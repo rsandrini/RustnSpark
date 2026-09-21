@@ -1,0 +1,4 @@
+score,falencia_pct,combate_winrate,tier5_pct,missoes_tier2,missoes_tier5,engasgo_pct,margem_mediana,preco_fuel,preco_reparo,rec_base,rec_por_tier,desg_base,desg_ambiente,manutencao_tier,reparo_limiar
+2.57,0.0,55.1,99.2,9,144,0.7,776.0,3.0,6,200,120,"(3, 5)",1.2,350,45
+2.683,0.0,55.9,99.8,9.0,128,0.2,795.0,3.0,6,200,120,"(3, 5)",1.2,200,45
+2.741,0.0,56.0,100.0,9.0,120.0,0.0,804.0,3.0,6,200,120,"(3, 5)",1.2,100,45

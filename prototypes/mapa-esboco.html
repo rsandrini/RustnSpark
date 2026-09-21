@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rust and Spark — Mapa</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#0b0e13; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --spark:#f0a500; --rust:#b5462f; --ok:#2ea043;
+    --luna:#4a90d9; --sun:#e3b341; --explorers:#3fa66a; --pirata:#c23b3b; --neutro:#5a6273;
+    --risk-lo:#2ea043; --risk-md:#e8833a; --risk-hi:#f85149;
+  }
+  *{box-sizing:inherit}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100%}
+  header{padding:14px 16px 10px;flex:0 0 auto;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:18px;letter-spacing:.3px}
+  h1 .r{color:var(--rust)} h1 .s{color:var(--spark)}
+  .sub{font-size:12px;color:var(--mut);margin-top:2px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--mut);margin-top:8px}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .dotleg{width:10px;height:10px;border-radius:50%}
+
+  .stage{flex:1 1 auto;position:relative;overflow:hidden}
+  svg{width:100%;height:100%;display:block;touch-action:none}
+  .edge{stroke:var(--line);stroke-width:2}
+  .edge.hot{stroke:var(--pirata);stroke-dasharray:5 4;opacity:.8}
+  .zone{opacity:.10}
+  .node-hit{cursor:pointer}
+  .ncore{stroke:#0b0e13;stroke-width:2.5}
+  .nring{fill:none;stroke-width:2.5;opacity:.9}
+  .nlabel{fill:var(--ink);font-size:12px;font-weight:600;text-anchor:middle;pointer-events:none}
+  .nsub{fill:var(--mut);font-size:9.5px;text-anchor:middle;pointer-events:none;text-transform:uppercase;letter-spacing:.5px}
+  .badge{font-size:10px;font-weight:700}
+  .node-hit.sel .nring{stroke:var(--spark);opacity:1}
+  .node-hit.sel .ncore{stroke:var(--spark)}
+  .miss-ico{font-size:13px;text-anchor:middle;pointer-events:none}
+
+  /* painel do no */
+  .panel{position:absolute;right:0;top:0;bottom:0;width:min(340px,86vw);background:var(--panel);
+    border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;
+    display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+  .panel.open{transform:translateX(0)}
+  .ph{padding:16px 16px 12px;border-bottom:1px solid var(--line)}
+  .ph .close{float:right;background:transparent;border:0;color:var(--mut);font-size:22px;cursor:pointer;line-height:1}
+  .ph h2{margin:0;font-size:18px}
+  .ph .kind{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-top:2px}
+  .pc{padding:14px 16px;overflow-y:auto;flex:1}
+  .field{margin-bottom:14px}
+  .field .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:4px}
+  .ctrlbar{height:22px;border-radius:5px;overflow:hidden;display:flex;border:1px solid var(--line)}
+  .ctrlbar div{height:100%}
+  .ctrllegend{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:11px;color:var(--mut)}
+  .ctrllegend span{display:flex;align-items:center;gap:4px}
+  .riskpill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .riskpill.lo{background:rgba(46,160,67,.16);color:var(--risk-lo)}
+  .riskpill.md{background:rgba(210,153,34,.16);color:var(--risk-md)}
+  .riskpill.hi{background:rgba(248,81,73,.16);color:var(--risk-hi)}
+  .statrow{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .statrow b{color:var(--ink)} .statrow span{color:var(--mut)}
+  .mlist{display:flex;flex-direction:column;gap:7px}
+  .mrow{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;font-size:13px}
+  .mrow .mi{font-size:15px} .mrow .mt{flex:1} .mrow .mr{color:var(--spark);font-weight:700}
+  .pa{padding:14px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+  .btn{padding:11px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;transition:.15s;text-align:center}
+  .btn:hover{border-color:var(--mut)}
+  .btn.primary{background:var(--luna);border-color:var(--luna);color:#fff}
+  .btn.go{background:var(--spark);border-color:var(--spark);color:#1a1200}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .hint{position:absolute;left:14px;bottom:12px;font-size:11.5px;color:var(--mut);
+    background:rgba(11,14,19,.8);padding:6px 10px;border-radius:7px;border:1px solid var(--line);max-width:60%}
+  .youare{position:absolute;left:14px;top:12px;font-size:12px;background:rgba(11,14,19,.8);
+    border:1px solid var(--line);border-radius:7px;padding:6px 10px}
+  .youare b{color:var(--spark)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1><span class="r">Rust</span> and <span class="s">Spark</span> — Mapa do Setor</h1>
+    <div class="sub">12 nós · hub central de navegação · controle de facção é estático na v0.1</div>
+    <div class="legend">
+      <span><span class="dotleg" style="background:var(--luna)"></span>Luna</span>
+      <span><span class="dotleg" style="background:var(--sun)"></span>Sun</span>
+      <span><span class="dotleg" style="background:var(--explorers)"></span>Explorers</span>
+      <span><span class="dotleg" style="background:var(--pirata)"></span>Piratas</span>
+      <span><span class="dotleg" style="background:var(--neutro)"></span>Neutro/disputado</span>
+    </div>
+  </header>
+
+  <div class="stage">
+    <svg id="map" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="youare">você está em <b id="youare">Porto Ceres</b></div>
+    <div class="hint" id="hint">Toque num nó para ver o local, missões e despachar viagem. Rotas tracejadas em vermelho = trecho perigoso (controle pirata).</div>
+    <!-- painel -->
+    <aside class="panel" id="panel">
+      <div class="ph">
+        <button class="close" id="close">×</button>
+        <h2 id="pname">—</h2>
+        <div class="kind" id="pkind">—</div>
+      </div>
+      <div class="pc" id="pc"></div>
+      <div class="pa" id="pa"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// ---------- dados ----------
+const F = {luna:"Luna",sun:"Sun",explorers:"Explorers",pirata:"Piratas",neutro:"Neutro"};
+const FC = {luna:"var(--luna)",sun:"var(--sun)",explorers:"var(--explorers)",pirata:"var(--pirata)",neutro:"var(--neutro)"};
+
+// 12 nos: posicao, nome, tipo, faccao dominante, controle (%), risco, ambiente, missoes
+const N = {
+  ceres:  {x:250,y:340,name:"Porto Ceres",kind:"Hub comercial",dom:"luna",ctrl:{luna:70,sun:15,neutro:15},risk:"lo",env:"espaço aberto",miss:[["📦","Entrega → Vesta",340],["🛡️","Escolta → Tycho",920],["⛏️","Mineração → Drift-9",760]]},
+  vesta:  {x:430,y:210,name:"Refinaria Vesta",kind:"Posto industrial",dom:"luna",ctrl:{luna:55,explorers:30,neutro:15},risk:"lo",env:"detritos leves",miss:[["📦","Entrega → Ceres",300],["⛏️","Mineração → Drift-9",640]]},
+  tycho:  {x:170,y:150,name:"Estaleiro Tycho",kind:"Hub / estaleiro",dom:"luna",ctrl:{luna:60,sun:25,neutro:15},risk:"lo",env:"gravitacional",miss:[["🆘","Resgate → Drift-9",1180],["📦","Entrega → Ceres",880]]},
+  gate:   {x:560,y:370,name:"Portão Kessler",kind:"Entroncamento",dom:"sun",ctrl:{sun:50,luna:35,neutro:15},risk:"md",env:"espaço aberto",miss:[["🛡️","Escolta → Hedus",1040]]},
+  hedus:  {x:720,y:250,name:"Base Hedus",kind:"Guarnição Sun",dom:"sun",ctrl:{sun:75,neutro:25},risk:"md",env:"espaço aberto",miss:[["🛡️","Escolta → Gate",980],["🧑‍🚀","Transporte → Marса",520]]},
+  marsa:  {x:840,y:150,name:"Ancoradouro Marsa",kind:"Porto Sun",dom:"sun",ctrl:{sun:65,luna:20,neutro:15},risk:"md",env:"gravitacional",miss:[["🧑‍🚀","Transporte → Hedus",500]]},
+  rennick:{x:640,y:520,name:"Estação Rennick",kind:"Posto isolado",dom:"neutro",ctrl:{neutro:45,explorers:30,pirata:25},risk:"md",env:"radiação",miss:[]},
+  drift:  {x:820,y:470,name:"Campo Drift-9",kind:"Campo de detritos",dom:"pirata",ctrl:{pirata:60,explorers:25,neutro:15},risk:"hi",env:"detritos densos",miss:[["⛏️","Mineração local",520],["🆘","Resgate → Tycho",1240]]},
+  spur:   {x:410,y:520,name:"Fenda Spur",kind:"Fronteira",dom:"explorers",ctrl:{explorers:55,neutro:25,pirata:20},risk:"md",env:"radiação",miss:[["⛏️","Mineração local",580]]},
+  cair:   {x:150,y:470,name:"Refúgio Cair",kind:"Posto Explorers",dom:"explorers",ctrl:{explorers:70,neutro:30},risk:"lo",env:"detritos leves",miss:[["📦","Entrega → Ceres",360],["⛏️","Mineração → Spur",470]]},
+  veil:   {x:910,y:610,name:"O Véu",kind:"Zona morta",dom:"pirata",ctrl:{pirata:80,neutro:20},risk:"hi",env:"radiação",miss:[["🆘","Resgate → Drift-9",1520]]},
+  echo:   {x:520,y:120,name:"Eco-7",kind:"Relé abandonado",dom:"neutro",ctrl:{neutro:50,sun:25,pirata:25},risk:"hi",env:"detritos densos",miss:[["⛏️","Scavenging local",680]]},
+};
+// arestas [a,b, perigosa?]
+const E = [
+  ["tycho","ceres"],["tycho","vesta"],["vesta","ceres"],["vesta","echo"],["ceres","cair"],
+  ["ceres","gate"],["cair","spur"],["spur","rennick"],["gate","hedus"],["gate","rennick"],
+  ["hedus","marsa"],["hedus","echo"],["rennick","drift",true],["drift","veil",true],
+  ["spur","drift",true],["echo","drift",true],["marsa","drift",true],["cair","ceres"],
+];
+let here="ceres", sel=null;
+
+const svg=document.getElementById("map");
+const SVGNS="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+
+function draw(){
+  svg.innerHTML="";
+  // arestas
+  E.forEach(([a,b,hot])=>{
+    const A=N[a],B=N[b];
+    svg.appendChild(el("line",{x1:A.x,y1:A.y,x2:B.x,y2:B.y,class:"edge"+(hot?" hot":"")}));
+  });
+  // nos
+  for(const id in N){
+    const n=N[id];
+    const g=el("g",{class:"node-hit"+(sel===id?" sel":""),tabindex:0});
+    // halo de zona (faccao dominante)
+    g.appendChild(el("circle",{cx:n.x,cy:n.y,r:46,class:"zone",fill:FC[n.dom]}));
+    // anel de risco
+    const rc = n.risk==="lo"?"var(--risk-lo)":n.risk==="md"?"var(--risk-md)":"var(--risk-hi)";
+    g.appendChild(el("circle",{cx:n.x,cy:n.y,r:26,class:"nring",stroke:rc}));
+    // core faccao
+    g.appendChild(el("circle",{cx:n.x,cy:n.y,r:20,class:"ncore",fill:FC[n.dom]}));
+    // "voce esta aqui"
+    if(id===here) g.appendChild(el("circle",{cx:n.x,cy:n.y,r:8,fill:"var(--spark)"}));
+    // missoes (contador)
+    if(n.miss.length){
+      g.appendChild(el("circle",{cx:n.x+20,cy:n.y-18,r:10,fill:"var(--spark)",stroke:"#0b0e13","stroke-width":2}));
+      const t=el("text",{x:n.x+20,y:n.y-14,"text-anchor":"middle",fill:"#1a1200","font-size":"11","font-weight":"700"});
+      t.textContent=n.miss.length; g.appendChild(t);
+    }
+    // rotulos
+    const lbl=el("text",{x:n.x,y:n.y+42,class:"nlabel"});lbl.textContent=n.name;g.appendChild(lbl);
+    const sub=el("text",{x:n.x,y:n.y+55,class:"nsub"});sub.textContent=F[n.dom];g.appendChild(sub);
+    g.addEventListener("click",()=>select(id));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter")select(id)});
+    svg.appendChild(g);
+  }
+}
+
+function select(id){
+  sel=id; draw();
+  const n=N[id];
+  document.getElementById("pname").textContent=n.name;
+  document.getElementById("pkind").textContent=n.kind+" · "+n.env;
+  // corpo
+  const ctrlDivs=Object.entries(n.ctrl).map(([f,p])=>`<div style="width:${p}%;background:${FC[f]}"></div>`).join("");
+  const ctrlLeg=Object.entries(n.ctrl).map(([f,p])=>`<span><span class="dotleg" style="width:9px;height:9px;border-radius:50%;background:${FC[f]}"></span>${F[f]} ${p}%</span>`).join("");
+  const riskTxt=n.risk==="lo"?"baixo":n.risk==="md"?"médio":"alto";
+  const missHtml = n.miss.length
+    ? `<div class="mlist">`+n.miss.map(m=>`<div class="mrow"><span class="mi">${m[0]}</span><span class="mt">${m[1]}</span><span class="mr">${m[2]}¢</span></div>`).join("")+`</div>`
+    : `<div style="color:var(--mut);font-size:13px;font-style:italic">Nenhuma missão disponível aqui.<br>Postos isolados oferecem pouco.</div>`;
+
+  document.getElementById("pc").innerHTML=`
+    <div class="field">
+      <div class="lbl">Controle de facção</div>
+      <div class="ctrlbar">${ctrlDivs}</div>
+      <div class="ctrllegend">${ctrlLeg}</div>
+    </div>
+    <div class="field">
+      <div class="lbl">Risco de encontro</div>
+      <span class="riskpill ${n.risk}">${riskTxt}</span>
+      ${n.dom==="pirata"?' <span style="color:var(--pirata);font-size:12px">· dominado por piratas</span>':''}
+    </div>
+    <div class="field">
+      <div class="lbl">Missões neste local (${n.miss.length})</div>
+      ${missHtml}
+    </div>`;
+  // acoes
+  const isHere = id===here;
+  document.getElementById("pa").innerHTML = isHere
+    ? `<button class="btn primary" onclick="enterPort()">Entrar no porto</button>
+       <button class="btn" onclick="openBoard()">Ver quadro de missões</button>`
+    : `<div class="statrow"><span>distância estimada</span><b>~${dist(here,id)} saltos</b></div>
+       <button class="btn go" onclick="dispatch('${id}')">Despachar viagem → ${n.name}</button>
+       <button class="btn" onclick="openBoard()">Ver missões de lá</button>`;
+  document.getElementById("panel").classList.add("open");
+}
+function dist(a,b){ // BFS simples nas arestas
+  const adj={};E.forEach(([x,y])=>{(adj[x]=adj[x]||[]).push(y);(adj[y]=adj[y]||[]).push(x);});
+  let q=[[a,0]],seen={[a]:1};
+  while(q.length){const [c,d]=q.shift();if(c===b)return d;(adj[c]||[]).forEach(nx=>{if(!seen[nx]){seen[nx]=1;q.push([nx,d+1])}})}
+  return "?";
+}
+window.enterPort=()=>flash("→ abriria a tela do PORTO (abas: mercado, reparo, fuel, scavenging)");
+window.openBoard=()=>flash("→ abriria o QUADRO DE MISSÕES deste local");
+window.dispatch=(id)=>{flash("→ despacharia viagem: entra em TRÂNSITO, processa em tempo real, gera RELATÓRIO");};
+function flash(msg){const h=document.getElementById("hint");h.textContent=msg;h.style.borderColor="var(--spark)";
+  setTimeout(()=>{h.style.borderColor="var(--line)"},1200);}
+document.getElementById("close").onclick=()=>{document.getElementById("panel").classList.remove("open");sel=null;draw();};
+
+draw();
+select("ceres");
+</script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rust and Spark — Porto</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#0b0e13; --panel:#12171f; --panel2:#1a212c; --ink:#e6edf3; --mut:#8b949e;
+    --line:#2a313c; --spark:#f0a500; --rust:#b5462f; --ok:#2ea043; --bad:#f85149;
+    --luna:#4a90d9; --sun:#e3b341; --explorers:#3fa66a; --pirata:#c23b3b;
+  }
+  *{box-sizing:inherit}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .app{max-width:820px;margin:0 auto;padding:0 0 70px}
+
+  /* cabecalho do porto */
+  .porthead{background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border-bottom:1px solid var(--line);padding:18px 16px 14px;position:sticky;top:0;z-index:5}
+  .porthead::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(500px 120px at 15% -20%,rgba(74,144,217,.12),transparent)}
+  .ptop{display:flex;justify-content:space-between;align-items:flex-start;position:relative}
+  h1{margin:0;font-size:20px}
+  .pmeta{font-size:12.5px;color:var(--mut);margin-top:3px}
+  .fac{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;
+    border:1px solid;margin-right:6px}
+  .fac.luna{color:var(--luna);border-color:var(--luna)}
+  .wallet{text-align:right;flex:0 0 auto}
+  .wallet .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+  .wallet .amt{font-size:20px;font-weight:700;color:var(--spark)}
+  .wallet .scrap{font-size:12px;color:var(--mut);margin-top:1px}
+
+  /* abas */
+  .tabs{display:flex;gap:2px;margin-top:14px;position:relative;overflow-x:auto}
+  .tab{flex:0 0 auto;background:transparent;border:0;border-bottom:2px solid transparent;
+    color:var(--mut);padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .tab.on{color:var(--ink);border-bottom-color:var(--spark)}
+  .tab .badge{font-size:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:0 6px;margin-left:5px}
+
+  .pane{padding:16px}
+  .pane.hide{display:none}
+  .paneintro{font-size:13px;color:var(--mut);margin:0 0 14px}
+
+  /* linha de item generica */
+  .item{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:9px}
+  .item .ico{width:40px;height:40px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:19px}
+  .item .name{font-weight:600;font-size:14.5px}
+  .item .desc{font-size:12px;color:var(--mut);margin-top:1px}
+  .cond{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;margin-left:6px;font-weight:600}
+  .cond.hi{background:rgba(46,160,67,.15);color:var(--ok)}
+  .cond.md{background:rgba(240,165,0,.15);color:var(--spark)}
+  .cond.lo{background:rgba(248,81,73,.15);color:var(--bad)}
+  .item .act{text-align:right}
+  .price{font-size:15px;font-weight:700}
+  .price.buy{color:var(--ink)} .price.sell{color:var(--ok)}
+  .price small{font-size:10.5px;color:var(--mut);font-weight:400;display:block}
+  .btn{padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;margin-top:5px}
+  .btn:hover{border-color:var(--mut)}
+  .btn.buy{background:var(--luna);border-color:var(--luna);color:#fff}
+  .btn.sell{background:transparent;border-color:var(--ok);color:var(--ok)}
+  .btn.go{background:var(--spark);border-color:var(--spark);color:#1a1200;width:100%;padding:12px;font-size:14px;margin-top:12px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .subhead{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
+    margin:18px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .spread{font-size:12px;color:var(--mut);background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:9px 12px;margin-bottom:14px}
+  .spread b{color:var(--ink)}
+
+  /* MERCADO — grade de cards compactos */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:9px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px;
+    display:flex;flex-direction:column;position:relative;transition:.15s;cursor:pointer}
+  .card:hover{border-color:#3d4756}
+  .card .rar{position:absolute;top:7px;left:7px;font-size:8.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.3px;padding:1px 5px;border-radius:5px}
+  .rar.comum{background:rgba(139,148,158,.18);color:#b6bec9}
+  .rar.incomum{background:rgba(63,166,106,.18);color:var(--explorers)}
+  .rar.raro{background:rgba(74,144,217,.2);color:var(--luna)}
+  .rar.epico{background:rgba(180,70,200,.2);color:#c98be0}
+  .card .thumb{width:44px;height:44px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;display:grid;place-items:center;font-size:24px;margin:14px auto 7px}
+  .card .cname{font-weight:600;font-size:12px;line-height:1.25;margin-bottom:3px;min-height:30px}
+  .card .cstat{font-size:10.5px;color:var(--spark);font-weight:600;margin-bottom:2px}
+  .card .cstat2{font-size:10px;color:var(--mut);margin-bottom:6px}
+  .card .cbot{display:flex;flex-direction:column;gap:5px;margin-top:auto}
+  .card .cprice{font-size:13px;font-weight:700}
+  .card .cprice.sell{color:var(--ok)}
+  .card .cprice small{font-size:9px;color:var(--mut);font-weight:400;margin-left:3px}
+  .card .cbtn{padding:6px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:11.5px;font-weight:600;cursor:pointer;width:100%}
+  .card .cbtn.buy{background:var(--luna);border-color:var(--luna);color:#fff}
+  .card .cbtn.sell{background:transparent;border-color:var(--ok);color:var(--ok)}
+  .card .cbtn:hover{filter:brightness(1.1)}
+  .card .condmini{position:absolute;top:7px;right:7px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px}
+  .condmini.hi{background:rgba(46,160,67,.15);color:var(--ok)}
+  .condmini.md{background:rgba(240,165,0,.15);color:var(--spark)}
+  .condmini.lo{background:rgba(248,81,73,.15);color:var(--bad)}
+  .tapinfo{text-align:center;font-size:9px;color:var(--mut);margin-top:4px}
+
+  /* reparo */
+  .reptotals{background:var(--panel);border:1px solid var(--spark);border-radius:10px;padding:14px;
+    margin-top:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .reptotals .big{font-size:13px;color:var(--mut)} .reptotals .big b{color:var(--ink);font-size:16px}
+
+  /* fuel */
+  .fueltank{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .fuelbar{height:30px;background:var(--panel2);border-radius:8px;overflow:hidden;position:relative;margin:10px 0}
+  .fuelbar i{display:block;height:100%;background:linear-gradient(90deg,var(--sun),var(--spark))}
+  .fuelbar span{position:absolute;inset:0;display:grid;place-items:center;font-size:13px;font-weight:700;color:#1a1200}
+  .fuelrow{display:flex;gap:9px;align-items:center;margin-top:12px}
+  .fuelrow input{flex:1;accent-color:var(--spark)}
+  .instant{color:var(--ok);font-size:12px;font-weight:600}
+
+  /* scavenging */
+  .scavbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .scavstat{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .scavstat b{color:var(--ink)} .scavstat span{color:var(--mut)}
+  .scavwarn{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);border-radius:9px;
+    padding:10px 12px;margin:12px 0;font-size:12.5px;color:#ffb3ae}
+  .scavresult{margin-top:12px;padding:12px;border-radius:9px;font-size:14px;display:none}
+  .scavresult.win{display:block;background:rgba(46,160,67,.1);border:1px solid var(--ok)}
+  .scavresult.lose{display:block;background:rgba(139,148,158,.08);border:1px solid var(--line);color:var(--mut)}
+
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--spark);
+    border-radius:8px;padding:11px 13px;margin:6px 16px;font-size:12.5px;color:var(--mut)}
+
+  /* popup */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.on{display:flex}
+  .pop{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .pop h3{font-size:17px}
+  .poprow{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line);gap:14px}
+  .poprow span{color:var(--mut);flex:0 0 auto} .poprow b{color:var(--ink);text-align:right} .poprow b.pos{color:var(--ok)}
+  .popdesc{font-size:13px;color:var(--mut);margin:12px 0 0;line-height:1.55}
+  .popclose{margin-top:16px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+  .popclose:hover{border-color:var(--mut)}
+
+  /* reparo com slider */
+  .repcard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 15px;margin-bottom:11px}
+  .repcard .rtop{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+  .repcard .rico{width:38px;height:38px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+  .repcard .rname{font-weight:600;font-size:14px}
+  .repcard .rnow{font-size:12px;color:var(--mut)}
+  .repcard .rtarget{margin-left:auto;text-align:right}
+  .repcard .rtarget b{font-size:17px;color:var(--spark)}
+  .repcard .rtarget small{display:block;font-size:10.5px;color:var(--mut)}
+  .slwrap{position:relative;margin:4px 0 8px}
+  .slwrap .track{position:absolute;top:50%;left:0;right:0;height:6px;transform:translateY(-50%);
+    border-radius:4px;background:var(--panel2);overflow:hidden;pointer-events:none}
+  .slwrap .track .cur{position:absolute;left:0;top:0;bottom:0;background:#3a4250}
+  .slwrap .track .add{position:absolute;top:0;bottom:0;background:var(--spark);opacity:.55}
+  .slwrap input[type=range]{position:relative;width:100%;margin:0;accent-color:var(--spark);background:transparent}
+  .repcard .rcost{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut)}
+  .repcard .rcost b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CABECALHO -->
+  <div class="porthead">
+    <div class="ptop">
+      <div>
+        <h1>Porto Ceres</h1>
+        <div class="pmeta"><span class="fac luna">Luna 70%</span>Hub comercial · preços base · sem campo de sucata local</div>
+      </div>
+      <div class="wallet">
+        <div class="lbl">Créditos</div>
+        <div class="amt" id="wallet">4 820 ¢</div>
+        <div class="scrap">sucata: 6 un.</div>
+      </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-t="mercado">🛒 Mercado</button>
+      <button class="tab" data-t="reparo">🔧 Reparo <span class="badge">3 peças</span></button>
+      <button class="tab" data-t="fuel">⛽ Abastecer</button>
+      <button class="tab" data-t="scav">♻️ Scavenging</button>
+    </div>
+  </div>
+
+  <!-- ABA MERCADO -->
+  <div class="pane" id="pane-mercado">
+    <p class="paneintro">Cada porto tem seu preço (humor fixo por local na v0.1). Compra e venda em qualquer porto; <b>venda sempre rende menos que a compra</b>.</p>
+    <div class="spread">Spread deste porto: você <b>compra a 100%</b> do preço-base e <b>vende a ~60%</b>. Condição da peça multiplica o valor.</div>
+
+    <div class="subhead">À venda aqui</div>
+    <div class="grid" id="market-buy"></div>
+
+    <div class="subhead">Sua nave / inventário — vender</div>
+    <div class="grid" id="market-sell"></div>
+  </div>
+
+  <!-- ABA REPARO -->
+  <div class="pane hide" id="pane-reparo">
+    <p class="paneintro">Reparo custa <b>6¢ por ponto</b> de condição e <b>leva tempo</b> (neste hub: rápido; postos pequenos demoram mais). Remendar é barato mas piora o teto da peça — cuidado.</p>
+    <div id="repair-list"></div>
+    <div class="reptotals" id="reptotals"></div>
+    <div style="display:flex;gap:9px;margin-top:12px">
+      <button class="btn" id="repair-all" style="flex:0 0 auto">⤢ Reparar tudo</button>
+      <button class="btn go" id="repair-go" style="margin-top:0">Iniciar reparo selecionado</button>
+    </div>
+  </div>
+
+  <!-- ABA FUEL -->
+  <div class="pane hide" id="pane-fuel">
+    <p class="paneintro">Abastecer é <b class="instant">instantâneo</b> — paga e sai. Preço por unidade varia por porto.</p>
+    <div class="fueltank">
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--mut)">
+        <span>Tanque</span><span id="fuel-label">120 / 200 un.</span>
+      </div>
+      <div class="fuelbar"><i id="fuel-fill" style="width:60%"></i><span id="fuel-pct">60%</span></div>
+      <div style="font-size:12.5px;color:var(--mut)">Preço aqui: <b style="color:var(--ink)">3 ¢/un.</b></div>
+      <div class="fuelrow">
+        <span style="font-size:12px;color:var(--mut)">comprar:</span>
+        <input type="range" id="fuel-range" min="0" max="80" value="80">
+        <span id="fuel-buyamt" style="font-size:13px;font-weight:700;width:120px;text-align:right">80 un · 240¢</span>
+      </div>
+      <div style="display:flex;gap:9px;margin-top:12px">
+        <button class="btn" id="fuel-max" style="flex:0 0 auto">⤢ Encher tanque</button>
+        <button class="btn go" id="fuel-go" style="margin-top:0">Abastecer (instantâneo)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA SCAVENGING -->
+  <div class="pane hide" id="pane-scav">
+    <p class="paneintro">Vasculhar detritos livremente. Chance <b>baixa</b> quando solo; risco de desgaste. Alguns campos têm peças melhores sob controle pirata (viram missão, não ação livre).</p>
+    <div class="scavbox">
+      <div class="scavstat"><span>Campo</span><b>Cinturão de Ceres (leve)</b></div>
+      <div class="scavstat"><span>Chance de achado</span><b style="color:var(--spark)">25%</b></div>
+      <div class="scavstat"><span>Qualidade esperada</span><b>comum, danificada</b></div>
+      <div class="scavstat"><span>Custo</span><b>tempo + desgaste leve</b></div>
+      <div class="scavwarn">⚠ Vasculhar sozinho desgasta sua nave. Missões de scavenging rendem melhor, mas são mais perigosas.</div>
+      <button class="btn go" id="scav-go">Vasculhar (25%)</button>
+      <div class="scavresult" id="scav-result"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Esboço interativo.</b> <b>Mercado</b>: grade de cards compactos — raridade no canto, clique
+    abre o detalhe completo da peça. <b>Reparo</b>: arraste o slider de cada peça (da condição atual
+    até 100%) e veja custo + tempo somarem (6¢/ponto). <b>Abastecer</b>: instantâneo. <b>Scavenging</b>:
+    role a chance de 25%. Fotos reais entram depois (emoji por ora); preços dinâmicos são fase 2.
+  </div>
+
+  <div class="overlay" id="overlay" onclick="closePop()"></div>
+</div>
+
+<script>
+let wallet=4820, scrap=6;
+function money(n){return n.toLocaleString('pt-BR').replace(/,/g,' ')+" ¢";}
+function updWallet(){document.getElementById("wallet").textContent=money(wallet);}
+
+// ---- MERCADO ----
+// itens com ficha completa (para o popup); card mostra so o essencial
+const BUY=[
+  {ico:"🛡️",name:"Blindagem Mk-II",stat:"BLI +4",stat2:"massa +8",rar:"comum",base:820,cond:100,
+   full:{Classe:"Blindagem",BLI:"+4",Massa:"+8 t",Energia:"—",Escudo:"—",Regen:"não regenera",Notas:"Placas de troca cara. Remendo barato reduz o teto."}},
+  {ico:"⚡",name:"Regulador de escudo",stat:"ESC regen +2",stat2:"energia 3/s",rar:"incomum",base:340,cond:100,
+   full:{Classe:"Componente de escudo",ESC:"regen +2",Energia:"−3/s contínuo",Massa:"+1 t",Pico:"absorve picos de combate",Notas:"Regenera com tempo + energia."}},
+  {ico:"🔭",name:"Sensor LR-7",stat:"SEN +3",stat2:"−40% emboscada",rar:"raro",base:560,cond:100,
+   full:{Classe:"Sensor",SEN:"+3",Alcance:"longo",Energia:"−2/s",Efeito:"reduz chance de emboscada em 40%",Notas:"Enxerga através de radiação de fundo."}},
+  {ico:"⛏️",name:"Broca Delver",stat:"extração +2",stat2:"energia 5/s",rar:"comum",base:480,cond:100,
+   full:{Classe:"Minerador",Extração:"+2 eficiência",Energia:"−5/s ativo",Massa:"+4 t",Notas:"Exige reator ou bateria robusta para operar."}},
+  {ico:"🚀",name:"Motor iônico Vipo",stat:"MOB +3",stat2:"energia 6/s",rar:"incomum",base:910,cond:100,
+   full:{Classe:"Propulsão",MOB:"+3",Empuxo:"médio",Energia:"−6/s contínuo",Combustível:"dispensa tanque",Notas:"Precisa de fonte contínua forte (reator/painel grande)."}},
+  {ico:"🔫",name:"Canhão de trilho",stat:"PDF +5",stat2:"pico 40 energia",rar:"raro",base:1180,cond:100,
+   full:{Classe:"Arma",PDF:"+5",Alcance:"longo",Energia:"pico de 40 por disparo",Massa:"+5 t",Notas:"Exige bateria para o pico; sem ela, trava no combate."}},
+  {ico:"🔋",name:"Bateria Cell-9",stat:"buffer +30",stat2:"cobre picos",rar:"comum",base:390,cond:100,
+   full:{Classe:"Energia",Buffer:"+30",Função:"cobre picos de combate (arma/escudo)",Massa:"+3 t",Notas:"Não gera energia; armazena. Par ideal do canhão."}},
+  {ico:"☀️",name:"Painel solar dobrável",stat:"energia +4/s",stat2:"massa leve",rar:"comum",base:260,cond:100,
+   full:{Classe:"Energia",Geração:"+4/s contínuo",Massa:"+1 t",Notas:"Fraco perto do Sol distante; base do arquétipo 'tartaruga'."}},
+];
+const SELL=[
+  {ico:"⚡",name:"Regulador de escudo",stat:"ESC regen +2",stat2:"loot recente",rar:"incomum",base:340,cond:58,
+   full:{Classe:"Componente de escudo",ESC:"regen +2",Condição:"58%",Origem:"loot da última missão",Notas:"Vale menos que novo pela condição."}},
+  {ico:"♻️",name:"Sucata",stat:"6 unidades",stat2:"material",rar:"comum",base:40,cond:null,scrap:true,
+   full:{Classe:"Material",Quantidade:"6 un",Uso:"vender por créditos; não instalável",Notas:"Moeda de troca para reparo, peças e fuel."}},
+  {ico:"🔩",name:"Propulsor de manobra",stat:"MOB +1",stat2:"gasto",rar:"comum",base:300,cond:24,
+   full:{Classe:"Propulsão auxiliar",MOB:"+1",Condição:"24% (quase inútil)",Notas:"Melhor vender que reparar nesse estado."}},
+];
+const SELL_RATE=0.60;
+function condClass(c){return c>=67?"hi":c>=34?"md":"lo";}
+function card(it,mode){
+  const val=mode==="sell"?Math.round(it.base*(it.cond!=null?it.cond/100:1)*SELL_RATE)*(it.scrap?scrap:1):it.base;
+  const priceLbl=mode==="sell"?(it.scrap?'total':'venda'):'base';
+  const btn=mode==="sell"
+    ?`<button class="cbtn sell" onclick="event.stopPropagation();sell(${val})">Vender</button>`
+    :`<button class="cbtn buy" onclick="event.stopPropagation();buy(${it.base})">Comprar</button>`;
+  const cond=it.cond!=null?`<span class="condmini ${condClass(it.cond)}">${it.cond}%</span>`:"";
+  return `<div class="card" onclick='showItem(${JSON.stringify(it).replace(/'/g,"&#39;")},"${mode}")'>
+    <span class="rar ${it.rar}">${it.rar}</span>${cond}
+    <div class="thumb">${it.ico}</div>
+    <div class="cname">${it.name}</div>
+    <div class="cstat">${it.stat}</div>
+    <div class="cstat2">${it.stat2}</div>
+    <div class="cbot">
+      <div class="cprice ${mode==='sell'?'sell':''}">${money(val)}<small>${priceLbl}</small></div>
+      ${btn}
+    </div>
+    <div class="tapinfo">tocar p/ detalhes</div>
+  </div>`;
+}
+function renderMarket(){
+  document.getElementById("market-buy").innerHTML=BUY.map(it=>card(it,"buy")).join("");
+  document.getElementById("market-sell").innerHTML=SELL.map(it=>card(it,"sell")).join("");
+}
+window.buy=(p)=>{
+  confirmAction(`Comprar esta peça por <b>${money(p)}</b>?`,
+    `Saldo após: ${money(wallet-p)}`, wallet<p?"Créditos insuficientes":null, ()=>{
+    wallet-=p;updWallet();flash();
+  });
+};
+window.sell=(v)=>{
+  confirmAction(`Vender por <b class="pos">${money(v)}</b>?`,
+    `Saldo após: ${money(wallet+v)}`, null, ()=>{
+    wallet+=v;updWallet();flash();
+  });
+};
+function confirmAction(title, sub, block, onOk){
+  const o=document.getElementById("overlay");
+  o.innerHTML=`<div class="pop" onclick="event.stopPropagation()">
+    <h3 style="margin:0 0 8px">${title}</h3>
+    <p class="popdesc" style="margin:0 0 4px">${sub}</p>
+    ${block?`<div class="scavwarn" style="margin:12px 0 0">⚠ ${block}</div>`:""}
+    <div style="display:flex;gap:9px;margin-top:16px">
+      <button class="popclose" style="margin:0" onclick="closePop()">Cancelar</button>
+      <button class="btn go" style="margin:0;flex:1" ${block?'disabled':''} id="confirm-ok">Confirmar</button>
+    </div></div>`;
+  o.classList.add("on");
+  if(!block) document.getElementById("confirm-ok").onclick=()=>{onOk();closePop();};
+}
+function flash(){const w=document.getElementById("wallet");w.style.color="var(--ok)";
+  setTimeout(()=>w.style.color="var(--spark)",500);}
+
+// popup — ficha COMPLETA
+window.showItem=(it,mode)=>{
+  const rarCol={comum:"#b6bec9",incomum:"var(--explorers)",raro:"var(--luna)",epico:"#c98be0"}[it.rar];
+  const rows=Object.entries(it.full).map(([k,v])=>`<div class="poprow"><span>${k}</span><b>${v}</b></div>`).join("");
+  const val=Math.round(it.base*(it.cond!=null?it.cond/100:1)*SELL_RATE);
+  const o=document.getElementById("overlay");
+  o.innerHTML=`<div class="pop" onclick="event.stopPropagation()">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+      <div style="width:52px;height:52px;border-radius:10px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-size:28px">${it.ico}</div>
+      <div><h3 style="margin:0">${it.name}</h3>
+        <span style="color:${rarCol};font-size:12px;font-weight:700;text-transform:uppercase">${it.rar}</span></div>
+    </div>
+    ${rows}
+    <div class="poprow"><span>Preço-base</span><b>${money(it.base)}</b></div>
+    <div class="poprow"><span>Venda estimada</span><b class="pos">${money(val)}${it.cond!=null?' (cond '+it.cond+'%)':''}</b></div>
+    <button class="popclose" onclick="closePop()">fechar</button></div>`;
+  o.classList.add("on");
+};
+window.closePop=()=>document.getElementById("overlay").classList.remove("on");
+
+// ---- REPARO (slider por peca: da condicao atual ate 100) ----
+const REPAIR=[
+  {ico:"🔩",name:"Propulsor de manobra",cond:24,target:100},
+  {ico:"🛡️",name:"Blindagem de bombordo",cond:62,target:100},
+  {ico:"⚡",name:"Regulador de escudo",cond:78,target:78},
+];
+const PRECO_REPARO=6, K_TIME=3; // hub
+function renderRepair(){
+  document.getElementById("repair-list").innerHTML=REPAIR.map((p,i)=>{
+    const pts=p.target-p.cond;
+    const cc=condClass(p.cond)==='hi'?'ok':condClass(p.cond)==='md'?'spark':'bad';
+    return `<div class="repcard">
+      <div class="rtop">
+        <div class="rico">${p.ico}</div>
+        <div><div class="rname">${p.name}</div><div class="rnow">condição atual ${p.cond}%</div></div>
+        <div class="rtarget"><b id="tg${i}">${p.target}%</b><small>reparar até</small></div>
+      </div>
+      <div class="slwrap">
+        <div class="track"><div class="cur" style="width:${p.cond}%;background:var(--${cc})"></div>
+          <div class="add" id="add${i}" style="left:${p.cond}%;width:${p.target-p.cond}%"></div></div>
+        <input type="range" min="${p.cond}" max="100" value="${p.target}" oninput="setTarget(${i},this.value)">
+      </div>
+      <div class="rcost"><span>${pts} pts a reparar</span><span>custo <b id="rc${i}">${pts*PRECO_REPARO}¢</b> · tempo <b id="rt${i}">${Math.round(pts*K_TIME)}s</b></span></div>
+    </div>`;}).join("");
+  updRepTotals();
+}
+window.setTarget=(i,v)=>{
+  v=+v; REPAIR[i].target=v;
+  const p=REPAIR[i], pts=v-p.cond;
+  document.getElementById("tg"+i).textContent=v+"%";
+  document.getElementById("add"+i).style.width=(v-p.cond)+"%";
+  document.getElementById("rc"+i).textContent=pts*PRECO_REPARO+"¢";
+  document.getElementById("rt"+i).textContent=Math.round(pts*K_TIME)+"s";
+  updRepTotals();
+};
+function updRepTotals(){
+  const pts=REPAIR.reduce((a,p)=>a+(p.target-p.cond),0);
+  const cost=pts*PRECO_REPARO, time=Math.round(pts*K_TIME);
+  document.getElementById("reptotals").innerHTML=
+    `<div class="big">Total: <b>${pts} pts</b> em ${REPAIR.filter(p=>p.target>p.cond).length} peça(s)</div>
+     <div class="big">Custo <b>${money(cost)}</b></div>
+     <div class="big">Tempo <b>${time}s</b> <span style="font-size:11px">(hub rápido)</span></div>`;
+  const go=document.getElementById("repair-go");
+  go.disabled = pts===0 || wallet<cost;
+  go.textContent = pts===0?"Nada a reparar":`Iniciar reparo — ${money(cost)} · ${time}s`;
+}
+document.getElementById("repair-go").onclick=()=>{
+  const pts=REPAIR.reduce((a,p)=>a+(p.target-p.cond),0), cost=pts*PRECO_REPARO;
+  if(wallet>=cost){wallet-=cost;updWallet();REPAIR.forEach(p=>p.cond=p.target);renderRepair();flash();}
+};
+document.getElementById("repair-all").onclick=()=>{
+  REPAIR.forEach(p=>p.target=100); renderRepair();
+};
+
+// ---- FUEL ----
+const FUEL_PRICE=3, FUEL_CUR=120, FUEL_MAX=200;
+document.getElementById("fuel-range").oninput=function(){
+  const buy=+this.value, canBuy=Math.min(buy,FUEL_MAX-FUEL_CUR);
+  document.getElementById("fuel-buyamt").textContent=`${canBuy} un · ${canBuy*FUEL_PRICE}¢`;
+  document.getElementById("fuel-go").textContent=`Abastecer ${canBuy} un (instantâneo) — ${canBuy*FUEL_PRICE}¢`;
+};
+document.getElementById("fuel-range").dispatchEvent(new Event('input'));
+document.getElementById("fuel-max").onclick=()=>{
+  const need=FUEL_MAX-FUEL_CUR;
+  const r=document.getElementById("fuel-range");
+  r.max=Math.max(80,need); r.value=need;
+  r.dispatchEvent(new Event('input'));
+};
+document.getElementById("fuel-go").onclick=()=>{
+  const buy=Math.min(+document.getElementById("fuel-range").value,FUEL_MAX-FUEL_CUR);
+  const cost=buy*FUEL_PRICE;
+  if(wallet>=cost){wallet-=cost;updWallet();
+    const nv=FUEL_CUR+buy;const pct=Math.round(nv/FUEL_MAX*100);
+    document.getElementById("fuel-fill").style.width=pct+"%";
+    document.getElementById("fuel-pct").textContent=pct+"%";
+    document.getElementById("fuel-label").textContent=`${nv} / ${FUEL_MAX} un.`;
+    flash("abastecido");}
+};
+
+// ---- SCAVENGING ----
+document.getElementById("scav-go").onclick=()=>{
+  const r=document.getElementById("scav-result");
+  const win=Math.random()<0.25;
+  if(win){r.className="scavresult win";
+    r.innerHTML="✦ <b>Achado!</b> Recuperou um <b>acoplador de energia (comum, 41%)</b>. Guardado no inventário.";}
+  else{r.className="scavresult lose";
+    r.innerHTML="Nada de útil desta vez. A nave sofreu <b>−2% de desgaste</b> vasculhando.";}
+};
+
+// ---- TABS ----
+document.getElementById("tabs").addEventListener("click",e=>{
+  const t=e.target.closest(".tab");if(!t)return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove("on"));
+  t.classList.add("on");
+  ["mercado","reparo","fuel","scav"].forEach(id=>{
+    document.getElementById("pane-"+id).classList.toggle("hide",id!==t.dataset.t);
+  });
+});
+renderMarket();renderRepair();updWallet();
+</script>
+</body>
+</html>

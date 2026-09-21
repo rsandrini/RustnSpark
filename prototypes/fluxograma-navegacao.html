@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rust and Spark — Fluxograma de Navegação</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#0e1116; --panel:#161b22; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --spark:#f0a500; --rust:#b5462f; --ok:#2ea043;
+  }
+  *{box-sizing:inherit}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:20px 18px 8px}
+  h1{margin:0;font-size:20px;letter-spacing:.3px}
+  h1 .r{color:var(--rust)} h1 .s{color:var(--spark)}
+  p.sub{margin:6px 0 0;color:var(--mut);font-size:13px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;padding:12px 18px;color:var(--mut);font-size:12.5px}
+  .legend b{color:var(--ink);font-weight:600}
+  .chip{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+  .wrap{overflow-x:auto;padding:6px 10px 40px}
+  .mermaid{min-width:340px}
+  footer{color:var(--mut);font-size:12px;padding:0 18px 30px;max-width:760px}
+  code{background:#0b0f14;padding:1px 5px;border-radius:4px;color:var(--spark)}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="r">Rust</span> and <span class="s">Spark</span> — Fluxograma de Navegação</h1>
+  <p class="sub">Esqueleto de telas v0.1 · como o jogador e o admin transitam</p>
+</header>
+
+<div class="legend">
+  <span><span class="chip" style="background:#1f6feb"></span><b>Jogador — núcleo do loop</b></span>
+  <span><span class="chip" style="background:#8957e5"></span><b>Jogador — suporte</b></span>
+  <span><span class="chip" style="background:var(--spark)"></span><b>Admin</b></span>
+  <span><span class="chip" style="background:var(--ok)"></span><b>Ponto de entrada</b></span>
+</div>
+
+<div class="wrap">
+<pre class="mermaid">
+flowchart TD
+  START([Login]):::entry --> FAC{Primeira vez?}
+  FAC -- sim --> ONB[Escolha de faccao<br/>+ Tutorial guiado]:::sup
+  FAC -- nao --> HOME
+  ONB --> HANGAR
+
+  HOME[Perfil / Carteira<br/>saldo · faccao · historico]:::sup
+
+  HOME --> MAPA
+  HOME --> QUADRO
+  HOME --> HANGAR
+  HOME --> INV
+
+  subgraph LOOP[" Loop principal "]
+    QUADRO[J1 · Quadro de missoes<br/>expira / renova · 5 tipos · filtro]:::core
+    MAPA[J2 · Mapa<br/>12 nos · controle faccao · risco]:::core
+    HANGAR[J3 · Hangar / Montagem<br/>grafo · rotacao · energia]:::core
+    PORTO[J5 · Porto - abas<br/>mercado · reparo · fuel · scavenging]:::core
+    TRANS[J6 · Transito / Status<br/>tempo · perna atual · abortar]:::core
+    REL[J4 · Relatorio narrado<br/>a experiencia assincrona]:::core
+  end
+
+  MAPA -->|seleciona no| PORTO
+  MAPA -->|seleciona rota c/ missao| QUADRO
+  QUADRO -->|aceita missao| TRANS
+  MAPA -->|despacha viagem| TRANS
+  TRANS -->|processa em tempo real| REL
+  REL -->|de volta ao porto| PORTO
+  REL -->|ver danos / vender| INV
+
+  PORTO --> HANGAR
+  PORTO --> MAPA
+  PORTO -->|scavenging livre| TRANS
+  HANGAR --> INV
+  INV[J7 · Inventario / Sucata<br/>instalar ou vender]:::sup
+  INV --> HANGAR
+  INV --> PORTO
+
+  REL -->|derrota total| RESGATE{Resgate}:::sup
+  RESGATE -->|auto: paga fixo| PORTO
+  RESGATE -->|aguarda + recompensa| HOME
+
+  %% ADMIN
+  ADMIN([Admin Login]):::entry --> DASH
+  DASH[A · Dashboard<br/>jogadores · missoes · winrate · alertas]:::adm
+  DASH --> ECON[B · Economia<br/>precos · ralo · sucata]:::adm
+  DASH --> MUNDO[C · Mundo / Mapa<br/>zonas · trafego · geracao missao]:::adm
+  DASH --> PLAYERS[D · Jogadores / Inspetor<br/>ficha · replay · suporte]:::adm
+  DASH --> TUNING[E · Tuning runtime<br/>numeros · catalogo · flags]:::adm
+  PLAYERS -->|replay| RELADM[Replay do relatorio<br/>via MissionLog]:::adm
+
+  classDef core fill:#0d2847,stroke:#1f6feb,color:#cfe0ff;
+  classDef sup fill:#241a3a,stroke:#8957e5,color:#e5d9ff;
+  classDef adm fill:#2a2205,stroke:#f0a500,color:#ffe9ad;
+  classDef entry fill:#0f2e1a,stroke:#2ea043,color:#b8f0c8;
+</pre>
+</div>
+
+<footer>
+  Núcleo do loop (azul): quadro → despacho → trânsito → relatório → porto, e volta.
+  O <b>Porto</b> é uma tela só, com abas. O <b>Mapa</b> é o hub de navegação: leva a
+  porto, a missões e a despachar viagem. A <b>derrota total</b> nunca trava o jogador —
+  resgate-auto pago (pode ficar negativo) ou aguardar resgate. O <b>admin</b> é uma
+  árvore rasa a partir do dashboard; o <b>inspetor</b> puxa o replay via
+  <code>MissionLog</code>. Tutorial guiado vive DENTRO das telas reais (estado guiado),
+  não como tela separada.
+</footer>
+
+<script>
+  mermaid.initialize({startOnLoad:true, theme:'dark',
+    themeVariables:{fontFamily:'-apple-system,Segoe UI,Roboto,sans-serif',fontSize:'13px'}});
+</script>
+</body>
+</html>

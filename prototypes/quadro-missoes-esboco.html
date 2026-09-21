@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rust and Spark — Quadro de Missões</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --mut:#8b949e;
+    --line:#30363d; --spark:#f0a500; --rust:#b5462f; --ok:#2ea043; --blue:#1f6feb;
+    --risk-lo:#2ea043; --risk-md:#d29922; --risk-hi:#f85149;
+  }
+  *{box-sizing:inherit}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .app{max-width:900px;margin:0 auto;padding:16px 14px 60px}
+
+  header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  h1{margin:0;font-size:19px;letter-spacing:.3px}
+  h1 .r{color:var(--rust)} h1 .s{color:var(--spark)}
+  .loc{font-size:13px;color:var(--mut)}
+  .loc b{color:var(--ink)}
+
+  /* barra de local / navegacao entre nos (simula "por local") */
+  .locbar{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;margin-top:8px}
+  .node{flex:0 0 auto;padding:7px 12px;border:1px solid var(--line);border-radius:20px;
+    background:var(--panel);color:var(--mut);font-size:12.5px;cursor:pointer;white-space:nowrap;
+    transition:.15s}
+  .node:hover{border-color:var(--mut);color:var(--ink)}
+  .node.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .node .cnt{opacity:.7;margin-left:5px}
+  .node.dead{opacity:.6;font-style:italic}
+
+  /* controles */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:16px 0 6px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{background:var(--panel);color:var(--mut);border:0;padding:7px 11px;font-size:12.5px;
+    cursor:pointer;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:0}
+  .seg button.on{background:var(--panel2);color:var(--ink)}
+  .spacer{flex:1}
+  .sortlbl{font-size:12px;color:var(--mut);margin-right:2px}
+
+  /* card de missao */
+  .list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    transition:.15s}
+  .card:hover{border-color:#3d4756}
+  .row{display:grid;grid-template-columns:44px 1fr auto;gap:12px;padding:13px 14px;cursor:pointer;align-items:center}
+  .ico{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:22px;
+    background:var(--panel2);border:1px solid var(--line)}
+  .mid .type{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+  .mid .route{font-size:15.5px;font-weight:600;margin:1px 0 3px}
+  .mid .route .arrow{color:var(--mut);margin:0 6px}
+  .meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--mut)}
+  .meta b{color:var(--ink);font-weight:600}
+  .right{text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .rew{font-size:17px;font-weight:700;color:var(--spark)}
+  .rew small{font-size:11px;color:var(--mut);font-weight:400}
+  .risk{font-size:11.5px;padding:2px 8px;border-radius:20px;font-weight:600}
+  .risk.lo{background:rgba(46,160,67,.16);color:var(--risk-lo)}
+  .risk.md{background:rgba(210,153,34,.16);color:var(--risk-md)}
+  .risk.hi{background:rgba(248,81,73,.16);color:var(--risk-hi)}
+  .expire{font-size:11px;color:var(--mut)}
+  .expire.soon{color:var(--risk-hi);font-weight:600}
+
+  /* detalhe expandido */
+  .detail{max-height:0;overflow:hidden;transition:max-height .25s ease;
+    border-top:0 solid var(--line);background:var(--panel2)}
+  .card.open .detail{max-height:520px;border-top:1px solid var(--line)}
+  .detail-in{padding:14px}
+  .legs{display:flex;flex-direction:column;gap:0}
+  .leg{display:grid;grid-template-columns:20px 1fr;gap:10px;position:relative}
+  .leg .dot{width:11px;height:11px;border-radius:50%;background:var(--blue);margin-top:5px;
+    border:2px solid var(--bg);z-index:1}
+  .leg:not(:last-child)::before{content:"";position:absolute;left:5px;top:12px;bottom:-6px;
+    width:2px;background:var(--line)}
+  .leg .body{padding-bottom:14px}
+  .leg .lname{font-weight:600;font-size:14px}
+  .leg .lenv{font-size:12.5px;color:var(--mut);margin-top:1px}
+  .leg .ctrl{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;margin-top:4px;
+    border:1px solid var(--line)}
+  .ctrl.luna{color:#7cc4ff}
+  .ctrl.sun{color:#ff9d7c} .ctrl.pirata{color:var(--risk-hi)} .ctrl.explorers{color:#b8f0c8}
+  .actions{display:flex;gap:10px;margin-top:6px}
+  .btn{flex:1;padding:11px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--mut)}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.holdbtn.on{border-color:var(--spark);color:var(--spark)}
+
+  /* requisitos */
+  .reqbox{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:12px}
+  .reqhead{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:7px}
+  .req{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:2px 0}
+  .req .ri{font-weight:700;width:14px}
+  .req.ok .ri{color:var(--ok)} .req.ok{color:var(--ink)}
+  .req.bad .ri{color:var(--risk-hi)} .req.bad{color:#ffb3ae}
+  .req b{color:var(--ink)}
+
+  .legshead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;
+    font-size:12px;color:var(--mut)}
+  .ctrltoggle{background:transparent;border:1px solid var(--line);color:var(--mut);
+    font-size:11.5px;padding:4px 9px;border-radius:7px;cursor:pointer}
+  .ctrltoggle:hover{border-color:var(--mut);color:var(--ink)}
+  .ctrl-hidden{display:none}
+
+  .okbadge{color:var(--ok);font-weight:600}
+  .badbadge{color:var(--risk-md);font-weight:600}
+  .holdtag{color:var(--spark);font-weight:700}
+
+  .holdbanner{display:none;background:rgba(240,165,0,.1);border:1px solid var(--spark);
+    border-radius:9px;padding:10px 13px;margin-top:12px;font-size:13px;color:#ffe9ad}
+  .holdbanner.on{display:block}
+  .holdbanner b{color:var(--spark)}
+
+  .empty{text-align:center;color:var(--mut);padding:48px 20px;border:1px dashed var(--line);
+    border-radius:12px;margin-top:14px}
+  .empty .big{font-size:32px;margin-bottom:8px;opacity:.5}
+  footer{color:var(--mut);font-size:12px;margin-top:26px;line-height:1.7}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--spark);
+    border-radius:8px;padding:11px 13px;margin-top:22px;font-size:12.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1><span class="r">Rust</span> and <span class="s">Spark</span> — Quadro de Missões</h1>
+    <div class="loc">você está em <b id="here">Porto Ceres</b></div>
+  </header>
+
+  <!-- navegacao por local (esboco: cada no tem sua propria oferta) -->
+  <div class="locbar" id="locbar"></div>
+
+  <div class="holdbanner" id="holdbanner"></div>
+
+  <div class="controls">
+    <div class="seg" id="filter">
+      <button data-f="all" class="on">Todas</button>
+      <button data-f="entrega">Entrega</button>
+      <button data-f="transporte">Transporte</button>
+      <button data-f="escolta">Escolta</button>
+      <button data-f="mineracao">Mineração</button>
+      <button data-f="resgate">Resgate</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="sortlbl">ordenar:</span>
+    <div class="seg" id="sort">
+      <button data-s="rew" class="on">Recompensa</button>
+      <button data-s="dist">Distância</button>
+      <button data-s="risk">Risco</button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="note">
+    <b>Esboço interativo.</b> Expanda um card para ver <b>requisitos</b> (✓/✕ contra sua
+    nave) e o trajeto. Missão com requisito não cumprido → <b>"Aceitar" travado</b>, mas dá
+    pra <b>deixar em hold</b> (máx 1) e ir ajustar a nave. Dentro do card, botão
+    <b>"mostrar controle das zonas"</b> revela quem domina cada perna. Troque de local na
+    barra (<i>Rennick</i> está vazia de propósito). Escolta/resgate exigem coisas que sua
+    nave-fake não tem — bom pra ver o estado travado.
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+// ---- dados de exemplo (fake, so pra sentir a tela) ----
+const NODES = [
+  {id:"ceres", name:"Porto Ceres", kind:"hub"},
+  {id:"vesta", name:"Refinaria Vesta", kind:"posto"},
+  {id:"tycho", name:"Estaleiro Tycho", kind:"hub"},
+  {id:"rennick", name:"Estação Rennick", kind:"isolado"},
+  {id:"drift", name:"Campo Drift-9", kind:"fronteira"},
+];
+
+const TYPES = {
+  entrega:{ico:"📦",label:"Entrega"},
+  transporte:{ico:"🧑‍🚀",label:"Transporte"},
+  escolta:{ico:"🛡️",label:"Escolta"},
+  mineracao:{ico:"⛏️",label:"Mineração"},
+  resgate:{ico:"🆘",label:"Resgate"},
+};
+const CTRL = {luna:"Luna",sun:"Sun",explorers:"Explorers",pirata:"Piratas"};
+
+// missoes por local
+const M = {
+  ceres:[
+    {t:"entrega",to:"Refinaria Vesta",dist:2,dur:"~6 min",rew:340,risk:"lo",exp:"expira em 14 min",
+     legs:[["Saída de Ceres","espaço aberto","luna"],["Aproximação Vesta","detritos leves","luna"]]},
+    {t:"escolta",to:"Estaleiro Tycho",dist:4,dur:"~13 min",rew:920,risk:"md",exp:"expira em 8 min",soon:true,
+     legs:[["Corredor central","espaço aberto","sun"],["Cinturão médio","detritos","sun"],["Chegada Tycho","gravitacional","luna"]]},
+    {t:"mineracao",to:"Campo Drift-9",dist:5,dur:"~17 min",rew:760,risk:"hi",exp:"expira em 22 min",
+     legs:[["Rota da fronteira","radiação","explorers"],["Campo Drift-9","detritos densos","pirata"]]},
+    {t:"transporte",to:"Estação Rennick",dist:3,dur:"~9 min",rew:480,risk:"md",exp:"expira em 31 min",
+     legs:[["Desvio de Ceres","espaço aberto","luna"],["Aproximação Rennick","radiação","explorers"]]},
+  ],
+  vesta:[
+    {t:"entrega",to:"Porto Ceres",dist:2,dur:"~6 min",rew:300,risk:"lo",exp:"expira em 19 min",
+     legs:[["Saída de Vesta","detritos leves","luna"],["Chegada Ceres","espaço aberto","luna"]]},
+    {t:"mineracao",to:"Campo Drift-9",dist:3,dur:"~10 min",rew:640,risk:"md",exp:"expira em 12 min",
+     legs:[["Rota curta","radiação","explorers"],["Campo Drift-9","detritos densos","pirata"]]},
+  ],
+  tycho:[
+    {t:"resgate",to:"Campo Drift-9",dist:4,dur:"~14 min",rew:1180,risk:"hi",exp:"expira em 6 min",soon:true,
+     legs:[["Corredor externo","espaço aberto","sun"],["Zona morta","radiação","pirata"],["Retorno Tycho","gravitacional","luna"]]},
+    {t:"entrega",to:"Porto Ceres",dist:4,dur:"~13 min",rew:880,risk:"md",exp:"expira em 26 min",
+     legs:[["Saída Tycho","gravitacional","luna"],["Cinturão médio","detritos","sun"],["Chegada Ceres","espaço aberto","luna"]]},
+    {t:"escolta",to:"Refinaria Vesta",dist:5,dur:"~16 min",rew:1040,risk:"md",exp:"expira em 40 min",
+     legs:[["Corredor central","espaço aberto","sun"],["Aproximação Vesta","detritos leves","luna"]]},
+  ],
+  rennick:[], // isolado, vazio de proposito
+  drift:[
+    {t:"mineracao",to:"(local)",dist:0,dur:"~8 min",rew:520,risk:"hi",exp:"expira em 15 min",
+     legs:[["Campo Drift-9","detritos densos","pirata"]]},
+    {t:"resgate",to:"Estaleiro Tycho",dist:4,dur:"~14 min",rew:1240,risk:"hi",exp:"expira em 9 min",soon:true,
+     legs:[["Zona morta","radiação","pirata"],["Corredor externo","espaço aberto","sun"],["Retorno Tycho","gravitacional","luna"]]},
+  ],
+};
+
+// ficha da nave atual do jogador (fake) — o quadro compara contra isto
+const SHIP = {carga:15, passageiros:0, arma:true, vel:6};
+
+// requisitos por missao (adicionados por indice, so pra sentir)
+// injeta requisitos coerentes com o tipo
+function reqFor(m){
+  const r=[];
+  if(m.t==="entrega") r.push({k:"carga", need: m.rew>700?40:20, lbl:"capacidade de carga"});
+  if(m.t==="transporte") r.push({k:"passageiros", need:2, lbl:"vagas de passageiro"});
+  if(m.t==="escolta") { r.push({k:"arma", need:true, lbl:"armamento"}); r.push({k:"vel", need:7, lbl:"velocidade mín."}); }
+  if(m.t==="mineracao") r.push({k:"carga", need:25, lbl:"capacidade de carga"});
+  if(m.t==="resgate") { r.push({k:"passageiros", need:1, lbl:"vaga de resgate"}); r.push({k:"vel", need:7, lbl:"velocidade mín."}); }
+  return r;
+}
+function checkReq(r){
+  if(r.k==="arma") return {ok:SHIP.arma===true, have:SHIP.arma?"sim":"não"};
+  const have=SHIP[r.k];
+  return {ok: have>=r.need, have};
+}
+
+let cur="ceres", filter="all", sort="rew", hold=null;
+
+function riskVal(r){return r==="lo"?0:r==="md"?1:2}
+function render(){
+  document.getElementById("here").textContent = NODES.find(n=>n.id===cur).name;
+  // locbar
+  const lb=document.getElementById("locbar");
+  lb.innerHTML="";
+  NODES.forEach(n=>{
+    const c=(M[n.id]||[]).length;
+    const d=document.createElement("div");
+    d.className="node"+(n.id===cur?" active":"")+(c===0?" dead":"");
+    d.innerHTML=n.name+`<span class="cnt">${c||"—"}</span>`;
+    d.onclick=()=>{cur=n.id;render()};
+    lb.appendChild(d);
+  });
+  // lista
+  let items=(M[cur]||[]).slice();
+  if(filter!=="all") items=items.filter(m=>m.t===filter);
+  items.sort((a,b)=> sort==="rew"? b.rew-a.rew : sort==="dist"? a.dist-b.dist : riskVal(b.risk)-riskVal(a.risk));
+  const list=document.getElementById("list");
+  list.innerHTML="";
+  if(items.length===0){
+    list.innerHTML=`<div class="empty"><div class="big">🌑</div>
+      Nenhuma missão disponível aqui.<br>Locais isolados oferecem pouco — vá a um hub.</div>`;
+    updateFoot(0);return;
+  }
+  items.forEach((m,i)=>{
+    const T=TYPES[m.t];
+    const mid=cur+"_"+i;
+    const card=document.createElement("div");card.className="card";
+    const isHold = hold===mid;
+    // pernas (controle escondido atras de botao)
+    const legsHtml=m.legs.map((l,li)=>`
+      <div class="leg"><div class="dot"></div><div class="body">
+        <div class="lname">${l[0]}</div>
+        <div class="lenv">${l[1]}</div>
+        <span class="ctrl ${l[2]} ctrl-hidden" data-ctrl>controle: ${CTRL[l[2]]}</span>
+      </div></div>`).join("");
+    // requisitos
+    const reqs=reqFor(m).map(r=>{
+      const c=checkReq(r);
+      return `<div class="req ${c.ok?'ok':'bad'}">
+        <span class="ri">${c.ok?'✓':'✕'}</span>
+        <span>${r.lbl}: pede <b>${r.need===true?'sim':r.need}</b>, você tem <b>${c.have}</b></span>
+      </div>`;
+    }).join("");
+    const allOk=reqFor(m).every(r=>checkReq(r).ok);
+    const missing=reqFor(m).filter(r=>!checkReq(r).ok).map(r=>r.lbl).join(", ");
+
+    let acceptBtn;
+    if(allOk){
+      acceptBtn=`<button class="btn primary">Aceitar missão</button>`;
+    }else{
+      acceptBtn=`<button class="btn" disabled title="Falta: ${missing}">Requisitos não cumpridos</button>`;
+    }
+    const holdBtn = allOk ? "" :
+      (isHold? `<button class="btn holdbtn on" data-hold="${mid}">✓ Em hold</button>`
+             : `<button class="btn holdbtn" data-hold="${mid}">Deixar em hold</button>`);
+
+    card.innerHTML=`
+      <div class="row">
+        <div class="ico">${T.ico}</div>
+        <div class="mid">
+          <div class="type">${T.label} · ${m.legs.length} perna${m.legs.length>1?"s":""}${isHold?' · <span class="holdtag">EM HOLD</span>':''}</div>
+          <div class="route">${NODES.find(n=>n.id===cur).name}<span class="arrow">→</span>${m.to}</div>
+          <div class="meta">
+            <span>dist <b>${m.dist||"—"}</b></span>
+            <span>dur <b>${m.dur}</b></span>
+            <span class="expire ${m.soon?"soon":""}">⏱ ${m.exp}</span>
+            ${allOk?'<span class="okbadge">✓ nave apta</span>':'<span class="badbadge">⚠ requisitos</span>'}
+          </div>
+        </div>
+        <div class="right">
+          <div class="rew">${m.rew}<small> ¢</small></div>
+          <div class="risk ${m.risk}">${m.risk==="lo"?"risco baixo":m.risk==="md"?"risco médio":"risco alto"}</div>
+        </div>
+      </div>
+      <div class="detail"><div class="detail-in">
+        <div class="reqbox"><div class="reqhead">Requisitos da missão</div>${reqs||'<div class="req ok"><span class="ri">✓</span><span>sem requisitos especiais</span></div>'}</div>
+        <div class="legshead">
+          <span>Trajeto · ${m.legs.length} perna${m.legs.length>1?"s":""}</span>
+          <button class="ctrltoggle" data-ctrltoggle>mostrar controle das zonas</button>
+        </div>
+        <div class="legs">${legsHtml}</div>
+        <div class="actions">
+          <button class="btn">Ver no mapa</button>
+          ${holdBtn}
+          ${acceptBtn}
+        </div>
+      </div></div>`;
+    card.querySelector(".row").onclick=()=>card.classList.toggle("open");
+    // toggle de controle
+    const ct=card.querySelector("[data-ctrltoggle]");
+    ct.onclick=(e)=>{e.stopPropagation();
+      const hidden=card.querySelector(".ctrl-hidden");
+      const show = !!hidden;
+      card.querySelectorAll("[data-ctrl]").forEach(el=>el.classList.toggle("ctrl-hidden"));
+      ct.textContent = show ? "ocultar controle das zonas" : "mostrar controle das zonas";
+    };
+    // hold
+    const hb=card.querySelector("[data-hold]");
+    if(hb) hb.onclick=(e)=>{e.stopPropagation();
+      hold = (hold===mid)? null : mid; render();
+    };
+    if(isHold) card.classList.add("open");
+    list.appendChild(card);
+  });
+  updateFoot(items.length);
+}
+function updateFoot(n){
+  document.getElementById("foot").innerHTML=
+    `${n} missão${n!==1?"es":""} em ${NODES.find(x=>x.id===cur).name}. `+
+    `Ofertas diferentes por local reforçam a logística — o trabalho bom pode estar longe. `+
+    `<br><br>Sua nave (fake): carga <b>${SHIP.carga}</b> · passageiros <b>${SHIP.passageiros}</b> · `+
+    `arma <b>${SHIP.arma?'sim':'não'}</b> · vel <b>${SHIP.vel}</b>. `+
+    `Missões que excedem isso ficam com "Aceitar" travado — use o hold e vá ao hangar.`;
+  // banner de hold
+  const hb=document.getElementById("holdbanner");
+  if(hold){
+    hb.classList.add("on");
+    hb.innerHTML=`<b>⏸ 1 missão em hold.</b> Reservada enquanto você ajusta a nave. `+
+      `O prazo continua correndo — se expirar, ela é perdida. (Hold máximo: 1)`;
+  }else{
+    hb.classList.remove("on");
+  }
+}
+document.getElementById("filter").onclick=e=>{
+  if(!e.target.dataset.f)return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove("on"));
+  e.target.classList.add("on");filter=e.target.dataset.f;render();
+};
+document.getElementById("sort").onclick=e=>{
+  if(!e.target.dataset.s)return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove("on"));
+  e.target.classList.add("on");sort=e.target.dataset.s;render();
+};
+render();
+</script>
+</body>
+</html>

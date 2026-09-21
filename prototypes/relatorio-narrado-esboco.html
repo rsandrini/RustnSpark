@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rust and Spark — Relatório de Missão</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    --bg:#0b0e13; --panel:#12171f; --panel2:#1a212c; --ink:#e6edf3; --mut:#8b949e;
+    --line:#2a313c; --spark:#f0a500; --rust:#b5462f; --ok:#2ea043; --bad:#f85149;
+    --luna:#4a90d9; --sun:#e3b341; --explorers:#3fa66a; --pirata:#c23b3b;
+    --paper:#e9e2d0; --ink2:#c9d1d9;
+  }
+  *{box-sizing:inherit}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .app{max-width:760px;margin:0 auto;padding:16px 14px 70px}
+
+  /* cabecalho de resultado */
+  .head{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    border-radius:14px;padding:18px;position:relative;overflow:hidden}
+  .head::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 120px at 20% -10%,rgba(240,165,0,.10),transparent)}
+  .verdict{display:inline-block;font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+    padding:5px 12px;border-radius:20px;position:relative}
+  .verdict.partial{background:rgba(240,165,0,.16);color:var(--spark);border:1px solid var(--spark)}
+  h1{margin:10px 0 3px;font-size:22px;position:relative}
+  .subtitle{color:var(--mut);font-size:13px;position:relative}
+  .kpis{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;position:relative}
+  .kpi{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 13px;flex:1;min-width:120px}
+  .kpi .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+  .kpi .v{font-size:19px;font-weight:700;margin-top:2px}
+  .kpi .v.pos{color:var(--ok)} .kpi .v.neg{color:var(--bad)} .kpi .v.spark{color:var(--spark)}
+
+  /* toggle narrativa/tabela */
+  .viewtoggle{display:flex;gap:0;margin:20px 0 6px;border:1px solid var(--line);border-radius:9px;overflow:hidden;width:fit-content}
+  .viewtoggle button{background:var(--panel);color:var(--mut);border:0;padding:8px 16px;font-size:13px;
+    cursor:pointer;font-weight:600}
+  .viewtoggle button.on{background:var(--panel2);color:var(--ink)}
+
+  /* narracao por perna */
+  .leg{margin-top:18px;position:relative;padding-left:26px}
+  .leg::before{content:"";position:absolute;left:7px;top:26px;bottom:-18px;width:2px;background:var(--line)}
+  .leg:last-child::before{display:none}
+  .legdot{position:absolute;left:0;top:4px;width:16px;height:16px;border-radius:50%;
+    background:var(--panel2);border:2px solid var(--line);z-index:1}
+  .legdot.hit{border-color:var(--bad)} .legdot.ok{border-color:var(--ok)}
+  .legname{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+  .legname .env{color:var(--explorers)}
+  .legname .env.rad{color:var(--spark)} .legname .env.pir{color:var(--pirata)}
+
+  .event{margin:10px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;transition:.15s}
+  .event .txt{font-size:15px;color:var(--ink2)}
+  .event .fx{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .tag{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+  .tag.dmg{color:var(--bad)} .tag.wear{color:var(--spark)} .tag.loot{color:var(--ok)}
+  .tag.info{color:var(--mut)}
+  .expand{margin-top:9px;font-size:12.5px;color:var(--mut);background:transparent;border:0;cursor:pointer;
+    padding:0;text-decoration:underline;text-underline-offset:2px}
+  .long{max-height:0;overflow:hidden;transition:max-height .25s;color:var(--mut);font-size:14px;font-style:italic}
+  .event.open .long{max-height:200px;margin-top:8px}
+
+  /* resumo curto */
+  .summary{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .sline{margin:0 0 12px;font-size:16px;color:var(--ink)}
+  .sbul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .sbul li{display:flex;gap:10px;font-size:14px;color:var(--ink2);align-items:flex-start}
+  .si{flex:0 0 22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;
+    background:var(--bg);border:1px solid var(--line)}
+  .si.dmg{color:var(--bad)} .si.loot{color:var(--ok)} .si.wear{color:var(--spark)}
+  .sbalance{display:flex;justify-content:space-between;align-items:center;margin-top:16px;
+    padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--mut)}
+  .sbalance b{font-size:20px} .sbalance .pos{color:var(--ok)}
+
+  /* log linha-a-linha estilo servidor */
+  .log{background:#0a0d12;border:1px solid var(--line);border-radius:12px;padding:6px 0;
+    font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow-x:auto}
+  .logline{display:grid;grid-template-columns:104px 92px 1fr auto;gap:12px;padding:6px 16px;
+    white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.03)}
+  .logline:last-child{border-bottom:0}
+  .logline .lp{color:var(--mut)}
+  .logline .lc{font-weight:700}
+  .logline .lc.combate{color:var(--pirata)} .logline .lc.loot{color:var(--ok)}
+  .logline .lc.falha{color:var(--spark)} .logline .lc.pagamento{color:var(--luna)}
+  .logline .lc.ambiente{color:var(--explorers)} .logline .lc.transito{color:var(--mut)}
+  .logline .ld{color:var(--ink2);white-space:normal}
+  .logline .le{text-align:right;font-weight:600}
+  .logline .le.neg{color:var(--bad)} .logline .le.pos{color:var(--ok)} .logline .le.wear{color:var(--spark)}
+  .logfoot{display:grid;grid-template-columns:104px 92px 1fr auto;gap:12px;padding:10px 16px;
+    border-top:1px solid var(--line);margin-top:4px;font-weight:700;color:var(--ink)}
+  .logfoot .le{text-align:right}
+
+  .view.hide{display:none}
+
+  /* links e popups */
+  .ilink{color:var(--luna);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+  .ilink:hover{color:var(--spark)}
+  .tag.clickable{cursor:pointer}
+  .tag.clickable:hover{border-color:var(--mut)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50}
+  .overlay.on{display:flex}
+  .pop{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .pop h3{margin:0 0 12px;font-size:17px}
+  .poprow{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .poprow span{color:var(--mut)} .poprow b{color:var(--ink)} .poprow b.pos{color:var(--ok)}
+  .popdesc{font-size:13.5px;color:var(--ink2);margin:12px 0 0;line-height:1.55}
+  .popclose{margin-top:16px;width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}
+  .popclose:hover{border-color:var(--mut)}
+  .hpbar{display:flex;height:26px;border-radius:6px;overflow:hidden;margin:10px 0 14px;border:1px solid var(--line)}
+  .hpseg{display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+
+  /* rodape de acoes */
+  .actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+  .btn{flex:1;min-width:140px;padding:13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;text-align:center}
+  .btn:hover{border-color:var(--mut)}
+  .btn.primary{background:var(--luna);border-color:var(--luna);color:#fff}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--spark);
+    border-radius:8px;padding:11px 13px;margin-top:24px;font-size:12.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- RESULTADO -->
+  <div class="head">
+    <span class="verdict partial">Sucesso parcial</span>
+    <h1>Escolta do comboio até Estaleiro Tycho</h1>
+    <div class="subtitle">Porto Ceres → Estaleiro Tycho · 3 pernas · contrato Luna</div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Créditos</div><div class="v pos">+754 ¢</div></div>
+      <div class="kpi"><div class="k">Comboio entregue</div><div class="v spark">82%</div></div>
+      <div class="kpi"><div class="k">Loot</div><div class="v spark">2 peças</div></div>
+      <div class="kpi"><div class="k">Duração</div><div class="v">13 min</div></div>
+    </div>
+  </div>
+
+  <!-- TOGGLE 3 VIEWS -->
+  <div class="viewtoggle" id="vt">
+    <button data-v="resumo" class="on">⚡ Resumo</button>
+    <button data-v="narr">📖 Narrativa</button>
+    <button data-v="log">📋 Log</button>
+  </div>
+
+  <!-- VIEW A: RESUMO CURTO (padrao) -->
+  <div class="view" id="view-resumo">
+    <div class="summary">
+      <p class="sline">Você <b>entregou o comboio</b> a Tycho a <b>82% de integridade</b> — prêmio parcial.</p>
+      <ul class="sbul">
+        <li><span class="si dmg">⚔</span> Emboscada pirata no cinturão médio — <b>−31 HP</b> (<a class="ilink" href="#" onclick="showHP(event)">ver dano</a>), escudo e blindagem desgastados.</li>
+        <li><span class="si loot">✦</span> Recuperou <b>2 peças</b> dos destroços (<a class="ilink" href="#" onclick="showItem(event,'reg')">regulador</a> + <a class="ilink" href="#" onclick="showItem(event,'suc')">sucata</a>).</li>
+        <li><span class="si wear">⚠</span> Propulsor gasto <b>travou na chegada</b> — sacudiu o comboio, mas a entrega saiu.</li>
+      </ul>
+      <div class="sbalance">
+        <span>Prêmio (920 base × 82%)</span>
+        <b class="pos">+754 ¢</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW B: NARRATIVA -->
+  <div class="view narr hide" id="view-narr"></div>
+
+  <!-- VIEW C: LOG -->
+  <div class="view hide" id="view-log">
+    <div class="log" id="logbody"></div>
+  </div>
+
+  <!-- ACOES -->
+  <div class="actions">
+    <button class="btn">Ver danos no hangar</button>
+    <button class="btn">Guardar loot / vender</button>
+    <button class="btn primary">Voltar ao porto</button>
+  </div>
+
+  <div class="note">
+    <b>Esboço interativo.</b> Três views dos <b>mesmos eventos</b>: <b>⚡ Resumo</b> (padrão —
+    2-3 linhas, o que 90% lê toda vez), <b>📖 Narrativa</b> (capítulos por perna, tom
+    Expanse, com "ver descrição completa") e <b>📋 Log</b> (linha-a-linha estilo servidor,
+    escaneável). No jogo real a narrativa é gerada por <b>template determinístico</b> (sem
+    LLM): o motor produz os eventos, os moldes viram texto. As três views leem do mesmo
+    array de eventos estruturados — que é o que o MissionLog guarda (nunca o texto).
+  </div>
+
+  <div class="overlay" id="overlay" onclick="closePop()"></div>
+</div>
+
+<script>
+// ---- EVENTOS ESTRUTURADOS (fonte unica; as 3 views renderizam a partir daqui) ----
+// isto e o que o MissionLog guardaria. Texto NUNCA e armazenado — gerado abaixo.
+const LEGS = [
+  {leg:1, name:"Corredor central", env:"espaço aberto", envc:"", ctrl:"Sun", hit:false, events:[
+    {cat:"transito", type:"rotina", desc:"trânsito de rotina", eff:[["wear","desgaste −3%"]],
+     molde:"A saída de Ceres foi limpa. O comboio manteve formação e os motores iônicos assentaram num zumbido estável.",
+     longo:""},
+  ]},
+  {leg:2, name:"Cinturão médio", env:"detritos", envc:"pir", ctrl:"Sun", hit:true, events:[
+    {cat:"combate", type:"emboscada", desc:"dano recebido",
+     eff:[["neg","−31 HP", {hp:true}]],
+     hpbreak:{escudo:18, blindagem:9, casco:31},   // cascata do dano
+     objdmg:14,  // dano ao objeto (comboio) nesta perna
+     molde:"Três marcas piratas saíram de trás de um fragmento de casco e abriram fogo. O escudo cedeu na segunda salva e estilhaços rasparam a blindagem antes de você revidar e forçá-los a recuar. Um dos disparos alcançou o comboio.",
+     longo:"O sensor cuspiu o alerta tarde demais — a radiação de fundo do cinturão mascarou as assinaturas até elas estarem quase em cima. Você jogou potência no escudo dianteiro e apresentou a blindagem mais grossa. Funcionou, mas custou caro em condição, e uma das naves do comboio levou um roção."},
+    {cat:"loot", type:"scavenging", desc:"peças recuperadas",
+     eff:[["pos","regulador de escudo", {item:"reg"}],["pos","sucata ×2", {item:"suc"}]],
+     molde:"No rescaldo, você vasculhou os destroços e recuperou peças ainda aproveitáveis.",
+     longo:""},
+  ]},
+  {leg:3, name:"Chegada Tycho", env:"gravitacional", envc:"", ctrl:"Luna", hit:false, events:[
+    {cat:"falha", type:"propulsor", desc:"propulsor travou", eff:[["wear","propulsor cond 24%"]],
+     objdmg:4,  // a falha EXPÔS o objeto a mais dano — consequencia mecanica, nao $$
+     molde:"O poço gravitacional de Tycho puxou mais fundo que o previsto e um propulsor gasto travou na aproximação. A manobra brusca sacudiu o comboio antes de você reassumir o controle.",
+     longo:"O propulsor de bombordo já vinha reclamando desde a perna 2 — condição no limite, e o esforço da inserção gravitacional foi a gota d'água. A falha não custou a entrega, mas balançou a carga na última curva."},
+  ]},
+];
+// PAGAMENTO — calculado pela INTEGRIDADE do objeto, independente de qualquer peça
+const OBJ = {name:"Comboio", integridade:82};      // 100 - (14+4)
+const BASE_PRIZE = 920;
+function prize(){ return OBJ.integridade>=50 ? Math.round(BASE_PRIZE*OBJ.integridade/100) : 0; }
+const PAYOUT = {desc:`prêmio (comboio a ${OBJ.integridade}%)`, val:`+${prize()} ¢`};
+
+// dados dos itens (para popup)
+const ITEMS = {
+  reg:{nome:"Regulador de escudo", tipo:"Componente de escudo", rar:"comum", cond:58,
+       efeito:"Aumenta a taxa de regeneração do escudo. Instalável na ponte de energia.",
+       venda:"~120 ¢"},
+  suc:{nome:"Sucata", tipo:"Material", rar:"comum", cond:null,
+       efeito:"Vendável em qualquer porto. Não instalável. Moeda de troca para reparo e peças.",
+       venda:"~40 ¢ /un."},
+};
+
+// ---- VIEW B: narrativa (molde + inline, com links) ----
+function renderNarr(){
+  const box=document.getElementById("view-narr");
+  box.innerHTML = LEGS.map(L=>{
+    const evs = L.events.map(e=>{
+      const tags = e.eff.map(([k,t,meta])=>{
+        if(meta&&meta.hp) return `<span class="tag dmg clickable" onclick="showHP(event)">${t} ⓘ</span>`;
+        if(meta&&meta.item) return `<span class="tag loot clickable" onclick="showItem(event,'${meta.item}')">${t} ⓘ</span>`;
+        return `<span class="tag ${k==='neg'?'dmg':k==='pos'?'loot':k}">${t}</span>`;
+      }).join("");
+      const long = e.longo? `<button class="expand" onclick="this.parentElement.classList.toggle('open')">ver descrição completa</button><div class="long">${e.longo}</div>`:"";
+      return `<div class="event"><div class="txt">${e.molde}</div><div class="fx">${tags}</div>${long}</div>`;
+    }).join("");
+    const envc = L.envc==="pir"?"pir":L.envc==="rad"?"rad":"";
+    return `<div class="leg"><div class="legdot ${L.hit?'hit':''}"></div>
+      <div class="legname">Perna ${L.leg} · ${L.name} · <span class="env ${envc}">${L.env}</span> · controle ${L.ctrl}</div>
+      ${evs}</div>`;
+  }).join("");
+}
+// ---- VIEW C: log linha-a-linha ----
+function renderLog(){
+  const body=document.getElementById("logbody");
+  let lines="";
+  LEGS.forEach(L=>{
+    L.events.forEach(e=>{
+      const effTxt = e.eff.map(([k,t])=>t).join(" · ");
+      const cls = e.eff.some(x=>x[0]==="neg")?"neg":e.eff.some(x=>x[0]==="pos")?"pos":e.eff.some(x=>x[0]==="wear")?"wear":"";
+      lines += `<div class="logline"><span class="lp">P${L.leg}</span>`+
+        `<span class="lc ${e.cat}">${e.cat}</span>`+
+        `<span class="ld">${e.desc}</span>`+
+        `<span class="le ${cls}">${effTxt}</span></div>`;
+      if(e.objdmg) lines += `<div class="logline"><span class="lp">P${L.leg}</span>`+
+        `<span class="lc info">objeto</span><span class="ld">comboio danificado</span>`+
+        `<span class="le neg">−${e.objdmg}% integridade</span></div>`;
+    });
+  });
+  lines += `<div class="logline"><span class="lp">fim</span><span class="lc pagamento">pagamento</span>`+
+    `<span class="ld">${PAYOUT.desc}</span><span class="le pos">${PAYOUT.val}</span></div>`;
+  body.innerHTML = lines +
+    `<div class="logfoot"><span></span><span></span><span>saldo — comboio ${OBJ.integridade}% · prêmio ${prize()}¢</span>`+
+    `<span class="le pos">+754 ¢ · −31 HP · 2 peças</span></div>`;
+}
+renderNarr(); renderLog();
+
+// ---- POPUPS ----
+function popup(html){
+  let o=document.getElementById("overlay");
+  o.innerHTML=`<div class="pop" onclick="event.stopPropagation()">${html}
+    <button class="popclose" onclick="closePop()">fechar</button></div>`;
+  o.classList.add("on");
+}
+window.closePop=()=>document.getElementById("overlay").classList.remove("on");
+window.showItem=(e,id)=>{e.preventDefault();e.stopPropagation();
+  const it=ITEMS[id];
+  const rar={comum:"var(--mut)",incomum:"var(--explorers)",raro:"var(--luna)"}[it.rar]||"var(--mut)";
+  popup(`<h3>${it.nome}</h3>
+    <div class="poprow"><span>Tipo</span><b>${it.tipo}</b></div>
+    <div class="poprow"><span>Raridade</span><b style="color:${rar}">${it.rar}</b></div>
+    ${it.cond!=null?`<div class="poprow"><span>Condição</span><b>${it.cond}%</b></div>`:""}
+    <div class="poprow"><span>Venda estimada</span><b class="pos">${it.venda}</b></div>
+    <p class="popdesc">${it.efeito}</p>`);
+};
+window.showHP=(e)=>{e.preventDefault();e.stopPropagation();
+  const b=LEGS[1].events[0].hpbreak;
+  popup(`<h3>Cascata de dano — emboscada</h3>
+    <p class="popdesc">O dano atravessa as camadas em ordem: escudo → blindagem → casco (HP).</p>
+    <div class="hpbar"><div class="hpseg" style="flex:${b.escudo};background:var(--luna)">escudo ${b.escudo}</div>
+      <div class="hpseg" style="flex:${b.blindagem};background:var(--sun);color:#1a1200">blind. ${b.blindagem}</div>
+      <div class="hpseg" style="flex:${b.casco-b.escudo-b.blindagem};background:var(--bad)">casco ${b.casco-b.escudo-b.blindagem}</div></div>
+    <div class="poprow"><span>Escudo absorveu</span><b style="color:var(--luna)">${b.escudo}</b></div>
+    <div class="poprow"><span>Blindagem absorveu</span><b style="color:var(--sun)">${b.blindagem}</b></div>
+    <div class="poprow"><span>Chegou ao casco (HP)</span><b style="color:var(--bad)">${b.casco-b.escudo-b.blindagem}</b></div>
+    <p class="popdesc" style="margin-top:10px">Sem escudo, os ${b.escudo} teriam ido direto ao casco. É o que ele compra.</p>`);
+};
+
+// ---- toggle de views ----
+document.getElementById("vt").addEventListener("click",e=>{
+  if(!e.target.dataset.v)return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove("on"));
+  e.target.classList.add("on");
+  const v=e.target.dataset.v;
+  document.getElementById("view-resumo").classList.toggle("hide",v!=="resumo");
+  document.getElementById("view-narr").classList.toggle("hide",v!=="narr");
+  document.getElementById("view-log").classList.toggle("hide",v!=="log");
+});
+</script>
+</body>
+</html>

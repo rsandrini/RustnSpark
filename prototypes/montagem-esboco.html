@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Montagem de Nave — Esboço v0.1</title>
+<style>
+  :root{
+    box-sizing:border-box;
+    /* paleta: aço frio, alerta âmbar, verde-terminal fosco — painel de engenharia gasto */
+    --bg:#12161a;
+    --panel:#1a2026;
+    --panel-2:#222a31;
+    --grid:#232c33;
+    --steel:#3a4650;
+    --steel-lt:#5a6b78;
+    --ink:#c9d4dc;
+    --ink-dim:#7e8c98;
+    --amber:#e0a13c;
+    --amber-dim:#8a6a2c;
+    --ok:#5fb08a;
+    --bad:#c8543f;
+    --hull:#2b333a;
+  }
+  *{box-sizing:inherit}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:'DM Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    font-size:14px;line-height:1.5;
+    padding-top:env(safe-area-inset-top,0);
+    display:flex;flex-direction:column;height:100%;
+  }
+  header{
+    padding:14px 20px;border-bottom:1px solid var(--steel);
+    display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  }
+  header h1{
+    font-family:Georgia,'Times New Roman',serif;
+    font-size:20px;font-weight:600;margin:0;letter-spacing:.3px;
+    color:var(--ink);
+  }
+  header .sub{color:var(--ink-dim);font-size:12px}
+  .wrap{display:flex;flex:1;min-height:0;flex-wrap:wrap}
+  /* paleta de peças */
+  .tray{
+    width:210px;background:var(--panel);border-right:1px solid var(--steel);
+    padding:14px;overflow-y:auto;
+  }
+  .tray h2,.sheet h2{
+    font-size:11px;letter-spacing:1px;color:var(--amber);
+    font-weight:600;margin:0 0 10px;text-transform:uppercase;
+    border-bottom:1px solid var(--amber-dim);padding-bottom:6px;
+  }
+  .part-btn{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    width:100%;background:var(--panel-2);border:1px solid var(--steel);
+    color:var(--ink);padding:8px 10px;margin-bottom:7px;cursor:grab;
+    text-align:left;font-family:inherit;font-size:12px;border-radius:2px;
+    transition:border-color .12s,background .12s;
+  }
+  .part-btn:hover{border-color:var(--steel-lt);background:#28323a}
+  .part-btn:active{cursor:grabbing}
+  .part-btn .sz{color:var(--ink-dim);font-size:10px}
+  .part-btn .dot{width:9px;height:9px;border-radius:1px;flex:none}
+
+  /* area de montagem */
+  .yard{flex:1;min-width:280px;position:relative;overflow:hidden;
+    background:
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/28px 28px,
+      radial-gradient(circle at 50% 40%,#171d22,#0e1215);
+  }
+  .yard .hint{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);
+    color:var(--ink-dim);font-size:11px;pointer-events:none;text-align:center;width:90%;
+  }
+  .block{
+    position:absolute;border:1px solid var(--steel-lt);
+    background:var(--panel-2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:grab;user-select:none;border-radius:2px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+    overflow:hidden;
+  }
+  .block:active{cursor:grabbing;z-index:50}
+  .block .bl-name{font-size:10px;color:var(--ink);text-align:center;padding:2px}
+  .block .bl-bar{height:3px;width:100%;position:absolute;bottom:0;left:0}
+  .block.floating{border-color:var(--bad);border-style:dashed}
+  .block.bridge{border-color:var(--amber);border-width:2px}
+  .yard .rm{
+    position:absolute;top:1px;right:2px;font-size:11px;color:var(--ink-dim);
+    cursor:pointer;line-height:1;padding:2px;display:none;
+  }
+  .block:hover .rm{display:block}
+
+  /* ficha */
+  .sheet{
+    width:250px;background:var(--panel);border-left:1px solid var(--steel);
+    padding:14px;overflow-y:auto;
+  }
+  .stat{display:flex;justify-content:space-between;padding:5px 0;
+    border-bottom:1px dotted var(--steel);font-size:13px}
+  .stat .k{color:var(--ink-dim)}
+  .stat .v{color:var(--ink);font-variant-numeric:tabular-nums}
+  .bar-row{margin:10px 0}
+  .bar-row .lbl{display:flex;justify-content:space-between;font-size:11px;
+    color:var(--ink-dim);margin-bottom:3px}
+  .bar{height:8px;background:#0d1115;border:1px solid var(--steel);border-radius:2px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--steel-lt)}
+  .verdict{margin-top:14px;padding:10px;border-radius:2px;font-size:12px;line-height:1.45}
+  .verdict.ok{background:#16241d;border:1px solid var(--ok);color:#a9e0c6}
+  .verdict.bad{background:#241614;border:1px solid var(--bad);color:#e5a99c}
+  .verdict .cls{font-family:Georgia,serif;font-size:16px;display:block;margin-bottom:4px}
+  .verdict ul{margin:6px 0 0;padding-left:16px}
+  .verdict li{margin:2px 0}
+  @media (max-width:760px){
+    .tray{width:100%;border-right:none;border-bottom:1px solid var(--steel);max-height:150px}
+    .sheet{width:100%;border-left:none;border-top:1px solid var(--steel)}
+    .yard{min-height:320px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Estaleiro</h1>
+  <span class="sub">arraste peças para o pátio · encoste-as para conectar · a ponte é o núcleo</span>
+</header>
+<div class="wrap">
+  <aside class="tray" id="tray"><h2>Peças</h2></aside>
+  <main class="yard" id="yard">
+    <div class="hint" id="hint">Comece pela Ponte. Cada peça precisa encostar em outra — nada flutua no vácuo.</div>
+  </main>
+  <aside class="sheet">
+    <h2>Ficha da nave</h2>
+    <div id="stats"></div>
+    <div id="bars"></div>
+    <div class="verdict" id="verdict"></div>
+  </aside>
+</div>
+
+<script>
+const CELL = 28; // malha
+// catalogo enxuto pro esboco (w,h em celulas; cor; contribuicoes)
+const CATALOG = {
+  bridge:  {name:'Ponte',    w:2,h:2, color:'#e0a13c', give:{HP:30}, energia:-1, mass:4, bridge:true},
+  eng_s:   {name:'Motor P',  w:1,h:2, color:'#6f9ad6', pot:25, mass:3, energia:2},
+  eng_l:   {name:'Motor G',  w:2,h:2, color:'#4f7fc4', pot:70, mass:14, energia:7},
+  tank:    {name:'Tanque',   w:1,h:2, color:'#c98b4f', fuel:1000, mass:5},
+  batt:    {name:'Bateria',  w:1,h:1, color:'#8a6fd6', output:80, mass:5, energia:0},
+  gun:     {name:'Canhão',   w:1,h:1, color:'#c8543f', PDF:3, mass:3, cat:'arma'},
+  laser:   {name:'Laser',    w:1,h:1, color:'#c85fa0', PDF:4, mass:4, energia:-5, cat:'arma'},
+  armor:   {name:'Placa',    w:2,h:1, color:'#7e8c98', BLI:5, HP:40, mass:10, cat:'defesa'},
+  cargo:   {name:'Carga',    w:2,h:1, color:'#5fb08a', CRG:5, mass:2, cat:'carga'},
+  radar:   {name:'Radar',    w:1,h:1, color:'#67c7c0', SEN:4, mass:2, energia:-2, cat:'sensor'},
+};
+
+const tray = document.getElementById('tray');
+const yard = document.getElementById('yard');
+let blocks = []; // {id,type,gx,gy,el}
+let uid = 0;
+
+// montar paleta
+for(const [type,p] of Object.entries(CATALOG)){
+  const b = document.createElement('button');
+  b.className='part-btn';
+  b.innerHTML = `<span style="display:flex;align-items:center;gap:8px">
+      <span class="dot" style="background:${p.color}"></span>${p.name}</span>
+      <span class="sz">${p.w}×${p.h}</span>`;
+  b.draggable=true;
+  b.addEventListener('dragstart',e=>e.dataTransfer.setData('type',type));
+  tray.appendChild(b);
+}
+
+yard.addEventListener('dragover',e=>e.preventDefault());
+yard.addEventListener('drop',e=>{
+  e.preventDefault();
+  const type=e.dataTransfer.getData('type'); if(!type)return;
+  const r=yard.getBoundingClientRect();
+  const gx=Math.round((e.clientX-r.left)/CELL)-Math.floor(CATALOG[type].w/2);
+  const gy=Math.round((e.clientY-r.top)/CELL)-Math.floor(CATALOG[type].h/2);
+  place(type,gx,gy);
+});
+
+function overlaps(gx,gy,w,h,ignoreId){
+  for(const b of blocks){
+    if(b.id===ignoreId)continue;
+    const p=CATALOG[b.type];
+    if(gx< b.gx+p.w && gx+w> b.gx && gy< b.gy+p.h && gy+h> b.gy) return true;
+  }
+  return false;
+}
+function place(type,gx,gy){
+  const p=CATALOG[type];
+  gx=Math.max(0,gx); gy=Math.max(0,gy);
+  if(overlaps(gx,gy,p.w,p.h,null)) return; // sem sobreposicao
+  if(type==='bridge' && blocks.some(b=>b.type==='bridge')) return; // 1 ponte
+  const id=++uid;
+  const el=document.createElement('div');
+  el.className='block'+(p.bridge?' bridge':'');
+  el.style.width=(p.w*CELL-2)+'px'; el.style.height=(p.h*CELL-2)+'px';
+  el.style.left=(gx*CELL)+'px'; el.style.top=(gy*CELL)+'px';
+  el.style.background=shade(p.color);
+  el.innerHTML=`<span class="bl-name">${p.name}</span>
+    <span class="bl-bar" style="background:${p.color}"></span>
+    <span class="rm">✕</span>`;
+  yard.appendChild(el);
+  const blk={id,type,gx,gy,el};
+  blocks.push(blk);
+  el.querySelector('.rm').addEventListener('click',ev=>{ev.stopPropagation();remove(id)});
+  makeDrag(blk);
+  document.getElementById('hint').style.display='none';
+  recompute();
+}
+function remove(id){
+  const i=blocks.findIndex(b=>b.id===id);
+  if(i<0)return; blocks[i].el.remove(); blocks.splice(i,1);
+  if(!blocks.length) document.getElementById('hint').style.display='';
+  recompute();
+}
+function makeDrag(blk){
+  const el=blk.el; let sx,sy,ox,oy,drag=false;
+  el.addEventListener('pointerdown',e=>{
+    if(e.target.classList.contains('rm'))return;
+    drag=true; el.setPointerCapture(e.pointerId);
+    sx=e.clientX; sy=e.clientY; ox=blk.gx; oy=blk.gy; el.style.zIndex=50;
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!drag)return;
+    const dgx=Math.round((e.clientX-sx)/CELL), dgy=Math.round((e.clientY-sy)/CELL);
+    const ngx=Math.max(0,ox+dgx), ngy=Math.max(0,oy+dgy);
+    const p=CATALOG[blk.type];
+    if(!overlaps(ngx,ngy,p.w,p.h,blk.id)){
+      blk.gx=ngx; blk.gy=ngy;
+      el.style.left=(ngx*CELL)+'px'; el.style.top=(ngy*CELL)+'px';
+    }
+  });
+  el.addEventListener('pointerup',e=>{drag=false;el.style.zIndex='';recompute()});
+}
+
+// adjacencia: dois blocos conectam se compartilham uma borda (encostam)
+function adjacent(a,b){
+  const pa=CATALOG[a.type], pb=CATALOG[b.type];
+  const ax2=a.gx+pa.w, ay2=a.gy+pa.h, bx2=b.gx+pb.w, by2=b.gy+pb.h;
+  const horizTouch = (ax2===b.gx || bx2===a.gx) && (a.gy<by2 && ay2>b.gy);
+  const vertTouch  = (ay2===b.gy || by2===a.gy) && (a.gx<bx2 && ax2>b.gx);
+  return horizTouch || vertTouch;
+}
+// coesao: todos conectados a ponte via cadeia de adjacencia
+function cohesionSet(){
+  const bridge=blocks.find(b=>b.type==='bridge');
+  if(!bridge)return new Set();
+  const seen=new Set([bridge.id]); const stack=[bridge];
+  while(stack.length){
+    const cur=stack.pop();
+    for(const b of blocks){
+      if(seen.has(b.id))continue;
+      if(adjacent(cur,b)){seen.add(b.id);stack.push(b)}
+    }
+  }
+  return seen;
+}
+
+function recompute(){
+  const set=cohesionSet();
+  // marca flutuantes
+  const bridge=blocks.find(b=>b.type==='bridge');
+  for(const b of blocks){
+    const floating = bridge ? !set.has(b.id) : true;
+    b.el.classList.toggle('floating', floating && b.type!=='bridge');
+  }
+  // soma ficha (so peças coesas contam)
+  const f={pot:0,mass:0,energia:0,fuel:0,output:0,PDF:0,BLI:0,CRG:0,SEN:0,HP:0};
+  const catUse={arma:0,carga:0,defesa:0,sensor:0};
+  let count=0;
+  for(const b of blocks){
+    if(bridge && !set.has(b.id))continue;
+    const p=CATALOG[b.type]; count++;
+    for(const k of ['pot','mass','energia','fuel','output','PDF','BLI','CRG','SEN']) f[k]+=p[k]||0;
+    f.HP += (p.HP||0) + (p.give&&p.give.HP||0);
+    if(p.cat) catUse[p.cat]+=p.w*p.h;
+  }
+  const MOB = f.mass? Math.max(0,Math.round(f.pot/f.mass*1.6)):0;
+  // classe emergente
+  const optTotal=catUse.arma+catUse.carga+catUse.defesa+catUse.sensor;
+  const prop=c=>optTotal?catUse[c]/optTotal:0;
+  let cls='—';
+  if(count>1){
+    if(prop('arma')>=.35 && prop('carga')<.2) cls='Caça';
+    else if(prop('carga')>=.35) cls='Cargueira';
+    else if(prop('arma')>=.25&&prop('carga')>=.25) cls='Corsária';
+    else if(prop('sensor')>=.3) cls='Exploradora';
+    else cls='Híbrida';
+  }
+  // render ficha
+  const stats=document.getElementById('stats');
+  const rows=[['Mobilidade',MOB],['Poder de fogo',f.PDF],['Blindagem',f.BLI],
+    ['Sensores',f.SEN],['Carga',f.CRG],['Casco (HP)',f.HP],
+    ['Massa',f.mass],['Combustível',f.fuel]];
+  stats.innerHTML=rows.map(([k,v])=>`<div class="stat"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  // barra de energia
+  const bars=document.getElementById('bars');
+  const gen=blocks.filter(b=>(!bridge||set.has(b.id))).reduce((s,b)=>s+Math.max(0,CATALOG[b.type].energia||0),0);
+  const con=blocks.filter(b=>(!bridge||set.has(b.id))).reduce((s,b)=>s+Math.max(0,-(CATALOG[b.type].energia||0)),0);
+  const epct=gen?Math.min(100,con/gen*100):(con?100:0);
+  bars.innerHTML=`<div class="bar-row"><div class="lbl"><span>Energia (consumo/geração)</span><span>${con}/${gen}</span></div>
+    <div class="bar"><i style="width:${gen?Math.min(100,con/gen*100):0}%;background:${con<=gen?'var(--ok)':'var(--bad)'}"></i></div></div>`;
+  // veredito de viabilidade
+  const problems=[];
+  if(!bridge) problems.push('Falta a Ponte de comando.');
+  if(count>0 && MOB<1) problems.push('Sem propulsão suficiente (MOB 0).');
+  if(con>gen) problems.push('Energia contínua insuficiente.');
+  const hasEngine=blocks.some(b=>(!bridge||set.has(b.id))&&CATALOG[b.type].pot);
+  const hasChem=blocks.some(b=>(!bridge||set.has(b.id))&&CATALOG[b.type].energia>0&&CATALOG[b.type].pot);
+  const hasTank=blocks.some(b=>(!bridge||set.has(b.id))&&CATALOG[b.type].fuel);
+  if(hasChem && !hasTank) problems.push('Motor a combustível sem tanque.');
+  if(bridge && blocks.some(b=>!set.has(b.id) && b.type!=='bridge')) problems.push('Há peças flutuando (não conectadas à ponte).');
+  const v=document.getElementById('verdict');
+  if(bridge && !problems.length && count>1){
+    v.className='verdict ok';
+    v.innerHTML=`<span class="cls">Classe: ${cls}</span>Nave viável. Pronta para despacho.`;
+  }else{
+    v.className='verdict bad';
+    v.innerHTML=`<span class="cls">Classe: ${cls}</span>Inviável:<ul>${problems.map(p=>`<li>${p}</li>`).join('')||'<li>Adicione peças.</li>'}</ul>`;
+  }
+}
+function shade(hex){ // fundo escuro tingido da cor da peça
+  const n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;
+  return `rgb(${Math.round(r*.28+30)},${Math.round(g*.28+34)},${Math.round(b*.28+38)})`;
+}
+recompute();
+</script>
+</body>
+</html>
