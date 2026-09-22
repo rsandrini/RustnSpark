@@ -11,9 +11,9 @@
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:unit": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects unit",
-    "test:int": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects integration --passWithNoTests --runInBand",
-    "test:e2e": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects e2e --passWithNoTests",
-    "test:validation": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects validation --passWithNoTests",
+    "test:int": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects integration --runInBand",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects e2e",
+    "test:validation": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects validation",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed"
   },
