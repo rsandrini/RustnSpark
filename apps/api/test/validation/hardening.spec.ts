@@ -58,6 +58,9 @@ function makeEnv(): EnvService {
     CORS_ORIGINS: ['http://allowed.example'],
     JWT_ACCESS_SECRET: 'a'.repeat(32),
     COOKIE_SECRET: 'b'.repeat(32),
+    ARGON2_MEMORY_KIB: 4096,
+    ARGON2_TIME_COST: 1,
+    ARGON2_PARALLELISM: 1,
   });
 }
 

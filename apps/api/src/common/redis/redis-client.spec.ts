@@ -12,6 +12,9 @@ const env = new EnvService({
   CORS_ORIGINS: ['http://localhost:5173'],
   JWT_ACCESS_SECRET: 'a'.repeat(32),
   COOKIE_SECRET: 'b'.repeat(32),
+  ARGON2_MEMORY_KIB: 4096,
+  ARGON2_TIME_COST: 1,
+  ARGON2_PARALLELISM: 1,
 });
 
 describe('RedisClient', () => {

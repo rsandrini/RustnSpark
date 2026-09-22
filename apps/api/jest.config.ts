@@ -28,11 +28,16 @@ const config: Config = {
   // Redis would mean faking bullmq instead of testing it; it's covered for real by
   // test/integration/jobs.int-spec.ts. queues.ts and processors/ping.processor.ts hold this
   // module's actual logic and are unit-tested directly.
+  // `auth/refresh-token.service.ts` is excluded for the same reason: every branch (not-found,
+  // expired, reused, rotated) is a real Postgres round trip and the global constraint forbids
+  // mocking Prisma to fake them in a unit test; it's covered for real by
+  // test/integration/refresh-token.service.int-spec.ts.
   collectCoverageFrom: [
     '<rootDir>/src/**/*.ts',
     '!<rootDir>/src/main.ts',
     '!<rootDir>/src/worker.ts',
     '!<rootDir>/src/jobs/jobs.module.ts',
+    '!<rootDir>/src/auth/refresh-token.service.ts',
   ],
   coverageThreshold: {
     // Real numbers as of S1.7 (unit project, main.ts excluded): 98.02/84.94/100/98.87

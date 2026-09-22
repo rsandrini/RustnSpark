@@ -2,10 +2,17 @@ import { z } from 'zod';
 
 const MIN_SECRET_LENGTH = 32;
 const DEFAULT_PORT = 3000;
+// OWASP-floor Argon2id parameters (OWASP cheat sheet minimum for Argon2id: m=19456 KiB, t=2, p=1).
+const DEFAULT_ARGON2_MEMORY_KIB = 19456;
+const DEFAULT_ARGON2_TIME_COST = 2;
+const DEFAULT_ARGON2_PARALLELISM = 1;
 
 const secret = z
   .string()
   .min(MIN_SECRET_LENGTH, `must be at least ${MIN_SECRET_LENGTH} characters`);
+
+const positiveInt = (defaultValue: number) =>
+  z.coerce.number().int().positive().default(defaultValue);
 
 const corsOrigin = z.string().refine(isBareHttpOrigin, 'must be a bare http(s) origin');
 
@@ -29,6 +36,10 @@ export const envSchema = z.object({
     .pipe(z.array(corsOrigin).min(1)),
   JWT_ACCESS_SECRET: secret,
   COOKIE_SECRET: secret,
+  // Non-secret Argon2id cost parameters (R19): defaults are the OWASP floor, tunable per env.
+  ARGON2_MEMORY_KIB: positiveInt(DEFAULT_ARGON2_MEMORY_KIB),
+  ARGON2_TIME_COST: positiveInt(DEFAULT_ARGON2_TIME_COST),
+  ARGON2_PARALLELISM: positiveInt(DEFAULT_ARGON2_PARALLELISM),
 });
 
 export type Env = z.output<typeof envSchema>;

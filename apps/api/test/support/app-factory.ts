@@ -19,6 +19,11 @@ export function testEnv(overrides: Record<string, string> = {}): Record<string, 
     CORS_ORIGINS: 'http://localhost:5173',
     JWT_ACCESS_SECRET: 'a'.repeat(32),
     COOKIE_SECRET: 'b'.repeat(32),
+    // Fast, insecure cost values: correctness of the algorithm/claims is what these tests check,
+    // not hashing speed (real cost defaults live in env.schema.ts / .env.example).
+    ARGON2_MEMORY_KIB: '4096',
+    ARGON2_TIME_COST: '1',
+    ARGON2_PARALLELISM: '1',
     ...overrides,
   };
 }
