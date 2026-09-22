@@ -16,11 +16,13 @@ RUN pnpm install --frozen-lockfile --filter api...
 COPY tsconfig.base.json ./
 COPY apps/api apps/api
 # S1.3 insertion point A (compile-time): generate the Prisma client here, before the build.
+RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api build
 # /out holds only the compiled dist plus production dependencies (fresh install from the same lockfile).
 RUN pnpm --filter api deploy --prod /out
 # S1.3 insertion point B (runtime tree): a generated client lands inside /out/node_modules, so generate
 # again here, run from /out (the Prisma CLI must be a production dependency of api).
+RUN cd /out && node_modules/.bin/prisma generate
 
 FROM node:22-bookworm-slim AS runtime
 # S1.3: if the Prisma engine needs it, install openssl here (the slim image ships none):

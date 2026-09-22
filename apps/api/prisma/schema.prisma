@@ -1,0 +1,12 @@
+// Base schema for the Rust and Spark API. Grows migration-by-migration per plan Appendix B:
+// no speculative tables here, only what the current migration needs.
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [btree_gist]
+}
