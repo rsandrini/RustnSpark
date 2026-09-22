@@ -12,10 +12,7 @@ export interface CurrentUserPayload {
 
 // Exported separately from the decorator factory so it can be unit-tested directly, without
 // going through Nest's param-decorator execution pipeline.
-export function extractCurrentUser(
-  _data: unknown,
-  context: ExecutionContext,
-): CurrentUserPayload {
+export function extractCurrentUser(_data: unknown, context: ExecutionContext): CurrentUserPayload {
   const request = context.switchToHttp().getRequest<{ user?: CurrentUserPayload }>();
   if (!request.user) {
     throw new Error('@CurrentUser() used on a route JwtAuthGuard did not run for');

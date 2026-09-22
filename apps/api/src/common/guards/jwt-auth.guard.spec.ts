@@ -26,9 +26,7 @@ function makeContext(
   } as unknown as ExecutionContext;
 }
 
-function makeTokenService(
-  verifyAccessToken: TokenService['verifyAccessToken'],
-): TokenService {
+function makeTokenService(verifyAccessToken: TokenService['verifyAccessToken']): TokenService {
   return { verifyAccessToken } as unknown as TokenService;
 }
 

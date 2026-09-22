@@ -2,7 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 import { ForbiddenException, NotFoundException, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { CurrentUserPayload } from '../decorators/current-user.decorator.js';
-import { OWNED_RESOURCE_KEY, type OwnedResourceOptions } from '../decorators/owned-resource.decorator.js';
+import {
+  OWNED_RESOURCE_KEY,
+  type OwnedResourceOptions,
+} from '../decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from './ownership.guard.js';
 import { OwnershipResolverRegistry } from './ownership-resolver.registry.js';
 

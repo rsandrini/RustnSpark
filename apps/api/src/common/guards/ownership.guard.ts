@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { CurrentUserPayload } from '../decorators/current-user.decorator.js';
-import { OWNED_RESOURCE_KEY, type OwnedResourceOptions } from '../decorators/owned-resource.decorator.js';
+import {
+  OWNED_RESOURCE_KEY,
+  type OwnedResourceOptions,
+} from '../decorators/owned-resource.decorator.js';
 import { OwnershipResolverRegistry } from './ownership-resolver.registry.js';
 
 // Applied per-route via @UseGuards(OwnershipGuard) wherever @OwnedResource({ type, param }) is

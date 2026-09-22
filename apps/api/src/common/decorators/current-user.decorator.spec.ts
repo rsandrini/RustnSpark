@@ -15,8 +15,6 @@ describe('CurrentUser decorator', () => {
   });
 
   it('throws when used on a route without JwtAuthGuard having run', () => {
-    expect(() => extractCurrentUser(undefined, makeContext(undefined))).toThrow(
-      /JwtAuthGuard/,
-    );
+    expect(() => extractCurrentUser(undefined, makeContext(undefined))).toThrow(/JwtAuthGuard/);
   });
 });

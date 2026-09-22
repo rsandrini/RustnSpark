@@ -1,5 +1,8 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { CurrentUser, type CurrentUserPayload } from '../../src/common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from '../../src/common/decorators/current-user.decorator.js';
 import { OwnedResource } from '../../src/common/decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from '../../src/common/guards/ownership.guard.js';
 
