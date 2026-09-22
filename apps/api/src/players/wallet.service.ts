@@ -6,6 +6,9 @@ import { PlayerEventService } from './player-event.service.js';
 export const WALLET_DEBIT_EVENT = 'wallet.debit';
 export const WALLET_CREDIT_EVENT = 'wallet.credit';
 
+// Player.credits is a Postgres int4 column.
+export const MAX_CREDITS = 2_147_483_647;
+
 // Base for every wallet failure, so game-logic callers can catch the family when they only care
 // that the movement failed, and match on the subtype/code when they need to distinguish.
 export abstract class WalletError extends Error {}
@@ -33,6 +36,17 @@ export class WalletPlayerNotFoundError extends WalletError {
   constructor(playerId: string) {
     super(`player ${playerId} not found`);
     this.name = 'WalletPlayerNotFoundError';
+  }
+}
+
+// Guarded explicitly so an overflowing credit surfaces as a domain error instead of a raw
+// Postgres integer-out-of-range failure.
+export class CreditOverflowError extends WalletError {
+  readonly code = 'CREDIT_OVERFLOW' as const;
+
+  constructor(playerId: string, amount: number) {
+    super(`crediting ${amount} credits to player ${playerId} would overflow the balance`);
+    this.name = 'CreditOverflowError';
   }
 }
 
@@ -107,10 +121,17 @@ export class WalletService {
     amount: number,
     reason: string,
   ): Promise<void> {
+    // The int4 ceiling check lives in the UPDATE predicate so concurrent credits cannot race
+    // past it; the follow-up exists-check only picks which error a 0-row update means.
     const updated = await tx.$executeRaw`
-      UPDATE "Player" SET credits = credits + ${amount} WHERE id = ${playerId}
+      UPDATE "Player" SET credits = credits + ${amount}
+      WHERE id = ${playerId} AND credits <= ${MAX_CREDITS - amount}
     `;
-    if (updated === 0) throw new WalletPlayerNotFoundError(playerId);
+    if (updated === 0) {
+      const player = await tx.player.findUnique({ where: { id: playerId }, select: { id: true } });
+      if (player) throw new CreditOverflowError(playerId, amount);
+      throw new WalletPlayerNotFoundError(playerId);
+    }
     await this.events.record(
       { playerId, type: WALLET_CREDIT_EVENT, creditsDelta: amount, payload: { reason } },
       tx,

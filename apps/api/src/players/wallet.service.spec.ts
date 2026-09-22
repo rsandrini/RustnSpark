@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  CreditOverflowError,
   InsufficientFundsError,
   InvalidWalletOperationError,
   WalletError,
@@ -53,5 +54,14 @@ describe('InsufficientFundsError', () => {
     expect(error).toBeInstanceOf(WalletError);
     expect(error).toBeInstanceOf(Error);
     expect(error.code).toBe('INSUFFICIENT_FUNDS');
+  });
+});
+
+describe('CreditOverflowError', () => {
+  it('carries the CREDIT_OVERFLOW machine code', () => {
+    const error = new CreditOverflowError('player-1', 10);
+    expect(error).toBeInstanceOf(WalletError);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.code).toBe('CREDIT_OVERFLOW');
   });
 });

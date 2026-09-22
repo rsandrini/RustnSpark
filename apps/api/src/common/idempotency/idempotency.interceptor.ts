@@ -113,16 +113,18 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     const statusCode = this.resolveStatusCode(context, request.method);
     return next.handle().pipe(
+      catchError((error: unknown) =>
+        // Handler-phase failure: free the pending row so a same-key retry re-executes instead of
+        // replaying a failure. Must stay upstream of complete(): if complete() fails after a
+        // SUCCESSFUL handler, the row stays parked and the retry gets 409 — re-executing would
+        // double the side effect.
+        from(this.abandon(user.playerId, route, key)).pipe(mergeMap(() => throwError(() => error))),
+      ),
       mergeMap(async (result: unknown) => {
         const body = result === undefined || result === null ? '' : JSON.stringify(result);
         await this.complete(user.playerId, route, key, statusCode, body);
         return result;
       }),
-      catchError((error: unknown) =>
-        // A failed execution stores nothing: the pending row is removed so the client's retry
-        // with the same key re-executes instead of replaying a failure.
-        from(this.abandon(user.playerId, route, key)).pipe(mergeMap(() => throwError(() => error))),
-      ),
     );
   }
 

@@ -1,7 +1,16 @@
 import type { Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -141,6 +150,35 @@ describe('IdempotencyInterceptor (real HTTP pipeline, test-only route)', () => {
     const first = await firstPromise;
     expect(first.status).toBe(200);
     expect(first.body).toEqual({ seq: 1, label: 'race' });
+    expect(controller.executions).toBe(1);
+  });
+
+  it('keeps the pending row when storing the response fails, so a same-key retry gets 409', async () => {
+    const token = await seedAuthedPlayer();
+
+    // Fault injection on the real client (not a DB mock): only the complete() UPDATE fails once,
+    // simulating a DB blip after the handler already succeeded. Every other statement — the
+    // pending-row insert included — hits real Postgres.
+    const update = jest.spyOn(prisma.idempotencyKey, 'update');
+    update.mockRejectedValueOnce(new Error('simulated DB blip'));
+    try {
+      const first = await post(token, 'key-blip', { label: 'blip' });
+      expect(first.status).toBe(500);
+    } finally {
+      update.mockRestore();
+    }
+
+    // The handler ran but its outcome could not be stored: the pending row must SURVIVE, parked
+    // with the sentinel status, so the key stays blocked instead of silently freeing.
+    expect(controller.executions).toBe(1);
+    const rows = await prisma.idempotencyKey.findMany();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.responseStatus).toBe(0);
+
+    const second = await post(token, 'key-blip', { label: 'blip' });
+    expect(second.status).toBe(409);
+    expect(second.body).toMatchObject({ message: 'IDEMPOTENCY_IN_PROGRESS' });
+    // No re-execution: the side effect already happened once.
     expect(controller.executions).toBe(1);
   });
 

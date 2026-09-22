@@ -2,9 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { Player } from '@prisma/client';
 import {
+  CreditOverflowError,
   InsufficientFundsError,
+  MAX_CREDITS,
   WALLET_CREDIT_EVENT,
   WALLET_DEBIT_EVENT,
+  WalletPlayerNotFoundError,
   WalletService,
 } from '../../src/players/wallet.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -54,9 +57,18 @@ describe('WalletService (real Postgres)', () => {
   it('serializes 20 parallel debits of 10 against a balance of 100: exactly 10 succeed', async () => {
     const player = await seedPlayer(100);
 
-    const results = await Promise.allSettled(
-      Array.from({ length: 20 }, () => wallet.debit(player.id, 10, 'race-test')),
-    );
+    // Shared gate: all 20 debits park on one promise and start in the same microtask flush, so
+    // real transaction overlap never depends on how the individual calls happen to be staggered.
+    let releaseGate!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    const attempts = Array.from({ length: 20 }, async () => {
+      await gate;
+      return wallet.debit(player.id, 10, 'race-test');
+    });
+    releaseGate();
+    const results = await Promise.allSettled(attempts);
 
     const fulfilled = results.filter((result) => result.status === 'fulfilled');
     const rejected = results.filter(
@@ -93,6 +105,31 @@ describe('WalletService (real Postgres)', () => {
       creditsDelta: 50,
       payload: { reason: 'mission-reward' },
     });
+  });
+
+  it('rejects a credit that would overflow the Int range, leaving balance and events untouched', async () => {
+    const player = await seedPlayer(MAX_CREDITS - 10);
+
+    await expect(wallet.credit(player.id, 11, 'overflow')).rejects.toBeInstanceOf(
+      CreditOverflowError,
+    );
+
+    expect(await balanceOf(player.id)).toBe(MAX_CREDITS - 10);
+    expect(await prisma.playerEvent.count({ where: { playerId: player.id } })).toBe(0);
+  });
+
+  it('accepts a credit that lands exactly on the Int ceiling', async () => {
+    const player = await seedPlayer(MAX_CREDITS - 10);
+
+    await wallet.credit(player.id, 10, 'to-the-ceiling');
+
+    expect(await balanceOf(player.id)).toBe(MAX_CREDITS);
+  });
+
+  it('throws WalletPlayerNotFoundError when crediting a missing player', async () => {
+    await expect(wallet.credit(randomUUID(), 10, 'no-player')).rejects.toBeInstanceOf(
+      WalletPlayerNotFoundError,
+    );
   });
 
   it('rejects a debit larger than the balance with no balance change and no event', async () => {
