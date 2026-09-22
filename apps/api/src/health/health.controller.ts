@@ -1,11 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
+import { Public } from '../common/decorators/public.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RedisHealthIndicator } from './redis.health-indicator.js';
 
-// No auth guard is applied here (none exists globally yet): this route is reachable without
-// authentication by construction. S2.4's global guard rollout must add an explicit exemption
-// for GET /v1/health when it lands, or this route will start requiring a token by accident.
+// Explicit exemption from the global JwtAuthGuard (S2.4): this route must stay reachable with
+// no Authorization header, or the Docker healthchecks (compose.yaml) and CI break.
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(

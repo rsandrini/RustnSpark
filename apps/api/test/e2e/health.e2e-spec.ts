@@ -31,4 +31,14 @@ describe('GET /v1/health against the real compose stack', () => {
       details: { database: { status: 'up' }, redis: { status: 'up' } },
     });
   });
+
+  // Regression for S2.4: the global JwtAuthGuard (APP_GUARD) now runs on every route by default.
+  // Without @Public() on HealthController, this request would 401 and the Docker healthchecks
+  // (compose.yaml) plus CI would break the whole stack.
+  it('still returns 200 with no Authorization header now that the global JwtAuthGuard is active', async () => {
+    const response = await request(httpServer(testApp.app)).get('/v1/health');
+
+    expect(response.status).toBe(200);
+    expect(response.status).not.toBe(401);
+  });
 });

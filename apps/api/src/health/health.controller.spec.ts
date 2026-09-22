@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Reflector } from '@nestjs/core';
 import { HealthCheckService, PrismaHealthIndicator, TerminusModule } from '@nestjs/terminus';
+import { IS_PUBLIC_KEY } from '../common/decorators/public.decorator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { HealthController } from './health.controller.js';
 import { RedisHealthIndicator } from './redis.health-indicator.js';
@@ -83,5 +85,12 @@ describe('HealthController', () => {
 
     expect(moduleRef.get(HealthCheckService)).toBeInstanceOf(HealthCheckService);
     expect(moduleRef.get(PrismaHealthIndicator)).toBeInstanceOf(PrismaHealthIndicator);
+  });
+
+  // Regression for S2.4: without this, the global JwtAuthGuard rollout would 401 the Docker
+  // healthcheck and CI (see integration/jwt-auth.guard.int-spec.ts for the real-HTTP proof).
+  it('is marked @Public() so the global JwtAuthGuard skips it', () => {
+    const reflector = new Reflector();
+    expect(reflector.get(IS_PUBLIC_KEY, HealthController)).toBe(true);
   });
 });

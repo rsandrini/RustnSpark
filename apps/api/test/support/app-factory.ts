@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common';
+import type { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { EnvService } from '../../src/common/env/env.module.js';
@@ -41,11 +41,19 @@ export interface TestApp {
 // Note: the hand-rolled ThrottlerGuard (60 req/60s per IP, src/common/guards/throttler.guard.ts)
 // applies globally, so a test that fires many requests at one endpoint from the same client can
 // trip it within a single test run.
-export async function createTestApp(overrides: Record<string, string> = {}): Promise<TestApp> {
+// `extraImports` lets a test add test-only modules (e.g. test/support/ownership-test.module.ts)
+// alongside AppModule without changing production wiring; every existing caller that omits it
+// gets exactly the previous behaviour.
+export async function createTestApp(
+  overrides: Record<string, string> = {},
+  extraImports: NonNullable<ModuleMetadata['imports']> = [],
+): Promise<TestApp> {
   const originalEnv = { ...process.env };
   Object.assign(process.env, testEnv(overrides));
 
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule, ...extraImports],
+  }).compile();
   const app = moduleRef.createNestApplication();
   configureApp(app, app.get(EnvService));
   await app.init();
