@@ -17,13 +17,18 @@ x-dev-urls: &dev-urls
   DATABASE_URL: postgresql://rustandspark:${POSTGRES_PASSWORD:-rustandspark}@postgres:5432/rustandspark
   REDIS_URL: redis://redis:6379
 
-# Node-based TCP probe: /v1/health arrives in S1.5, which switches this to an HTTP check.
+# GET /v1/health (S1.5): only exits 0 on HTTP 200, i.e. the app is up AND its db/redis
+# dependencies answer, not merely that the port accepts a TCP connection. Node's built-in
+# http client is used instead of curl so the slim runtime image needs no extra package.
 x-api-healthcheck: &api-healthcheck
   test:
     - CMD
     - node
     - -e
-    - "require('net').connect(3000, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"
+    - |
+      const req = require('http').get('http://127.0.0.1:3000/v1/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1));
+      req.on('error', () => process.exit(1));
+      req.setTimeout(2000, () => { req.destroy(); process.exit(1); });
   interval: 5s
   timeout: 3s
   retries: 12
