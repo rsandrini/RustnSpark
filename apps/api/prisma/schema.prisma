@@ -58,6 +58,10 @@ model RefreshToken {
   replacedById String?
 
   @@index([familyId])
+  // rotate() looks up every refresh request by tokenHash; no row is ever deleted (only
+  // revokedAt is set), so this table grows unbounded and needs its own index, not just familyId.
+  @@index([tokenHash])
+  @@index([expiresAt])
 }
 
 model PlayerEvent {

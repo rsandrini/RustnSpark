@@ -1,5 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { EnvService, type Env } from '../../src/common/env/env.module.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import {
@@ -126,6 +135,61 @@ describe('RefreshTokenService against postgres-test', () => {
     });
 
     await expect(service.rotate(issued.token)).rejects.toBeInstanceOf(RefreshTokenExpiredError);
+  });
+
+  it('two concurrent rotate() calls on the same token: exactly one succeeds, the family ends fully revoked', async () => {
+    const issued = await service.issue(accountId);
+
+    // A plain shared gate is not enough here: rotate()'s pre-transaction read is a fast, isolated
+    // round trip, so two gated calls tend to fully serialize (first commits before the second even
+    // reads) and never actually overlap inside Postgres. To force the real race this finding is
+    // about, hold both calls right after their (real, unmocked) `existing` read completes, so both
+    // enter their transactions with revokedAt: null in hand — exactly the interleaving where the
+    // buggy code let both writes through.
+    let readsSeen = 0;
+    let releaseBothRead!: () => void;
+    const bothRead = new Promise<void>((resolve) => {
+      releaseBothRead = resolve;
+    });
+    const originalFindFirst = prisma.refreshToken.findFirst.bind(prisma.refreshToken);
+    const findFirstSpy = jest.spyOn(prisma.refreshToken, 'findFirst');
+    // The real client method returns a chainable Prisma__RefreshTokenClient, not a plain promise;
+    // this test only ever awaits it, so the cast below is safe and avoids reproducing that shape.
+    findFirstSpy.mockImplementation(((...args: Parameters<typeof originalFindFirst>) => {
+      return (async () => {
+        const result = await originalFindFirst(...args);
+        readsSeen += 1;
+        if (readsSeen >= 2) releaseBothRead();
+        await bothRead;
+        return result;
+      })();
+    }) as typeof prisma.refreshToken.findFirst);
+
+    let results: PromiseSettledResult<Awaited<ReturnType<typeof service.rotate>>>[];
+    try {
+      results = await Promise.allSettled([
+        service.rotate(issued.token),
+        service.rotate(issued.token),
+      ]);
+    } finally {
+      findFirstSpy.mockRestore();
+    }
+
+    const fulfilled = results.filter((result) => result.status === 'fulfilled');
+    const rejected = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    for (const result of rejected) {
+      expect(result.reason).toBeInstanceOf(RefreshTokenReusedError);
+    }
+
+    // No forked family: every row descended from the presented token ends up revoked, including
+    // the successor the winning call minted (reuse detection burns the whole family, R25).
+    const rows = await prisma.refreshToken.findMany({ where: { familyId: issued.familyId } });
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows.every((row) => row.revokedAt !== null)).toBe(true);
   });
 
   it('revoke() revokes only the presented token (logout, not family-wide)', async () => {

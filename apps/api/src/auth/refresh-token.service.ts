@@ -75,7 +75,7 @@ export class RefreshTokenService {
     const nextHash = this.hashToken(raw);
     const expiresAt = this.nextExpiry();
 
-    const created = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const next = await tx.refreshToken.create({
         data: {
           accountId: existing.accountId,
@@ -84,14 +84,25 @@ export class RefreshTokenService {
           expiresAt,
         },
       });
-      await tx.refreshToken.update({
-        where: { id: existing.id },
+      // Conditional UPDATE (same pattern as revoke() above and WalletService.debit()): the WHERE
+      // clause itself enforces "only if still unrevoked" at the database level, closing the
+      // read-then-write race where two concurrent rotations of the same token both read
+      // revokedAt: null before either commits.
+      const revoked = await tx.refreshToken.updateMany({
+        where: { id: existing.id, revokedAt: null },
         data: { revokedAt: new Date(), replacedById: next.id },
       });
-      return next;
+      return { next, wonRace: revoked.count > 0 };
     });
 
-    return { token: raw, familyId: created.familyId, expiresAt: created.expiresAt };
+    if (!result.wonRace) {
+      // Someone else already revoked/rotated this token between our read and our write: identical
+      // to presenting an already-revoked token, so it gets the exact same reuse-detection outcome.
+      await this.revokeFamily(existing.familyId);
+      throw new RefreshTokenReusedError(existing.familyId);
+    }
+
+    return { token: raw, familyId: result.next.familyId, expiresAt: result.next.expiresAt };
   }
 
   // Logout: revokes only the presented token (not the whole family).
