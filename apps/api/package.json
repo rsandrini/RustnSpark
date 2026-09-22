@@ -4,6 +4,9 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "scripts": {
     "build": "nest build",
     "start": "nest start",
@@ -55,6 +58,7 @@
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2"
   }
 }
