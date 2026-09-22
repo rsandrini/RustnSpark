@@ -32,12 +32,23 @@ const config: Config = {
   // expired, reused, rotated) is a real Postgres round trip and the global constraint forbids
   // mocking Prisma to fake them in a unit test; it's covered for real by
   // test/integration/refresh-token.service.int-spec.ts.
+  // S2.3's request-path files (auth.controller/auth.service/auth.module, players/*) are excluded
+  // for that same reason: their behavior is DB round trips and cookie/HTTP wiring, covered for
+  // real by test/integration/auth-*.int-spec.ts and players.int-spec.ts against the real test
+  // Postgres booted through createTestApp. Their pure pieces (DTOs, locale resolution, the
+  // throttle policy) stay in the unit tree and are unit-tested directly.
   collectCoverageFrom: [
     '<rootDir>/src/**/*.ts',
     '!<rootDir>/src/main.ts',
     '!<rootDir>/src/worker.ts',
     '!<rootDir>/src/jobs/jobs.module.ts',
     '!<rootDir>/src/auth/refresh-token.service.ts',
+    '!<rootDir>/src/auth/auth.module.ts',
+    '!<rootDir>/src/auth/auth.controller.ts',
+    '!<rootDir>/src/auth/auth.service.ts',
+    '!<rootDir>/src/players/players.module.ts',
+    '!<rootDir>/src/players/players.controller.ts',
+    '!<rootDir>/src/players/players.service.ts',
   ],
   coverageThreshold: {
     // Real numbers as of S1.7 (unit project, main.ts excluded): 98.02/84.94/100/98.87

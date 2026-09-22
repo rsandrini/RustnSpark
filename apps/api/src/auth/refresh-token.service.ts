@@ -4,8 +4,9 @@ import { EnvService } from '../common/env/env.module.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // Sliding 30-day TTL, reset on every rotation (R25). Auth infrastructure, not a balance number:
-// GameConfig-backed tuning arrives in S3.
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+// GameConfig-backed tuning arrives in S3. Exported so S2.3's controller can align the refresh
+// cookie's Max-Age to it (R26).
+export const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RAW_TOKEN_BYTES = 32; // 256-bit opaque token
 
 export interface IssuedRefreshToken {

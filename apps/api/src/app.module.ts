@@ -8,13 +8,23 @@ import { EnvModule } from './common/env/env.module.js';
 import { RedisModule } from './common/redis/redis.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { PlayersModule } from './players/players.module.js';
 import { TokenService } from './auth/token.service.js';
 
 // AllExceptionsFilter is bound in main.ts instead of here: it needs HttpAdapterHost, which is
 // only populated once NestFactory.create() sets up the platform adapter, not during a bare
 // Test.createTestingModule().compile() used by unit tests such as app.module.spec.ts.
 @Module({
-  imports: [EnvModule, PrismaModule, RedisModule, OwnershipResolverModule, HealthModule],
+  imports: [
+    EnvModule,
+    PrismaModule,
+    RedisModule,
+    OwnershipResolverModule,
+    HealthModule,
+    AuthModule,
+    PlayersModule,
+  ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },

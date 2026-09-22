@@ -5,6 +5,11 @@ import {
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import {
+  THROTTLE_ROUTE_KEY,
+  type ThrottleRoutePolicy,
+} from '../decorators/throttle-route.decorator.js';
 
 export const THROTTLE_TTL_MS = 60_000;
 export const THROTTLE_LIMIT = 60;
@@ -18,6 +23,11 @@ interface Bucket {
   resetAt: number;
 }
 
+interface ThrottleRequest {
+  ip?: string;
+  body?: unknown;
+}
+
 // Hand-rolled instead of @nestjs/throttler: that package still ships CommonJS and its
 // `require('@nestjs/common')` breaks under this project's Jest ESM runtime (works at real
 // Node runtime, confirmed, but not under `--experimental-vm-modules` on Node 22). A fixed
@@ -27,26 +37,56 @@ export class ThrottlerGuard implements CanActivate {
   private readonly buckets = new Map<string, Bucket>();
   private lastSweepAt = 0;
 
+  constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<{ ip?: string }>();
-    const key = request.ip ?? 'unknown';
+    const request = context.switchToHttp().getRequest<ThrottleRequest>();
+    // R20: a @ThrottleRoute policy REPLACES the default limiter on that route (one limiter total).
+    const policy = this.reflector.getAllAndOverride<ThrottleRoutePolicy | undefined>(
+      THROTTLE_ROUTE_KEY,
+      [context.getHandler(), context.getClass()],
+    );
     const now = Date.now();
 
     this.sweepExpired(now);
 
+    const limit = policy?.limit ?? THROTTLE_LIMIT;
+    const ttlMs = policy?.ttlMs ?? THROTTLE_TTL_MS;
+    const key = this.bucketKey(context, request, policy);
     const bucket = this.buckets.get(key);
 
     if (!bucket || bucket.resetAt <= now) {
-      this.buckets.set(key, { count: 1, resetAt: now + THROTTLE_TTL_MS });
+      this.buckets.set(key, { count: 1, resetAt: now + ttlMs });
       return true;
     }
 
-    if (bucket.count >= THROTTLE_LIMIT) {
+    if (bucket.count >= limit) {
+      this.setRetryAfter(context, bucket.resetAt - now);
       throw new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS);
     }
 
     bucket.count += 1;
     return true;
+  }
+
+  private bucketKey(
+    context: ExecutionContext,
+    request: ThrottleRequest,
+    policy: ThrottleRoutePolicy | undefined,
+  ): string {
+    const ip = request.ip ?? 'unknown';
+    if (!policy) return ip; // default: one bucket per client IP shared across unmarked routes.
+    // Policy buckets are namespaced per handler, so two policy routes never share one.
+    const route = `${context.getClass().name}.${context.getHandler().name}`;
+    if (policy.key === 'ip+email') return `${route}|${ip}|${emailKey(request)}`;
+    return `${route}|${ip}`;
+  }
+
+  private setRetryAfter(context: ExecutionContext, msUntilReset: number): void {
+    const response = context
+      .switchToHttp()
+      .getResponse<{ setHeader(name: string, value: string): void }>();
+    response.setHeader('Retry-After', String(Math.max(1, Math.ceil(msUntilReset / 1000))));
   }
 
   // Opportunistic, bounded-frequency sweep: runs on a request rather than a timer, so there is
@@ -59,4 +99,14 @@ export class ThrottlerGuard implements CanActivate {
       if (bucket.resetAt <= now) this.buckets.delete(key);
     }
   }
+}
+
+// The guard runs before the ValidationPipe, so the body is unvalidated here: only a string email
+// participates in the key, and it is lowercased so casing can't dodge the bucket (matches R17's
+// normalization). Missing/malformed bodies share one bucket per IP on that route.
+function emailKey(request: ThrottleRequest): string {
+  const body = request.body;
+  if (typeof body !== 'object' || body === null) return '';
+  const email = (body as { email?: unknown }).email;
+  return typeof email === 'string' ? email.toLowerCase() : '';
 }
