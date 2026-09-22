@@ -15,12 +15,18 @@ export interface Rng {
   child(label: string): Rng;
 }
 
-/** splitmix32: avalanches one seed number into four well-mixed 32-bit words to seed sfc32's state. */
+/**
+ * splitmix32: avalanches one seed number into four well-mixed 32-bit words to seed sfc32's state.
+ * deriveSeed can return up to ~53 bits, so the seed is split into low/high 32-bit halves and both
+ * are mixed into every step; using only the low 32 bits would collapse deriveSeed's full range
+ * down to a 2^32 collision space for every derived (child) seed.
+ */
 function expandSeed(seed: number): [number, number, number, number] {
+  const high = Math.floor(seed / 4294967296) >>> 0;
   let state = seed >>> 0;
   const next = (): number => {
     state = (state + 0x9e3779b9) >>> 0;
-    let z = state;
+    let z = state ^ high;
     z = Math.imul(z ^ (z >>> 16), 0x85ebca6b);
     z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35);
     return (z ^ (z >>> 16)) >>> 0;
@@ -30,7 +36,7 @@ function expandSeed(seed: number): [number, number, number, number] {
 
 /** Builds a seeded Rng. A string seed is hashed via deriveSeed; a number seed is used directly. */
 export function createRng(seed: number | string): Rng {
-  const rootSeed = typeof seed === 'string' ? deriveSeed(seed, 'root') : seed >>> 0;
+  const rootSeed = typeof seed === 'string' ? deriveSeed(seed, 'root') : seed;
   const [a, b, c, d] = expandSeed(rootSeed);
   const next = sfc32(a, b, c, d);
 

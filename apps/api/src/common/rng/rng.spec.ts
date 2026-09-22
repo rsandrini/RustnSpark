@@ -23,6 +23,17 @@ describe('createRng', () => {
       const b = createRng(2);
       expect(a.float()).not.toBe(b.float());
     });
+
+    it('two seeds sharing the same low 32 bits but different high bits produce different sequences', () => {
+      // 12345 and 12345 + 2^32 have an identical low-32-bit half; only the high bits differ.
+      // deriveSeed can return up to ~53 bits, so all of it must reach the generator, not just
+      // the low 32 bits, or every derived seed tree would collide at a 2^32 birthday bound.
+      const low = createRng(12345);
+      const highShifted = createRng(12345 + 4294967296);
+      const lowValues = Array.from({ length: 5 }, () => low.float());
+      const highShiftedValues = Array.from({ length: 5 }, () => highShifted.float());
+      expect(highShiftedValues).not.toEqual(lowValues);
+    });
   });
 
   describe('golden values', () => {
@@ -39,8 +50,8 @@ describe('createRng', () => {
       const rng = createRng('rust-and-spark');
       const values = Array.from({ length: 5 }, () => rng.float());
       expect(values).toEqual([
-        0.1924690050072968, 0.4495863562915474, 0.1348537530284375, 0.17517932131886482,
-        0.5319244149141014,
+        0.008188138250261545, 0.23016472510062158, 0.9348792626988143, 0.8818587264977396,
+        0.3596335225738585,
       ]);
     });
   });
