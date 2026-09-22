@@ -280,3 +280,10 @@ export class GameConfigValidationError extends Error {
     this.name = 'GameConfigValidationError';
   }
 }
+
+export class ConfigNotLoadedError extends Error {
+  constructor(message = 'Game config cache has not been loaded') {
+    super(message);
+    this.name = 'ConfigNotLoadedError';
+  }
+}

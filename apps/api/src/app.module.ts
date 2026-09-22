@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PlayersModule } from './players/players.module.js';
+import { ConfigModule } from './config/config.module.js';
 import { TokenService } from './auth/token.service.js';
 
 // AllExceptionsFilter is bound in main.ts instead of here: it needs HttpAdapterHost, which is
@@ -25,6 +26,7 @@ import { TokenService } from './auth/token.service.js';
     HealthModule,
     AuthModule,
     PlayersModule,
+    ConfigModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
