@@ -1,0 +1,30 @@
+{
+  "name": "rust-and-spark",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:unit": "pnpm --filter api test:unit",
+    "test:int": "pnpm --filter api test:int",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "test:validation": "pnpm --filter api test:validation",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:seed": "pnpm --filter api db:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.8",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.70.1"
+  }
+}

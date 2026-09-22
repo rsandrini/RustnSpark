@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+docs
+design
+prototypes
+simulation
+.superpowers
+*.md
