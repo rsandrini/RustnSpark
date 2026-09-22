@@ -28,6 +28,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      # The generated Prisma client is local node_modules state, not committed: without it the
+      # type-aware lint sees PrismaClient as any (no-unsafe-* errors) and PrismaService throws
+      # "did not initialize" at runtime. postinstall covers humans; this step keeps CI explicit.
+      - run: pnpm --filter api db:generate
       - run: pnpm lint
       - run: pnpm typecheck
 
@@ -50,6 +54,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api db:generate
       # Coverage (and its per-path thresholds, apps/api/jest.config.ts) is enforced on this
       # project only: it is the one whose tests exercise this whole source tree today.
       - run: pnpm --filter api test:unit --coverage
@@ -73,6 +78,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api db:generate
       # Same compose `test` profile (tmpfs postgres-test:5433, redis-test:6380) devs run locally,
       # so there is one definition of "the test database", not one for CI and another for humans.
       - run: docker compose --profile test up -d --wait
