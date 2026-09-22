@@ -1,5 +1,8 @@
 # Profiles: dev (api, worker, postgres, redis), test (tmpfs postgres/redis for integration tests),
-# prod (api + worker against external Postgres/Redis). Secrets come from the untracked .env.
+# prod (api + worker against external Postgres/Redis). Values come from the untracked .env.
+# Compose interpolates the whole file before filtering by profile, so JWT_ACCESS_SECRET and
+# COOKIE_SECRET must be set for EVERY profile, including `test`. DATABASE_URL, REDIS_URL and CORS_ORIGINS
+# are passed through unchecked: the API's own boot validation rejects them when missing or invalid.
 
 x-api-build: &api-build
   context: .
@@ -66,7 +69,7 @@ services:
       <<: [*api-secrets, *dev-urls]
       NODE_ENV: development
       PORT: '3000'
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
     depends_on:
@@ -86,7 +89,7 @@ services:
       <<: [*api-secrets, *dev-urls]
       NODE_ENV: development
       PORT: '3000'
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,9 +137,9 @@ services:
       <<: *api-secrets
       NODE_ENV: production
       PORT: '3000'
-      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
-      REDIS_URL: ${REDIS_URL:?set REDIS_URL in .env}
-      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS in .env}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
     healthcheck: *api-healthcheck
@@ -151,9 +154,9 @@ services:
       <<: *api-secrets
       NODE_ENV: production
       PORT: '3000'
-      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
-      REDIS_URL: ${REDIS_URL:?set REDIS_URL in .env}
-      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS in .env}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
 
 volumes:
   postgres-data:
