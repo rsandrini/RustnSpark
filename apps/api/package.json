@@ -17,7 +17,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate"
+    "postinstall": "if [ -f prisma/schema.prisma ]; then prisma generate; fi"
   },
   "dependencies": {
     "@nestjs/bullmq": "12.0.0",
