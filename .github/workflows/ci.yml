@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: '9.15.9'
+  NODE_VERSION: '22'
+  # Fixture secrets only, never real ones (>= 32 chars to satisfy the env schema, S1.2).
+  JWT_ACCESS_SECRET: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  COOKIE_SECRET: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+  CORS_ORIGINS: 'http://localhost:5173'
+
+jobs:
+  quality:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    # Every spec that compiles AppModule (or EnvModule/PrismaModule/RedisModule) needs these 7 env
+    # vars; unit specs set their own copy in process.env too, but this is a safety net for future
+    # ones that don't. Nothing here needs a live Postgres/Redis: PrismaService/RedisClient connect
+    # lazily on onModuleInit, which plain `Test.createTestingModule().compile()` never triggers.
+    env:
+      NODE_ENV: test
+      PORT: '3100'
+      DATABASE_URL: postgresql://rustandspark:rustandspark@127.0.0.1:5433/rustandspark_test
+      REDIS_URL: redis://127.0.0.1:6380
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Coverage (and its per-path thresholds, apps/api/jest.config.ts) is enforced on this
+      # project only: it is the one whose tests exercise this whole source tree today.
+      - run: pnpm --filter api test:unit --coverage
+
+  integration:
+    name: Integration tests (Postgres + Redis)
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      PORT: '3100'
+      DATABASE_URL: postgresql://rustandspark:rustandspark@127.0.0.1:5433/rustandspark_test
+      REDIS_URL: redis://127.0.0.1:6380
+      # A throwaway second database on the same postgres-test instance, never postgres-test's own
+      # target database (`prisma migrate diff` can reset the shadow database's contents; running
+      # it against the real target would destroy test data - a footgun flagged by S1.3).
+      SHADOW_DATABASE_URL: postgresql://rustandspark:rustandspark@127.0.0.1:5433/rustandspark_shadow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Same compose `test` profile (tmpfs postgres-test:5433, redis-test:6380) devs run locally,
+      # so there is one definition of "the test database", not one for CI and another for humans.
+      - run: docker compose --profile test up -d --wait
+      - name: Create throwaway shadow database
+        run: >
+          docker compose --profile test exec -T postgres-test
+          psql -U rustandspark -d rustandspark_test -c "CREATE DATABASE rustandspark_shadow;"
+      - run: pnpm --filter api db:migrate
+      - name: Check schema.prisma has no drift from committed migrations
+        working-directory: apps/api
+        run: >
+          pnpm exec prisma migrate diff
+          --from-migrations ./prisma/migrations
+          --to-schema-datamodel ./prisma/schema.prisma
+          --shadow-database-url "$SHADOW_DATABASE_URL"
+          --exit-code
+      - run: pnpm --filter api test:int
+      - if: always()
+        run: docker compose --profile test down -v
+
+  compose-check:
+    name: Compose config check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-compose-syntax.sh
+      - run: docker compose config --quiet
+
+  security:
+    name: Dependency audit & secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Gates on critical only: as of S1.7 there is one known high-severity advisory
+      # (GHSA-ggr8-5vv4-36mx, deepmerge-ts via prisma's own @prisma/config) in the toolchain of
+      # prisma@6.19.3, which is pinned on purpose (see prisma.pinning note below) and cannot be
+      # bumped away without breaking that pin. Full output still prints below for visibility.
+      - run: pnpm audit --prod --audit-level=critical
+      - name: Full audit report (visibility only, does not fail the build)
+        if: always()
+        continue-on-error: true
+        run: pnpm audit --prod
+      - name: Secret scan (gitleaks)
+        run: >
+          docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:v8.30.1
+          detect --source /repo --redact -v
+
+  # Single required status check for branch protection; add/remove job names above freely.
+  ci:
+    name: CI
+    if: always()
+    needs: [quality, unit, integration, compose-check, security]
+    runs-on: ubuntu-latest
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
