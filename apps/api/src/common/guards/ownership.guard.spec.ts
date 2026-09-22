@@ -82,4 +82,16 @@ describe('OwnershipGuard', () => {
 
     await expect(guard.canActivate(context)).rejects.toThrow(/shipId/);
   });
+
+  it('throws a plain error (not 403) when request.user is absent — JwtAuthGuard did not run (misconfiguration)', async () => {
+    const registry = new OwnershipResolverRegistry();
+    registry.register('ship', () => Promise.resolve({ ownerPlayerId: 'someone-else' }));
+    const guard = new OwnershipGuard(reflector, registry);
+    const context = makeContext({ type: 'ship', param: 'id' }, { id: 'ship-1' }, undefined);
+
+    const error = await guard.canActivate(context).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect(error).not.toBeInstanceOf(ForbiddenException);
+    expect((error as Error).message).toMatch(/JwtAuthGuard/);
+  });
 });

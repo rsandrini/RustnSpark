@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import {
+  OwnershipResolverAlreadyRegisteredError,
   OwnershipResolverNotFoundError,
   OwnershipResolverRegistry,
 } from './ownership-resolver.registry.js';
@@ -17,14 +18,18 @@ describe('OwnershipResolverRegistry', () => {
     });
   });
 
-  it('lets a later registration for the same type replace the earlier one', () => {
+  it('throws a dedicated error on duplicate registration instead of silently overwriting', () => {
     const registry = new OwnershipResolverRegistry();
     const first = () => Promise.resolve({ ownerPlayerId: 'first' });
     const second = () => Promise.resolve({ ownerPlayerId: 'second' });
     registry.register('ship', first);
-    registry.register('ship', second);
 
-    expect(registry.resolve('ship')).toBe(second);
+    expect(() => registry.register('ship', second)).toThrow(
+      OwnershipResolverAlreadyRegisteredError,
+    );
+    expect(() => registry.register('ship', second)).toThrow(/ship/);
+    // The first registration survives the rejected duplicate.
+    expect(registry.resolve('ship')).toBe(first);
   });
 
   it('throws a clear error for a type nobody registered (programming error, not 404/403)', () => {

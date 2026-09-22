@@ -9,8 +9,6 @@ import { InvalidAccessTokenError, TokenService } from '../../auth/token.service.
 import type { CurrentUserPayload } from '../decorators/current-user.decorator.js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 
-const BEARER_PREFIX = 'Bearer ';
-
 // Global guard (registered as APP_GUARD in app.module.ts, after ThrottlerGuard, R28): every
 // route is authenticated by default, except one marked @Public(). Stateless by design (R29):
 // verifies the access JWT via TokenService only, no Prisma lookup, so a banned account's
@@ -50,7 +48,10 @@ export class JwtAuthGuard implements CanActivate {
 }
 
 function extractBearerToken(header: string | undefined): string | undefined {
-  if (!header?.startsWith(BEARER_PREFIX)) return undefined;
-  const token = header.slice(BEARER_PREFIX.length).trim();
+  if (!header) return undefined;
+  const separator = header.indexOf(' ');
+  // RFC 7235: auth-scheme names are case-insensitive, so "bearer"/"BEARER" are equivalent.
+  if (separator === -1 || header.slice(0, separator).toLowerCase() !== 'bearer') return undefined;
+  const token = header.slice(separator + 1).trim();
   return token.length > 0 ? token : undefined;
 }

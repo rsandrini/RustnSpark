@@ -38,8 +38,9 @@ class TestController {
   }
 }
 
-// Mirrors the hardening providers AppModule registers globally (APP_INTERCEPTOR/APP_GUARD),
-// without pulling in Prisma/Redis: these tests exercise the HTTP hardening layer only.
+// Mirrors AppModule's pre-auth hardening providers (APP_INTERCEPTOR/APP_GUARD) without pulling
+// in Prisma/Redis: these tests exercise the HTTP hardening layer only. The global JwtAuthGuard
+// AppModule also registers since S2.4 is deliberately not mirrored here — auth has its own specs.
 @Module({
   controllers: [TestController],
   providers: [
@@ -66,7 +67,10 @@ function makeEnv(): EnvService {
 
 async function makeApp(): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({ imports: [TestAppModule] }).compile();
-  const app = moduleRef.createNestApplication();
+  // bodyParser: false mirrors main.ts so configureApp()'s size-limited parsers are the only
+  // ones in play — otherwise Nest's default parser shadows them and the 413 tests below
+  // would not track BODY_SIZE_LIMIT.
+  const app = moduleRef.createNestApplication({ bodyParser: false });
   configureApp(app, makeEnv());
   await app.init();
   return app;
@@ -141,6 +145,15 @@ describe('hardening baseline', () => {
     const oversized = 'x'.repeat(200 * 1024);
     const response = await request(httpServer(app)).post('/v1/ping').send({ message: oversized });
     expect(response.status).toBe(413);
+  });
+
+  // Companion to the 413 test: with bodyParser disabled, only configureApp()'s parser exists,
+  // so the trip point IS BODY_SIZE_LIMIT (100kb) — a body just under it must still pass.
+  it('accepts a body just under the configured size limit', async () => {
+    app = await makeApp();
+    const underLimit = 'x'.repeat(90 * 1024);
+    const response = await request(httpServer(app)).post('/v1/ping').send({ message: underLimit });
+    expect(response.status).toBe(200);
   });
 
   it('returns 429 once the throttle limit is exceeded', async () => {

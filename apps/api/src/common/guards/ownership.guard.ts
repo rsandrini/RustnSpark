@@ -42,11 +42,18 @@ export class OwnershipGuard implements CanActivate {
         `@OwnedResource() param "${options.param}" was not found on the request's route params`,
       );
     }
+    if (!request.user) {
+      // JwtAuthGuard (global) must have populated it first; missing means @Public() on an
+      // @OwnedResource() route — a misconfiguration, not a 403.
+      throw new Error(
+        'OwnershipGuard ran without request.user: JwtAuthGuard must run before it (is this route @Public()?)',
+      );
+    }
     const resolver = this.registry.resolve(options.type);
     const owner = await resolver(resourceId);
 
     if (!owner) throw new NotFoundException('resource not found');
-    if (owner.ownerPlayerId !== request.user?.playerId) {
+    if (owner.ownerPlayerId !== request.user.playerId) {
       throw new ForbiddenException('resource is owned by another player');
     }
     return true;

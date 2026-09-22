@@ -22,6 +22,18 @@ export class OwnershipResolverNotFoundError extends Error {
   }
 }
 
+// Thrown by register() when two modules try to own the same type: a silent overwrite would let
+// one resolver shadow the other — the same class of programming error as a missing resolver.
+export class OwnershipResolverAlreadyRegisteredError extends Error {
+  constructor(type: string) {
+    super(
+      `An ownership resolver for type "${type}" is already registered. Two modules are ` +
+        'registering the same type; exactly one resolver per type is allowed.',
+    );
+    this.name = 'OwnershipResolverAlreadyRegisteredError';
+  }
+}
+
 // Empty in production until a domain module registers into it (Step 4 ships, Step 6 missions,
 // ...). Application-wide singleton: OwnershipResolverModule exports this globally so every
 // feature module sees the same instance OwnershipGuard resolves against.
@@ -30,6 +42,7 @@ export class OwnershipResolverRegistry {
   private readonly resolvers = new Map<string, OwnershipResolver>();
 
   register(type: string, resolver: OwnershipResolver): void {
+    if (this.resolvers.has(type)) throw new OwnershipResolverAlreadyRegisteredError(type);
     this.resolvers.set(type, resolver);
   }
 

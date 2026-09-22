@@ -76,6 +76,26 @@ describe('JwtAuthGuard', () => {
     expect(verifyAccessToken).not.toHaveBeenCalled();
   });
 
+  it('rejects with 401 when the Authorization header has no space-separated token', async () => {
+    const verifyAccessToken = verifyAccessTokenMock();
+    const guard = new JwtAuthGuard(reflector, makeTokenService(verifyAccessToken));
+    const context = makeContext('Bearer', false);
+
+    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    expect(verifyAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('accepts the Bearer scheme in any letter case (RFC 7235: schemes are case-insensitive)', async () => {
+    const verifyAccessToken = verifyAccessTokenMock(() =>
+      Promise.resolve({ accountId: 'acc-1', playerId: 'ply-1', role: 'PLAYER' as const }),
+    );
+    const guard = new JwtAuthGuard(reflector, makeTokenService(verifyAccessToken));
+    const context = makeContext('bEaReR valid.jwt.here', false);
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(verifyAccessToken).toHaveBeenCalledWith('valid.jwt.here');
+  });
+
   it('rejects with 401 when TokenService reports an invalid or expired token', async () => {
     const tokenService = makeTokenService(
       verifyAccessTokenMock(() =>

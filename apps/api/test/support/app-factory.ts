@@ -54,7 +54,9 @@ export async function createTestApp(
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule, ...extraImports],
   }).compile();
-  const app = moduleRef.createNestApplication();
+  // bodyParser: false mirrors main.ts: configureApp() installs the size-limited parsers,
+  // and Nest's default parser must not shadow them or BODY_SIZE_LIMIT would not govern tests.
+  const app = moduleRef.createNestApplication({ bodyParser: false });
   configureApp(app, app.get(EnvService));
   await app.init();
 
