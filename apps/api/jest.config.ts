@@ -37,6 +37,13 @@ const config: Config = {
   // real by test/integration/auth-*.int-spec.ts and players.int-spec.ts against the real test
   // Postgres booted through createTestApp. Their pure pieces (DTOs, locale resolution, the
   // throttle policy) stay in the unit tree and are unit-tested directly.
+  // S2.5's wallet.service.ts and player-event.service.ts are excluded for that same reason: the
+  // conditional-UPDATE race semantics only exist on a real Postgres with row locking, proven by
+  // test/integration/wallet.int-spec.ts (incl. the 20-parallel-debit test); their pure
+  // validators stay unit-tested directly. common/idempotency/idempotency.interceptor.ts
+  // likewise: its replay/409/422 paths are IdempotencyKey row round trips, proven by
+  // test/integration/idempotency.int-spec.ts; its pure helpers (key extraction, body hashing,
+  // passthrough) are unit-tested directly.
   collectCoverageFrom: [
     '<rootDir>/src/**/*.ts',
     '!<rootDir>/src/main.ts',
@@ -49,6 +56,9 @@ const config: Config = {
     '!<rootDir>/src/players/players.module.ts',
     '!<rootDir>/src/players/players.controller.ts',
     '!<rootDir>/src/players/players.service.ts',
+    '!<rootDir>/src/players/wallet.service.ts',
+    '!<rootDir>/src/players/player-event.service.ts',
+    '!<rootDir>/src/common/idempotency/idempotency.interceptor.ts',
   ],
   coverageThreshold: {
     // Real numbers as of S1.7 (unit project, main.ts excluded): 98.02/84.94/100/98.87

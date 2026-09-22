@@ -4,6 +4,7 @@ import { ThrottlerGuard } from './common/guards/throttler.guard.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { OwnershipResolverModule } from './common/guards/ownership-resolver.module.js';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor.js';
+import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
 import { EnvModule } from './common/env/env.module.js';
 import { RedisModule } from './common/redis/redis.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -27,6 +28,9 @@ import { TokenService } from './auth/token.service.js';
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
+    // Global like the guards below (S2.5): passes every route straight through except the ones
+    // decorated @Idempotent(), which then require an Idempotency-Key and get R21 replay semantics.
+    { provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // R28: JwtAuthGuard is registered after ThrottlerGuard, never before or in place of it, so
     // throttling still sees every request, including ones this guard is about to reject with 401.
