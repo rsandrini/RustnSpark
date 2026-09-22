@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { EnvService } from '../env/env.module.js';
 import { RedisClient } from './redis-client.js';
@@ -30,5 +31,16 @@ describe('RedisClient', () => {
     const client = new RedisClient(env);
     await client.onModuleDestroy();
     expect(quit).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: ioredis treats an unhandled 'error' event as an uncaught exception (crashes the
+  // process) unless a listener is attached. This emits a real event on the instance, not a mock.
+  it('does not crash the process when redis emits a connection error, and logs it', () => {
+    const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const client = new RedisClient(env);
+
+    expect(() => client.emit('error', new Error('connection refused'))).not.toThrow();
+
+    expect(errorLog).toHaveBeenCalledWith('connection refused', 'connection error');
   });
 });
