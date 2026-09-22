@@ -10,3 +10,77 @@ datasource db {
   url        = env("DATABASE_URL")
   extensions = [btree_gist]
 }
+
+enum AccountRole {
+  PLAYER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  BANNED
+}
+
+model Account {
+  id            String         @id @default(dbgenerated("gen_random_uuid()"))
+  // Plain unique string: lowercasing is the service layer's job (R17), not a DB constraint.
+  email         String         @unique
+  passwordHash  String
+  role          AccountRole    @default(PLAYER)
+  status        AccountStatus  @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  player        Player?
+  refreshTokens RefreshToken[]
+}
+
+model Player {
+  id              String           @id @default(dbgenerated("gen_random_uuid()"))
+  accountId       String           @unique
+  account         Account          @relation(fields: [accountId], references: [id])
+  name            String           @unique
+  credits         Int              @default(0)
+  // Plain string, not an enum: `pt-BR` is not a valid enum member; DTO validation enforces values.
+  locale          String           @default("en")
+  createdAt       DateTime         @default(now())
+  events          PlayerEvent[]
+  idempotencyKeys IdempotencyKey[]
+}
+
+model RefreshToken {
+  id           String    @id @default(dbgenerated("gen_random_uuid()"))
+  accountId    String
+  account      Account   @relation(fields: [accountId], references: [id])
+  familyId     String
+  tokenHash    String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  // Plain nullable column (no FK): rotation bookkeeping only, per the plan's field list.
+  replacedById String?
+
+  @@index([familyId])
+}
+
+model PlayerEvent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  at           DateTime @default(now())
+  type         String
+  payload      Json?
+  creditsDelta Int?
+
+  @@index([playerId, at])
+}
+
+model IdempotencyKey {
+  key            String
+  playerId       String
+  route          String
+  requestHash    String
+  responseStatus Int
+  responseBody   String
+  expiresAt      DateTime
+  player         Player   @relation(fields: [playerId], references: [id])
+
+  @@id([playerId, route, key])
+}
