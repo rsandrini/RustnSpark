@@ -1,11 +1,32 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { AppModule } from './app.module.js';
 
+const originalEnv = { ...process.env };
+
 describe('AppModule', () => {
-  it('compiles', async () => {
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it('compiles with a valid environment', async () => {
+    Object.assign(process.env, {
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/rustandspark',
+      REDIS_URL: 'redis://localhost:6379',
+      CORS_ORIGINS: 'http://localhost:5173',
+      JWT_ACCESS_SECRET: 'a'.repeat(32),
+      COOKIE_SECRET: 'b'.repeat(32),
+    });
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     expect(moduleRef.get(AppModule)).toBeInstanceOf(AppModule);
+  });
+
+  it('refuses to compile without the required environment', async () => {
+    delete process.env.DATABASE_URL;
+    await expect(Test.createTestingModule({ imports: [AppModule] }).compile()).rejects.toThrow(
+      /DATABASE_URL/,
+    );
   });
 });
 
