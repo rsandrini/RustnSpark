@@ -19,8 +19,21 @@ const config: Config = {
   // source tree today. `main.ts` is excluded: its only uncovered lines are the process-entrypoint
   // guard and bootstrap(), which run for real every time the app boots (proven by the Docker
   // healthcheck and the e2e/validation suites exercising the `configureApp` it wraps), not by
-  // tests importing this module.
-  collectCoverageFrom: ['<rootDir>/src/**/*.ts', '!<rootDir>/src/main.ts'],
+  // tests importing this module. `worker.ts` is excluded for the same reason: its bootstrap() and
+  // entrypoint guard run for real every time the worker container boots, proven by the Docker-gated
+  // lifecycle test (test/integration/docker-worker-lifecycle.int-spec.ts, DOCKER_TESTS=1) that
+  // spawns dist/worker.js as a real process and sends it a real SIGTERM, not by unit tests.
+  // `jobs/jobs.module.ts` is excluded too: BullMQ's Queue/Worker connect as soon as the module is
+  // compiled (no lazy-connect like RedisClient/PrismaService), so exercising it without a live
+  // Redis would mean faking bullmq instead of testing it; it's covered for real by
+  // test/integration/jobs.int-spec.ts. queues.ts and processors/ping.processor.ts hold this
+  // module's actual logic and are unit-tested directly.
+  collectCoverageFrom: [
+    '<rootDir>/src/**/*.ts',
+    '!<rootDir>/src/main.ts',
+    '!<rootDir>/src/worker.ts',
+    '!<rootDir>/src/jobs/jobs.module.ts',
+  ],
   coverageThreshold: {
     // Real numbers as of S1.7 (unit project, main.ts excluded): 98.02/84.94/100/98.87
     // (stmts/branches/funcs/lines). Thresholds sit a little below that so incidental variance
@@ -39,6 +52,8 @@ const config: Config = {
     './src/common/redis/**/*.ts': { statements: 100, branches: 70, functions: 100, lines: 100 },
     './src/health/**/*.ts': { statements: 100, branches: 70, functions: 100, lines: 100 },
     './src/prisma/**/*.ts': { statements: 100, branches: 70, functions: 100, lines: 100 },
+    './src/jobs/queues.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+    './src/jobs/processors/**/*.ts': { statements: 100, branches: 90, functions: 100, lines: 100 },
   },
   projects: [
     { ...base, displayName: 'unit', rootDir: '.', testMatch: ['<rootDir>/src/**/*.spec.ts'] },
