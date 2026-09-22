@@ -8,8 +8,12 @@ import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../su
 // deterministic reset all work end to end against a real Postgres instance.
 describe('database round-trip against postgres-test', () => {
   const prisma = getTestPrismaClient();
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeAll(async () => {
+    // resetDatabase refuses to truncate unless NODE_ENV is 'test' (test-db.ts); set it here so
+    // this suite is self-contained instead of relying on an ambient CI-only env var.
+    process.env.NODE_ENV = 'test';
     await prisma.$executeRawUnsafe(
       'CREATE TABLE IF NOT EXISTS ci_roundtrip_probe (id SERIAL PRIMARY KEY, value TEXT NOT NULL)',
     );
@@ -22,6 +26,7 @@ describe('database round-trip against postgres-test', () => {
   afterAll(async () => {
     await prisma.$executeRawUnsafe('DROP TABLE IF EXISTS ci_roundtrip_probe');
     await closeTestPrismaClient();
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it('persists a row through a real connection and reads it back', async () => {

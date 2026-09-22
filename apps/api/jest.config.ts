@@ -47,6 +47,11 @@ const config: Config = {
       displayName: 'integration',
       rootDir: '.',
       testMatch: ['<rootDir>/test/integration/**/*.int-spec.ts'],
+      // Integration specs share one real Postgres and reset it with a TRUNCATE (test-db.ts);
+      // running two spec files concurrently would race one file's afterEach truncate against
+      // another's in-flight assertions. `maxWorkers` is global-only (same as coverageThreshold
+      // above: jest-config ignores it inside a project block), so serialization is done via
+      // `--runInBand` on the `test:int` script instead, not here.
     },
     {
       ...base,

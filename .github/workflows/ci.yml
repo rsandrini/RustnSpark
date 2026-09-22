@@ -112,15 +112,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      # Gates on critical only: as of S1.7 there is one known high-severity advisory
-      # (GHSA-ggr8-5vv4-36mx, deepmerge-ts via prisma's own @prisma/config) in the toolchain of
-      # prisma@6.19.3, which is pinned on purpose (see prisma.pinning note below) and cannot be
-      # bumped away without breaking that pin. Full output still prints below for visibility.
-      - run: pnpm audit --prod --audit-level=critical
-      - name: Full audit report (visibility only, does not fail the build)
-        if: always()
-        continue-on-error: true
-        run: pnpm audit --prod
+      # The one known high-severity advisory (GHSA-ggr8-5vv4-36mx, deepmerge-ts via prisma's own
+      # @prisma/config) is resolved by the root package.json's `pnpm.overrides` entry, which pins
+      # only that transitive dependency forward and leaves prisma@6.19.3 itself untouched.
+      - run: pnpm audit --prod
       - name: Secret scan (gitleaks)
         run: >
           docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:v8.30.1
