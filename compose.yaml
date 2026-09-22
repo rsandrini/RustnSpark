@@ -1,0 +1,160 @@
+# Profiles: dev (api, worker, postgres, redis), test (tmpfs postgres/redis for integration tests),
+# prod (api + worker against external Postgres/Redis). Secrets come from the untracked .env.
+
+x-api-build: &api-build
+  context: .
+  dockerfile: docker/api.Dockerfile
+
+x-api-secrets: &api-secrets
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in .env}
+  COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET in .env}
+
+# Connection strings for the dev and test databases as seen from other containers.
+x-dev-urls: &dev-urls
+  DATABASE_URL: postgresql://rustandspark:${POSTGRES_PASSWORD:-rustandspark}@postgres:5432/rustandspark
+  REDIS_URL: redis://redis:6379
+
+# Node-based TCP probe: /v1/health arrives in S1.5, which switches this to an HTTP check.
+x-api-healthcheck: &api-healthcheck
+  test:
+    - CMD
+    - node
+    - -e
+    - "require('net').connect(3000, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"
+  interval: 5s
+  timeout: 3s
+  retries: 12
+  start_period: 10s
+
+services:
+  postgres:
+    profiles: [dev]
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rustandspark
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rustandspark}
+      POSTGRES_DB: rustandspark
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rustandspark -d rustandspark]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    profiles: [dev]
+    image: redis:7
+    command: [redis-server, --appendonly, 'yes']
+    ports:
+      - 127.0.0.1:6379:6379
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: [dev]
+    build: *api-build
+    image: rustandspark-api:dev
+    environment:
+      <<: [*api-secrets, *dev-urls]
+      NODE_ENV: development
+      PORT: '3000'
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - 127.0.0.1:${API_PORT:-3000}:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck: *api-healthcheck
+
+  # Same image as api; dist/worker.js arrives in S1.8, so this service cannot run before then.
+  worker:
+    profiles: [dev]
+    build: *api-build
+    image: rustandspark-api:dev
+    command: [node, dist/worker.js]
+    environment:
+      <<: [*api-secrets, *dev-urls]
+      NODE_ENV: development
+      PORT: '3000'
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres-test:
+    profiles: [test]
+    image: postgres:16
+    environment:
+      POSTGRES_USER: rustandspark
+      POSTGRES_PASSWORD: rustandspark
+      POSTGRES_DB: rustandspark_test
+    ports:
+      - 127.0.0.1:5433:5432
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rustandspark -d rustandspark_test]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  redis-test:
+    profiles: [test]
+    image: redis:7
+    command: [redis-server, --appendonly, 'yes']
+    ports:
+      - 127.0.0.1:6380:6379
+    tmpfs:
+      - /data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # prod: no postgres/redis here; DATABASE_URL and REDIS_URL must point at external instances.
+  api-prod:
+    profiles: [prod]
+    build: *api-build
+    image: rustandspark-api:prod
+    restart: unless-stopped
+    environment:
+      <<: *api-secrets
+      NODE_ENV: production
+      PORT: '3000'
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS in .env}
+    ports:
+      - 127.0.0.1:${API_PORT:-3000}:3000
+    healthcheck: *api-healthcheck
+
+  worker-prod:
+    profiles: [prod]
+    build: *api-build
+    image: rustandspark-api:prod
+    restart: unless-stopped
+    command: [node, dist/worker.js]
+    environment:
+      <<: *api-secrets
+      NODE_ENV: production
+      PORT: '3000'
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      REDIS_URL: ${REDIS_URL:?set REDIS_URL in .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS in .env}
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,13 @@
+.git
+.github
+.superpowers
+.env*
+**/node_modules
+**/dist
+**/coverage
+docs
+design
+prototypes
+simulation
+*.md
+compose.yaml
