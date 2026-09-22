@@ -55,7 +55,14 @@ describe('JwtAuthGuard (global, real HTTP pipeline)', () => {
 
   it('rejects with 401 for a tampered (bad signature) token', async () => {
     const token = await tokenService.signAccessToken({ accountId, playerId, role: 'PLAYER' });
-    const tampered = `${token.slice(0, -1)}${token.endsWith('a') ? 'b' : 'a'}`;
+    // Tamper with the FIRST signature character, never the last: the final base64url char of a
+    // 32-byte HMAC carries 2 padding bits, so a last-char swap can decode to the same signature
+    // bytes and still verify (observed as a ~1-in-8 flake). Every other position is fully
+    // significant, so this swap always invalidates the signature.
+    const [header, payload, signature] = token.split('.');
+    if (!header || !payload || !signature) throw new Error('test setup: token is not a JWS');
+    const tamperedSignature = `${signature[0] === 'a' ? 'b' : 'a'}${signature.slice(1)}`;
+    const tampered = `${header}.${payload}.${tamperedSignature}`;
 
     const response = await request(httpServer(testApp.app))
       .get('/v1/test/widgets/widget-1')
