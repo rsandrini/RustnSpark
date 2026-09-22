@@ -88,3 +88,189 @@ model IdempotencyKey {
 
   @@id([playerId, route, key])
 }
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum PartClass {
+  ENGINE
+  TANK
+  BATTERY
+  REACTOR
+  WEAPON
+  DEFENSE
+  CARGO
+  SENSOR
+  UTILITY
+  BRIDGE
+}
+
+enum MissionType {
+  DELIVERY
+  TRANSPORT
+  ESCORT
+  MINING
+  RESCUE
+}
+
+model GameConfig {
+  key         String   @id
+  value       Json
+  type        String
+  description Json
+  updatedAt   DateTime @updatedAt
+  updatedBy   String?
+}
+
+model TuningRevision {
+  id         BigInt   @id @default(autoincrement())
+  at         DateTime @default(now())
+  actor      String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  reason     String
+}
+
+model RulesSnapshot {
+  hash      String   @id
+  rules     Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Faction {
+  id              String            @id
+  displayName     Json
+  description     Json
+  color           String
+  playable        Boolean           @default(false)
+  relations       Json
+  starterKitHint  Json?
+  locations       Location[]
+  missionTemplates MissionTemplate[]
+}
+
+model Environment {
+  id               String             @id
+  displayName      Json
+  description      Json
+  level            Int
+  fuelMult         Float              @default(1)
+  subsystemTarget  String?
+  mitigatingPart   String?
+  routeEnvironments RouteEnvironment[]
+}
+
+model Location {
+  id          String   @id
+  displayName Json
+  description Json
+  type        String
+  x           Float
+  y           Float
+  zone        Int
+  factionId   String
+  isolation   Float
+  mood        Float
+  services    Json
+  faction     Faction  @relation(fields: [factionId], references: [id])
+  routesA     Route[]  @relation("RouteA")
+  routesB     Route[]  @relation("RouteB")
+
+  @@index([factionId])
+}
+
+model Route {
+  id            String             @id
+  nodeAId       String
+  nodeBId       String
+  distance      Int
+  danger        Int
+  nodeA         Location           @relation("RouteA", fields: [nodeAId], references: [id])
+  nodeB         Location           @relation("RouteB", fields: [nodeBId], references: [id])
+  routeEnvironments RouteEnvironment[]
+
+  @@unique([nodeAId, nodeBId])
+  @@index([nodeBId])
+}
+
+model RouteEnvironment {
+  routeId       String
+  environmentId String
+  order         Int
+  route         Route       @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  environment   Environment @relation(fields: [environmentId], references: [id])
+
+  @@id([routeId, environmentId, order])
+  @@index([environmentId])
+}
+
+model PartCatalog {
+  partType      String    @id
+  displayName   Json
+  description   Json
+  partClass     PartClass
+  rarity        Rarity
+  w             Int
+  h             Int
+  mass          Float
+  structureCost Int
+  basePrice     Int
+  scrapValue    Int
+  partHp        Int
+  pot           Float     @default(0)
+  pdf           Float     @default(0)
+  bli           Float     @default(0)
+  esc           Float     @default(0)
+  sen           Float     @default(0)
+  crg           Float     @default(0)
+  min           Float     @default(0)
+  energyCont    Float     @default(0)
+  energyCombat  Float     @default(0)
+  fuelCap       Int?
+  fuelUse       Float?
+  batCharge     Float?
+  batOutput     Float?
+  batInput      Float?
+  specialProp   Json?
+  active        Boolean   @default(true)
+}
+
+model MissionTemplate {
+  id              String      @id
+  displayName     Json
+  description     Json
+  type            MissionType
+  factionId       String
+  requirements    Json
+  rewardCalc      Json
+  deadlineCalc    Json
+  encounterPolicy Json
+  active          Boolean     @default(true)
+  faction         Faction     @relation(fields: [factionId], references: [id])
+
+  @@index([factionId])
+}
+
+model DropTable {
+  id     String @id
+  source String
+  tiers  Json
+}
+
+model Material {
+  id          String  @id
+  displayName Json
+  description Json
+  rarity      Rarity
+  basePrice   Int
+  active      Boolean @default(true)
+}
