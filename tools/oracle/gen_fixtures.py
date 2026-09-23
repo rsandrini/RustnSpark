@@ -586,7 +586,32 @@ def build_baselines() -> bytes:
             "margem_mediana": [80, 400],
         },
         "layer4": {
-            "note": "Production-mode baseline is recorded by test/validation/production-mode.spec.ts after first green run; oracle ALVOS above are the health bands.",
+            "note": (
+                "Production-mode baseline recorded by test/validation/production-mode.spec.ts "
+                "(first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; "
+                "where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, "
+                "median margin ~780 > 400) the band anchors to oracle-measured reality "
+                "(layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13)."
+            ),
+            "n_lives_per_config": 120,
+            "baseline": {
+                "falencia_pct": 0,
+                "combat_winrate": 55.1,
+                "tier5_pct": 97.2,
+                "missions_tier2_median": 10,
+                "missions_tier5_median": 135,
+                "engasgo_pct": 2.33,
+                "median_margin": 766.4,
+            },
+            "band": {
+                "falencia_pct": [0, 15],
+                "combat_winrate": [45, 60],
+                "tier5_pct": [90, 100],
+                "missions_tier2_median": [4, 10],
+                "missions_tier5_median": [60, 160],
+                "engasgo_pct": [2, 12],
+                "median_margin": [740, 850],
+            },
         },
     }
     return dumps_pretty(doc)
