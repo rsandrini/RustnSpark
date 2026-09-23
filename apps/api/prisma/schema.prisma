@@ -44,6 +44,9 @@ model Player {
   createdAt       DateTime         @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
+  parts           PartInstance[]
+  ship            Ship?
+  materials       PlayerMaterial[]
 }
 
 model RefreshToken {
@@ -118,6 +121,23 @@ enum MissionType {
   RESCUE
 }
 
+enum PartLocation {
+  INVENTORY
+  INSTALLED
+}
+
+enum ShipStatus {
+  IN_PORT
+  ON_MISSION
+  ADRIFT
+}
+
+enum ShipStance {
+  DEFENSIVE
+  NEUTRAL
+  AGGRESSIVE
+}
+
 model GameConfig {
   key         String   @id
   value       Json
@@ -184,6 +204,7 @@ model Location {
   faction     Faction  @relation(fields: [factionId], references: [id])
   routesA     Route[]  @relation("RouteA")
   routesB     Route[]  @relation("RouteB")
+  ships       Ship[]
 
   @@index([factionId])
 }
@@ -214,7 +235,7 @@ model RouteEnvironment {
 }
 
 model PartCatalog {
-  partType      String    @id
+  partType      String         @id
   displayName   Json
   description   Json
   partClass     PartClass
@@ -226,22 +247,23 @@ model PartCatalog {
   basePrice     Int
   scrapValue    Int
   partHp        Int
-  pot           Float     @default(0)
-  pdf           Float     @default(0)
-  bli           Float     @default(0)
-  esc           Float     @default(0)
-  sen           Float     @default(0)
-  crg           Float     @default(0)
-  min           Float     @default(0)
-  energyCont    Float     @default(0)
-  energyCombat  Float     @default(0)
+  pot           Float          @default(0)
+  pdf           Float          @default(0)
+  bli           Float          @default(0)
+  esc           Float          @default(0)
+  sen           Float          @default(0)
+  crg           Float          @default(0)
+  min           Float          @default(0)
+  energyCont    Float          @default(0)
+  energyCombat  Float          @default(0)
   fuelCap       Int?
   fuelUse       Float?
   batCharge     Float?
   batOutput     Float?
   batInput      Float?
   specialProp   Json?
-  active        Boolean   @default(true)
+  active        Boolean        @default(true)
+  instances     PartInstance[]
 }
 
 model MissionTemplate {
@@ -267,10 +289,53 @@ model DropTable {
 }
 
 model Material {
-  id          String  @id
-  displayName Json
-  description Json
-  rarity      Rarity
-  basePrice   Int
-  active      Boolean @default(true)
+  id              String           @id
+  displayName     Json
+  description     Json
+  rarity          Rarity
+  basePrice       Int
+  active          Boolean          @default(true)
+  playerMaterials PlayerMaterial[]
+}
+
+model PartInstance {
+  id            String       @id @default(dbgenerated("gen_random_uuid()"))
+  partType      String
+  ownerPlayerId String
+  condition     Float
+  location      PartLocation @default(INVENTORY)
+  shipId        String?
+  propRoll      Json?
+  partCatalog   PartCatalog  @relation(fields: [partType], references: [partType])
+  owner         Player       @relation(fields: [ownerPlayerId], references: [id])
+  ship          Ship?        @relation(fields: [shipId], references: [id])
+
+  @@index([ownerPlayerId, location])
+  @@index([shipId])
+}
+
+model Ship {
+  id                String     @id @default(dbgenerated("gen_random_uuid()"))
+  ownerPlayerId     String     @unique
+  name              String
+  layout            Json
+  fuel              Float      @default(0)
+  status            ShipStatus @default(IN_PORT)
+  currentLocationId String
+  stance            ShipStance @default(NEUTRAL)
+  owner             Player     @relation(fields: [ownerPlayerId], references: [id])
+  parts             PartInstance[]
+  location          Location   @relation(fields: [currentLocationId], references: [id])
+
+  @@index([currentLocationId])
+}
+
+model PlayerMaterial {
+  playerId   String
+  materialId String
+  quantity   Int      @default(0)
+  player     Player   @relation(fields: [playerId], references: [id])
+  material   Material @relation(fields: [materialId], references: [id])
+
+  @@id([playerId, materialId])
 }
