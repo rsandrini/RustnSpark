@@ -315,4 +315,41 @@ describe('resolveCombat — acceptance (S5.3)', () => {
     expect(result.rounds[0]?.hit).toBe(true);
     rng.assertDrained();
   });
+
+  it('firstStrikeSide keeps the bonus on that side even when the other side attacks first', () => {
+    const rules: GameRules['combat'] = {
+      ...base,
+      first_strike_bonus: 2,
+      kite_factor: 0,
+      max_rounds: 1,
+    };
+    // B has SEN 10 → attacks first. With firstStrikeSide 'A', B never consumes the
+    // pending bonus, so A still gets it on A's first real roll (D16b / encounter slot A).
+    const a: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 0, hp: 100, mob: 4 };
+    const b: CombatSheet = { pdf: 10, bli: 0, esc: 0, sen: 10, hp: 100, mob: 3 };
+    // B vs A: dc = 10 + roundHalfEven(4 × 1.5) = 16. Roll 5 + 10 = 15 → miss
+    // (with the bonus it would be 17 ≥ 16 — proving B did not take it).
+    // A vs B: dc = 10 + roundHalfEven(3 × 1.5) = 14. Roll 12 + 0 + 2 = 14 → hit
+    // (without the bonus 12 < 14 — proving A did take it).
+    const rng = new ScriptedRng(
+      [
+        { fn: 'random', args: [], value: 0.5 },
+        { fn: 'random', args: [], value: 0.5 },
+        { fn: 'randint', args: [1, 20], value: 5 },
+        { fn: 'randint', args: [1, 20], value: 12 },
+        { fn: 'randint', args: [1, 6], value: 1 },
+      ],
+      [],
+      'first-strike-side-a',
+    );
+    const result = resolveCombat(a, b, rules, rng, { firstStrikeSide: 'A' });
+    expect(result.rounds).toHaveLength(2);
+    expect(result.rounds[0]?.attacker).toBe('B');
+    expect(result.rounds[0]?.dc).toBe(16);
+    expect(result.rounds[0]?.hit).toBe(false);
+    expect(result.rounds[1]?.attacker).toBe('A');
+    expect(result.rounds[1]?.dc).toBe(14);
+    expect(result.rounds[1]?.hit).toBe(true);
+    rng.assertDrained();
+  });
 });

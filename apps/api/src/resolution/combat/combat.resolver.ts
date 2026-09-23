@@ -9,6 +9,18 @@ import type {
   CombatSide,
 } from './combat.types.js';
 
+/** Optional combat knobs layered on top of `GameRules['combat']`. */
+export interface CombatOptions {
+  /**
+   * Side that holds the first-strike bonus. When set, only that side's first
+   * real attack receives it (the other side's attacks never consume it).
+   * Unset: the first attacker that actually rolls gets it (S5.3 / Layer-1
+   * semantics). The encounter pipeline passes `'A'` so the slot-A holder keeps
+   * first strike regardless of SEN order (D16b / Appendix E).
+   */
+  readonly firstStrikeSide?: CombatSide;
+}
+
 /**
  * Port of `simulation/torneio-balanceamento.py` `combate()` with production
  * knobs (first strike, retreat ratio, config-driven dials). Layer 1 (S5.1
@@ -20,14 +32,16 @@ import type {
  * 3. for each side in SEN order (tie → A): if alive and not kited,
  *    `int(1, attack_die)` then on hit `int(1, damage_die)`
  *
- * First-strike bonus applies to the first attacker that actually rolls; skips
- * (retreat/kite) do not consume it. Per-round event recording never draws RNG.
+ * First-strike bonus applies to the first eligible attacker that actually
+ * rolls; skips (retreat/kite) do not consume it. Per-round event recording
+ * never draws RNG.
  */
 export function resolveCombat(
   a: CombatSheet,
   b: CombatSheet,
   rules: GameRules['combat'],
   rng: Rng,
+  options?: CombatOptions,
 ): CombatResult {
   let hpA = a.hp;
   let hpB = b.hp;
@@ -72,8 +86,13 @@ export function resolveCombat(
       const dfd = isA ? b : a;
       const dc = rules.dc_base + roundHalfEven(dfd.mob * rules.dodge_factor);
       const roll = rng.int(1, rules.attack_die);
-      const bonus = firstStrikePending ? rules.first_strike_bonus : 0;
-      firstStrikePending = false;
+      const holdsBonus =
+        firstStrikePending &&
+        (options?.firstStrikeSide === undefined || side === options.firstStrikeSide);
+      const bonus = holdsBonus ? rules.first_strike_bonus : 0;
+      if (holdsBonus) {
+        firstStrikePending = false;
+      }
 
       const hit = roll + atk.pdf + bonus >= dc;
       let damage = 0;
