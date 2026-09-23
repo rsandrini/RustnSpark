@@ -1,0 +1,44 @@
+{
+  "login": {
+    "title": "Sign in",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "submit": "Sign in",
+    "registerLink": "Create an account",
+    "error": {
+      "invalidCredentials": "Invalid credentials"
+    }
+  },
+  "register": {
+    "title": "Create account",
+    "callsignLabel": "Callsign",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "submit": "Create account",
+    "loginLink": "Already have an account? Sign in",
+    "error": {
+      "generic": "Could not create account"
+    }
+  },
+  "home": {
+    "title": "Home",
+    "greeting": "Welcome, {{name}}",
+    "loginLink": "Sign in",
+    "registerLink": "Create an account",
+    "logout": "Sign out",
+    "adminLink": "Admin"
+  },
+  "admin": {
+    "title": "Admin",
+    "logout": "Sign out",
+    "placeholder": "Admin dashboard placeholder"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "homeLink": "Go home"
+  },
+  "loading": "Loading...",
+  "error": {
+    "unexpected": "Something went wrong"
+  }
+}
