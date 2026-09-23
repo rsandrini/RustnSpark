@@ -72,6 +72,36 @@ describe('GameConfigService integration', () => {
     }
   }, 10000);
 
+  async function writeWithoutPublishing(key: string, value: unknown): Promise<void> {
+    const repository = module!.get(GameConfigRepository);
+    const prismaService = module!.get(PrismaService);
+    await prismaService.$transaction(async (tx) => {
+      await repository.upsert(key, value as never, 'INTEGER', { en: 'x', 'pt-BR': 'x' }, 'tester', tx);
+      await repository.createRevision(
+        { actor: 'tester', entityType: 'GameConfig', entityId: key, before: null as never, after: value as never, reason: 'silent write' },
+        tx,
+      );
+    });
+  }
+
+  it('self-heals via the version poll when a pub/sub message was missed', async () => {
+    await writeWithoutPublishing('economy.start_credits', 4321);
+    expect(serviceA!.snapshot().rules.economy.start_credits).not.toBe(4321);
+
+    await serviceA!.pollForChanges();
+
+    expect(serviceA!.snapshot().rules.economy.start_credits).toBe(4321);
+  });
+
+  it('keeps the last good snapshot and does not throw when a reload fails', async () => {
+    const before = serviceA!.snapshot();
+    await writeWithoutPublishing('economy.start_credits', 'not-a-number');
+
+    await expect(serviceA!.pollForChanges()).resolves.toBeUndefined();
+
+    expect(serviceA!.snapshot().hash).toBe(before.hash);
+  });
+
   it('byHash(snapshot().hash) returns the same rules', async () => {
     const snapshot = serviceA!.snapshot();
     const fromHash = await serviceA!.byHash(snapshot.hash);

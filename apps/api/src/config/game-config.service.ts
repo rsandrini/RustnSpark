@@ -11,6 +11,10 @@ import { GameConfigRepository } from './game-config.repository.js';
 import { ConfigNotLoadedError, GameConfigValidationError, type GameRules } from './game-config.types.js';
 
 const CHANGE_CHANNEL = 'gameconfig:changed';
+// Safety net for a dropped pub/sub message: every instance re-checks the latest revision on this
+// interval and reloads when it is ahead of its cache. Infrastructure, not balance, so it is an
+// env var rather than a GameConfig key.
+const DEFAULT_POLL_INTERVAL_MS = 15_000;
 
 interface ConfigCache {
   version: number;
@@ -55,6 +59,7 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GameConfigService.name);
   private cache: ConfigCache | undefined;
   private subscriber: Redis | undefined;
+  private pollTimer: NodeJS.Timeout | undefined;
 
   constructor(
     private readonly repository: GameConfigRepository,
@@ -70,9 +75,14 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
       void this.handleChangeMessage(message);
     });
     await this.subscriber.subscribe(CHANGE_CHANNEL);
+
+    const interval = Number(process.env.CONFIG_POLL_INTERVAL_MS ?? DEFAULT_POLL_INTERVAL_MS);
+    this.pollTimer = setInterval(() => void this.pollForChanges(), interval);
+    this.pollTimer.unref();
   }
 
   async onModuleDestroy(): Promise<void> {
+    if (this.pollTimer) clearInterval(this.pollTimer);
     if (this.subscriber) {
       await this.subscriber.unsubscribe(CHANGE_CHANNEL).catch(() => undefined);
       await this.subscriber.quit().catch(() => undefined);
@@ -270,7 +280,32 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     if (typeof payload.version === 'number' && payload.version > this.cache.version) {
-      await this.refresh();
+      await this.reloadKeepingLastGood();
+    }
+  }
+
+  async pollForChanges(): Promise<void> {
+    if (!this.cache) return;
+    try {
+      const latest = await this.repository.findLatestRevision();
+      if (Number(latest?.id ?? 0n) > this.cache.version) {
+        await this.reloadKeepingLastGood();
+      }
+    } catch (error) {
+      this.logger.error(error instanceof Error ? error.message : String(error), 'Config poll failed');
+    }
+  }
+
+  // A failing reload (e.g. one bad GameConfig row) must not crash the process or drop the
+  // snapshot in use: log it and keep serving the last good rules until the next change.
+  private async reloadKeepingLastGood(): Promise<void> {
+    try {
+      await this.loadAndCache();
+    } catch (error) {
+      this.logger.error(
+        error instanceof Error ? error.message : String(error),
+        'Config reload failed; keeping last good snapshot',
+      );
     }
   }
 }
