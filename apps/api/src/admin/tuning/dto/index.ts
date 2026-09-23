@@ -1,4 +1,4 @@
-import { Allow, IsArray, IsNumber, IsString, MinLength, ValidateNested } from 'class-validator';
+import { Allow, IsArray, IsNumber, IsObject, IsString, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export interface ConfigEntryResponse {
@@ -54,4 +54,28 @@ export class ImportBundleDto {
   @ValidateNested({ each: true })
   @Type(() => BundleEntryDto)
   entries!: BundleEntryDto[];
+}
+
+export class CreateEntityDto {
+  @IsObject()
+  data!: Record<string, unknown>;
+
+  @IsString()
+  @MinLength(3)
+  reason!: string;
+}
+
+export class UpdateEntityDto {
+  @IsObject()
+  data!: Record<string, unknown>;
+
+  @IsString()
+  @MinLength(3)
+  reason!: string;
+}
+
+export class RetireEntityDto {
+  @IsString()
+  @MinLength(3)
+  reason!: string;
 }

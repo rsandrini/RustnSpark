@@ -18,7 +18,6 @@ import { ConfigTuningService, RevisionMismatchError } from './config-tuning.serv
 import {
   ImportBundleDto,
   ResetConfigValueDto,
-  RevertRevisionDto,
   UpdateConfigValueDto,
   type ConfigEntryResponse,
 } from './dto/index.js';
@@ -97,22 +96,6 @@ export class ConfigTuningController {
       offset: offset ? Number(offset) : undefined,
     });
     return serializeRevisions(revisions);
-  }
-
-  @Post('revisions/:id/revert')
-  @HttpCode(200)
-  async revertRevision(
-    @Param('id') id: string,
-    @Body() dto: RevertRevisionDto,
-    @CurrentUser() user: CurrentUserPayload,
-  ): Promise<Record<string, unknown>> {
-    try {
-      const revision = await this.configTuningService.revertRevision(BigInt(id), dto, user.accountId);
-      return serializeRevision(revision);
-    } catch (error) {
-      this.rethrowAsApiError(error);
-      throw error;
-    }
   }
 
   @Get('bundle')

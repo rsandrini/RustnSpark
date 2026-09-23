@@ -1209,3 +1209,8 @@ export function getConfigGroups(): readonly string[] {
 export function isValidConfigKey(key: string): key is ConfigKey {
   return configRegistryByKey().has(key);
 }
+
+export function registerConfigRegistryEntry(entry: ConfigRegistryEntry): void {
+  (CONFIG_REGISTRY as ConfigRegistryEntry[]).push(entry);
+  registryByKey = undefined;
+}
