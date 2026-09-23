@@ -44,27 +44,40 @@ describe('checkViability', () => {
     }
   });
 
-  it('passes for the kitchen-sink build with high structure use', () => {
-    const parts = buildInstalled([
+  it('keeps the kitchen-sink build viable but heaviest, slowest and nearly out of structure (GDD §7)', () => {
+    const oracleBuilds = [
+      ['bridge', 'engine_ion_micro', 'reactor_solar', 'battery_small', 'hull'],
+      ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'cargo', 'cargo', 'hull'],
+      ['bridge', 'engine_chem_medium', 'weapon_ballistic', 'armor_plate', 'tank_small', 'hull'],
+      ['bridge', 'engine_ion_micro', 'mining_rig', 'reactor_solar', 'hull'],
+      ['bridge', 'engine_chem_medium', 'tank_small', 'battery_large', 'weapon_laser', 'hull'],
+      ['bridge', 'engine_chem_medium', 'tank_small', 'battery_small', 'shield_basic', 'hull'],
+    ];
+    const kitchenSink = buildInstalled([
       'bridge',
       'engine_chem_large',
-      'engine_chem_medium',
-      'engine_ion_micro',
       'tank_small',
       'battery_large',
       'weapon_missile',
+      'weapon_laser',
       'armor_plate',
-      'hull',
       'shield_basic',
       'sensor_radar',
       'reactor_solar',
       'cargo',
+      'cargo',
+      'cargo',
+      'hull',
     ]);
-    const sheet = deriveSheet(parts, rules);
-    const result = checkViability(sheet, parts, rules);
-    expect(result.viable).toBe(true);
-    expect(sheet.structureUsed / sheet.structureBudget).toBeGreaterThanOrEqual(0.9);
-    expect(sheet.mob).toBeLessThanOrEqual(3);
+    const sink = deriveSheet(kitchenSink, rules);
+    expect(checkViability(sink, kitchenSink, rules).problems).toEqual([]);
+    expect(sink.structureUsed / sink.structureBudget).toBeGreaterThanOrEqual(0.9);
+
+    for (const build of oracleBuilds) {
+      const other = deriveSheet(buildInstalled(build), rules);
+      expect(sink.mass).toBeGreaterThan(other.mass);
+      expect(sink.mob).toBeLessThanOrEqual(other.mob);
+    }
   });
 
   it('fails with NO_BRIDGE when the bridge is missing', () => {
