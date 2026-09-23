@@ -101,17 +101,17 @@ describe('shipTier', () => {
   });
 
   it('computes the exact tier for each BUILDS_UPGRADE build from catalog prices', () => {
-    // carga: 0 + 800 + 200 + 150 + 80*3 + 100 + 120 = 1610
-    expect(shipTier(parts(BUILDS_UPGRADE.carga), GAME_CONFIG_DEFAULTS)).toBe(1);
+    // carga: 0 + 800 + 200 + 150 + 80*3 + 100 + 120 = 1610 -> tier 2
+    expect(shipTier(parts(BUILDS_UPGRADE.carga), GAME_CONFIG_DEFAULTS)).toBe(2);
 
-    // combate: 0 + 800 + 200 + 150 + 500 + 350 + 120 + 200 + 100 = 2420
-    expect(shipTier(parts(BUILDS_UPGRADE.combate), GAME_CONFIG_DEFAULTS)).toBe(1);
+    // combate: 0 + 800 + 200 + 150 + 500 + 350 + 120 + 200 + 100 = 2420 -> tier 3
+    expect(shipTier(parts(BUILDS_UPGRADE.combate), GAME_CONFIG_DEFAULTS)).toBe(3);
 
-    // minerador: 0 + 800 + 200 + 150 + 400 + 80 + 80 + 100 = 1810
-    expect(shipTier(parts(BUILDS_UPGRADE.minerador), GAME_CONFIG_DEFAULTS)).toBe(1);
+    // minerador: 0 + 800 + 200 + 150 + 400 + 80 + 80 + 100 = 1810 -> tier 2
+    expect(shipTier(parts(BUILDS_UPGRADE.minerador), GAME_CONFIG_DEFAULTS)).toBe(2);
 
-    // rapido: 0 + 800 + 100 + 200 + 150 + 120 + 120 + 100 + 200 = 1790
-    expect(shipTier(parts(BUILDS_UPGRADE.rapido), GAME_CONFIG_DEFAULTS)).toBe(1);
+    // rapido: 0 + 800 + 100 + 200 + 150 + 120 + 120 + 100 + 200 = 1790 -> tier 2
+    expect(shipTier(parts(BUILDS_UPGRADE.rapido), GAME_CONFIG_DEFAULTS)).toBe(2);
   });
 
   it('returns tier 5 for a build whose total base value reaches the top threshold', () => {
