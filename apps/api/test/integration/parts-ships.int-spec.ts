@@ -150,6 +150,19 @@ describe('parts and ships API (S4.3)', () => {
       expect(asShip(second).id).toBe(asShip(first).id);
     });
 
+    it('creates exactly one ship and one starter credit under concurrent onboarding', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+
+      const responses = await Promise.all([onboard(token, 'luna'), onboard(token, 'luna'), onboard(token, 'luna')]);
+
+      expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
+      expect(new Set(responses.map((r) => asShip(r).id)).size).toBe(1);
+      expect(await prisma.ship.count({ where: { ownerPlayerId: seeded.player.id } })).toBe(1);
+      const events = await prisma.playerEvent.count({ where: { playerId: seeded.player.id, type: 'wallet.credit' } });
+      expect(events).toBe(1);
+    });
+
     it('rejects a different faction after onboarding with 409', async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();

@@ -30,7 +30,7 @@ export class OnboardingService {
 
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
-      include: { ship: { include: { parts: true } } },
+      include: { ships: { select: { id: true }, orderBy: { id: 'asc' }, take: 1 } },
     });
     if (!player) throw new NotFoundException('player not found');
 
@@ -38,15 +38,28 @@ export class OnboardingService {
       throw new ConflictException(`player has already chosen faction ${player.factionId}`);
     }
 
-    if (player.ship) {
-      return this.shipsService.findById(player.ship.id);
+    const existing = player.ships[0];
+    if (existing) {
+      return this.shipsService.findById(existing.id);
     }
 
     const starterParts = rules.onboarding.starter_parts as string[];
     const condition = rules.parts.starter_condition;
     const startCredits = rules.economy.start_credits;
 
-    const ship = await this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      // The schema allows N ships per player, so single-shot onboarding is enforced by
+      // serializing on the player row and re-checking inside the transaction.
+      await tx.$queryRaw`SELECT id FROM "Player" WHERE id = ${playerId} FOR UPDATE`;
+      const already = await tx.ship.findFirst({
+        where: { ownerPlayerId: playerId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      });
+      if (already) {
+        return { shipId: already.id };
+      }
+
       const created = await tx.ship.create({
         data: {
           ownerPlayerId: playerId,
@@ -86,6 +99,9 @@ export class OnboardingService {
 
       const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
       const layout = autoLayout(installedParts, catalogMap);
+      if (layout.length !== installedParts.length) {
+        throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
+      }
 
       const sheet = deriveSheet(installedParts, rules);
       const { viable, problems } = checkViability(sheet, installedParts, rules);
@@ -105,11 +121,11 @@ export class OnboardingService {
         data: { layout: layout as unknown as never, fuel: sheet.fuelCap },
       });
 
-      return filled;
+      await this.walletService.credit(playerId, startCredits, ONBOARDING_REASON, tx);
+
+      return { shipId: filled.id };
     });
 
-    await this.walletService.credit(playerId, startCredits, ONBOARDING_REASON);
-
-    return this.shipsService.findById(ship.id);
+    return this.shipsService.findById(outcome.shipId);
   }
 }

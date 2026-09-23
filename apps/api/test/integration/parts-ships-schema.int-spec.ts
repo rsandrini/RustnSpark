@@ -229,7 +229,7 @@ describe('parts and ships data model (S4.1)', () => {
     expect(final?.ship?.id).not.toBe(shipA.id);
   });
 
-  it('enforces one Ship per player through ownerPlayerId unique constraint', async () => {
+  it('allows several Ships per player (schema supports N; the UI limits it to one)', async () => {
     const { playerId, locationId } = await seedPrerequisites();
 
     await prisma.ship.create({
@@ -241,7 +241,7 @@ describe('parts and ships data model (S4.1)', () => {
       },
     });
 
-    const duplicate = prisma.ship.create({
+    await prisma.ship.create({
       data: {
         ownerPlayerId: playerId,
         name: 'Second Ship',
@@ -249,7 +249,7 @@ describe('parts and ships data model (S4.1)', () => {
         currentLocationId: locationId,
       },
     });
-    await expect(duplicate).rejects.toThrow(/unique constraint/i);
+    expect(await prisma.ship.count({ where: { ownerPlayerId: playerId } })).toBe(2);
   });
 
   it('uses a composite primary key on PlayerMaterial and upserts quantity', async () => {

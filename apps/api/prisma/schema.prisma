@@ -47,7 +47,7 @@ model Player {
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
   parts           PartInstance[]
-  ship            Ship?
+  ships           Ship[]
   materials       PlayerMaterial[]
 }
 
@@ -318,7 +318,7 @@ model PartInstance {
 
 model Ship {
   id                String     @id @default(dbgenerated("gen_random_uuid()"))
-  ownerPlayerId     String     @unique
+  ownerPlayerId     String
   name              String
   layout            Json
   fuel              Float      @default(0)
@@ -330,6 +330,7 @@ model Ship {
   location          Location   @relation(fields: [currentLocationId], references: [id])
 
   @@index([currentLocationId])
+  @@index([ownerPlayerId])
 }
 
 model PlayerMaterial {
