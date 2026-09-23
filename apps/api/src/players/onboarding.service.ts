@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
@@ -7,7 +7,6 @@ import { pickCatalogStats } from '../parts/parts.service.js';
 import { autoLayout } from '../ships/auto-layout.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
-import type { PlayableFaction } from './dto/onboarding.dto.js';
 
 const ONBOARDING_REASON = 'onboarding starter credits';
 
@@ -20,12 +19,12 @@ export class OnboardingService {
     private readonly walletService: WalletService,
   ) {}
 
-  async onboard(playerId: string, faction: PlayableFaction) {
+  async onboard(playerId: string, faction: string) {
     const rules = this.configService.snapshot().rules;
     const homeLocations = rules.onboarding.home_locations as Record<string, string>;
-    const locationId = homeLocations[faction];
+    const locationId = Object.hasOwn(homeLocations, faction) ? homeLocations[faction] : undefined;
     if (!locationId) {
-      throw new NotFoundException('faction home location not found');
+      throw new BadRequestException({ error: 'UNKNOWN_FACTION', message: 'faction is not playable' });
     }
 
     const player = await this.prisma.player.findUnique({

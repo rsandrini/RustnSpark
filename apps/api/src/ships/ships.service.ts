@@ -16,6 +16,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
 import { validateLayout } from './geometry.js';
+import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { checkViability, type ViabilityProblem } from './viability.js';
@@ -30,10 +31,12 @@ export interface ShipResponse {
   stance: string;
   layout: Placement[];
   sheet: ShipSheet;
+  shipClass: ShipClassType;
 }
 
 export interface PreviewResponse {
   sheet: ShipSheet;
+  shipClass: ShipClassType;
   viability: { viable: boolean; problems: ViabilityProblem[] };
   layout: Placement[];
   omittedPartInstanceIds: string[];
@@ -135,7 +138,13 @@ export class ShipsService implements OnModuleInit {
 
     const sheet = deriveSheet(installed, rules);
     const viability = checkViability(sheet, installed, rules);
-    return { sheet, viability, layout: effectiveLayout, omittedPartInstanceIds };
+    return {
+      sheet,
+      shipClass: deriveShipClass(installed, rules),
+      viability,
+      layout: effectiveLayout,
+      omittedPartInstanceIds,
+    };
   }
 
   async setStance(shipId: string, stance: Ship['stance']): Promise<ShipResponse> {
@@ -278,6 +287,7 @@ export class ShipsService implements OnModuleInit {
       stance: ship.stance,
       layout: (ship.layout as unknown as Placement[]) ?? [],
       sheet,
+      shipClass: deriveShipClass(installed, rules),
     };
   }
 }

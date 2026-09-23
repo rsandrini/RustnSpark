@@ -23,6 +23,13 @@ describe('deriveShipClass', () => {
     expect(deriveShipClass(parts, rules)).toBe('HAULER');
   });
 
+  it('classifies a build with enough pressurized structure as TRANSPORT', () => {
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'hull', 'hull', 'hull', 'hull']).map((part) =>
+      part.catalog.partType === 'hull' ? { ...part, catalog: { ...part.catalog, pressurized: true } } : part,
+    );
+    expect(deriveShipClass(parts, rules)).toBe('TRANSPORT');
+  });
+
   it('classifies a combat-focused build as WARSHIP', () => {
     const parts = buildInstalled([
       'bridge',

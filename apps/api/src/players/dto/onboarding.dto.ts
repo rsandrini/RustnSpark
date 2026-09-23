@@ -1,9 +1,10 @@
-import { IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-const PLAYABLE_FACTIONS = ['luna', 'sun', 'explorers'] as const;
-export type PlayableFaction = (typeof PLAYABLE_FACTIONS)[number];
-
+// The playable factions are the keys of the Admin-editable `onboarding.home_locations`, so the
+// service validates the value against live config rather than a hard-coded list here.
 export class OnboardingDto {
-  @IsIn(PLAYABLE_FACTIONS)
-  faction!: PlayableFaction;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  faction!: string;
 }

@@ -163,6 +163,15 @@ describe('parts and ships API (S4.3)', () => {
       expect(events).toBe(1);
     });
 
+    it('rejects a faction that has no configured home location with 400', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+
+      const response = await onboard(token, 'not_a_faction');
+
+      expect(response.status).toBe(400);
+    });
+
     it('rejects a different faction after onboarding with 409', async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();

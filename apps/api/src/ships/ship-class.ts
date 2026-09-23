@@ -11,7 +11,7 @@ export function deriveShipClass(parts: InstalledPart[], rules: GameRules): ShipC
   }
 
   const cargoCost = structureCostForClasses(parts, ['CARGO']);
-  const pressurizedCost = 0;
+  const pressurizedCost = structureCostForFlag(parts, (part) => part.catalog.pressurized);
   const combatCost = structureCostForClasses(parts, ['WEAPON', 'DEFENSE']);
   const hasMiningGear = parts.some((part) => part.catalog.min > 0);
 
@@ -37,4 +37,8 @@ function structureCostForClasses(parts: InstalledPart[], classes: readonly strin
   return parts
     .filter((part) => classes.includes(part.catalog.partClass))
     .reduce((total, part) => total + part.catalog.structureCost, 0);
+}
+
+function structureCostForFlag(parts: InstalledPart[], predicate: (part: InstalledPart) => boolean): number {
+  return parts.filter(predicate).reduce((total, part) => total + part.catalog.structureCost, 0);
 }

@@ -158,6 +158,8 @@ model TuningRevision {
   before     Json?
   after      Json?
   reason     String
+
+  @@index([entityType, entityId, id(sort: Desc)])
 }
 
 model RulesSnapshot {
