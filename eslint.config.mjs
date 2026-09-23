@@ -42,5 +42,28 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // Tunable numbers live in the database; rule code must name or config-drive literals.
+    files: [
+      'apps/api/src/resolution/**/*.ts',
+      'apps/api/src/economy/**/*.ts',
+      'apps/api/src/ships/**/*.ts',
+      'apps/api/src/parts/**/*.ts',
+      'apps/api/src/missions/**/*.ts',
+    ],
+    rules: {
+      'no-magic-numbers': [
+        'error',
+        {
+          ignore: [0, 1, -1, 100],
+          ignoreArrayIndexes: false,
+          ignoreDefaultValues: false,
+          ignoreClassFieldInitialValues: false,
+          enforceConst: true,
+          detectObjects: false,
+        },
+      ],
+    },
+  },
   prettier,
 );
