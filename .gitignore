@@ -4,3 +4,5 @@ dist
 coverage
 apps/web/src/**/*.js
 apps/web/src/**/*.js.map
+__pycache__
+*.pyc

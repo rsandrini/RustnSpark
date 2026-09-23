@@ -8,3 +8,6 @@ prototypes
 simulation
 .superpowers
 *.md
+# Byte-identical generator output (tools/oracle/gen_fixtures.py --check) — Prettier must not rewrap.
+apps/api/test/fixtures/oracle
+tools

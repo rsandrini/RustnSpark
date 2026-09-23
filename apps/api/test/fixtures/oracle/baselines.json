@@ -1,0 +1,138 @@
+{
+  "alvos": {
+    "combate_winrate": [
+      45,
+      60
+    ],
+    "engasgo_pct": [
+      2,
+      12
+    ],
+    "falencia_pct": [
+      2,
+      15
+    ],
+    "margem_mediana": [
+      80,
+      400
+    ],
+    "missoes_tier2": [
+      4,
+      10
+    ],
+    "missoes_tier5": [
+      60,
+      160
+    ],
+    "tier5_pct": [
+      15,
+      55
+    ]
+  },
+  "layer3": {
+    "life_sweep": {
+      "band": {
+        "bankruptcy_pct": 0,
+        "choke_pct_max": 3,
+        "combat_winrate": [
+          53.5,
+          57.5
+        ],
+        "median_margin": [
+          760,
+          820
+        ],
+        "missions_tier2_median": [
+          8,
+          10
+        ],
+        "missions_tier5_median": {
+          "manutencao_100": [
+            113,
+            129
+          ],
+          "manutencao_200": [
+            121,
+            137
+          ],
+          "manutencao_350": [
+            136,
+            152
+          ]
+        }
+      },
+      "n_lives": 2000,
+      "oracle": {
+        "bankruptcy_pct": 0,
+        "choke_pct": [
+          0,
+          2
+        ],
+        "combat_winrate": [
+          55,
+          56
+        ],
+        "median_margin": [
+          778,
+          803
+        ],
+        "missions_tier2_median": 9,
+        "missions_tier5_median": {
+          "manutencao_100": 121,
+          "manutencao_200": 129,
+          "manutencao_350": 144
+        },
+        "tier5_reached_pct": [
+          98,
+          100
+        ]
+      },
+      "seed": 1
+    },
+    "tournament_fixed_order": {
+      "band": {
+        "build_max": 58,
+        "build_min": 43,
+        "spread_max": 13.5
+      },
+      "dials": "canonical (first_strike 2, max_rounds 40, pierce 0.35)",
+      "n_per_pair": 3000,
+      "oracle": {
+        "builds": {
+          "Blindado": 44.1,
+          "DanoAlto": 55.8,
+          "Equilib": 53.3,
+          "Escudo": 48.1,
+          "Rapido": 48.6
+        },
+        "spread": 11.7
+      }
+    },
+    "tournament_symmetrized": {
+      "band": {
+        "build_max": 57,
+        "build_min": 39,
+        "spread_max": 15.0
+      },
+      "n_per_order": 1500,
+      "oracle": {
+        "Blindado": [
+          40.6,
+          41.3
+        ],
+        "DanoAlto": [
+          54.4,
+          55.1
+        ],
+        "spread": [
+          13.3,
+          14.0
+        ]
+      }
+    }
+  },
+  "layer4": {
+    "note": "Production-mode baseline is recorded by test/validation/production-mode.spec.ts after first green run; oracle ALVOS above are the health bands."
+  },
+  "version": 1
+}
