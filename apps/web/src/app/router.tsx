@@ -1,6 +1,7 @@
 import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../i18n/language-switcher';
 import { AuthProvider } from '../features/auth/auth.context';
 import { LoginPage } from '../features/auth/login.page';
 import { RegisterPage } from '../features/auth/register.page';
@@ -19,6 +20,7 @@ function AdminFallback() {
 function RootLayout() {
   return (
     <AuthProvider>
+      <LanguageSwitcher />
       <Outlet />
     </AuthProvider>
   );

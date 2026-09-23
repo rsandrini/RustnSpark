@@ -103,5 +103,8 @@
   "loading": "Loading...",
   "error": {
     "unexpected": "Something went wrong"
+  },
+  "language": {
+    "label": "Language"
   }
 }

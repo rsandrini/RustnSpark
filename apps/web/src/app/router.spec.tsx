@@ -45,4 +45,21 @@ describe('router', () => {
     );
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
   });
+
+  it('switches the login screen to Portuguese with the language switcher and remembers it', async () => {
+    server.use(
+      http.post('/v1/auth/refresh', () =>
+        HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/login'] });
+
+    await user.selectOptions(await screen.findByLabelText(/language/i), 'pt-BR');
+
+    expect(await screen.findByRole('heading', { name: 'Entrar' })).toBeInTheDocument();
+    expect(window.localStorage.getItem('rs.language')).toBe('pt-BR');
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en');
+    window.localStorage.removeItem('rs.language');
+  });
 });

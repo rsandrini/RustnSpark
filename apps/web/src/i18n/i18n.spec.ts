@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import en from './en.json';
 import ptBR from './pt-BR.json';
 
@@ -22,5 +22,19 @@ describe('i18n', () => {
     const enKeys = collectKeys(en).sort();
     const ptKeys = collectKeys(ptBR).sort();
     expect(ptKeys).toEqual(enKeys);
+  });
+});
+
+describe('detectInitialLng', () => {
+  it('prefers a saved language, then the browser language, then English', async () => {
+    const { detectInitialLng, LANGUAGE_STORAGE_KEY } = await import('./config');
+    window.localStorage.removeItem(LANGUAGE_STORAGE_KEY);
+    expect(detectInitialLng()).toBe('en');
+    const lang = vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('pt-PT');
+    expect(detectInitialLng()).toBe('pt-BR');
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
+    expect(detectInitialLng()).toBe('en');
+    window.localStorage.removeItem(LANGUAGE_STORAGE_KEY);
+    lang.mockRestore();
   });
 });

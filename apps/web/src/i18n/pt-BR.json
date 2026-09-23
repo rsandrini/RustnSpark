@@ -103,5 +103,8 @@
   "loading": "Carregando...",
   "error": {
     "unexpected": "Algo deu errado"
+  },
+  "language": {
+    "label": "Idioma"
   }
 }
