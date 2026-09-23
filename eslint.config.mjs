@@ -77,6 +77,36 @@ export default defineConfig(
     },
   },
   {
+    // Resolution and pure economy calculators never touch I/O (plan S5.9).
+    // Only Nest wiring files under resolution/ are exempt.
+    files: ['apps/api/src/resolution/**/*.ts', 'apps/api/src/economy/*.calculator.ts'],
+    ignores: ['apps/api/src/resolution/**/*.module.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@prisma/client',
+              message: 'Resolution/pure economy code must stay I/O-free (S5.9).',
+            },
+            {
+              name: 'bullmq',
+              message: 'Resolution/pure economy code must stay I/O-free (S5.9).',
+            },
+          ],
+          patterns: [
+            {
+              group: ['@nestjs/*'],
+              message: 'Resolution/pure economy code must stay I/O-free (S5.9).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     // The web app stores tokens in memory and serves player-facing text from locale files.
     files: ['apps/web/src/**/*.ts', 'apps/web/src/**/*.tsx'],
     plugins: { react, 'react-hooks': reactHooks },
