@@ -44,7 +44,7 @@ const PARTS: SeedPart[] = [
     w: 1,
     h: 1,
     mass: 4,
-    structureCost: 0,
+    structureCost: -100,
     basePrice: 0,
     scrapValue: 0,
     partHp: 30,

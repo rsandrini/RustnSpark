@@ -1,0 +1,84 @@
+import type { GameRules } from '../config/game-config.types.js';
+import type { InstalledPart, PartCatalog } from '../parts/part.types.js';
+import { performance } from '../parts/condition.js';
+import type { ShipSheet } from './sheet.types.js';
+
+const HALF = 0.5;
+const NO_AUTONOMY = 0;
+const MIN_MOB = 1;
+const EVEN_DIVISOR = 2;
+
+function roundHalfEven(value: number): number {
+  const floor = Math.floor(value);
+  const ceil = Math.ceil(value);
+  const midpoint = floor + HALF;
+  if (value < midpoint) {
+    return floor;
+  }
+  if (value > midpoint) {
+    return ceil;
+  }
+  return floor % EVEN_DIVISOR === 0 ? floor : ceil;
+}
+
+function sumStat(parts: InstalledPart[], stat: keyof PartCatalog): number {
+  return parts.reduce((total, part) => total + (part.catalog[stat] as number), 0);
+}
+
+function averageCondition(parts: InstalledPart[]): number {
+  if (parts.length === 0) {
+    return 0;
+  }
+  const total = parts.reduce((sum, part) => sum + part.instance.condition, 0);
+  return total / parts.length;
+}
+
+export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet {
+  const bridge = parts.find((part) => part.catalog.partClass === 'BRIDGE');
+  const structureBudget = bridge === undefined ? 0 : Math.abs(bridge.catalog.structureCost);
+  const structureUsed = parts
+    .filter((part) => part.catalog.partClass !== 'BRIDGE')
+    .reduce((total, part) => total + part.catalog.structureCost, 0);
+
+  const fuelUse = sumStat(parts, 'fuelUse');
+  const fuelCap = sumStat(parts, 'fuelCap');
+  const pot = sumStat(parts, 'pot');
+  const mass = sumStat(parts, 'mass');
+
+  const mobRaw = mass === 0 ? 0 : (pot / mass) * rules.ship.mob_factor;
+  const mob = Math.max(MIN_MOB, roundHalfEven(mobRaw));
+
+  return {
+    pot,
+    pdf: sumStat(parts, 'pdf'),
+    bli: sumStat(parts, 'bli'),
+    esc: sumStat(parts, 'esc'),
+    sen: sumStat(parts, 'sen'),
+    crg: sumStat(parts, 'crg'),
+    min: sumStat(parts, 'min'),
+    hp: sumStat(parts, 'partHp'),
+    mass,
+    energyCont: sumStat(parts, 'energyCont'),
+    energyCombat: sumStat(parts, 'energyCombat'),
+    batCharge: sumStat(parts, 'batCharge'),
+    batOutput: sumStat(parts, 'batOutput'),
+    batInput: sumStat(parts, 'batInput'),
+    fuelCap,
+    fuelUse,
+    structureUsed,
+    structureBudget,
+    autonomy: fuelUse > 0 ? (fuelCap / fuelUse) * 100 : NO_AUTONOMY,
+    mob,
+    condition: averageCondition(parts),
+  };
+}
+
+export function effectiveSheet(sheet: ShipSheet, parts: InstalledPart[], rules: GameRules): ShipSheet {
+  const avgCondition = averageCondition(parts);
+  const perf = performance(avgCondition, rules);
+  return {
+    ...sheet,
+    hp: sheet.hp * perf,
+    condition: avgCondition,
+  };
+}
