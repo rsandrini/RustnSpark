@@ -11,7 +11,6 @@ import { RevisionService } from './revision.service.js';
 import type {
   ConfigEntryResponse,
   ResetConfigValueDto,
-  RevertRevisionDto,
   UpdateConfigValueDto,
 } from './dto/index.js';
 
@@ -105,33 +104,6 @@ export class ConfigTuningService {
       const before = await this.getCurrentValue(key, tx);
       await this.gameConfigRepository.upsert(key, validated, entry.type, entry.description, actor, tx);
       return this.createRevision(actor, key, before, validated, dto.reason, tx);
-    });
-
-    await this.gameConfigService.refresh();
-    return revision;
-  }
-
-  async revertRevision(id: bigint, dto: RevertRevisionDto, actor: string): Promise<TuningRevision> {
-    const target = await this.revisionService.findById(id);
-    if (!target) {
-      throw new GameConfigValidationError(`Revision not found: ${id.toString()}`, [
-        { key: String(id), message: 'Revision not found' },
-      ]);
-    }
-    if (target.before === null || target.before === undefined) {
-      throw new GameConfigValidationError(`Cannot revert revision ${id.toString()}: no before state`, [
-        { key: target.entityId, message: 'No before state' },
-      ]);
-    }
-
-    const entry = this.resolveEntry(target.entityId);
-    const validated = validateConfigValue(target.entityId, target.before);
-    await this.references.assertReferences(target.entityId, validated);
-
-    const revision = await this.prisma.$transaction(async (tx) => {
-      const before = await this.getCurrentValue(target.entityId, tx);
-      await this.gameConfigRepository.upsert(target.entityId, validated, entry.type, entry.description, actor, tx);
-      return this.createRevision(actor, target.entityId, before, validated, dto.reason, tx);
     });
 
     await this.gameConfigService.refresh();

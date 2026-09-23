@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type PartCatalog as PartCatalogRow } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
+import { parseLocale } from '../common/locale/locale.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PartCatalog } from './part.types.js';
 
@@ -62,6 +63,15 @@ function localize(value: Record<string, unknown>, locale: string): string {
 @Injectable()
 export class PartsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // An explicit ?locale= wins; otherwise the player's saved locale, then the default.
+  async catalogForPlayer(playerId: string, explicit: string | undefined): Promise<CatalogItem[]> {
+    if (explicit !== undefined) {
+      return this.catalog(parseLocale(explicit));
+    }
+    const player = await this.prisma.player.findUnique({ where: { id: playerId }, select: { locale: true } });
+    return this.catalog(parseLocale(player?.locale));
+  }
 
   async catalog(locale: Locale): Promise<CatalogItem[]> {
     const rows = await this.prisma.partCatalog.findMany({ where: { active: true }, orderBy: { partType: 'asc' } });

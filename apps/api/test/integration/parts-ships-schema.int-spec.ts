@@ -229,6 +229,25 @@ describe('parts and ships data model (S4.1)', () => {
     expect(final?.ship?.id).not.toBe(shipA.id);
   });
 
+  it('requires INSTALLED parts to have a ship and INVENTORY parts to have none', async () => {
+    const { playerId, partType } = await seedPrerequisites();
+
+    await expect(
+      prisma.partInstance.create({
+        data: { partType, ownerPlayerId: playerId, condition: 80, location: 'INSTALLED' },
+      }),
+    ).rejects.toThrow(/check constraint/i);
+
+    const ship = await prisma.ship.create({
+      data: { ownerPlayerId: playerId, name: 'S', layout: [], currentLocationId: (await prisma.location.findFirstOrThrow()).id },
+    });
+    await expect(
+      prisma.partInstance.create({
+        data: { partType, ownerPlayerId: playerId, condition: 80, location: 'INVENTORY', shipId: ship.id },
+      }),
+    ).rejects.toThrow(/check constraint/i);
+  });
+
   it('allows several Ships per player (schema supports N; the UI limits it to one)', async () => {
     const { playerId, locationId } = await seedPrerequisites();
 

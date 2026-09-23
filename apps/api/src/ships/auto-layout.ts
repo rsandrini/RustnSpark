@@ -5,9 +5,7 @@ const RIGHT_ANGLE = 90;
 
 export function autoLayout(parts: InstalledPart[], catalog: ReadonlyMap<string, PartCatalog>): Placement[] {
   const ordered = [...parts].sort((a, b) => {
-    if (a.catalog.partClass === 'BRIDGE') return -1;
-    if (b.catalog.partClass === 'BRIDGE') return 1;
-    return 0;
+    return Number(b.catalog.partClass === 'BRIDGE') - Number(a.catalog.partClass === 'BRIDGE');
   });
 
   const placements: Placement[] = [];

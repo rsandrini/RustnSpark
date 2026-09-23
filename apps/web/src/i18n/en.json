@@ -94,7 +94,17 @@
     "ally": "Ally",
     "resetConfirm": "Reset {{key}} to factory default?",
     "retireConfirm": "Retire {{id}}?",
-    "revertConfirm": "Revert revision {{id}}?"
+    "revertConfirm": "Revert revision {{id}}?",
+    "entityNames": {
+      "parts": "Parts",
+      "materials": "Materials",
+      "factions": "Factions",
+      "locations": "Locations",
+      "routes": "Routes",
+      "environments": "Environments",
+      "mission-templates": "Mission templates",
+      "drop-tables": "Drop tables"
+    }
   },
   "notFound": {
     "title": "Page not found",

@@ -7,6 +7,8 @@ const HALF = 0.5;
 const NO_AUTONOMY = 0;
 const MIN_MOB = 1;
 const EVEN_DIVISOR = 2;
+// Autonomy is reported as a percentage of one full tank's worth of fuel use.
+const PERCENT = 100;
 
 function roundHalfEven(value: number): number {
   const floor = Math.floor(value);
@@ -33,6 +35,11 @@ function averageCondition(parts: InstalledPart[]): number {
   return total / parts.length;
 }
 
+// Unrounded mobility; viability gates on this value (rounding could otherwise hide MOB < 1).
+export function rawMobility(pot: number, mass: number, rules: GameRules): number {
+  return mass === 0 ? 0 : (pot / mass) * rules.ship.mob_factor;
+}
+
 export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet {
   const bridge = parts.find((part) => part.catalog.partClass === 'BRIDGE');
   const structureBudget = bridge === undefined ? 0 : Math.abs(bridge.catalog.structureCost);
@@ -46,7 +53,7 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
   // A full tank is part of the ship's mass; the factor is Admin-tunable and 0 by default.
   const mass = sumStat(parts, 'mass') + fuelCap * rules.ship.fuel_mass_per_unit;
 
-  const mobRaw = mass === 0 ? 0 : (pot / mass) * rules.ship.mob_factor;
+  const mobRaw = rawMobility(pot, mass, rules);
   const mob = Math.max(MIN_MOB, roundHalfEven(mobRaw));
 
   return {
@@ -68,7 +75,7 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
     fuelUse,
     structureUsed,
     structureBudget,
-    autonomy: fuelUse > 0 ? (fuelCap / fuelUse) * 100 : NO_AUTONOMY,
+    autonomy: fuelUse > 0 ? (fuelCap / fuelUse) * PERCENT : NO_AUTONOMY,
     mob,
     condition: averageCondition(parts),
   };

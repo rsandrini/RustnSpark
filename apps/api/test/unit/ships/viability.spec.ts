@@ -126,11 +126,10 @@ describe('checkViability', () => {
   });
 
   it('fails with BATTERY_OUTPUT_INSUFFICIENT when combat drain exceeds battery output', () => {
-    const parts = buildInstalled(['bridge', 'weapon_laser']);
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'weapon_laser']);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.viable).toBe(false);
-    expect(result.problems.map((p) => p.code)).toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.problems.map((p) => p.code)).toEqual(['BATTERY_OUTPUT_INSUFFICIENT', 'BATTERY_CHARGE_INSUFFICIENT']);
   });
 
   it('fails with STRUCTURE_EXCEEDED when parts exceed the structure budget', () => {

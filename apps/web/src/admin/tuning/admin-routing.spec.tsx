@@ -124,10 +124,14 @@ describe('admin tuning routing', () => {
       await screen.findByRole('heading', { name: /tuning/i }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: /entities/i }));
+    await user.click(screen.getByRole('link', { name: 'Materials' }));
     expect(
       await screen.findByRole('heading', { name: /materials/i }),
     ).toBeInTheDocument();
+
+    for (const name of ['Parts', 'Factions', 'Locations', 'Routes', 'Environments', 'Mission templates', 'Drop tables']) {
+      expect(screen.getByRole('link', { name })).toBeInTheDocument();
+    }
 
     await user.click(screen.getByRole('link', { name: /revision history/i }));
     expect(

@@ -216,6 +216,19 @@ describe('parts and ships API (S4.3)', () => {
       expect(bridge?.displayName).toBe('Ponte de Comando');
     });
 
+    it("GET /v1/parts/catalog defaults to the player's saved locale when no query is given", async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      await prisma.player.update({ where: { id: seeded.player.id }, data: { locale: 'pt-BR' } });
+
+      const response = await request(httpServer(testApp.app))
+        .get('/v1/parts/catalog')
+        .set('Authorization', `Bearer ${token}`);
+
+      const items = response.body as Array<Record<string, unknown>>;
+      expect(items.find((item) => item.partType === 'bridge')?.displayName).toBe('Ponte de Comando');
+    });
+
     it('GET /v1/inventory after onboarding lists starter parts', async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();

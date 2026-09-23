@@ -1,5 +1,6 @@
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart } from '../parts/part.types.js';
+import { rawMobility } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 
 export type ViabilityProblemCode =
@@ -63,8 +64,7 @@ export function checkViability(
     problems.push(NO_ENGINE);
   }
 
-  const rawMob = sheet.mass === 0 ? 0 : (sheet.pot / sheet.mass) * rules.ship.mob_factor;
-  if (rawMob < 1) {
+  if (rawMobility(sheet.pot, sheet.mass, rules) < 1) {
     problems.push(MOB_TOO_LOW);
   }
 
