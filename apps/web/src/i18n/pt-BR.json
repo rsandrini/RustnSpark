@@ -1,0 +1,107 @@
+{
+  "login": {
+    "title": "Entrar",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Senha",
+    "submit": "Entrar",
+    "registerLink": "Criar uma conta",
+    "error": {
+      "invalidCredentials": "Credenciais inválidas"
+    }
+  },
+  "register": {
+    "title": "Criar conta",
+    "callsignLabel": "Indicativo",
+    "emailLabel": "E-mail",
+    "passwordLabel": "Senha",
+    "submit": "Criar conta",
+    "loginLink": "Já tem uma conta? Entre",
+    "error": {
+      "generic": "Não foi possível criar a conta"
+    }
+  },
+  "home": {
+    "title": "Início",
+    "greeting": "Bem-vindo, {{name}}",
+    "loginLink": "Entrar",
+    "registerLink": "Criar uma conta",
+    "logout": "Sair",
+    "adminLink": "Admin"
+  },
+  "admin": {
+    "title": "Admin",
+    "logout": "Sair",
+    "placeholder": "Painel de administração provisório",
+    "navigation": "Navegação de admin"
+  },
+  "tuning": {
+    "configTitle": "Ajustes",
+    "entities": "Entidades",
+    "revisionHistoryTitle": "Histórico de revisões",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar por chave ou descrição",
+    "key": "Chave",
+    "description": "Descrição",
+    "currentValue": "Valor atual",
+    "factoryDefault": "Padrão de fábrica",
+    "actions": "Ações",
+    "modified": "modificado",
+    "save": "Salvar",
+    "reset": "Redefinir",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "create": "Criar",
+    "edit": "Editar",
+    "retire": "Desativar",
+    "id": "Id",
+    "export": "Exportar",
+    "import": "Importar",
+    "required": "(obrigatório)",
+    "bounds": "Limites: {{min}} – {{max}}",
+    "select": "Selecionar",
+    "yes": "Sim",
+    "no": "Não",
+    "reasonLabel": "Motivo",
+    "defaultReason": "Mudança de ajuste",
+    "configChangeReason": "Mudança de configuração",
+    "configResetReason": "Redefinir para o padrão de fábrica",
+    "retireReason": "Desativar entidade",
+    "revertReason": "Reverter revisão",
+    "invalidJson": "Valor JSON inválido",
+    "invalidBundle": "Bundle JSON inválido",
+    "importBundle": "Importar bundle",
+    "pasteBundle": "Cole o JSON do bundle aqui",
+    "bundleJson": "JSON do bundle",
+    "diffPreview": "Prévia das diferenças",
+    "dryRun": "Prévia",
+    "apply": "Aplicar",
+    "unit": "({{unit}})",
+    "diffItem": "{{key}}: {{before}} → {{after}}",
+    "loading": "Carregando admin...",
+    "dashboardPlaceholder": "Painel de administração",
+    "entityType": "Tipo de entidade",
+    "entityId": "Id da entidade",
+    "actor": "Autor",
+    "timestamp": "Data/hora",
+    "reason": "Motivo",
+    "revert": "Reverter",
+    "createEntity": "Criar entidade",
+    "editEntity": "Editar entidade",
+    "faction": "Facção",
+    "relation": "Relação",
+    "neutral": "Neutro",
+    "hostile": "Hostil",
+    "ally": "Aliado",
+    "resetConfirm": "Redefinir {{key}} para o padrão de fábrica?",
+    "retireConfirm": "Desativar {{id}}?",
+    "revertConfirm": "Reverter revisão {{id}}?"
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "homeLink": "Voltar ao início"
+  },
+  "loading": "Carregando...",
+  "error": {
+    "unexpected": "Algo deu errado"
+  }
+}

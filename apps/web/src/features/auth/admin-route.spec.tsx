@@ -1,0 +1,45 @@
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { renderWithRouter } from '../../test/utils';
+import { server } from '../../test/msw/server';
+import { routes } from '../../app/router';
+
+describe('admin route guard', () => {
+  it('redirects a non-admin user to the home page', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          { id: 'p1', email: 'user@example.com', role: 'USER', locale: 'en' },
+          { status: 200 },
+        ),
+      ),
+    );
+
+    renderWithRouter(routes, { initialEntries: ['/admin'] });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: /admin/i })).not.toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByRole('heading', { name: /home/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the admin shell for an admin user', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          { id: 'p1', email: 'admin@example.com', role: 'ADMIN', locale: 'en' },
+          { status: 200 },
+        ),
+      ),
+    );
+
+    renderWithRouter(routes, { initialEntries: ['/admin'] });
+
+    expect(
+      await screen.findByRole('heading', { name: /admin/i }),
+    ).toBeInTheDocument();
+  });
+});

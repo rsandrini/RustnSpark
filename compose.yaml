@@ -163,6 +163,35 @@ services:
       REDIS_URL: ${REDIS_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
 
+  web:
+    profiles: [dev]
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: rustandspark-web:dev
+    environment:
+      API_UPSTREAM: api:3000
+    ports:
+      - 127.0.0.1:${WEB_PORT:-8080}:80
+    depends_on:
+      api:
+        condition: service_healthy
+
+  web-prod:
+    profiles: [prod]
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    image: rustandspark-web:prod
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: api-prod:3000
+    ports:
+      - 127.0.0.1:${WEB_PORT:-8080}:80
+    depends_on:
+      api-prod:
+        condition: service_healthy
+
 volumes:
   postgres-data:
   redis-data:

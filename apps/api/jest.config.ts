@@ -82,7 +82,12 @@ const config: Config = {
     './src/jobs/processors/**/*.ts': { statements: 100, branches: 90, functions: 100, lines: 100 },
   },
   projects: [
-    { ...base, displayName: 'unit', rootDir: '.', testMatch: ['<rootDir>/src/**/*.spec.ts'] },
+    {
+      ...base,
+      displayName: 'unit',
+      rootDir: '.',
+      testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/unit/**/*.spec.ts'],
+    },
     {
       ...base,
       displayName: 'integration',
