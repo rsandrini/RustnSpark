@@ -12,7 +12,7 @@ export function HomePage() {
       <h1>{t('home.title')}</h1>
       {user ? (
         <>
-          <p>{t('home.greeting', { name: user.email })}</p>
+          <p>{t('home.greeting', { name: user.name })}</p>
           <button type="button" onClick={() => logout.mutate()}>
             {t('home.logout')}
           </button>

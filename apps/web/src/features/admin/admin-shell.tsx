@@ -16,7 +16,7 @@ export function AdminShell() {
           <Link to="/admin/tuning/entities/materials">{t('tuning.entities')}</Link>
           <Link to="/admin/tuning/revisions">{t('tuning.revisionHistoryTitle')}</Link>
         </nav>
-        <span>{user?.email}</span>
+        <span>{user?.name}</span>
         <button type="button" onClick={() => logout.mutate()}>
           {t('admin.logout')}
         </button>

@@ -4,9 +4,10 @@ export type { UserRole };
 
 export interface UserProfile {
   id: string;
-  email: string;
-  role: UserRole;
+  name: string;
+  credits: number;
   locale: string;
+  role: UserRole;
 }
 
 export interface LoginCredentials {
@@ -15,7 +16,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  callsign: string;
+  name: string;
   email: string;
   password: string;
 }

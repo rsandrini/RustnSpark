@@ -11,7 +11,7 @@
   },
   "register": {
     "title": "Create account",
-    "callsignLabel": "Callsign",
+    "nameLabel": "Name",
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "submit": "Create account",

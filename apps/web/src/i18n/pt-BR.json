@@ -11,7 +11,7 @@
   },
   "register": {
     "title": "Criar conta",
-    "callsignLabel": "Indicativo",
+    "nameLabel": "Nome",
     "emailLabel": "E-mail",
     "passwordLabel": "Senha",
     "submit": "Criar conta",

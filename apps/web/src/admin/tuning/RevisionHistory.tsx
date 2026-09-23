@@ -51,7 +51,7 @@ export function RevisionHistory() {
               <td>{revision.entityType}</td>
               <td>{revision.entityId}</td>
               <td>{revision.actor}</td>
-              <td>{new Date(revision.createdAt).toLocaleString()}</td>
+              <td>{new Date(revision.at).toLocaleString()}</td>
               <td>{revision.reason}</td>
               <td>
                 <button
