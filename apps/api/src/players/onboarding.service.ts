@@ -90,6 +90,7 @@ export class OnboardingService {
       const partsWithCatalog = await tx.partInstance.findMany({
         where: { id: { in: instances.map((i) => i.id) } },
         include: { partCatalog: true },
+        orderBy: { id: 'asc' },
       });
 
       const installedParts = partsWithCatalog.map((part) => ({

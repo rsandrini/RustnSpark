@@ -540,8 +540,7 @@ describe('parts and ships API (S4.3)', () => {
       const shipId = asShip(onboarded).id;
       await prisma.ship.update({ where: { id: shipId }, data: { status: 'ON_MISSION' } });
 
-      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
-      const layout = parts.map((part, index) => ({ partInstanceId: part.id, gx: index, gy: 0, rot: 0 }));
+      const layout = (await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).layout as Array<Record<string, unknown>>;
 
       const before = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
       const response = await request(httpServer(testApp.app))

@@ -64,7 +64,7 @@ export class PartsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async catalog(locale: Locale): Promise<CatalogItem[]> {
-    const rows = await this.prisma.partCatalog.findMany({ where: { active: true } });
+    const rows = await this.prisma.partCatalog.findMany({ where: { active: true }, orderBy: { partType: 'asc' } });
     return rows.map((row) => ({
       partType: row.partType,
       displayName: localize(row.displayName as Record<string, unknown>, locale),
@@ -76,6 +76,7 @@ export class PartsService {
     const rows = await this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId },
       include: { partCatalog: true },
+      orderBy: { id: 'asc' },
     });
     return rows.map((row) => ({
       id: row.id,
@@ -92,6 +93,7 @@ export class PartsService {
     return this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId },
       include: { partCatalog: true },
+      orderBy: { id: 'asc' },
     });
   }
 }

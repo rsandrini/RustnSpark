@@ -59,7 +59,7 @@ export class ShipsService implements OnModuleInit {
   }
 
   async findByPlayer(playerId: string): Promise<ShipResponse[]> {
-    const ships = await this.prisma.ship.findMany({ where: { ownerPlayerId: playerId } });
+    const ships = await this.prisma.ship.findMany({ where: { ownerPlayerId: playerId }, orderBy: { id: 'asc' } });
     const rules = this.configService.snapshot().rules;
     return Promise.all(ships.map((ship) => this.toResponse(ship, rules)));
   }
