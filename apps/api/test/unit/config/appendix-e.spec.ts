@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { getRegistryEntry } from '../../../src/config/config-registry.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import { validateGameRules } from '../../../src/config/game-rules.schema.js';
+import { roundHalfEven } from '../../../src/resolution/numeric/round-half-even.js';
 import {
   AMBUSH_CONSEQUENCES,
   APPENDIX_E_DEFAULTS,
@@ -39,18 +40,6 @@ function valueAt(rules: unknown, dottedKey: string): unknown {
     cursor = (cursor as Record<string, unknown>)[segment];
   }
   return cursor;
-}
-
-// Python round() is half-to-even (D16d): 4.5 → 4, 5.5 → 6, 2.5 → 2. S5.2 will move this
-// to src/resolution/numeric/round-half-even.ts; until then the gate carries its own copy so
-// a wrong factory default cannot hide behind a wrong helper.
-function roundHalfEven(value: number): number {
-  const floor = Math.floor(value);
-  const ceil = Math.ceil(value);
-  const midpoint = floor + 0.5;
-  if (value < midpoint) return floor;
-  if (value > midpoint) return ceil;
-  return floor % 2 === 0 ? floor : ceil;
 }
 
 function rating(pdf: number, hp: number, esc: number, bli: number, armorWeight: number): number {
