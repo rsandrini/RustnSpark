@@ -20,6 +20,8 @@ export interface PartCatalog {
   batCharge: number;
   batOutput: number;
   batInput: number;
+  pressurized: boolean;
+  lifeSupport: boolean;
 }
 
 export interface PartInstance {

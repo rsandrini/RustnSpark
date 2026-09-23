@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { checkViability } from '../../../src/ships/viability.js';
-import { buildInstalled } from './fixtures/catalog.js';
+import { buildInstalled, CATALOG_BY_TYPE } from './fixtures/catalog.js';
 
 const rules = GAME_CONFIG_DEFAULTS;
 
@@ -135,5 +135,44 @@ describe('checkViability', () => {
     const result = checkViability(sheet, parts, rules);
     expect(result.viable).toBe(false);
     expect(result.problems.map((p) => p.code)).toContain('STRUCTURE_EXCEEDED');
+  });
+
+  it('fails with BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
+    const base = buildInstalled(['bridge', 'battery_small', 'weapon_laser']);
+    const battery = { ...CATALOG_BY_TYPE.get('battery_small')!, batCharge: 1, batOutput: 1000 };
+    const parts = base.map((part) => (part.catalog.partType === 'battery_small' ? { ...part, catalog: battery } : part));
+    const sheet = deriveSheet(parts, rules);
+    const result = checkViability(sheet, parts, rules);
+    expect(result.problems.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
+    expect(result.problems.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+  });
+
+  it('fails with NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
+    const base = buildInstalled(['bridge', 'cargo']);
+    const pressurized = base.map((part) =>
+      part.catalog.partType === 'cargo' ? { ...part, catalog: { ...part.catalog, pressurized: true } } : part,
+    );
+    const sheet = deriveSheet(pressurized, rules);
+    const result = checkViability(sheet, pressurized, rules);
+    expect(result.problems.map((p) => p.code)).toContain('NO_LIFE_SUPPORT');
+  });
+
+  it('does not report NO_LIFE_SUPPORT when a life support part is installed', () => {
+    const base = buildInstalled(['bridge', 'cargo', 'sensor_radar']);
+    const parts = base.map((part) => {
+      if (part.catalog.partType === 'cargo') return { ...part, catalog: { ...part.catalog, pressurized: true } };
+      if (part.catalog.partType === 'sensor_radar') return { ...part, catalog: { ...part.catalog, lifeSupport: true } };
+      return part;
+    });
+    const sheet = deriveSheet(parts, rules);
+    const result = checkViability(sheet, parts, rules);
+    expect(result.problems.map((p) => p.code)).not.toContain('NO_LIFE_SUPPORT');
+  });
+
+  it('does not require a fuel tank for an ion-only build', () => {
+    const parts = buildInstalled(['bridge', 'engine_ion_micro', 'reactor_solar']);
+    const sheet = deriveSheet(parts, rules);
+    const result = checkViability(sheet, parts, rules);
+    expect(result.problems.map((p) => p.code)).not.toContain('NO_FUEL_CAPACITY');
   });
 });

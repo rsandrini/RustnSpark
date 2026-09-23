@@ -19,6 +19,13 @@ export interface InventoryItem {
   catalog: PartCatalog;
 }
 
+function readFlag(specialProp: unknown, key: string): boolean {
+  if (typeof specialProp !== 'object' || specialProp === null) {
+    return false;
+  }
+  return (specialProp as Record<string, unknown>)[key] === true;
+}
+
 export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
   return {
     partType: row.partType,
@@ -42,6 +49,8 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     batCharge: row.batCharge ?? 0,
     batOutput: row.batOutput ?? 0,
     batInput: row.batInput ?? 0,
+    pressurized: readFlag(row.specialProp, 'pressurized'),
+    lifeSupport: readFlag(row.specialProp, 'lifeSupport'),
   };
 }
 

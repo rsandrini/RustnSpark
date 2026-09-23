@@ -1,11 +1,16 @@
-import { describe, expect, it } from '@jest/globals';
+import { readFileSync } from 'node:fs';
+import { afterAll, beforeEach, describe, expect, it } from '@jest/globals';
 import {
   getTestPrismaClient,
   resetDatabase,
   closeTestPrismaClient,
 } from '../../test/support/test-db.js';
 import { seedGameConfig } from '../../prisma/seed-data/game-config.js';
-import { CONFIG_REGISTRY } from '../../src/config/config-registry.js';
+
+const MIGRATION_SQL = readFileSync(
+  new URL('../../prisma/migrations/0008_lower_upgrade_cost_thresholds/migration.sql', import.meta.url),
+  'utf8',
+);
 
 const OLD_DEFAULT = { 2: 2500, 3: 7000, 4: 16000, 5: 32000 };
 const NEW_DEFAULT = { 2: 1200, 3: 2000, 4: 2800, 5: 3800 };
@@ -15,7 +20,7 @@ describe('lower upgrade cost thresholds migration', () => {
 
   beforeEach(async () => {
     await resetDatabase(prisma);
-    await seedGameConfig(prisma, CONFIG_REGISTRY);
+    await seedGameConfig(prisma);
   });
 
   afterAll(async () => {
@@ -28,12 +33,7 @@ describe('lower upgrade cost thresholds migration', () => {
       data: { value: OLD_DEFAULT },
     });
 
-    await prisma.$executeRaw`
-      UPDATE "GameConfig"
-      SET "value" = ${JSON.stringify(NEW_DEFAULT)}::jsonb
-      WHERE "key" = 'economy.upgrade_costs'
-        AND "value" = ${JSON.stringify(OLD_DEFAULT)}::jsonb
-    `;
+    await prisma.$executeRawUnsafe(MIGRATION_SQL);
 
     const row = await prisma.gameConfig.findUniqueOrThrow({
       where: { key: 'economy.upgrade_costs' },
@@ -48,12 +48,7 @@ describe('lower upgrade cost thresholds migration', () => {
       data: { value: custom },
     });
 
-    await prisma.$executeRaw`
-      UPDATE "GameConfig"
-      SET "value" = ${JSON.stringify(NEW_DEFAULT)}::jsonb
-      WHERE "key" = 'economy.upgrade_costs'
-        AND "value" = ${JSON.stringify(OLD_DEFAULT)}::jsonb
-    `;
+    await prisma.$executeRawUnsafe(MIGRATION_SQL);
 
     const row = await prisma.gameConfig.findUniqueOrThrow({
       where: { key: 'economy.upgrade_costs' },

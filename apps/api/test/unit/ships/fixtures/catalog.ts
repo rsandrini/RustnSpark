@@ -23,6 +23,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'engine_chem_small',
@@ -46,6 +48,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'engine_chem_medium',
@@ -69,6 +73,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'engine_chem_large',
@@ -92,6 +98,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'engine_ion_micro',
@@ -115,6 +123,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'tank_small',
@@ -138,6 +148,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'battery_small',
@@ -161,6 +173,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 300,
     batOutput: 80,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'battery_large',
@@ -184,6 +198,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 900,
     batOutput: 200,
     batInput: 10,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'weapon_ballistic',
@@ -207,6 +223,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'weapon_laser',
@@ -230,6 +248,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'weapon_missile',
@@ -253,6 +273,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'armor_plate',
@@ -276,6 +298,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'hull',
@@ -299,6 +323,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'shield_basic',
@@ -322,6 +348,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'sensor_radar',
@@ -345,6 +373,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'cargo',
@@ -368,6 +398,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'mining_rig',
@@ -391,6 +423,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'reactor_solar',
@@ -414,6 +448,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   {
     partType: 'reactor_nuclear',
@@ -437,6 +473,8 @@ export const CATALOG_PARTS: PartCatalog[] = [
     batCharge: 0,
     batOutput: 0,
     batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
 ];
 

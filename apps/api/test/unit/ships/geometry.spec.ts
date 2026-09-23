@@ -28,6 +28,8 @@ describe('validateLayout', () => {
         batCharge: 0,
         batOutput: 0,
         batInput: 0,
+        pressurized: false,
+        lifeSupport: false,
       },
     ],
     [
@@ -54,6 +56,8 @@ describe('validateLayout', () => {
         batCharge: 0,
         batOutput: 0,
         batInput: 0,
+        pressurized: false,
+        lifeSupport: false,
       },
     ],
   ]);
