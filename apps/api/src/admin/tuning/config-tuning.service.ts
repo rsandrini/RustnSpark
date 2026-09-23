@@ -6,6 +6,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { validateConfigValue } from '../../config/game-rules.schema.js';
 import { GameConfigValidationError, type ConfigRegistryEntry } from '../../config/game-config.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { ConfigReferenceValidator } from './config-reference.validator.js';
 import { RevisionService } from './revision.service.js';
 import type {
   ConfigEntryResponse,
@@ -49,6 +50,7 @@ export class ConfigTuningService {
     private readonly gameConfigRepository: GameConfigRepository,
     private readonly revisionService: RevisionService,
     private readonly prisma: PrismaService,
+    private readonly references: ConfigReferenceValidator,
   ) {}
 
   async list(): Promise<ConfigEntryResponse[]> {
@@ -79,6 +81,7 @@ export class ConfigTuningService {
   async update(key: string, dto: UpdateConfigValueDto, actor: string): Promise<TuningRevision> {
     const entry = this.resolveEntry(key);
     const validated = validateConfigValue(key, dto.value);
+    await this.references.assertReferences(key, validated);
 
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
@@ -95,6 +98,7 @@ export class ConfigTuningService {
     const entry = this.resolveEntry(key);
     const factoryDefault = structuredClone(entry.factoryDefault);
     const validated = validateConfigValue(key, factoryDefault);
+    await this.references.assertReferences(key, validated);
 
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
@@ -122,6 +126,7 @@ export class ConfigTuningService {
 
     const entry = this.resolveEntry(target.entityId);
     const validated = validateConfigValue(target.entityId, target.before);
+    await this.references.assertReferences(target.entityId, validated);
 
     const revision = await this.prisma.$transaction(async (tx) => {
       const before = await this.getCurrentValue(target.entityId, tx);

@@ -336,6 +336,85 @@ describe('entity tuning (S3.8)', () => {
     expect(response.status).toBe(403);
   });
 
+  it('rejects deactivating a starter part through PATCH with STARTER_PART_REQUIRED', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+
+    const response = await request(server)
+      .patch('/v1/admin/tuning/parts/bridge')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ data: { active: false }, reason: 'sneak past the guard' });
+
+    expect(response.status).toBe(400);
+    expect((response.body as ErrorResponse).code).toBe('STARTER_PART_REQUIRED');
+    expect((await prisma.partCatalog.findUnique({ where: { partType: 'bridge' } }))?.active).toBe(true);
+  });
+
+  it('rejects renaming a part id through PATCH', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+
+    const response = await request(server)
+      .patch('/v1/admin/tuning/parts/weapon_ballistic')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ data: { partType: 'renamed_weapon' }, reason: 'rename' });
+
+    expect(response.status).toBe(400);
+    expect(await prisma.partCatalog.findUnique({ where: { partType: 'weapon_ballistic' } })).not.toBeNull();
+  });
+
+  it('rejects onboarding config that points at a missing or inactive part or a missing location', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+
+    const badParts = await request(server)
+      .patch('/v1/admin/tuning/config/onboarding.starter_parts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: ['bridge', 'no_such_part'], reason: 'bad ref', expectedRevision: 0 });
+    expect(badParts.status).toBe(400);
+    expect(JSON.stringify(badParts.body)).toContain('STARTER_PART_NOT_ACTIVE');
+
+    const badHome = await request(server)
+      .patch('/v1/admin/tuning/config/onboarding.home_locations')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: { luna: 'no_such_location', sun: 'no_such_location' }, reason: 'bad ref', expectedRevision: 0 });
+    expect(badHome.status).toBe(400);
+    expect(JSON.stringify(badHome.body)).toContain('HOME_LOCATION_NOT_FOUND');
+  });
+
+  it('reverting the retirement of a route recreates it instead of failing', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+    const ids = (await prisma.location.findMany({ orderBy: { id: 'asc' } })).map((l) => l.id);
+    const taken = new Set((await prisma.route.findMany()).map((r) => `${r.nodeAId}|${r.nodeBId}`));
+    const pair = ids.flatMap((x, i) => ids.slice(i + 1).map((y) => [x, y] as const)).find(([x, y]) => !taken.has(`${x}|${y}`));
+    const [a, b] = pair!;
+
+    const created = await request(server)
+      .post('/v1/admin/tuning/routes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ data: validRoutePayload('extra_route_for_revert', a, b), reason: 'extra route' });
+    expect(created.status).toBe(201);
+
+    const retired = await request(server)
+      .delete('/v1/admin/tuning/routes/extra_route_for_revert')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ reason: 'retire route' });
+    expect(retired.status).toBe(200);
+    expect(await prisma.route.findUnique({ where: { id: 'extra_route_for_revert' } })).toBeNull();
+
+    const reverted = await request(server)
+      .post(`/v1/admin/tuning/revisions/${(retired.body as EntityWriteResponse).revision.id}/revert`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ reason: 'undo retire' });
+    expect(reverted.status).toBe(200);
+    expect(await prisma.route.findUnique({ where: { id: 'extra_route_for_revert' } })).not.toBeNull();
+  });
+
   it('reverts an entity revision and restores the prior state', async () => {
     await seed(prisma);
     const server = httpServer(testApp.app);
