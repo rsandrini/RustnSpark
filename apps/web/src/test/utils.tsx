@@ -22,7 +22,10 @@ export function renderWithProviders(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         {wrapRouter ? (
-          <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>
+          <MemoryRouter
+            initialEntries={options.initialEntries ?? ['/']}
+            future={{ v7_relativeSplatPath: true }}
+          >
             {ui}
           </MemoryRouter>
         ) : (
@@ -39,6 +42,7 @@ export function renderWithRouter(
 ) {
   const router = createMemoryRouter(routes, {
     initialEntries: options.initialEntries ?? ['/'],
+    future: { v7_relativeSplatPath: true },
   });
   return renderWithProviders(<RouterProvider router={router} />, {
     withRouter: false,
