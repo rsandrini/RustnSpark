@@ -17,6 +17,7 @@
     "test:int": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects integration --runInBand",
     "test:e2e": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects e2e",
     "test:validation": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects validation",
+    "admin:create": "node --loader ts-node/esm src/admin/cli/create-admin.cli.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
