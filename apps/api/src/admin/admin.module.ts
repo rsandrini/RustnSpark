@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '../config/config.module.js';
 import { AdminController } from './admin.controller.js';
 import { AdminGuard } from './guards/admin.guard.js';
+import { BundleService } from './tuning/bundle.service.js';
+import { ConfigTuningController } from './tuning/config-tuning.controller.js';
+import { ConfigTuningService } from './tuning/config-tuning.service.js';
+import { RevisionService } from './tuning/revision.service.js';
 
 @Module({
-  controllers: [AdminController],
-  providers: [AdminGuard],
+  imports: [ConfigModule],
+  controllers: [AdminController, ConfigTuningController],
+  providers: [AdminGuard, ConfigTuningService, RevisionService, BundleService],
 })
 export class AdminModule {}
