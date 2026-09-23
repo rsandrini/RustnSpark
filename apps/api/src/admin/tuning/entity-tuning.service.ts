@@ -167,14 +167,18 @@ export class EntityTuningService {
   ): Promise<{ row: Record<string, unknown>; revision: TuningRevision }> {
     const schema = this.resolveSchema(entity);
     const validated = this.validateData(schema, data, 'update');
-    if (validated.id !== undefined && entity !== 'parts' && validated.id !== id) {
+    const idField = getIdField(entity);
+    if (validated[idField] !== undefined && validated[idField] !== id) {
       throw new GameConfigValidationError('Editing the row id is not allowed', [
-        { key: 'id', message: 'Editing the row id is not allowed' },
+        { key: idField, message: 'Editing the row id is not allowed' },
       ]);
+    }
+    if (validated.active === false) {
+      // Setting `active` directly is a retirement and must obey the same guards as DELETE.
+      this.assertCanRetire(entity, id);
     }
     await this.validateEntityRules(entity, validated, 'update', id);
 
-    const idField = getIdField(entity);
     const result = await this.prisma.$transaction(async (tx) => {
       const before = (await getDelegate(tx, entity).findUnique({
         where: { [idField]: id },
@@ -284,18 +288,32 @@ export class EntityTuningService {
     }
 
     const entity = revision.entityType;
-    const before = revision.before as Record<string, unknown>;
+    const schema = this.resolveSchema(entity);
     const idField = getIdField(entity);
-    const rowId = String(before[idField]);
+    const rowId = String(getEntityId(entity, revision.before as Record<string, unknown>));
+    // Restoring an old state goes through the same validation as a fresh write: a revision can
+    // predate rules (e.g. a symmetric faction matrix) that the restored row would now violate.
+    const restored = this.serializeRow(revision.before as Record<string, unknown>, schema);
+    // Nullable columns come back as null, which the create validator (optional, not nullable)
+    // rejects; validate without them but write the row back exactly as it was.
+    this.validateData(
+      schema,
+      Object.fromEntries(Object.entries(restored).filter(([, value]) => value !== null)),
+      'create',
+    );
 
     const result = await this.prisma.$transaction(async (tx) => {
       const current = (await getDelegate(tx, entity).findUnique({
         where: { [idField]: rowId },
       })) as Record<string, unknown> | null;
-      const row = (await getDelegate(tx, entity).update({
-        where: { [idField]: rowId },
-        data: before,
-      })) as Record<string, unknown>;
+      // Routes are hard-deleted on retirement, so reverting one recreates the row.
+      await this.validateEntityRules(entity, restored, current ? 'update' : 'create', rowId);
+      if (restored.active === false) {
+        this.assertCanRetire(entity, rowId);
+      }
+      const row = (current
+        ? await getDelegate(tx, entity).update({ where: { [idField]: rowId }, data: restored })
+        : await getDelegate(tx, entity).create({ data: restored })) as Record<string, unknown>;
       const newRevision = await this.createRevision(
         actor,
         entity,
@@ -350,11 +368,6 @@ export class EntityTuningService {
     }
     if (entity === 'mission-templates' && data.factionId !== undefined) {
       await this.validateFactionExists(data.factionId as string);
-    }
-    if (entity === 'locations' && mode === 'update' && data.id !== undefined && data.id !== existingId) {
-      throw new GameConfigValidationError('Editing a location id is not allowed', [
-        { key: 'id', message: 'Editing a location id is not allowed' },
-      ]);
     }
   }
 
@@ -435,14 +448,6 @@ export class EntityTuningService {
       if (starterParts.includes(id)) {
         throw new GameConfigValidationError(`Starter part ${id} cannot be retired`, [
           { key: id, message: 'STARTER_PART_REQUIRED' },
-        ]);
-      }
-    }
-    if (entity === 'locations') {
-      const homeLocations = Object.values(rules.onboarding.home_locations as Record<string, string>);
-      if (homeLocations.includes(id)) {
-        throw new GameConfigValidationError(`Home location ${id} cannot be retired`, [
-          { key: id, message: 'HOME_LOCATION_REQUIRED' },
         ]);
       }
     }

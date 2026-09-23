@@ -130,7 +130,7 @@ describe('ConfigScreen', () => {
               before: 1000,
               after: 1500,
               reason: 'initial',
-              createdAt: new Date().toISOString(),
+              at: new Date().toISOString(),
             },
           ],
           { status: 200 },
@@ -140,7 +140,7 @@ describe('ConfigScreen', () => {
         const body = await request.json();
         savedBodies.push(body);
         return HttpResponse.json(
-          { id: '6', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 2000, reason: 'tuning', createdAt: new Date().toISOString() },
+          { id: '6', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 2000, reason: 'tuning', at: new Date().toISOString() },
           { status: 200 },
         );
       }),
@@ -184,7 +184,7 @@ describe('ConfigScreen', () => {
       http.post('/v1/admin/tuning/config/economy.start_credits/reset', () => {
         resetCalled = true;
         return HttpResponse.json(
-          { id: '7', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 1000, reason: 'reset', createdAt: new Date().toISOString() },
+          { id: '7', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 1000, reason: 'reset', at: new Date().toISOString() },
           { status: 200 },
         );
       }),

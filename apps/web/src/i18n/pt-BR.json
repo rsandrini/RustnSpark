@@ -11,7 +11,7 @@
   },
   "register": {
     "title": "Criar conta",
-    "callsignLabel": "Indicativo",
+    "nameLabel": "Nome",
     "emailLabel": "E-mail",
     "passwordLabel": "Senha",
     "submit": "Criar conta",
@@ -94,7 +94,17 @@
     "ally": "Aliado",
     "resetConfirm": "Redefinir {{key}} para o padrão de fábrica?",
     "retireConfirm": "Desativar {{id}}?",
-    "revertConfirm": "Reverter revisão {{id}}?"
+    "revertConfirm": "Reverter revisão {{id}}?",
+    "entityNames": {
+      "parts": "Peças",
+      "materials": "Materiais",
+      "factions": "Facções",
+      "locations": "Locais",
+      "routes": "Rotas",
+      "environments": "Ambientes",
+      "mission-templates": "Modelos de missão",
+      "drop-tables": "Tabelas de drop"
+    }
   },
   "notFound": {
     "title": "Página não encontrada",
@@ -103,5 +113,8 @@
   "loading": "Carregando...",
   "error": {
     "unexpected": "Algo deu errado"
+  },
+  "language": {
+    "label": "Idioma"
   }
 }

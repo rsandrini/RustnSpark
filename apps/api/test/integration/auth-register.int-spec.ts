@@ -4,7 +4,11 @@ import request from 'supertest';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
-import { seedAccountWithPlayer } from '../support/auth-fixtures.js';
+import {
+  accessTokenFrom,
+  expectRefreshCookieAttributes,
+  seedAccountWithPlayer,
+} from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
 // Register behavior specs. Register is throttled at 3/min per IP (R20), so each test boots its
@@ -37,7 +41,7 @@ describe('POST /v1/auth/register', () => {
     return testApp.app.getHttpServer() as Server;
   }
 
-  it('returns 201 with the player profile and no cookie (R23)', async () => {
+  it('returns 201 with a session (access token + player profile + refresh cookie)', async () => {
     const response = await request(server()).post('/v1/auth/register').send({
       email: 'reg@example.com',
       password: 'reg-password-1',
@@ -46,13 +50,18 @@ describe('POST /v1/auth/register', () => {
     });
 
     expect(response.status).toBe(201);
-    expect(response.body).toEqual({
-      id: expect.any(String),
-      name: 'reg_pilot',
-      credits: 0,
-      locale: 'en',
+    expect(response.body).toMatchObject({
+      accessToken: expect.any(String),
+      player: {
+        id: expect.any(String),
+        name: 'reg_pilot',
+        credits: 0,
+        locale: 'en',
+        role: 'PLAYER',
+      },
     });
-    expect(response.headers['set-cookie']).toBeUndefined();
+    expect(typeof accessTokenFrom(response)).toBe('string');
+    expectRefreshCookieAttributes(response);
 
     const persisted = await prisma.player.findUnique({ where: { name: 'reg_pilot' } });
     expect(persisted).not.toBeNull();
@@ -118,7 +127,7 @@ describe('POST /v1/auth/register', () => {
       .send({ email: 'hdr@example.com', password: 'hdr-password-1', name: 'hdr_pilot' });
 
     expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({ locale: 'pt-BR' });
+    expect(response.body).toMatchObject({ player: { locale: 'pt-BR' } });
   });
 
   it("falls back to 'en' for an unsupported Accept-Language header", async () => {
@@ -128,7 +137,7 @@ describe('POST /v1/auth/register', () => {
       .send({ email: 'fallback@example.com', password: 'fallback-pass-1', name: 'fallback_pilot' });
 
     expect(response.status).toBe(201);
-    expect(response.body).toMatchObject({ locale: 'en' });
+    expect(response.body).toMatchObject({ player: { locale: 'en' } });
   });
 
   it('rejects an unsupported or wrongly-cased locale in the body with 400', async () => {

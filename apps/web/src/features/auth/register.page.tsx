@@ -6,13 +6,13 @@ import { useRegister } from './auth.hooks';
 export function RegisterPage() {
   const { t } = useTranslation();
   const register = useRegister();
-  const [callsign, setCallsign] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    register.mutate({ callsign, email, password });
+    register.mutate({ name, email, password });
   };
 
   return (
@@ -20,12 +20,12 @@ export function RegisterPage() {
       <h1>{t('register.title')}</h1>
       <form onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="callsign">{t('register.callsignLabel')}</label>
+          <label htmlFor="name">{t('register.nameLabel')}</label>
           <input
-            id="callsign"
+            id="name"
             type="text"
-            value={callsign}
-            onChange={(e) => setCallsign(e.target.value)}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
           />
         </div>

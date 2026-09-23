@@ -19,7 +19,6 @@ type MockedRepository = jest.Mocked<
     | 'findLatestSnapshot'
     | 'createRevision'
     | 'findLatestRevision'
-    | 'findRevisions'
     | 'findRevisionById'
   >
 >;
@@ -34,7 +33,6 @@ function buildMockRepository(): MockedRepository {
     findLatestSnapshot: jest.fn(),
     createRevision: jest.fn(),
     findLatestRevision: jest.fn(),
-    findRevisions: jest.fn(),
     findRevisionById: jest.fn(),
   };
 }

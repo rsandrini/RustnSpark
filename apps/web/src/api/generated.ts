@@ -1,11 +1,12 @@
 export interface RegisterRequest {
   email: string;
   password: string;
-  callsign: string;
+  name: string;
 }
 
 export interface RegisterResponse {
   accessToken: string;
+  player: PlayerProfileResponse;
 }
 
 export interface LoginRequest {
@@ -23,13 +24,14 @@ export interface RefreshResponse {
 
 export type LogoutRequest = Record<string, never>;
 
-export type UserRole = 'USER' | 'ADMIN';
+export type UserRole = 'PLAYER' | 'ADMIN';
 
 export interface PlayerProfileResponse {
   id: string;
-  email: string;
-  role: UserRole;
+  name: string;
+  credits: number;
   locale: string;
+  role: UserRole;
 }
 
 export interface UpdateLocaleRequest {
@@ -76,7 +78,7 @@ export interface TuningRevisionResponse {
   before: unknown;
   after: unknown;
   reason: string;
-  createdAt: string;
+  at: string;
 }
 
 export interface BundleExportEntry {

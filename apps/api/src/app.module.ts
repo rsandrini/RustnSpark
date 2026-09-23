@@ -11,6 +11,8 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PlayersModule } from './players/players.module.js';
+import { PartsModule } from './parts/parts.module.js';
+import { ShipsModule } from './ships/ships.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { TokenService } from './auth/token.service.js';
@@ -27,6 +29,8 @@ import { TokenService } from './auth/token.service.js';
     HealthModule,
     AuthModule,
     PlayersModule,
+    PartsModule,
+    ShipsModule,
     ConfigModule,
     AdminModule,
   ],

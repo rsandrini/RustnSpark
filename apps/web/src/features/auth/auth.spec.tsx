@@ -41,7 +41,7 @@ describe('auth flow', () => {
     const user = userEvent.setup();
     renderWithRouter(routes, { initialEntries: ['/register'] });
 
-    await user.type(screen.getByLabelText(/callsign/i), 'ace');
+    await user.type(screen.getByLabelText(/name/i), 'ace');
     await user.type(screen.getByLabelText(/email/i), 'ace@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password');
     await user.click(screen.getByRole('button', { name: /create account/i }));

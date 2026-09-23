@@ -6,6 +6,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { validateConfigValue } from '../../config/game-rules.schema.js';
 import { GameConfigValidationError, type ConfigRegistryEntry } from '../../config/game-config.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { ConfigReferenceValidator } from './config-reference.validator.js';
 import type { BundleEntryDto } from './dto/index.js';
 
 export interface BundleExportEntry {
@@ -40,6 +41,7 @@ export class BundleService {
     private readonly gameConfigRepository: GameConfigRepository,
     private readonly gameConfigService: GameConfigService,
     private readonly prisma: PrismaService,
+    private readonly references: ConfigReferenceValidator,
   ) {}
 
   async export(): Promise<BundleExport> {
@@ -66,6 +68,7 @@ export class BundleService {
     const diffs: BundleDiff[] = [];
     for (const entry of entries) {
       const { value, before } = this.validateBundleEntry(entry, rowsByKey);
+      await this.references.assertReferences(entry.key, value);
       diffs.push({ key: entry.key, before, after: value });
     }
 
@@ -79,6 +82,9 @@ export class BundleService {
     const validated: ValidatedBundleEntry[] = entries.map((entry) =>
       this.validateBundleEntry(entry, rowsByKey),
     );
+    for (const entry of validated) {
+      await this.references.assertReferences(entry.key, entry.value);
+    }
 
     const revisions = await this.prisma.$transaction(async (tx) => {
       const created: TuningRevision[] = [];

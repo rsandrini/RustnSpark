@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { ESLint } from 'eslint';
 import { existsSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, rmdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,6 +46,8 @@ describe('no-magic-numbers guard', () => {
         expect(errors.length).toBeGreaterThanOrEqual(1);
       } finally {
         await rm(fixturePath, { force: true });
+        // Only removes the directory this test created; a real, non-empty one is left alone.
+        await rmdir(fixtureDir).catch(() => undefined);
       }
     },
     30_000,

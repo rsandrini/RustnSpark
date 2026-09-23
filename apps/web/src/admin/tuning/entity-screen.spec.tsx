@@ -158,7 +158,7 @@ describe('EntityScreen', () => {
         const body = await request.json();
         savedBodies.push(body);
         return HttpResponse.json(
-          { row: { id: 'copper', displayName: { en: 'Copper', 'pt-BR': 'Cobre' }, rarity: 'COMMON', basePrice: 15 }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'copper', before: null, after: {}, reason: 'create', createdAt: new Date().toISOString() } },
+          { row: { id: 'copper', displayName: { en: 'Copper', 'pt-BR': 'Cobre' }, rarity: 'COMMON', basePrice: 15 }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'copper', before: null, after: {}, reason: 'create', at: new Date().toISOString() } },
           { status: 200 },
         );
       }),
@@ -234,7 +234,7 @@ describe('EntityScreen', () => {
       http.delete('/v1/admin/tuning/materials/iron', () => {
         retired = true;
         return HttpResponse.json(
-          { row: { ...materialsRows[0], active: false }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'iron', before: materialsRows[0], after: { ...materialsRows[0], active: false }, reason: 'retire', createdAt: new Date().toISOString() } },
+          { row: { ...materialsRows[0], active: false }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'iron', before: materialsRows[0], after: { ...materialsRows[0], active: false }, reason: 'retire', at: new Date().toISOString() } },
           { status: 200 },
         );
       }),

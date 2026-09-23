@@ -45,9 +45,9 @@ export class AuthService {
     private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
-  // R23: register creates the account + player and returns the profile only — no auto-login,
-  // no refresh token; the client follows up with /login.
-  async register(input: RegisterInput): Promise<PlayerProfile> {
+  // S3 C1: register creates the account + player and returns a full session so the client can
+  // use the access token immediately, same as login.
+  async register(input: RegisterInput): Promise<AuthSession> {
     // R17: emails are normalized before every query/write; the column stays a plain unique string.
     const email = input.email.toLowerCase();
     if (await this.hasConflict(email, input.name)) {
@@ -62,8 +62,13 @@ export class AuthService {
           locale: input.locale,
           account: { create: { email, passwordHash } },
         },
+        include: { account: true },
       });
-      return toPlayerProfile(player);
+      return this.buildSession(
+        player.account,
+        player,
+        await this.refreshTokenService.issue(player.account.id),
+      );
     } catch (error) {
       // Unique-violation race between the pre-check and the write: same non-revealing 409.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -146,6 +151,6 @@ export class AuthService {
       playerId: player.id,
       role: account.role,
     });
-    return { accessToken, refresh, player: toPlayerProfile(player) };
+    return { accessToken, refresh, player: toPlayerProfile(player, account.role) };
   }
 }

@@ -10,7 +10,7 @@ function mockAdminUser() {
   server.use(
     http.get('/v1/players/me', () =>
       HttpResponse.json(
-        { id: 'p1', email: 'admin@example.com', role: 'ADMIN', locale: 'en' },
+        { id: 'p1', name: 'Admin Pilot', credits: 0, role: 'ADMIN', locale: 'en' },
         { status: 200 },
       ),
     ),
@@ -21,7 +21,7 @@ function mockNonAdminUser() {
   server.use(
     http.get('/v1/players/me', () =>
       HttpResponse.json(
-        { id: 'p1', email: 'user@example.com', role: 'USER', locale: 'en' },
+        { id: 'p1', name: 'User Pilot', credits: 0, role: 'PLAYER', locale: 'en' },
         { status: 200 },
       ),
     ),
@@ -124,10 +124,14 @@ describe('admin tuning routing', () => {
       await screen.findByRole('heading', { name: /tuning/i }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('link', { name: /entities/i }));
+    await user.click(screen.getByRole('link', { name: 'Materials' }));
     expect(
       await screen.findByRole('heading', { name: /materials/i }),
     ).toBeInTheDocument();
+
+    for (const name of ['Parts', 'Factions', 'Locations', 'Routes', 'Environments', 'Mission templates', 'Drop tables']) {
+      expect(screen.getByRole('link', { name })).toBeInTheDocument();
+    }
 
     await user.click(screen.getByRole('link', { name: /revision history/i }));
     expect(

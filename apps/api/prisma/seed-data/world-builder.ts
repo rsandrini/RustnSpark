@@ -269,8 +269,9 @@ export async function seedWorld(prisma: PrismaClient): Promise<void> {
           id,
           displayName: { en: englishName(raw.name), 'pt-BR': raw.name },
           description: {
-            en: `${englishName(raw.name)} — a ${TYPE_MAP[raw.kind] ?? 'outpost'} in the sector.`,
-            'pt-BR': `${raw.name} — um ${TYPE_MAP[raw.kind] ?? 'outpost'} no setor.`,
+            en: `${englishName(raw.name)} — a ${(TYPE_MAP[raw.kind] ?? 'outpost').replaceAll('_', ' ')} in the sector.`,
+            // raw.kind is already the Portuguese label; the TYPE_MAP slug is English.
+            'pt-BR': `${raw.name} — ${raw.kind.toLowerCase()} no setor.`,
           },
           type: TYPE_MAP[raw.kind] ?? 'outpost',
           x: raw.x,

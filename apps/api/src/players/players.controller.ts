@@ -4,13 +4,18 @@ import {
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
+import { OnboardingDto } from './dto/onboarding.dto.js';
+import { OnboardingService } from './onboarding.service.js';
 import { PlayersService, type PlayerProfile } from './players.service.js';
 
 // No @Public() anywhere here: the global JwtAuthGuard's default-deny applies (R28), and the
 // player is identified by the token claims rather than a path param (no OwnershipGuard needed).
 @Controller('players')
 export class PlayersController {
-  constructor(private readonly playersService: PlayersService) {}
+  constructor(
+    private readonly playersService: PlayersService,
+    private readonly onboardingService: OnboardingService,
+  ) {}
 
   @Get('me')
   getMe(@CurrentUser() user: CurrentUserPayload): Promise<PlayerProfile> {
@@ -24,5 +29,14 @@ export class PlayersController {
     @Body() dto: UpdateLocaleDto,
   ): Promise<PlayerProfile> {
     return this.playersService.updateLocale(user.playerId, dto.locale);
+  }
+
+  @Post('me/onboarding')
+  @HttpCode(200)
+  onboard(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: OnboardingDto,
+  ) {
+    return this.onboardingService.onboard(user.playerId, dto.faction);
   }
 }

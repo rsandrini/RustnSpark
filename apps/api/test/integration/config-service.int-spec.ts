@@ -72,6 +72,36 @@ describe('GameConfigService integration', () => {
     }
   }, 10000);
 
+  async function writeWithoutPublishing(key: string, value: unknown): Promise<void> {
+    const repository = module!.get(GameConfigRepository);
+    const prismaService = module!.get(PrismaService);
+    await prismaService.$transaction(async (tx) => {
+      await repository.upsert(key, value, 'INTEGER', { en: 'x', 'pt-BR': 'x' }, 'tester', tx);
+      await repository.createRevision(
+        { actor: 'tester', entityType: 'GameConfig', entityId: key, before: null as never, after: value as never, reason: 'silent write' },
+        tx,
+      );
+    });
+  }
+
+  it('self-heals via the version poll when a pub/sub message was missed', async () => {
+    await writeWithoutPublishing('economy.start_credits', 4321);
+    expect(serviceA!.snapshot().rules.economy.start_credits).not.toBe(4321);
+
+    await serviceA!.pollForChanges();
+
+    expect(serviceA!.snapshot().rules.economy.start_credits).toBe(4321);
+  });
+
+  it('keeps the last good snapshot and does not throw when a reload fails', async () => {
+    const before = serviceA!.snapshot();
+    await writeWithoutPublishing('economy.start_credits', 'not-a-number');
+
+    await expect(serviceA!.pollForChanges()).resolves.toBeUndefined();
+
+    expect(serviceA!.snapshot().hash).toBe(before.hash);
+  });
+
   it('byHash(snapshot().hash) returns the same rules', async () => {
     const snapshot = serviceA!.snapshot();
     const fromHash = await serviceA!.byHash(snapshot.hash);
@@ -87,58 +117,6 @@ describe('GameConfigService integration', () => {
     const after = serviceA!.snapshot();
     expect(after.version).toBe(before.version);
     expect(after.rules.economy.start_credits).toBe(before.rules.economy.start_credits);
-    const revisions = await serviceA!.getRevisions('GameConfig', 'economy.start_credits');
-    expect(revisions).toHaveLength(0);
-  });
-
-  it('resetToFactoryDefault writes the factory default as current and increments version', async () => {
-    await serviceA!.setValue('economy.start_credits', 5000, 'tester', 'override');
-    const overridden = serviceA!.snapshot();
-    expect(overridden.rules.economy.start_credits).toBe(5000);
-
-    await serviceA!.resetToFactoryDefault('economy.start_credits', 'tester', 'reset');
-    const reset = serviceA!.snapshot();
-    expect(reset.rules.economy.start_credits).toBe(GAME_CONFIG_DEFAULTS.economy.start_credits);
-    expect(reset.version).toBeGreaterThan(overridden.version);
-  });
-
-  it('revertRevision restores the prior value', async () => {
-    const first = await serviceA!.setValue('economy.start_credits', 4000, 'tester', 'set-4000');
-    expect(serviceA!.snapshot().rules.economy.start_credits).toBe(4000);
-
-    await serviceA!.revertRevision(first.id, 'tester');
-    const reverted = serviceA!.snapshot();
-    expect(reverted.rules.economy.start_credits).toBe(GAME_CONFIG_DEFAULTS.economy.start_credits);
-    expect(reverted.version).toBeGreaterThan(Number(first.id));
-  });
-
-  it('setValues bundle writes all keys atomically and creates one revision per key', async () => {
-    const revisions = await serviceA!.setValues(
-      [
-        { key: 'economy.start_credits', value: 3000, reason: 'bundle-1' },
-        { key: 'combat.dc_base', value: 12, reason: 'bundle-2' },
-      ],
-      'tester',
-    );
-    expect(revisions).toHaveLength(2);
-
-    const snapshot = serviceA!.snapshot();
-    expect(snapshot.rules.economy.start_credits).toBe(3000);
-    expect(snapshot.rules.combat.dc_base).toBe(12);
-
-    await expect(
-      serviceA!.setValues(
-        [
-          { key: 'economy.start_credits', value: 3500, reason: 'bundle-3' },
-          { key: 'combat.dc_base', value: 999, reason: 'bundle-bad' },
-        ],
-        'tester',
-      ),
-    ).rejects.toBeInstanceOf(GameConfigValidationError);
-
-    const afterFailed = serviceA!.snapshot();
-    expect(afterFailed.rules.economy.start_credits).toBe(3000);
-    expect(afterFailed.rules.combat.dc_base).toBe(12);
-    expect(await serviceA!.getRevisions('GameConfig')).toHaveLength(2);
+    expect(await prisma.tuningRevision.count({ where: { entityId: 'economy.start_credits' } })).toBe(0);
   });
 });

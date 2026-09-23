@@ -68,17 +68,6 @@ export class GameConfigRepository {
     return client.tuningRevision.findFirst({ orderBy: { id: 'desc' } });
   }
 
-  async findRevisions(
-    filters: { entityType?: string; entityId?: string } = {},
-    tx?: Prisma.TransactionClient,
-  ): Promise<TuningRevision[]> {
-    const client = tx ?? this.prisma;
-    const where: Prisma.TuningRevisionWhereInput = {};
-    if (filters.entityType) where.entityType = filters.entityType;
-    if (filters.entityId) where.entityId = filters.entityId;
-    return client.tuningRevision.findMany({ where, orderBy: { id: 'desc' } });
-  }
-
   async findRevisionsPaginated(
     filters: { entityType?: string; entityId?: string; limit?: number; offset?: number } = {},
     tx?: Prisma.TransactionClient,

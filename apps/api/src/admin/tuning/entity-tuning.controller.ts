@@ -14,7 +14,7 @@ import {
 import type { TuningRevision } from '@prisma/client';
 import { AdminGuard } from '../guards/admin.guard.js';
 import { ConfigTuningApiError, ConfigTuningApiErrorFilter } from './config-tuning-error.filter.js';
-import { ConfigTuningService, RevisionMismatchError } from './config-tuning.service.js';
+import { RevisionMismatchError } from './config-tuning.service.js';
 import { CreateEntityDto, RetireEntityDto, RevertRevisionDto, UpdateEntityDto } from './dto/index.js';
 import { EntityTuningService } from './entity-tuning.service.js';
 import { CurrentUser, type CurrentUserPayload } from '../../common/decorators/current-user.decorator.js';
@@ -33,7 +33,6 @@ function serializeRevision(revision: TuningRevision): Record<string, unknown> {
 export class EntityTuningController {
   constructor(
     private readonly entityTuningService: EntityTuningService,
-    private readonly configTuningService: ConfigTuningService,
   ) {}
 
   @Get('schema/:entity')

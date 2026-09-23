@@ -46,19 +46,23 @@ describe('auth endpoints (S2.3)', () => {
   it('runs the full register → login → me → locale → refresh → logout flow', async () => {
     const server = httpServer(testApp.app);
 
-    // R23: register returns 201 + the player profile only — no auto-login, no refresh cookie.
+    // S3 C1: register returns 201 + a full session (access token + player + refresh cookie).
     const registerResponse = await request(server)
       .post('/v1/auth/register')
       .set('Accept-Language', 'pt-BR,pt;q=0.9')
       .send({ email: 'flow@example.com', password: 'flow-password-1', name: 'flow_pilot' });
     expect(registerResponse.status).toBe(201);
-    expect(registerResponse.body).toEqual({
-      id: expect.any(String),
-      name: 'flow_pilot',
-      credits: 0,
-      locale: 'pt-BR',
+    expect(registerResponse.body).toMatchObject({
+      accessToken: expect.any(String),
+      player: {
+        id: expect.any(String),
+        name: 'flow_pilot',
+        credits: 0,
+        locale: 'pt-BR',
+        role: 'PLAYER',
+      },
     });
-    expect(registerResponse.headers['set-cookie']).toBeUndefined();
+    expectRefreshCookieAttributes(registerResponse);
 
     const loginResponse = await request(server)
       .post('/v1/auth/login')
@@ -66,7 +70,7 @@ describe('auth endpoints (S2.3)', () => {
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.body).toMatchObject({
       accessToken: expect.any(String),
-      player: registerResponse.body as unknown,
+      player: (registerResponse.body as unknown as Record<string, unknown>).player,
     });
     expectRefreshCookieAttributes(loginResponse);
     const loginCookie = refreshCookiePairFrom(loginResponse);
@@ -76,7 +80,9 @@ describe('auth endpoints (S2.3)', () => {
       .get('/v1/players/me')
       .set('Authorization', `Bearer ${accessToken}`);
     expect(meResponse.status).toBe(200);
-    expect(meResponse.body).toEqual(registerResponse.body);
+    expect(meResponse.body).toEqual(
+      (registerResponse.body as unknown as Record<string, unknown>).player,
+    );
 
     const localeResponse = await request(server)
       .post('/v1/players/me/locale')
