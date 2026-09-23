@@ -4,7 +4,7 @@ import { ModulesContainer } from '@nestjs/core';
 import { AdminGuard } from '../../src/admin/guards/admin.guard.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 
-type Ctor = new (...args: never[]) => unknown;
+type Ctor = { name: string; prototype: Record<string, unknown> };
 
 function guardsOf(target: object): unknown[] {
   return (Reflect.getMetadata(GUARDS_METADATA, target) as unknown[] | undefined) ?? [];
@@ -41,10 +41,10 @@ describe('AdminGuard coverage', () => {
       const classGuarded = guardsOf(ctor).includes(AdminGuard);
       if (classGuarded) continue;
       const handlers = Object.getOwnPropertyNames(ctor.prototype).filter(
-        (name) => name !== 'constructor' && typeof ctor.prototype[name as keyof typeof ctor.prototype] === 'function',
+        (name) => name !== 'constructor' && typeof ctor.prototype[name] === 'function',
       );
       for (const name of handlers) {
-        const handler = ctor.prototype[name as keyof typeof ctor.prototype] as object;
+        const handler = ctor.prototype[name] as object;
         const isRoute = Reflect.getMetadata('path', handler) !== undefined;
         if (isRoute) {
           expect({ controller: ctor.name, handler: name, guarded: guardsOf(handler).includes(AdminGuard) }).toEqual({

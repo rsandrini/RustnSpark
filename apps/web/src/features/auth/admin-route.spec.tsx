@@ -10,7 +10,7 @@ describe('admin route guard', () => {
     server.use(
       http.get('/v1/players/me', () =>
         HttpResponse.json(
-          { id: 'p1', name: 'User Pilot', credits: 0, role: 'USER', locale: 'en' },
+          { id: 'p1', name: 'User Pilot', credits: 0, role: 'PLAYER', locale: 'en' },
           { status: 200 },
         ),
       ),

@@ -76,7 +76,7 @@ describe('GameConfigService integration', () => {
     const repository = module!.get(GameConfigRepository);
     const prismaService = module!.get(PrismaService);
     await prismaService.$transaction(async (tx) => {
-      await repository.upsert(key, value as never, 'INTEGER', { en: 'x', 'pt-BR': 'x' }, 'tester', tx);
+      await repository.upsert(key, value, 'INTEGER', { en: 'x', 'pt-BR': 'x' }, 'tester', tx);
       await repository.createRevision(
         { actor: 'tester', entityType: 'GameConfig', entityId: key, before: null as never, after: value as never, reason: 'silent write' },
         tx,

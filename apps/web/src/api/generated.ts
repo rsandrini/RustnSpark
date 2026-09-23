@@ -24,7 +24,7 @@ export interface RefreshResponse {
 
 export type LogoutRequest = Record<string, never>;
 
-export type UserRole = 'USER' | 'ADMIN';
+export type UserRole = 'PLAYER' | 'ADMIN';
 
 export interface PlayerProfileResponse {
   id: string;
