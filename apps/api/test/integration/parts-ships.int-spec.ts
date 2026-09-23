@@ -46,6 +46,7 @@ interface PreviewResponse {
   sheet: SheetShape;
   viability: { viable: boolean; problems: Array<Record<string, unknown>> };
   layout: Array<Record<string, unknown>>;
+  omittedPartInstanceIds: string[];
 }
 
 function httpServer(app: INestApplication): Server {
@@ -444,6 +445,77 @@ describe('parts and ships API (S4.3)', () => {
       const ship = asShip(response);
       expect(ship.sheet.mob).toBeGreaterThanOrEqual(1);
       expect(ship.sheet.fuelCap).toBeGreaterThan(0);
+    });
+  });
+
+  describe('auto-assemble consistency', () => {
+    async function withOversizedPart(): Promise<{ token: string; shipId: string; oversizedId: string }> {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      const hull = await prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'hull' } });
+      await prisma.partCatalog.create({
+        data: {
+          ...hull,
+          partType: 'oversized_test',
+          w: 25,
+          h: 25,
+          displayName: hull.displayName ?? {},
+          description: hull.description ?? {},
+          specialProp: hull.specialProp ?? undefined,
+        },
+      });
+      const oversized = await prisma.partInstance.create({
+        data: { partType: 'oversized_test', ownerPlayerId: seeded.player.id, condition: 100 },
+      });
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id, id: { not: oversized.id } },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+      return { token, shipId, oversizedId: oversized.id };
+    }
+
+    it('rejects auto-assemble when a part cannot be placed instead of saving a different ship', async () => {
+      const { token, shipId, oversizedId } = await withOversizedPart();
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/auto-assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(response.body)).toContain('AUTO_LAYOUT_OMITTED_PARTS');
+      expect(JSON.stringify(response.body)).toContain(oversizedId);
+      const saved = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
+      expect(saved.layout).toEqual([]);
+    });
+
+    it('reports omitted parts in preview and derives the sheet from placed parts only', async () => {
+      const { token, shipId, oversizedId } = await withOversizedPart();
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(asPreview(response).omittedPartInstanceIds).toEqual([oversizedId]);
+    });
+
+    it('rejects auto-assemble referencing a part the player does not own with 403', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/auto-assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ partInstanceIds: ['00000000-0000-4000-8000-000000000000'] });
+
+      expect(response.status).toBe(403);
     });
   });
 

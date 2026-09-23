@@ -36,6 +36,7 @@ export interface PreviewResponse {
   sheet: ShipSheet;
   viability: { viable: boolean; problems: ViabilityProblem[] };
   layout: Placement[];
+  omittedPartInstanceIds: string[];
 }
 
 @Injectable()
@@ -92,8 +93,14 @@ export class ShipsService implements OnModuleInit {
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-    const installed = candidateParts.map(toInstalledPart);
-    const layout = autoLayout(installed, buildCatalogMap(installed));
+    const { layout, placed, omitted } = arrange(candidateParts.map(toInstalledPart));
+    if (omitted.length > 0) {
+      throw new BadRequestException({
+        error: 'AUTO_LAYOUT_OMITTED_PARTS',
+        omittedPartInstanceIds: omitted.map((part) => part.instance.id),
+      });
+    }
+    const installed = placed;
 
     this.assertLayoutValid(layout, playerParts, shipId);
     const sheet = deriveSheet(installed, rules);
@@ -111,6 +118,7 @@ export class ShipsService implements OnModuleInit {
 
     let installed: InstalledPart[];
     let effectiveLayout: Placement[];
+    let omittedPartInstanceIds: string[] = [];
 
     if (layout !== undefined && layout.length > 0) {
       this.assertLayoutValid(layout, playerParts, shipId);
@@ -118,14 +126,16 @@ export class ShipsService implements OnModuleInit {
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      installed = candidateParts.map(toInstalledPart);
-      effectiveLayout = autoLayout(installed, buildCatalogMap(installed));
+      const arranged = arrange(candidateParts.map(toInstalledPart));
+      installed = arranged.placed;
+      effectiveLayout = arranged.layout;
+      omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
       this.assertLayoutValid(effectiveLayout, playerParts, shipId);
     }
 
     const sheet = deriveSheet(installed, rules);
     const viability = checkViability(sheet, installed, rules);
-    return { sheet, viability, layout: effectiveLayout };
+    return { sheet, viability, layout: effectiveLayout, omittedPartInstanceIds };
   }
 
   async setStance(shipId: string, stance: Ship['stance']): Promise<ShipResponse> {
@@ -207,6 +217,10 @@ export class ShipsService implements OnModuleInit {
       return playerParts.filter((part) => part.location === 'INVENTORY');
     }
     const allowed = new Set(partInstanceIds);
+    const owned = new Set(playerParts.map((part) => part.id));
+    if ([...allowed].some((id) => !owned.has(id))) {
+      throw new ForbiddenException('request references a part not owned by player');
+    }
     return playerParts.filter((part) => allowed.has(part.id));
   }
 
@@ -272,6 +286,22 @@ type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog }
 
 function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
   return { instance: part, catalog: pickCatalogStats(part.partCatalog) };
+}
+
+// autoLayout may leave parts out when they do not fit; callers must derive and check the sheet
+// from `placed` (what is actually saved), never from the requested list.
+function arrange(requested: InstalledPart[]): {
+  layout: Placement[];
+  placed: InstalledPart[];
+  omitted: InstalledPart[];
+} {
+  const layout = autoLayout(requested, buildCatalogMap(requested));
+  const placedIds = new Set(layout.map((placement) => placement.partInstanceId));
+  return {
+    layout,
+    placed: requested.filter((part) => placedIds.has(part.instance.id)),
+    omitted: requested.filter((part) => !placedIds.has(part.instance.id)),
+  };
 }
 
 function buildCatalogMapFromPrisma(
