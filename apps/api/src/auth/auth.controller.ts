@@ -31,15 +31,21 @@ export class AuthController {
 
   @Post('register')
   @ThrottleRoute({ limit: 3, ttlMs: 60_000, key: 'ip' })
-  register(@Body() dto: RegisterDto, @Req() request: Request): Promise<PlayerProfile> {
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ accessToken: string; player: PlayerProfile }> {
     // An explicit body locale wins; otherwise Accept-Language decides, falling back to 'en'.
     const locale = dto.locale ?? resolveLocaleFromHeader(request.headers['accept-language']);
-    return this.authService.register({
+    const session = await this.authService.register({
       email: dto.email,
       password: dto.password,
       name: dto.name,
       locale,
     });
+    setRefreshCookie(response, session);
+    return { accessToken: session.accessToken, player: session.player };
   }
 
   @Post('login')

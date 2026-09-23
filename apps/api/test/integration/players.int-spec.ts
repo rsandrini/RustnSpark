@@ -60,6 +60,7 @@ describe('players/me endpoints (S2.3)', () => {
       name: seeded.player.name,
       credits: 0,
       locale: 'pt-BR',
+      role: seeded.account.role,
     });
   });
 
