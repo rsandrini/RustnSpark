@@ -3,8 +3,7 @@ import type { GameRules } from '../config/game-config.types.js';
 const SQUARED = 2;
 
 export function performance(condition: number, rules: GameRules): number {
-  const floor = rules.wear.performance_floor;
-  return floor + (1 - floor) * (condition / 100);
+  return rules.wear.performance_floor + rules.wear.performance_slope * (condition / 100);
 }
 
 export function chokeChance(condition: number, rules: GameRules): number {

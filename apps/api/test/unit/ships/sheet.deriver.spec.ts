@@ -433,4 +433,12 @@ describe('sheet.deriver', () => {
       expect(effective.mob).toBe(base.mob);
     });
   });
+
+  it('adds a full tank of fuel mass, so ship.fuel_mass_per_unit affects mass and MOB', () => {
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small']);
+    const base = deriveSheet(parts, rules);
+    const heavier = deriveSheet(parts, { ...rules, ship: { ...rules.ship, fuel_mass_per_unit: 0.1 } });
+    expect(heavier.mass).toBeCloseTo(base.mass + base.fuelCap * 0.1);
+    expect(heavier.mob).toBeLessThanOrEqual(base.mob);
+  });
 });

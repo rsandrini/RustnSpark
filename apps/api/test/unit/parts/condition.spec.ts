@@ -6,6 +6,12 @@ const rules = GAME_CONFIG_DEFAULTS;
 
 describe('condition', () => {
   describe('performance', () => {
+    it('follows wear.performance_slope when it is tuned', () => {
+      const tuned = { ...rules, wear: { ...rules.wear, performance_slope: 0.25 } };
+      expect(performance(100, tuned)).toBe(rules.wear.performance_floor + 0.25);
+    });
+
+
     it('returns 1.0 at condition 100', () => {
       expect(performance(100, rules)).toBe(1);
     });

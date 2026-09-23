@@ -43,7 +43,8 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
   const fuelUse = sumStat(parts, 'fuelUse');
   const fuelCap = sumStat(parts, 'fuelCap');
   const pot = sumStat(parts, 'pot');
-  const mass = sumStat(parts, 'mass');
+  // A full tank is part of the ship's mass; the factor is Admin-tunable and 0 by default.
+  const mass = sumStat(parts, 'mass') + fuelCap * rules.ship.fuel_mass_per_unit;
 
   const mobRaw = mass === 0 ? 0 : (pot / mass) * rules.ship.mob_factor;
   const mob = Math.max(MIN_MOB, roundHalfEven(mobRaw));
