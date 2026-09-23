@@ -49,3 +49,12 @@ function matchSupportedLocale(tag: string): Locale | undefined {
   if (primary === 'en') return 'en';
   return undefined;
 }
+
+// Parses an explicit locale parameter; unsupported or empty values fall back to the default.
+export function parseLocale(value: string | undefined): Locale {
+  if (!value) return DEFAULT_LOCALE;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'pt-br' || normalized === 'pt') return 'pt-BR';
+  if (normalized === 'en') return 'en';
+  return DEFAULT_LOCALE;
+}

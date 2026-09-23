@@ -41,6 +41,8 @@ model Player {
   credits         Int              @default(0)
   // Plain string, not an enum: `pt-BR` is not a valid enum member; DTO validation enforces values.
   locale          String           @default("en")
+  // Faction chosen during onboarding; null until a player completes onboarding.
+  factionId       String?
   createdAt       DateTime         @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
