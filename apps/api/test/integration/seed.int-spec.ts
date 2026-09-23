@@ -256,6 +256,19 @@ describe('database seed (S3.4)', () => {
     }
   });
 
+  it('seeds location descriptions that are actually translated, not English slugs in Portuguese text', async () => {
+    await seed(prisma);
+
+    const locations = await prisma.location.findMany();
+    expect(locations.length).toBeGreaterThan(0);
+    for (const row of locations) {
+      const description = row.description as { en: string; 'pt-BR': string };
+      expect(description['pt-BR']).not.toBe(description.en);
+      expect(description['pt-BR']).not.toMatch(new RegExp(`\\b${row.type}\\b`));
+      expect(description['pt-BR']).toMatch(/no setor\.$/);
+    }
+  });
+
   it('seeds non-empty en and pt-BR display names and descriptions for every locale entity', async () => {
     await seed(prisma);
 
