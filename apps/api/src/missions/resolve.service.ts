@@ -16,6 +16,7 @@ import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
+import { EncounterService } from './encounters/encounter.service.js';
 
 const OBJECT_CARRIED_TYPES: readonly string[] = ['DELIVERY', 'TRANSPORT', 'RESCUE'];
 const NO_MISSION_LOG = '';
@@ -76,6 +77,7 @@ export class MissionResolveService {
     private readonly config: GameConfigService,
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
+    private readonly encounters: EncounterService,
   ) {}
 
   async resolve(data: DispatchJobData): Promise<ResolveJobResult> {
@@ -205,6 +207,9 @@ export class MissionResolveService {
     const credited = Math.round(outcome.creditsDelta);
 
     await this.prisma.$transaction(async (tx) => {
+      // S7.5: detect PvP overlaps against RoutePresence and write at most one
+      // Encounter row per (A, B, route, leg); both logs receive the same event.
+      const encounterEvents = await this.encounters.collectForResolve(mission, snapshot, tx);
       await tx.missionLog.create({
         data: {
           missionId,
@@ -213,7 +218,10 @@ export class MissionResolveService {
           rulesHash: hash,
           outcome: outcome.status,
           shipSnapshot: snapshot as unknown as Prisma.InputJsonValue,
-          legs: { legs: outcome.legs, events: outcome.events } as unknown as Prisma.InputJsonValue,
+          legs: {
+            legs: outcome.legs,
+            events: [...outcome.events, ...encounterEvents],
+          } as unknown as Prisma.InputJsonValue,
         },
       });
       for (const part of outcome.parts) {

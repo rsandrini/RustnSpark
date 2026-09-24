@@ -14,6 +14,8 @@ import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { BoardService } from './board.service.js';
 import { DispatchService } from './dispatch.service.js';
+import { EncounterService } from './encounters/encounter.service.js';
+import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
@@ -52,6 +54,8 @@ import { MissionResolveService } from './resolve.service.js';
     DispatchService,
     MissionProducer,
     MissionResolveService,
+    EncounterService,
+    RoutePresenceService,
     WalletService,
     PlayerEventService,
   ],

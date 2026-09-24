@@ -4,6 +4,8 @@ import { EnvModule, EnvService } from '../common/env/env.module.js';
 import { ConfigModule } from '../config/config.module.js';
 import { PartsService } from '../parts/parts.service.js';
 import { MissionResolveService } from '../missions/resolve.service.js';
+import { EncounterService } from '../missions/encounters/encounter.service.js';
+import { RoutePresenceService } from '../missions/encounters/route-presence.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { MissionProcessor } from './processors/mission.processor.js';
@@ -60,6 +62,8 @@ import {
     ReconcileProcessor,
     ReconcileScheduler,
     MissionResolveService,
+    EncounterService,
+    RoutePresenceService,
     PartsService,
     WalletService,
     PlayerEventService,
