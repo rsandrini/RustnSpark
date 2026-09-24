@@ -11,11 +11,13 @@ export interface MissionLoot {
   readonly quantity: number;
 }
 
-/** Who an event touched. `enemy` is the generated pirate (D23 — no NPC table). */
+/** Who an event touched. `enemy` is the generated pirate (D23 — no NPC table);
+ *  `opponentShipId` is the other player's ship on a PvP overlap (S7.5). */
 export interface MissionActors {
   readonly playerShipId: string;
   readonly clientShipId?: string;
   readonly enemy?: 'pirate';
+  readonly opponentShipId?: string;
 }
 
 /**

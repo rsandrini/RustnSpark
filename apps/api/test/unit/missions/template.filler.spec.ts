@@ -109,6 +109,7 @@ function fill(
 }
 
 interface TestLeg {
+  readonly routeId?: string;
   readonly distance: number;
   readonly danger: number;
   readonly zone: number;
@@ -173,6 +174,9 @@ describe('S6.2 — template filler (pure generation)', () => {
     for (const leg of legs) {
       expect(leg.distance).toBeGreaterThan(0);
       expect(leg.env.level).toBeGreaterThanOrEqual(1);
+      // S7.2 dispatch writes RoutePresence rows keyed by the generating route.
+      expect(typeof leg.routeId).toBe('string');
+      expect(leg.routeId).not.toBe('');
     }
     // Fixture edges only ever carry these distances.
     for (const leg of legs) {

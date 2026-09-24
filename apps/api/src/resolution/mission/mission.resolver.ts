@@ -156,13 +156,10 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
 
   const actors = { playerShipId: input.snapshot.shipId };
   const lastLeg = Math.max(0, legs.length - 1);
+  // Combat spoils/penalties only: fuel left the tank (inventory) on leg_travel with
+  // credits 0, and payment events append below. A negative total (combat loss with
+  // no payout) is debited by the resolve service — it is not dropped.
   let creditsDelta = legs.reduce((sum, leg) => sum + leg.combatCredits, 0);
-  // Fuel transits are already negative credits on transit events; include them.
-  for (const event of events) {
-    if (event.category === 'transit' && event.type === 'leg_travel') {
-      creditsDelta += event.effects.credits;
-    }
-  }
 
   // Payment only when every leg completed.
   if (status === 'success') {

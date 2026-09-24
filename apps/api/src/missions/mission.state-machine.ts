@@ -1,8 +1,19 @@
 import type { MissionStatus } from '@prisma/client';
 
-// S6.4 owns hold/release/accept/expire; S7 adds the execution events by extending
-// this table together with its exhaustive spec.
-export const MISSION_EVENTS = ['HOLD', 'RELEASE', 'ACCEPT', 'EXPIRE'] as const;
+// S6.4 owns hold/release/accept/expire; S7.2 adds DISPATCH (ACCEPTED → IN_TRANSIT);
+// S7.3 adds RESOLVE (claim IN_TRANSIT → RESOLVING) and the COMPLETE/FAIL finish pair;
+// S7.4 adds REQUEUE (the reconciler returns a stuck RESOLVING claim to IN_TRANSIT).
+export const MISSION_EVENTS = [
+  'HOLD',
+  'RELEASE',
+  'ACCEPT',
+  'EXPIRE',
+  'DISPATCH',
+  'RESOLVE',
+  'COMPLETE',
+  'FAIL',
+  'REQUEUE',
+] as const;
 export type MissionEvent = (typeof MISSION_EVENTS)[number];
 
 const TABLE: Readonly<
@@ -10,9 +21,9 @@ const TABLE: Readonly<
 > = {
   AVAILABLE: { HOLD: 'HELD', ACCEPT: 'ACCEPTED', EXPIRE: 'EXPIRED' },
   HELD: { RELEASE: 'AVAILABLE', ACCEPT: 'ACCEPTED', EXPIRE: 'EXPIRED' },
-  ACCEPTED: {},
-  IN_TRANSIT: {},
-  RESOLVING: {},
+  ACCEPTED: { DISPATCH: 'IN_TRANSIT' },
+  IN_TRANSIT: { RESOLVE: 'RESOLVING' },
+  RESOLVING: { COMPLETE: 'DONE', FAIL: 'FAILED', REQUEUE: 'IN_TRANSIT' },
   DONE: {},
   FAILED: {},
   EXPIRED: {},

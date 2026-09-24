@@ -62,7 +62,10 @@ export class ShipsService implements OnModuleInit {
   }
 
   async findByPlayer(playerId: string): Promise<ShipResponse[]> {
-    const ships = await this.prisma.ship.findMany({ where: { ownerPlayerId: playerId }, orderBy: { id: 'asc' } });
+    const ships = await this.prisma.ship.findMany({
+      where: { ownerPlayerId: playerId },
+      orderBy: { id: 'asc' },
+    });
     const rules = this.configService.snapshot().rules;
     return Promise.all(ships.map((ship) => this.toResponse(ship, rules)));
   }
@@ -115,7 +118,11 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
-  async preview(shipId: string, layout?: Placement[], partInstanceIds?: string[]): Promise<PreviewResponse> {
+  async preview(
+    shipId: string,
+    layout?: Placement[],
+    partInstanceIds?: string[],
+  ): Promise<PreviewResponse> {
     const { ship, rules } = await this.loadShipWithRules(shipId);
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
 
@@ -172,7 +179,7 @@ export class ShipsService implements OnModuleInit {
 
   private assertCanModify(ship: Ship): void {
     if (ship.status === 'ON_MISSION') {
-      throw new ConflictException('ship is on a mission');
+      throw new ConflictException({ error: 'SHIP_ON_MISSION' });
     }
   }
 
@@ -209,7 +216,10 @@ export class ShipsService implements OnModuleInit {
     }
   }
 
-  private buildInstalledParts(layout: Placement[], playerParts: PartInstanceWithCatalog[]): InstalledPart[] {
+  private buildInstalledParts(
+    layout: Placement[],
+    playerParts: PartInstanceWithCatalog[],
+  ): InstalledPart[] {
     return layout
       .map((placement) => {
         const part = playerParts.find((p) => p.id === placement.partInstanceId);

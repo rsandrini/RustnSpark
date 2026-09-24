@@ -19,7 +19,9 @@ const MAX_CONTRACT_QUANTITY = 15;
 
 // D29 finalizes reward from the accepting ship's tier; the stored figure is the
 // provisional board value at generation time (starter-ship tier).
-const PROVISIONAL_TIER = 1;
+// Provisional difficulty tier until per-template tiers exist; exported so the S7.3 resolve
+// processor rates payouts with the same value the board reward was computed from.
+export const PROVISIONAL_TIER = 1;
 
 export class MissionGenerationError extends Error {
   constructor(message: string) {
@@ -232,6 +234,7 @@ function legForRoute(
   }
   const environment = environmentForRoute(route.id, world);
   return {
+    routeId: route.id,
     distance: route.distance,
     danger: route.danger,
     zone: Math.max(nodeA.zone, nodeB.zone),

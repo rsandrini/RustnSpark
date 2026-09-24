@@ -42,6 +42,7 @@ describe('validateEnv', () => {
       ARGON2_MEMORY_KIB: 19456,
       ARGON2_TIME_COST: 2,
       ARGON2_PARALLELISM: 1,
+      RECONCILE_INTERVAL_MS: 30000,
     });
   });
 
@@ -60,13 +61,14 @@ describe('validateEnv', () => {
     ['ARGON2_MEMORY_KIB', 19456],
     ['ARGON2_TIME_COST', 2],
     ['ARGON2_PARALLELISM', 1],
-  ])('defaults %s to the OWASP-floor value %p', (key, defaultValue) => {
+    ['RECONCILE_INTERVAL_MS', 30000],
+  ])('defaults %s to its documented default %p', (key, defaultValue) => {
     const source: Record<string, string | undefined> = validSource();
     delete source[key];
     expect(validateEnv(source)[key as keyof ReturnType<typeof validateEnv>]).toBe(defaultValue);
   });
 
-  it.each(['ARGON2_MEMORY_KIB', 'ARGON2_TIME_COST', 'ARGON2_PARALLELISM'])(
+  it.each(['ARGON2_MEMORY_KIB', 'ARGON2_TIME_COST', 'ARGON2_PARALLELISM', 'RECONCILE_INTERVAL_MS'])(
     'refuses a non-integer or non-positive %s',
     (key) => {
       expect(errorOf({ ...validSource(), [key]: 'abc' }).message).toContain(key);
