@@ -460,9 +460,31 @@ model Ship {
   location          Location          @relation(fields: [currentLocationId], references: [id])
   missions          MissionInstance[]
   presences         RoutePresence[]
+  repairJobs        RepairJob[]
 
   @@index([currentLocationId])
   @@index([ownerPlayerId])
+}
+
+enum RepairJobStatus {
+  PENDING
+  COMPLETED
+}
+
+model RepairJob {
+  id              String          @id @default(dbgenerated("gen_random_uuid()"))
+  shipId          String
+  playerId        String
+  targets         Json
+  cost            Int
+  durationSeconds Int
+  status          RepairJobStatus @default(PENDING)
+  startedAt       DateTime        @default(now())
+  completesAt     DateTime
+  ship            Ship            @relation(fields: [shipId], references: [id])
+
+  @@index([status, completesAt])
+  @@index([shipId, status])
 }
 
 model PlayerMaterial {

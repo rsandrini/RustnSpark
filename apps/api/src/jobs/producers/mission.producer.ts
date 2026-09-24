@@ -10,9 +10,7 @@ import { MISSION_QUEUE_NAME, RESOLVE_JOB_NAME } from '../queues.js';
 // MissionsModule registerQueue options, not from call sites.
 @Injectable()
 export class MissionProducer {
-  constructor(
-    @InjectQueue(MISSION_QUEUE_NAME) private readonly queue: Queue<DispatchJobData>,
-  ) {}
+  constructor(@InjectQueue(MISSION_QUEUE_NAME) private readonly queue: Queue<DispatchJobData>) {}
 
   enqueueResolve(data: DispatchJobData, delayMs: number): Promise<Job<DispatchJobData>> {
     return this.queue.add(RESOLVE_JOB_NAME, data, {

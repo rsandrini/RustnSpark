@@ -9,9 +9,10 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PartsService } from '../../parts/parts.service.js';
 import { MissionResolveService } from '../../missions/resolve.service.js';
+import { RepairService } from '../../economy/repair.service.js';
 import { rebuildDispatchData } from '../../missions/dispatch.service.js';
 import type { DispatchJobData } from '../../missions/dispatch.service.js';
-import { MISSION_QUEUE_NAME, RECONCILE_QUEUE_NAME } from '../queues.js';
+import { MISSION_QUEUE_NAME, RECONCILE_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../queues.js';
 
 // Cap per category per tick: keeps one reconcile job bounded; the next interval picks up
 // the remainder. Matches the "bounded" wording of resolve-on-read without a config knob.
@@ -50,8 +51,10 @@ export class ReconcileProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue(MISSION_QUEUE_NAME) private readonly missions: Queue<DispatchJobData>,
+    @InjectQueue(REPAIR_QUEUE_NAME) private readonly repairs: Queue<{ repairJobId: string }>,
     private readonly resolveService: MissionResolveService,
     private readonly parts: PartsService,
+    private readonly repairService: RepairService,
   ) {
     super();
   }
@@ -63,6 +66,7 @@ export class ReconcileProcessor extends WorkerHost {
     drained += await this.drainFailedSet();
     resolved += await this.resolvePastDue();
     resolved += await this.requeueStuck();
+    resolved += await this.completeLostRepairs();
 
     if (drained > 0 || resolved > 0) {
       this.logger.log(
@@ -140,6 +144,38 @@ export class ReconcileProcessor extends WorkerHost {
       }
     }
     return resolved;
+  }
+
+  // S8.4: a past-due PENDING repair whose delayed job is gone/failed/completed is finished
+  // here — same lost-job recovery as missions, via the same idempotent complete() claim.
+  private async completeLostRepairs(): Promise<number> {
+    const due = await this.prisma.repairJob.findMany({
+      where: { status: 'PENDING', completesAt: { lte: new Date() } },
+      take: RECONCILE_BATCH,
+      orderBy: { completesAt: 'asc' },
+    });
+    let resolved = 0;
+    for (const repair of due) {
+      if (await this.repairJobStillOwnedByWorker(repair.id)) continue;
+      try {
+        const result = await this.repairService.complete(repair.id);
+        if (result.applied) resolved += 1;
+      } catch (error) {
+        this.logger.warn(`reconcile of repair job ${repair.id} failed: ${String(error)}`);
+      }
+    }
+    return resolved;
+  }
+
+  private async repairJobStillOwnedByWorker(repairJobId: string): Promise<boolean> {
+    const job = await this.repairs.getJob(repairJobId);
+    if (!job) return false;
+    const state = await job.getState();
+    if (state === 'failed' || state === 'completed') {
+      await job.remove().catch(() => undefined);
+      return false;
+    }
+    return isLeaveToWorkerState(state);
   }
 
   // True when a job for this mission still exists and is one the mission worker owns —

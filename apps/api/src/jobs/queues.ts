@@ -24,11 +24,16 @@ export const RECONCILE_QUEUE_NAME = 'reconcile';
 export const RECONCILE_SCHEDULER_ID = 'reconcile';
 export const RECONCILE_TICK_JOB_NAME = 'tick';
 
+// S8.4: repair is a delayed job (duration = points × hub/outpost k). jobId = RepairJob.id
+// so a duplicate enqueue is a no-op; the processor applies condition only on first complete.
+export const REPAIR_QUEUE_NAME = 'repair';
+export const REPAIR_JOB_NAME = 'complete';
+
 // BullMQ opens its own dedicated connection per Queue/Worker: a Worker's blocking commands cannot
 // share a connection with anything else, so bullmq requires `maxRetriesPerRequest: null` on any
 // connection it drives itself. Passing the shared REDIS_CLIENT ioredis instance (S1.5) straight to
 // a Worker throws ("Your redis options maxRetriesPerRequest must be null") because that instance
-// doesn't set it, and setting it globally on REDIS_CLIENT would change retry behaviour for the
+// doesn't set it, and setting it globally on REDIS_CLIENT would change behaviour for the
 // health check and anything else that reuses it. Handing bullmq a plain options object instead
 // sidesteps that: bullmq sets `maxRetriesPerRequest` itself once it opens the connection. This
 // still derives from the one EnvService.get('REDIS_URL') source of truth (R4), never a second

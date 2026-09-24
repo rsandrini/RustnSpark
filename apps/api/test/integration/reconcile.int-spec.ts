@@ -19,11 +19,13 @@ import { ReconcileProcessor } from '../../src/jobs/processors/reconcile.processo
 import {
   MISSION_QUEUE_NAME,
   RECONCILE_QUEUE_NAME,
+  REPAIR_QUEUE_NAME,
   RESOLVE_JOB_NAME,
   bullConnectionOptions,
 } from '../../src/jobs/queues.js';
 import { PartsService } from '../../src/parts/parts.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { RepairService } from '../../src/economy/repair.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -52,6 +54,7 @@ describe('reconciliation tick (S7.4)', () => {
   let configService: GameConfigService;
   let missionQueue: Queue<DispatchJobData>;
   let reconcileQueue: Queue;
+  let repairQueue: Queue<{ repairJobId: string }>;
   let processor: ReconcileProcessor;
 
   beforeAll(async () => {
@@ -61,6 +64,7 @@ describe('reconciliation tick (S7.4)', () => {
     tokenService = testApp.app.get(TokenService);
     configService = testApp.app.get(GameConfigService);
     missionQueue = testApp.app.get<Queue<DispatchJobData>>(getQueueToken(MISSION_QUEUE_NAME));
+    repairQueue = testApp.app.get<Queue<{ repairJobId: string }>>(getQueueToken(REPAIR_QUEUE_NAME));
     // The reconcile queue only lives in the worker graph (JobsModule); the API app never
     // registers it, so the test opens its own bullmq Queue against the same Redis.
     reconcileQueue = new Queue(RECONCILE_QUEUE_NAME, {
@@ -71,8 +75,10 @@ describe('reconciliation tick (S7.4)', () => {
     processor = new ReconcileProcessor(
       prisma,
       missionQueue,
+      repairQueue,
       testApp.app.get(MissionResolveService),
       testApp.app.get(PartsService),
+      testApp.app.get(RepairService),
     );
   });
 
@@ -85,6 +91,7 @@ describe('reconciliation tick (S7.4)', () => {
   afterEach(async () => {
     await resetDatabase(prisma);
     await missionQueue.obliterate({ force: true }).catch(() => undefined);
+    await repairQueue.obliterate({ force: true }).catch(() => undefined);
     const schedulers = await reconcileQueue.getJobSchedulers().catch(() => []);
     for (const scheduler of schedulers) {
       await reconcileQueue.removeJobScheduler(scheduler.key).catch(() => undefined);

@@ -184,6 +184,14 @@ export class DispatchService {
       if (ship.status !== 'IN_PORT') {
         throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
       }
+      // S8.4: an in-flight repair holds the ship in port — dispatch waits for completion.
+      const repairing = await tx.repairJob.findFirst({
+        where: { shipId: ship.id, status: 'PENDING' },
+        select: { id: true },
+      });
+      if (repairing) {
+        throw new ConflictException({ error: 'SHIP_REPAIRING' });
+      }
       if (ship.currentLocationId !== mission.originId) {
         throw new ConflictException({ error: 'SHIP_NOT_AT_ORIGIN' });
       }
