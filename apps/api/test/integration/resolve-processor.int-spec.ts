@@ -325,6 +325,31 @@ describe('mission resolve processor (S7.3)', () => {
     ).resolves.toBe(payoutsBefore);
   }, 30_000);
 
+  // S8.6 acceptance (plan line 484): while the balance is negative, navigation stays
+  // open (dispatch has no solvency guard) and missions are the repayment path — the
+  // payout lands on top of the debt instead of being refused.
+  it('pays a negative balance back: dispatch allowed while negative, payout adds to the debt', async () => {
+    const player = await authFor(testApp.app);
+    // Same fixed seed as the happy path so the outcome (and its payout) is deterministic.
+    const mission = await createAcceptedMission(player, 's7.3-happy-seed', [150, 100]);
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: -500 },
+    });
+
+    const job = await dispatchedJob(player, mission, 10_000);
+
+    const result = await processor.process(job);
+    expect(result.skipped).toBe(false);
+    expect(result.status).toBe('DONE');
+    expect(result.credited).toBeGreaterThan(0);
+
+    const creditsAfter = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+    });
+    expect(creditsAfter.credits).toBe(-500 + result.credited);
+  }, 30_000);
+
   it('retries with backoff and dead-letters a poison job into the failed set', async () => {
     const connection = bullConnectionOptions(testApp.app.get(EnvService).get('REDIS_URL'));
 

@@ -6,6 +6,7 @@ import { PartsModule } from '../parts/parts.module.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { REPAIR_QUEUE_NAME, bullConnectionOptions } from '../jobs/queues.js';
+import { InventoryService } from './inventory.service.js';
 import { MarketController } from './market.controller.js';
 import { MarketService } from './market.service.js';
 import { PricingService } from './pricing.service.js';
@@ -13,11 +14,13 @@ import { RepairController } from './repair.controller.js';
 import { RepairService } from './repair.service.js';
 import { RefuelController } from './refuel.controller.js';
 import { RefuelService } from './refuel.service.js';
+import { RescueController } from './rescue.controller.js';
+import { RescueService } from './rescue.service.js';
 import { ScavengingController } from './scavenging.controller.js';
 import { ScavengingService } from './scavenging.service.js';
 
-// S8.1-S8.5: pricing, market HTTP, instant refuel, the repair job producer and
-// free scavenging live here. Wallet/PlayerEvent are provided directly (same
+// S8.1-S8.6: pricing, market HTTP, instant refuel, the repair job producer, free
+// scavenging and auto-rescue live here. Wallet/PlayerEvent are provided directly (same
 // pattern as MissionsModule) so the worker graph can also provide RepairService
 // without pulling PlayersModule's controllers.
 @Module({
@@ -34,12 +37,20 @@ import { ScavengingService } from './scavenging.service.js';
     }),
     BullModule.registerQueue({ name: REPAIR_QUEUE_NAME }),
   ],
-  controllers: [MarketController, RepairController, RefuelController, ScavengingController],
+  controllers: [
+    MarketController,
+    RepairController,
+    RefuelController,
+    RescueController,
+    ScavengingController,
+  ],
   providers: [
     PricingService,
     MarketService,
     RepairService,
     RefuelService,
+    RescueService,
+    InventoryService,
     ScavengingService,
     WalletService,
     PlayerEventService,
