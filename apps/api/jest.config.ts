@@ -58,6 +58,11 @@ const config: Config = {
     '!<rootDir>/src/players/players.service.ts',
     '!<rootDir>/src/players/wallet.service.ts',
     '!<rootDir>/src/players/player-event.service.ts',
+    // S6.2's board.service.ts likewise: the advisory-lock lazy top-up only exists on a
+    // real Postgres, covered for real by test/integration/board.int-spec.ts (incl. the
+    // concurrent-reads test); its pure pieces (seed derivation, template filler) are
+    // unit-tested directly.
+    '!<rootDir>/src/missions/board.service.ts',
     '!<rootDir>/src/common/idempotency/idempotency.interceptor.ts',
   ],
   coverageThreshold: {
