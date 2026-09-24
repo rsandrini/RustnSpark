@@ -8,6 +8,14 @@ export const PING_QUEUE_NAME = 'ping';
 // consumes them lands with S7.3 (jobs/processors/mission.processor.ts) in the worker graph.
 export const MISSION_QUEUE_NAME = 'mission';
 
+// Resolve jobs retry with exponential backoff; once attempts are exhausted the job stays in
+// the queue's `failed` set — that set IS the dead-letter path, drained by the reconciler (S7.4)
+// rather than a second queue. Both the producer (MissionsModule) and the worker (JobsModule)
+// register these as defaultJobOptions so enqueues inherit them.
+export const RESOLVE_JOB_NAME = 'resolve';
+export const RESOLVE_JOB_ATTEMPTS = 3;
+export const RESOLVE_BACKOFF_BASE_MS = 1000;
+
 // BullMQ opens its own dedicated connection per Queue/Worker: a Worker's blocking commands cannot
 // share a connection with anything else, so bullmq requires `maxRetriesPerRequest: null` on any
 // connection it drives itself. Passing the shared REDIS_CLIENT ioredis instance (S1.5) straight to

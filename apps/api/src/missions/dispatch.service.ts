@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   ConflictException,
@@ -8,8 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { MissionInstance } from '@prisma/client';
-import type { Queue } from 'bullmq';
-import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
+import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -97,7 +95,7 @@ export class DispatchService {
     private readonly prisma: PrismaService,
     private readonly config: GameConfigService,
     private readonly parts: PartsService,
-    @InjectQueue(MISSION_QUEUE_NAME) private readonly queue: Queue,
+    private readonly producer: MissionProducer,
   ) {}
 
   async dispatch(shipId: string, missionId: string, playerId: string): Promise<DispatchResponse> {
@@ -249,10 +247,7 @@ export class DispatchService {
         arrivalAt: arrivalAt.toISOString(),
         snapshot: outcome.snapshot,
       };
-      await this.queue.add('resolve', data, {
-        delay: Math.max(0, arrivalAt.getTime() - serverTime.getTime()),
-        jobId: missionId,
-      });
+      await this.producer.enqueueResolve(data, arrivalAt.getTime() - serverTime.getTime());
     } catch (error) {
       // Enqueue runs after commit by design: the mission is already reconcilable state,
       // so a Redis blip must not fail the dispatch (S7.2 acceptance, plan line 435).

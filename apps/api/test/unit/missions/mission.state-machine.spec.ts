@@ -18,9 +18,10 @@ const STATUSES = [
 
 type Allowed = readonly [MissionStatus, (typeof MISSION_EVENTS)[number], MissionStatus];
 
-// The whole transition table: S6.4's four reservation events plus S7.2's DISPATCH.
-// Every other (status, event) pair is rejected — including terminal states, other
-// in-flight statuses (RESOLVE lands with S7.3), and holding an already-held mission.
+// The whole transition table: S6.4's four reservation events, S7.2's DISPATCH, and
+// S7.3's resolve triple (RESOLVE claims IN_TRANSIT → RESOLVING; COMPLETE/FAIL finish
+// the claim from RESOLVING). Every other (status, event) pair is rejected — including
+// terminal states, other in-flight statuses, and holding an already-held mission.
 const ALLOWED: readonly Allowed[] = [
   ['AVAILABLE', 'HOLD', 'HELD'],
   ['AVAILABLE', 'ACCEPT', 'ACCEPTED'],
@@ -29,11 +30,23 @@ const ALLOWED: readonly Allowed[] = [
   ['HELD', 'ACCEPT', 'ACCEPTED'],
   ['HELD', 'EXPIRE', 'EXPIRED'],
   ['ACCEPTED', 'DISPATCH', 'IN_TRANSIT'],
+  ['IN_TRANSIT', 'RESOLVE', 'RESOLVING'],
+  ['RESOLVING', 'COMPLETE', 'DONE'],
+  ['RESOLVING', 'FAIL', 'FAILED'],
 ];
 
-describe('mission state machine (S6.4 + S7.2 dispatch)', () => {
-  it('pins the event set through S7.2', () => {
-    expect(MISSION_EVENTS).toEqual(['HOLD', 'RELEASE', 'ACCEPT', 'EXPIRE', 'DISPATCH']);
+describe('mission state machine (S6.4 + S7.3 resolve)', () => {
+  it('pins the event set through S7.3', () => {
+    expect(MISSION_EVENTS).toEqual([
+      'HOLD',
+      'RELEASE',
+      'ACCEPT',
+      'EXPIRE',
+      'DISPATCH',
+      'RESOLVE',
+      'COMPLETE',
+      'FAIL',
+    ]);
   });
 
   it('iterates all eight mission statuses', () => {
@@ -78,6 +91,21 @@ describe('mission state machine (S6.4 + S7.2 dispatch)', () => {
     // DISPATCH is legal only from ACCEPTED; the exhaustive test covers the rest.
     for (const from of ['IN_TRANSIT', 'RESOLVING', 'DONE', 'FAILED', 'EXPIRED'] as const) {
       expect(missionStatusAfter(from, 'DISPATCH')).toBeNull();
+    }
+  });
+
+  it('restricts RESOLVE to IN_TRANSIT and the finish events to RESOLVING', () => {
+    for (const from of STATUSES) {
+      expect(missionStatusAfter(from, 'RESOLVE')).toBe(from === 'IN_TRANSIT' ? 'RESOLVING' : null);
+      const finish = missionStatusAfter(from, 'COMPLETE');
+      const fail = missionStatusAfter(from, 'FAIL');
+      if (from === 'RESOLVING') {
+        expect(finish).toBe('DONE');
+        expect(fail).toBe('FAILED');
+      } else {
+        expect(finish).toBeNull();
+        expect(fail).toBeNull();
+      }
     }
   });
 });
