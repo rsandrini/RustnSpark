@@ -291,6 +291,54 @@ describe('market API (S8.2)', () => {
     });
   });
 
+  it('parallel buys cannot overspend: exactly floor(balance/price) succeed', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'hull',
+    );
+    expect(listing).toBeDefined();
+    const price = listing!.price;
+    expect(price).toBeGreaterThan(0);
+
+    // Balance buys exactly two: the conditional debit (credits >= price) must let
+    // two through and reject the rest, however the requests interleave.
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: price * 2 },
+    });
+
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () =>
+        buy(player.token, randomUUID(), {
+          listingId: listing!.listingId,
+          expectedPrice: price,
+        }),
+      ),
+    );
+    const succeeded = responses.filter((response) => response.status === 200);
+    const rejected = responses.filter((response) => response.status === 409);
+    expect(succeeded).toHaveLength(2);
+    expect(rejected).toHaveLength(4);
+    for (const response of rejected) {
+      expect(response.body).toMatchObject({
+        statusCode: 409,
+        message: { error: 'INSUFFICIENT_FUNDS' },
+      });
+    }
+
+    const after = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(after.credits).toBe(0);
+    const parts = await prisma.partInstance.count({
+      where: { ownerPlayerId: player.seeded.player.id, partType: 'hull', location: 'INVENTORY' },
+    });
+    expect(parts).toBe(2);
+  });
+
   it('sell credits the player; PRICE_CHANGED guards stale prices; idempotent', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
