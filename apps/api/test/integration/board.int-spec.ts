@@ -3,6 +3,7 @@ import type { INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { MissionType } from '@prisma/client';
 import { seed } from '../../prisma/seed.js';
+import { OwnershipResolverModule } from '../../src/common/guards/ownership-resolver.module.js';
 import { ConfigModule } from '../../src/config/config.module.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { BoardService } from '../../src/missions/board.service.js';
@@ -26,7 +27,11 @@ describe('mission board (S6.2)', () => {
 
   beforeEach(async () => {
     await seed(prisma);
-    module = await Test.createTestingModule({ imports: [ConfigModule, MissionsModule] }).compile();
+    // OwnershipResolverModule is normally global through AppModule; this partial graph
+    // compiles MissionsController's OwnershipGuard routes without the full app (S7.2).
+    module = await Test.createTestingModule({
+      imports: [ConfigModule, OwnershipResolverModule, MissionsModule],
+    }).compile();
     await module.init();
     board = module.get(BoardService);
     config = module.get(GameConfigService);

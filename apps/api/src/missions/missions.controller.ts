@@ -1,16 +1,33 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
+import { OwnedResource } from '../common/decorators/owned-resource.decorator.js';
+import { OwnershipGuard } from '../common/guards/ownership.guard.js';
 import { AcceptMissionDto } from './dto/accept.dto.js';
+import { DispatchMissionDto } from './dto/dispatch.dto.js';
+import { DispatchService } from './dispatch.service.js';
 import { MissionsService } from './missions.service.js';
 
 // Default-deny (R28): no @Public() anywhere, the player comes from token claims.
 // Paths are relative to the global `v1` prefix (main.ts).
 @Controller()
 export class MissionsController {
-  constructor(private readonly missions: MissionsService) {}
+  constructor(
+    private readonly missions: MissionsService,
+    private readonly dispatchService: DispatchService,
+  ) {}
 
   @Get('locations/:id/missions')
   getBoard(@CurrentUser() user: CurrentUserPayload, @Param('id') locationId: string) {
@@ -42,5 +59,17 @@ export class MissionsController {
   @HttpCode(HttpStatus.OK)
   releaseHold(@CurrentUser() user: CurrentUserPayload, @Param('id') missionId: string) {
     return this.missions.release(missionId, user.playerId);
+  }
+
+  @Post('ships/:id/dispatch')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  dispatch(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') shipId: string,
+    @Body() dto: DispatchMissionDto,
+  ) {
+    return this.dispatchService.dispatch(shipId, dto.missionId, user.playerId);
   }
 }

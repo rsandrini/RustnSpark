@@ -69,12 +69,18 @@ export class PartsService {
     if (explicit !== undefined) {
       return this.catalog(parseLocale(explicit));
     }
-    const player = await this.prisma.player.findUnique({ where: { id: playerId }, select: { locale: true } });
+    const player = await this.prisma.player.findUnique({
+      where: { id: playerId },
+      select: { locale: true },
+    });
     return this.catalog(parseLocale(player?.locale));
   }
 
   async catalog(locale: Locale): Promise<CatalogItem[]> {
-    const rows = await this.prisma.partCatalog.findMany({ where: { active: true }, orderBy: { partType: 'asc' } });
+    const rows = await this.prisma.partCatalog.findMany({
+      where: { active: true },
+      orderBy: { partType: 'asc' },
+    });
     return rows.map((row) => ({
       partType: row.partType,
       displayName: localize(row.displayName as Record<string, unknown>, locale),
@@ -99,8 +105,12 @@ export class PartsService {
   }
 
   // Ship assembly operates on a player's parts; this returns them with catalog stats attached.
-  async findPlayerParts(playerId: string): Promise<Prisma.PartInstanceGetPayload<{ include: { partCatalog: true } }>[]> {
-    return this.prisma.partInstance.findMany({
+  // An optional tx keeps the read inside a caller's transaction (S7.2 dispatch).
+  async findPlayerParts(
+    playerId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Prisma.PartInstanceGetPayload<{ include: { partCatalog: true } }>[]> {
+    return (tx ?? this.prisma).partInstance.findMany({
       where: { ownerPlayerId: playerId },
       include: { partCatalog: true },
       orderBy: { id: 'asc' },

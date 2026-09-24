@@ -13,10 +13,7 @@ function check(
   requirements?: unknown,
 ): { eligible: boolean; reasons: { code: string }[] } {
   const sheet = deriveSheet(parts, rules);
-  return checkMissionRequirements(
-    { missionType, requirements, sheet, parts: parts },
-    rules,
-  );
+  return checkMissionRequirements({ missionType, requirements, sheet, parts: parts }, rules);
 }
 
 function codes(result: { reasons: { code: string }[] }): string[] {

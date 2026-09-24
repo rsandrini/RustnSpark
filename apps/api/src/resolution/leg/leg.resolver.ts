@@ -38,6 +38,9 @@ export interface PartSnapshot {
 }
 
 export interface LegRoute {
+  // Present on every filler-generated leg (S7.2 dispatch keys RoutePresence by it);
+  // optional so resolution fixtures and hand-built legs stay minimal.
+  readonly routeId?: string;
   readonly distance: number;
   readonly danger: number;
   readonly zone: number;

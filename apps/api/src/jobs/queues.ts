@@ -4,6 +4,10 @@ import type { ConnectionOptions } from 'bullmq';
 // domain queue so this throwaway proof-of-life wiring is easy to spot and delete.
 export const PING_QUEUE_NAME = 'ping';
 
+// Dispatch (S7.2) enqueues delayed resolve jobs with jobId = missionId; the processor that
+// consumes them lands with S7.3 (jobs/processors/mission.processor.ts) in the worker graph.
+export const MISSION_QUEUE_NAME = 'mission';
+
 // BullMQ opens its own dedicated connection per Queue/Worker: a Worker's blocking commands cannot
 // share a connection with anything else, so bullmq requires `maxRetriesPerRequest: null` on any
 // connection it drives itself. Passing the shared REDIS_CLIENT ioredis instance (S1.5) straight to

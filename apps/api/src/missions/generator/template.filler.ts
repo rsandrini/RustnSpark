@@ -232,6 +232,7 @@ function legForRoute(
   }
   const environment = environmentForRoute(route.id, world);
   return {
+    routeId: route.id,
     distance: route.distance,
     danger: route.danger,
     zone: Math.max(nodeA.zone, nodeB.zone),
