@@ -11,10 +11,13 @@ import { MarketService } from './market.service.js';
 import { PricingService } from './pricing.service.js';
 import { RepairController } from './repair.controller.js';
 import { RepairService } from './repair.service.js';
+import { RefuelController } from './refuel.controller.js';
+import { RefuelService } from './refuel.service.js';
 
-// S8.1/S8.2/S8.4: pricing, market HTTP, and the repair job producer live here.
-// Wallet/PlayerEvent are provided directly (same pattern as MissionsModule) so the
-// worker graph can also provide RepairService without pulling PlayersModule's controllers.
+// S8.1-S8.4: pricing, market HTTP, instant refuel, and the repair job producer
+// live here. Wallet/PlayerEvent are provided directly (same pattern as
+// MissionsModule) so the worker graph can also provide RepairService without
+// pulling PlayersModule's controllers.
 @Module({
   imports: [
     ConfigModule,
@@ -29,8 +32,15 @@ import { RepairService } from './repair.service.js';
     }),
     BullModule.registerQueue({ name: REPAIR_QUEUE_NAME }),
   ],
-  controllers: [MarketController, RepairController],
-  providers: [PricingService, MarketService, RepairService, WalletService, PlayerEventService],
+  controllers: [MarketController, RepairController, RefuelController],
+  providers: [
+    PricingService,
+    MarketService,
+    RepairService,
+    RefuelService,
+    WalletService,
+    PlayerEventService,
+  ],
   exports: [PricingService, MarketService, RepairService],
 })
 export class EconomyModule {}

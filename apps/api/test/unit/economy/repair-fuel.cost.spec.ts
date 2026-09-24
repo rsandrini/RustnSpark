@@ -1,7 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
-import { fuelCost, type FuelCostInput } from '../../../src/economy/fuel-cost.calculator.js';
+import {
+  fuelCost,
+  fuelUnits,
+  refuelCost,
+  type FuelCostInput,
+} from '../../../src/economy/fuel-cost.calculator.js';
 import {
   locationFactor,
   repairCost,
@@ -139,5 +144,32 @@ describe('S5.8 — fuel cost (sim form + location factor)', () => {
 
   it('pins parity geometry to factor 1.0', () => {
     expect(locationFactor(PARITY_ISO, PARITY_FACTION, rules)).toBe(1);
+  });
+});
+
+describe('S8.3 — refuel cost (raw tank units × fuel_price × location factor)', () => {
+  it('prices raw units with fuel_price and the location factor', () => {
+    // 1000 units × 3 × (0.9 isolation × neutral) = 2700
+    expect(refuelCost(1000, 0.9, 'neutral', rules)).toBeCloseTo(2700, 10);
+    // 250 × 3 × (2 × 2.5 hostile) = 3750
+    expect(refuelCost(250, 2, 'hostile', rules)).toBeCloseTo(3750, 10);
+    // 100 × 3 × (1.4 × 0.8 ally) = 336
+    expect(refuelCost(100, 1.4, 'ally', rules)).toBeCloseTo(336, 10);
+  });
+
+  it('is linear: zero units cost nothing, doubling units doubles cost', () => {
+    expect(refuelCost(0, 2, 'hostile', rules)).toBe(0);
+    expect(refuelCost(200, 0.9, 'neutral', rules)).toBe(2 * refuelCost(100, 0.9, 'neutral', rules));
+  });
+
+  it('uses only isolation × faction (no mood term, per plan S5.8)', () => {
+    // The transit geometry burns 20 units, so the credit-denominated fuelCost and
+    // the raw-unit refuelCost must agree — and neither carries a mood multiplier.
+    const units = fuelUnits(fuel());
+    expect(units).toBe(20);
+    expect(refuelCost(units, 0.9, 'ally', rules)).toBeCloseTo(
+      fuelCost(fuel({ isolation: 0.9, factionRelation: 'ally' }), rules),
+      10,
+    );
   });
 });
