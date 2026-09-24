@@ -24,13 +24,28 @@ export function fuelUnits(
 /**
  * Fuel cost (plan S5.8 / sim): `round(fuelUse × distance / 100 × env.fuel_mult)
  * × fuel_price × location factor`. The distance term uses Python half-even
- * rounding (D16d). Used for refuel pricing (S8.3); mission travel burns
- * `fuelUnits` from the tank and does not re-charge credits (fuel is prepaid
- * inventory once S8.3 lands — charging here double-spent the same units).
+ * rounding (D16d). Mission travel burns `fuelUnits` from the tank and does
+ * not charge credits — fuel is prepaid inventory bought via S8.3 refuel,
+ * so charging here would double-spend the same units.
  */
 export function fuelCost(input: FuelCostInput, rules: GameRules): number {
   const units = fuelUnits(input);
   return (
     units * rules.economy.fuel_price * locationFactor(input.isolation, input.factionRelation, rules)
   );
+}
+
+/**
+ * S8.3 refuel: raw tank units × `fuel_price` × location factor
+ * (isolation × faction, GDD §9 `fator_local`; mood applies to part prices
+ * only per plan S5.8). Returns an unrounded float — callers round to whole
+ * credits (wallet amounts must be integers).
+ */
+export function refuelCost(
+  units: number,
+  isolation: number,
+  factionRelation: string,
+  rules: GameRules,
+): number {
+  return units * rules.economy.fuel_price * locationFactor(isolation, factionRelation, rules);
 }

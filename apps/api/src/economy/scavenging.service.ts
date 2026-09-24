@@ -1,0 +1,267 @@
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Location } from '@prisma/client';
+import { GameConfigService } from '../config/game-config.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { PlayerEventService } from '../players/player-event.service.js';
+import { stableUnit } from './deterministic.js';
+
+export const SCAVENGE_EVENT = 'scavenge';
+
+const MS_PER_SECOND = 1000;
+// DropTable rows are seeded with ids like `scavenging_common`; the stable handle
+// is the `source` column (schema-dados §12: fonte = scavenging | npc_* | quest).
+const DROP_TABLE_SOURCE = 'scavenging';
+const DEFAULT_DROP_CHANCE = 0;
+// Seed's DropTable rows are COMMON/UNCOMMON/RARE; if a tier ever has no active
+// catalog part the attempt simply yields nothing rather than crashing the roll.
+const FALLBACK_RARITY = 'COMMON';
+
+export type FieldType = 'common' | 'mission' | 'pirate';
+
+export interface ScavengePart {
+  readonly partInstanceId: string;
+  readonly partType: string;
+  readonly condition: number;
+}
+
+export interface ScavengeResponse {
+  readonly locationId: string;
+  readonly attempt: number;
+  readonly fieldType: FieldType;
+  readonly dropped: boolean;
+  readonly part: ScavengePart | null;
+  readonly cooldownSeconds: number;
+}
+
+export interface DropTier {
+  readonly tier: string;
+  readonly chance: number;
+}
+
+export interface CatalogEntry {
+  readonly partType: string;
+  readonly rarity: string;
+}
+
+export interface ScavengeRollInput {
+  readonly seed: string;
+  readonly playerId: string;
+  readonly locationId: string;
+  readonly attempt: number;
+  readonly fieldType: FieldType;
+  readonly chance: Readonly<Record<string, number>>;
+  readonly qualityMin: number;
+  readonly qualityMax: number;
+  readonly tiers: readonly DropTier[];
+  readonly catalog: readonly CatalogEntry[];
+}
+
+export interface ScavengeOutcome {
+  readonly dropped: boolean;
+  readonly partType?: string;
+  readonly condition?: number;
+}
+
+/**
+ * S8.5 field type (plan line 481 / GDD §14): a debris field under pirate
+ * control is the 75% tier; every other location is a common (solo) field at
+ * 25%. The 55% "mission field" tier belongs to scavenging missions, which
+ * v0.1 has no SCAVENGING MissionType for — it stays reserved in config
+ * (pinned by unit tests) until that mission lands.
+ */
+export function fieldTypeOf(location: Pick<Location, 'type' | 'factionId'>): FieldType {
+  if (location.type === 'scrap_field' && location.factionId === 'pirates') {
+    return 'pirate';
+  }
+  return 'common';
+}
+
+/**
+ * Pure, seed-deterministic drop resolution (GDD §14): roll the field's drop
+ * chance; on a hit pick a rarity tier from the seeded DropTable (cumulative
+ * chances in stored order), pick a part from that rarity's active catalog
+ * pool, and roll damaged quality between quality_min and quality_max. Same
+ * world seed + player + location + attempt always yields the same loot — no
+ * Math.random anywhere.
+ */
+export function scavengeOutcome(input: ScavengeRollInput): ScavengeOutcome {
+  const keys = `${input.seed}:${input.playerId}:${input.locationId}:${input.attempt}`;
+  const chance = input.chance[input.fieldType] ?? DEFAULT_DROP_CHANCE;
+  if (stableUnit(`${keys}:drop`) >= chance) {
+    return { dropped: false };
+  }
+
+  const tierRoll = stableUnit(`${keys}:tier`);
+  let picked = input.tiers.at(-1)?.tier;
+  let cumulative = 0;
+  for (const entry of input.tiers) {
+    cumulative += entry.chance;
+    if (tierRoll < cumulative) {
+      picked = entry.tier;
+      break;
+    }
+  }
+
+  let pool = input.catalog.filter((entry) => entry.rarity === picked);
+  if (pool.length === 0) {
+    pool = input.catalog.filter((entry) => entry.rarity === FALLBACK_RARITY);
+  }
+  if (pool.length === 0) {
+    return { dropped: false };
+  }
+
+  const partIndex = Math.min(pool.length - 1, Math.floor(stableUnit(`${keys}:part`) * pool.length));
+  const span = input.qualityMax - input.qualityMin;
+  const condition = Math.round(input.qualityMin + stableUnit(`${keys}:quality`) * span);
+  return { dropped: true, partType: pool[partIndex]!.partType, condition };
+}
+
+/**
+ * S8.5: free scavenging action — ship must be at the location (and not on a
+ * mission); one attempt per player per location per scavenging.cooldown_seconds
+ * (D28, anti-farming); loot lands directly in the player's inventory. Free —
+ * allowed on a negative balance (GDD §14). The Player row is locked for the
+ * attempt so the cooldown check, attempt counter and loot write are atomic
+ * under parallel requests.
+ */
+@Injectable()
+export class ScavengingService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: GameConfigService,
+    private readonly events: PlayerEventService,
+  ) {}
+
+  async scavenge(locationId: string, playerId: string): Promise<ScavengeResponse> {
+    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
+    if (!location) {
+      throw new NotFoundException('location not found');
+    }
+
+    const ship = await this.prisma.ship.findFirst({
+      where: { ownerPlayerId: playerId, currentLocationId: locationId },
+      select: { status: true },
+    });
+    if (!ship) {
+      throw new ConflictException({ error: 'SHIP_NOT_AT_LOCATION' });
+    }
+    if (ship.status === 'ON_MISSION') {
+      throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+    }
+
+    const rules = this.config.snapshot().rules;
+    const fieldType = fieldTypeOf(location);
+    const [tiers, catalog] = await Promise.all([this.dropTiers(), this.activeCatalog()]);
+
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Player" WHERE id = ${playerId} FOR UPDATE`;
+      const history = await tx.playerEvent.findMany({
+        where: { playerId, type: SCAVENGE_EVENT },
+        orderBy: { at: 'asc' },
+        select: { at: true, payload: true },
+      });
+      const attempts = history.filter((entry) => payloadLocationId(entry.payload) === locationId);
+      const last = attempts.at(-1);
+      const cooldownSeconds = rules.scavenging.cooldown_seconds;
+      if (last !== undefined && cooldownSeconds > 0) {
+        const elapsed = Math.floor((Date.now() - last.at.getTime()) / MS_PER_SECOND);
+        const retryAfterSeconds = cooldownSeconds - elapsed;
+        if (retryAfterSeconds > 0) {
+          throw new ConflictException({ error: 'SCAVENGE_COOL_DOWN', retryAfterSeconds });
+        }
+      }
+
+      const attempt = attempts.length;
+      const result = scavengeOutcome({
+        seed: rules.world.seed,
+        playerId,
+        locationId,
+        attempt,
+        fieldType,
+        chance: rules.scavenging.chance,
+        qualityMin: rules.scavenging.quality_min,
+        qualityMax: rules.scavenging.quality_max,
+        tiers,
+        catalog,
+      });
+
+      let part: ScavengePart | null = null;
+      if (result.dropped && result.partType !== undefined && result.condition !== undefined) {
+        const created = await tx.partInstance.create({
+          data: {
+            partType: result.partType,
+            ownerPlayerId: playerId,
+            condition: result.condition,
+            location: 'INVENTORY',
+          },
+        });
+        part = {
+          partInstanceId: created.id,
+          partType: created.partType,
+          condition: created.condition,
+        };
+      }
+
+      await this.events.record(
+        {
+          playerId,
+          type: SCAVENGE_EVENT,
+          payload: {
+            locationId,
+            attempt,
+            fieldType,
+            dropped: result.dropped,
+            partType: result.partType ?? null,
+            condition: result.condition ?? null,
+          },
+        },
+        tx,
+      );
+      return { attempt, dropped: result.dropped, part };
+    });
+
+    return {
+      locationId,
+      attempt: outcome.attempt,
+      fieldType,
+      dropped: outcome.dropped,
+      part: outcome.part,
+      cooldownSeconds: rules.scavenging.cooldown_seconds,
+    };
+  }
+
+  private async dropTiers(): Promise<DropTier[]> {
+    const table = await this.prisma.dropTable.findFirst({
+      where: { source: DROP_TABLE_SOURCE },
+      orderBy: { id: 'asc' },
+    });
+    if (!table) return [];
+    const tiers = table.tiers as unknown;
+    if (!Array.isArray(tiers)) return [];
+    return tiers.flatMap((entry) => {
+      if (typeof entry !== 'object' || entry === null) return [];
+      const candidate = entry as Record<string, unknown>;
+      if (typeof candidate['tier'] !== 'string' || typeof candidate['chance'] !== 'number') {
+        return [];
+      }
+      return [{ tier: candidate['tier'], chance: candidate['chance'] }];
+    });
+  }
+
+  private async activeCatalog(): Promise<CatalogEntry[]> {
+    const rows = await this.prisma.partCatalog.findMany({
+      where: { active: true },
+      orderBy: { partType: 'asc' },
+      select: { partType: true, rarity: true },
+    });
+    return rows;
+  }
+}
+
+function payloadLocationId(payload: unknown): string | null {
+  if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
+    const value = (payload as Record<string, unknown>)['locationId'];
+    if (typeof value === 'string') return value;
+  }
+  return null;
+}

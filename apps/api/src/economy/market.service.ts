@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -8,6 +7,7 @@ import {
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { stableUnit } from './deterministic.js';
 import { PricingService } from './pricing.service.js';
 
 export const MARKET_BUY_EVENT = 'market.buy';
@@ -16,7 +16,6 @@ export const MARKET_SELL_EVENT = 'market.sell';
 const USED_OFFER_COUNT = 6;
 const USED_CONDITION_MIN = 40;
 const USED_CONDITION_MAX = 90;
-const UINT32_MAX = 0xffffffff;
 const DAY_KEY_LENGTH = 10;
 
 export interface MarketListing {
@@ -46,11 +45,6 @@ export interface SellResponse {
   readonly partInstanceId: string;
   readonly price: number;
   readonly credits: number;
-}
-
-function stableUnit(input: string): number {
-  const digest = createHash('sha256').update(input).digest();
-  return digest.readUInt32BE(0) / UINT32_MAX;
 }
 
 function dayKey(at: Date): string {

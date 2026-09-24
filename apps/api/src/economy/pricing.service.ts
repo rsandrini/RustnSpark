@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Location, PartCatalog, PartInstance, Player } from '@prisma/client';
+import type { Location, Material, PartCatalog, PartInstance, Player } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { buyPrice, sellPrice, type PartPriceInput } from './price.calculator.js';
+
+// Catalog listings price a pristine part; materials have no condition at all, so the
+// same local-value formula applies at full condition (plan S8.7).
+const FULL_CONDITION = 100;
 
 export interface MarketContext {
   readonly location: Location;
@@ -81,6 +85,11 @@ export class PricingService {
     catalog: Pick<PartCatalog, 'basePrice'>,
   ): number {
     return sellPrice(this.priceInput(context, catalog, part.condition), context.rules);
+  }
+
+  // Plan S8.7: `material.basePrice × isolation × faction × mood × sell_ratio`.
+  sellMaterial(context: MarketContext, material: Pick<Material, 'basePrice'>): number {
+    return sellPrice(this.priceInput(context, material, FULL_CONDITION), context.rules);
   }
 
   playerFactionId(playerId: string): Promise<Pick<Player, 'factionId'> | null> {

@@ -18,3 +18,16 @@ export class SellDto {
   @Min(0)
   expectedPrice!: number;
 }
+
+export class SellMaterialDto {
+  @IsString()
+  @IsNotEmpty()
+  materialId!: string;
+
+  @IsInt()
+  quantity!: number;
+
+  @IsInt()
+  @Min(0)
+  expectedPrice!: number;
+}

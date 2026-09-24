@@ -6,15 +6,25 @@ import { PartsModule } from '../parts/parts.module.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { REPAIR_QUEUE_NAME, bullConnectionOptions } from '../jobs/queues.js';
+import { InventoryService } from './inventory.service.js';
 import { MarketController } from './market.controller.js';
 import { MarketService } from './market.service.js';
+import { MaterialsController } from './materials.controller.js';
+import { MaterialsService } from './materials.service.js';
 import { PricingService } from './pricing.service.js';
 import { RepairController } from './repair.controller.js';
 import { RepairService } from './repair.service.js';
+import { RefuelController } from './refuel.controller.js';
+import { RefuelService } from './refuel.service.js';
+import { RescueController } from './rescue.controller.js';
+import { RescueService } from './rescue.service.js';
+import { ScavengingController } from './scavenging.controller.js';
+import { ScavengingService } from './scavenging.service.js';
 
-// S8.1/S8.2/S8.4: pricing, market HTTP, and the repair job producer live here.
-// Wallet/PlayerEvent are provided directly (same pattern as MissionsModule) so the
-// worker graph can also provide RepairService without pulling PlayersModule's controllers.
+// S8.1-S8.7: pricing, market HTTP, instant refuel, the repair job producer, free
+// scavenging, auto-rescue and the materials market live here. Wallet/PlayerEvent are
+// provided directly (same pattern as MissionsModule) so the worker graph can also
+// provide RepairService without pulling PlayersModule's controllers.
 @Module({
   imports: [
     ConfigModule,
@@ -29,8 +39,26 @@ import { RepairService } from './repair.service.js';
     }),
     BullModule.registerQueue({ name: REPAIR_QUEUE_NAME }),
   ],
-  controllers: [MarketController, RepairController],
-  providers: [PricingService, MarketService, RepairService, WalletService, PlayerEventService],
+  controllers: [
+    MarketController,
+    MaterialsController,
+    RepairController,
+    RefuelController,
+    RescueController,
+    ScavengingController,
+  ],
+  providers: [
+    PricingService,
+    MarketService,
+    MaterialsService,
+    RepairService,
+    RefuelService,
+    RescueService,
+    InventoryService,
+    ScavengingService,
+    WalletService,
+    PlayerEventService,
+  ],
   exports: [PricingService, MarketService, RepairService],
 })
 export class EconomyModule {}
