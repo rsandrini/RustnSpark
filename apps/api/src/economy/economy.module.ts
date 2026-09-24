@@ -9,6 +9,8 @@ import { REPAIR_QUEUE_NAME, bullConnectionOptions } from '../jobs/queues.js';
 import { InventoryService } from './inventory.service.js';
 import { MarketController } from './market.controller.js';
 import { MarketService } from './market.service.js';
+import { MaterialsController } from './materials.controller.js';
+import { MaterialsService } from './materials.service.js';
 import { PricingService } from './pricing.service.js';
 import { RepairController } from './repair.controller.js';
 import { RepairService } from './repair.service.js';
@@ -19,10 +21,10 @@ import { RescueService } from './rescue.service.js';
 import { ScavengingController } from './scavenging.controller.js';
 import { ScavengingService } from './scavenging.service.js';
 
-// S8.1-S8.6: pricing, market HTTP, instant refuel, the repair job producer, free
-// scavenging and auto-rescue live here. Wallet/PlayerEvent are provided directly (same
-// pattern as MissionsModule) so the worker graph can also provide RepairService
-// without pulling PlayersModule's controllers.
+// S8.1-S8.7: pricing, market HTTP, instant refuel, the repair job producer, free
+// scavenging, auto-rescue and the materials market live here. Wallet/PlayerEvent are
+// provided directly (same pattern as MissionsModule) so the worker graph can also
+// provide RepairService without pulling PlayersModule's controllers.
 @Module({
   imports: [
     ConfigModule,
@@ -39,6 +41,7 @@ import { ScavengingService } from './scavenging.service.js';
   ],
   controllers: [
     MarketController,
+    MaterialsController,
     RepairController,
     RefuelController,
     RescueController,
@@ -47,6 +50,7 @@ import { ScavengingService } from './scavenging.service.js';
   providers: [
     PricingService,
     MarketService,
+    MaterialsService,
     RepairService,
     RefuelService,
     RescueService,

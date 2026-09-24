@@ -136,6 +136,46 @@ describe('mission resolve processor (S7.3)', () => {
     });
   }
 
+  // S8.7: a mining mission's yield must land in PlayerMaterial in the same transaction
+  // as the payout (plan line 485). One leg, debris env (richness 0.6), a mining rig bolted
+  // onto the starter ship (min = 0 would roll zero yield) and a fixed seed pin the outcome.
+  async function createMiningMission(
+    player: AuthPair,
+    seedValue: string,
+  ): Promise<MissionInstance> {
+    const template = await prisma.missionTemplate.findFirstOrThrow({
+      where: { type: 'MINING' },
+      orderBy: { id: 'asc' },
+    });
+    const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+    return prisma.missionInstance.create({
+      data: {
+        templateId: template.id,
+        type: 'MINING',
+        factionId: template.factionId,
+        originId: 'ceres',
+        destinationId: 'hedus',
+        legs: [
+          {
+            routeId: route.id,
+            distance: 150,
+            danger: 0,
+            zone: 0,
+            env: { id: 'debris', level: 1, fuelMult: 1 },
+          },
+        ],
+        cargo: { materialId: 'common_ore' },
+        reward: 100,
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+        seed: seedValue,
+        status: 'ACCEPTED',
+        playerId: player.seeded.player.id,
+        shipId: player.shipId,
+        acceptedAt: new Date(),
+      },
+    });
+  }
+
   function dispatch(token: string, shipId: string, missionId: string) {
     return request(httpServer(testApp.app))
       .post(`/v1/ships/${shipId}/dispatch`)
@@ -348,6 +388,60 @@ describe('mission resolve processor (S7.3)', () => {
       where: { id: player.seeded.player.id },
     });
     expect(creditsAfter.credits).toBe(-500 + result.credited);
+  }, 30_000);
+
+  // S8.7 acceptance (plan line 485): mined materials land in PlayerMaterial on mission
+  // resolution, atomic with the payout — both effects are asserted after one process().
+  it('lands mined materials in PlayerMaterial together with the payout', async () => {
+    const player = await authFor(testApp.app);
+    // The starter ship has no mining rig (min = 0 → zero yield by construction), and the
+    // rig draws −3 continuous energy that the starter build cannot cover — so the rig
+    // lands together with a solar panel to keep the hull viable (plan S7.1 re-check).
+    await prisma.partInstance.createMany({
+      data: [
+        {
+          partType: 'mining_rig',
+          ownerPlayerId: player.seeded.player.id,
+          condition: 100,
+          location: 'INSTALLED',
+          shipId: player.shipId,
+        },
+        {
+          partType: 'reactor_solar',
+          ownerPlayerId: player.seeded.player.id,
+          condition: 100,
+          location: 'INSTALLED',
+          shipId: player.shipId,
+        },
+      ],
+    });
+    const mission = await createMiningMission(player, 's8.7-mining-seed');
+    const creditsBefore = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+    });
+
+    const job = await dispatchedJob(player, mission, 10_000);
+    const result = await processor.process(job);
+    expect(result.skipped).toBe(false);
+    expect(result.status).toBe('DONE');
+
+    const holding = await prisma.playerMaterial.findUnique({
+      where: {
+        playerId_materialId: {
+          playerId: player.seeded.player.id,
+          materialId: 'common_ore',
+        },
+      },
+    });
+    expect(holding).not.toBeNull();
+    expect(holding!.quantity).toBeGreaterThan(0);
+
+    // Payout landed in the same transaction as the loot.
+    expect(result.credited).toBeGreaterThan(0);
+    const creditsAfter = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+    });
+    expect(creditsAfter.credits).toBe(creditsBefore.credits + result.credited);
   }, 30_000);
 
   it('retries with backoff and dead-letters a poison job into the failed set', async () => {
