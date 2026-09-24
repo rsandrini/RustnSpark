@@ -34,21 +34,22 @@ model Account {
 }
 
 model Player {
-  id              String           @id @default(dbgenerated("gen_random_uuid()"))
-  accountId       String           @unique
-  account         Account          @relation(fields: [accountId], references: [id])
-  name            String           @unique
-  credits         Int              @default(0)
+  id              String            @id @default(dbgenerated("gen_random_uuid()"))
+  accountId       String            @unique
+  account         Account           @relation(fields: [accountId], references: [id])
+  name            String            @unique
+  credits         Int               @default(0)
   // Plain string, not an enum: `pt-BR` is not a valid enum member; DTO validation enforces values.
-  locale          String           @default("en")
+  locale          String            @default("en")
   // Faction chosen during onboarding; null until a player completes onboarding.
   factionId       String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime          @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
   parts           PartInstance[]
   ships           Ship[]
   materials       PlayerMaterial[]
+  missions        MissionInstance[]
 }
 
 model RefreshToken {
@@ -123,6 +124,20 @@ enum MissionType {
   RESCUE
 }
 
+// Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union
+// ('success' | 'failed' | 'adrift' | 'partial_failure') defined in mission.resolver.ts —
+// that one records what happened during resolution; this one tracks the mission row itself.
+enum MissionStatus {
+  AVAILABLE
+  HELD
+  ACCEPTED
+  IN_TRANSIT
+  RESOLVING
+  DONE
+  FAILED
+  EXPIRED
+}
+
 enum PartLocation {
   INVENTORY
   INSTALLED
@@ -171,56 +186,59 @@ model RulesSnapshot {
 }
 
 model Faction {
-  id              String            @id
-  displayName     Json
-  description     Json
-  color           String
-  playable        Boolean           @default(false)
-  relations       Json
-  starterKitHint  Json?
-  locations       Location[]
+  id               String            @id
+  displayName      Json
+  description      Json
+  color            String
+  playable         Boolean           @default(false)
+  relations        Json
+  starterKitHint   Json?
+  locations        Location[]
   missionTemplates MissionTemplate[]
+  missionInstances MissionInstance[]
 }
 
 model Environment {
-  id               String             @id
-  displayName      Json
-  description      Json
-  level            Int
-  fuelMult         Float              @default(1)
-  subsystemTarget  String?
-  mitigatingPart   String?
+  id                String             @id
+  displayName       Json
+  description       Json
+  level             Int
+  fuelMult          Float              @default(1)
+  subsystemTarget   String?
+  mitigatingPart    String?
   routeEnvironments RouteEnvironment[]
 }
 
 model Location {
-  id          String   @id
-  displayName Json
-  description Json
-  type        String
-  x           Float
-  y           Float
-  zone        Int
-  factionId   String
-  isolation   Float
-  mood        Float
-  services    Json
-  faction     Faction  @relation(fields: [factionId], references: [id])
-  routesA     Route[]  @relation("RouteA")
-  routesB     Route[]  @relation("RouteB")
-  ships       Ship[]
+  id                  String            @id
+  displayName         Json
+  description         Json
+  type                String
+  x                   Float
+  y                   Float
+  zone                Int
+  factionId           String
+  isolation           Float
+  mood                Float
+  services            Json
+  faction             Faction           @relation(fields: [factionId], references: [id])
+  routesA             Route[]           @relation("RouteA")
+  routesB             Route[]           @relation("RouteB")
+  ships               Ship[]
+  missionsOrigin      MissionInstance[] @relation("MissionOrigin")
+  missionsDestination MissionInstance[] @relation("MissionDestination")
 
   @@index([factionId])
 }
 
 model Route {
-  id            String             @id
-  nodeAId       String
-  nodeBId       String
-  distance      Int
-  danger        Int
-  nodeA         Location           @relation("RouteA", fields: [nodeAId], references: [id])
-  nodeB         Location           @relation("RouteB", fields: [nodeBId], references: [id])
+  id                String             @id
+  nodeAId           String
+  nodeBId           String
+  distance          Int
+  danger            Int
+  nodeA             Location           @relation("RouteA", fields: [nodeAId], references: [id])
+  nodeB             Location           @relation("RouteB", fields: [nodeBId], references: [id])
   routeEnvironments RouteEnvironment[]
 
   @@unique([nodeAId, nodeBId])
@@ -271,7 +289,7 @@ model PartCatalog {
 }
 
 model MissionTemplate {
-  id              String      @id
+  id              String            @id
   displayName     Json
   description     Json
   type            MissionType
@@ -280,10 +298,53 @@ model MissionTemplate {
   rewardCalc      Json
   deadlineCalc    Json
   encounterPolicy Json
-  active          Boolean     @default(true)
-  faction         Faction     @relation(fields: [factionId], references: [id])
+  active          Boolean           @default(true)
+  faction         Faction           @relation(fields: [factionId], references: [id])
+  instances       MissionInstance[]
 
   @@index([factionId])
+}
+
+model MissionInstance {
+  id            String          @id @default(dbgenerated("gen_random_uuid()"))
+  templateId    String
+  type          MissionType
+  factionId     String
+  originId      String
+  destinationId String
+  // Structured leg plan (distance/danger/zone/env per leg) — never narrated text (GDD §MissionLog).
+  legs          Json
+  // Per-type payload (mining quantity/material, escort client, rescue mob, cargo manifest…).
+  cargo         Json
+  // Integer credits (wallet is integer-only; MAX_CREDITS fits Int).
+  reward        Int
+  // Board/hold deadline: the hold timer keeps running against this (GDD §12).
+  expiresAt     DateTime
+  status        MissionStatus   @default(AVAILABLE)
+  playerId      String?
+  shipId        String?
+  acceptedAt    DateTime?
+  arrivalAt     DateTime?
+  // Completion deadline (rescue: round-trip at reference_mob × uniform(1.25, 2.0)); nullable
+  // because only some mission types carry one.
+  deadlineAt    DateTime?
+  // Deterministic generator input (e.g. "ceres|12|cfg-abc"): always pass the stored string
+  // to createRng() — never Number() it, or the stream changes. TEXT so no bit-width ceiling.
+  seed          String
+  // Optimistic lock (S6.4 state machine increments on every transition).
+  version       Int             @default(0)
+  template      MissionTemplate @relation(fields: [templateId], references: [id])
+  faction       Faction         @relation(fields: [factionId], references: [id])
+  origin        Location        @relation("MissionOrigin", fields: [originId], references: [id])
+  destination   Location        @relation("MissionDestination", fields: [destinationId], references: [id])
+  player        Player?         @relation(fields: [playerId], references: [id])
+  ship          Ship?           @relation(fields: [shipId], references: [id])
+  // Hand-written partial indexes live only in migration 0012_missions (Prisma PSL cannot
+  // express WHERE): status/arrivalAt for IN_TRANSIT, and the one-active-per-player unique
+  // over (ACCEPTED, IN_TRANSIT, RESOLVING).
+
+  // Board query: what is offerable at this location, soonest deadline first.
+  @@index([originId, status, expiresAt])
 }
 
 model DropTable {
@@ -319,17 +380,18 @@ model PartInstance {
 }
 
 model Ship {
-  id                String     @id @default(dbgenerated("gen_random_uuid()"))
+  id                String            @id @default(dbgenerated("gen_random_uuid()"))
   ownerPlayerId     String
   name              String
   layout            Json
-  fuel              Float      @default(0)
-  status            ShipStatus @default(IN_PORT)
+  fuel              Float             @default(0)
+  status            ShipStatus        @default(IN_PORT)
   currentLocationId String
-  stance            ShipStance @default(NEUTRAL)
-  owner             Player     @relation(fields: [ownerPlayerId], references: [id])
+  stance            ShipStance        @default(NEUTRAL)
+  owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]
-  location          Location   @relation(fields: [currentLocationId], references: [id])
+  location          Location          @relation(fields: [currentLocationId], references: [id])
+  missions          MissionInstance[]
 
   @@index([currentLocationId])
   @@index([ownerPlayerId])
