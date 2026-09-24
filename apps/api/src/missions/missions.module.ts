@@ -10,15 +10,21 @@ import {
   bullConnectionOptions,
 } from '../jobs/queues.js';
 import { PartsModule } from '../parts/parts.module.js';
+import { PlayerEventService } from '../players/player-event.service.js';
+import { WalletService } from '../players/wallet.service.js';
 import { BoardService } from './board.service.js';
 import { DispatchService } from './dispatch.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
+import { MissionResolveService } from './resolve.service.js';
 
 // The API process enqueues resolve jobs here (S7.2/S7.3 via MissionProducer); the worker
 // process registers the same queue name with MissionProcessor inside JobsModule — separate
 // processes, so each carries its own forRoot connection to the same Redis. defaultJobOptions
 // give every enqueued resolve job the retry/backoff policy (S7.3) without call-site wiring.
+// S7.4: MissionResolveService + Wallet/PlayerEvent are provided directly (not via
+// PlayersModule) so resolve-on-read in getActive() works without pulling ShipsModule's
+// controller/ownership graph into partial test graphs (board.int-spec).
 @Module({
   imports: [
     ConfigModule,
@@ -40,7 +46,15 @@ import { MissionsService } from './missions.service.js';
     }),
   ],
   controllers: [MissionsController],
-  providers: [BoardService, MissionsService, DispatchService, MissionProducer],
+  providers: [
+    BoardService,
+    MissionsService,
+    DispatchService,
+    MissionProducer,
+    MissionResolveService,
+    WalletService,
+    PlayerEventService,
+  ],
   exports: [BoardService, MissionsService, DispatchService, MissionProducer],
 })
 export class MissionsModule {}

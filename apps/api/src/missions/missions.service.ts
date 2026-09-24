@@ -2,19 +2,25 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma, type MissionInstance, type Ship } from '@prisma/client';
+import type { Queue } from 'bullmq';
 import { GameConfigService } from '../config/game-config.service.js';
+import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { BoardService, type BoardMission } from './board.service.js';
+import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import { checkMissionRequirements } from './requirements.checker.js';
+import { MissionResolveService } from './resolve.service.js';
 
 // Two-int advisory-lock namespace for hold bookkeeping (class | hashtext(playerId)),
 // next to the board's 6200: serializes one player's own hold/release/expire-count so
@@ -26,6 +32,10 @@ const DEFAULT_VIEWER_TIER = 1;
 const ACTIVE_STATUSES = ['ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
 const PLAYER_VISIBLE_STATUSES = ['HELD', 'ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
 const RESERVABLE_STATUSES = ['AVAILABLE', 'HELD'] as const;
+
+// Resolve-on-read bound (S7.4): a player has at most one in-flight mission (partial
+// unique index), so 1 is already generous — the cap documents "bounded" without a knob.
+const RESOLVE_ON_READ_LIMIT = 1;
 
 function unavailableError(mission: MissionInstance, playerId: string): string {
   if (mission.status === 'EXPIRED') return 'MISSION_EXPIRED';
@@ -41,11 +51,15 @@ function unavailableError(mission: MissionInstance, playerId: string): string {
 
 @Injectable()
 export class MissionsService {
+  private readonly logger = new Logger(MissionsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: GameConfigService,
     private readonly parts: PartsService,
     private readonly board: BoardService,
+    private readonly resolveService: MissionResolveService,
+    @InjectQueue(MISSION_QUEUE_NAME) private readonly missionQueue: Queue<DispatchJobData>,
   ) {}
 
   async getBoard(locationId: string, playerId: string): Promise<BoardMission[]> {
@@ -54,6 +68,10 @@ export class MissionsService {
   }
 
   async getActive(playerId: string): Promise<MissionInstance[]> {
+    // S7.4 "resolve on read": a past-arrival IN_TRANSIT mission is resolved synchronously
+    // before the read, so the response never shows it still in transit. Bounded (1) and
+    // best-effort: a failure logs and leaves the row for the background reconcile tick.
+    await this.resolveDueOnRead(playerId);
     // The start deadline keeps running during a hold (design ux §7): a hold that
     // outlives it loses the reservation with no penalty beyond the missed offer.
     await this.prisma.missionInstance.updateMany({
@@ -64,6 +82,25 @@ export class MissionsService {
       where: { playerId, status: { in: [...PLAYER_VISIBLE_STATUSES] } },
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
+  }
+
+  private async resolveDueOnRead(playerId: string): Promise<void> {
+    const due = await this.prisma.missionInstance.findMany({
+      where: { playerId, status: 'IN_TRANSIT', arrivalAt: { lte: new Date() } },
+      take: RESOLVE_ON_READ_LIMIT,
+      orderBy: { arrivalAt: 'asc' },
+    });
+    for (const mission of due) {
+      try {
+        const job = await this.missionQueue.getJob(mission.id);
+        const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission));
+        await this.resolveService.resolve(data);
+      } catch (error) {
+        this.logger.warn(
+          `resolve-on-read failed for mission ${mission.id}; reconciler will retry: ${String(error)}`,
+        );
+      }
+    }
   }
 
   async hold(missionId: string, playerId: string): Promise<MissionInstance> {

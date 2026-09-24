@@ -2,13 +2,18 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { EnvModule, EnvService } from '../common/env/env.module.js';
 import { ConfigModule } from '../config/config.module.js';
+import { PartsService } from '../parts/parts.service.js';
+import { MissionResolveService } from '../missions/resolve.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { MissionProcessor } from './processors/mission.processor.js';
 import { PingProcessor } from './processors/ping.processor.js';
+import { ReconcileProcessor } from './processors/reconcile.processor.js';
+import { ReconcileScheduler } from './reconcile.scheduler.js';
 import {
   MISSION_QUEUE_NAME,
   PING_QUEUE_NAME,
+  RECONCILE_QUEUE_NAME,
   RESOLVE_BACKOFF_BASE_MS,
   RESOLVE_JOB_ATTEMPTS,
   bullConnectionOptions,
@@ -25,6 +30,9 @@ import {
 // directly here — the worker never imports PlayersModule/ShipsModule (their controllers and
 // resolver registration belong to the API process), and ConfigModule pulls in the global
 // Prisma/Redis/Env modules this standalone context needs.
+// S7.4: ReconcileProcessor + ReconcileScheduler join with MissionResolveService and
+// PartsService provided directly (same rationale — no controllers in the worker graph);
+// the scheduler upserts one repeatable tick every RECONCILE_INTERVAL_MS on boot.
 @Module({
   imports: [
     EnvModule,
@@ -44,7 +52,17 @@ import {
         backoff: { type: 'exponential', delay: RESOLVE_BACKOFF_BASE_MS },
       },
     }),
+    BullModule.registerQueue({ name: RECONCILE_QUEUE_NAME }),
   ],
-  providers: [PingProcessor, MissionProcessor, WalletService, PlayerEventService],
+  providers: [
+    PingProcessor,
+    MissionProcessor,
+    ReconcileProcessor,
+    ReconcileScheduler,
+    MissionResolveService,
+    PartsService,
+    WalletService,
+    PlayerEventService,
+  ],
 })
 export class JobsModule {}

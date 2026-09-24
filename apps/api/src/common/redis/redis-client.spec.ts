@@ -15,6 +15,7 @@ const env = new EnvService({
   ARGON2_MEMORY_KIB: 4096,
   ARGON2_TIME_COST: 1,
   ARGON2_PARALLELISM: 1,
+  RECONCILE_INTERVAL_MS: 30000,
 });
 
 describe('RedisClient', () => {

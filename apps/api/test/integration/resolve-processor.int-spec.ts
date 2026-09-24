@@ -20,9 +20,8 @@ import {
   bullConnectionOptions,
 } from '../../src/jobs/queues.js';
 import { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
+import { MissionResolveService } from '../../src/missions/resolve.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
-import { PlayerEventService } from '../../src/players/player-event.service.js';
-import { WalletService } from '../../src/players/wallet.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -60,12 +59,9 @@ describe('mission resolve processor (S7.3)', () => {
     queue = testApp.app.get(getQueueToken(MISSION_QUEUE_NAME));
     // Constructed directly (like ping unit tests) so tests 1–4 don't boot a competing
     // BullMQ Worker; the real worker graph is proven by the retries test below.
-    processor = new MissionProcessor(
-      prisma,
-      configService,
-      testApp.app.get(WalletService),
-      testApp.app.get(PlayerEventService),
-    );
+    // S7.4: MissionProcessor is now a thin adapter over MissionResolveService, which
+    // lives in MissionsModule and is shared with resolve-on-read.
+    processor = new MissionProcessor(testApp.app.get(MissionResolveService));
   });
 
   beforeEach(async () => {

@@ -55,7 +55,10 @@ export interface DispatchResponse {
   readonly durationClass?: DurationClass;
 }
 
-function parseDispatchLegs(legs: unknown): DispatchLeg[] {
+// Exported in S7.4: the reconciler rebuilds a DispatchJobData when the delayed job (and
+// therefore its frozen snapshot) is gone, parsing mission.legs with the same validation
+// dispatch used at enqueue time.
+export function parseDispatchLegs(legs: unknown): DispatchLeg[] {
   if (!Array.isArray(legs) || legs.length === 0) {
     throw new ConflictException({ error: 'MISSION_MALFORMED' });
   }
@@ -76,6 +79,46 @@ function parseDispatchLegs(legs: unknown): DispatchLeg[] {
       env: candidate.env ?? { id: 'none', level: 1, fuelMult: 1 },
     };
   });
+}
+
+// S7.4: reconstruct the job payload from live rows when the original job was lost. Ship
+// fuel/stance/location are unchanged mid-flight (in-transit lock, S7.7), installed parts
+// still match the dispatch snapshot, and legs come from mission.legs — enough for
+// MissionResolveService to run the same pipeline the worker would have.
+export async function rebuildDispatchData(
+  prisma: PrismaService,
+  parts: PartsService,
+  mission: MissionInstance,
+): Promise<DispatchJobData> {
+  if (!mission.shipId || !mission.playerId) {
+    throw new Error(`mission ${mission.id} has no ship/player — cannot rebuild dispatch data`);
+  }
+  if (!mission.arrivalAt) {
+    throw new Error(`mission ${mission.id} is ${mission.status} without arrivalAt`);
+  }
+  const ship = await prisma.ship.findUniqueOrThrow({ where: { id: mission.shipId } });
+  const rows = await parts.findPlayerParts(mission.playerId);
+  const installedRows = rows.filter(
+    (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
+  );
+  const legs = parseDispatchLegs(mission.legs);
+  return {
+    missionId: mission.id,
+    arrivalAt: mission.arrivalAt.toISOString(),
+    snapshot: {
+      shipId: ship.id,
+      fuel: ship.fuel,
+      currentLocationId: ship.currentLocationId,
+      stance: ship.stance,
+      parts: installedRows.map((part) => ({
+        id: part.id,
+        partType: part.partType,
+        condition: part.condition,
+        catalog: pickCatalogStats(part.partCatalog),
+      })),
+      legs,
+    },
+  };
 }
 
 const MS_PER_SECOND = 1000;

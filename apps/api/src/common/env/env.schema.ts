@@ -6,6 +6,8 @@ const DEFAULT_PORT = 3000;
 const DEFAULT_ARGON2_MEMORY_KIB = 19456;
 const DEFAULT_ARGON2_TIME_COST = 2;
 const DEFAULT_ARGON2_PARALLELISM = 1;
+// D4: reconciliation tick granularity — infrastructure timing, not a balance knob.
+const DEFAULT_RECONCILE_INTERVAL_MS = 30_000;
 
 const secret = z
   .string()
@@ -40,6 +42,8 @@ export const envSchema = z.object({
   ARGON2_MEMORY_KIB: positiveInt(DEFAULT_ARGON2_MEMORY_KIB),
   ARGON2_TIME_COST: positiveInt(DEFAULT_ARGON2_TIME_COST),
   ARGON2_PARALLELISM: positiveInt(DEFAULT_ARGON2_PARALLELISM),
+  // Reconcile tick granularity (D4): infrastructure, not balance — default 30 s.
+  RECONCILE_INTERVAL_MS: positiveInt(DEFAULT_RECONCILE_INTERVAL_MS),
 });
 
 export type Env = z.output<typeof envSchema>;

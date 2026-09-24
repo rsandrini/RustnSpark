@@ -24,6 +24,10 @@ export function testEnv(overrides: Record<string, string> = {}): Record<string, 
     ARGON2_MEMORY_KIB: '4096',
     ARGON2_TIME_COST: '1',
     ARGON2_PARALLELISM: '1',
+    // Effectively never: a JobsModule boot inside a test would otherwise schedule real
+    // reconcile ticks (default 30 s) against the shared test Redis mid-suite. Specs that
+    // assert the scheduler pass their own override (e.g. RECONCILE_INTERVAL_MS=12345).
+    RECONCILE_INTERVAL_MS: '3600000',
     ...overrides,
   };
 }

@@ -18,9 +18,10 @@ const STATUSES = [
 
 type Allowed = readonly [MissionStatus, (typeof MISSION_EVENTS)[number], MissionStatus];
 
-// The whole transition table: S6.4's four reservation events, S7.2's DISPATCH, and
+// The whole transition table: S6.4's four reservation events, S7.2's DISPATCH,
 // S7.3's resolve triple (RESOLVE claims IN_TRANSIT → RESOLVING; COMPLETE/FAIL finish
-// the claim from RESOLVING). Every other (status, event) pair is rejected — including
+// the claim from RESOLVING), and S7.4's REQUEUE (the reconciler returns a stuck
+// RESOLVING claim to IN_TRANSIT). Every other (status, event) pair is rejected — including
 // terminal states, other in-flight statuses, and holding an already-held mission.
 const ALLOWED: readonly Allowed[] = [
   ['AVAILABLE', 'HOLD', 'HELD'],
@@ -33,10 +34,11 @@ const ALLOWED: readonly Allowed[] = [
   ['IN_TRANSIT', 'RESOLVE', 'RESOLVING'],
   ['RESOLVING', 'COMPLETE', 'DONE'],
   ['RESOLVING', 'FAIL', 'FAILED'],
+  ['RESOLVING', 'REQUEUE', 'IN_TRANSIT'],
 ];
 
-describe('mission state machine (S6.4 + S7.3 resolve)', () => {
-  it('pins the event set through S7.3', () => {
+describe('mission state machine (S6.4 + S7.3 resolve + S7.4 requeue)', () => {
+  it('pins the event set through S7.4', () => {
     expect(MISSION_EVENTS).toEqual([
       'HOLD',
       'RELEASE',
@@ -46,6 +48,7 @@ describe('mission state machine (S6.4 + S7.3 resolve)', () => {
       'RESOLVE',
       'COMPLETE',
       'FAIL',
+      'REQUEUE',
     ]);
   });
 
@@ -106,6 +109,12 @@ describe('mission state machine (S6.4 + S7.3 resolve)', () => {
         expect(finish).toBeNull();
         expect(fail).toBeNull();
       }
+    }
+  });
+
+  it('restricts REQUEUE to RESOLVING — the reconciler reclaim path (S7.4)', () => {
+    for (const from of STATUSES) {
+      expect(missionStatusAfter(from, 'REQUEUE')).toBe(from === 'RESOLVING' ? 'IN_TRANSIT' : null);
     }
   });
 });
