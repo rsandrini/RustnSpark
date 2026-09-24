@@ -225,6 +225,36 @@ describe('reconciliation tick (S7.4)', () => {
     await expectResolved(mission.id);
   }, 30_000);
 
+  // A fresh ReconcileScheduler upsert enqueues its first tick immediately (BullMQ
+  // nextMillis = now when the scheduler has no prior state), so every JobsModule boot
+  // runs one reconcile tick right away. The ghost test must consume that boot tick
+  // before enqueuing its poison job — otherwise the boot tick's drainFailedSet races
+  // the job into removal and the test flakes depending on worker start-up order.
+  async function waitForReconcileIdle(queue: Queue, timeoutMs = 10_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      // Not 'delayed': the scheduler eagerly stores the *next* iteration (due in
+      // RECONCILE_INTERVAL_MS) as a delayed job, which is expected to sit there.
+      const counts = await queue.getJobCounts('waiting', 'active', 'prioritized', 'waiting-children');
+      const pending =
+        (counts.waiting ?? 0) +
+        (counts.active ?? 0) +
+        (counts.prioritized ?? 0) +
+        (counts['waiting-children'] ?? 0);
+      if (pending === 0) return;
+      if (Date.now() > deadline) {
+        const stuck = await queue.getJobs(['waiting', 'active', 'prioritized'], 0, 10);
+        const detail = await Promise.all(
+          stuck.map(async (j) => ({ id: j.id, name: j.name, state: await j.getState() })),
+        );
+        throw new Error(
+          `reconcile queue did not settle within ${timeoutMs} ms: ${JSON.stringify({ counts, detail })}`,
+        );
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
   it('drains a dead-lettered job whose mission row is gone (ghost failed job)', async () => {
     const ghostId = randomUUID();
     const connection = bullConnectionOptions(testApp.app.get(EnvService).get('REDIS_URL'));
@@ -233,6 +263,11 @@ describe('reconciliation tick (S7.4)', () => {
     let workerContext: INestApplicationContext | undefined;
     try {
       await queueEvents.waitUntilReady();
+
+      // Boot first and let the immediate boot tick drain an empty failed set.
+      workerContext = await NestFactory.createApplicationContext(JobsModule, { logger: false });
+      await waitForReconcileIdle(reconcileQueue);
+
       const job = await producerQueue.add(
         RESOLVE_JOB_NAME,
         {
@@ -251,7 +286,6 @@ describe('reconciliation tick (S7.4)', () => {
       );
 
       // Real worker drives the poison job into the failed set (the dead-letter path).
-      workerContext = await NestFactory.createApplicationContext(JobsModule, { logger: false });
       const deadline = Date.now() + 15_000;
       let state = await job.getState();
       while (state !== 'failed' && Date.now() < deadline) {

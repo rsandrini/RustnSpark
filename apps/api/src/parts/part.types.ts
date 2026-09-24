@@ -6,6 +6,8 @@ export interface PartCatalog {
   mass: number;
   structureCost: number;
   partHp: number;
+  /** Catalog list price — carried into the dispatch snapshot so resolve can compute shipTier (D29). */
+  basePrice: number;
   pot: number;
   pdf: number;
   bli: number;

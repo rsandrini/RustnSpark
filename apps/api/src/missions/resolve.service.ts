@@ -15,6 +15,7 @@ import type { FactionRelation, Stance } from '../resolution/encounter/encounter-
 import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
+import { shipTier } from '../ships/ship-tier.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { EncounterService } from './encounters/encounter.service.js';
 
@@ -178,11 +179,21 @@ export class MissionResolveService {
         ? { materialId: cargo['materialId'], requiredQuantity: cargo['quantity'] }
         : undefined;
 
+    // D29: accept finalizes the board reward from the accepting ship's tier; resolve
+    // must rate the payout (and combat win credits, which scale with tier) from the
+    // same tier. The dispatch snapshot carries each part's basePrice for this; older
+    // job payloads without it fall back to PROVISIONAL_TIER (tier 1).
+    const snapshotTier = shipTier(
+      snapshot.parts.map((part) => ({ basePrice: part.catalog.basePrice ?? 0 })),
+      rules,
+    );
     const missionInput: MissionInput = {
       id: mission.id,
       type: mission.type,
       legs,
-      tier: PROVISIONAL_TIER,
+      tier: snapshot.parts.every((part) => typeof part.catalog.basePrice === 'number')
+        ? snapshotTier
+        : PROVISIONAL_TIER,
       isolation: destination.isolation,
       factionRelation: employer.key,
       relation: employer.relation,
@@ -252,8 +263,19 @@ export class MissionResolveService {
           update: { quantity: { increment: entry.quantity } },
         });
       }
+      // Debit as well as credit: combat_loss_penalty makes creditsDelta negative on a
+      // failed mission, and the old `credited > 0` guard silently dropped that wallet
+      // movement while PlayerEvent still recorded the negative delta. Negative balances
+      // are legal here (GDD §14: only missions pay the debt back; market blocks spend).
       if (credited > 0) {
         await this.wallet.credit(mission.playerId!, credited, `mission:${missionId}:payout`, tx);
+      } else if (credited < 0) {
+        await this.wallet.debitAllowingNegative(
+          mission.playerId!,
+          -credited,
+          `mission:${missionId}:payout`,
+          tx,
+        );
       }
       await this.events.record(
         {
@@ -275,7 +297,7 @@ export class MissionResolveService {
       status: finalStatus,
       skipped: false,
       rulesHash: hash,
-      credited: Math.max(0, credited),
+      credited,
     };
   }
 }

@@ -179,6 +179,7 @@ describe('in-transit lock API (S7.7)', () => {
     const response = await request(httpServer(testApp.app))
       .post(`/v1/ships/${player.shipId}/repair`)
       .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
       .send({ targets: [{ partInstanceId: part.id, toCondition: 100 }] });
     expect(response.status).toBe(409);
     expect(response.body).toMatchObject({

@@ -1,6 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
@@ -58,6 +58,8 @@ function repairSecondsPerPoint(rules: GameRules, zone: number): number {
 
 @Injectable()
 export class RepairService {
+  private readonly logger = new Logger(RepairService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: GameConfigService,
@@ -68,6 +70,10 @@ export class RepairService {
   ) {}
 
   async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
+    // Ownership / installed-target validation runs outside the tx so a 404/409 does not
+    // hold a Ship row lock. Status, pending-job and payment all re-check inside the tx
+    // against a FOR UPDATE lock: two concurrent starts serialize, and the unique partial
+    // index (migration 0015) is the hard backstop if a path ever skips the lock.
     const ship = await this.prisma.ship.findUnique({
       where: { id: shipId },
       include: { location: { include: { faction: { select: { relations: true } } } } },
@@ -80,14 +86,6 @@ export class RepairService {
     }
     if (ship.status !== 'IN_PORT') {
       throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
-    }
-
-    const active = await this.prisma.repairJob.findFirst({
-      where: { shipId, status: 'PENDING' },
-      select: { id: true },
-    });
-    if (active) {
-      throw new ConflictException({ error: 'ALREADY_REPAIRING' });
     }
 
     const player = await this.prisma.player.findUnique({
@@ -153,40 +151,77 @@ export class RepairService {
     const durationSeconds = points * secondsPerPoint;
     const completesAt = new Date(Date.now() + durationSeconds * MS_PER_SECOND);
 
-    const job = await this.prisma.$transaction(async (tx) => {
-      await this.wallet.debit(playerId, cost, `repair.start:${shipId}`, tx);
-      const created = await tx.repairJob.create({
-        data: {
-          shipId,
-          playerId,
-          targets: stored as unknown as never,
-          cost,
-          durationSeconds,
-          completesAt,
-        },
-      });
-      await this.events.record(
-        {
-          playerId,
-          type: REPAIR_STARTED_EVENT,
-          payload: {
-            repairJobId: created.id,
+    let job: Awaited<ReturnType<typeof this.prisma.repairJob.create>>;
+    try {
+      job = await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Ship" WHERE id = ${shipId} FOR UPDATE`;
+        const locked = await tx.ship.findUnique({
+          where: { id: shipId },
+          select: { status: true },
+        });
+        if (!locked) throw new NotFoundException('ship not found');
+        if (locked.status === 'ON_MISSION') {
+          throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+        }
+        if (locked.status !== 'IN_PORT') {
+          throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+        }
+        const active = await tx.repairJob.findFirst({
+          where: { shipId, status: 'PENDING' },
+          select: { id: true },
+        });
+        if (active) {
+          throw new ConflictException({ error: 'ALREADY_REPAIRING' });
+        }
+        await this.wallet.debit(playerId, cost, `repair.start:${shipId}`, tx);
+        const created = await tx.repairJob.create({
+          data: {
             shipId,
+            playerId,
+            targets: stored as unknown as never,
             cost,
             durationSeconds,
-            targets: stored as unknown as Record<string, unknown>[],
-          } as unknown as Prisma.InputJsonValue,
-        },
-        tx,
-      );
-      return created;
-    });
+            completesAt,
+          },
+        });
+        await this.events.record(
+          {
+            playerId,
+            type: REPAIR_STARTED_EVENT,
+            payload: {
+              repairJobId: created.id,
+              shipId,
+              cost,
+              durationSeconds,
+              targets: stored as unknown as Record<string, unknown>[],
+            } as unknown as Prisma.InputJsonValue,
+          },
+          tx,
+        );
+        return created;
+      });
+    } catch (error) {
+      // Unique partial index (migration 0015): a peer that lost the FOR UPDATE race
+      // still cannot insert a second PENDING row for this ship.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException({ error: 'ALREADY_REPAIRING' });
+      }
+      throw error;
+    }
 
-    await this.repairs.add(
-      REPAIR_JOB_NAME,
-      { repairJobId: job.id },
-      { jobId: job.id, delay: durationSeconds * MS_PER_SECOND },
-    );
+    // Enqueue after commit (same pattern as dispatch): a Redis blip must not undo a
+    // paid repair — the reconciler re-enqueues lost PENDING jobs by completesAt.
+    try {
+      await this.repairs.add(
+        REPAIR_JOB_NAME,
+        { repairJobId: job.id },
+        { jobId: job.id, delay: durationSeconds * MS_PER_SECOND },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `enqueue of repair ${job.id} failed; reconciler will complete it: ${String(error)}`,
+      );
+    }
 
     return {
       repairJobId: job.id,
@@ -199,7 +234,8 @@ export class RepairService {
   }
 
   // Idempotent: only a PENDING → COMPLETED claim applies part conditions; a replayed
-  // job (double delivery, reconciler + worker race) sees count 0 and no-ops.
+  // job (double delivery, reconciler + worker race) sees count 0 and no-ops. Targets
+  // use updateMany so a part sold after start (removed row) cannot wedge the job.
   async complete(repairJobId: string): Promise<{ applied: boolean }> {
     const job = await this.prisma.repairJob.findUnique({ where: { id: repairJobId } });
     if (!job) return { applied: false };
@@ -212,7 +248,7 @@ export class RepairService {
       });
       if (claim.count === 0) return false;
       for (const target of targets) {
-        await tx.partInstance.update({
+        await tx.partInstance.updateMany({
           where: { id: target.partInstanceId },
           data: { condition: target.toCondition },
         });

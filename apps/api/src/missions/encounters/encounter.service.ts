@@ -157,22 +157,26 @@ export class EncounterService {
     if (existing) return existing;
 
     const result = await this.computeResult(missionA, missionB, routeId, legIndex, zone);
+    // INSERT … ON CONFLICT DO NOTHING (createMany skipDuplicates): a unique-violation
+    // aborts the PG transaction, so the old create-then-catch-retry could never re-read
+    // in the same tx — only job-level retries recovered. ON CONFLICT lets both resolvers
+    // race safely; the loser's insert no-ops and both re-read the winner's row.
     try {
-      return await tx.encounter.create({
-        data: {
-          missionAId: missionA.id,
-          missionBId: missionB.id,
-          routeId,
-          legIndex,
-          seed: pairSeed(missionA.seed, missionB.seed),
-          result: result as unknown as Prisma.InputJsonValue,
-        },
-        select: { id: true },
+      await tx.encounter.createMany({
+        data: [
+          {
+            missionAId: missionA.id,
+            missionBId: missionB.id,
+            routeId,
+            legIndex,
+            seed: pairSeed(missionA.seed, missionB.seed),
+            result: result as unknown as Prisma.InputJsonValue,
+          },
+        ],
+        skipDuplicates: true,
       });
+      return await tx.encounter.findUnique({ where, select: { id: true } });
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        return tx.encounter.findUnique({ where, select: { id: true } });
-      }
       this.logger.warn(
         `encounter insert failed for ${missionA.id}/${missionB.id}: ${String(error)}`,
       );

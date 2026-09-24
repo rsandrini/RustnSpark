@@ -8,6 +8,7 @@ export const WALLET_CREDIT_EVENT = 'wallet.credit';
 
 // Player.credits is a Postgres int4 column.
 export const MAX_CREDITS = 2_147_483_647;
+export const MIN_CREDITS = -2_147_483_648;
 
 // Base for every wallet failure, so game-logic callers can catch the family when they only care
 // that the movement failed, and match on the subtype/code when they need to distinguish.
@@ -98,6 +99,23 @@ export class WalletService {
     );
   }
 
+  // Mission combat-loss penalties (GDD §14) must land even when the balance cannot cover
+  // them: the sim subtracts unconditionally and only later gates *spending* on a negative
+  // balance. No `credits >= amount` predicate here — same single-UPDATE shape as debit(),
+  // minus the solvency check.
+  async debitAllowingNegative(
+    playerId: string,
+    amount: number,
+    reason: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    assertValidWalletOperation(amount, reason);
+    if (tx) return this.debitAllowingNegativeInTransaction(tx, playerId, amount, reason);
+    await this.prisma.$transaction((inner) =>
+      this.debitAllowingNegativeInTransaction(inner, playerId, amount, reason),
+    );
+  }
+
   private async debitInTransaction(
     tx: Prisma.TransactionClient,
     playerId: string,
@@ -134,6 +152,25 @@ export class WalletService {
     }
     await this.events.record(
       { playerId, type: WALLET_CREDIT_EVENT, creditsDelta: amount, payload: { reason } },
+      tx,
+    );
+  }
+
+  private async debitAllowingNegativeInTransaction(
+    tx: Prisma.TransactionClient,
+    playerId: string,
+    amount: number,
+    reason: string,
+  ): Promise<void> {
+    // Floor is the int4 minimum so a penalty never wraps past Postgres range; a 0-row
+    // update therefore only means "player missing".
+    const updated = await tx.$executeRaw`
+      UPDATE "Player" SET credits = credits - ${amount}
+      WHERE id = ${playerId} AND credits >= ${MIN_CREDITS + amount}
+    `;
+    if (updated === 0) throw new WalletPlayerNotFoundError(playerId);
+    await this.events.record(
+      { playerId, type: WALLET_DEBIT_EVENT, creditsDelta: -amount, payload: { reason } },
       tx,
     );
   }

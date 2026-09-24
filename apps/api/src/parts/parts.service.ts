@@ -36,6 +36,7 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     mass: row.mass,
     structureCost: row.structureCost,
     partHp: row.partHp,
+    basePrice: row.basePrice,
     pot: row.pot ?? 0,
     pdf: row.pdf ?? 0,
     bli: row.bli ?? 0,

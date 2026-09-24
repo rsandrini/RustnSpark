@@ -483,6 +483,8 @@ model RepairJob {
   completesAt     DateTime
   ship            Ship            @relation(fields: [shipId], references: [id])
 
+  // Hand-written partial unique lives only in migration 0015_repair_jobs (Prisma PSL
+  // cannot express WHERE): one PENDING job per ship, the hard guard for double-start.
   @@index([status, completesAt])
   @@index([shipId, status])
 }

@@ -106,7 +106,20 @@ export class MarketService {
     private readonly events: PlayerEventService,
   ) {}
 
+  // GDD §13: the board and purchases are the port you are docked at — a ship mid-jump
+  // cannot shop somewhere else. No ship owned → nothing to dock → same 409.
+  private async assertShipAtLocation(playerId: string, locationId: string): Promise<void> {
+    const ship = await this.prisma.ship.findFirst({
+      where: { ownerPlayerId: playerId, currentLocationId: locationId },
+      select: { id: true },
+    });
+    if (!ship) {
+      throw new ConflictException({ error: 'SHIP_NOT_AT_LOCATION' });
+    }
+  }
+
   async market(locationId: string, playerId: string): Promise<MarketResponse> {
+    await this.assertShipAtLocation(playerId, locationId);
     const context = await this.pricing.contextForLocation(locationId, playerId);
     const catalogs = await this.prisma.partCatalog.findMany({
       where: { active: true },
@@ -157,6 +170,7 @@ export class MarketService {
     const parsed = parseListingId(listingId);
     if (!parsed) throw new BadRequestException({ error: 'INVALID_LISTING' });
 
+    await this.assertShipAtLocation(playerId, parsed.locationId);
     const context = await this.pricing.contextForLocation(parsed.locationId, playerId);
     const catalog = await this.prisma.partCatalog.findUnique({
       where: { partType: parsed.partType },
@@ -246,8 +260,14 @@ export class MarketService {
       throw new NotFoundException('part not found');
     }
 
+    // Fast path before pricing so a mid-flight ship fails with SHIP_ON_MISSION (the
+    // S7.7 lock error) rather than a stale-price 409; the locked re-check inside the
+    // tx is what actually serializes against a concurrent dispatch.
     if (part.location === 'INSTALLED' && part.shipId) {
-      const ship = await this.prisma.ship.findUnique({ where: { id: part.shipId } });
+      const ship = await this.prisma.ship.findUnique({
+        where: { id: part.shipId },
+        select: { status: true },
+      });
       if (ship?.status === 'ON_MISSION') {
         throw new ConflictException({ error: 'SHIP_ON_MISSION' });
       }
@@ -261,7 +281,14 @@ export class MarketService {
 
     const credits = await this.prisma.$transaction(async (tx) => {
       if (part.location === 'INSTALLED' && part.shipId) {
+        // Serialize against dispatch/repair: both lock the Ship row first, so a
+        // dispatch that lands between the outer read and this tx still sees
+        // ON_MISSION under the lock.
+        await tx.$queryRaw`SELECT id FROM "Ship" WHERE id = ${part.shipId} FOR UPDATE`;
         const ship = await tx.ship.findUnique({ where: { id: part.shipId } });
+        if (ship?.status === 'ON_MISSION') {
+          throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+        }
         if (ship) {
           const layout = Array.isArray(ship.layout)
             ? (ship.layout as Array<{ partInstanceId?: string }>)

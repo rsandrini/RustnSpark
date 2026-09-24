@@ -5,6 +5,7 @@ import {
 } from '../common/decorators/current-user.decorator.js';
 import { OwnedResource } from '../common/decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from '../common/guards/ownership.guard.js';
+import { Idempotent } from '../common/idempotency/idempotent.decorator.js';
 import { RepairDto } from './dto/repair.dto.js';
 import { RepairService, type StoredTarget } from './repair.service.js';
 
@@ -14,6 +15,7 @@ export class RepairController {
 
   @Post(':id/repair')
   @HttpCode(HttpStatus.OK)
+  @Idempotent()
   @UseGuards(OwnershipGuard)
   @OwnedResource({ type: 'ship', param: 'id' })
   repairShip(

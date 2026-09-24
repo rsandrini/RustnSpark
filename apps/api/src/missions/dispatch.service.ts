@@ -177,6 +177,9 @@ export class DispatchService {
         throw new ConflictException({ error: 'SHIP_MISMATCH' });
       }
 
+      // Lock the Ship row before status/repair/location checks so a concurrent
+      // repair.start or sell serializes on the same lock (review R-S7.7).
+      await tx.$queryRaw`SELECT id FROM "Ship" WHERE id = ${shipId} FOR UPDATE`;
       const ship = await tx.ship.findUnique({ where: { id: shipId } });
       if (!ship || ship.ownerPlayerId !== playerId) {
         throw new NotFoundException('ship not found');

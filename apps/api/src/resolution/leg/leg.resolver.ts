@@ -1,6 +1,6 @@
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
-import { fuelCost } from '../../economy/fuel-cost.calculator.js';
+import { fuelUnits } from '../../economy/fuel-cost.calculator.js';
 import type { ShipSheet } from '../../ships/sheet.types.js';
 import { resolveEncounter } from '../encounter/encounter.resolver.js';
 import type { EncounterOutcome } from '../encounter/encounter.resolver.js';
@@ -181,19 +181,17 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   const wearRng = rng.child('wear');
   const miningRng = rng.child('mining');
 
-  const fuelUnits = fuelCost(
-    {
-      fuelUse: input.ship.sheet.fuelUse,
-      distance: input.route.distance,
-      envFuelMult: input.route.env.fuelMult,
-      isolation: input.context.isolation,
-      factionRelation: input.context.factionRelation,
-    },
-    rules,
-  );
+  // Tank burns raw units (sim fuel_gasto), not the credit-denominated fuelCost —
+  // charging the priced figure to the tank drained it fuel_price× too fast and
+  // double-spent the same units against the wallet.
+  const fuelBurned = fuelUnits({
+    fuelUse: input.ship.sheet.fuelUse,
+    distance: input.route.distance,
+    envFuelMult: input.route.env.fuelMult,
+  });
 
   // 1. Fuel gate — exhausted before the leg starts → adrift, not death.
-  if (fuelUnits > input.ship.fuel) {
+  if (fuelBurned > input.ship.fuel) {
     events.push(
       missionEvent({
         leg: input.index,
@@ -226,14 +224,14 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       partClass: part.partClass,
       condition: part.condition,
       providesEsc: part.providesEsc,
-      remainingFuel: input.ship.fuel - fuelUnits,
+      remainingFuel: input.ship.fuel - fuelBurned,
     })),
     rules,
     chokeRng,
   );
 
   let parts = input.ship.parts.map((part) => ({ ...part }));
-  let fuel = input.ship.fuel - fuelUnits;
+  let fuel = input.ship.fuel - fuelBurned;
   const motorAbort = chokeEvents.some((event) => event.type === 'motor');
 
   for (const event of chokeEvents) {
@@ -265,7 +263,10 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       type: 'leg_travel',
       actors,
       magnitude: input.route.distance,
-      credits: -fuelUnits,
+      // Fuel left the tank (inventory), not the wallet — prepaid once S8.3 refuel
+      // exists. Keeping credits at 0 stops creditsDelta from double-charging fuel
+      // that already drained ship.fuel above.
+      credits: 0,
     }),
   );
 
