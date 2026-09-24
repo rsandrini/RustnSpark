@@ -50,6 +50,7 @@ model Player {
   ships           Ship[]
   materials       PlayerMaterial[]
   missions        MissionInstance[]
+  missionLogs     MissionLog[]
 }
 
 model RefreshToken {
@@ -178,9 +179,10 @@ model TuningRevision {
 }
 
 model RulesSnapshot {
-  hash      String   @id
-  rules     Json
-  createdAt DateTime @default(now())
+  hash        String       @id
+  rules       Json
+  createdAt   DateTime     @default(now())
+  missionLogs MissionLog[]
 
   @@index([createdAt])
 }
@@ -240,6 +242,8 @@ model Route {
   nodeA             Location           @relation("RouteA", fields: [nodeAId], references: [id])
   nodeB             Location           @relation("RouteB", fields: [nodeBId], references: [id])
   routeEnvironments RouteEnvironment[]
+  presences         RoutePresence[]
+  encounters        Encounter[]
 
   @@unique([nodeAId, nodeBId])
   @@index([nodeBId])
@@ -343,8 +347,71 @@ model MissionInstance {
   // express WHERE): status/arrivalAt for IN_TRANSIT, and the one-active-per-player unique
   // over (ACCEPTED, IN_TRANSIT, RESOLVING).
 
+  missionLogs MissionLog[]
+  presences   RoutePresence[]
+  encountersA Encounter[]     @relation("EncounterMissionA")
+  encountersB Encounter[]     @relation("EncounterMissionB")
+
   // Board query: what is offerable at this location, soonest deadline first.
   @@index([originId, status, expiresAt])
+}
+
+model MissionLog {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.VarChar(36)
+  missionId     String          @unique @db.VarChar(36)
+  playerId      String          @db.VarChar(36)
+  // D19 replay inputs are bounded strings: the S7.1 schema test rejects any TEXT column
+  // in this table, so every string column declares an explicit VarChar ceiling.
+  seed          String          @db.VarChar(512)
+  rulesHash     String          @db.VarChar(64)
+  outcome       String          @db.VarChar(32)
+  shipSnapshot  Json
+  legs          Json
+  schemaVersion Int             @default(1)
+  createdAt     DateTime        @default(now())
+  mission       MissionInstance @relation(fields: [missionId], references: [id])
+  player        Player          @relation(fields: [playerId], references: [id])
+  rulesSnapshot RulesSnapshot   @relation(fields: [rulesHash], references: [hash])
+
+  @@index([playerId, createdAt])
+}
+
+model RoutePresence {
+  id        String                   @id @default(dbgenerated("gen_random_uuid()"))
+  missionId String
+  shipId    String
+  routeId   String
+  legIndex  Int
+  window    Unsupported("tstzrange")
+  mission   MissionInstance          @relation(fields: [missionId], references: [id])
+  ship      Ship                     @relation(fields: [shipId], references: [id])
+  route     Route                    @relation(fields: [routeId], references: [id])
+
+  // The overlap (&&) query must answer from this GiST index, not a seq scan: the S7.1
+  // EXPLAIN test turns seq scans off and asserts the planner picks RoutePresence_window_idx.
+  @@index([window], type: Gist)
+  @@index([missionId])
+  @@index([shipId])
+  @@index([routeId])
+}
+
+model Encounter {
+  id         String          @id @default(dbgenerated("gen_random_uuid()"))
+  routeId    String
+  legIndex   Int
+  missionAId String
+  missionBId String
+  seed       String
+  result     Json
+  resolvedAt DateTime        @default(now())
+  route      Route           @relation(fields: [routeId], references: [id])
+  missionA   MissionInstance @relation("EncounterMissionA", fields: [missionAId], references: [id])
+  missionB   MissionInstance @relation("EncounterMissionB", fields: [missionBId], references: [id])
+
+  // D1 "exactly one Encounter row": the resolver orders mission ids (A < B) before insert,
+  // so a double resolution of the same overlap hits this key instead of duplicating.
+  @@unique([missionAId, missionBId, routeId, legIndex])
+  @@index([routeId])
 }
 
 model DropTable {
@@ -392,6 +459,7 @@ model Ship {
   parts             PartInstance[]
   location          Location          @relation(fields: [currentLocationId], references: [id])
   missions          MissionInstance[]
+  presences         RoutePresence[]
 
   @@index([currentLocationId])
   @@index([ownerPlayerId])
