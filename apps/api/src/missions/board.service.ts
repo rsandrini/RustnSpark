@@ -1,44 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import type { MissionInstance, Prisma } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
-import type { GameRules } from '../config/game-config.types.js';
-import { rewardBase } from '../economy/reward.calculator.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { missionSeed } from './generator/mission.generator.js';
 import { fillMission, MissionGenerationError } from './generator/template.filler.js';
+import { missionReward } from './mission.reward.js';
 
 // Two-int advisory-lock namespace for board top-ups (class | hashtext(locationId)),
 // so board locks can never collide with future advisory users in other domains.
 const BOARD_LOCK_CLASS = 6200;
 
 export type BoardMission = MissionInstance & { readonly rewardEstimate: number };
-
-interface RewardLeg {
-  readonly distance: number;
-  readonly danger: number;
-}
-
-// D29 finalizes the real reward from the accepting ship's tier; the board only ever
-// shows an estimate scaled by the *viewer's* current tier.
-function estimateReward(row: MissionInstance, viewerTier: number, rules: GameRules): number {
-  const legs = (Array.isArray(row.legs) ? row.legs : []) as unknown as RewardLeg[];
-  const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
-  const maxDanger = legs.reduce(
-    (peak, leg) => ((leg.danger ?? 0) > peak ? (leg.danger ?? 0) : peak),
-    0,
-  );
-  return Math.round(
-    rewardBase(
-      {
-        tier: viewerTier,
-        danger: maxDanger,
-        distance: totalDistance,
-        missionType: row.type,
-      },
-      rules,
-    ),
-  );
-}
 
 async function loadWorld(tx: Prisma.TransactionClient) {
   const [locations, routes, routeEnvironments, environments, templates, materials] =
@@ -81,8 +53,12 @@ export class BoardService {
       `;
 
       await tx.missionInstance.updateMany({
-        where: { originId: locationId, status: 'AVAILABLE', expiresAt: { lte: now } },
-        data: { status: 'EXPIRED' },
+        where: {
+          originId: locationId,
+          status: { in: ['AVAILABLE', 'HELD'] },
+          expiresAt: { lte: now },
+        },
+        data: { status: 'EXPIRED', playerId: null },
       });
 
       let available = await tx.missionInstance.count({
@@ -117,7 +93,7 @@ export class BoardService {
       });
       return rows.map((row) => ({
         ...row,
-        rewardEstimate: estimateReward(row, viewerTier, rules),
+        rewardEstimate: missionReward(row, viewerTier, rules),
       }));
     });
   }
