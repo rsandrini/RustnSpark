@@ -1,27 +1,13 @@
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart, PartCatalog } from '../parts/part.types.js';
 import { performance } from '../parts/condition.js';
+import { roundHalfEven } from '../resolution/numeric/round-half-even.js';
 import type { ShipSheet } from './sheet.types.js';
 
-const HALF = 0.5;
 const NO_AUTONOMY = 0;
 const MIN_MOB = 1;
-const EVEN_DIVISOR = 2;
 // Autonomy is reported as a percentage of one full tank's worth of fuel use.
 const PERCENT = 100;
-
-function roundHalfEven(value: number): number {
-  const floor = Math.floor(value);
-  const ceil = Math.ceil(value);
-  const midpoint = floor + HALF;
-  if (value < midpoint) {
-    return floor;
-  }
-  if (value > midpoint) {
-    return ceil;
-  }
-  return floor % EVEN_DIVISOR === 0 ? floor : ceil;
-}
 
 function sumStat(parts: InstalledPart[], stat: keyof PartCatalog): number {
   return parts.reduce((total, part) => total + (part.catalog[stat] as number), 0);
@@ -81,7 +67,11 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
   };
 }
 
-export function effectiveSheet(sheet: ShipSheet, parts: InstalledPart[], rules: GameRules): ShipSheet {
+export function effectiveSheet(
+  sheet: ShipSheet,
+  parts: InstalledPart[],
+  rules: GameRules,
+): ShipSheet {
   const avgCondition = averageCondition(parts);
   const perf = performance(avgCondition, rules);
   return {
