@@ -641,3 +641,15 @@ export const EntityChangeResponseSchema = z.object({
   revision: TuningRevisionResponseSchema,
 });
 export type EntityChangeResponse = z.infer<typeof EntityChangeResponseSchema>;
+
+// System (S11.2): active broadcast notices served to players.
+export const SystemNoticeSchema = z.object({
+  id: z.string(),
+  message: LocalizedTextSchema,
+});
+export type SystemNotice = z.infer<typeof SystemNoticeSchema>;
+
+export const SystemNoticesResponseSchema = z.object({
+  items: z.array(SystemNoticeSchema),
+});
+export type SystemNoticesResponse = z.infer<typeof SystemNoticesResponseSchema>;

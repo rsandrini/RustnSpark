@@ -5,6 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
@@ -51,8 +53,6 @@ export class OnboardingService {
       return this.shipsService.findById(existing.id);
     }
 
-    const starterParts = rules.onboarding.starter_parts as string[];
-    const condition = rules.parts.starter_condition;
     const startCredits = rules.economy.start_credits;
 
     const outcome = await this.prisma.$transaction(async (tx) => {
@@ -82,59 +82,77 @@ export class OnboardingService {
 
       await tx.player.update({ where: { id: playerId }, data: { factionId: faction } });
 
-      const instances = await Promise.all(
-        starterParts.map((partType) =>
-          tx.partInstance.create({
-            data: {
-              partType,
-              ownerPlayerId: playerId,
-              condition,
-              location: 'INVENTORY',
-            },
-          }),
-        ),
-      );
-
-      const partsWithCatalog = await tx.partInstance.findMany({
-        where: { id: { in: instances.map((i) => i.id) } },
-        include: { partCatalog: true },
-        orderBy: { id: 'asc' },
-      });
-
-      const installedParts = partsWithCatalog.map((part) => ({
-        instance: part,
-        catalog: pickCatalogStats(part.partCatalog),
-      }));
-
-      const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
-      const layout = autoLayout(installedParts, catalogMap);
-      if (layout.length !== installedParts.length) {
-        throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
-      }
-
-      const sheet = deriveSheet(installedParts, rules);
-      const { viable, problems } = checkViability(sheet, installedParts, rules);
-      if (!viable) {
-        throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems });
-      }
-
-      for (const placement of layout) {
-        await tx.partInstance.update({
-          where: { id: placement.partInstanceId },
-          data: { location: 'INSTALLED', shipId: created.id },
-        });
-      }
-
-      const filled = await tx.ship.update({
-        where: { id: created.id },
-        data: { layout: toJsonInput(layout), fuel: sheet.fuelCap },
-      });
+      await this.applyStarterKit(tx, playerId, created.id, rules);
 
       await this.walletService.credit(playerId, startCredits, ONBOARDING_REASON, tx);
 
-      return { shipId: filled.id };
+      return { shipId: created.id };
     });
 
     return this.shipsService.findById(outcome.shipId);
+  }
+
+  /**
+   * The starter loadout: create `onboarding.starter_parts` in INVENTORY, auto-layout them
+   * onto the ship, verify viability, install and fill the tank. Extracted from `onboard`
+   * so the S11.4 support reset can re-kit an existing hull with the exact same proven
+   * path (and the same conflict errors) instead of a second implementation.
+   */
+  async applyStarterKit(
+    tx: Prisma.TransactionClient,
+    playerId: string,
+    shipId: string,
+    rules: GameRules,
+  ): Promise<void> {
+    const starterParts = rules.onboarding.starter_parts as string[];
+    const condition = rules.parts.starter_condition;
+
+    const instances = await Promise.all(
+      starterParts.map((partType) =>
+        tx.partInstance.create({
+          data: {
+            partType,
+            ownerPlayerId: playerId,
+            condition,
+            location: 'INVENTORY',
+          },
+        }),
+      ),
+    );
+
+    const partsWithCatalog = await tx.partInstance.findMany({
+      where: { id: { in: instances.map((i) => i.id) } },
+      include: { partCatalog: true },
+      orderBy: { id: 'asc' },
+    });
+
+    const installedParts = partsWithCatalog.map((part) => ({
+      instance: part,
+      catalog: pickCatalogStats(part.partCatalog),
+    }));
+
+    const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
+    const layout = autoLayout(installedParts, catalogMap);
+    if (layout.length !== installedParts.length) {
+      throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
+    }
+
+    const sheet = deriveSheet(installedParts, rules);
+    const { viable, problems } = checkViability(sheet, installedParts, rules);
+    if (!viable) {
+      throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems });
+    }
+
+    for (const placement of layout) {
+      await tx.partInstance.update({
+        where: { id: placement.partInstanceId },
+        data: { location: 'INSTALLED', shipId },
+      });
+    }
+
+    await tx.ship.update({
+      where: { id: shipId },
+      data: { layout: toJsonInput(layout), fuel: sheet.fuelCap },
+    });
   }
 }

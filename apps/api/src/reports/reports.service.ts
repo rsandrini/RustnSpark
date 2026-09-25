@@ -46,14 +46,17 @@ interface StoredLogJson {
   readonly events?: unknown;
 }
 
-function encodeCursor(createdAt: Date, id: string): string {
+// Exported for the S11.4 inspector: same (createdAt, id) descending cursor format for
+// the admin PlayerEvent timeline as for the player's own report history.
+export function encodeCursor(createdAt: Date, id: string): string {
   return Buffer.from(JSON.stringify({ at: createdAt.toISOString(), id }), 'utf8').toString(
     'base64url',
   );
 }
 
-// The dispatch snapshot (D19) lists every part the ship flew with; keep instance id → type.
-function partTypesOf(snapshot: unknown): Record<string, string> {
+// Dispatch snapshot (D19) → instance id → catalog type; exported so the admin replay
+// (S11.4) builds the same ReportLog.partTypeById the player path builds.
+export function partTypesOf(snapshot: unknown): Record<string, string> {
   const parts = (snapshot as { parts?: unknown } | null)?.parts;
   if (!Array.isArray(parts)) return {};
   const out: Record<string, string> = {};
@@ -150,10 +153,6 @@ export class ReportsService {
     viewRaw?: string,
     explicitLocale?: string,
   ): Promise<ReportResponse> {
-    const view = viewRaw ?? 'summary';
-    if (!(VIEW_NAMES as readonly string[]).includes(view)) {
-      throw new BadRequestException({ error: 'UNKNOWN_VIEW' });
-    }
     // Same id, wrong owner → 404 (not 403): a report id must never confirm
     // another player's mission exists (S9.3 resolves ownership through the
     // registry directly; OwnershipGuard's 403 semantics are for owned-resource
@@ -164,6 +163,22 @@ export class ReportsService {
     }
     const log = await this.loadReportLog(missionId);
     if (log === null) throw new NotFoundException({ error: 'REPORT_NOT_FOUND' });
+    return this.render(log, playerId, viewRaw, explicitLocale);
+  }
+
+  // The single (log, view, locale) → response path (S9.3), public so the S11.4 admin
+  // replay renders its recomputed ReportLog through exactly the code the player path
+  // uses: same view validation, same locale resolution, same EntityNames, same renderer.
+  async render(
+    log: ReportLog,
+    playerId: string,
+    viewRaw?: string,
+    explicitLocale?: string,
+  ): Promise<ReportResponse> {
+    const view = viewRaw ?? 'summary';
+    if (!(VIEW_NAMES as readonly string[]).includes(view)) {
+      throw new BadRequestException({ error: 'UNKNOWN_VIEW' });
+    }
     const locale = await this.localeFor(playerId, explicitLocale);
     const names = await this.entityNames(locale, log.partTypeById);
     const result = renderReport(log, locale, view as ViewName, names);
@@ -287,7 +302,7 @@ export class ReportsService {
   }
 }
 
-function parseLimit(raw: string | undefined): number {
+export function parseLimit(raw: string | undefined): number {
   if (raw === undefined) return DEFAULT_LIST_LIMIT;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 1 || value > MAX_LIST_LIMIT) {
@@ -296,7 +311,7 @@ function parseLimit(raw: string | undefined): number {
   return value;
 }
 
-function decodeCursor(raw: string): { at: Date; id: string } {
+export function decodeCursor(raw: string): { at: Date; id: string } {
   try {
     const parsed = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as {
       at?: unknown;

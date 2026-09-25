@@ -19,19 +19,15 @@ import type { InstalledPart } from '../../src/parts/part.types.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
 import type { EscapePreset } from '../../src/resolution/encounter/escape.resolver.js';
-import type { FactionRelation, Stance } from '../../src/resolution/encounter/encounter-policy.js';
-import type {
-  EscortClient,
-  LegRoute,
-  PartSnapshot,
-} from '../../src/resolution/leg/leg.resolver.js';
+import type { Stance } from '../../src/resolution/encounter/encounter-policy.js';
+import type { EscortClient, PartSnapshot } from '../../src/resolution/leg/leg.resolver.js';
 import { resolveMission } from '../../src/resolution/mission/mission.resolver.js';
 import type {
   MissionInput,
   MissionOutcome,
-  MissionSnapshot,
 } from '../../src/resolution/mission/mission.resolver.js';
 import { PROVISIONAL_TIER } from '../../src/missions/generator/template.filler.js';
+import { ReplayService } from '../../src/admin/inspector/replay.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import {
   accessTokenFrom,
@@ -65,20 +61,6 @@ interface StoredLegs {
 }
 
 const OBJECT_CARRIED_TYPES: readonly string[] = ['DELIVERY', 'TRANSPORT', 'RESCUE'];
-
-function relationOf(
-  relations: unknown,
-  factionId: string,
-): { key: string; relation: FactionRelation } {
-  let raw: unknown;
-  if (typeof relations === 'object' && relations !== null && !Array.isArray(relations)) {
-    raw = (relations as Record<string, unknown>)[factionId];
-  }
-  const normalized = typeof raw === 'string' ? raw.toLowerCase() : 'neutral';
-  if (normalized === 'ally') return { key: 'ally', relation: 'ALLY' };
-  if (normalized === 'hostile') return { key: 'hostile', relation: 'HOSTILE' };
-  return { key: 'neutral', relation: 'NEUTRAL' };
-}
 
 function parseClient(raw: unknown): EscortClient | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -132,6 +114,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
   let configService: GameConfigService;
   let queue: Queue<DispatchJobData>;
   let processor: MissionProcessor;
+  let replayService: ReplayService;
 
   beforeAll(async () => {
     testApp = await createTestApp();
@@ -141,6 +124,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
     configService = testApp.app.get(GameConfigService);
     queue = testApp.app.get(getQueueToken(MISSION_QUEUE_NAME));
     processor = new MissionProcessorImpl(testApp.app.get(MissionResolveService));
+    replayService = testApp.app.get(ReplayService);
   });
 
   beforeEach(async () => {
@@ -226,82 +210,6 @@ describe('MissionLog replay determinism (S7.6)', () => {
     expect(result.skipped).toBe(false);
   }
 
-  // Rebuild MissionOutcome the way D19 replay must: log.shipSnapshot (parts + legs),
-  // log.seed, rules via byHash(log.rulesHash) — never config.snapshot(), never a live
-  // partCatalog/Route join for the frozen values. Mission-row context (type, cargo,
-  // destination isolation, faction matrix, template policy) is read from the mission
-  // itself, which Admin edits in this spec do not touch.
-  async function replayFromLog(log: {
-    seed: string;
-    rulesHash: string;
-    shipSnapshot: unknown;
-    missionId: string;
-    legs: unknown;
-  }): Promise<MissionOutcome> {
-    const rules = await configService.byHash(log.rulesHash);
-    const snapshot = log.shipSnapshot as DispatchSnapshot;
-
-    const installed: InstalledPart[] = snapshot.parts.map((part) => ({
-      instance: { id: part.id, partType: part.partType, condition: part.condition },
-      catalog: part.catalog,
-    }));
-    const sheet = deriveSheet(installed, rules);
-    const partSnaps: PartSnapshot[] = snapshot.parts.map((part) => ({
-      id: part.id,
-      partClass: part.catalog.partClass,
-      providesEsc: part.catalog.esc > 0,
-      condition: part.condition,
-    }));
-    const missionSnapshot: MissionSnapshot = {
-      shipId: snapshot.shipId,
-      parts: partSnaps,
-      sheet,
-      fuel: snapshot.fuel,
-      hp: sheet.hp,
-      esc: sheet.esc,
-    };
-
-    const mission = await prisma.missionInstance.findUniqueOrThrow({
-      where: { id: log.missionId },
-      include: { template: true, faction: true },
-    });
-    const player = await prisma.player.findUniqueOrThrow({
-      where: { id: mission.playerId! },
-      select: { factionId: true },
-    });
-    const destination = await prisma.location.findUniqueOrThrow({
-      where: { id: mission.destinationId },
-      select: { isolation: true },
-    });
-    const cargo = (mission.cargo ?? {}) as Record<string, unknown>;
-    const policy = (mission.template.encounterPolicy ?? {}) as Record<string, unknown>;
-    const employer = relationOf(mission.faction.relations, player.factionId ?? '');
-
-    const legs: readonly LegRoute[] = snapshot.legs;
-    const missionInput: MissionInput = {
-      id: mission.id,
-      type: mission.type,
-      legs,
-      tier: PROVISIONAL_TIER,
-      isolation: destination.isolation,
-      factionRelation: employer.key,
-      relation: employer.relation,
-      stance: snapshot.stance as Stance,
-      preset: ((policy['preset'] as string | undefined) ?? 'CRUISE') as EscapePreset,
-      missionOwner: (policy['missionOwner'] as 'player' | 'enemy' | null | undefined) ?? null,
-      missionForcesFlee: policy['missionForcesFlee'] === true,
-      objectCarried: OBJECT_CARRIED_TYPES.includes(mission.type),
-      client: parseClient(cargo['client']),
-    };
-
-    return resolveMission({
-      seed: mission.seed,
-      snapshot: missionSnapshot,
-      mission: missionInput,
-      rules,
-    });
-  }
-
   function storedLegsOf(logLegs: unknown): StoredLegs {
     const embed = logLegs as Partial<StoredLegs>;
     expect(Array.isArray(embed.events)).toBe(true);
@@ -343,7 +251,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
     const stored = storedLegsOf(log.legs);
     expect(stored.events.length).toBeGreaterThan(0);
 
-    const baseline = await replayFromLog(log);
+    const baseline = await replayService.replay(log);
     expect(baseline.events).toEqual(stored.events);
     expect(legStatuses(baseline.legs)).toEqual(legStatuses(stored.legs));
     expect(baseline.status).toBe(log.outcome);
@@ -382,7 +290,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
     expect(frozenRules.economy.reward_per_tier).toBe(120);
     expect(configService.snapshot().rules.economy.reward_per_tier).toBe(500);
 
-    const afterEdits = await replayFromLog(log);
+    const afterEdits = await replayService.replay(log);
     expect(afterEdits.events).toEqual(stored.events);
     expect(legStatuses(afterEdits.legs)).toEqual(legStatuses(stored.legs));
     expect(afterEdits.status).toBe(log.outcome);
@@ -490,7 +398,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
 
     // Replay still reproduces the v1 core: same engine, same inputs; the v2 fields
     // it now computes are projected away for the comparison.
-    const recomputed = await replayFromLog(v1Log);
+    const recomputed = await replayService.replay(v1Log);
     expect(recomputed.events.map(asV1)).toEqual(v1Stored.events);
     expect(legStatuses(recomputed.legs)).toEqual(legStatuses(v1Stored.legs));
     expect(recomputed.status).toBe(v1Log.outcome);

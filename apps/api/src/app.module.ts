@@ -3,6 +3,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard } from './common/guards/throttler.guard.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { OwnershipResolverModule } from './common/guards/ownership-resolver.module.js';
+import { MaintenanceGuard } from './admin/system/maintenance.guard.js';
 import { RequestIdInterceptor } from './common/interceptors/request-id.interceptor.js';
 import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
 import { EnvModule } from './common/env/env.module.js';
@@ -52,6 +53,9 @@ import { TokenService } from './auth/token.service.js';
     // throttling still sees every request, including ones this guard is about to reject with 401.
     // Default-deny: every route requires a valid access token unless marked @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // S11.2 maintenance mode — after JwtAuthGuard on purpose: it needs request.user to tell
+    // player intents (503 while the flag is on) from admins, reads and public routes.
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     // Provided here only so the global JwtAuthGuard above can inject it; S2.3's future
     // AuthModule will add its own instance for its controllers (TokenService is stateless, so a
     // second instance is harmless).

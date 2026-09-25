@@ -1,6 +1,7 @@
-import { Body, Controller, HttpCode, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, HttpCode, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
+import { REGISTER_OPEN_FLAG_KEY, SystemFlagService } from '../admin/system/system-flag.service.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { ThrottleRoute } from '../common/decorators/throttle-route.decorator.js';
 import { resolveLocaleFromHeader } from '../common/locale/locale.js';
@@ -27,7 +28,10 @@ const COOKIE_BASE = {
 @Public()
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly systemFlags: SystemFlagService,
+  ) {}
 
   @Post('register')
   @ThrottleRoute({ limit: 3, ttlMs: 60_000, key: 'ip' })
@@ -36,6 +40,11 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ accessToken: string; player: PlayerProfile }> {
+    // S11.2: `register.open=false` closes registration immediately — read per request,
+    // so the flag needs no restart to take effect.
+    if (!(await this.systemFlags.isEnabled(REGISTER_OPEN_FLAG_KEY, true))) {
+      throw new ForbiddenException({ error: 'REGISTRATION_CLOSED' });
+    }
     // An explicit body locale wins; otherwise Accept-Language decides, falling back to 'en'.
     const locale = dto.locale ?? resolveLocaleFromHeader(request.headers['accept-language']);
     const session = await this.authService.register({
