@@ -12,7 +12,11 @@ import {
 } from '../decorators/throttle-route.decorator.js';
 
 export const THROTTLE_TTL_MS = 60_000;
-export const THROTTLE_LIMIT = 60;
+// Per-IP default for every route without its own @ThrottleRoute policy (auth routes keep
+// their strict ones). The browser client polls (transit every few seconds, board, reports)
+// and several players can share one NAT'd IP, so the old 60/min tripped in ordinary play;
+// 300/min still stops a scripted flood.
+export const THROTTLE_LIMIT = 300;
 // This is the production limiter until S12.1's Redis-backed store, not a throwaway stopgap:
 // sweep at most this often so the in-memory Map can't grow unbounded from clients that never
 // return (a long-running single instance otherwise leaks one entry per distinct IP forever).

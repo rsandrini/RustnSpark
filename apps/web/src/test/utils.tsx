@@ -44,7 +44,8 @@ export function renderWithRouter(
     initialEntries: options.initialEntries ?? ['/'],
     future: { v7_relativeSplatPath: true },
   });
-  return renderWithProviders(<RouterProvider router={router} />, {
+  const view = renderWithProviders(<RouterProvider router={router} />, {
     withRouter: false,
   });
+  return { ...view, router };
 }

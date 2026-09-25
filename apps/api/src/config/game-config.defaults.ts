@@ -137,7 +137,15 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     restart_condition_max: 30,
   },
   onboarding: {
-    starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'battery_small', 'cargo', 'cargo', 'hull'],
+    starter_parts: [
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'battery_small',
+      'cargo',
+      'cargo',
+      'hull',
+    ],
     home_locations: { luna: 'ceres', sun: 'hedus', explorers: 'cair' },
   },
   world: {

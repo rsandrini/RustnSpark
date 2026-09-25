@@ -33,10 +33,7 @@ export class PlayersController {
 
   @Post('me/onboarding')
   @HttpCode(200)
-  onboard(
-    @CurrentUser() user: CurrentUserPayload,
-    @Body() dto: OnboardingDto,
-  ) {
+  onboard(@CurrentUser() user: CurrentUserPayload, @Body() dto: OnboardingDto) {
     return this.onboardingService.onboard(user.playerId, dto.faction);
   }
 }

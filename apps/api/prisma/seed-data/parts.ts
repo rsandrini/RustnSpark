@@ -115,7 +115,8 @@ const PARTS: SeedPart[] = [
     displayName: { en: 'Micro Ion Engine', 'pt-BR': 'Motor Iônico Micro' },
     description: {
       en: 'Tiny ionic drive with no fuel use; tournament-tested motor_pp.',
-      'pt-BR': 'Propulsor iônico minúsculo sem consumo de combustível; motor_pp validado no torneio.',
+      'pt-BR':
+        'Propulsor iônico minúsculo sem consumo de combustível; motor_pp validado no torneio.',
     },
     partClass: 'ENGINE',
     rarity: 'COMMON',

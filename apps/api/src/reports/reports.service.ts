@@ -11,12 +11,7 @@ import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { renderReport, type ViewResult } from './report.render.js';
-import {
-  type ReportLegRef,
-  type ReportLog,
-  VIEW_NAMES,
-  type ViewName,
-} from './report.types.js';
+import { type ReportLegRef, type ReportLog, VIEW_NAMES, type ViewName } from './report.types.js';
 import {
   parseMissionLogEvents,
   UnsupportedMissionLogSchemaError,
@@ -40,7 +35,11 @@ export interface ReportListResponse {
   readonly nextCursor?: string;
 }
 
-export type ReportResponse = { readonly locale: Locale } & ViewResult;
+export type ReportResponse = {
+  readonly locale: Locale;
+  /** Mission outcome, so the report screen needs no second call to label itself. */
+  readonly outcome: string;
+} & ViewResult;
 
 interface StoredLogJson {
   readonly legs?: unknown;
@@ -125,7 +124,9 @@ export class ReportsService {
     const last = page[page.length - 1];
     return {
       items,
-      ...(hasMore && last !== undefined ? { nextCursor: encodeCursor(last.createdAt, last.id) } : {}),
+      ...(hasMore && last !== undefined
+        ? { nextCursor: encodeCursor(last.createdAt, last.id) }
+        : {}),
     };
   }
 
@@ -152,7 +153,7 @@ export class ReportsService {
     const locale = await this.localeFor(playerId, explicitLocale);
     const names = await this.entityNames(locale);
     const result = renderReport(log, locale, view as ViewName, names);
-    return { locale, ...result };
+    return { locale, outcome: log.outcome, ...result };
   }
 
   private async loadReportLog(missionId: string): Promise<ReportLog | null> {
@@ -209,7 +210,9 @@ export class ReportsService {
       where: {
         playerId,
         type: 'mission.resolved',
-        OR: missionIds.map((missionId) => ({ payload: { path: ['missionId'], equals: missionId } })),
+        OR: missionIds.map((missionId) => ({
+          payload: { path: ['missionId'], equals: missionId },
+        })),
       },
       orderBy: { at: 'desc' },
       select: { creditsDelta: true, payload: true },

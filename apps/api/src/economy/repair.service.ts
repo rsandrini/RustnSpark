@@ -70,7 +70,18 @@ export class RepairService {
     @InjectQueue(REPAIR_QUEUE_NAME) private readonly repairs: Queue<{ repairJobId: string }>,
   ) {}
 
-  async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
+  /**
+   * Price and duration of a repair without touching the wallet (S10.9): the port shows
+   * the exact figure before the player commits, and it comes from the same `plan` that
+   * `start` charges, so a quote can never disagree with the debit (barring a price move
+   * between the two calls, which start() re-derives and charges at the new value).
+   */
+  async quote(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
+    const { cost, durationSeconds } = await this.plan(shipId, playerId, targets);
+    return { shipId, cost, durationSeconds };
+  }
+
+  private async plan(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
     // Ownership / installed-target validation runs outside the tx so a 404/409 does not
     // hold a Ship row lock. Status, pending-job and payment all re-check inside the tx
     // against a FOR UPDATE lock: two concurrent starts serialize, and the unique partial
@@ -150,6 +161,11 @@ export class RepairService {
     );
     const secondsPerPoint = repairSecondsPerPoint(rules, ship.location.zone);
     const durationSeconds = points * secondsPerPoint;
+    return { stored, cost, durationSeconds };
+  }
+
+  async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
+    const { stored, cost, durationSeconds } = await this.plan(shipId, playerId, targets);
     const completesAt = new Date(Date.now() + durationSeconds * MS_PER_SECOND);
 
     let job: Awaited<ReturnType<typeof this.prisma.repairJob.create>>;

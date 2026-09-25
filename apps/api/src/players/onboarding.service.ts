@@ -1,5 +1,10 @@
 import { toJsonInput } from '../common/prisma-json.js';
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
@@ -25,7 +30,10 @@ export class OnboardingService {
     const homeLocations = rules.onboarding.home_locations as Record<string, string>;
     const locationId = Object.hasOwn(homeLocations, faction) ? homeLocations[faction] : undefined;
     if (!locationId) {
-      throw new BadRequestException({ error: 'UNKNOWN_FACTION', message: 'faction is not playable' });
+      throw new BadRequestException({
+        error: 'UNKNOWN_FACTION',
+        message: 'faction is not playable',
+      });
     }
 
     const player = await this.prisma.player.findUnique({

@@ -83,7 +83,9 @@ describe('parts and ships API (S4.3)', () => {
     if (prisma) await resetDatabase(prisma);
   });
 
-  async function seedAndToken(overrides: Parameters<typeof seedAccountWithPlayer>[2] = {}): Promise<AuthPair> {
+  async function seedAndToken(
+    overrides: Parameters<typeof seedAccountWithPlayer>[2] = {},
+  ): Promise<AuthPair> {
     const seeded = await seedAccountWithPlayer(prisma, passwordService, overrides);
     const tokenService = testApp.app.get(TokenService);
     const token = await tokenService.signAccessToken({
@@ -154,12 +156,18 @@ describe('parts and ships API (S4.3)', () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
 
-      const responses = await Promise.all([onboard(token, 'luna'), onboard(token, 'luna'), onboard(token, 'luna')]);
+      const responses = await Promise.all([
+        onboard(token, 'luna'),
+        onboard(token, 'luna'),
+        onboard(token, 'luna'),
+      ]);
 
       expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
       expect(new Set(responses.map((r) => asShip(r).id)).size).toBe(1);
       expect(await prisma.ship.count({ where: { ownerPlayerId: seeded.player.id } })).toBe(1);
-      const events = await prisma.playerEvent.count({ where: { playerId: seeded.player.id, type: 'wallet.credit' } });
+      const events = await prisma.playerEvent.count({
+        where: { playerId: seeded.player.id, type: 'wallet.credit' },
+      });
       expect(events).toBe(1);
     });
 
@@ -226,7 +234,9 @@ describe('parts and ships API (S4.3)', () => {
         .set('Authorization', `Bearer ${token}`);
 
       const items = response.body as Array<Record<string, unknown>>;
-      expect(items.find((item) => item.partType === 'bridge')?.displayName).toBe('Ponte de Comando');
+      expect(items.find((item) => item.partType === 'bridge')?.displayName).toBe(
+        'Ponte de Comando',
+      );
     });
 
     it('GET /v1/inventory after onboarding lists starter parts', async () => {
@@ -242,7 +252,17 @@ describe('parts and ships API (S4.3)', () => {
       const items = response.body as Array<Record<string, unknown>>;
       expect(items.length).toBe(7);
       const types = items.map((item) => item.partType as string).sort();
-      expect(types).toEqual(['bridge', 'battery_small', 'cargo', 'cargo', 'engine_chem_small', 'hull', 'tank_small'].sort());
+      expect(types).toEqual(
+        [
+          'bridge',
+          'battery_small',
+          'cargo',
+          'cargo',
+          'engine_chem_small',
+          'hull',
+          'tank_small',
+        ].sort(),
+      );
       for (const item of items) {
         expect(item.condition).toBe(80);
         expect(item.catalog).toBeDefined();
@@ -298,7 +318,9 @@ describe('parts and ships API (S4.3)', () => {
       });
       await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
 
-      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
       const take = (partType: string): PartInstance => {
         const index = parts.findIndex((p) => p.partType === partType);
         if (index === -1) throw new Error(`missing part ${partType}`);
@@ -337,7 +359,9 @@ describe('parts and ships API (S4.3)', () => {
       await freshSeededApp();
       const { token: ownerToken, seeded: owner } = await seedAndToken();
       await onboard(ownerToken, 'luna');
-      const ownerParts = await prisma.partInstance.findMany({ where: { ownerPlayerId: owner.player.id } });
+      const ownerParts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: owner.player.id },
+      });
 
       const { token: otherToken } = await seedAndToken();
       const otherShip = await onboard(otherToken, 'sun');
@@ -428,8 +452,15 @@ describe('parts and ships API (S4.3)', () => {
       const shipId = asShip(onboarded).id;
       await prisma.ship.update({ where: { id: shipId }, data: { status: 'ON_MISSION' } });
 
-      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
-      const layout = parts.map((part, index) => ({ partInstanceId: part.id, gx: index, gy: 0, rot: 0 }));
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      const layout = parts.map((part, index) => ({
+        partInstanceId: part.id,
+        gx: index,
+        gy: 0,
+        rot: 0,
+      }));
 
       const response = await request(httpServer(testApp.app))
         .post(`/v1/ships/${shipId}/assemble`)
@@ -445,8 +476,15 @@ describe('parts and ships API (S4.3)', () => {
       const onboarded = await onboard(token, 'luna');
       const shipId = asShip(onboarded).id;
 
-      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
-      const layout = parts.map((part, index) => ({ partInstanceId: part.id, gx: index, gy: 0, rot: 0 }));
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      const layout = parts.map((part, index) => ({
+        partInstanceId: part.id,
+        gx: index,
+        gy: 0,
+        rot: 0,
+      }));
 
       const response = await request(httpServer(testApp.app))
         .post(`/v1/ships/${shipId}/assemble`)
@@ -484,7 +522,11 @@ describe('parts and ships API (S4.3)', () => {
   });
 
   describe('auto-assemble consistency', () => {
-    async function withOversizedPart(): Promise<{ token: string; shipId: string; oversizedId: string }> {
+    async function withOversizedPart(): Promise<{
+      token: string;
+      shipId: string;
+      oversizedId: string;
+    }> {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
       const onboarded = await onboard(token, 'luna');
@@ -562,9 +604,12 @@ describe('parts and ships API (S4.3)', () => {
       const shipId = asShip(onboarded).id;
       await prisma.ship.update({ where: { id: shipId }, data: { status: 'ON_MISSION' } });
 
-      const layout = (await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).layout as Array<Record<string, unknown>>;
+      const layout = (await prisma.ship.findUniqueOrThrow({ where: { id: shipId } }))
+        .layout as Array<Record<string, unknown>>;
 
-      const before = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
+      const before = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
       const response = await request(httpServer(testApp.app))
         .post(`/v1/ships/${shipId}/preview`)
         .set('Authorization', `Bearer ${token}`)
@@ -576,10 +621,12 @@ describe('parts and ships API (S4.3)', () => {
       expect(preview.viability).toBeDefined();
       expect(preview.layout).toEqual(layout);
 
-      const after = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
-      expect(after.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort()).toEqual(
-        before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort(),
-      );
+      const after = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      expect(
+        after.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort(),
+      ).toEqual(before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort());
     });
   });
 

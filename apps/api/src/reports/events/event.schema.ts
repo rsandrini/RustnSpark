@@ -84,7 +84,9 @@ function numberFor(version: SchemaVersion): z.ZodType<number> {
   return version === 2 ? z.number().int() : z.number();
 }
 
-function eventMembers(version: SchemaVersion): [z.core.$ZodTypeDiscriminable, ...z.core.$ZodTypeDiscriminable[]] {
+function eventMembers(
+  version: SchemaVersion,
+): [z.core.$ZodTypeDiscriminable, ...z.core.$ZodTypeDiscriminable[]] {
   const num = numberFor(version);
   const strict = version === 2;
   const object = strict ? z.strictObject : z.object;
@@ -107,37 +109,37 @@ function eventMembers(version: SchemaVersion): [z.core.$ZodTypeDiscriminable, ..
     ),
   });
 
-  const members = (
-    Object.keys(CATEGORY_OF) as MissionEventType[]
-  ).map((type): z.core.$ZodTypeDiscriminable => {
-    // S9.0 enrichment (D36) exists only from schemaVersion 2 on; v1 rows are
-    // the six core keys, anything else is stripped on read.
-    const extras: Record<string, z.ZodType> = {};
-    if (version === 2) {
-      if ((CASCADE_TYPES as readonly string[]).includes(type)) {
-        extras['cascade'] = object({
-          shield: num,
-          armor: num,
-          hp: num,
-        });
-      }
-      if ((PART_FAILURE_TYPES as readonly string[]).includes(type)) {
-        extras['consequence'] = z.enum(FAILURE_CONSEQUENCE_VALUES);
-        if (type === 'tank') {
-          extras['fuelLost'] = num;
+  const members = (Object.keys(CATEGORY_OF) as MissionEventType[]).map(
+    (type): z.core.$ZodTypeDiscriminable => {
+      // S9.0 enrichment (D36) exists only from schemaVersion 2 on; v1 rows are
+      // the six core keys, anything else is stripped on read.
+      const extras: Record<string, z.ZodType> = {};
+      if (version === 2) {
+        if ((CASCADE_TYPES as readonly string[]).includes(type)) {
+          extras['cascade'] = object({
+            shield: num,
+            armor: num,
+            hp: num,
+          });
+        }
+        if ((PART_FAILURE_TYPES as readonly string[]).includes(type)) {
+          extras['consequence'] = z.enum(FAILURE_CONSEQUENCE_VALUES);
+          if (type === 'tank') {
+            extras['fuelLost'] = num;
+          }
         }
       }
-    }
-    return object({
-      leg: num,
-      category: z.literal(CATEGORY_OF[type]),
-      type: z.literal(type),
-      actors,
-      effects,
-      magnitude: num,
-      ...extras,
-    });
-  });
+      return object({
+        leg: num,
+        category: z.literal(CATEGORY_OF[type]),
+        type: z.literal(type),
+        actors,
+        effects,
+        magnitude: num,
+        ...extras,
+      });
+    },
+  );
   return members as [z.core.$ZodTypeDiscriminable, ...z.core.$ZodTypeDiscriminable[]];
 }
 

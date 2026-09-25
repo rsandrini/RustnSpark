@@ -67,29 +67,15 @@ const fakeFields: EntitySchemaField[] = [
 
 describe('SchemaForm', () => {
   it('renders inputs for every field type in the schema', () => {
-    renderWithProviders(
-      <SchemaForm fields={fakeFields} onSubmit={vi.fn()} />,
-    );
+    renderWithProviders(<SchemaForm fields={fakeFields} onSubmit={vi.fn()} />);
 
-    expect(
-      screen.getByRole('textbox', { name: /^name$/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('spinbutton', { name: /count/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /^name$/i })).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: /count/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /kind/i })).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /metadata/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /display name \(en\)/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /display name \(pt-BR\)/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /registered field/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /metadata/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /display name \(en\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /display name \(pt-BR\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /registered field/i })).toBeInTheDocument();
   });
 
   it('submits parsed values', async () => {
@@ -99,24 +85,12 @@ describe('SchemaForm', () => {
 
     await user.type(screen.getByRole('textbox', { name: /^name$/i }), 'test');
     await user.type(screen.getByRole('spinbutton', { name: /count/i }), '7');
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /kind/i }),
-      'B',
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: /display name \(en\)/i }),
-      'Test',
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: /display name \(pt-BR\)/i }),
-      'Teste',
-    );
+    await user.selectOptions(screen.getByRole('combobox', { name: /kind/i }), 'B');
+    await user.type(screen.getByRole('textbox', { name: /display name \(en\)/i }), 'Test');
+    await user.type(screen.getByRole('textbox', { name: /display name \(pt-BR\)/i }), 'Teste');
     await user.click(screen.getByRole('textbox', { name: /metadata/i }));
     await user.paste('{"foo":1}');
-    await user.type(
-      screen.getByRole('textbox', { name: /reason/i }),
-      'test reason',
-    );
+    await user.type(screen.getByRole('textbox', { name: /reason/i }), 'test reason');
 
     await user.click(screen.getByRole('button', { name: /save/i }));
 
@@ -133,9 +107,7 @@ describe('SchemaForm', () => {
   });
 
   it('shows field descriptions and bounds', () => {
-    renderWithProviders(
-      <SchemaForm fields={fakeFields} onSubmit={vi.fn()} />,
-    );
+    renderWithProviders(<SchemaForm fields={fakeFields} onSubmit={vi.fn()} />);
 
     expect(screen.getByText(/0 – 100/i)).toBeInTheDocument();
     expect(screen.getAllByText(/\(required\)/i).length).toBeGreaterThan(0);

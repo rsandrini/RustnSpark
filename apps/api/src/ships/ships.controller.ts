@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -6,12 +15,7 @@ import {
 import { OwnedResource } from '../common/decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from '../common/guards/ownership.guard.js';
 import { ShipsService } from './ships.service.js';
-import {
-  AssembleDto,
-  AutoAssembleDto,
-  PreviewDto,
-  StanceDto,
-} from './dto/ship-operations.dto.js';
+import { AssembleDto, AutoAssembleDto, PreviewDto, StanceDto } from './dto/ship-operations.dto.js';
 
 @Controller('ships')
 export class ShipsController {

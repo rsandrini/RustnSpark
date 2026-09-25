@@ -52,9 +52,7 @@ export function RegisterPage() {
         <button type="submit" disabled={register.isPending}>
           {t('register.submit')}
         </button>
-        {register.isError && (
-          <p role="alert">{t('register.error.generic')}</p>
-        )}
+        {register.isError && <p role="alert">{t('register.error.generic')}</p>}
       </form>
       <Link to="/login">{t('register.loginLink')}</Link>
     </main>

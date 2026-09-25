@@ -89,10 +89,7 @@ describe('EntityScreen', () => {
         future={{ v7_relativeSplatPath: true }}
       >
         <Routes>
-          <Route
-            path="/admin/tuning/entities/:entity"
-            element={<EntityScreen />}
-          />
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
       </MemoryRouter>,
       { withRouter: false },
@@ -108,9 +105,7 @@ describe('EntityScreen', () => {
       http.get('/v1/admin/tuning/schema/materials', () =>
         HttpResponse.json(materialsSchema, { status: 200 }),
       ),
-      http.get('/v1/admin/tuning/materials', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
     );
 
     const user = userEvent.setup();
@@ -120,10 +115,7 @@ describe('EntityScreen', () => {
         future={{ v7_relativeSplatPath: true }}
       >
         <Routes>
-          <Route
-            path="/admin/tuning/entities/:entity"
-            element={<EntityScreen />}
-          />
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
       </MemoryRouter>,
       { withRouter: false },
@@ -131,18 +123,12 @@ describe('EntityScreen', () => {
 
     await user.click(await screen.findByRole('button', { name: /create/i }));
 
-    expect(
-      screen.getByRole('textbox', { name: /id/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /id/i })).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', { name: /display name by locale \(en\)/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole('combobox', { name: /rarity/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /fake registered field/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /rarity/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /fake registered field/i })).toBeInTheDocument();
   });
 
   it('submits the create form to the API', async () => {
@@ -151,14 +137,29 @@ describe('EntityScreen', () => {
       http.get('/v1/admin/tuning/schema/materials', () =>
         HttpResponse.json(materialsSchema, { status: 200 }),
       ),
-      http.get('/v1/admin/tuning/materials', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
       http.post('/v1/admin/tuning/materials', async ({ request }) => {
         const body = await request.json();
         savedBodies.push(body);
         return HttpResponse.json(
-          { row: { id: 'copper', displayName: { en: 'Copper', 'pt-BR': 'Cobre' }, rarity: 'COMMON', basePrice: 15 }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'copper', before: null, after: {}, reason: 'create', at: new Date().toISOString() } },
+          {
+            row: {
+              id: 'copper',
+              displayName: { en: 'Copper', 'pt-BR': 'Cobre' },
+              rarity: 'COMMON',
+              basePrice: 15,
+            },
+            revision: {
+              id: '1',
+              actor: 'admin',
+              entityType: 'materials',
+              entityId: 'copper',
+              before: null,
+              after: {},
+              reason: 'create',
+              at: new Date().toISOString(),
+            },
+          },
           { status: 200 },
         );
       }),
@@ -171,10 +172,7 @@ describe('EntityScreen', () => {
         future={{ v7_relativeSplatPath: true }}
       >
         <Routes>
-          <Route
-            path="/admin/tuning/entities/:entity"
-            element={<EntityScreen />}
-          />
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
       </MemoryRouter>,
       { withRouter: false },
@@ -191,18 +189,9 @@ describe('EntityScreen', () => {
       screen.getByRole('textbox', { name: /display name by locale \(pt-BR\)/i }),
       'Cobre',
     );
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /rarity/i }),
-      'COMMON',
-    );
-    await user.type(
-      screen.getByRole('spinbutton', { name: /base price/i }),
-      '15',
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: /reason/i }),
-      'add copper',
-    );
+    await user.selectOptions(screen.getByRole('combobox', { name: /rarity/i }), 'COMMON');
+    await user.type(screen.getByRole('spinbutton', { name: /base price/i }), '15');
+    await user.type(screen.getByRole('textbox', { name: /reason/i }), 'add copper');
 
     await user.click(screen.getByRole('button', { name: /save/i }));
 
@@ -234,7 +223,19 @@ describe('EntityScreen', () => {
       http.delete('/v1/admin/tuning/materials/iron', () => {
         retired = true;
         return HttpResponse.json(
-          { row: { ...materialsRows[0], active: false }, revision: { id: '1', actor: 'admin', entityType: 'materials', entityId: 'iron', before: materialsRows[0], after: { ...materialsRows[0], active: false }, reason: 'retire', at: new Date().toISOString() } },
+          {
+            row: { ...materialsRows[0], active: false },
+            revision: {
+              id: '1',
+              actor: 'admin',
+              entityType: 'materials',
+              entityId: 'iron',
+              before: materialsRows[0],
+              after: { ...materialsRows[0], active: false },
+              reason: 'retire',
+              at: new Date().toISOString(),
+            },
+          },
           { status: 200 },
         );
       }),
@@ -247,10 +248,7 @@ describe('EntityScreen', () => {
         future={{ v7_relativeSplatPath: true }}
       >
         <Routes>
-          <Route
-            path="/admin/tuning/entities/:entity"
-            element={<EntityScreen />}
-          />
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
       </MemoryRouter>,
       { withRouter: false },

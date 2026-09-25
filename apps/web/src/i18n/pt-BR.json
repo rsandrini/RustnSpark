@@ -20,6 +20,105 @@
       "generic": "Não foi possível criar a conta"
     }
   },
+  "onboarding": {
+    "title": "Escolha sua facção",
+    "subtitle": "Uma escolha para todo o contrato — sua bandeira voa em cada missão depois disto.",
+    "hint": "Escolha uma facção para receber sua nave e porto iniciais.",
+    "confirm": "Decolar",
+    "selecting": "Preparando sua nave...",
+    "error": {
+      "generic": "Não foi possível concluir o onboarding",
+      "unknownFaction": "Essa facção não é jogável"
+    },
+    "factions": {
+      "luna": {
+        "name": "Autoridade de Luna",
+        "blurb": "Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato."
+      },
+      "sun": {
+        "name": "Comerciantes do Sol",
+        "blurb": "Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador."
+      },
+      "explorers": {
+        "name": "Exploradores",
+        "blurb": "Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou."
+      }
+    }
+  },
+  "hangar": {
+    "title": "Hangar",
+    "tray": "Peças",
+    "trayEmpty": "Nenhuma peça solta no estoque.",
+    "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
+    "sheet": "Folha da nave",
+    "class": "Classe",
+    "stats": {
+      "pot": "Potência",
+      "pdf": "Poder de fogo",
+      "bli": "Duração da bateria",
+      "esc": "Fugas",
+      "sen": "Sensores",
+      "crg": "Carga",
+      "min": "Mineração",
+      "hp": "Pontos de casco",
+      "mass": "Massa",
+      "fuelCap": "Tanque de combustível",
+      "fuelUse": "Consumo de combustível",
+      "energyCont": "Energia (contínua)",
+      "energyCombat": "Energia (combate)",
+      "autonomy": "Autonomia",
+      "condition": "Condição",
+      "structure": "Estrutura {{used}}/{{budget}}"
+    },
+    "classes": {
+      "HAULER": "Cargueiro",
+      "TRANSPORT": "Transporte",
+      "WARSHIP": "Guerra",
+      "MINER": "Minerador",
+      "MULTIROLE": "Multifunção"
+    },
+    "partClasses": {
+      "BRIDGE": "Ponte",
+      "ENGINE": "Motor",
+      "TANK": "Tanque",
+      "BATTERY": "Bateria",
+      "REACTOR": "Reator",
+      "WEAPON": "Arma",
+      "DEFENSE": "Defesa",
+      "CARGO": "Carga",
+      "SENSOR": "Sensor",
+      "UTILITY": "Utilidade"
+    },
+    "actions": {
+      "save": "Salvar layout",
+      "auto": "Layout automático",
+      "rotate": "Girar",
+      "remove": "Remover"
+    },
+    "state": {
+      "selected": "Selecionado: {{name}}",
+      "saved": "Layout salvo.",
+      "saving": "Salvando layout...",
+      "previewing": "Atualizando status...",
+      "noPreview": "Posicione ao menos uma peça para calcular a folha."
+    },
+    "problems": {
+      "NO_BRIDGE": "Nenhuma ponte instalada.",
+      "NO_ENGINE": "Nenhum motor instalado.",
+      "MOB_TOO_LOW": "Mobilidade abaixo de 1.",
+      "NO_FUEL_CAPACITY": "Motor químico precisa de tanque.",
+      "NO_LIFE_SUPPORT": "Nenhum suporte de vida instalado.",
+      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido.",
+      "OUT_OF_BOUNDS": "Peça fora da grade.",
+      "OVERLAP": "Peças sobrepostas.",
+      "DISCONNECTED": "Peças precisam tocar a ponte.",
+      "INVALID_LAYOUT": "O layout não é válido."
+    },
+    "errors": {
+      "SHIP_ON_MISSION": "A nave está em uma missão.",
+      "generic": "Não foi possível salvar o layout."
+    }
+  },
   "home": {
     "title": "Início",
     "greeting": "Bem-vindo, {{name}}",
@@ -106,15 +205,287 @@
       "drop-tables": "Tabelas de drop"
     }
   },
+  "factions": {
+    "luna": "Autoridade de Luna",
+    "sun": "Comerciantes do Sol",
+    "explorers": "Exploradores",
+    "pirates": "Piratas",
+    "independent": "Independente"
+  },
+  "ui": {
+    "risk": {
+      "lo": "Risco baixo",
+      "md": "Risco médio",
+      "hi": "Risco alto"
+    },
+    "close": "Fechar",
+    "countdown": {
+      "label": "Tempo restante",
+      "expired": "O tempo acabou"
+    },
+    "loading": "Carregando..."
+  },
+  "nav": {
+    "label": "Navegação do jogo",
+    "hangar": "Hangar",
+    "map": "Mapa",
+    "board": "Quadro",
+    "transit": "Trânsito",
+    "port": "Porto",
+    "profile": "Perfil"
+  },
+  "port": {
+    "title": "Porto",
+    "wallet": "Créditos",
+    "negative": "Saldo negativo — comprar e reabastecer estão desativados.",
+    "at": "Atracado em {{location}}",
+    "tabs": {
+      "market": "Mercado",
+      "repair": "Reparo",
+      "refuel": "Abastecer",
+      "scavenging": "Scavenging"
+    },
+    "buy": "Comprar",
+    "sell": "Vender",
+    "buyConfirm": "Comprar {{name}} por {{price}} ¢?",
+    "sellConfirm": "Vender {{name}}?",
+    "sellQuote": "Vender {{name}} por {{price}} ¢?",
+    "balanceAfter": "Saldo após: {{balance}} ¢",
+    "priceUpdated": "O preço mudou para {{price}} ¢ — confirme novamente.",
+    "insufficient": "Créditos insuficientes",
+    "bought": "Comprou {{name}} por {{price}} ¢.",
+    "sold": "Vendeu {{name}} por {{price}} ¢.",
+    "failed": "O porto rejeitou essa ação.",
+    "marketEmpty": "Nada à venda neste porto.",
+    "forSale": "À venda",
+    "yourGoods": "Suas mercadorias",
+    "materials": "Materiais minerais",
+    "quantity": "{{quantity}} ×",
+    "unitPrice": "{{price}} ¢ cada",
+    "repairNoDamage": "Todas as peças instaladas estão em perfeito estado.",
+    "repairAll": "Reparar tudo",
+    "repairSlider": "Reparar para {{value}}%",
+    "repairStart": "Iniciar reparo",
+    "repairStarted": "Reparo iniciado por {{cost}} ¢ — conclui em {{seconds}}s.",
+    "repairLoading": "Encomendando reparos…",
+    "refuelGauge": "Combustível {{fuel}} / {{cap}}",
+    "refuelFill": "Encher o tanque",
+    "refuelFull": "O tanque já está cheio.",
+    "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
+    "scavWarn": "Vasculhar sozinho desgasta sua nave. Missões de scavenging rendem melhor — e são muito mais perigosas.",
+    "scavenge": "Vasculhar o campo",
+    "scavFound": "Salvou: {{part}} (condição {{condition}}).",
+    "scavNone": "Nada aproveitável — tente de novo em {{seconds}}s.",
+    "scavBusy": "Você já está vasculhando.",
+    "repairQuote": "Custo do reparo: {{cost}} ¢ · {{seconds}} s",
+    "repairConfirmTitle": "Reparar por {{cost}} ¢?",
+    "repairConfirm": "Iniciar reparo",
+    "noShip": "Você não tem uma nave."
+  },
+  "inventory": {
+    "title": "Inventário",
+    "install": "Instalar no hangar",
+    "installed": "Instalado",
+    "sellPart": "Vender esta peça",
+    "noParts": "Nenhuma peça no armazenamento ou instalada.",
+    "noMaterials": "Nenhum material em armazenamento.",
+    "materials": "Materiais",
+    "parts": "Peças",
+    "sellAll": "Vender tudo",
+    "condition": "Condição {{value}}%"
+  },
+  "profile": {
+    "title": "Perfil",
+    "wallet": "Carteira",
+    "history": "Histórico de missões",
+    "noHistory": "Nenhuma missão concluída ainda.",
+    "legCount": "{{count}} trechos",
+    "credits": "+{{amount}} ¢"
+  },
+  "report": {
+    "title": "Relatório da missão",
+    "tabs": {
+      "summary": "Resumo",
+      "narrative": "Narrativa",
+      "log": "Registro"
+    },
+    "noReport": "Ainda não há relatório para esta missão.",
+    "eventDetails": "Detalhes do evento",
+    "backMap": "Voltar ao mapa",
+    "backBoard": "Voltar ao quadro",
+    "outcome": {
+      "success": "Missão cumprida",
+      "partial_failure": "Sucesso parcial",
+      "failed": "Missão falhou",
+      "adrift": "Nave à deriva"
+    },
+    "cascade": {
+      "shield": "Absorvido pelo escudo",
+      "armor": "Absorvido pela blindagem",
+      "hp": "Dano ao casco"
+    },
+    "refKind": {
+      "loot": "Item",
+      "part": "Peça"
+    },
+    "refDetails": "Detalhes"
+  },
+  "transit": {
+    "title": "Em trânsito",
+    "empty": "Nenhuma missão ativa. Aceite uma no quadro de missões.",
+    "accepted": "Missão aceita — pronta para sair.",
+    "dispatch": "Partir",
+    "failed": "Não foi possível despachar a nave.",
+    "leg": "Trecho {{index}} de {{total}}",
+    "waitingLeg": "Aguardando a próxima janela",
+    "legDone": "Concluído",
+    "arrivesIn": "Chega em",
+    "startDeadline": "Prazo de partida",
+    "delivered": "Missão entregue",
+    "viewReport": "Ver relatório",
+    "backToMap": "Voltar ao mapa",
+    "held": "Esta missão está apenas reservada. Aceite-a no quadro para começar.",
+    "resolving": "Resolvendo a missão…",
+    "lastMission": "Última missão",
+    "lastReport": "Ler o relatório"
+  },
+  "board": {
+    "title": "Quadro de missões",
+    "filterAll": "Todas as missões",
+    "accept": "Aceitar",
+    "hold": "Reservar",
+    "release": "Soltar",
+    "eligible": "Elegível",
+    "blocked": "Bloqueada",
+    "reward": "Recompensa {{amount}}",
+    "estimate": "Est. {{amount}}",
+    "expires": "Expira em",
+    "empty": "Sem ofertas neste local.",
+    "noShip": "Nave não atribuída — monte uma nave no hangar primeiro.",
+    "failed": "O servidor rejeitou essa ação.",
+    "type": {
+      "DELIVERY": "Entrega",
+      "TRANSPORT": "Transporte",
+      "ESCORT": "Escolta",
+      "MINING": "Mineração",
+      "RESCUE": "Resgate"
+    },
+    "status": {
+      "AVAILABLE": "Aberta",
+      "HELD": "Reservada",
+      "ACCEPTED": "Aceita",
+      "IN_TRANSIT": "Em trânsito",
+      "EXPIRED": "Expirada",
+      "DONE": "Concluída",
+      "FAILED": "Falhou"
+    },
+    "reasons": {
+      "NO_SHIP": "Nenhuma nave disponível",
+      "ACTIVE_MISSION_EXISTS": "Já existe uma missão ativa",
+      "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local",
+      "CARGO_TYPE": "Porão não comporta essa carga",
+      "PRESSURIZED_LIFE_SUPPORT": "Requer suporte de vida pressurizado",
+      "WEAPONS": "Requer armamentos",
+      "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão",
+      "MINER": "Requer sistema de mineração",
+      "SPEED": "Lento demais para essa missão",
+      "NO_BRIDGE": "Sem ponte",
+      "NO_ENGINE": "Sem motor",
+      "MOB_TOO_LOW": "Mobilidade baixa demais",
+      "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
+      "NO_LIFE_SUPPORT": "Sem suporte de vida",
+      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
+    }
+  },
+  "map": {
+    "title": "Mapa do setor",
+    "hint": "Selecione um nó para inspecioná-lo.",
+    "youAreHere": "Você está aqui",
+    "missions": "{{count}} missões no quadro",
+    "noMissions": "Sem ofertas no quadro",
+    "zone": "Zona {{zone}}",
+    "board": "Abrir quadro de missões",
+    "types": {
+      "port": "Porto comercial",
+      "outpost": "Posto avançado",
+      "shipyard": "Estaleiro",
+      "junction": "Entroncamento",
+      "garrison": "Guarnição",
+      "scrap_field": "Campo de destroços",
+      "frontier": "Fronteira",
+      "dead_zone": "Zona morta",
+      "relay": "Relé"
+    }
+  },
   "notFound": {
     "title": "Página não encontrada",
     "homeLink": "Voltar ao início"
   },
   "loading": "Carregando...",
   "error": {
-    "unexpected": "Algo deu errado"
+    "unexpected": "Algo deu errado",
+    "NO_SHIP": "Você não tem uma nave.",
+    "ACTIVE_MISSION_EXISTS": "Já há uma missão em andamento.",
+    "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local.",
+    "CARGO_TYPE": "Capacidade de carga abaixo do manifest.",
+    "PRESSURIZED_LIFE_SUPPORT": "A nave não tem suporte de vida pressurizado.",
+    "WEAPONS": "Nenhuma arma instalada.",
+    "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão.",
+    "MINER": "Nenhum equipamento de mineração instalado.",
+    "SPEED": "Lento demais para este contrato.",
+    "HOLD_LIMIT": "Você já está com uma missão reservada.",
+    "UNKNOWN_FACTION": "Essa facção não é jogável.",
+    "ALREADY_REPAIRING": "Esta nave já está em reparo.",
+    "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
+    "BALANCE_NEGATIVE": "Seu saldo está negativo — ganhe créditos antes de gastar.",
+    "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem.",
+    "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
+    "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
+    "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
+    "FUEL_EMPTY": "O tanque está vazio.",
+    "HOLD_NOT_OWNED": "Você não está com esta missão reservada.",
+    "INSUFFICIENT_FUNDS": "Créditos insuficientes.",
+    "INSUFFICIENT_MATERIALS": "Você não possui essa quantidade.",
+    "INVALID_AMOUNT": "Quantidade inválida.",
+    "INVALID_CURSOR": "Cursor de página inválido.",
+    "INVALID_LAYOUT": "Essa montagem não é válida.",
+    "INVALID_LIMIT": "Tamanho de página inválido.",
+    "INVALID_LISTING": "Essa oferta não está mais disponível.",
+    "INVALID_QUANTITY": "Quantidade inválida.",
+    "INVALID_REPAIR_TARGET": "Um alvo de reparo é inválido.",
+    "MISSION_EXPIRED": "Esta missão expirou.",
+    "MISSION_MALFORMED": "Esta missão está malformada.",
+    "MISSION_NOT_ACCEPTED": "Aceite a missão primeiro.",
+    "MISSION_REQUIREMENTS_NOT_MET": "Sua nave não cumpre os requisitos desta missão.",
+    "NO_REPAIR_TARGETS": "Nada para reparar.",
+    "OUT_OF_BOUNDS": "Uma peça está fora da área de montagem.",
+    "OVERLAP": "As peças se sobrepõem.",
+    "PART_NOT_INSTALLED": "Essa peça não está instalada.",
+    "PRICE_CHANGED": "O preço mudou para {{price}} ¢.",
+    "REPORT_NOT_FOUND": "Relatório não encontrado.",
+    "REPORT_SCHEMA_UNSUPPORTED": "Este relatório não pode ser lido.",
+    "REVISION_MISMATCH": "A configuração mudou — recarregue e tente de novo.",
+    "SCAVENGE_COOL_DOWN": "Nada de novo aqui ainda — tente de novo em {{seconds}} s.",
+    "SHIP_MISMATCH": "Essa nave não corresponde a esta missão.",
+    "SHIP_NOT_ADRIFT": "A nave não está à deriva.",
+    "SHIP_NOT_AT_LOCATION": "Sua nave não está neste local.",
+    "SHIP_NOT_IN_PORT": "A nave precisa estar no porto.",
+    "SHIP_NOT_VIABLE": "A nave não é viável — corrija a montagem primeiro.",
+    "SHIP_ON_MISSION": "A nave está em missão.",
+    "SHIP_REPAIRING": "A nave está em reparo.",
+    "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
+    "VALIDATION_ERROR": "Alguns campos são inválidos.",
+    "RATE_LIMITED": "Requisições demais — aguarde um instante.",
+    "UNAUTHORIZED": "Sua sessão terminou — entre novamente."
   },
   "language": {
     "label": "Idioma"
+  },
+  "rescue": {
+    "title": "Nave à deriva",
+    "body": "Sua nave ficou sem combustível e está à deriva. Um reboque a traz de volta ao porto — custa créditos e pode deixar seu saldo negativo.",
+    "action": "Chamar reboque",
+    "done": "Rebocada de volta ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
   }
 }

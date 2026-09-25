@@ -65,7 +65,8 @@ export class ConfigTuningService {
       const currentValue = rowsByKey.has(entry.key)
         ? structuredClone(rowsByKey.get(entry.key))
         : structuredClone(entry.factoryDefault);
-      const modified = rowsByKey.has(entry.key) && !deepEqual(rowsByKey.get(entry.key), entry.factoryDefault);
+      const modified =
+        rowsByKey.has(entry.key) && !deepEqual(rowsByKey.get(entry.key), entry.factoryDefault);
 
       return {
         key: entry.key,
@@ -94,7 +95,14 @@ export class ConfigTuningService {
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
       const before = await this.getCurrentValue(key, tx);
-      await this.gameConfigRepository.upsert(key, validated, entry.type, entry.description, actor, tx);
+      await this.gameConfigRepository.upsert(
+        key,
+        validated,
+        entry.type,
+        entry.description,
+        actor,
+        tx,
+      );
       return this.createRevision(actor, key, before, validated, dto.reason, tx);
     });
 
@@ -113,7 +121,14 @@ export class ConfigTuningService {
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
       const before = await this.getCurrentValue(key, tx);
-      await this.gameConfigRepository.upsert(key, validated, entry.type, entry.description, actor, tx);
+      await this.gameConfigRepository.upsert(
+        key,
+        validated,
+        entry.type,
+        entry.description,
+        actor,
+        tx,
+      );
       return this.createRevision(actor, key, before, validated, dto.reason, tx);
     });
 
@@ -124,7 +139,9 @@ export class ConfigTuningService {
   private resolveEntry(key: string): ConfigRegistryEntry {
     const entry = getRegistryEntry(key);
     if (!entry) {
-      throw new GameConfigValidationError(`Unknown config key: ${key}`, [{ key, message: 'Unknown key' }]);
+      throw new GameConfigValidationError(`Unknown config key: ${key}`, [
+        { key, message: 'Unknown key' },
+      ]);
     }
     return entry;
   }

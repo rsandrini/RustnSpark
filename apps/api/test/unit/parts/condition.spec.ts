@@ -11,7 +11,6 @@ describe('condition', () => {
       expect(performance(100, tuned)).toBe(rules.wear.performance_floor + 0.25);
     });
 
-
     it('returns 1.0 at condition 100', () => {
       expect(performance(100, rules)).toBe(1);
     });

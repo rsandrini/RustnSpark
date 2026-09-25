@@ -88,7 +88,10 @@ function parts(ids: readonly string[]): Array<{ basePrice: number }> {
 }
 
 function rulesWithThresholds(thresholds: Record<string, number>): GameRules {
-  return { ...GAME_CONFIG_DEFAULTS, economy: { ...GAME_CONFIG_DEFAULTS.economy, upgrade_costs: thresholds } };
+  return {
+    ...GAME_CONFIG_DEFAULTS,
+    economy: { ...GAME_CONFIG_DEFAULTS.economy, upgrade_costs: thresholds },
+  };
 }
 
 describe('shipTier', () => {
@@ -125,7 +128,9 @@ describe('shipTier', () => {
   });
 
   it('accepts parts normalized from nested partCatalog data', () => {
-    const instances = parts(STARTER_BUILD).map((p) => ({ partCatalog: { basePrice: p.basePrice } }));
+    const instances = parts(STARTER_BUILD).map((p) => ({
+      partCatalog: { basePrice: p.basePrice },
+    }));
     // Callers normalize nested catalog data to the unified { basePrice } shape.
     const normalized = instances.map((i) => ({ basePrice: i.partCatalog.basePrice }));
     expect(shipTier(normalized, GAME_CONFIG_DEFAULTS)).toBe(1);

@@ -61,6 +61,7 @@ describe('players/me endpoints (S2.3)', () => {
       credits: 0,
       locale: 'pt-BR',
       role: seeded.account.role,
+      factionId: null,
     });
   });
 

@@ -13,6 +13,20 @@ import { RepairService, type StoredTarget } from './repair.service.js';
 export class RepairController {
   constructor(private readonly repair: RepairService) {}
 
+  // Dry run for the port's cost confirmation (S10.9): same validation and pricing as the
+  // charge, no debit and no job — hence no idempotency key.
+  @Post(':id/repair/quote')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  quoteRepair(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') shipId: string,
+    @Body() dto: RepairDto,
+  ): Promise<{ shipId: string; cost: number; durationSeconds: number }> {
+    return this.repair.quote(shipId, user.playerId, dto.targets);
+  }
+
   @Post(':id/repair')
   @HttpCode(HttpStatus.OK)
   @Idempotent()

@@ -299,7 +299,9 @@ describe('in-transit lock API (S7.7)', () => {
       statusCode: 409,
       message: { error: 'SHIP_ON_MISSION' },
     });
-    await expect(prisma.partInstance.findUnique({ where: { id: part.id } })).resolves.not.toBeNull();
+    await expect(
+      prisma.partInstance.findUnique({ where: { id: part.id } }),
+    ).resolves.not.toBeNull();
   });
 
   it('rejects selling materials with 409 while ON_MISSION', async () => {
@@ -321,7 +323,9 @@ describe('in-transit lock API (S7.7)', () => {
       message: { error: 'SHIP_ON_MISSION' },
     });
     const held = await prisma.playerMaterial.findUnique({
-      where: { playerId_materialId: { playerId: player.seeded.player.id, materialId: 'common_ore' } },
+      where: {
+        playerId_materialId: { playerId: player.seeded.player.id, materialId: 'common_ore' },
+      },
     });
     expect(held?.quantity).toBe(5);
   });
@@ -345,7 +349,10 @@ describe('in-transit lock API (S7.7)', () => {
 
     const pricing = testApp.app.get(PricingService);
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
-    const context = await pricing.contextForLocation(ship.currentLocationId, player.seeded.player.id);
+    const context = await pricing.contextForLocation(
+      ship.currentLocationId,
+      player.seeded.player.id,
+    );
     const expectedPrice = pricing.sell(context, part, { basePrice: part.partCatalog.basePrice });
 
     const response = await request(httpServer(testApp.app))

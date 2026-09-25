@@ -1,10 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { BundleDialog } from './BundleDialog';
 import type * as dto from '../../api/generated';
@@ -97,9 +93,10 @@ export function ConfigScreen() {
     const map = new Map<string, dto.ConfigEntryResponse[]>();
     if (!config) return map;
     const searchLower = search.toLowerCase();
-    const filtered = config.filter((entry) =>
-      entry.key.toLowerCase().includes(searchLower) ||
-      entry.description[locale]?.toLowerCase().includes(searchLower),
+    const filtered = config.filter(
+      (entry) =>
+        entry.key.toLowerCase().includes(searchLower) ||
+        entry.description[locale]?.toLowerCase().includes(searchLower),
     );
     for (const entry of filtered) {
       const group = map.get(entry.group) ?? [];
@@ -171,15 +168,11 @@ export function ConfigScreen() {
                   <tr key={entry.key}>
                     <td>
                       {entry.key}
-                      {entry.modified && (
-                        <span>{t('tuning.modified')}</span>
-                      )}
+                      {entry.modified && <span>{t('tuning.modified')}</span>}
                     </td>
                     <td>
                       {entry.description[locale]}
-                      {entry.unit && (
-                        <small>{t('tuning.unit', { unit: entry.unit })}</small>
-                      )}
+                      {entry.unit && <small>{t('tuning.unit', { unit: entry.unit })}</small>}
                     </td>
                     <td>
                       {isJson ? (
@@ -209,9 +202,7 @@ export function ConfigScreen() {
                           aria-label={entry.key}
                         />
                       )}
-                      {errors[entry.key] && (
-                        <span role="alert">{errors[entry.key]}</span>
-                      )}
+                      {errors[entry.key] && <span role="alert">{errors[entry.key]}</span>}
                     </td>
                     <td>{serializeValue(entry.factoryDefault)}</td>
                     <td>
@@ -253,10 +244,7 @@ export function ConfigScreen() {
       {confirmReset && (
         <div role="dialog" aria-modal="true">
           <p>{t('tuning.resetConfirm', { key: confirmReset })}</p>
-          <button
-            type="button"
-            onClick={() => resetMutation.mutate(confirmReset)}
-          >
+          <button type="button" onClick={() => resetMutation.mutate(confirmReset)}>
             {t('tuning.confirm')}
           </button>
           <button type="button" onClick={() => setConfirmReset(null)}>

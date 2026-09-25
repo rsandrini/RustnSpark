@@ -13,6 +13,13 @@ import { RevisionService } from './tuning/revision.service.js';
 @Module({
   imports: [ConfigModule],
   controllers: [AdminController, ConfigTuningController, EntityTuningController],
-  providers: [AdminGuard, ConfigReferenceValidator, ConfigTuningService, EntityTuningService, RevisionService, BundleService],
+  providers: [
+    AdminGuard,
+    ConfigReferenceValidator,
+    ConfigTuningService,
+    EntityTuningService,
+    RevisionService,
+    BundleService,
+  ],
 })
 export class AdminModule {}

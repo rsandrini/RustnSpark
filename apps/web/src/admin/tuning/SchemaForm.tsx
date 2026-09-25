@@ -11,11 +11,7 @@ interface SchemaFormProps {
   errors?: string[];
 }
 
-function getFieldLabel(
-  field: dto.EntitySchemaField,
-  locale: string,
-  subKey?: string,
-): string {
+function getFieldLabel(field: dto.EntitySchemaField, locale: string, subKey?: string): string {
   const description = field.description?.[locale as 'en' | 'pt-BR'] ?? field.name;
   return subKey ? `${description} (${subKey})` : description;
 }
@@ -147,9 +143,7 @@ export function SchemaForm({
             id={`${field.name}-pt-BR`}
             type="text"
             value={map['pt-BR']}
-            onChange={(event) =>
-              handleChange(field.name, event.target.value, 'pt-BR')
-            }
+            onChange={(event) => handleChange(field.name, event.target.value, 'pt-BR')}
             aria-label={getFieldLabel(field, locale, 'pt-BR')}
             required={field.required}
           />
@@ -203,9 +197,7 @@ export function SchemaForm({
           </label>
           {renderInput(field)}
           {field.min !== undefined || field.max !== undefined ? (
-            <small>
-              {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
-            </small>
+            <small>{t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}</small>
           ) : null}
         </div>
       ))}

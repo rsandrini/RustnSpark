@@ -35,7 +35,12 @@ interface ScavengeBody {
   attempt: number;
   fieldType: string;
   dropped: boolean;
-  part: { partInstanceId: string; partType: string; condition: number } | null;
+  part: {
+    partInstanceId: string;
+    partType: string;
+    condition: number;
+    displayName: { en: string; 'pt-BR': string };
+  } | null;
   cooldownSeconds: number;
 }
 
@@ -152,6 +157,9 @@ describe('scavenging API (S8.5)', () => {
         partType: outcome.partType,
         condition: outcome.condition,
       });
+      // Localized name shipped with the drop (S10.9): the client never shows a raw code.
+      expect(body.part!.displayName.en).not.toBe('');
+      expect(body.part!.displayName['pt-BR']).not.toBe('');
       expect(body.part!.condition).toBeGreaterThanOrEqual(30);
       expect(body.part!.condition).toBeLessThanOrEqual(70);
     } else {

@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import type { Location } from '@prisma/client';
 import { Clock } from '../common/clock/clock.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import { localize } from '../common/i18n/localize.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { stableUnit } from './deterministic.js';
@@ -22,6 +23,8 @@ export type FieldType = 'common' | 'mission' | 'pirate';
 export interface ScavengePart {
   readonly partInstanceId: string;
   readonly partType: string;
+  /** Localized catalog name, so the client never has to show the raw part code. */
+  readonly displayName: { readonly en: string; readonly 'pt-BR': string };
   readonly condition: number;
 }
 
@@ -42,6 +45,7 @@ export interface DropTier {
 export interface CatalogEntry {
   readonly partType: string;
   readonly rarity: string;
+  readonly displayName?: unknown;
 }
 
 export interface ScavengeRollInput {
@@ -180,7 +184,9 @@ export class ScavengingService {
       });
       const cooldownSeconds = rules.scavenging.cooldown_seconds;
       if (counter.attemptCount > 0 && counter.lastAttemptAt !== null && cooldownSeconds > 0) {
-        const elapsed = Math.floor((now.getTime() - counter.lastAttemptAt.getTime()) / MS_PER_SECOND);
+        const elapsed = Math.floor(
+          (now.getTime() - counter.lastAttemptAt.getTime()) / MS_PER_SECOND,
+        );
         const retryAfterSeconds = cooldownSeconds - elapsed;
         if (retryAfterSeconds > 0) {
           throw new ConflictException({ error: 'SCAVENGE_COOL_DOWN', retryAfterSeconds });
@@ -211,9 +217,14 @@ export class ScavengingService {
             location: 'INVENTORY',
           },
         });
+        const entry = catalog.find((candidate) => candidate.partType === created.partType);
         part = {
           partInstanceId: created.id,
           partType: created.partType,
+          displayName: {
+            en: localize(entry?.displayName, 'en'),
+            'pt-BR': localize(entry?.displayName, 'pt-BR'),
+          },
           condition: created.condition,
         };
       }
@@ -272,7 +283,7 @@ export class ScavengingService {
     const rows = await this.prisma.partCatalog.findMany({
       where: { active: true },
       orderBy: { partType: 'asc' },
-      select: { partType: true, rarity: true },
+      select: { partType: true, rarity: true, displayName: true },
     });
     return rows;
   }

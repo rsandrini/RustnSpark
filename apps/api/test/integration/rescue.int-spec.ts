@@ -329,7 +329,7 @@ describe('rescue API (S8.6)', () => {
     // A full refuel is a free no-op: the tank sits exactly at its cap, never above it.
     const full = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
     expect(full.status).toBe(200);
-    expect((full.body as { units: number; fuel: number; fuelCap: number })).toMatchObject({
+    expect(full.body as { units: number; fuel: number; fuelCap: number }).toMatchObject({
       units: 0,
       fuel: kitFuelCap,
       fuelCap: kitFuelCap,

@@ -33,9 +33,7 @@ async function main(): Promise<void> {
   });
   const validationErrors = await validate(dto);
   if (validationErrors.length > 0) {
-    const messages = validationErrors.flatMap((error) =>
-      Object.values(error.constraints ?? {}),
-    );
+    const messages = validationErrors.flatMap((error) => Object.values(error.constraints ?? {}));
     throw new Error(`validation failed:\n${messages.map((m) => `  - ${m}`).join('\n')}`);
   }
 

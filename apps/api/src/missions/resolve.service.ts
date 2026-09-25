@@ -302,7 +302,12 @@ export class MissionResolveService {
           playerId: mission.playerId!,
           type: 'mission.resolved',
           creditsDelta: credited,
-          payload: { missionId, outcome: outcome.status, integrity: outcome.integrity, balanceAfter },
+          payload: {
+            missionId,
+            outcome: outcome.status,
+            integrity: outcome.integrity,
+            balanceAfter,
+          },
         },
         tx,
       );

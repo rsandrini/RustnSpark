@@ -21,7 +21,12 @@ import type { ParsedMissionEvent } from '../events/event.schema.js';
 /** D39: a rendered line. `text` always equals the segments concatenated. */
 export type ReportSegment =
   | { readonly t: 'text'; readonly value: string }
-  | { readonly t: 'ref'; readonly kind: 'part' | 'loot'; readonly id: string; readonly value: string };
+  | {
+      readonly t: 'ref';
+      readonly kind: 'part' | 'loot';
+      readonly id: string;
+      readonly value: string;
+    };
 
 export interface ReportLine {
   readonly text: string;
@@ -142,7 +147,10 @@ export function loadLegacyVariants(locale: Locale, file: string): readonly strin
       ? (parsed as { legacy?: unknown }).legacy
       : undefined;
   if (legacy === undefined) return [];
-  if (!Array.isArray(legacy) || !legacy.every((entry): entry is string => typeof entry === 'string')) {
+  if (
+    !Array.isArray(legacy) ||
+    !legacy.every((entry): entry is string => typeof entry === 'string')
+  ) {
     throw new Error(`Report template ${locale}/${file} "legacy" must be [string, ...]`);
   }
   return legacy;
@@ -200,7 +208,10 @@ function resolveToken(
   locale: Locale,
   names: EntityNames,
 ): ReportSegment {
-  const numeric = (value: number): ReportSegment => ({ t: 'text', value: formatNumber(value, locale) });
+  const numeric = (value: number): ReportSegment => ({
+    t: 'text',
+    value: formatNumber(value, locale),
+  });
   switch (token) {
     case 'magnitude':
       return numeric(event.magnitude);
@@ -244,10 +255,7 @@ function resolveToken(
  * engine — exposed so placeholder typos are unit-testable without files).
  * Adjacent text pieces are merged; refs stay their own segments (D39).
  */
-function substitute(
-  template: string,
-  resolve: (name: string) => ReportSegment,
-): ReportLine {
+function substitute(template: string, resolve: (name: string) => ReportSegment): ReportLine {
   const segments: ReportSegment[] = [];
   const pushText = (value: string): void => {
     if (value === '') return;
@@ -313,7 +321,9 @@ export function renderEventLine(
   if (lacksV2Data(event)) {
     variants = loadLegacyVariants(locale, event.type);
     if (variants.length === 0) {
-      throw new Error(`Report template ${locale}/${event.type} has no "legacy" variants for a v1 event`);
+      throw new Error(
+        `Report template ${locale}/${event.type} has no "legacy" variants for a v1 event`,
+      );
     }
   }
   const variantIndex = deriveSeed(seed, `narr:${eventIndex}`) % variants.length;

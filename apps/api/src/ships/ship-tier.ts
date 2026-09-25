@@ -10,7 +10,9 @@ export function shipTier(parts: readonly PricedPart[], rules: GameRules): ShipTi
   const totalValue = parts.reduce((sum, part) => sum + part.basePrice, 0);
 
   let tier: ShipTier = 1;
-  for (const [t, threshold] of Object.entries(thresholds).sort((a, b) => Number(a[0]) - Number(b[0]))) {
+  for (const [t, threshold] of Object.entries(thresholds).sort(
+    (a, b) => Number(a[0]) - Number(b[0]),
+  )) {
     if (totalValue >= threshold) {
       tier = Number(t) as ShipTier;
     }

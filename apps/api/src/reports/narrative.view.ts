@@ -40,9 +40,7 @@ export function renderNarrative(
     log.events.forEach((event, storedIndex) => {
       if (event.leg !== leg) return;
       const line = renderEventLine(event, storedIndex, log.seed, locale, names);
-      lines.push(
-        event.cascade ? { ...line, detail: { cascade: event.cascade } } : line,
-      );
+      lines.push(event.cascade ? { ...line, detail: { cascade: event.cascade } } : line);
     });
     return { leg, header, lines };
   });

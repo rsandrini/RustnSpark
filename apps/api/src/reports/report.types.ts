@@ -40,10 +40,7 @@ export interface ReportViewChrome {
   readonly summary: { readonly result: string; readonly resultBalance: string };
   readonly chapter: string;
   readonly effects: Readonly<
-    Record<
-      'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'none',
-      string
-    >
+    Record<'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'none', string>
   >;
 }
 

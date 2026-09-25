@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { MissionInstance, Prisma } from '@prisma/client';
+import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { missionSeed } from './generator/mission.generator.js';
@@ -12,6 +13,8 @@ const BOARD_LOCK_CLASS = 6200;
 
 export type BoardMission = MissionInstance & { readonly rewardEstimate: number };
 
+type World = Awaited<ReturnType<typeof loadWorld>>;
+
 async function loadWorld(tx: Prisma.TransactionClient) {
   const [locations, routes, routeEnvironments, environments, templates, materials] =
     await Promise.all([
@@ -23,6 +26,13 @@ async function loadWorld(tx: Prisma.TransactionClient) {
       tx.material.findMany({ where: { active: true } }),
     ]);
   return { locations, routes, routeEnvironments, environments, templates, materials };
+}
+
+// The world tables are read-only for a top-up, so a multi-location top-up (the map's
+// mission counts) loads them once per transaction instead of once per location.
+function lazyWorld(tx: Prisma.TransactionClient): () => Promise<World> {
+  let cached: Promise<World> | undefined;
+  return () => (cached ??= loadWorld(tx));
 }
 
 @Injectable()
@@ -43,49 +53,10 @@ export class BoardService {
   async getBoard(locationId: string, viewerTier: number): Promise<BoardMission[]> {
     const { rules, version } = this.config.snapshot();
     const now = new Date();
-    const boardMin = rules.missions.board_min_per_location;
 
     return this.prisma.$transaction(async (tx) => {
-      // ::text cast: pg_advisory_xact_lock returns void, which Prisma's deserializer
-      // rejects on $queryRaw (the lock still taken before the cast is applied).
-      await tx.$queryRaw`
-        SELECT pg_advisory_xact_lock(${BOARD_LOCK_CLASS}::int4, hashtext(${locationId}::text))::text
-      `;
-
-      await tx.missionInstance.updateMany({
-        where: {
-          originId: locationId,
-          status: { in: ['AVAILABLE', 'HELD'] },
-          expiresAt: { lte: now },
-        },
-        data: { status: 'EXPIRED', playerId: null },
-      });
-
-      let available = await tx.missionInstance.count({
-        where: { originId: locationId, status: 'AVAILABLE', expiresAt: { gt: now } },
-      });
-
-      if (available < boardMin) {
-        const location = await tx.location.findUnique({ where: { id: locationId } });
-        if (location !== null) {
-          const world = await loadWorld(tx);
-          let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
-          while (available < boardMin) {
-            const seed = missionSeed({ locationId, epoch, configVersion: version });
-            try {
-              const draft = fillMission({ seed, origin: location, world, rules, now });
-              await tx.missionInstance.create({ data: draft });
-            } catch (error) {
-              // S3.4 guarantees every seeded location can serve a template; if the data
-              // was edited into a corner, serve the (possibly thin) board instead of 500ing.
-              if (error instanceof MissionGenerationError) break;
-              throw error;
-            }
-            available += 1;
-            epoch += 1;
-          }
-        }
-      }
+      await this.lock(tx, locationId);
+      await this.topUp(tx, locationId, now, rules, version, lazyWorld(tx));
 
       const rows = await tx.missionInstance.findMany({
         where: { originId: locationId, status: 'AVAILABLE', expiresAt: { gt: now } },
@@ -96,5 +67,104 @@ export class BoardService {
         rewardEstimate: missionReward(row, viewerTier, rules),
       }));
     });
+  }
+
+  /**
+   * Live offer counts for a batch of locations, in one transaction (S10.5): same
+   * flip/top-up semantics as getBoard, so a count equals what the board would serve.
+   * Locks are taken in sorted id order — a fixed order can never deadlock against
+   * another batch, and single-location getBoard waits on the same lock it holds.
+   */
+  async countOffers(locationIds: readonly string[]): Promise<Map<string, number>> {
+    const { rules, version } = this.config.snapshot();
+    const now = new Date();
+    const counts = new Map<string, number>();
+    const boardMin = rules.missions.board_min_per_location;
+
+    // Steady state (every board already full) is a single read: no advisory locks, no
+    // writes. This runs on every map/port/board load, so it must not serialize the
+    // whole world behind 12 locks or generate anything when there is nothing to do.
+    const live = await this.prisma.missionInstance.groupBy({
+      by: ['originId'],
+      where: { originId: { in: [...locationIds] }, status: 'AVAILABLE', expiresAt: { gt: now } },
+      _count: { _all: true },
+    });
+    const liveByLocation = new Map(live.map((row) => [row.originId, row._count._all]));
+    const needsTopUp: string[] = [];
+    for (const locationId of new Set(locationIds)) {
+      const count = liveByLocation.get(locationId) ?? 0;
+      if (count >= boardMin) counts.set(locationId, count);
+      else needsTopUp.push(locationId);
+    }
+    if (needsTopUp.length === 0) return counts;
+    const sorted = needsTopUp.sort();
+
+    return this.prisma.$transaction(async (tx) => {
+      for (const locationId of sorted) {
+        await this.lock(tx, locationId);
+      }
+      const world = lazyWorld(tx);
+      for (const locationId of sorted) {
+        counts.set(locationId, await this.topUp(tx, locationId, now, rules, version, world));
+      }
+      return counts;
+    });
+  }
+
+  private async lock(tx: Prisma.TransactionClient, locationId: string): Promise<void> {
+    // ::text cast: pg_advisory_xact_lock returns void, which Prisma's deserializer
+    // rejects on $queryRaw (the lock still taken before the cast is applied).
+    await tx.$queryRaw`
+      SELECT pg_advisory_xact_lock(${BOARD_LOCK_CLASS}::int4, hashtext(${locationId}::text))::text
+    `;
+  }
+
+  // Flip expired offers, then generate until the location has board_min live rows.
+  // Returns the resulting live count (possibly short if generation ran out of
+  // servable templates — see the MissionGenerationError branch).
+  private async topUp(
+    tx: Prisma.TransactionClient,
+    locationId: string,
+    now: Date,
+    rules: GameRules,
+    configVersion: number,
+    world: () => Promise<World>,
+  ): Promise<number> {
+    const boardMin = rules.missions.board_min_per_location;
+
+    await tx.missionInstance.updateMany({
+      where: {
+        originId: locationId,
+        status: { in: ['AVAILABLE', 'HELD'] },
+        expiresAt: { lte: now },
+      },
+      data: { status: 'EXPIRED', playerId: null },
+    });
+
+    let available = await tx.missionInstance.count({
+      where: { originId: locationId, status: 'AVAILABLE', expiresAt: { gt: now } },
+    });
+    if (available >= boardMin) return available;
+
+    const location = await tx.location.findUnique({ where: { id: locationId } });
+    if (location === null) return available;
+
+    const worldTables = await world();
+    let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
+    while (available < boardMin) {
+      const seed = missionSeed({ locationId, epoch, configVersion });
+      try {
+        const draft = fillMission({ seed, origin: location, world: worldTables, rules, now });
+        await tx.missionInstance.create({ data: draft });
+      } catch (error) {
+        // S3.4 guarantees every seeded location can serve a template; if the data
+        // was edited into a corner, serve the (possibly thin) board instead of 500ing.
+        if (error instanceof MissionGenerationError) break;
+        throw error;
+      }
+      available += 1;
+      epoch += 1;
+    }
+    return available;
   }
 }

@@ -29,7 +29,17 @@ function runCreateAdmin(args: CreateAdminArgs): {
 } {
   const result = spawnSync(
     'pnpm',
-    ['--filter', 'api', 'admin:create', '--email', args.email, '--password', args.password, '--name', args.name],
+    [
+      '--filter',
+      'api',
+      'admin:create',
+      '--email',
+      args.email,
+      '--password',
+      args.password,
+      '--name',
+      args.name,
+    ],
     { cwd: WORKSPACE_ROOT, encoding: 'utf8', env: process.env },
   );
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
@@ -68,9 +78,7 @@ describe('admin access (S3.6)', () => {
     };
     const createResult = runCreateAdmin(adminArgs);
     expect(createResult.status).toBe(0);
-    const idMatch = createResult.stdout.match(
-      /[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i,
-    );
+    const idMatch = createResult.stdout.match(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i);
     expect(idMatch).not.toBeNull();
     const adminId = idMatch![0];
 

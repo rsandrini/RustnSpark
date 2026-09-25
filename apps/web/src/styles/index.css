@@ -1,0 +1,1198 @@
+/*
+ * Shared stylesheet for the game shell (S10.1). Palette and component rules are
+ * carried over from the prototypes so every screen keeps the same look:
+ * mapa/porto/quadro/relatorio share the deep-space family; the assembly yard
+ * (montagem) keeps its steel/amber engineering tones under .hangar-scoped rules.
+ */
+
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  --bg: #0b0e13;
+  --panel: #12171f;
+  --panel2: #1a212c;
+  --ink: #e6edf3;
+  --mut: #8b949e;
+  --line: #2a313c;
+  --line-strong: #30363d;
+  --spark: #f0a500;
+  --rust: #b5462f;
+  --ok: #2ea043;
+  --bad: #f85149;
+  --blue: #1f6feb;
+
+  --luna: #4a90d9;
+  --sun: #e3b341;
+  --explorers: #3fa66a;
+  --pirata: #c23b3b;
+  --neutro: #5a6273;
+
+  --risk-lo: #2ea043;
+  --risk-md: #e8833a;
+  --risk-hi: #f85149;
+
+  /* assembly yard palette (montagem-esboco-v2) */
+  --yard-bg: #12161a;
+  --yard-panel: #1a2026;
+  --yard-panel2: #222a31;
+  --steel: #3a4650;
+  --steel-lt: #5a6b78;
+  --ink-dim: #7e8c98;
+  --amber: #e0a13c;
+
+  --radius: 10px;
+  --gap: 12px;
+}
+
+* {
+  box-sizing: inherit;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font:
+    15px/1.55 -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: var(--blue);
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 14px 70px;
+}
+
+.app.wide {
+  max-width: 1100px;
+}
+
+/* headers ------------------------------------------------------------- */
+.topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 19px;
+  letter-spacing: 0.3px;
+}
+
+.topbar h1 .r {
+  color: var(--rust);
+}
+
+.topbar h1 .s {
+  color: var(--spark);
+}
+
+.sub {
+  font-size: 12.5px;
+  color: var(--mut);
+}
+
+.sub b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--mut);
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* panels --------------------------------------------------------------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.panel + .panel {
+  margin-top: var(--gap);
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--spark);
+  font-weight: 600;
+}
+
+/* tabs ----------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-top: 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--mut);
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--spark);
+}
+
+.tab .count {
+  font-size: 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 6px;
+  margin-left: 5px;
+}
+
+/* generic item row (ItemCard) ----------------------------------------- */
+.item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  margin-bottom: 9px;
+}
+
+.item .ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+}
+
+.item .name {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.item .desc {
+  font-size: 12px;
+  color: var(--mut);
+  margin-top: 1px;
+}
+
+.item .act {
+  text-align: right;
+}
+
+/* buttons -------------------------------------------------------------- */
+.btn {
+  padding: 8px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--mut);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.btn.spark {
+  background: rgba(240, 165, 0, 0.14);
+  border-color: var(--spark);
+  color: var(--spark);
+}
+
+.btn.danger {
+  background: rgba(248, 81, 73, 0.12);
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.btn.block {
+  display: block;
+  width: 100%;
+}
+
+/* badges --------------------------------------------------------------- */
+.risk {
+  display: inline-block;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.risk.lo {
+  background: rgba(46, 160, 67, 0.16);
+  color: var(--risk-lo);
+}
+
+.risk.md {
+  background: rgba(210, 153, 34, 0.16);
+  color: var(--risk-md);
+}
+
+.risk.hi {
+  background: rgba(248, 81, 73, 0.16);
+  color: var(--risk-hi);
+}
+
+.cond {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.cond.ok {
+  background: rgba(46, 160, 67, 0.15);
+  color: var(--ok);
+}
+
+.cond.warn {
+  background: rgba(240, 165, 0, 0.15);
+  color: var(--spark);
+}
+
+.cond.bad {
+  background: rgba(248, 81, 73, 0.15);
+  color: var(--bad);
+}
+
+.fac {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid;
+  margin-right: 6px;
+}
+
+.fac.luna {
+  color: var(--luna);
+  border-color: var(--luna);
+}
+
+.fac.sun {
+  color: var(--sun);
+  border-color: var(--sun);
+}
+
+.fac.explorers {
+  color: var(--explorers);
+  border-color: var(--explorers);
+}
+
+.fac.pirata {
+  color: var(--pirata);
+  border-color: var(--pirata);
+}
+
+.fac.neutro {
+  color: var(--neutro);
+  border-color: var(--neutro);
+}
+
+/* mission cards -------------------------------------------------------- */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: #3d4756;
+}
+
+.card .row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  padding: 13px 14px;
+  cursor: pointer;
+  align-items: center;
+}
+
+.card .row.static {
+  cursor: default;
+}
+
+.card .ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+}
+
+.card .mid .type {
+  font-size: 12px;
+  color: var(--mut);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card .mid .route {
+  font-size: 15.5px;
+  font-weight: 600;
+  margin: 1px 0 3px;
+}
+
+.card .mid .route .arrow {
+  color: var(--mut);
+  margin: 0 6px;
+}
+
+.card .meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--mut);
+}
+
+.card .meta b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.card .right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.rew {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
+.rew small {
+  font-size: 11px;
+  color: var(--mut);
+  font-weight: 400;
+}
+
+/* stat rows / KPIs ----------------------------------------------------- */
+.statrow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.statrow b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.statrow span {
+  color: var(--mut);
+}
+
+.kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.kpi {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 13px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.kpi .k {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--mut);
+}
+
+.kpi .v {
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi .v.pos {
+  color: var(--ok);
+}
+
+.kpi .v.neg {
+  color: var(--bad);
+}
+
+.kpi .v.spark {
+  color: var(--spark);
+}
+
+/* popup (side sheet, from mapa-esboco) -------------------------------- */
+.sheet {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(340px, 86vw);
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.sheet.open {
+  transform: translateX(0);
+}
+
+.sheet .ph {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sheet .ph h2 {
+  margin: 0;
+  font-size: 18px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+}
+
+.sheet .pc {
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* centered modal popup ------------------------------------------------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 10, 0.66);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 18px;
+  width: min(440px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* map (mapa-esboco) ---------------------------------------------------- */
+.stage {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #101720, var(--bg));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.stage svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+}
+
+.edge {
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.edge.hot {
+  stroke: var(--pirata);
+  stroke-dasharray: 5 4;
+  opacity: 0.8;
+}
+
+.node-hit {
+  cursor: pointer;
+}
+
+.node-hit:focus-visible .nring {
+  stroke: var(--blue);
+}
+
+.ncore {
+  stroke: #0b0e13;
+  stroke-width: 2.5;
+}
+
+.nring {
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 0.9;
+}
+
+.nlabel {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.nsub {
+  fill: var(--mut);
+  font-size: 9.5px;
+  text-anchor: middle;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.node-hit.sel .nring,
+.node-hit.sel .ncore {
+  stroke: var(--spark);
+  opacity: 1;
+}
+
+.miss-count {
+  fill: var(--spark);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--mut);
+  margin-top: 8px;
+}
+
+.legend .dotleg {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+/* report (relatorio-narrado) ------------------------------------------ */
+.verdict {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.verdict.ok {
+  background: rgba(46, 160, 67, 0.16);
+  color: var(--ok);
+  border: 1px solid var(--ok);
+}
+
+.verdict.partial {
+  background: rgba(240, 165, 0, 0.16);
+  color: var(--spark);
+  border: 1px solid var(--spark);
+}
+
+.verdict.bad {
+  background: rgba(248, 81, 73, 0.16);
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
+.report-head {
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-head::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px 120px at 20% -10%, rgba(240, 165, 0, 0.1), transparent);
+  pointer-events: none;
+}
+
+.leg {
+  margin-top: 18px;
+  position: relative;
+  padding-left: 26px;
+}
+
+.leg::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 26px;
+  bottom: -18px;
+  width: 2px;
+  background: var(--line);
+}
+
+.leg:last-child::before {
+  display: none;
+}
+
+.legdot {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  z-index: 1;
+}
+
+.legdot.hit {
+  border-color: var(--bad);
+}
+
+.legdot.ok {
+  border-color: var(--ok);
+}
+
+.legname {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--mut);
+}
+
+.event {
+  margin: 10px 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.event .fx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.tag.dmg {
+  color: var(--bad);
+}
+
+.tag.wear {
+  color: var(--spark);
+}
+
+.tag.loot {
+  color: var(--ok);
+}
+
+.tag.info {
+  color: var(--mut);
+}
+
+/* hangar (montagem) ---------------------------------------------------- */
+.hangar-scene {
+  background:
+    linear-gradient(var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
+    radial-gradient(circle at 50% 40%, #171d22, #0e1215);
+  border: 1px solid var(--steel);
+  border-radius: 12px;
+}
+
+.block {
+  position: absolute;
+  border: 1px solid var(--steel-lt);
+  background: var(--yard-panel2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--ink);
+  text-align: center;
+  user-select: none;
+}
+
+.block.bridge {
+  border-color: var(--amber);
+  border-width: 2px;
+}
+
+.block.selected {
+  box-shadow: 0 0 0 2px var(--amber);
+}
+
+.block.floating {
+  border-color: var(--bad);
+  border-style: dashed;
+}
+
+/* forms ---------------------------------------------------------------- */
+.input {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field .lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mut);
+  margin-bottom: 4px;
+}
+
+.error-text {
+  color: var(--bad);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  color: var(--mut);
+}
+
+.badge.ok {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.badge.warn {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.reasons {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--bad);
+  font-size: 12.5px;
+}
+
+/* transit (S10.7) -------------------------------------------------------- */
+.legbar {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--bg-2, #161b22);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.legbar-fill {
+  height: 100%;
+  background: var(--spark);
+  transition: width 0.8s linear;
+}
+
+.legs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.leg {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.leg.done {
+  opacity: 0.55;
+}
+
+.leg.current {
+  border-color: var(--spark);
+}
+
+/* report (S10.8) --------------------------------------------------------- */
+.btn.tiny {
+  min-width: 0;
+  padding: 0 7px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-lines {
+  font-size: 12.5px;
+  color: var(--mut);
+}
+
+/* port / profile (S10.9) ------------------------------------------------- */
+.notice {
+  color: var(--ok);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.wallet {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.wallet .lbl {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--mut);
+}
+
+.wallet .amt {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
+/* navigation (S10.10) ---------------------------------------------------- */
+.game-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.game-nav .nav-link {
+  color: var(--mut);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.game-nav .nav-link:hover {
+  color: var(--ink);
+}
+
+.game-nav .nav-link.on {
+  color: var(--spark);
+  border-bottom: 2px solid var(--spark);
+  border-radius: 8px 8px 0 0;
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* onboarding (S10.2) ---------------------------------------------------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.faction-picker {
+  border: 0;
+  margin: 18px 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faction-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 15px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.faction-card:hover {
+  border-color: #3d4756;
+}
+
+.faction-card.on {
+  border-color: var(--spark);
+  background: linear-gradient(160deg, var(--panel2), var(--panel));
+}
+
+.faction-card input {
+  grid-row: span 2;
+}
+
+.faction-card .fac {
+  justify-self: start;
+}
+
+.faction-card .desc {
+  grid-column: 2;
+  font-size: 12.5px;
+  color: var(--mut);
+}
+
+/* hangar yard (S10.4) ---------------------------------------------------- */
+.yard-grid {
+  stroke: var(--line);
+  stroke-width: 0.03;
+  fill: none;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.yard-cell {
+  fill: transparent;
+}
+
+.yard-cell:hover {
+  fill: rgba(240, 165, 0, 0.08);
+}
+
+svg .block {
+  fill: var(--yard-panel2);
+  stroke: var(--steel-lt);
+  stroke-width: 0.05;
+  cursor: grab;
+}
+
+svg .block.bridge {
+  stroke: var(--amber);
+  stroke-width: 0.1;
+}
+
+svg .block.selected {
+  stroke: var(--spark);
+}
+
+svg .block.floating {
+  stroke: var(--bad);
+  stroke-dasharray: 0.2 0.12;
+}
+
+.block-label {
+  fill: var(--ink);
+  font-size: 0.42;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.part-btn {
+  display: block;
+  width: 100%;
+  background: var(--yard-panel2);
+  border: 1px solid var(--steel);
+  color: var(--ink);
+  padding: 8px 10px;
+  margin-bottom: 7px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 2px;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.part-btn:hover {
+  border-color: var(--steel-lt);
+}
+
+.part-btn.on {
+  border-color: var(--amber);
+  background: #28323a;
+}
+
+.part-btn .meta {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+}
+
+.hangar-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  gap: 12px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .hangar-layout {
+    grid-template-columns: 1fr;
+  }
+}

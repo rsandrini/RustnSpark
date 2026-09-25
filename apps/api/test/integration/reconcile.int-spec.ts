@@ -235,7 +235,12 @@ describe('reconciliation tick (S7.4)', () => {
     for (;;) {
       // Not 'delayed': the scheduler eagerly stores the *next* iteration (due in
       // RECONCILE_INTERVAL_MS) as a delayed job, which is expected to sit there.
-      const counts = await queue.getJobCounts('waiting', 'active', 'prioritized', 'waiting-children');
+      const counts = await queue.getJobCounts(
+        'waiting',
+        'active',
+        'prioritized',
+        'waiting-children',
+      );
       const pending =
         (counts.waiting ?? 0) +
         (counts.active ?? 0) +

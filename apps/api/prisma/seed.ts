@@ -29,7 +29,8 @@ export async function seed(prisma?: PrismaClient): Promise<void> {
 }
 
 // Only execute when this file is the process entry point; tests import seed() directly.
-const isEntryPoint = import.meta.url.startsWith('file:') && process.argv[1]?.includes('seed.ts') === true;
+const isEntryPoint =
+  import.meta.url.startsWith('file:') && process.argv[1]?.includes('seed.ts') === true;
 if (isEntryPoint) {
   seed().catch((error: unknown) => {
     console.error(error);

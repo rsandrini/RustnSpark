@@ -7,7 +7,23 @@ import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
 
 describe('auth flow', () => {
-  it('submits the login form and lands on the home page', async () => {
+  it('logs an onboarded pilot in and lands on the home page', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: 0,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: 'luna',
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+
     const user = userEvent.setup();
     renderWithRouter(routes, { initialEntries: ['/login'] });
 
@@ -16,6 +32,19 @@ describe('auth flow', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+  });
+
+  it('routes a pilot without a faction to onboarding after login', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/login'] });
+
+    await user.type(screen.getByLabelText(/email/i), 'fresh@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(
+      await screen.findByRole('heading', { name: /choose your faction/i }),
+    ).toBeInTheDocument();
   });
 
   it('shows an error message when login returns 401', async () => {
@@ -32,12 +61,10 @@ describe('auth flow', () => {
     await user.type(screen.getByLabelText(/password/i), 'wrong');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(
-      await screen.findByText(/invalid credentials/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/invalid credentials/i)).toBeInTheDocument();
   });
 
-  it('submits the register form and lands on the home page', async () => {
+  it('submits the register form and lands on onboarding', async () => {
     const user = userEvent.setup();
     renderWithRouter(routes, { initialEntries: ['/register'] });
 
@@ -46,6 +73,8 @@ describe('auth flow', () => {
     await user.type(screen.getByLabelText(/password/i), 'password');
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /choose your faction/i }),
+    ).toBeInTheDocument();
   });
 });

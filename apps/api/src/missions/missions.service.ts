@@ -13,6 +13,7 @@ import { GameConfigService } from '../config/game-config.service.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
+import type { InstalledPart } from '../parts/part.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -38,6 +39,39 @@ const RESERVABLE_STATUSES = ['AVAILABLE', 'HELD'] as const;
 // Resolve-on-read bound (S7.4): a player has at most one in-flight mission (partial
 // unique index), so 1 is already generous — the cap documents "bounded" without a knob.
 const RESOLVE_ON_READ_LIMIT = 1;
+
+// Board eligibility (S10.6): the server stays the authority on "may this player accept",
+// so the board UI disables Accept without the client re-implementing any rule. reasons
+// carry stable codes — the API error codes and requirement reasons are mapped to
+// translated messages on the client (S10.1); `message` is the English fallback.
+export interface EligibilityReason {
+  readonly code: string;
+  readonly message: string;
+}
+
+export interface BoardEligibility {
+  readonly eligible: boolean;
+  readonly reasons: readonly EligibilityReason[];
+}
+
+export type BoardOffer = BoardMission & { readonly eligibility: BoardEligibility };
+
+// Per-leg transit windows (S10.7) served from RoutePresence — written pro-rata by leg
+// distance at dispatch (S7.1), so the client shows the current leg without deriving time.
+export interface LegWindow {
+  readonly legIndex: number;
+  readonly routeId: string;
+  readonly from: Date;
+  readonly to: Date;
+}
+
+export type ActiveMission = MissionInstance & { readonly legWindows: LegWindow[] };
+
+interface ViewerContext {
+  readonly tier: number;
+  readonly ship: Ship | undefined;
+  readonly installed: InstalledPart[];
+}
 
 function unavailableError(mission: MissionInstance, playerId: string): string {
   if (mission.status === 'EXPIRED') return 'MISSION_EXPIRED';
@@ -77,12 +111,13 @@ export class MissionsService implements OnModuleInit {
     });
   }
 
-  async getBoard(locationId: string, playerId: string): Promise<BoardMission[]> {
-    const tier = await this.viewerTier(playerId, locationId);
-    return this.board.getBoard(locationId, tier);
+  async getBoard(locationId: string, playerId: string): Promise<BoardOffer[]> {
+    const viewer = await this.viewerContext(playerId, locationId);
+    const rows = await this.board.getBoard(locationId, viewer.tier);
+    return this.withEligibility(rows, viewer, playerId, locationId);
   }
 
-  async getActive(playerId: string): Promise<MissionInstance[]> {
+  async getActive(playerId: string): Promise<ActiveMission[]> {
     // S7.4 "resolve on read": a past-arrival IN_TRANSIT mission is resolved synchronously
     // before the read, so the response never shows it still in transit. Bounded (1) and
     // best-effort: a failure logs and leaves the row for the background reconcile tick.
@@ -93,10 +128,33 @@ export class MissionsService implements OnModuleInit {
       where: { playerId, status: 'HELD', expiresAt: { lte: new Date() } },
       data: { status: 'EXPIRED', playerId: null },
     });
-    return this.prisma.missionInstance.findMany({
+    const rows = await this.prisma.missionInstance.findMany({
       where: { playerId, status: { in: [...PLAYER_VISIBLE_STATUSES] } },
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
+    if (rows.length === 0) return [];
+    const windows = await this.legWindows(rows.map((row) => row.id));
+    return rows.map((row) => ({ ...row, legWindows: windows.get(row.id) ?? [] }));
+  }
+
+  // RoutePresence rows exist only while the mission is in transit (created at dispatch,
+  // dropped at resolve); an ACCEPTED or HELD mission simply reports no windows yet.
+  private async legWindows(missionIds: readonly string[]): Promise<Map<string, LegWindow[]>> {
+    const found = await this.prisma.$queryRaw<
+      Array<{ missionId: string; legIndex: number; routeId: string; from: Date; to: Date }>
+    >`
+      SELECT "missionId", "legIndex", "routeId", lower("window") AS "from", upper("window") AS "to"
+      FROM "RoutePresence"
+      WHERE "missionId" IN (${Prisma.join(missionIds)})
+      ORDER BY "legIndex" ASC
+    `;
+    const byMission = new Map<string, LegWindow[]>();
+    for (const row of found) {
+      const list = byMission.get(row.missionId) ?? [];
+      list.push({ legIndex: row.legIndex, routeId: row.routeId, from: row.from, to: row.to });
+      byMission.set(row.missionId, list);
+    }
+    return byMission;
   }
 
   private async resolveDueOnRead(playerId: string): Promise<void> {
@@ -314,23 +372,90 @@ export class MissionsService implements OnModuleInit {
     return this.prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
   }
 
-  private async viewerTier(playerId: string, locationId: string): Promise<number> {
+  // The viewer's ship: the one docked at the requested location if any, else their
+  // first ship — the same selection that sizes rewardEstimate, so eligibility and the
+  // displayed reward describe the same vessel.
+  private async viewerContext(playerId: string, locationId: string): Promise<ViewerContext> {
     const ships = await this.prisma.ship.findMany({
       where: { ownerPlayerId: playerId },
       orderBy: { id: 'asc' },
     });
     const ship: Ship | undefined =
       ships.find((candidate) => candidate.currentLocationId === locationId) ?? ships[0];
-    if (ship === undefined) return DEFAULT_VIEWER_TIER;
 
     const rows = await this.parts.findPlayerParts(playerId);
-    const installed = rows.filter(
-      (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
-    );
-    return shipTier(
-      installed.map((part) => ({ basePrice: part.partCatalog.basePrice })),
-      this.config.snapshot().rules,
-    );
+    const installedRows =
+      ship === undefined
+        ? []
+        : rows.filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id);
+    const installed = installedRows.map((part) => ({
+      instance: part,
+      catalog: pickCatalogStats(part.partCatalog),
+    }));
+    const tier =
+      ship === undefined
+        ? DEFAULT_VIEWER_TIER
+        : shipTier(
+            installed.map((part) => ({ basePrice: part.catalog.basePrice })),
+            this.config.snapshot().rules,
+          );
+    return { tier, ship, installed };
+  }
+
+  // Composes every precondition accept() enforces (one active mission, ship at origin,
+  // viable ship) plus the template requirement check into one upfront answer per offer.
+  private async withEligibility(
+    rows: readonly BoardMission[],
+    viewer: ViewerContext,
+    playerId: string,
+    locationId: string,
+  ): Promise<BoardOffer[]> {
+    if (rows.length === 0) return [];
+    const { rules } = this.config.snapshot();
+
+    const templates = await this.prisma.missionTemplate.findMany({
+      where: { id: { in: [...new Set(rows.map((row) => row.templateId))] } },
+      select: { id: true, requirements: true },
+    });
+    const requirementsById = new Map(templates.map((entry) => [entry.id, entry.requirements]));
+
+    const active = await this.prisma.missionInstance.count({
+      where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+    });
+    const sheet = viewer.ship === undefined ? null : deriveSheet(viewer.installed, rules);
+    const viability = sheet === null ? null : checkViability(sheet, viewer.installed, rules);
+
+    return rows.map((row) => {
+      const reasons: EligibilityReason[] = [];
+      if (viewer.ship === undefined) {
+        reasons.push({ code: 'NO_SHIP', message: 'no ship available' });
+      } else {
+        if (active > 0) {
+          reasons.push({
+            code: 'ACTIVE_MISSION_EXISTS',
+            message: 'a mission is already under way',
+          });
+        }
+        if (viewer.ship.currentLocationId !== locationId) {
+          reasons.push({ code: 'SHIP_NOT_AT_ORIGIN', message: 'ship is not at this location' });
+        }
+        if (viability !== null && !viability.viable) {
+          reasons.push(...viability.problems);
+        } else if (sheet !== null) {
+          const check = checkMissionRequirements(
+            {
+              missionType: row.type,
+              requirements: requirementsById.get(row.templateId),
+              sheet,
+              parts: viewer.installed,
+            },
+            rules,
+          );
+          reasons.push(...check.reasons);
+        }
+      }
+      return { ...row, eligibility: { eligible: reasons.length === 0, reasons } };
+    });
   }
 
   private async expire(missionId: string): Promise<void> {

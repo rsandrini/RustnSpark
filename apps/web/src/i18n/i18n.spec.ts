@@ -2,10 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import en from './en.json';
 import ptBR from './pt-BR.json';
 
-function collectKeys(
-  obj: Record<string, unknown>,
-  prefix = '',
-): string[] {
+function collectKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   const keys: string[] = [];
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;

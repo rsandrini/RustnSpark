@@ -3,7 +3,10 @@ import { validateLayout } from './geometry.js';
 
 const RIGHT_ANGLE = 90;
 
-export function autoLayout(parts: InstalledPart[], catalog: ReadonlyMap<string, PartCatalog>): Placement[] {
+export function autoLayout(
+  parts: InstalledPart[],
+  catalog: ReadonlyMap<string, PartCatalog>,
+): Placement[] {
   const ordered = [...parts].sort((a, b) => {
     return Number(b.catalog.partClass === 'BRIDGE') - Number(a.catalog.partClass === 'BRIDGE');
   });
@@ -36,7 +39,9 @@ function findPlacement(
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
       const errors = validateLayout([...existing, placement], catalog);
-      const relevant = errors.filter((error) => error.partInstanceId === part.instance.id || error.code === 'DISCONNECTED');
+      const relevant = errors.filter(
+        (error) => error.partInstanceId === part.instance.id || error.code === 'DISCONNECTED',
+      );
       if (relevant.length === 0) {
         return placement;
       }
@@ -63,7 +68,11 @@ function* candidatePositions(existing: Placement[]): Generator<{ gx: number; gy:
   }
 }
 
-function* ringAround(cx: number, cy: number, radius: number): Generator<{ gx: number; gy: number }> {
+function* ringAround(
+  cx: number,
+  cy: number,
+  radius: number,
+): Generator<{ gx: number; gy: number }> {
   for (let dx = -radius; dx <= radius; dx += 1) {
     yield { gx: cx + dx, gy: cy - radius };
     yield { gx: cx + dx, gy: cy + radius };

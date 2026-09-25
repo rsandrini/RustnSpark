@@ -16,14 +16,7 @@ import { concatLine, type ReportLog, viewChrome } from './report.types.js';
  * STORED array position — the display sort never feeds back into variant
  * choice (S9.2).
  */
-const CATEGORY_ORDER = [
-  'transit',
-  'combat',
-  'failure',
-  'environment',
-  'loot',
-  'payment',
-] as const;
+const CATEGORY_ORDER = ['transit', 'combat', 'failure', 'environment', 'loot', 'payment'] as const;
 
 const PART_FAILURE_TYPES = new Set(['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor']);
 

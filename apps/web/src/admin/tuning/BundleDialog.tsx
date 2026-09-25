@@ -16,8 +16,7 @@ export function BundleDialog({ onClose, onApplied }: BundleDialogProps) {
   const [error, setError] = useState<string | null>(null);
 
   const dryRunMutation = useMutation({
-    mutationFn: (entries: dto.BundleExportEntry[]) =>
-      tuningApi.dryRunBundle(entries),
+    mutationFn: (entries: dto.BundleExportEntry[]) => tuningApi.dryRunBundle(entries),
     onSuccess: (result) => {
       setDiffs(result.diffs);
       setError(null);
@@ -29,8 +28,7 @@ export function BundleDialog({ onClose, onApplied }: BundleDialogProps) {
   });
 
   const applyMutation = useMutation({
-    mutationFn: (entries: dto.BundleExportEntry[]) =>
-      tuningApi.importBundle(entries),
+    mutationFn: (entries: dto.BundleExportEntry[]) => tuningApi.importBundle(entries),
     onSuccess: () => {
       onApplied();
     },

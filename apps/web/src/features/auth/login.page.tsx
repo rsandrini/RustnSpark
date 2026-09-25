@@ -41,9 +41,7 @@ export function LoginPage() {
         <button type="submit" disabled={login.isPending}>
           {t('login.submit')}
         </button>
-        {login.isError && (
-          <p role="alert">{t('login.error.invalidCredentials')}</p>
-        )}
+        {login.isError && <p role="alert">{t('login.error.invalidCredentials')}</p>}
       </form>
       <Link to="/register">{t('login.registerLink')}</Link>
     </main>

@@ -18,14 +18,10 @@ describe('router', () => {
     renderWithRouter(routes);
 
     await user.click(screen.getByRole('link', { name: /sign in/i }));
-    expect(
-      screen.getByRole('heading', { name: /sign in/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /create an account/i }));
-    expect(
-      screen.getByRole('heading', { name: /create account/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
   });
 
   it('shows the not found page for unknown routes', async () => {
@@ -40,9 +36,7 @@ describe('router', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/admin'] });
-    await waitFor(() =>
-      expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument());
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
   });
 

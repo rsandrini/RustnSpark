@@ -299,4 +299,44 @@ describe('repair job API (S8.4)', () => {
     const after = await prisma.partInstance.findUniqueOrThrow({ where: { id: part.id } });
     expect(after.condition).toBe(70);
   });
+
+  it('quote returns the exact cost and duration start will charge, without charging (S10.9)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 50);
+    const targets = [{ partInstanceId: part.id, toCondition: 100 }];
+    const before = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+
+    // A dry run needs no Idempotency-Key and leaves no trace.
+    const quoted = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/repair/quote`)
+      .set(auth(player.token))
+      .send({ targets });
+    expect(quoted.status).toBe(200);
+    const quote = quoted.body as { cost: number; durationSeconds: number };
+    expect(quote.durationSeconds).toBe(50 * 3);
+    expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
+    const unchanged = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(unchanged.credits).toBe(before.credits);
+
+    const started = await startRepair(player.token, player.shipId, randomUUID(), targets);
+    expect(started.status).toBe(200);
+    expect(started.body).toMatchObject({
+      cost: quote.cost,
+      durationSeconds: quote.durationSeconds,
+    });
+
+    // Same validation as the charge: bad targets are refused on the quote too.
+    const invalid = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/repair/quote`)
+      .set(auth(player.token))
+      .send({ targets: [{ partInstanceId: part.id, toCondition: 10 }] });
+    expect(invalid.status).toBe(409);
+  });
 });

@@ -63,10 +63,7 @@ function collectEmittedTypeLiterals(): Set<string> {
           const [arg] = node.arguments;
           if (arg && ts.isObjectLiteralExpression(arg)) {
             for (const prop of arg.properties) {
-              if (
-                ts.isPropertyAssignment(prop) &&
-                prop.name.getText(source) === 'type'
-              ) {
+              if (ts.isPropertyAssignment(prop) && prop.name.getText(source) === 'type') {
                 collectStrings(prop.initializer);
               }
             }

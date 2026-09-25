@@ -55,19 +55,13 @@ const configEntries = [
 describe('ConfigScreen', () => {
   it('renders config keys grouped by domain with descriptions', async () => {
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json(configEntries, { status: 200 }),
-      ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json(configEntries, { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
     );
 
     renderWithProviders(<ConfigScreen />);
 
-    expect(
-      await screen.findByText('economy.start_credits'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('economy.start_credits')).toBeInTheDocument();
     expect(screen.getByText(/starting credits/i)).toBeInTheDocument();
     expect(screen.getByText('combat.dc_base')).toBeInTheDocument();
     expect(screen.getByText(/difficulty class/i)).toBeInTheDocument();
@@ -76,12 +70,8 @@ describe('ConfigScreen', () => {
 
   it('shows the modified badge only on modified keys', async () => {
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json(configEntries, { status: 200 }),
-      ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json(configEntries, { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
     );
 
     renderWithProviders(<ConfigScreen />);
@@ -93,12 +83,8 @@ describe('ConfigScreen', () => {
 
   it('filters keys by search query', async () => {
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json(configEntries, { status: 200 }),
-      ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json(configEntries, { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
     );
 
     const user = userEvent.setup();
@@ -116,9 +102,7 @@ describe('ConfigScreen', () => {
   it('saves a changed value via PATCH', async () => {
     const savedBodies: unknown[] = [];
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json(configEntries, { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json(configEntries, { status: 200 })),
       http.get('/v1/admin/tuning/revisions', () =>
         HttpResponse.json(
           [
@@ -140,7 +124,16 @@ describe('ConfigScreen', () => {
         const body = await request.json();
         savedBodies.push(body);
         return HttpResponse.json(
-          { id: '6', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 2000, reason: 'tuning', at: new Date().toISOString() },
+          {
+            id: '6',
+            actor: 'admin',
+            entityType: 'GameConfig',
+            entityId: 'economy.start_credits',
+            before: 1500,
+            after: 2000,
+            reason: 'tuning',
+            at: new Date().toISOString(),
+          },
           { status: 200 },
         );
       }),
@@ -156,9 +149,7 @@ describe('ConfigScreen', () => {
     await user.clear(input);
     await user.type(input, '2000');
 
-    await user.click(
-      screen.getByRole('button', { name: /save economy\.start_credits/i }),
-    );
+    await user.click(screen.getByRole('button', { name: /save economy\.start_credits/i }));
 
     await waitFor(() => {
       expect(savedBodies.length).toBeGreaterThan(0);
@@ -175,16 +166,21 @@ describe('ConfigScreen', () => {
   it('resets a key to factory default via POST', async () => {
     let resetCalled = false;
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json(configEntries, { status: 200 }),
-      ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json(configEntries, { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
       http.post('/v1/admin/tuning/config/economy.start_credits/reset', () => {
         resetCalled = true;
         return HttpResponse.json(
-          { id: '7', actor: 'admin', entityType: 'GameConfig', entityId: 'economy.start_credits', before: 1500, after: 1000, reason: 'reset', at: new Date().toISOString() },
+          {
+            id: '7',
+            actor: 'admin',
+            entityType: 'GameConfig',
+            entityId: 'economy.start_credits',
+            before: 1500,
+            after: 1000,
+            reason: 'reset',
+            at: new Date().toISOString(),
+          },
           { status: 200 },
         );
       }),
@@ -194,9 +190,7 @@ describe('ConfigScreen', () => {
     renderWithProviders(<ConfigScreen />);
     await screen.findByText('economy.start_credits');
 
-    await user.click(
-      screen.getByRole('button', { name: /reset economy\.start_credits/i }),
-    );
+    await user.click(screen.getByRole('button', { name: /reset economy\.start_credits/i }));
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() => {
