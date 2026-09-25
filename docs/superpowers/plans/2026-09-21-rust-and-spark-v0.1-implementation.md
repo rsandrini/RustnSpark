@@ -698,6 +698,8 @@ Sources: `S` = `simulation/sweep-rust-and-spark.py`, `I` = `simulador-integrado.
 | `missions.duration_class_cutoffs` | `{fast:600,medium:1800}` | D21 decided | seconds; long is above medium |
 | `missions.time_scale` | 1 | D21 | tests/dev shrink it |
 | `missions.board_min_per_location` | 1 | G §12 | |
+| `missions.starter_guarantee_max_completed` | 3 | D43 | a player who completed fewer missions, with nothing takeable on the board, gets a private start-safe mission (0 = off) |
+| `missions.starter_max_zone` | 1 | D43 | highest zone a start-safe mission may cross; never stricter than the home port's own zone |
 | `scavenging.chance` | `{common:0.25,mission:0.55,pirate:0.75}` | G §14 | |
 | `scavenging.quality_min` / `max` | 30 / 70 | G §14 | |
 | `scavenging.cooldown_seconds` | 300 | D28 decided | |
