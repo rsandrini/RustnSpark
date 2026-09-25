@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@rustandspark/contract": "workspace:^",
     "@tanstack/react-query": "^5.74.0",
     "i18next": "^23.16.8",
     "react": "^18.3.1",

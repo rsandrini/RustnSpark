@@ -43,8 +43,6 @@ const mission = (over: Partial<ActiveMission> = {}): ActiveMission => ({
   deadlineAt: iso(60 * 60 * 1000),
   seed: 'seed-1',
   version: 1,
-  rewardEstimate: 1350,
-  eligibility: { eligible: true, reasons: [] },
   legWindows: [],
   ...over,
 });

@@ -9,6 +9,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm --version
 # Manifests only, so the dependency layer is cached until a package.json or the lockfile changes.
 COPY apps/api/package.json apps/api/package.json
+# The contract package is a workspace dependency of api (its integration tests parse real
+# responses with the shared schemas); the install needs its manifest to resolve the workspace.
+COPY packages/contract/package.json packages/contract/package.json
 
 # One stage owns the whole install: it compiles, then assembles the production tree in /out.
 FROM base AS build

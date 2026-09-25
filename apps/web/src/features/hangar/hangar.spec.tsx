@@ -230,9 +230,11 @@ describe('hangar (S10.4)', () => {
   it('runs the auto layout through the server', async () => {
     server.use(onboarded());
     let autoCalls = 0;
+    let sentIds: string[] = [];
     server.use(
-      http.post('/v1/ships/:id/auto-assemble', () => {
+      http.post('/v1/ships/:id/auto-assemble', async ({ request }) => {
         autoCalls += 1;
+        sentIds = ((await request.json()) as { partInstanceIds?: string[] }).partInstanceIds ?? [];
         return HttpResponse.json(shipEcho([]), { status: 200 });
       }),
     );
@@ -242,5 +244,8 @@ describe('hangar (S10.4)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Auto layout' }));
     await waitFor(() => expect(autoCalls).toBe(1));
+    // Every owned part (installed and loose): the server arranges only what it is given.
+    expect(sentIds).toEqual(expect.arrayContaining(['part-bridge', 'part-cargo-b']));
+    expect(sentIds.length).toBeGreaterThanOrEqual(7);
   });
 });

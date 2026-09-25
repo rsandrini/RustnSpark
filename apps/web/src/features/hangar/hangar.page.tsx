@@ -126,7 +126,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
 
   const auto = useMutation({
-    mutationFn: () => client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {}),
+    // Auto-arrange EVERY part the player owns: with no ids the server arranges only loose
+    // inventory parts, which after onboarding (everything installed) is an empty, unviable ship.
+    mutationFn: () =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {
+        partInstanceIds: parts.map((part) => part.id),
+      }),
     onSuccess: (updated) => {
       setLayout(updated.layout);
       setSaved(false);
