@@ -9,6 +9,8 @@ const CELL_COUNT = GRID_HALF_SIZE * 2;
 export interface ShipYardProps {
   layout: readonly Placement[];
   catalogById: ReadonlyMap<string, PartCatalogStats>;
+  /** Localized part names by instance id. */
+  nameById: ReadonlyMap<string, string>;
   selectedId: string | null;
   draggingId: string | null;
   onSelect: (partInstanceId: string | null) => void;
@@ -24,6 +26,7 @@ export interface ShipYardProps {
 export function ShipYard({
   layout,
   catalogById,
+  nameById,
   selectedId,
   draggingId,
   onSelect,
@@ -112,7 +115,7 @@ export function ShipYard({
                 y={placement.gy + height / 2 + 0.2}
                 style={{ pointerEvents: 'none' }}
               >
-                {catalog.partType}
+                {nameById.get(placement.partInstanceId) ?? catalog.partType}
               </text>
             </g>
           );

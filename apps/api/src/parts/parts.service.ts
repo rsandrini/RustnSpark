@@ -15,6 +15,8 @@ export interface CatalogItem {
 export interface InventoryItem {
   id: string;
   partType: string;
+  /** Both locales, like the market and scavenging: the client picks one, never shows the code. */
+  displayName: { en: string; 'pt-BR': string };
   condition: number;
   location: string;
   shipId: string | null;
@@ -98,6 +100,13 @@ export class PartsService {
     return rows.map((row) => ({
       id: row.id,
       partType: row.partType,
+      displayName: {
+        en: localizeDisplayName(row.partCatalog.displayName as Record<string, unknown>, 'en'),
+        'pt-BR': localizeDisplayName(
+          row.partCatalog.displayName as Record<string, unknown>,
+          'pt-BR',
+        ),
+      },
       condition: row.condition,
       location: row.location,
       shipId: row.shipId,

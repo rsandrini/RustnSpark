@@ -105,10 +105,7 @@ export function PortPage({ guided = false }: PortPageProps) {
     if (location === undefined) return id;
     return pickLocalized(location.displayName, i18n.language);
   };
-  const partName = (item: InventoryItem) => {
-    const displayName = (item.catalog as { displayName?: LocalizedText }).displayName;
-    return displayName === undefined ? item.partType : pickLocalized(displayName, i18n.language);
-  };
+  const partName = (item: InventoryItem) => pickLocalized(item.displayName, i18n.language);
 
   const wallet = user?.credits ?? 0;
   const broke = wallet < 0;

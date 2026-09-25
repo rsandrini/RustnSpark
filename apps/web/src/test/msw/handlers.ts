@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import type {
   ActiveMission,
   InventoryItem,
+  LocalizedText,
   MarketListing,
   MaterialHolding,
   MissionOffer,
@@ -49,6 +50,19 @@ const sheet = () => ({
   condition: 1,
 });
 
+// Bilingual part names, as the real inventory/market endpoints send them (the raw part code is
+// never player-facing).
+const PART_NAMES: Record<string, LocalizedText> = {
+  bridge: { en: 'Bridge', 'pt-BR': 'Ponte' },
+  engine_chem_small: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
+  tank_small: { en: 'Small Tank', 'pt-BR': 'Tanque Pequeno' },
+  battery_small: { en: 'Small Battery', 'pt-BR': 'Bateria Pequena' },
+  cargo: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+  hull: { en: 'Plated Hull', 'pt-BR': 'Casco Blindado' },
+};
+const partNameOf = (partType: string): LocalizedText =>
+  PART_NAMES[partType] ?? { en: partType, 'pt-BR': partType };
+
 const catalog = (
   partType: string,
   partClass: InventoryItem['catalog']['partClass'],
@@ -85,6 +99,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-bridge',
     partType: 'bridge',
+    displayName: partNameOf('bridge'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -93,6 +108,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-engine',
     partType: 'engine_chem_small',
+    displayName: partNameOf('engine_chem_small'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -106,6 +122,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-tank',
     partType: 'tank_small',
+    displayName: partNameOf('tank_small'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -114,6 +131,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-battery',
     partType: 'battery_small',
+    displayName: partNameOf('battery_small'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -127,6 +145,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-hull',
     partType: 'hull',
+    displayName: partNameOf('hull'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -135,6 +154,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-cargo-a',
     partType: 'cargo',
+    displayName: partNameOf('cargo'),
     condition: 1,
     location: 'INSTALLED',
     shipId: 'ship-1',
@@ -143,6 +163,7 @@ const starterInventory = (): InventoryItem[] => [
   {
     id: 'part-cargo-b',
     partType: 'cargo',
+    displayName: partNameOf('cargo'),
     condition: 1,
     location: 'INVENTORY',
     shipId: null,
@@ -486,6 +507,7 @@ export const handlers = [
     inventoryState.push({
       id,
       partType: listing.partType,
+      displayName: partNameOf(listing.partType),
       condition: listing.condition,
       location: 'INVENTORY',
       shipId: null,
@@ -669,6 +691,7 @@ export const handlers = [
     inventoryState.push({
       id,
       partType: 'cargo',
+      displayName: partNameOf('cargo'),
       condition: 40,
       location: 'INVENTORY',
       shipId: null,

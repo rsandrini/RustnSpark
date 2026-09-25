@@ -86,6 +86,18 @@ describe('hangar (S10.4)', () => {
     expect(block(container, 'part-cargo-b')).toBeNull();
   });
 
+  it('labels parts with their localized names, never the raw part code', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    await screen.findByRole('heading', { name: 'Hangar' });
+    // Tray button and the placed block's label both use the server-provided name.
+    expect(await screen.findByRole('button', { name: /Cargo Rack/ })).toBeInTheDocument();
+    expect(container.textContent).toContain('Small Chemical Engine');
+    expect(container.textContent).not.toContain('engine_chem_small');
+    expect(container.textContent).not.toMatch(/\bcargo\b(?! Rack)/);
+  });
+
   it('places a tray part on the yard and previews the layout after the debounce', async () => {
     server.use(onboarded());
     const previewLayouts: Placement[][] = [];
