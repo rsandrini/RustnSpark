@@ -34,6 +34,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
   });
   const ship = shipsQuery.data?.[0];
+  // Yard size is the server's; before the ship loads nothing is placeable anyway.
+  const yardHalfSize = ship?.yard.halfSize ?? 0;
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -152,7 +154,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       (placement) => placement.partInstanceId === partInstanceId,
     );
     const rot = existing?.rot ?? 0;
-    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot)) return;
+    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardHalfSize)) return;
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
@@ -184,7 +186,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
     if (existing === undefined) return;
     const nextRot: 0 | 90 = existing.rot === 0 ? 90 : 0;
-    if (!canPlace(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, nextRot)) {
+    if (
+      !canPlace(
+        effectiveLayout,
+        catalogById,
+        selectedId,
+        existing.gx,
+        existing.gy,
+        nextRot,
+        yardHalfSize,
+      )
+    ) {
       return;
     }
     setLayout(
@@ -298,6 +310,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
         <section>
           <ShipYard
+            halfSize={ship.yard.halfSize}
             layout={effectiveLayout}
             catalogById={catalogById}
             nameById={nameById}

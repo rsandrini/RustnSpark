@@ -117,7 +117,8 @@
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
       "generic": "Could not save the layout."
-    }
+    },
+    "yardLabel": "Assembly yard"
   },
   "home": {
     "title": "Home",

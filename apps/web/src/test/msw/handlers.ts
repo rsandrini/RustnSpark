@@ -212,6 +212,7 @@ const ship = (): ShipResponse => ({
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
+  yard: { halfSize: 10 },
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -374,6 +375,7 @@ export const handlers = [
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
+      yard: { halfSize: 10 },
     }),
   ),
 

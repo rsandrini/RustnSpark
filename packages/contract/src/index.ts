@@ -187,6 +187,8 @@ export const ShipResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
+  /** The assembly yard: cells run [-halfSize, halfSize) on both axes. */
+  yard: z.object({ halfSize: z.number() }),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
 
