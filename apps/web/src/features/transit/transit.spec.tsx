@@ -196,4 +196,45 @@ describe('transit (S10.7)', () => {
     expect(await screen.findByTestId('resolving')).toHaveTextContent('Resolving the mission');
     expect(screen.queryByTestId('in-transit')).toBeNull();
   });
+
+  it('shows the report of a mission that finished while the page was open', async () => {
+    // The report list is empty until the worker finishes, exactly as in the real stack: a copy
+    // fetched at page load must not be the one shown after the mission resolves.
+    let resolved = false;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(resolved ? [] : [{ ...mission(), status: 'IN_TRANSIT' }], {
+          status: 200,
+        }),
+      ),
+      http.get('/v1/reports', () =>
+        HttpResponse.json(
+          {
+            items: resolved
+              ? [
+                  {
+                    missionId: 'm-9',
+                    outcome: 'success',
+                    credits: 700,
+                    legs: 1,
+                    createdAt: new Date().toISOString(),
+                  },
+                ]
+              : [],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    const { queryClient } = renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByTestId('in-transit')).toBeInTheDocument();
+
+    resolved = true;
+    await queryClient.invalidateQueries({ queryKey: ['active'] });
+    const panel = await screen.findByTestId('last-mission');
+    expect(within(panel).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+      'href',
+      '/report/m-9',
+    );
+  });
 });

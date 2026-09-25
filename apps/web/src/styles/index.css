@@ -819,34 +819,9 @@ a {
   border-radius: 12px;
 }
 
-.block {
-  position: absolute;
-  border: 1px solid var(--steel-lt);
-  background: var(--yard-panel2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 2px;
-  overflow: hidden;
-  font-size: 10px;
-  color: var(--ink);
-  text-align: center;
-  user-select: none;
-}
-
-.block.bridge {
-  border-color: var(--amber);
-  border-width: 2px;
-}
-
-.block.selected {
-  box-shadow: 0 0 0 2px var(--amber);
-}
-
-.block.floating {
-  border-color: var(--bad);
-  border-style: dashed;
-}
+/* (The HTML-era `.block` yard-block rules were removed: `.block` is also the full-width button
+   utility (`.btn.block`), and `position: absolute` here pulled every such button out of the layout.
+   The yard blocks are SVG rects styled by `svg .block` below.) */
 
 /* forms ---------------------------------------------------------------- */
 .input {
@@ -1143,7 +1118,9 @@ svg .block.floating {
 
 .block-label {
   fill: var(--ink);
-  font-size: 0.42;
+  /* User units of the yard viewBox (1 = one cell). A unitless value is invalid CSS and falls
+     back to the 16px default, i.e. 16 cells — the labels then swallow the whole yard. */
+  font-size: 0.42px;
   text-anchor: middle;
   pointer-events: none;
   user-select: none;

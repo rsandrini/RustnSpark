@@ -189,6 +189,45 @@ jobs:
           python-version: '3.13'
       - run: python tools/oracle/gen_fixtures.py --check
 
+  # Browser smoke against the REAL stack (compose `dev` profile: api + worker + Postgres + Redis +
+  # the built SPA behind nginx). NON-BLOCKING for now (owner decision): a failure is reported but
+  # does not gate merges, and the aggregate `ci` job does not depend on it. Promote it to required
+  # once the service has stayed green for a week.
+  browser-smoke:
+    name: Browser smoke (real stack, non-blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    env:
+      E2E_BASE_URL: http://127.0.0.1:8080
+      E2E_ADMIN_EMAIL: admin@e2e.test
+      E2E_ADMIN_PASSWORD: e2e-admin-password-1
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v5
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: docker compose --profile dev up -d --wait --build
+      # An admin only to tune two config keys so missions finish in seconds (see global-setup.ts).
+      - run: >
+          docker compose --profile dev exec -T api
+          node dist/admin/cli/create-admin.cli.js
+          --email "$E2E_ADMIN_EMAIL" --password "$E2E_ADMIN_PASSWORD" --name e2eadmin
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm --filter web e2e
+      - if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: browser-smoke-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+      - if: always()
+        run: docker compose --profile dev down -v
+
   # Single required status check for branch protection; add/remove job names above freely.
   ci:
     name: CI

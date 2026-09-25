@@ -19,7 +19,7 @@ export function renderWithProviders(
   });
   const wrapRouter = options.withRouter ?? true;
 
-  return render(
+  const view = render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         {wrapRouter ? (
@@ -30,6 +30,8 @@ export function renderWithProviders(
       </QueryClientProvider>
     </I18nextProvider>,
   );
+  // Exposed so a test can invalidate a query to simulate the server changing state.
+  return { ...view, queryClient };
 }
 
 export function renderWithRouter(

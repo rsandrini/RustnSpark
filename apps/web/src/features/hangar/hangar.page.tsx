@@ -218,28 +218,32 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
 
+  // Server values are floats (autonomy is 142857.14…): show at most one decimal, in the
+  // player's locale.
+  const number = (value: number) =>
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
   const statRows: Array<{ key: string; value: string }> =
     sheet === undefined
       ? []
       : [
-          { key: 'mob', value: String(sheet.mob) },
-          { key: 'crg', value: String(sheet.crg) },
-          { key: 'min', value: String(sheet.min) },
-          { key: 'hp', value: String(sheet.hp) },
-          { key: 'pot', value: String(sheet.pot) },
-          { key: 'pdf', value: String(sheet.pdf) },
-          { key: 'mass', value: String(sheet.mass) },
-          { key: 'fuelCap', value: String(sheet.fuelCap) },
-          { key: 'fuelUse', value: String(sheet.fuelUse) },
-          { key: 'energyCont', value: String(sheet.energyCont) },
-          { key: 'energyCombat', value: String(sheet.energyCombat) },
-          { key: 'autonomy', value: String(sheet.autonomy) },
-          { key: 'condition', value: String(sheet.condition) },
+          { key: 'mob', value: number(sheet.mob) },
+          { key: 'crg', value: number(sheet.crg) },
+          { key: 'min', value: number(sheet.min) },
+          { key: 'hp', value: number(sheet.hp) },
+          { key: 'pot', value: number(sheet.pot) },
+          { key: 'pdf', value: number(sheet.pdf) },
+          { key: 'mass', value: number(sheet.mass) },
+          { key: 'fuelCap', value: number(sheet.fuelCap) },
+          { key: 'fuelUse', value: number(sheet.fuelUse) },
+          { key: 'energyCont', value: number(sheet.energyCont) },
+          { key: 'energyCombat', value: number(sheet.energyCombat) },
+          { key: 'autonomy', value: number(sheet.autonomy) },
+          { key: 'condition', value: number(sheet.condition) },
           {
             key: 'structure',
-            value: t('hangar.stats.structure', {
-              used: sheet.structureUsed,
-              budget: sheet.structureBudget,
+            value: t('hangar.stats.structureValue', {
+              used: number(sheet.structureUsed),
+              budget: number(sheet.structureBudget),
             }),
           },
         ];

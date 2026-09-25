@@ -42,6 +42,21 @@ describe('router', () => {
     expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument();
   });
 
+  it('keeps a signed-out visitor on /register instead of bouncing them to /login', async () => {
+    server.use(
+      http.post('/v1/auth/refresh', () =>
+        HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/register'] });
+    // The silent session restore fails for a visitor with no cookie; that must not redirect a
+    // public route (it did: every direct visit to /register landed on the sign-in page).
+    expect(
+      await screen.findByRole('heading', { name: /create account|register/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /sign in/i })).not.toBeInTheDocument();
+  });
+
   it('switches the login screen to Portuguese with the language switcher and remembers it', async () => {
     server.use(
       http.post('/v1/auth/refresh', () =>

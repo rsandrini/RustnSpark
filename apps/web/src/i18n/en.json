@@ -68,7 +68,9 @@
       "energyCombat": "Energy (combat)",
       "autonomy": "Autonomy",
       "condition": "Condition",
-      "structure": "Structure {{used}}/{{budget}}"
+      "structure": "Structure",
+      "mob": "Mobility",
+      "structureValue": "{{used}} / {{budget}}"
     },
     "classes": {
       "HAULER": "Hauler",
@@ -281,7 +283,8 @@
     "repairQuote": "Repair cost: {{cost}} ¢ · {{seconds}} s",
     "repairConfirmTitle": "Repair for {{cost}} ¢?",
     "repairConfirm": "Start repair",
-    "noShip": "You have no ship."
+    "noShip": "You have no ship.",
+    "sellAll": "Sell all"
   },
   "inventory": {
     "title": "Inventory",
@@ -400,7 +403,8 @@
       "NO_FUEL_CAPACITY": "No fuel capacity",
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded"
-    }
+    },
+    "expiredLabel": "Expired"
   },
   "map": {
     "title": "Sector map",

@@ -68,7 +68,9 @@
       "energyCombat": "Energia (combate)",
       "autonomy": "Autonomia",
       "condition": "Condição",
-      "structure": "Estrutura {{used}}/{{budget}}"
+      "structure": "Estrutura",
+      "mob": "Mobilidade",
+      "structureValue": "{{used}} / {{budget}}"
     },
     "classes": {
       "HAULER": "Cargueiro",
@@ -281,7 +283,8 @@
     "repairQuote": "Custo do reparo: {{cost}} ¢ · {{seconds}} s",
     "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
-    "noShip": "Você não tem uma nave."
+    "noShip": "Você não tem uma nave.",
+    "sellAll": "Vender tudo"
   },
   "inventory": {
     "title": "Inventário",
@@ -400,7 +403,8 @@
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
-    }
+    },
+    "expiredLabel": "Expirada"
   },
   "map": {
     "title": "Mapa do setor",

@@ -4,6 +4,14 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { PartCatalogStats, Placement } from '../../api/generated';
 import { footprint } from './hangar.geometry';
 
+// A cell is small: show the first word of the part name, trimmed to what fits the block
+// (~4 characters per cell at the label size); the full name is the block's <title> tooltip.
+function fitLabel(name: string, blockWidth: number): string {
+  const maxChars = Math.max(2, Math.floor((blockWidth - 0.15) * 4.3));
+  const first = name.split(' ')[0] ?? name;
+  return first.length <= maxChars ? first : `${first.slice(0, maxChars - 1)}…`;
+}
+
 export interface ShipYardProps {
   layout: readonly Placement[];
   /** Yard extent from the server: cells run [-halfSize, halfSize). */
@@ -112,13 +120,14 @@ export function ShipYard({
                 }
                 onPointerDown={(event) => handlePointerDown(event, placement)}
               />
+              <title>{nameById.get(placement.partInstanceId) ?? catalog.partType}</title>
               <text
                 className="block-label"
                 x={placement.gx + width / 2}
                 y={placement.gy + height / 2 + 0.2}
                 style={{ pointerEvents: 'none' }}
               >
-                {nameById.get(placement.partInstanceId) ?? catalog.partType}
+                {fitLabel(nameById.get(placement.partInstanceId) ?? catalog.partType, width)}
               </text>
             </g>
           );
