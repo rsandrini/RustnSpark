@@ -541,6 +541,8 @@ missão. Números em §19.
 - **Resgate automático** por valor fixo (**800¢**) — o saldo pode ficar **negativo**.
 - **Aguardar resgate** de outro jogador/NPC, oferecendo recompensa.
 
+O resgate automático devolve a nave ao porto com uma **ração de emergência de combustível** (25% do tanque por padrão, ajustável no Admin: `economy.rescue_fuel_fraction`) — o bastante para uma missão curta, sem virar fonte de combustível. As peças de recomeço nunca podem valer mais, somadas, do que o custo do resgate.
+
 **Saldo negativo:** só missões pagam de volta; enquanto negativo, compras e upgrades são
 bloqueados, mas navegar e minerar (com sucata grátis) seguem liberados. Cava e sai
 cavando.
