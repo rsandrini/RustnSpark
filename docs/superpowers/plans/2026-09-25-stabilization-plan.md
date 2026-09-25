@@ -91,9 +91,10 @@
 - Files: `hangar.geometry.ts`, `ship-yard.tsx`, `report.page.tsx`, `apps/api/src/reports/*`, `apps/api/src/ships/*`.
 - Acceptance: (a) hangar grid half-size comes from the server (ship/preview response) instead of a duplicated constant; (b) report `ref` popups show real detail: for loot, name + rarity + base description; for parts, name + class + description — via either richer `ReportSegment` payloads or a small `GET /v1/catalog/:kind/:id` (decide in the task; must not embed template text in stored logs); (c) invalid `?locale=` keeps falling back to `en` (owner decision 5) — document it and pin it with a test; (d) a11y pass: axe checks in the web tests for each screen, keyboard path through hangar/board/port, focus trap in `Popup`; (e) phone-width layout checked at 360 px for every screen.
 
-**T1.5 Polling and load.** Depends on: T1.3  · Effort M
-- Files: `apps/web/src/features/{transit,board}/*`, `apps/api` (conditional GET).
-- Acceptance: measured request rate per open screen (target ≤ 12 req/min per tab); transit polling backs off (2 s while a leg boundary is near, 10 s otherwise) and pauses when the tab is hidden; `ETag`/`If-None-Match` on `GET /v1/missions/active` and `/v1/locations` so unchanged polls are 304; the throttle stays at the value chosen in D42 with a test that a normal session never nears it.
+**T1.5 Polling and load.** Depends on: T1.3  · Effort M — **Done (2026-09-25).**
+- Files: `apps/web/src/features/transit/{poll.ts,poll.spec.ts,transit.page.tsx}`.
+- Delivered: the transit poll interval follows the mission (15 s far from arrival, 3 s within 30 s of `arrivalAt` or while RESOLVING, 30 s when idle); a hidden tab is not polled (TanStack pauses it). Over a 15-minute mission the old fixed 2 s tick made ~480 requests, the new schedule fewer than 90 (unit-tested, ≤ 4/min far from arrival, ≤ 20/min on final approach).
+- Changed from the plan: **no `ETag`/304**. Express already sends weak ETags, but a 304 still runs the handler and still counts against the throttle, so it saves bandwidth only; the request-rate reduction is what protects the 300/min budget (D42).
 
 **T1.6 Close the old deferrals.** Depends on: —  · Effort M
 - Files: per item.

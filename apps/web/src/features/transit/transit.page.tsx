@@ -13,9 +13,8 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
-
-const ACTIVE_REFETCH_MS = 2000;
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -30,7 +29,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
 
   const activeQuery = useQuery({
     queryKey: ['active'],
-    refetchInterval: ACTIVE_REFETCH_MS,
+    refetchInterval: (query) => transitPollInterval(query.state.data, serverNow()),
     queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
   });
   const shipsQuery = useQuery({
