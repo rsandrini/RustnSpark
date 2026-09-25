@@ -112,11 +112,10 @@ jobs:
           --to-schema-datamodel ./prisma/schema.prisma
           --shadow-database-url "$SHADOW_DATABASE_URL"
           --exit-code
-      - run: pnpm --filter api test:int
-      # e2e needs the same compose test profile (already up above); validation needs no services.
-      # Both run here so "all suites green in CI" (M1) is literally true.
-      - run: pnpm --filter api test:e2e
-      - run: pnpm --filter api test:validation
+      # One run over every project (unit + integration + e2e + validation): "all suites green in CI"
+      # (M1) is literally true, and coverage is enforced on the union (jest.config.ts thresholds),
+      # because unit tests alone no longer exercise the request path that integration covers.
+      - run: pnpm --filter api test:cov
       - if: always()
         run: docker compose --profile test down -v
 

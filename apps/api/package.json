@@ -21,7 +21,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "postinstall": "if [ -f prisma/schema.prisma ]; then prisma generate; fi"
+    "postinstall": "if [ -f prisma/schema.prisma ]; then prisma generate; fi",
+    "test:cov": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand --coverage"
   },
   "dependencies": {
     "@nestjs/bullmq": "12.0.0",

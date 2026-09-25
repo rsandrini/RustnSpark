@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
@@ -8,6 +8,7 @@ import request from 'supertest';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
+import { Clock } from '../../src/common/clock/clock.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -292,7 +293,14 @@ describe('market API (S8.2)', () => {
       listingId: used!.listingId,
       expectedPrice: used!.price,
     });
-    expect(response.status).toBe(200);
+    // On a failure, show what the server said (a bare "409 vs 200" once hid the cause in CI).
+    expect({
+      status: response.status,
+      body: response.body as unknown,
+      listing: used,
+    }).toMatchObject({
+      status: 200,
+    });
     expect(response.body).toMatchObject({
       partType: used!.partType,
       condition: used!.condition,
@@ -540,5 +548,51 @@ describe('market API (S8.2)', () => {
     });
     expect(sold.status).toBe(200);
     expect((sold.body as { price: number }).price).toBe(offers[0]!.price);
+  });
+
+  it('the shelf follows the injected clock: a listing from another day is refused (T0.7)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const clock = testApp.app.get(Clock);
+    const at = jest.spyOn(clock, 'now');
+    try {
+      at.mockReturnValue(new Date('2026-03-10T12:00:00Z'));
+      const board = await getMarket(player.token, 'ceres');
+      const used = (board.body as MarketListingBody).listings.find(
+        (entry) => entry.kind === 'used',
+      )!;
+      expect(used.listingId).toContain(':2026-03-10:');
+
+      // Same instant: the listing is buyable at its listed price.
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { credits: used.price },
+      });
+      const bought = await buy(player.token, randomUUID(), {
+        listingId: used.listingId,
+        expectedPrice: used.price,
+      });
+      expect({ status: bought.status, body: bought.body as unknown }).toMatchObject({
+        status: 200,
+      });
+
+      // Next UTC day: yesterday's listing id no longer exists.
+      at.mockReturnValue(new Date('2026-03-11T00:00:01Z'));
+      const stale = await buy(player.token, randomUUID(), {
+        listingId: used.listingId,
+        expectedPrice: used.price,
+      });
+      expect(stale.status).toBe(400);
+      expect(stale.body).toMatchObject({ message: { error: 'INVALID_LISTING' } });
+
+      // ...and the board now lists the new day's shelf.
+      const next = await getMarket(player.token, 'ceres');
+      const fresh = (next.body as MarketListingBody).listings.find(
+        (entry) => entry.kind === 'used',
+      )!;
+      expect(fresh.listingId).toContain(':2026-03-11:');
+    } finally {
+      at.mockRestore();
+    }
   });
 });
