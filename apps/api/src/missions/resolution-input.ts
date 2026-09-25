@@ -1,0 +1,178 @@
+import type { GameRules } from '../config/game-config.types.js';
+import type { EscapePreset } from '../resolution/encounter/escape.resolver.js';
+import type { FactionRelation, Stance } from '../resolution/encounter/encounter-policy.js';
+import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
+import { resolveMission } from '../resolution/mission/mission.resolver.js';
+import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
+import type { InstalledPart } from '../parts/part.types.js';
+import { deriveSheet } from '../ships/sheet.deriver.js';
+import { shipTier } from '../ships/ship-tier.js';
+import type { DispatchSnapshot } from './dispatch.service.js';
+import { PROVISIONAL_TIER } from './generator/template.filler.js';
+
+// ONE place that turns (mission, dispatch snapshot, resolution context, rules) into the engine's
+// input. The worker (resolve.service) and the admin replay (replay.service) both call it, so a
+// replay can never drift from the run it re-runs: before this existed the replay had its own
+// copy that ignored mining stops and the snapshot's ship tier, and mismatched on those missions.
+
+const OBJECT_CARRIED_TYPES: readonly string[] = ['DELIVERY', 'TRANSPORT', 'RESCUE'];
+
+/**
+ * The world facts a resolution read from the LIVE database (destination isolation, the employer's
+ * relation to the player, the template's encounter policy, cargo, mined material rarity).
+ * They are stored in the MissionLog next to the dispatch snapshot, because every one of them can
+ * change afterwards (map re-tuned, relations edited) and a replay must see the run's own values.
+ * Plain JSON on purpose: it goes into a jsonb column.
+ */
+export interface ResolutionContext {
+  readonly isolation: number;
+  /** 'ally' | 'neutral' | 'hostile' — the employer faction's view of the player's faction. */
+  readonly factionRelation: string;
+  readonly preset: string;
+  readonly missionOwner: 'player' | 'enemy' | null;
+  readonly missionForcesFlee: boolean;
+  readonly client: EscortClient | null;
+  /** MINING only. */
+  readonly mining?: { readonly materialId: string; readonly materialRarity: string };
+  readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
+}
+
+export function relationOf(
+  relations: unknown,
+  factionId: string,
+): { key: string; relation: FactionRelation } {
+  let raw: unknown;
+  if (typeof relations === 'object' && relations !== null && !Array.isArray(relations)) {
+    raw = (relations as Record<string, unknown>)[factionId];
+  }
+  const normalized = typeof raw === 'string' ? raw.toLowerCase() : 'neutral';
+  if (normalized === 'ally') return { key: 'ally', relation: 'ALLY' };
+  if (normalized === 'hostile') return { key: 'hostile', relation: 'HOSTILE' };
+  return { key: 'neutral', relation: 'NEUTRAL' };
+}
+
+export function parseClient(raw: unknown): EscortClient | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const candidate = raw as Record<string, unknown>;
+  if (
+    typeof candidate['shipId'] !== 'string' ||
+    typeof candidate['maxHp'] !== 'number' ||
+    typeof candidate['hp'] !== 'number'
+  ) {
+    return null;
+  }
+  return { shipId: candidate['shipId'], maxHp: candidate['maxHp'], hp: candidate['hp'] };
+}
+
+export interface LiveContextSource {
+  readonly type: string;
+  readonly cargo: unknown;
+  readonly encounterPolicy: unknown;
+  readonly employerRelations: unknown;
+  readonly playerFactionId: string | null;
+  readonly destinationIsolation: number;
+  /** Rarity of the mined material (lower-case), when the mission mines one. */
+  readonly materialRarity?: string | null;
+}
+
+/** Reads the context from live data at resolution time (and for logs stored before it existed). */
+export function contextFromLive(source: LiveContextSource): ResolutionContext {
+  const cargo = (source.cargo ?? {}) as Record<string, unknown>;
+  const policy = (source.encounterPolicy ?? {}) as Record<string, unknown>;
+  const employer = relationOf(source.employerRelations, source.playerFactionId ?? '');
+  const materialId = typeof cargo['materialId'] === 'string' ? cargo['materialId'] : undefined;
+  return {
+    isolation: source.destinationIsolation,
+    factionRelation: employer.key,
+    preset: (policy['preset'] as string | undefined) ?? 'CRUISE',
+    missionOwner: (policy['missionOwner'] as 'player' | 'enemy' | null | undefined) ?? null,
+    missionForcesFlee: policy['missionForcesFlee'] === true,
+    client: parseClient(cargo['client']),
+    ...(source.type === 'MINING' && materialId !== undefined
+      ? { mining: { materialId, materialRarity: source.materialRarity ?? 'common' } }
+      : {}),
+    ...(cargo['contracted'] === true &&
+    materialId !== undefined &&
+    typeof cargo['quantity'] === 'number'
+      ? { contractedMining: { materialId, requiredQuantity: cargo['quantity'] } }
+      : {}),
+  };
+}
+
+const RELATIONS: Record<string, FactionRelation> = {
+  ally: 'ALLY',
+  hostile: 'HOSTILE',
+  neutral: 'NEUTRAL',
+};
+
+export function buildResolveInput(args: {
+  readonly missionId: string;
+  readonly missionType: string;
+  readonly seed: number | string;
+  readonly snapshot: DispatchSnapshot;
+  readonly context: ResolutionContext;
+  readonly rules: GameRules;
+}): Parameters<typeof resolveMission>[0] {
+  const { snapshot, context, rules } = args;
+  const installed: InstalledPart[] = snapshot.parts.map((part) => ({
+    instance: { id: part.id, partType: part.partType, condition: part.condition },
+    catalog: part.catalog,
+  }));
+  const sheet = deriveSheet(installed, rules);
+  const partSnaps: PartSnapshot[] = snapshot.parts.map((part) => ({
+    id: part.id,
+    partClass: part.catalog.partClass,
+    providesEsc: part.catalog.esc > 0,
+    condition: part.condition,
+  }));
+  const missionSnapshot: MissionSnapshot = {
+    shipId: snapshot.shipId,
+    parts: partSnaps,
+    sheet,
+    fuel: snapshot.fuel,
+    hp: sheet.hp,
+    esc: sheet.esc,
+  };
+
+  // D29: accept finalizes the board reward from the accepting ship's tier; the resolution rates
+  // the payout (and combat win credits) from the same tier. The dispatch snapshot carries each
+  // part's basePrice for this; older payloads without it fall back to PROVISIONAL_TIER.
+  const tier = snapshot.parts.every((part) => typeof part.catalog.basePrice === 'number')
+    ? shipTier(
+        snapshot.parts.map((part) => ({ basePrice: part.catalog.basePrice ?? 0 })),
+        rules,
+      )
+    : PROVISIONAL_TIER;
+
+  const legs: readonly LegRoute[] = snapshot.legs;
+  const lastLeg = legs[legs.length - 1];
+  const missionInput: MissionInput = {
+    id: args.missionId,
+    type: args.missionType as MissionInput['type'],
+    legs,
+    tier,
+    isolation: context.isolation,
+    factionRelation: context.factionRelation,
+    relation: RELATIONS[context.factionRelation] ?? 'NEUTRAL',
+    stance: snapshot.stance as Stance,
+    preset: context.preset as EscapePreset,
+    missionOwner: context.missionOwner,
+    missionForcesFlee: context.missionForcesFlee,
+    objectCarried: OBJECT_CARRIED_TYPES.includes(args.missionType),
+    client: context.client,
+    ...(context.mining
+      ? {
+          mining: {
+            stop: {
+              env: lastLeg?.env.id ?? 'open',
+              materialId: context.mining.materialId,
+              materialRarity: context.mining.materialRarity,
+            },
+            miner: { min: sheet.min, condition: sheet.condition },
+          },
+        }
+      : {}),
+    ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
+  };
+  return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
+}

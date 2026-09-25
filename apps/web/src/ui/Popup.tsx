@@ -20,6 +20,10 @@ const FOCUSABLE =
 export function Popup({ open, title, onClose, children, actions }: PopupProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Latest onClose without re-running the focus effect: callers pass a fresh closure every render,
+  // and re-running it would yank focus back to the first control on every keystroke.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -31,7 +35,7 @@ export function Popup({ open, title, onClose, children, actions }: PopupProps) {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab' || dialog === null) return;
@@ -56,7 +60,7 @@ export function Popup({ open, title, onClose, children, actions }: PopupProps) {
       window.removeEventListener('keydown', onKeyDown);
       opener?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

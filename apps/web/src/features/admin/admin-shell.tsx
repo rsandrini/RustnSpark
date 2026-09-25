@@ -23,6 +23,11 @@ export function AdminShell() {
       <header>
         <h1>{t('admin.title')}</h1>
         <nav aria-label={t('admin.navigation')}>
+          <Link to="/admin">{t('admin.dashboard')}</Link>
+          <Link to="/admin/analytics/economy">{t('admin.economy')}</Link>
+          <Link to="/admin/analytics/world">{t('admin.world')}</Link>
+          <Link to="/admin/players">{t('admin.players')}</Link>
+          <Link to="/admin/system">{t('admin.system')}</Link>
           <Link to="/admin/tuning/config">{t('tuning.configTitle')}</Link>
           {TUNABLE_ENTITIES.map((entity) => (
             <Link key={entity} to={`/admin/tuning/entities/${entity}`}>

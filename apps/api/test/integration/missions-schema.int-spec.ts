@@ -3,7 +3,8 @@ import { Prisma } from '@prisma/client';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
 // S6.1 acceptance: exact MissionInstance column set (plan line 407, plus the documented
-// deadlineAt deviation for rescue completion deadlines), the eight-status MissionStatus enum,
+// deadlineAt deviation for rescue completion deadlines and createdAt for the S11.3
+// generation-vs-consumption analytics window), the eight-status MissionStatus enum,
 // the board index, the IN_TRANSIT partial index, and the one-active-mission-per-player
 // partial unique. HELD rows are deliberately outside that unique: hold_max is GameConfig-
 // tunable and enforced app-level in S6.4, not frozen into a DB constraint here.
@@ -19,6 +20,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'cargo',
     'reward',
     'expiresAt',
+    'createdAt',
     'status',
     'playerId',
     'shipId',

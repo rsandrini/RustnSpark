@@ -25,6 +25,16 @@ const pinoHttp = pinoHttpImport as unknown as (options: Options) => HttpLogger;
 
 // Shared by main() and tests: hardening that does not need a live app instance to run.
 export function configureApp(app: INestApplication, env: EnvService): void {
+  // Behind nginx (compose) every request arrives from the proxy's address; the real client is in
+  // X-Forwarded-For. Trust that header ONLY when the immediate peer is a loopback/private-network
+  // address (the proxy), so a client on the public internet cannot spoof its IP. Without this,
+  // `request.ip` was the proxy for everyone: the per-IP throttler treated the whole game as one
+  // client (registration capped at 3/min globally) and the admin audit log recorded the proxy.
+  (app.getHttpAdapter().getInstance() as { set(name: string, value: string): void }).set(
+    'trust proxy',
+    'loopback, linklocal, uniquelocal',
+  );
+
   const pinoHttpOptions = createPinoHttpOptions(env.get('NODE_ENV'));
   const httpLogger = pinoHttp(pinoHttpOptions);
   app.useLogger(new PinoLoggerService(httpLogger.logger));

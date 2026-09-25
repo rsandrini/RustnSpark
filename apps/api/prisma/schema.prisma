@@ -52,6 +52,9 @@ model Player {
   missions        MissionInstance[]
   missionLogs     MissionLog[]
   scavengeCounters ScavengeCounter[]
+
+  // S11.3: new players per analytics window.
+  @@index([createdAt])
 }
 
 model RefreshToken {
@@ -82,6 +85,9 @@ model PlayerEvent {
   creditsDelta Int?
 
   @@index([playerId, at])
+  // S11.3: global time windows — active players filter on `at` alone, wallet flows on (type, at).
+  @@index([at])
+  @@index([type, at])
 }
 
 model IdempotencyKey {
@@ -192,6 +198,46 @@ model TuningRevision {
   reason     String
 
   @@index([entityType, entityId, id(sort: Desc)])
+}
+
+// S11.1: audit trail for every NON-tuning admin write (support actions, flags,
+// broadcast, maintenance) — actor, action, target, before/after, ip. Tuning
+// writes are audited through TuningRevision above (S3.7/S3.8), never here.
+model AdminAuditLog {
+  id     BigInt   @id @default(autoincrement())
+  at     DateTime @default(now())
+  actor  String
+  action String
+  target String?
+  before Json?
+  after  Json?
+  ip     String?
+
+  @@index([action, id(sort: Desc)])
+  @@index([target, id(sort: Desc)])
+}
+
+// S11.2: runtime feature flags — boolean key/value switches read per request from the
+// row itself, so a write is effective without a restart. Unknown keys read as their
+// caller-provided fallback (e.g. register.open defaults true, maintenance defaults false).
+model SystemFlag {
+  key       String   @id
+  value     Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+// S11.2: broadcast notices — active ones are served to players as they are written.
+// message is LocalizedText { en, pt-BR }; the actor of each change lives in AdminAuditLog.
+model SystemNotice {
+  id          String    @id @default(dbgenerated("gen_random_uuid()"))
+  message     Json
+  active      Boolean   @default(true)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  dismissedAt DateTime?
+
+  @@index([active, createdAt(sort: Desc)])
 }
 
 model RulesSnapshot {
@@ -341,6 +387,10 @@ model MissionInstance {
   reward        Int
   // Board/hold deadline: the hold timer keeps running against this (GDD §12).
   expiresAt     DateTime
+  // S11.3: when the offer was generated (board refill). Window for the analytics
+  // generation-vs-consumption-per-zone aggregate; migration 0021 backfills it from
+  // COALESCE(acceptedAt, expiresAt) because no creation time was recorded before.
+  createdAt     DateTime          @default(now())
   status        MissionStatus   @default(AVAILABLE)
   playerId      String?
   shipId        String?
@@ -377,6 +427,9 @@ model MissionInstance {
   @@index([originId, status, expiresAt])
   // A player's private offers at a location (D43).
   @@index([privatePlayerId, originId, status])
+  // S11.3: analytics windows — generation per zone (createdAt) and consumption (acceptedAt).
+  @@index([createdAt])
+  @@index([acceptedAt])
 }
 
 model MissionLog {
@@ -399,6 +452,9 @@ model MissionLog {
   rulesSnapshot RulesSnapshot   @relation(fields: [rulesHash], references: [hash])
 
   @@index([playerId, createdAt])
+  // S11.3: mission success rate and pirate-encounter winrate are per-window scans
+  // across every player, not per-player reads.
+  @@index([createdAt])
 }
 
 model RoutePresence {
