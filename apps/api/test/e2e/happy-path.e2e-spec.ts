@@ -286,6 +286,7 @@ describe('happy path over the API (S9.4)', () => {
     for (const line of logBody.lines!) {
       expect(line.text).toMatch(/^\[\d+ · [^\]]+\] /);
       expect(line.text).not.toMatch(/\{[a-zA-Z]+\}/);
+      expect(line.text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/); // never an instance id
       expect(line.text).toBe(line.segments.map((segment) => segment.value).join(''));
     }
 

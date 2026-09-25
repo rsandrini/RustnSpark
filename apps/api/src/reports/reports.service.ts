@@ -52,6 +52,20 @@ function encodeCursor(createdAt: Date, id: string): string {
   );
 }
 
+// The dispatch snapshot (D19) lists every part the ship flew with; keep instance id → type.
+function partTypesOf(snapshot: unknown): Record<string, string> {
+  const parts = (snapshot as { parts?: unknown } | null)?.parts;
+  if (!Array.isArray(parts)) return {};
+  const out: Record<string, string> = {};
+  for (const entry of parts) {
+    const candidate = entry as { id?: unknown; partType?: unknown };
+    if (typeof candidate.id === 'string' && typeof candidate.partType === 'string') {
+      out[candidate.id] = candidate.partType;
+    }
+  }
+  return out;
+}
+
 function readBalanceAfter(payload: unknown): number | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;
   const value = (payload as { balanceAfter?: unknown }).balanceAfter;
@@ -151,7 +165,7 @@ export class ReportsService {
     const log = await this.loadReportLog(missionId);
     if (log === null) throw new NotFoundException({ error: 'REPORT_NOT_FOUND' });
     const locale = await this.localeFor(playerId, explicitLocale);
-    const names = await this.entityNames(locale);
+    const names = await this.entityNames(locale, log.partTypeById);
     const result = renderReport(log, locale, view as ViewName, names);
     return { locale, outcome: log.outcome, ...result };
   }
@@ -174,6 +188,7 @@ export class ReportsService {
       outcome: log.outcome,
       events,
       legs,
+      partTypeById: partTypesOf(log.shipSnapshot),
       credits: resolved?.creditsDelta ?? sumStoredCredits(events),
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
     };
@@ -240,17 +255,27 @@ export class ReportsService {
     return resolveRequestLocale(explicit, saved);
   }
 
-  private async entityNames(locale: Locale): Promise<EntityNames> {
+  private async entityNames(
+    locale: Locale,
+    partTypeById: Readonly<Record<string, string>>,
+  ): Promise<EntityNames> {
     const [parts, materials] = await Promise.all([
       this.prisma.partCatalog.findMany({ select: { partType: true, displayName: true } }),
       this.prisma.material.findMany({ select: { id: true, displayName: true } }),
     ]);
+    const catalogByType = new Map(parts.map((row) => [row.partType, row]));
     return {
+      // Events name parts by instance id: the dispatch snapshot says which catalog type each
+      // instance was, and the live catalog (D38) supplies the localized name.
       parts: Object.fromEntries(
-        parts.map((row) => [
-          row.partType,
-          localizeDisplayName(row.displayName as Record<string, unknown>, locale),
-        ]),
+        Object.entries(partTypeById).map(([instanceId, partType]) => {
+          const row = catalogByType.get(partType);
+          const name =
+            row === undefined
+              ? partType
+              : localizeDisplayName(row.displayName as Record<string, unknown>, locale);
+          return [instanceId, { partType, name }];
+        }),
       ),
       materials: Object.fromEntries(
         materials.map((row) => [

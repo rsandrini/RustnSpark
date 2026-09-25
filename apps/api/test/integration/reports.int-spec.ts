@@ -249,7 +249,7 @@ describe('reports API (S9.3)', () => {
         seed: mission.seed,
         rulesHash,
         outcome: 'success',
-        shipSnapshot: {},
+        shipSnapshot: { parts: [{ id: 'part-instance-1', partType: 'engine_chem_small' }] },
         legs: opts.stored ?? STORED,
         schemaVersion: opts.schemaVersion ?? 2,
         ...(opts.createdAt !== undefined ? { createdAt: opts.createdAt } : {}),
@@ -555,7 +555,7 @@ describe('reports API (S9.3)', () => {
           category: 'failure',
           type: 'tank',
           actors: ACTORS,
-          effects: { hp: 0, condByPart: { engine_chem_small: 61 }, credits: 0, loot: [] },
+          effects: { hp: 0, condByPart: { 'part-instance-1': 61 }, credits: 0, loot: [] },
           magnitude: 9,
         },
       ],
@@ -586,5 +586,41 @@ describe('reports API (S9.3)', () => {
     const res = await report(fixture.token, fixture.missionId);
     expect(res.status).toBe(200);
     expect((res.body as ReportBody).outcome).toBe('success');
+  });
+
+  it('names a part by its catalog name in both locales, never by its instance id', async () => {
+    const fixture = await setup();
+    const stored = {
+      legs: [{ index: 0, status: 'completed' }],
+      events: [
+        {
+          leg: 0,
+          category: 'failure',
+          type: 'tank',
+          actors: ACTORS,
+          // Real events key parts by INSTANCE id (PartSnapshot.id), not by catalog type.
+          effects: { hp: 0, condByPart: { 'part-instance-1': 61 }, credits: 0, loot: [] },
+          magnitude: 9,
+          consequence: 'fuel_leak',
+          fuelLost: 4,
+        },
+      ],
+    };
+    const missionId = await makeMission(fixture.playerId, { stored });
+    const expectedName = { en: 'Small Chemical Engine', 'pt-BR': 'Pequeno Motor Químico' };
+    for (const locale of ['en', 'pt-BR'] as const) {
+      const res = await report(fixture.token, missionId, { view: 'narrative', locale });
+      expect(res.status).toBe(200);
+      const line = (res.body as ReportBody).chapters![0]!.lines[0]!;
+      expect(line.text).toContain(expectedName[locale]);
+      expect(line.text).not.toContain('part-instance-1');
+      // The ref carries the catalog part type (stable key for a detail popup), not the instance.
+      expect(line.segments).toContainEqual({
+        t: 'ref',
+        kind: 'part',
+        id: 'engine_chem_small',
+        value: expectedName[locale],
+      });
+    }
   });
 });

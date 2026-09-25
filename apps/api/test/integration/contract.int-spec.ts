@@ -7,6 +7,7 @@ import { z } from 'zod';
 import {
   ActiveMissionSchema,
   BuyResponseSchema,
+  CatalogDetailSchema,
   BundleExportSchema,
   ConfigEntryResponseSchema,
   DispatchResponseSchema,
@@ -131,6 +132,25 @@ describe('HTTP contract: real responses match packages/contract', () => {
   const get = (path: string, bearer = token) => request(server).get(path).set(auth(bearer));
   const post = (path: string, body: object = {}, bearer = token) =>
     request(server).post(path).set(auth(bearer)).set('Idempotency-Key', randomUUID()).send(body);
+
+  it('catalog details for report popups', async () => {
+    const part = await get('/v1/catalog/parts/engine_chem_small');
+    expect(part.status).toBe(200);
+    const detail = contract(CatalogDetailSchema, part.body, 'GET /catalog/parts/:partType');
+    expect(detail.kind).toBe('part');
+    expect(detail.displayName.en).not.toBe('');
+    expect(detail.description['pt-BR']).not.toBe('');
+
+    const material = await get('/v1/catalog/materials/common_ore');
+    expect(material.status).toBe(200);
+    expect(contract(CatalogDetailSchema, material.body, 'GET /catalog/materials/:id').kind).toBe(
+      'material',
+    );
+
+    // A stored log can name something that has since left the catalog: 404, handled by the UI.
+    expect((await get('/v1/catalog/parts/no_such_part')).status).toBe(404);
+    expect((await get('/v1/catalog/materials/no_such_material')).status).toBe(404);
+  });
 
   it('player profile and locale', async () => {
     const me = await get('/v1/players/me');

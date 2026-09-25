@@ -27,7 +27,7 @@ import {
 const SEED = 'report-1';
 
 const NAMES = {
-  parts: { engine_chem_small: 'Small Chemical Engine' },
+  parts: { 'part-instance-1': { partType: 'engine_chem_small', name: 'Small Chemical Engine' } },
   materials: { common_ore: 'Common Ore' },
 };
 
@@ -56,7 +56,7 @@ const RAW_EVENTS: Record<string, unknown>[] = [
     category: 'failure',
     type: 'tank',
     actors: ACTORS,
-    effects: { hp: 0, condByPart: { engine_chem_small: 7 }, credits: 0, loot: [] },
+    effects: { hp: 0, condByPart: { 'part-instance-1': 7 }, credits: 0, loot: [] },
     magnitude: 26,
     consequence: 'fuel_leak',
     fuelLost: 12,
@@ -103,6 +103,7 @@ const LOG: ReportLog = {
     { index: 1, status: 'adrift' },
     { index: 2, status: 'completed' },
   ],
+  partTypeById: { 'part-instance-1': 'engine_chem_small' },
   credits: 994,
   balanceAfter: 1500,
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -166,5 +166,38 @@ describe('report (S10.8)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Iron' }));
     const popup = await screen.findByRole('dialog', { name: 'Iron' });
     expect(popup).toHaveTextContent('Item');
+    // Real detail from the catalog: description and rarity, not just the name.
+    expect(await within(popup).findByText('Raw ore.')).toBeInTheDocument();
+    expect(popup).toHaveTextContent('Rarity');
+  });
+
+  it('still opens a popup for a reference that has left the catalog (404)', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            view: 'summary',
+            lines: [
+              {
+                text: 'Lost a Ghost Part',
+                segments: [
+                  { t: 'text', value: 'Lost a ' },
+                  { t: 'ref', kind: 'part', id: 'retired_part', value: 'Ghost Part' },
+                ],
+              },
+            ],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ghost Part' }));
+    const popup = await screen.findByRole('dialog', { name: 'Ghost Part' });
+    expect(popup).toHaveTextContent('Part');
+    // The lookup 404s and the popup settles on what the report itself carried.
+    await waitFor(() => expect(popup).not.toHaveTextContent('Loading'));
   });
 });

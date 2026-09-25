@@ -400,6 +400,18 @@ export const ReportListResponseSchema = z.object({
 });
 export type ReportListResponse = z.infer<typeof ReportListResponseSchema>;
 
+/** GET /v1/catalog/parts/:partType and /v1/catalog/materials/:id — what a report popup shows. */
+export const CatalogDetailSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['part', 'material']),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  /** Part class (parts) or rarity (materials). */
+  category: z.string(),
+  rarity: z.string(),
+});
+export type CatalogDetail = z.infer<typeof CatalogDetailSchema>;
+
 // ---------------------------------------------------------------------------------------------
 // Economy
 // ---------------------------------------------------------------------------------------------

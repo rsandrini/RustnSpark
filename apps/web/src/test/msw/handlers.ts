@@ -25,6 +25,7 @@ import type {
   ScavengeResponse,
   SellMaterialResponse,
   SellResponse,
+  CatalogDetail,
   ShipResponse,
   ShipStatus,
   UpdateLocaleResponse,
@@ -489,6 +490,39 @@ export const handlers = [
         .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
     }),
   ),
+  http.get('/v1/catalog/parts/:partType', ({ params }) => {
+    const partType = String(params.partType);
+    const name = PART_NAMES[partType];
+    if (name === undefined) {
+      return HttpResponse.json({ statusCode: 404, message: 'part not found' }, { status: 404 });
+    }
+    return ok<CatalogDetail>({
+      id: partType,
+      kind: 'part',
+      displayName: name,
+      description: {
+        en: `${name.en} — a fitted part.`,
+        'pt-BR': `${name['pt-BR']} — uma peça instalada.`,
+      },
+      category: 'ENGINE',
+      rarity: 'COMMON',
+    });
+  }),
+  http.get('/v1/catalog/materials/:id', ({ params }) => {
+    const holding = materialsState.find((entry) => entry.materialId === String(params.id));
+    if (holding === undefined) {
+      return HttpResponse.json({ statusCode: 404, message: 'material not found' }, { status: 404 });
+    }
+    return ok<CatalogDetail>({
+      id: holding.materialId,
+      kind: 'material',
+      displayName: holding.displayName,
+      description: { en: 'Raw ore.', 'pt-BR': 'Minério bruto.' },
+      category: 'COMMON',
+      rarity: 'COMMON',
+    });
+  }),
+
   http.get('/v1/materials', () =>
     ok<MaterialsResponse>({ locationId: 'ceres', materials: materialsState }),
   ),

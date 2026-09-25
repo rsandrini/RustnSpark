@@ -328,7 +328,11 @@
       "loot": "Item",
       "part": "Part"
     },
-    "refDetails": "Details"
+    "refDetails": "Details",
+    "refCategory": {
+      "part": "Class",
+      "loot": "Rarity"
+    }
   },
   "transit": {
     "title": "In transit",

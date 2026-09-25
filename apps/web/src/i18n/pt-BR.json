@@ -328,7 +328,11 @@
       "loot": "Item",
       "part": "Peça"
     },
-    "refDetails": "Detalhes"
+    "refDetails": "Detalhes",
+    "refCategory": {
+      "part": "Classe",
+      "loot": "Raridade"
+    }
   },
   "transit": {
     "title": "Em trânsito",
