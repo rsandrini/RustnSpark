@@ -8,7 +8,6 @@ import { useIntentKey } from '../../api/intent-key';
 import type {
   BuyResponse,
   InventoryItem,
-  LocalizedText,
   MarketResponse,
   MaterialsResponse,
   RefuelResponse,
