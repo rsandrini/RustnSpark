@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { HttpException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { MemoryThrottleStore } from '../throttling/throttle-store.js';
 import { ThrottleRoute } from '../decorators/throttle-route.decorator.js';
 import {
   SWEEP_INTERVAL_MS,
@@ -97,15 +98,22 @@ function makeContext(options: { ip?: string; body?: unknown; route?: RouteRef } 
   return { context, response };
 }
 
+const stores = new WeakMap<ThrottlerGuard, MemoryThrottleStore>();
 function makeGuard(): ThrottlerGuard {
-  return new ThrottlerGuard(new Reflector());
+  const store = new MemoryThrottleStore();
+  const guard = new ThrottlerGuard(new Reflector(), store);
+  stores.set(guard, store);
+  return guard;
 }
 
 // Returns the 429 HttpException the guard threw, rethrowing anything else and failing the test
 // when the request was allowed.
-function catchThrottle(guard: ThrottlerGuard, context: ExecutionContext): HttpException {
+async function catchThrottle(
+  guard: ThrottlerGuard,
+  context: ExecutionContext,
+): Promise<HttpException> {
   try {
-    guard.canActivate(context);
+    await guard.canActivate(context);
   } catch (error) {
     if (error instanceof HttpException) return error;
     throw error;
@@ -116,7 +124,7 @@ function catchThrottle(guard: ThrottlerGuard, context: ExecutionContext): HttpEx
 // The bucket Map is a private implementation detail; reaching into it here is the simplest way
 // to prove the sweep actually shrinks memory, without exposing a size getter from production code.
 function bucketCount(guard: ThrottlerGuard): number {
-  return (guard as unknown as { buckets: Map<string, unknown> }).buckets.size;
+  return stores.get(guard)!.size;
 }
 
 describe('ThrottlerGuard', () => {
@@ -124,33 +132,33 @@ describe('ThrottlerGuard', () => {
     jest.useRealTimers();
   });
 
-  it('allows requests up to the configured default limit', () => {
+  it('allows requests up to the configured default limit', async () => {
     const guard = makeGuard();
     const { context } = makeContext({ ip: '1.2.3.4' });
     for (let i = 0; i < THROTTLE_LIMIT; i += 1) {
-      expect(guard.canActivate(context)).toBe(true);
+      expect(await guard.canActivate(context)).toBe(true);
     }
   });
 
-  it('rejects with 429 and a Retry-After header once the default limit is exceeded', () => {
+  it('rejects with 429 and a Retry-After header once the default limit is exceeded', async () => {
     const guard = makeGuard();
     const { context, response } = makeContext({ ip: '1.2.3.4' });
-    for (let i = 0; i < THROTTLE_LIMIT; i += 1) guard.canActivate(context);
+    for (let i = 0; i < THROTTLE_LIMIT; i += 1) await guard.canActivate(context);
 
-    const error = catchThrottle(guard, context);
+    const error = await catchThrottle(guard, context);
     expect(error.getStatus()).toBe(429);
     expect(response.headers.get('Retry-After')).toMatch(/^\d+$/);
     expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
   });
 
-  it('tracks separate clients independently', () => {
+  it('tracks separate clients independently', async () => {
     const guard = makeGuard();
     const clientA = makeContext({ ip: '1.1.1.1' });
     const clientB = makeContext({ ip: '2.2.2.2' });
-    for (let i = 0; i < THROTTLE_LIMIT; i += 1) guard.canActivate(clientA.context);
+    for (let i = 0; i < THROTTLE_LIMIT; i += 1) await guard.canActivate(clientA.context);
 
-    expect(catchThrottle(guard, clientA.context).getStatus()).toBe(429);
-    expect(guard.canActivate(clientB.context)).toBe(true);
+    expect((await catchThrottle(guard, clientA.context)).getStatus()).toBe(429);
+    expect(await guard.canActivate(clientB.context)).toBe(true);
   });
 
   describe('with fake timers', () => {
@@ -158,24 +166,24 @@ describe('ThrottlerGuard', () => {
       jest.useFakeTimers();
     });
 
-    it('resets the window once the ttl elapses', () => {
+    it('resets the window once the ttl elapses', async () => {
       const guard = makeGuard();
       const { context } = makeContext({ ip: '1.2.3.4' });
-      for (let i = 0; i < THROTTLE_LIMIT; i += 1) guard.canActivate(context);
-      expect(catchThrottle(guard, context).getStatus()).toBe(429);
+      for (let i = 0; i < THROTTLE_LIMIT; i += 1) await guard.canActivate(context);
+      expect((await catchThrottle(guard, context)).getStatus()).toBe(429);
 
       jest.advanceTimersByTime(THROTTLE_TTL_MS + 1);
 
-      expect(guard.canActivate(context)).toBe(true);
+      expect(await guard.canActivate(context)).toBe(true);
     });
 
     // Regression: this is the production limiter until S12.1's Redis-backed store, so it must
     // not leak one entry per distinct IP forever for clients that never come back.
-    it('sweeps expired entries instead of growing the bucket map forever', () => {
+    it('sweeps expired entries instead of growing the bucket map forever', async () => {
       const guard = makeGuard();
       const clientCount = 500;
       for (let i = 0; i < clientCount; i += 1) {
-        guard.canActivate(makeContext({ ip: `client-${i}` }).context);
+        await guard.canActivate(makeContext({ ip: `client-${i}` }).context);
       }
       expect(bucketCount(guard)).toBe(clientCount);
 
@@ -184,113 +192,125 @@ describe('ThrottlerGuard', () => {
 
       // The sweep is opportunistic (runs on a request), so one request from a fresh
       // client is what triggers it.
-      guard.canActivate(makeContext({ ip: 'client-new' }).context);
+      await guard.canActivate(makeContext({ ip: 'client-new' }).context);
 
       expect(bucketCount(guard)).toBe(1);
     });
   });
 
   describe('route policies (R20)', () => {
-    it('replaces the default limit on a policy route: one limiter total', () => {
+    it('replaces the default limit on a policy route: one limiter total', async () => {
       const guard = makeGuard();
       const { context, response } = makeContext({ ip: '1.2.3.4', route: IP_POLICY_ROUTE });
-      expect(guard.canActivate(context)).toBe(true);
-      expect(guard.canActivate(context)).toBe(true);
+      expect(await guard.canActivate(context)).toBe(true);
+      expect(await guard.canActivate(context)).toBe(true);
 
       // The policy allows 2: the third request is throttled even though the default limit is 60.
-      expect(catchThrottle(guard, context).getStatus()).toBe(429);
+      expect((await catchThrottle(guard, context)).getStatus()).toBe(429);
       expect(response.headers.get('Retry-After')).toMatch(/^\d+$/);
     });
 
-    it('does not consume the default bucket of the same client', () => {
+    it('does not consume the default bucket of the same client', async () => {
       const guard = makeGuard();
       const policy = makeContext({ ip: '1.2.3.4', route: IP_POLICY_ROUTE });
-      guard.canActivate(policy.context);
-      guard.canActivate(policy.context);
-      expect(catchThrottle(guard, policy.context).getStatus()).toBe(429);
+      await guard.canActivate(policy.context);
+      await guard.canActivate(policy.context);
+      expect((await catchThrottle(guard, policy.context)).getStatus()).toBe(429);
 
       // An unmarked route from the same IP still gets a fresh default window.
-      expect(guard.canActivate(makeContext({ ip: '1.2.3.4' }).context)).toBe(true);
+      expect(await guard.canActivate(makeContext({ ip: '1.2.3.4' }).context)).toBe(true);
     });
 
-    it('does not share a bucket between two routes that carry the same policy', () => {
+    it('does not share a bucket between two routes that carry the same policy', async () => {
       const guard = makeGuard();
       const first = makeContext({ ip: '1.2.3.4', route: IP_POLICY_ROUTE });
       const second = makeContext({ ip: '1.2.3.4', route: SECOND_IP_POLICY_ROUTE });
-      guard.canActivate(first.context);
-      guard.canActivate(first.context);
-      expect(catchThrottle(guard, first.context).getStatus()).toBe(429);
+      await guard.canActivate(first.context);
+      await guard.canActivate(first.context);
+      expect((await catchThrottle(guard, first.context)).getStatus()).toBe(429);
 
-      expect(guard.canActivate(second.context)).toBe(true);
+      expect(await guard.canActivate(second.context)).toBe(true);
     });
 
-    it('shares one bucket across requests that carry no client ip', () => {
+    it('shares one bucket across requests that carry no client ip', async () => {
       const guard = makeGuard();
-      expect(guard.canActivate(makeContext({ route: IP_POLICY_ROUTE }).context)).toBe(true);
-      expect(guard.canActivate(makeContext({ route: IP_POLICY_ROUTE }).context)).toBe(true);
+      expect(await guard.canActivate(makeContext({ route: IP_POLICY_ROUTE }).context)).toBe(true);
+      expect(await guard.canActivate(makeContext({ route: IP_POLICY_ROUTE }).context)).toBe(true);
       expect(
-        catchThrottle(guard, makeContext({ route: IP_POLICY_ROUTE }).context).getStatus(),
+        (await catchThrottle(guard, makeContext({ route: IP_POLICY_ROUTE }).context)).getStatus(),
       ).toBe(429);
     });
 
-    it('uses the policy ttl for the policy window, not the default ttl', () => {
+    it('uses the policy ttl for the policy window, not the default ttl', async () => {
       jest.useFakeTimers();
       const guard = makeGuard();
       const { context } = makeContext({ ip: '1.2.3.4', route: SHORT_LIVED_POLICY_ROUTE });
-      guard.canActivate(context);
-      guard.canActivate(context);
-      expect(catchThrottle(guard, context).getStatus()).toBe(429);
+      await guard.canActivate(context);
+      await guard.canActivate(context);
+      expect((await catchThrottle(guard, context)).getStatus()).toBe(429);
 
       // Past the policy ttl (1s) but well inside the default ttl (60s).
       jest.advanceTimersByTime(1_001);
 
-      expect(guard.canActivate(context)).toBe(true);
+      expect(await guard.canActivate(context)).toBe(true);
     });
 
     describe('ip+email keying', () => {
       const emailContext = (body?: unknown) =>
         makeContext({ ip: '1.2.3.4', body, route: EMAIL_POLICY_ROUTE });
 
-      it('buckets by the lowercased email', () => {
+      it('buckets by the lowercased email', async () => {
         const guard = makeGuard();
-        expect(guard.canActivate(emailContext({ email: 'Pilot@Example.com' }).context)).toBe(true);
-        expect(guard.canActivate(emailContext({ email: 'pilot@example.com' }).context)).toBe(true);
+        expect(await guard.canActivate(emailContext({ email: 'Pilot@Example.com' }).context)).toBe(
+          true,
+        );
+        expect(await guard.canActivate(emailContext({ email: 'pilot@example.com' }).context)).toBe(
+          true,
+        );
 
         // The same mailbox in any case shares one bucket: the third attempt is throttled.
         expect(
-          catchThrottle(guard, emailContext({ email: 'PILOT@EXAMPLE.COM' }).context).getStatus(),
+          (
+            await catchThrottle(guard, emailContext({ email: 'PILOT@EXAMPLE.COM' }).context)
+          ).getStatus(),
         ).toBe(429);
       });
 
-      it('gives a different email from the same IP its own bucket', () => {
+      it('gives a different email from the same IP its own bucket', async () => {
         const guard = makeGuard();
-        guard.canActivate(emailContext({ email: 'a@example.com' }).context);
-        guard.canActivate(emailContext({ email: 'a@example.com' }).context);
+        await guard.canActivate(emailContext({ email: 'a@example.com' }).context);
+        await guard.canActivate(emailContext({ email: 'a@example.com' }).context);
         expect(
-          catchThrottle(guard, emailContext({ email: 'a@example.com' }).context).getStatus(),
+          (
+            await catchThrottle(guard, emailContext({ email: 'a@example.com' }).context)
+          ).getStatus(),
         ).toBe(429);
 
-        expect(guard.canActivate(emailContext({ email: 'b@example.com' }).context)).toBe(true);
+        expect(await guard.canActivate(emailContext({ email: 'b@example.com' }).context)).toBe(
+          true,
+        );
       });
 
-      it('treats a missing or non-string email as one shared bucket', () => {
+      it('treats a missing or non-string email as one shared bucket', async () => {
         const guard = makeGuard();
-        expect(guard.canActivate(emailContext(undefined).context)).toBe(true);
-        expect(guard.canActivate(emailContext({}).context)).toBe(true);
-        expect(catchThrottle(guard, emailContext({ email: 42 }).context).getStatus()).toBe(429);
-        expect(catchThrottle(guard, emailContext(null).context).getStatus()).toBe(429);
+        expect(await guard.canActivate(emailContext(undefined).context)).toBe(true);
+        expect(await guard.canActivate(emailContext({}).context)).toBe(true);
+        expect((await catchThrottle(guard, emailContext({ email: 42 }).context)).getStatus()).toBe(
+          429,
+        );
+        expect((await catchThrottle(guard, emailContext(null).context)).getStatus()).toBe(429);
       });
     });
 
-    it('keys ip policies by the IP alone, ignoring the body', () => {
+    it('keys ip policies by the IP alone, ignoring the body', async () => {
       const guard = makeGuard();
       const withBody = (body: unknown) =>
         makeContext({ ip: '1.2.3.4', body, route: IP_POLICY_ROUTE });
-      expect(guard.canActivate(withBody({ email: 'a@example.com' }).context)).toBe(true);
-      expect(guard.canActivate(withBody({ email: 'b@example.com' }).context)).toBe(true);
-      expect(catchThrottle(guard, withBody({ email: 'c@example.com' }).context).getStatus()).toBe(
-        429,
-      );
+      expect(await guard.canActivate(withBody({ email: 'a@example.com' }).context)).toBe(true);
+      expect(await guard.canActivate(withBody({ email: 'b@example.com' }).context)).toBe(true);
+      expect(
+        (await catchThrottle(guard, withBody({ email: 'c@example.com' }).context)).getStatus(),
+      ).toBe(429);
     });
   });
 });

@@ -1,3 +1,4 @@
+import { LOGIN_POLICY, REGISTER_POLICY } from '../common/throttling/policies.js';
 import { Body, Controller, ForbiddenException, HttpCode, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
@@ -34,7 +35,7 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  @ThrottleRoute({ limit: 3, ttlMs: 60_000, key: 'ip' })
+  @ThrottleRoute(REGISTER_POLICY)
   async register(
     @Body() dto: RegisterDto,
     @Req() request: Request,
@@ -59,7 +60,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  @ThrottleRoute({ limit: 5, ttlMs: 60_000, key: 'ip+email' })
+  @ThrottleRoute(LOGIN_POLICY)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) response: Response,

@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { REGISTER_POLICY } from '../../src/common/throttling/policies.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -79,10 +80,10 @@ describe('auth route throttles (R20)', () => {
     expect(other.status).toBe(401);
   });
 
-  it('throttles register to 3/min per IP and returns Retry-After on 429', async () => {
+  it('throttles register per IP (REGISTER_POLICY) and returns Retry-After on 429', async () => {
     const server = httpServer(testApp.app);
 
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < REGISTER_POLICY.limit; i += 1) {
       const created = await request(server)
         .post('/v1/auth/register')
         .send({

@@ -1,89 +1,112 @@
 import {
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
+  Optional,
   type CanActivate,
   type ExecutionContext,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { TokenService } from '../../auth/token.service.js';
 import {
   THROTTLE_ROUTE_KEY,
   type ThrottleRoutePolicy,
 } from '../decorators/throttle-route.decorator.js';
+import {
+  defaultPolicyFor,
+  isReadMethod,
+  THROTTLE_LIMIT,
+  THROTTLE_TTL_MS,
+} from '../throttling/policies.js';
+import {
+  MemoryThrottleStore,
+  SWEEP_INTERVAL_MS,
+  THROTTLE_STORE,
+  type ThrottleStore,
+} from '../throttling/throttle-store.js';
 
-export const THROTTLE_TTL_MS = 60_000;
-// Per-IP default for every route without its own @ThrottleRoute policy (auth routes keep
-// their strict ones). The browser client polls (transit every few seconds, board, reports)
-// and several players can share one NAT'd IP, so the old 60/min tripped in ordinary play;
-// 300/min still stops a scripted flood.
-export const THROTTLE_LIMIT = 300;
-// This is the production limiter until S12.1's Redis-backed store, not a throwaway stopgap:
-// sweep at most this often so the in-memory Map can't grow unbounded from clients that never
-// return (a long-running single instance otherwise leaks one entry per distinct IP forever).
-export const SWEEP_INTERVAL_MS = 60_000;
-
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
+export { SWEEP_INTERVAL_MS, THROTTLE_LIMIT, THROTTLE_TTL_MS };
 
 interface ThrottleRequest {
   ip?: string;
+  method?: string;
+  headers?: { authorization?: string };
   body?: unknown;
 }
 
 // Hand-rolled instead of @nestjs/throttler: that package still ships CommonJS and its
-// `require('@nestjs/common')` breaks under this project's Jest ESM runtime (works at real
-// Node runtime, confirmed, but not under `--experimental-vm-modules` on Node 22). A fixed
-// window per client IP is enough for a single-instance v0.1 API.
+// `require('@nestjs/common')` breaks under this project's Jest ESM runtime. The counting lives
+// in a ThrottleStore (Redis in the app, so limits hold across instances — S12.1; memory in
+// unit tests); the policy matrix lives in throttling/policies.ts.
+//
+// Runs BEFORE JwtAuthGuard (R28), so an account-keyed bucket cannot use request.user: the
+// bearer token is verified here (stateless, signature only) purely to pick the bucket. A missing
+// or invalid token falls back to the client IP, so unauthenticated floods are still per IP.
 @Injectable()
 export class ThrottlerGuard implements CanActivate {
-  private readonly buckets = new Map<string, Bucket>();
-  private lastSweepAt = 0;
+  private readonly store: ThrottleStore;
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    @Optional() @Inject(THROTTLE_STORE) store?: ThrottleStore,
+    @Optional() private readonly tokens?: TokenService,
+  ) {
+    this.store = store ?? new MemoryThrottleStore();
+  }
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<ThrottleRequest>();
-    // R20: a @ThrottleRoute policy REPLACES the default limiter on that route (one limiter total).
-    const policy = this.reflector.getAllAndOverride<ThrottleRoutePolicy | undefined>(
+    // R20: a @ThrottleRoute policy REPLACES the class default on that route (one limiter total).
+    const explicit = this.reflector.getAllAndOverride<ThrottleRoutePolicy | undefined>(
       THROTTLE_ROUTE_KEY,
       [context.getHandler(), context.getClass()],
     );
-    const now = Date.now();
+    const policy = explicit ?? defaultPolicyFor(request.method);
+    const key = await this.bucketKey(context, request, policy, explicit !== undefined);
 
-    this.sweepExpired(now);
-
-    const limit = policy?.limit ?? THROTTLE_LIMIT;
-    const ttlMs = policy?.ttlMs ?? THROTTLE_TTL_MS;
-    const key = this.bucketKey(context, request, policy);
-    const bucket = this.buckets.get(key);
-
-    if (!bucket || bucket.resetAt <= now) {
-      this.buckets.set(key, { count: 1, resetAt: now + ttlMs });
-      return true;
-    }
-
-    if (bucket.count >= limit) {
-      this.setRetryAfter(context, bucket.resetAt - now);
+    const hit = await this.store.hit(key, policy.ttlMs);
+    if (hit.count > policy.limit) {
+      this.setRetryAfter(context, hit.resetInMs);
       throw new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS);
     }
-
-    bucket.count += 1;
     return true;
   }
 
-  private bucketKey(
+  private async bucketKey(
     context: ExecutionContext,
     request: ThrottleRequest,
-    policy: ThrottleRoutePolicy | undefined,
-  ): string {
+    policy: ThrottleRoutePolicy,
+    explicit: boolean,
+  ): Promise<string> {
     const ip = request.ip ?? 'unknown';
-    if (!policy) return ip; // default: one bucket per client IP shared across unmarked routes.
-    // Policy buckets are namespaced per handler, so two policy routes never share one.
-    const route = `${context.getClass().name}.${context.getHandler().name}`;
-    if (policy.key === 'ip+email') return `${route}|${ip}|${emailKey(request)}`;
-    return `${route}|${ip}`;
+    // Routes with their own policy get their own bucket per handler, so two never share one.
+    // Unmarked routes share one bucket per (method class, client): all reads together, all
+    // intents together.
+    const scope = explicit
+      ? `${context.getClass().name}.${context.getHandler().name}`
+      : isReadMethod(request.method)
+        ? 'read'
+        : 'intent';
+    if (policy.key === 'ip+email') return `${scope}|${ip}|${emailKey(request)}`;
+    if (policy.key === 'account') {
+      const account = await this.accountOf(request);
+      return `${scope}|${account !== undefined ? `acct:${account}` : `ip:${ip}`}`;
+    }
+    return `${scope}|${ip}`;
+  }
+
+  private async accountOf(request: ThrottleRequest): Promise<string | undefined> {
+    if (this.tokens === undefined) return undefined;
+    const header = request.headers?.authorization;
+    if (header === undefined) return undefined;
+    const separator = header.indexOf(' ');
+    if (separator === -1 || header.slice(0, separator).toLowerCase() !== 'bearer') return undefined;
+    try {
+      return (await this.tokens.verifyAccessToken(header.slice(separator + 1).trim())).accountId;
+    } catch {
+      return undefined;
+    }
   }
 
   private setRetryAfter(context: ExecutionContext, msUntilReset: number): void {
@@ -91,17 +114,6 @@ export class ThrottlerGuard implements CanActivate {
       .switchToHttp()
       .getResponse<{ setHeader(name: string, value: string): void }>();
     response.setHeader('Retry-After', String(Math.max(1, Math.ceil(msUntilReset / 1000))));
-  }
-
-  // Opportunistic, bounded-frequency sweep: runs on a request rather than a timer, so there is
-  // nothing to unref/clear on shutdown, but never more often than SWEEP_INTERVAL_MS regardless
-  // of request volume, so its O(n) scan can't itself become a hot path under heavy traffic.
-  private sweepExpired(now: number): void {
-    if (now - this.lastSweepAt < SWEEP_INTERVAL_MS) return;
-    this.lastSweepAt = now;
-    for (const [key, bucket] of this.buckets) {
-      if (bucket.resetAt <= now) this.buckets.delete(key);
-    }
   }
 }
 

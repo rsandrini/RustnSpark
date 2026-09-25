@@ -1,3 +1,5 @@
+import { ThrottleRoute } from '../common/decorators/throttle-route.decorator.js';
+import { PREVIEW_POLICY } from '../common/throttling/policies.js';
 import { Body, Controller, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import {
   CurrentUser,
@@ -16,6 +18,7 @@ export class RepairController {
   // Dry run for the port's cost confirmation (S10.9): same validation and pricing as the
   // charge, no debit and no job — hence no idempotency key.
   @Post(':id/repair/quote')
+  @ThrottleRoute(PREVIEW_POLICY)
   @HttpCode(HttpStatus.OK)
   @UseGuards(OwnershipGuard)
   @OwnedResource({ type: 'ship', param: 'id' })
