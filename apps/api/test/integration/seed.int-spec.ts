@@ -111,7 +111,7 @@ describe('database seed (S3.4)', () => {
     await seed(prisma);
 
     const counts = await countRows(prisma);
-    expect(counts.gameConfig).toBe(98);
+    expect(counts.gameConfig).toBe(99);
     expect(counts.locations).toBe(12);
     expect(counts.routes).toBe(17);
     expect(counts.environments).toBe(4);

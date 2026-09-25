@@ -1,5 +1,5 @@
 import type { Server } from 'node:http';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
@@ -7,6 +7,7 @@ import request from 'supertest';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
+import { Clock } from '../../src/common/clock/clock.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -297,5 +298,79 @@ describe('scavenging API (S8.5)', () => {
       select: { credits: true },
     });
     expect(credits.credits).toBe(-50);
+  });
+
+  // Review items 8–9: the attempt counter and cooldown live in their own
+  // (player, location) row — wiping the audit trail doesn't reset them, and each
+  // location keeps its own count.
+  it('the cooldown lives in the per-location counter, not the event history', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+
+    const first = await scavenge(player.token, 'ceres');
+    expect(first.status).toBe(200);
+    expect((first.body as ScavengeBody).attempt).toBe(0);
+
+    const ceresCounter = await prisma.scavengeCounter.findUniqueOrThrow({
+      where: {
+        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'ceres' },
+      },
+    });
+    expect(ceresCounter.attemptCount).toBe(1);
+    expect(ceresCounter.lastAttemptAt).not.toBeNull();
+
+    // Wipe the scavenging events: with history-based counting this would let the player
+    // dig again from attempt 0 — the counter owns the state now.
+    await prisma.playerEvent.deleteMany({
+      where: { playerId: player.seeded.player.id, type: 'scavenge' },
+    });
+    const blocked = await scavenge(player.token, 'ceres');
+    expect(blocked.status).toBe(409);
+    expect(blocked.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'SCAVENGE_COOL_DOWN', retryAfterSeconds: expect.any(Number) },
+    });
+
+    // Another location has its own counter row and its own attempt number.
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { currentLocationId: 'drift' },
+    });
+    const elsewhere = await scavenge(player.token, 'drift');
+    expect(elsewhere.status).toBe(200);
+    expect((elsewhere.body as ScavengeBody).attempt).toBe(0);
+
+    const driftCounter = await prisma.scavengeCounter.findUniqueOrThrow({
+      where: {
+        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'drift' },
+      },
+    });
+    expect(driftCounter.attemptCount).toBe(1);
+    const ceresAfter = await prisma.scavengeCounter.findUniqueOrThrow({
+      where: {
+        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'ceres' },
+      },
+    });
+    expect(ceresAfter.attemptCount).toBe(1);
+  });
+
+  it('advancing the injected clock releases the cooldown without waiting', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+
+    expect((await scavenge(player.token, 'ceres')).status).toBe(200);
+    const blocked = await scavenge(player.token, 'ceres');
+    expect(blocked.status).toBe(409);
+
+    const clock = testApp.app.get(Clock);
+    const realNow = clock.now.bind(clock);
+    jest.spyOn(clock, 'now').mockImplementation(() => new Date(realNow().getTime() + 301_000));
+    try {
+      const after = await scavenge(player.token, 'ceres');
+      expect(after.status).toBe(200);
+      expect((after.body as ScavengeBody).attempt).toBe(1);
+    } finally {
+      jest.restoreAllMocks();
+    }
   });
 });

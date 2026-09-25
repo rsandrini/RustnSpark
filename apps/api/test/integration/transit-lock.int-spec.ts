@@ -10,6 +10,7 @@ import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
+import { PricingService } from '../../src/economy/pricing.service.js';
 import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
@@ -246,5 +247,114 @@ describe('in-transit lock API (S7.7)', () => {
       statusCode: 409,
       message: { error: 'SHIP_NOT_IN_PORT' },
     });
+  });
+
+  // S8.7 review (items 6–7): a ship in transit trades nothing — the trade POSTs join the
+  // S7.7 lock family (buy, inventory-part sell, materials sell all 409) while reads of the
+  // board stay open, and ADRIFT still trades: stripping a drifting hull is the designed
+  // path into the restart kit.
+  it('rejects buy with 409 while ON_MISSION; the board still reads', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await dispatchOnMission(player);
+
+    const board = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/market')
+      .set(auth(player.token));
+    expect(board.status).toBe(200);
+    const listing = (board.body as { listings: Array<{ listingId: string }> }).listings[0]!;
+
+    const response = await request(httpServer(testApp.app))
+      .post('/v1/market/buy')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ listingId: listing.listingId, expectedPrice: 1 });
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'SHIP_ON_MISSION' },
+    });
+  });
+
+  it('rejects sell of an inventory part with 409 while ON_MISSION', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await prisma.partInstance.create({
+      data: {
+        partType: 'hull',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 80,
+        location: 'INVENTORY',
+      },
+    });
+    await dispatchOnMission(player);
+
+    const response = await request(httpServer(testApp.app))
+      .post('/v1/market/sell')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ partInstanceId: part.id, expectedPrice: 1 });
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'SHIP_ON_MISSION' },
+    });
+    await expect(prisma.partInstance.findUnique({ where: { id: part.id } })).resolves.not.toBeNull();
+  });
+
+  it('rejects selling materials with 409 while ON_MISSION', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await prisma.playerMaterial.create({
+      data: { playerId: player.seeded.player.id, materialId: 'common_ore', quantity: 5 },
+    });
+    await dispatchOnMission(player);
+
+    const response = await request(httpServer(testApp.app))
+      .post('/v1/market/sell-material')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ materialId: 'common_ore', quantity: 2, expectedPrice: 1 });
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'SHIP_ON_MISSION' },
+    });
+    const held = await prisma.playerMaterial.findUnique({
+      where: { playerId_materialId: { playerId: player.seeded.player.id, materialId: 'common_ore' } },
+    });
+    expect(held?.quantity).toBe(5);
+  });
+
+  it('an ADRIFT ship still trades: an inventory part sells at its port price', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await prisma.partInstance.create({
+      data: {
+        partType: 'hull',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 80,
+        location: 'INVENTORY',
+      },
+      include: { partCatalog: true },
+    });
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { status: 'ADRIFT' },
+    });
+
+    const pricing = testApp.app.get(PricingService);
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const context = await pricing.contextForLocation(ship.currentLocationId, player.seeded.player.id);
+    const expectedPrice = pricing.sell(context, part, { basePrice: part.partCatalog.basePrice });
+
+    const response = await request(httpServer(testApp.app))
+      .post('/v1/market/sell')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ partInstanceId: part.id, expectedPrice });
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ partInstanceId: part.id, price: expectedPrice });
+    await expect(prisma.partInstance.findUnique({ where: { id: part.id } })).resolves.toBeNull();
   });
 });

@@ -296,10 +296,14 @@ describe('materials API (S8.7)', () => {
       expectedPrice: 0,
     });
     expect(zero.status).toBe(400);
+    // Rejected by the DTO (@Min(1)) before the service; MaterialsService.sell keeps its
+    // own INVALID_QUANTITY check as defense in depth for direct callers.
     expect(zero.body).toMatchObject({
       statusCode: 400,
-      message: { error: 'INVALID_QUANTITY' },
+      message: ['quantity must not be less than 1'],
     });
+    expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(2);
+    expect(await currentCredits(player.seeded.player.id)).toBe(200);
 
     const unknown = await sellMaterial(player.token, randomUUID(), {
       materialId: 'not_a_material',
@@ -307,6 +311,41 @@ describe('materials API (S8.7)', () => {
       expectedPrice: 0,
     });
     expect(unknown.status).toBe(404);
+  });
+
+  it('rejects quantities outside the int4/credit bounds (review item 2)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await hold(player.seeded.player.id, 'common_ore', 10);
+
+    // DTO bounds: below the column's floor, non-integer, and past int4 max all fail as
+    // 400 before any UPDATE runs (a raw int4 overflow used to surface as a 500).
+    for (const quantity of [0, -1, 1.5, 2_147_483_648]) {
+      const response = await sellMaterial(player.token, randomUUID(), {
+        materialId: 'common_ore',
+        quantity,
+        expectedPrice: 1,
+      });
+      expect(response.status).toBe(400);
+    }
+    expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(10);
+
+    // unitPrice × quantity past MAX_CREDITS is a domain conflict, not a wallet 500 deep
+    // inside the transaction (common_ore sells for ≥ 2¢ a unit at every seeded port).
+    const unitPrice = await unitPriceFor(player.seeded.player.id, 'common_ore');
+    expect(unitPrice).toBeGreaterThanOrEqual(2);
+    const overflow = await sellMaterial(player.token, randomUUID(), {
+      materialId: 'common_ore',
+      quantity: 2_147_483_647,
+      expectedPrice: 0,
+    });
+    expect(overflow.status).toBe(409);
+    expect(overflow.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'CREDIT_OVERFLOW' },
+    });
+    expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(10);
+    expect(await currentCredits(player.seeded.player.id)).toBe(200);
   });
 
   it('selling is allowed while the balance is negative (GDD §14)', async () => {

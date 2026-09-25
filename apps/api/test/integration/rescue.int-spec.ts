@@ -29,6 +29,7 @@ interface RescueBody {
   shipId: string;
   status: string;
   cost: number;
+  fuel: number;
   credits: number;
   restartParts: string[];
   viability: { viable: boolean; problems: { code: string }[] };
@@ -157,7 +158,8 @@ describe('rescue API (S8.6)', () => {
       viability: { viable: true },
     });
 
-    // Rescue is not a refuel: it tows the hull, it does not top up the tank.
+    // Rescue is not a refuel: it tows the hull, it does not top up the tank (a tank that is
+    // already above the emergency ration is left exactly as it was).
     const shipAfter = await shipRow(player.shipId);
     expect(shipAfter.status).toBe('IN_PORT');
     expect(shipAfter.fuel).toBe(shipBefore.fuel);
@@ -293,6 +295,47 @@ describe('rescue API (S8.6)', () => {
     expect(ship.layout).toHaveLength(starterParts.length);
   });
 
+  it('restart kit clamps fuel to the new tank ceiling (review item 5)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+
+    // Strip the engine (the only path to the restart kit) and drift in holding more
+    // fuel than the kit's tank can hold.
+    const engine = await prisma.partInstance.findFirstOrThrow({
+      where: { shipId: player.shipId, location: 'INSTALLED', partType: 'engine_chem_small' },
+    });
+    await prisma.partInstance.update({
+      where: { id: engine.id },
+      data: { location: 'INVENTORY', shipId: null },
+    });
+    await setStatus(player.shipId, 'ADRIFT');
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 9999 } });
+    await setCredits(player.seeded.player.id, 5000);
+
+    const rescued = await rescue(player.token, player.shipId, randomUUID());
+    expect(rescued.status).toBe(200);
+    expect((rescued.body as RescueBody).restartParts.length).toBeGreaterThan(0);
+
+    const installed = await prisma.partInstance.findMany({
+      where: { shipId: player.shipId, location: 'INSTALLED' },
+      include: { partCatalog: { select: { fuelCap: true } } },
+    });
+    const kitFuelCap = installed.reduce((total, row) => total + (row.partCatalog.fuelCap ?? 0), 0);
+    expect(kitFuelCap).toBeGreaterThan(0);
+
+    const ship = await shipRow(player.shipId);
+    expect(ship.fuel).toBe(kitFuelCap);
+
+    // A full refuel is a free no-op: the tank sits exactly at its cap, never above it.
+    const full = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
+    expect(full.status).toBe(200);
+    expect((full.body as { units: number; fuel: number; fuelCap: number })).toMatchObject({
+      units: 0,
+      fuel: kitFuelCap,
+      fuelCap: kitFuelCap,
+    });
+  });
+
   it('spending guard both ways: negative balance blocks refuel, positive unlocks it', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -316,17 +359,33 @@ describe('rescue API (S8.6)', () => {
       statusCode: 409,
       message: { error: 'BALANCE_NEGATIVE' },
     });
-    expect((await shipRow(player.shipId)).fuel).toBe(0);
+    // The emergency ration (25% of the tank) is what the player is left with — enough to
+    // fly one short job, never a refill.
+    const ration = Math.round(fuelCap * 0.25);
+    expect((rescued.body as RescueBody).fuel).toBe(ration);
+    expect((await shipRow(player.shipId)).fuel).toBe(ration);
     expect(await currentCredits(player.seeded.player.id)).toBe(-600);
 
     // Missions pay the debt back (GDD §14); with a positive balance buying works again.
     await setCredits(player.seeded.player.id, 5000);
     const unlocked = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
     expect(unlocked.status).toBe(200);
-    expect((unlocked.body as RefuelBody).units).toBe(fuelCap);
+    expect((unlocked.body as RefuelBody).units).toBe(fuelCap - ration);
     expect((unlocked.body as RefuelBody).cost).toBeGreaterThan(0);
     expect(await currentCredits(player.seeded.player.id)).toBe(
       5000 - (unlocked.body as RefuelBody).cost,
     );
+  });
+
+  it('emergency ration never lowers fuel and is capped at the tank (review item 11)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setStatus(player.shipId, 'ADRIFT');
+    const before = await shipRow(player.shipId);
+    // Already above 25% → untouched.
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: before.fuel } });
+    const rescued = await rescue(player.token, player.shipId, randomUUID());
+    expect(rescued.status).toBe(200);
+    expect((await shipRow(player.shipId)).fuel).toBe(before.fuel);
   });
 });

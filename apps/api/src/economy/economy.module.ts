@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import { Clock } from '../common/clock/clock.js';
 import { EnvModule, EnvService } from '../common/env/env.module.js';
 import { ConfigModule } from '../config/config.module.js';
 import { PartsModule } from '../parts/parts.module.js';
@@ -58,6 +59,7 @@ import { ScavengingService } from './scavenging.service.js';
     ScavengingService,
     WalletService,
     PlayerEventService,
+    Clock,
   ],
   exports: [PricingService, MarketService, RepairService],
 })

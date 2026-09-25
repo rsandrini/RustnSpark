@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { localize } from '../common/i18n/localize.js';
 import { PlayerEventService } from '../players/player-event.service.js';
-import { WalletService } from '../players/wallet.service.js';
+import { MAX_CREDITS, WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PricingService } from './pricing.service.js';
 
@@ -31,15 +32,6 @@ export interface SellMaterialResponse {
   readonly quantity: number;
   readonly price: number;
   readonly credits: number;
-}
-
-function localize(value: unknown, locale = 'en'): string {
-  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    const record = value as Record<string, unknown>;
-    const candidate = record[locale] ?? record['en'];
-    if (typeof candidate === 'string') return candidate;
-  }
-  return '';
 }
 
 /**
@@ -92,9 +84,28 @@ export class MaterialsService {
     const material = await this.prisma.material.findUnique({ where: { id: materialId } });
     if (!material) throw new NotFoundException('material not found');
 
-    const context = await this.pricing.contextForPlayer(playerId);
+    // GDD §13: trade is a port action. Pricing follows this ship's current port, so
+    // "the ship sells where it is docked" holds by construction; what has to be gated is
+    // the ship being away — a ship in transit trades nothing (S7.7 lock family, now
+    // covering sales of materials as well as parts). ADRIFT and IN_PORT both trade.
+    const ship = await this.prisma.ship.findFirst({
+      where: { ownerPlayerId: playerId },
+      orderBy: { id: 'asc' },
+      select: { id: true, status: true, currentLocationId: true },
+    });
+    if (!ship) throw new NotFoundException('player has no ship');
+    if (ship.status === 'ON_MISSION') {
+      throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+    }
+    const context = await this.pricing.contextForLocation(ship.currentLocationId, playerId);
     const unitPrice = this.pricing.sellMaterial(context, material);
     const price = unitPrice * quantity;
+    // The stack is int4 and the credit lands in an int4 balance: a sale whose total
+    // overflows either of them must fail as a domain conflict, never as a 500 from the
+    // wallet's overflow guard deep inside the transaction.
+    if (!Number.isSafeInteger(price) || price > MAX_CREDITS) {
+      throw new ConflictException({ error: 'CREDIT_OVERFLOW', max: MAX_CREDITS });
+    }
     // Stale-price guard only: the server always sells at its own recomputed price.
     if (price !== expectedPrice) {
       throw new ConflictException({ error: 'PRICE_CHANGED', actual: price });

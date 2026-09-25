@@ -1,3 +1,4 @@
+import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
   ConflictException,
@@ -276,7 +277,7 @@ export class ShipsService implements OnModuleInit {
       }
       await tx.ship.update({
         where: { id: shipId },
-        data: { layout: layout as unknown as never },
+        data: { layout: toJsonInput(layout) },
       });
     });
   }

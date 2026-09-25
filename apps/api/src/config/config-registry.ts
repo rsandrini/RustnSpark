@@ -546,6 +546,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.rescue_fuel_fraction',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 1,
+    unit: '×',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_fuel_fraction),
+    description: {
+      en: 'Share of the tank a rescued ship is left with (emergency ration; 0 = empty).',
+      'pt-BR': 'Fração do tanque com que a nave resgatada fica (ração de emergência; 0 = vazio).',
+    },
+  },
+  {
     key: 'economy.sell_ratio',
     group: 'economy',
     type: 'number',
@@ -1075,6 +1088,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       'pt-BR': 'Número mínimo de missões publicadas por local no quadro.',
     },
   },
+  // DEFERRED (S8 review item 12): the `mission` chance (55%) is reserved. No SCAVENGING
+  // MissionType exists in v0.1, so only `common` and `pirate` are read by scavenging.service.
   {
     key: 'scavenging.chance',
     group: 'scavenging',

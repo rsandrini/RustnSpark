@@ -1,3 +1,4 @@
+import { toJsonInput } from '../common/prisma-json.js';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma } from '@prisma/client';
@@ -178,7 +179,7 @@ export class RepairService {
           data: {
             shipId,
             playerId,
-            targets: stored as unknown as never,
+            targets: toJsonInput(stored),
             cost,
             durationSeconds,
             completesAt,

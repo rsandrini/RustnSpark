@@ -34,16 +34,22 @@ export function partValue(input: PartPriceInput, rules: GameRules): number {
   );
 }
 
+// Wallet movements must be positive integers (wallet.service's assertValidWalletOperation),
+// and refuel already rounds purchases up with Math.max(1, …) rather than to free — the same
+// floor applies here. So a 0-base part (bridge) or a cheap material whose local value rounds
+// away is still worth exactly 1¢, never 0¢: a 0-credit buy would 500 on the debit and a
+// 0-credit sale would 500 on the credit. buyPrice is floored too, which keeps the no-arbitrage
+// invariant buy(c) ≥ sell(c) (round(0.6v) ≤ round(v), both clamped at 1).
 function toCredits(value: number): number {
-  return Math.max(0, Math.round(value));
+  return Math.max(1, Math.round(value));
 }
 
-/** Buy price: full local value, rounded to integer credits. */
+/** Buy price: full local value, rounded to integer credits (never free). */
 export function buyPrice(input: PartPriceInput, rules: GameRules): number {
   return toCredits(partValue(input, rules));
 }
 
-/** Sell price: `sell_ratio` (default 0.6) × local value. */
+/** Sell price: `sell_ratio` (default 0.6) × local value (never worthless). */
 export function sellPrice(input: PartPriceInput, rules: GameRules): number {
   return toCredits(partValue(input, rules) * rules.economy.sell_ratio);
 }

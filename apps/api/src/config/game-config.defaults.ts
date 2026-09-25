@@ -53,6 +53,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     upgrade_costs: { 2: 1200, 3: 2000, 4: 2800, 5: 3800 },
     start_credits: 200,
     rescue_cost: 800,
+    // Emergency ration: a rescue leaves at least this share of the tank so a broke player
+    // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
+    rescue_fuel_fraction: 0.25,
     sell_ratio: 0.6,
     isolation_mult: { 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 },
     faction_mult: { ally: 0.8, neutral: 1.0, hostile: 2.5 },
@@ -128,7 +131,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   parts: {
     starter_condition: 80,
-    restart_condition_max: 50,
+    // 30, not 50: worst-case kit sell value (isolation × hostile × mood_max at
+    // restart_condition_max) is 737¢ against rescue_cost 800¢ — at 50 it was 1227¢ and
+    // rescue → kit → sell printed credits on a hostile port (S8.6 review).
+    restart_condition_max: 30,
   },
   onboarding: {
     starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'battery_small', 'cargo', 'cargo', 'hull'],

@@ -40,6 +40,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.repair_price_ref',
   'economy.repair_seconds_per_point',
   'economy.rescue_cost',
+  'economy.rescue_fuel_fraction',
   'economy.reward_base',
   'economy.reward_danger_divisor',
   'economy.reward_distance_divisor',

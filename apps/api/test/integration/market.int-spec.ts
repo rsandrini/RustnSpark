@@ -120,7 +120,9 @@ describe('market API (S8.2)', () => {
     expect(catalog.length).toBeGreaterThan(0);
     expect(used.length).toBeGreaterThan(0);
     for (const listing of body.listings) {
-      expect(listing.price).toBeGreaterThanOrEqual(0);
+      // S8.1 review: wallet moves are positive integers — nothing is ever free (a0-base
+      // bridge rounds to 1¢) and nothing is ever worthless.
+      expect(listing.price).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -337,6 +339,115 @@ describe('market API (S8.2)', () => {
       where: { ownerPlayerId: player.seeded.player.id, partType: 'hull', location: 'INVENTORY' },
     });
     expect(parts).toBe(2);
+  });
+
+  it('parallel sells of the same part credit once; losers 404, never 500 (review item 7)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
+    );
+    expect(listing).toBeDefined();
+    const bought = await buy(player.token, randomUUID(), {
+      listingId: listing!.listingId,
+      expectedPrice: listing!.price,
+    });
+    expect(bought.status).toBe(200);
+    const partInstanceId = (bought.body as { partInstanceId: string }).partInstanceId;
+    const before = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+
+    // Learn the real sell price from a stale-price guard, then race five distinct keys
+    // (same key would replay) at the same partInstance.
+    const stale = await sell(player.token, randomUUID(), {
+      partInstanceId,
+      expectedPrice: listing!.price + 1,
+    });
+    expect(stale.status).toBe(409);
+    const actual = (stale.body as { message: { actual: number } }).message.actual;
+
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, () =>
+        sell(player.token, randomUUID(), { partInstanceId, expectedPrice: actual }),
+      ),
+    );
+    const succeeded = responses.filter((response) => response.status === 200);
+    const gone = responses.filter((response) => response.status === 404);
+    expect(succeeded).toHaveLength(1);
+    expect(gone).toHaveLength(4);
+    for (const response of gone) {
+      expect(response.body).toMatchObject({ statusCode: 404 });
+    }
+
+    const after = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(after.credits).toBe(before.credits + actual);
+    await expect(prisma.partInstance.findUnique({ where: { id: partInstanceId } })).resolves.toBeNull();
+  });
+
+  it('a 0-base part moves exactly 1¢ each way — never free, never worthless (review item 1)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const bridge = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'bridge',
+    );
+    expect(bridge).toBeDefined();
+    expect(bridge!.price).toBe(1);
+
+    const before = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    const bought = await buy(player.token, randomUUID(), {
+      listingId: bridge!.listingId,
+      expectedPrice: 1,
+    });
+    expect(bought.status).toBe(200);
+    const partInstanceId = (bought.body as { partInstanceId: string }).partInstanceId;
+    const afterBuy = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(afterBuy.credits).toBe(before.credits - 1);
+
+    const stale = await sell(player.token, randomUUID(), { partInstanceId, expectedPrice: 2 });
+    expect(stale.status).toBe(409);
+    const actual = (stale.body as { message: { actual: number } }).message.actual;
+    expect(actual).toBe(1);
+    const sold = await sell(player.token, randomUUID(), { partInstanceId, expectedPrice: actual });
+    expect(sold.status).toBe(200);
+    const afterSell = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(afterSell.credits).toBe(before.credits);
+  });
+
+  it('rejects stale or forged used listing ids with 400 INVALID_LISTING (review item 3)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+    for (const listingId of [
+      `used:ceres:${yesterday}:0:hull`,
+      `used:ceres:${today}:6:hull`,
+      `used:ceres:${today}:99:hull`,
+      `used:ceres:${today}:999999999999999999999999:hull`,
+    ]) {
+      const response = await buy(player.token, randomUUID(), { listingId, expectedPrice: 1 });
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({
+        statusCode: 400,
+        message: { error: 'INVALID_LISTING' },
+      });
+    }
   });
 
   it('sell credits the player; PRICE_CHANGED guards stale prices; idempotent', async () => {

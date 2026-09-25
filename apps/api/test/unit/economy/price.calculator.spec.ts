@@ -83,3 +83,29 @@ describe('S8.1 — part value and prices', () => {
     expect(rules.economy.mood_max).toBe(1.15);
   });
 });
+
+describe('S8.1 — price floor (wallet requires positive integers)', () => {
+  it('never rounds to 0: a 0-base part and a dust-cheap part are worth 1¢ each', () => {
+    // bridge ships with basePrice 0 (it is structure, not a purchase) — buying or
+    // selling it at 0 would 500 on the wallet's positive-integer assertion.
+    expect(buyPrice(input({ basePrice: 0 }), rules)).toBe(1);
+    expect(sellPrice(input({ basePrice: 0 }), rules)).toBe(1);
+    expect(sellPrice(input({ basePrice: 1, condition: 1, isolation: 0.9 }), rules)).toBe(1);
+    expect(buyPrice(input({ basePrice: 1, condition: 1, isolation: 0.9 }), rules)).toBe(1);
+  });
+
+  it('keeps buy(c) ≥ sell(c) at every condition, so used offers cannot be arbitraged', () => {
+    for (const basePrice of [0, 1, 7, 80, 200, 2000]) {
+      for (const isolation of [0.9, 1, 1.4, 2]) {
+        for (const factionRelation of ['ally', 'neutral', 'hostile']) {
+          for (const mood of [0.85, 1, 1.15]) {
+            for (let condition = 0; condition <= 100; condition += 1) {
+              const inputAt = input({ basePrice, isolation, factionRelation, mood, condition });
+              expect(sellPrice(inputAt, rules)).toBeLessThanOrEqual(buyPrice(inputAt, rules));
+            }
+          }
+        }
+      }
+    }
+  });
+});

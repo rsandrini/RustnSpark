@@ -1,3 +1,4 @@
+import { toJsonInput } from '../common/prisma-json.js';
 import { ConflictException, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
@@ -16,6 +17,8 @@ export interface ViabilityReport {
 export interface RestartOutcome {
   readonly restartParts: string[];
   readonly viability: ViabilityReport;
+  /** Tank ceiling of the hull as it stands after the check (kit or original build). */
+  readonly fuelCap: number;
 }
 
 /**
@@ -39,7 +42,11 @@ export class InventoryService {
     const current = await this.installedOf(tx, shipId);
     const currentReport = this.viabilityOf(current, rules);
     if (currentReport.viable) {
-      return { restartParts: [], viability: currentReport };
+      return {
+        restartParts: [],
+        viability: currentReport,
+        fuelCap: deriveSheet(current, rules).fuelCap,
+      };
     }
 
     for (const part of current) {
@@ -51,24 +58,17 @@ export class InventoryService {
 
     const starterParts = [...(rules.onboarding.starter_parts as string[])];
     const condition = rules.parts.restart_condition_max;
-    const created = await Promise.all(
-      starterParts.map((partType) =>
-        tx.partInstance.create({
-          data: {
-            partType,
-            ownerPlayerId: playerId,
-            condition,
-            location: 'INVENTORY',
-          },
+    // Sequential, in starter_parts order: cuid ids are not ordered by creation, so sorting
+    // the kit by id would hand autoLayout a different sequence (and layout) per rescue.
+    const kit = [];
+    for (const partType of starterParts) {
+      kit.push(
+        await tx.partInstance.create({
+          data: { partType, ownerPlayerId: playerId, condition, location: 'INVENTORY' },
+          include: { partCatalog: true },
         }),
-      ),
-    );
-
-    const kit = await tx.partInstance.findMany({
-      where: { id: { in: created.map((part) => part.id) } },
-      include: { partCatalog: true },
-      orderBy: { id: 'asc' },
-    });
+      );
+    }
     const kitParts = kit.map((part) => ({
       instance: part,
       catalog: pickCatalogStats(part.partCatalog),
@@ -80,7 +80,8 @@ export class InventoryService {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
 
-    const viability = this.viabilityOf(kitParts, rules);
+    const kitSheet = deriveSheet(kitParts, rules);
+    const viability = checkViability(kitSheet, kitParts, rules);
     if (!viability.viable) {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
     }
@@ -91,9 +92,21 @@ export class InventoryService {
         data: { location: 'INSTALLED', shipId },
       });
     }
-    await tx.ship.update({ where: { id: shipId }, data: { layout: layout as unknown as never } });
+    // The hull can drift in with more fuel than the kit's tank holds (the old tank was
+    // sold off while ADRIFT, or swapped for a smaller one), so the stored fuel is clamped
+    // to the new ceiling — fuel above fuelCap is unspendable at the pump (refuel sees no
+    // need) yet reports as a full-plus tank everywhere the sheet is derived (S8.6 review).
+    const shipRow = await tx.ship.findUniqueOrThrow({
+      where: { id: shipId },
+      select: { fuel: true },
+    });
+    const fuel = Math.min(shipRow.fuel, kitSheet.fuelCap);
+    await tx.ship.update({
+      where: { id: shipId },
+      data: { layout: toJsonInput(layout), fuel },
+    });
 
-    return { restartParts: starterParts, viability };
+    return { restartParts: starterParts, viability, fuelCap: kitSheet.fuelCap };
   }
 
   private async installedOf(

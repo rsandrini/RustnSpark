@@ -58,6 +58,7 @@ const economySchema = z.object({
   upgrade_costs: z.record(z.string(), z.number().min(0).max(100000)),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
+  rescue_fuel_fraction: z.number().min(0).max(1),
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),

@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, TuningRevision } from '@prisma/client';
+import { withConfigOverrides } from '../../config/candidate-rules.js';
 import { CONFIG_REGISTRY, getRegistryEntry } from '../../config/config-registry.js';
 import { GameConfigRepository } from '../../config/game-config.repository.js';
 import { GameConfigService } from '../../config/game-config.service.js';
 import { validateConfigValue } from '../../config/game-rules.schema.js';
-import { GameConfigValidationError, type ConfigRegistryEntry } from '../../config/game-config.types.js';
+import {
+  GameConfigValidationError,
+  type ConfigRegistryEntry,
+  type GameRules,
+} from '../../config/game-config.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ConfigReferenceValidator } from './config-reference.validator.js';
 import type { BundleEntryDto } from './dto/index.js';
@@ -66,11 +71,18 @@ export class BundleService {
     const rowsByKey = new Map(rows.map((row) => [row.key, row.value]));
 
     const diffs: BundleDiff[] = [];
+    const validated: { key: string; value: unknown }[] = [];
     for (const entry of entries) {
       const { value, before } = this.validateBundleEntry(entry, rowsByKey);
       await this.references.assertReferences(entry.key, value);
+      validated.push({ key: entry.key, value });
       diffs.push({ key: entry.key, before, after: value });
     }
+    // The bundle is applied as a whole, so the restart-kit invariant is checked against
+    // the ruleset every entry would produce together — an import pairing a higher
+    // restart_condition_max with a higher rescue_cost is fine; one that nets out
+    // profitable is not (S8.6). Same check import() runs before the write.
+    await this.references.assertRestartKitEconomy(this.candidateRules(validated), 'bundle');
 
     return { valid: true, diffs };
   }
@@ -85,6 +97,11 @@ export class BundleService {
     for (const entry of validated) {
       await this.references.assertReferences(entry.key, entry.value);
     }
+    // Same whole-bundle invariant check as dryRun(): refuse the write, not just the preview.
+    await this.references.assertRestartKitEconomy(
+      this.candidateRules(validated.map((entry) => ({ key: entry.key, value: entry.value }))),
+      'bundle',
+    );
 
     const revisions = await this.prisma.$transaction(async (tx) => {
       const created: TuningRevision[] = [];
@@ -132,5 +149,11 @@ export class BundleService {
       ? structuredClone(rowsByKey.get(entry.key))
       : structuredClone(registryEntry.factoryDefault);
     return { key: entry.key, value: validated, before, registryEntry };
+  }
+
+  private candidateRules(
+    entries: ReadonlyArray<{ key: string; value: unknown }>,
+  ): GameRules {
+    return withConfigOverrides(this.gameConfigService.snapshot().rules, entries);
   }
 }

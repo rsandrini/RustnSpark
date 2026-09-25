@@ -1,3 +1,4 @@
+import { toJsonInput } from '../common/prisma-json.js';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -118,7 +119,7 @@ export class OnboardingService {
 
       const filled = await tx.ship.update({
         where: { id: created.id },
-        data: { layout: layout as unknown as never, fuel: sheet.fuelCap },
+        data: { layout: toJsonInput(layout), fuel: sheet.fuelCap },
       });
 
       await this.walletService.credit(playerId, startCredits, ONBOARDING_REASON, tx);

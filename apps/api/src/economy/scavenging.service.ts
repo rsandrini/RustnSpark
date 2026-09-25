@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Location } from '@prisma/client';
+import { Clock } from '../common/clock/clock.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
@@ -120,9 +121,12 @@ export function scavengeOutcome(input: ScavengeRollInput): ScavengeOutcome {
  * S8.5: free scavenging action — ship must be at the location (and not on a
  * mission); one attempt per player per location per scavenging.cooldown_seconds
  * (D28, anti-farming); loot lands directly in the player's inventory. Free —
- * allowed on a negative balance (GDD §14). The Player row is locked for the
- * attempt so the cooldown check, attempt counter and loot write are atomic
- * under parallel requests.
+ * allowed on a negative balance (GDD §14). Review items 8–9: the per-location
+ * attempt counter and cooldown stamp live in their own ScavengeCounter row (one
+ * upsert instead of scanning the player's whole event history), elapsed time is
+ * read through the injected Clock, and the transaction takes the Ship lock first
+ * (canonical Ship → Player order) so a dispatch landing after the pre-read is
+ * caught under the lock.
  */
 @Injectable()
 export class ScavengingService {
@@ -130,6 +134,7 @@ export class ScavengingService {
     private readonly prisma: PrismaService,
     private readonly config: GameConfigService,
     private readonly events: PlayerEventService,
+    private readonly clock: Clock,
   ) {}
 
   async scavenge(locationId: string, playerId: string): Promise<ScavengeResponse> {
@@ -140,7 +145,7 @@ export class ScavengingService {
 
     const ship = await this.prisma.ship.findFirst({
       where: { ownerPlayerId: playerId, currentLocationId: locationId },
-      select: { status: true },
+      select: { id: true, status: true },
     });
     if (!ship) {
       throw new ConflictException({ error: 'SHIP_NOT_AT_LOCATION' });
@@ -154,24 +159,35 @@ export class ScavengingService {
     const [tiers, catalog] = await Promise.all([this.dropTiers(), this.activeCatalog()]);
 
     const outcome = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Player" WHERE id = ${playerId} FOR UPDATE`;
-      const history = await tx.playerEvent.findMany({
-        where: { playerId, type: SCAVENGE_EVENT },
-        orderBy: { at: 'asc' },
-        select: { at: true, payload: true },
+      // Canonical order — Ship first (dispatch/repair/rescue all take it before any
+      // wallet or world row), then Player. The status is re-read under the lock: a
+      // dispatch that lands between the pre-check and this tx still sees ON_MISSION.
+      await tx.$queryRaw`SELECT id FROM "Ship" WHERE id = ${ship.id} FOR UPDATE`;
+      const locked = await tx.ship.findUniqueOrThrow({
+        where: { id: ship.id },
+        select: { status: true },
       });
-      const attempts = history.filter((entry) => payloadLocationId(entry.payload) === locationId);
-      const last = attempts.at(-1);
+      if (locked.status === 'ON_MISSION') {
+        throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+      }
+      await tx.$queryRaw`SELECT id FROM "Player" WHERE id = ${playerId} FOR UPDATE`;
+
+      const now = this.clock.now();
+      const counter = await tx.scavengeCounter.upsert({
+        where: { playerId_locationId: { playerId, locationId } },
+        create: { playerId, locationId, attemptCount: 0 },
+        update: {},
+      });
       const cooldownSeconds = rules.scavenging.cooldown_seconds;
-      if (last !== undefined && cooldownSeconds > 0) {
-        const elapsed = Math.floor((Date.now() - last.at.getTime()) / MS_PER_SECOND);
+      if (counter.attemptCount > 0 && counter.lastAttemptAt !== null && cooldownSeconds > 0) {
+        const elapsed = Math.floor((now.getTime() - counter.lastAttemptAt.getTime()) / MS_PER_SECOND);
         const retryAfterSeconds = cooldownSeconds - elapsed;
         if (retryAfterSeconds > 0) {
           throw new ConflictException({ error: 'SCAVENGE_COOL_DOWN', retryAfterSeconds });
         }
       }
 
-      const attempt = attempts.length;
+      const attempt = counter.attemptCount;
       const result = scavengeOutcome({
         seed: rules.world.seed,
         playerId,
@@ -217,6 +233,10 @@ export class ScavengingService {
         },
         tx,
       );
+      await tx.scavengeCounter.update({
+        where: { playerId_locationId: { playerId, locationId } },
+        data: { attemptCount: attempt + 1, lastAttemptAt: now },
+      });
       return { attempt, dropped: result.dropped, part };
     });
 
@@ -256,12 +276,4 @@ export class ScavengingService {
     });
     return rows;
   }
-}
-
-function payloadLocationId(payload: unknown): string | null {
-  if (typeof payload === 'object' && payload !== null && !Array.isArray(payload)) {
-    const value = (payload as Record<string, unknown>)['locationId'];
-    if (typeof value === 'string') return value;
-  }
-  return null;
 }

@@ -333,6 +333,31 @@ describe('refuel API (S8.3)', () => {
     expect(await currentCredits(player.seeded.player.id)).toBe(100000 - cost);
   });
 
+  it('a partial refuel without a key is rejected before any fuel is bought (review item 10)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setShipFuel(player.shipId, 0);
+
+    const noKey = await refuel(player.token, player.shipId, undefined, {
+      mode: 'partial',
+      amount: 10,
+    });
+    expect(noKey.status).toBe(400);
+    expect(noKey.body).toMatchObject({
+      statusCode: 400,
+      message: 'IDEMPOTENCY_KEY_REQUIRED',
+    });
+    expect(await currentFuel(player.shipId)).toBe(0);
+    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+
+    const keyed = await refuel(player.token, player.shipId, randomUUID(), {
+      mode: 'partial',
+      amount: 10,
+    });
+    expect(keyed.status).toBe(200);
+    expect(await currentFuel(player.shipId)).toBe(10);
+  });
+
   it('validates refuel input: unknown mode 400, partial without amount 400', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

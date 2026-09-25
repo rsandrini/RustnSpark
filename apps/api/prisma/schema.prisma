@@ -51,6 +51,7 @@ model Player {
   materials       PlayerMaterial[]
   missions        MissionInstance[]
   missionLogs     MissionLog[]
+  scavengeCounters ScavengeCounter[]
 }
 
 model RefreshToken {
@@ -94,6 +95,21 @@ model IdempotencyKey {
   player         Player   @relation(fields: [playerId], references: [id])
 
   @@id([playerId, route, key])
+}
+
+// S8.5 review (items 8–9): one row per (player, location) instead of scanning the
+// player's whole scavenging event history for the cooldown and attempt number.
+// attemptCount is both the anti-farming counter and the drop-roll seed index;
+// lastAttemptAt drives the D28 cooldown, read through the injected Clock.
+model ScavengeCounter {
+  playerId      String
+  locationId    String
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  player        Player    @relation(fields: [playerId], references: [id])
+  location      Location  @relation(fields: [locationId], references: [id])
+
+  @@id([playerId, locationId])
 }
 
 enum Rarity {
@@ -229,6 +245,7 @@ model Location {
   ships               Ship[]
   missionsOrigin      MissionInstance[] @relation("MissionOrigin")
   missionsDestination MissionInstance[] @relation("MissionDestination")
+  scavengeCounters    ScavengeCounter[]
 
   @@index([factionId])
 }

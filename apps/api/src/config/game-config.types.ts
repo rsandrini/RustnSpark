@@ -52,6 +52,7 @@ export type ConfigKey =
   | 'economy.repair_price_ref'
   | 'economy.repair_seconds_per_point'
   | 'economy.rescue_cost'
+  | 'economy.rescue_fuel_fraction'
   | 'economy.reward_base'
   | 'economy.reward_danger_divisor'
   | 'economy.reward_distance_divisor'
@@ -185,6 +186,7 @@ export type GameRules = Readonly<{
     upgrade_costs: Readonly<Record<string, number>>;
     start_credits: number;
     rescue_cost: number;
+    rescue_fuel_fraction: number;
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;
