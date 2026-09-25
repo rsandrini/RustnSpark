@@ -4,11 +4,13 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  type OnModuleInit,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma, type MissionInstance, type Ship } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import { GameConfigService } from '../config/game-config.service.js';
+import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -50,7 +52,7 @@ function unavailableError(mission: MissionInstance, playerId: string): string {
 }
 
 @Injectable()
-export class MissionsService {
+export class MissionsService implements OnModuleInit {
   private readonly logger = new Logger(MissionsService.name);
 
   constructor(
@@ -60,7 +62,20 @@ export class MissionsService {
     private readonly board: BoardService,
     private readonly resolveService: MissionResolveService,
     @InjectQueue(MISSION_QUEUE_NAME) private readonly missionQueue: Queue<DispatchJobData>,
+    private readonly ownershipRegistry: OwnershipResolverRegistry,
   ) {}
+
+  // Missions own 'mission' ownership (S9.3): reports resolve the owning player
+  // through this resolver to answer 404 for foreign mission ids.
+  onModuleInit(): void {
+    this.ownershipRegistry.register('mission', async (missionId: string) => {
+      const mission = await this.prisma.missionInstance.findUnique({
+        where: { id: missionId },
+        select: { playerId: true },
+      });
+      return mission?.playerId ? { ownerPlayerId: mission.playerId } : null;
+    });
+  }
 
   async getBoard(locationId: string, playerId: string): Promise<BoardMission[]> {
     const tier = await this.viewerTier(playerId, locationId);

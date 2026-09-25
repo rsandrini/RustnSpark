@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "The raiders broke first — {shield} soaked by the shields, {armor} by the plate, {hull} into the frame. The wreck paid {credits}.",
+    "They had no second answer — {shield} on the shields, {armor} on the armor, {hull} hull stress. Salvage duties: {credits}."
+  ],
+  "legacy": [
+    "The raiders broke first — the wreck paid {credits}.",
+    "They had no second answer. Salvage duties: {credits}."
+  ]
+}

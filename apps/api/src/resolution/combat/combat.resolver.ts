@@ -96,6 +96,7 @@ export function resolveCombat(
 
       const hit = roll + atk.pdf + bonus >= dc;
       let damage = 0;
+      let armorAbsorbed = 0;
       let shieldAbsorbed = 0;
       if (hit) {
         const base = atk.pdf + rng.int(1, rules.damage_die);
@@ -103,6 +104,9 @@ export function resolveCombat(
         const bli = Math.min(dfd.bli, rules.armor_cap);
         // Same expression as the oracle (fura cancels algebraically — known defect).
         damage = Math.max(1, roundHalfEven(base - fura - bli + fura));
+        // What armor soaked: the pre-armor hit minus what landed (S9.0 layer split;
+        // recording draws no RNG — the tapes only replay outcomes).
+        armorAbsorbed = base - damage;
         if (isA) {
           shieldAbsorbed = Math.min(escB, damage);
           escB -= shieldAbsorbed;
@@ -121,6 +125,7 @@ export function resolveCombat(
         dc,
         hit,
         damage,
+        armorAbsorbed,
         shieldAbsorbed,
         hp: isA ? hpB : hpA,
       });

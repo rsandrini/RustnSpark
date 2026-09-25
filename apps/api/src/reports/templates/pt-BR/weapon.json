@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} travou o alimentador sob carga — cada segundo tiro vai para lugar nenhum. Condição {condition} ({conditionLost} pontos).",
+    "Artilharia degradada: {part} em {condition}, {conditionLost} pontos a menos. Metade dos canhões não responde."
+  ]
+}

@@ -16,6 +16,7 @@ import { ShipsModule } from './ships/ships.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { MissionsModule } from './missions/missions.module.js';
 import { EconomyModule } from './economy/economy.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { TokenService } from './auth/token.service.js';
 
@@ -36,6 +37,7 @@ import { TokenService } from './auth/token.service.js';
     ConfigModule,
     MissionsModule,
     EconomyModule,
+    ReportsModule,
     AdminModule,
   ],
   providers: [

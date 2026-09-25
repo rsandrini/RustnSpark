@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} dropped out of the layer stack — the next hit bypasses the shields. Condition {condition} ({conditionLost} points).",
+    "Defense grid gap: {part} at {condition} after {conditionLost} points. Whatever comes next goes straight through."
+  ]
+}

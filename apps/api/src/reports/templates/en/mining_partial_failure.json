@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "The assay came back short — the buyer paid against the shortfall: {credits}.",
+    "Partial delivery: part of the load didn't grade. {credits} recovered."
+  ]
+}

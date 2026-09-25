@@ -8,14 +8,14 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && cp -R src/reports/templates/en src/reports/templates/pt-BR dist/reports/templates/",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:unit": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects unit",
     "test:int": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects integration --runInBand",
-    "test:e2e": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects e2e",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects e2e --runInBand",
     "test:validation": "node --disable-warning=ExperimentalWarning --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects validation",
     "admin:create": "node --loader ts-node/esm src/admin/cli/create-admin.cli.ts",
     "db:generate": "prisma generate",

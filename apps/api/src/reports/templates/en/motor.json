@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} seized under thrust — condition {condition}, {conditionLost} points gone. This leg is written off; so is the mission.",
+    "The drive quit mid-burn: {part} at {condition} after {conditionLost} points. The abort stands."
+  ]
+}

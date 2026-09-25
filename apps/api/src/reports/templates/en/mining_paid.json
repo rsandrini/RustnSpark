@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "The buyer settled in full — {credits} for the load.",
+    "Cargo signed off: {credits} landed in the account."
+  ]
+}

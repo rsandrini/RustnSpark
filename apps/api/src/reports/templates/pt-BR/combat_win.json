@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Os saqueadores cederam primeiro — {shield} no escudo, {armor} na blindagem, {hull} no casco. Os destroços pagaram {credits}.",
+    "Não tiveram resposta — {shield} no escudo, {armor} na blindagem, {hull} de estresse no casco. Trabalho de salvagem: {credits}."
+  ],
+  "legacy": [
+    "Os saqueadores cederam primeiro — os destroços pagaram {credits}.",
+    "Não tiveram resposta. Trabalho de salvagem: {credits}."
+  ]
+}

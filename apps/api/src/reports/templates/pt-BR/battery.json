@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Queda de energia — {part} em {condition} após {conditionLost} pontos. Os escudos ficam apagados até o próximo porto.",
+    "{part} descarregou sob carga: condição {condition}, {conditionLost} pontos perdidos. Rede de escudos offline nesta perna."
+  ]
+}

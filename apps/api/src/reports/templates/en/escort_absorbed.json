@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "The escort ate the first volley — {magnitude} never reached you. The rest split across your layers: {shield} shields, {armor} plate, {hull} frame; you still gave up {hp}.",
+    "Your wingman covered the crossfire — {magnitude} absorbed on their side. Yours: {shield}/{armor}/{hull}, hull delta {hp}."
+  ],
+  "legacy": [
+    "The escort ate the first volley — {magnitude} never reached you; you still gave up {hp}.",
+    "Your wingman covered the crossfire — {magnitude} absorbed on their side, hull delta {hp}."
+  ]
+}

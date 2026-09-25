@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
-import type { MissionInstance } from '@prisma/client';
+import type { MissionInstance, MissionLog, Prisma } from '@prisma/client';
 import { Job, Queue } from 'bullmq';
 import request from 'supertest';
 import { seed } from '../../prisma/seed.js';
@@ -309,6 +309,22 @@ describe('MissionLog replay determinism (S7.6)', () => {
     return embed as StoredLegs;
   }
 
+  // S9.0: v1 rows stored the six core keys only. v2 only ADDS optional fields, so
+  // projecting a v2 event down to those keys is exactly its v1 shape.
+  function asV1(event: MissionOutcome['events'][number]): Omit<
+    MissionOutcome['events'][number],
+    'cascade' | 'consequence' | 'fuelLost'
+  > {
+    return {
+      leg: event.leg,
+      category: event.category,
+      type: event.type,
+      actors: event.actors,
+      effects: event.effects,
+      magnitude: event.magnitude,
+    };
+  }
+
   // jsonb round-trips floats (e.g. sheet.autonomy) with a different last bit than the
   // in-memory double; acceptance is identical *events*, plus matching leg statuses.
   function legStatuses(legs: readonly { status: string }[]): string[] {
@@ -415,6 +431,70 @@ describe('MissionLog replay determinism (S7.6)', () => {
       rules: configService.snapshot().rules,
     });
     expect(wrongOutcome.events).not.toEqual(stored.events);
+  });
+
+  it('replays a v1-shaped log (schemaVersion 1) to identical core events (S9.0)', async () => {
+    const player = await authFor(testApp.app);
+
+    // Find a seed whose run actually carries v2 enrichment (a part choke), so the
+    // projection below strips real fields instead of passing vacuously. Choke odds
+    // at condition 2 are ~87% per critical part per leg, so the first candidate
+    // essentially always wins; later candidates only re-run after a clean mission
+    // (ship IN_PORT, just moved back to origin).
+    let source: MissionLog | null = null;
+    for (const candidate of [
+      's7.6-v1-choke-1',
+      's7.6-v1-choke-2',
+      's7.6-v1-choke-3',
+      's7.6-v1-choke-4',
+      's7.6-v1-choke-5',
+      's7.6-v1-choke-6',
+    ]) {
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { status: 'IN_PORT', currentLocationId: 'ceres' },
+      });
+      await prisma.partInstance.updateMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        data: { condition: 2 },
+      });
+      const mission = await createAcceptedMission(player, candidate, [150, 100]);
+      await resolveFreshMission(player, mission.id);
+      const log = await prisma.missionLog.findUniqueOrThrow({
+        where: { missionId: mission.id },
+      });
+      const events = storedLegsOf(log.legs).events;
+      if (events.some((event) => event.consequence !== undefined)) {
+        source = log;
+        break;
+      }
+    }
+    expect(source).not.toBeNull();
+    expect(source!.schemaVersion).toBe(2);
+
+    // Downgrade the row the way a pre-S9.0 log looks in production: v1 projection,
+    // schemaVersion 1. v1 rows in a real database are simply never touched.
+    const v2 = storedLegsOf(source!.legs);
+    await prisma.missionLog.update({
+      where: { missionId: source!.missionId },
+      data: {
+        schemaVersion: 1,
+        legs: { legs: v2.legs, events: v2.events.map(asV1) } as unknown as Prisma.InputJsonValue,
+      },
+    });
+    const v1Log = await prisma.missionLog.findUniqueOrThrow({
+      where: { missionId: source!.missionId },
+    });
+    expect(v1Log.schemaVersion).toBe(1);
+    const v1Stored = storedLegsOf(v1Log.legs);
+    expect(v1Stored.events.every((event) => event.consequence === undefined)).toBe(true);
+
+    // Replay still reproduces the v1 core: same engine, same inputs; the v2 fields
+    // it now computes are projected away for the comparison.
+    const recomputed = await replayFromLog(v1Log);
+    expect(recomputed.events.map(asV1)).toEqual(v1Stored.events);
+    expect(legStatuses(recomputed.legs)).toEqual(legStatuses(v1Stored.legs));
+    expect(recomputed.status).toBe(v1Log.outcome);
   });
 });
 

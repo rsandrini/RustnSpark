@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Contract settled — {credits} credited to the account.",
+    "The books closed clean: {credits} for the run."
+  ]
+}

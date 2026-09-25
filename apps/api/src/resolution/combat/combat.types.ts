@@ -25,6 +25,8 @@ export interface CombatAttackEvent {
   readonly hit: boolean;
   /** Total damage before shield absorption (0 on miss). */
   readonly damage: number;
+  /** Pre-armor damage minus applied damage — what BLI deflected (0 on miss). */
+  readonly armorAbsorbed: number;
   readonly shieldAbsorbed: number;
   /** Defender HP after this attack. */
   readonly hp: number;

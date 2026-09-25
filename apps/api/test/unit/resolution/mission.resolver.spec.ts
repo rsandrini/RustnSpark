@@ -286,9 +286,75 @@ describe('S5.9 — escort client destroyed fails the mission', () => {
         expect(out.status).toBe('failed');
         expect(out.client?.hp).toBe(0);
         expect(out.events.some((event) => event.type === 'escort_client_destroyed')).toBe(true);
+        // S9.0: the absorbed-damage event carries the fight's layer split too.
+        const absorbed = out.events.find((event) => event.type === 'escort_absorbed');
+        expect(absorbed?.cascade).toBeDefined();
+        expect(absorbed?.cascade!.hp).toBeGreaterThanOrEqual(0);
         break;
       }
     }
     expect(destroyed).toBe(true);
+  });
+});
+
+describe('S9.0 — event enrichment (schemaVersion 2)', () => {
+  it('combat_win / combat_loss carry the {shield, armor, hp} layer split (GDD §15)', () => {
+    const hostile = mission({
+      relation: 'HOSTILE',
+      stance: 'AGGRESSIVE',
+      legs: [
+        { distance: 800, danger: 10, zone: 3, env: { id: 'debris', level: 3, fuelMult: 1.1 } },
+      ],
+    });
+    let found = false;
+    for (let seed = 0; seed < 500 && !found; seed += 1) {
+      const out = resolve(seed, snapshot({ fuel: 800 }), hostile);
+      for (const event of out.events) {
+        if (event.type !== 'combat_win' && event.type !== 'combat_loss') continue;
+        const cascade = event.cascade;
+        expect(cascade).toBeDefined();
+        expect(Number.isInteger(cascade!.shield)).toBe(true);
+        expect(Number.isInteger(cascade!.armor)).toBe(true);
+        expect(Number.isInteger(cascade!.hp)).toBe(true);
+        expect(cascade!.shield).toBeGreaterThanOrEqual(0);
+        expect(cascade!.armor).toBeGreaterThanOrEqual(0);
+        expect(cascade!.hp).toBeGreaterThanOrEqual(0);
+        // No escort client here, so the hull-pool loss IS the net HP effect.
+        expect(cascade!.hp).toBe(-event.effects.hp);
+        if (cascade!.shield + cascade!.armor + cascade!.hp > 0) found = true;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('part-failure events carry consequence; tank leaks carry an integer fuelLost', () => {
+    const weakParts = PARTS.map((part) => ({ ...part, condition: 5 }));
+    const PART_FAILURES = new Set(['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor']);
+    let sawConsequence = false;
+    let sawTankLeak = false;
+    for (let seed = 0; seed < 400 && !(sawConsequence && sawTankLeak); seed += 1) {
+      const out = resolve(
+        seed,
+        snapshot({ parts: weakParts, fuel: 500 }),
+        mission({
+          legs: [{ distance: 400, danger: 0, zone: 1, env: { id: 'open', level: 1, fuelMult: 1 } }],
+        }),
+      );
+      for (const event of out.events) {
+        if (!PART_FAILURES.has(event.type)) continue;
+        expect(typeof event.consequence).toBe('string');
+        expect(event.consequence!.length).toBeGreaterThan(0);
+        sawConsequence = true;
+        if (event.type === 'tank') {
+          expect(Number.isInteger(event.fuelLost)).toBe(true);
+          expect(event.fuelLost!).toBeGreaterThanOrEqual(0);
+          sawTankLeak = true;
+        } else {
+          expect(event.fuelLost).toBeUndefined();
+        }
+      }
+    }
+    expect(sawConsequence).toBe(true);
+    expect(sawTankLeak).toBe(true);
   });
 });

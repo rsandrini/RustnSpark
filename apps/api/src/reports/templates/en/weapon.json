@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} misfeeds under load — every second shot goes nowhere. Condition {condition} ({conditionLost} points).",
+    "Gunnery degraded: {part} at {condition}, {conditionLost} points gone. Half the barrels don't answer."
+  ]
+}
