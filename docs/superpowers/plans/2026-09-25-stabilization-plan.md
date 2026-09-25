@@ -42,13 +42,13 @@
 | T1.4 client hygiene | **Done** — grid size from the server, catalog popups, axe on every screen, modal focus, i18n-key guard; also fixed a report bug (parts printed as instance ids) |
 | T1.5 polling | **Done** — schedule follows the mission (480 → <90 requests per 15-min mission) |
 | T1.6 old deferrals | **Done** except the ion-engine energy value (owner content decision) |
-| T2.1 decisions | **Done** — D40–D42 recorded; **D43 opened** (first mission for a new player) |
+| T2.1 decisions | **Done** — D40–D42 recorded; D43 decided and implemented |
 | T2.2 branches | **Done** — every step's merge commit is tagged `m1`…`m10`, `stabilization-1/2`; merged branches deleted |
 | T2.3 re-scope | **Done** — Steps 11–12 notes in the main plan |
 
 **Also found and fixed along the way** (not in the original list): the repair endpoint answered 500 (not 409) when the balance could not cover it and lacked the negative-balance guard; two flaky tests (repair cost depended on random part ids; a 1 ms timer assertion); `/register` bounced to `/login`; the hangar's CSS (unitless font-size, dead absolute-position rule); missing translations; Auto layout sent no part ids; the transit screen showed a stale "no report".
 
-**Still open:** D43 (owner decision), the manual S10.10 sign-off by a person (desktop + phone, both locales), the ion-engine energy value, and promoting the browser smoke to a required check after a week green.
+**Still open:** the manual S10.10 sign-off by a person (desktop + phone, both locales), the ion-engine energy value, and promoting the browser smoke to a required check after a week green.
 
 ---
 
@@ -110,7 +110,7 @@
 **T1.3 Real-API browser smoke (F10; pulls S12.4 forward).** Depends on: T0.5, T1.1  · Effort L — **Done (2026-09-25); runs non-blocking in CI per owner decision 6.**
 - Delivered: `apps/web/e2e/{smoke.spec.ts,global-setup.ts}` + `playwright.config.ts` (desktop 1280×800 and phone 360×740 projects); CI job `browser-smoke` (compose `dev` stack → admin via CLI → Playwright, report and screenshots as artifacts, `continue-on-error`, not part of the aggregate `ci` gate). The suite registers a real player per faction through the UI, then runs hangar → map → board → accept → dispatch → the worker resolves → report (summary/narrative/log) → port tabs → profile, checking every screen for horizontal overflow, raw catalog codes and leaked i18n keys, plus a pt-BR switch test.
 - **Found by running the real thing** (all fixed unless noted): direct visits to `/register` bounced to `/login`; the hangar yard labels rendered at 16 cells (unitless CSS `font-size: 0.42`) and prototype `.block` CSS (`position: absolute`) pulled every `btn block` button out of the layout (916 px overflow); hangar stats printed `hangar.stats.mob`, `port.sellAll` and a raw `{{used}}/{{budget}}`, plus `142857.14285…` for autonomy; the transit page never showed the finished mission's report (the latest-report query was cached from before the mission ended); expired offers read "Expires in Time is up". New guards: a static i18n-key test (literal keys and dynamic key families must exist in both locales) and axe checks.
-- **Open, needs an owner decision (D43):** nothing guarantees a brand-new player can take a first mission. The seeded `missions.board_min_per_location` is **1**, so a port lists a single offer, and most templates need parts the starter ship lacks (TRANSPORT needs pressurized life support, ESCORT needs weapons, MINING a rig...). The smoke tunes the board to 20 offers and records the remaining case as a visible `known-gap` skip. Options: a starter-safe mission guaranteed per home port; a higher board minimum for hubs; or adding the needed part to the starter kit.
+- **D43 (first mission for a new player) — decided and implemented (2026-09-25):** a guaranteed, private, start-safe mission per player (see D43 in the main plan). The smoke no longer tunes the board or skips: it runs on default settings and fails if a new player has nothing to accept.
 - Local run needs Chromium's system libs (`libnspr4`, `libnss3`); CI installs them with `playwright install --with-deps`.
 
 **T1.4 Client hygiene from the review backlog.** Depends on: T1.2  · Effort M

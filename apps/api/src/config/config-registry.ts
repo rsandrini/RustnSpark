@@ -1077,6 +1077,31 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.starter_guarantee_max_completed',
+    group: 'missions',
+    type: 'integer',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.starter_guarantee_max_completed),
+    description: {
+      en: 'A player who has completed fewer missions than this and has nothing takeable on the board gets a private start-safe mission (0 = off).',
+      'pt-BR':
+        'Quem concluiu menos missões que isso e não tem nada aceitável no quadro recebe uma missão inicial segura e privada (0 = desligado).',
+    },
+  },
+  {
+    key: 'missions.starter_max_zone',
+    group: 'missions',
+    type: 'integer',
+    min: 0,
+    max: 3,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.starter_max_zone),
+    description: {
+      en: 'Highest zone a start-safe mission may cross (0-1 is the safe core).',
+      'pt-BR': 'Maior zona que uma missão inicial segura pode cruzar (0-1 é o núcleo seguro).',
+    },
+  },
+  {
     key: 'missions.board_min_per_location',
     group: 'missions',
     type: 'integer',

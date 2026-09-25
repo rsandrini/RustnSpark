@@ -190,6 +190,11 @@ export function BoardPage({ guided = false }: BoardPageProps) {
                     <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
                       {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
                     </span>
+                    {offer.privatePlayerId !== null && (
+                      <span className="badge ok" data-testid="starter-badge">
+                        {t('board.starterBadge')}
+                      </span>
+                    )}
                     {offer.status !== 'AVAILABLE' && (
                       <span className="badge">{t(`board.status.${offer.status}`)}</span>
                     )}

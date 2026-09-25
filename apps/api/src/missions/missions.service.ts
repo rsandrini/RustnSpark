@@ -113,8 +113,68 @@ export class MissionsService implements OnModuleInit {
 
   async getBoard(locationId: string, playerId: string): Promise<BoardOffer[]> {
     const viewer = await this.viewerContext(playerId, locationId);
-    const rows = await this.board.getBoard(locationId, viewer.tier);
-    return this.withEligibility(rows, viewer, playerId, locationId);
+    const rows = await this.board.getBoard(locationId, viewer.tier, playerId);
+    const offers = await this.withEligibility(rows, viewer, playerId, locationId);
+    if (offers.some((offer) => offer.eligibility.eligible)) return offers;
+
+    // D43: nothing on the board is takeable for this player. A new player must always have a
+    // first mission, so a private start-safe one is created (or already exists) and the board
+    // is read again to include it.
+    const created = await this.ensureStarterOffer(playerId, locationId, viewer);
+    if (!created) return offers;
+    const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId);
+    return this.withEligibility(withStarter, viewer, playerId, locationId);
+  }
+
+  /**
+   * D43 guarantee: while the player has completed fewer than `starter_guarantee_max_completed`
+   * missions, has no mission in flight, and their viable ship is at rest in this port, make sure
+   * a private DELIVERY mission inside the safe zones exists that THIS ship can accept. Returns
+   * whether a new offer was created.
+   */
+  private async ensureStarterOffer(
+    playerId: string,
+    locationId: string,
+    viewer: ViewerContext,
+  ): Promise<boolean> {
+    const { rules } = this.config.snapshot();
+    const { ship } = viewer;
+    if (rules.missions.starter_guarantee_max_completed <= 0 || ship === undefined) return false;
+    if (ship.currentLocationId !== locationId || ship.status !== 'IN_PORT') return false;
+
+    const [completed, active] = await Promise.all([
+      this.prisma.missionInstance.count({
+        where: { playerId, status: { in: ['DONE', 'FAILED'] } },
+      }),
+      this.prisma.missionInstance.count({
+        where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+      }),
+    ]);
+    if (completed >= rules.missions.starter_guarantee_max_completed || active > 0) return false;
+
+    const sheet = deriveSheet(viewer.installed, rules);
+    if (!checkViability(sheet, viewer.installed, rules).viable) return false;
+
+    const templates = await this.prisma.missionTemplate.findMany({
+      where: { type: 'DELIVERY', active: true },
+      select: { id: true, requirements: true },
+    });
+    const requirementsById = new Map(templates.map((entry) => [entry.id, entry.requirements]));
+    return this.board.createStarterOffer({
+      playerId,
+      locationId,
+      types: ['DELIVERY'],
+      isTakeable: (draft) =>
+        checkMissionRequirements(
+          {
+            missionType: draft.type,
+            requirements: requirementsById.get(draft.templateId),
+            sheet,
+            parts: viewer.installed,
+          },
+          rules,
+        ).reasons.length === 0,
+    });
   }
 
   async getActive(playerId: string): Promise<ActiveMission[]> {
@@ -183,6 +243,10 @@ export class MissionsService implements OnModuleInit {
     // would roll the EXPIRED flip back, and the row must stay flipped after the 409.
     const probe = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!probe) throw new NotFoundException('mission not found');
+    // Someone else's private start-safe mission does not exist as far as this player can tell.
+    if (probe.privatePlayerId !== null && probe.privatePlayerId !== playerId) {
+      throw new NotFoundException('mission not found');
+    }
     if (
       (probe.status === 'AVAILABLE' || probe.status === 'HELD') &&
       probe.expiresAt.getTime() <= Date.now()
@@ -259,6 +323,10 @@ export class MissionsService implements OnModuleInit {
 
     const mission = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!mission) throw new NotFoundException('mission not found');
+    // Someone else's private start-safe mission does not exist as far as this player can tell.
+    if (mission.privatePlayerId !== null && mission.privatePlayerId !== playerId) {
+      throw new NotFoundException('mission not found');
+    }
 
     // Idempotent: a repeat accept by the same player replays the stored outcome (D29).
     if (mission.status === 'ACCEPTED' && mission.playerId === playerId) {

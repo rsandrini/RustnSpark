@@ -37,6 +37,7 @@ const mission = (over: Partial<ActiveMission> = {}): ActiveMission => ({
   expiresAt: iso(2 * 60 * 60 * 1000),
   status: 'ACCEPTED',
   playerId: 'player-1',
+  privatePlayerId: null,
   shipId: null,
   acceptedAt: iso(-5 * 60 * 1000),
   arrivalAt: null,

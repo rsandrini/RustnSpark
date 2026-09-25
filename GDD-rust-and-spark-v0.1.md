@@ -495,6 +495,8 @@ v2 — pilar próprio).
 idealmente ≥1). Templates preenchidos com dados reais do mapa (origem, destino, facção,
 carga, prazo). Expiram e renovam, sem punir por perder — oportunidade, não fracasso.
 
+**Primeira missão garantida:** todo jogador novo sempre tem uma missão que a própria nave consegue aceitar. Se nada no quadro serve, o jogo cria uma **missão inicial privada** (só o dono vê e aceita): uma entrega em rotas tão seguras quanto o porto de origem, oferecida enquanto o jogador tiver concluído poucas missões (ajustável no Admin: `missions.starter_guarantee_max_completed`, `missions.starter_max_zone`).
+
 ---
 
 ## 13. Economia

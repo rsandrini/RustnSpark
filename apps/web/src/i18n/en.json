@@ -404,7 +404,8 @@
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded"
     },
-    "expiredLabel": "Expired"
+    "expiredLabel": "Expired",
+    "starterBadge": "Starter mission"
   },
   "map": {
     "title": "Sector map",

@@ -78,4 +78,43 @@ describe('board (S10.6)', () => {
     expect(heading.nextElementSibling?.textContent).toBe('Portão Kessler');
     expect(document.querySelectorAll('.item')).toHaveLength(4);
   });
+
+  it("labels the player's private start-safe mission (D43) and no shared offer", async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'starter-1',
+              templateId: 'delivery_luna',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'tycho',
+              legs: [],
+              cargo: {},
+              reward: 300,
+              expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: 'player-1',
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'starter|player-1|ceres|0',
+              version: 0,
+              rewardEstimate: 300,
+              eligibility: { eligible: true, reasons: [] },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/board'] });
+    expect(await screen.findByTestId('starter-badge')).toHaveTextContent('Starter mission');
+    expect(screen.getAllByTestId('starter-badge')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled();
+  });
 });

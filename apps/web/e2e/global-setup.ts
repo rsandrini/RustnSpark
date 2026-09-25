@@ -22,13 +22,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const headers = { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` };
 
   // The seeded defaults are tuned for a live game, not a smoke test: missions take real minutes
-  // (`time_scale` 1) and every port lists ONE offer (`board_min_per_location` 1), which for a
-  // brand-new player is usually a mission their starter ship cannot take. Tune both through the
-  // real tuning API (D33: the database wins, effective immediately).
-  const tuning: Array<[string, number]> = [
-    ['missions.time_scale', 0.001],
-    ['missions.board_min_per_location', 20],
-  ];
+  // (`time_scale` 1). Only that is changed. The board is deliberately left at its default (ONE
+  // public offer per port): a new player's first mission must come from the private start-safe
+  // mission (D43), and this suite is what proves it on the real stack.
+  const tuning: Array<[string, number]> = [['missions.time_scale', 0.001]];
   for (const [key, value] of tuning) {
     const revisions = await fetch(`${baseURL}/v1/admin/tuning/revisions?limit=1`, { headers });
     const latest = revisions.ok

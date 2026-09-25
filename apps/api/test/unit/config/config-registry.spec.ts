@@ -75,6 +75,8 @@ const EXPECTED_KEYS: readonly string[] = [
   'missions.duration_class_cutoffs',
   'missions.duration_k',
   'missions.hold_max',
+  'missions.starter_guarantee_max_completed',
+  'missions.starter_max_zone',
   'missions.time_scale',
   'onboarding.home_locations',
   'onboarding.starter_parts',
