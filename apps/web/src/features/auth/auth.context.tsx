@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { setAccessToken, setOnUnauthorized } from '../../api/client';
 import { authApi } from './auth.api';
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleUnauthorized = useCallback(() => {
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
-    navigate('/login');
+    void navigate('/login');
   }, [navigate]);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // load; navigating again here would override that redirect.
       if (profile === null) return;
       // A pilot without a faction has no ship yet: onboarding first (S10.2).
-      navigate(profile.factionId ? '/' : '/onboarding');
+      void navigate(profile.factionId ? '/' : '/onboarding');
     },
     [loadProfile, navigate],
   );
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(accessToken);
       const profile = await loadProfile(accessToken);
       if (profile === null) return;
-      navigate('/onboarding');
+      void navigate('/onboarding');
     },
     [loadProfile, navigate],
   );
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
-    navigate('/login');
+    void navigate('/login');
   }, [navigate]);
 
   const value = useMemo(

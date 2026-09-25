@@ -11,15 +11,6 @@ console.error = (...args: unknown[]) => {
   originalError(...args);
 };
 
-const originalWarn = console.warn;
-console.warn = (...args: unknown[]) => {
-  const message = typeof args[0] === 'string' ? args[0] : '';
-  if (message.includes('v7_startTransition')) {
-    return;
-  }
-  originalWarn(...args);
-};
-
 beforeAll(async () => {
   server.listen({ onUnhandledRequest: 'error' });
   await new Promise<void>((resolve) => {

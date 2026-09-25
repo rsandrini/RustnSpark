@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
@@ -40,7 +40,7 @@ export function OnboardingPage() {
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
-      navigate('/');
+      void navigate('/');
     },
   });
 
