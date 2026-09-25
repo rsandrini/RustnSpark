@@ -97,6 +97,26 @@
 - Files: per item.
 - Acceptance: each item from the Step 3/4 review list is either done with a test or explicitly re-deferred with a reason in the plan: S3.7 (`economy.start_credits` HTTP tuning proving Admin changes apply immediately); no-mock admin login test; tier threshold ruling; ion engine energy value; minors M2, M3, M5, M6, M11, M15, M17 (Step 3) and M4, M6, M9, M12 (Step 4); the "config key mutation" test now that Step 5 landed (`economy.rescue_fuel_fraction`, `economy.sell_ratio`, `scavenging.cooldown_seconds` verified live over HTTP).
 
+**T1.6 result (audited 2026-09-25 against the code and the review doc `docs/reviews/2026-09-23-step3-step4-review.md`):**
+
+| Old deferral | Status |
+|---|---|
+| S3.7: Admin change reaches gameplay over HTTP (`economy.start_credits`, then the keys added later: `economy.rescue_fuel_fraction`, `economy.sell_ratio`, `scavenging.cooldown_seconds`) | **Done** — `test/integration/tuning-live.int-spec.ts` (4 tests) |
+| No-mock admin login test | **Already done** — `admin-access.int-spec.ts` creates the admin through the CLI and logs in via `POST /v1/auth/login` |
+| Seeded pt-BR text still English "in one spot" | **Done** — `seed.int-spec.ts` now fails on any seeded pt-BR text identical to its English (only allow-listed names/loanwords: Luna, Sun, Explorers, Laser, Radar); the original defect no longer exists |
+| Language switcher; login/register in Portuguese | **Done** (Step 3 lower-priority commit; keys are parity-tested) |
+| Magic-number guard "checks nothing yet" | **Done** — `test/unit/lint/magic-numbers.spec.ts` covers `resolution/`, `economy/`, `missions/` |
+| Unused code / missing admin-query index | **Done** — `TuningRevision(entityType, entityId, id desc)` index exists |
+| Auto-assemble silently drops parts the player does not own | **Done** — `filterCandidateParts` rejects them (403) |
+| Part load order not stable | **Done** — `findPlayerParts` orders by `id` |
+| Ship class shown nowhere | **Done** — shown in the hangar (Step 10) |
+| Starter kit not validated against active items | **Done** — `ConfigReferenceValidator` (`STARTER_PART_NOT_ACTIVE`) |
+| Onboarding not atomic / repeatable | **Done** — single transaction under a Player row lock, second call returns the existing ship |
+| Fixture "generated from this implementation, not the oracle" | **Done** — Step 5 parity against the Python oracle tapes (600 tournament tapes) |
+| Ship-tier thresholds ruling | **Closed by D14** (installed-part value thresholds, decided by the owner) |
+| Ion engine energy value | **Open (owner content decision)** — `engine_ion_micro` ships with the tournament-validated `energyCont: 0`; it is Admin-tunable, so it needs a ruling, not code |
+| Generated API client | Tracked as T1.2 |
+
 ---
 
 ## Phase 2 — Decisions and housekeeping

@@ -325,4 +325,46 @@ describe('database seed (S3.4)', () => {
 
     expect(await everyLocationCanServeATemplate(prisma)).toBe(true);
   });
+
+  // The existing bilingual check only proves "both locales are non-empty", which an English
+  // string pasted into the pt-BR slot satisfies. This one fails on any seeded pt-BR text that is
+  // identical to its English text, unless it is a proper name / loanword that is genuinely the
+  // same in both languages (listed explicitly, so adding to it is a visible decision).
+  it('never seeds an English sentence into a pt-BR slot (identical texts must be allow-listed names)', async () => {
+    await seed(prisma);
+    const SAME_IN_BOTH = new Set<string>([
+      // proper names and loanwords
+      'Luna',
+      'Sun',
+      'Explorers',
+      // identical in Portuguese
+      'Laser',
+      'Radar',
+    ]);
+    const tables: Array<{ table: string; rows: Array<Record<string, unknown>> }> = [
+      { table: 'faction', rows: await prisma.faction.findMany() },
+      { table: 'environment', rows: await prisma.environment.findMany() },
+      { table: 'location', rows: await prisma.location.findMany() },
+      { table: 'partCatalog', rows: await prisma.partCatalog.findMany() },
+      { table: 'missionTemplate', rows: await prisma.missionTemplate.findMany() },
+      { table: 'material', rows: await prisma.material.findMany() },
+    ];
+    const offenders: string[] = [];
+    for (const { table, rows } of tables) {
+      for (const row of rows) {
+        for (const field of ['displayName', 'description']) {
+          const value = row[field] as { en?: string; 'pt-BR'?: string } | undefined;
+          if (value?.en === undefined || value['pt-BR'] === undefined) continue;
+          if (value.en.trim().toLowerCase() === value['pt-BR'].trim().toLowerCase()) {
+            if (!SAME_IN_BOTH.has(value.en.trim())) {
+              offenders.push(
+                `${table}.${String(row['id'] ?? row['partType'])}.${field}: "${value.en}"`,
+              );
+            }
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
