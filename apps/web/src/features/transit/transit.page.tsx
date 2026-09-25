@@ -13,9 +13,8 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
-
-const ACTIVE_REFETCH_MS = 2000;
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -30,7 +29,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
 
   const activeQuery = useQuery({
     queryKey: ['active'],
-    refetchInterval: ACTIVE_REFETCH_MS,
+    refetchInterval: (query) => transitPollInterval(query.state.data, serverNow()),
     queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
   });
   const shipsQuery = useQuery({
@@ -39,8 +38,14 @@ export function TransitPage({ guided = false }: TransitPageProps) {
   });
   // The newest finished run, straight from the server: it survives a reload, and its
   // outcome (not the mere absence of an active mission) decides what the page says.
+  //
+  // It is only needed once nothing is in flight, and it must be fetched AFTER the mission ends:
+  // a copy read at page load (before the worker finished) would keep showing "no report". So it
+  // is enabled by the active list going empty, which fetches fresh data at that moment.
+  const activeIsEmpty = activeQuery.isSuccess && (activeQuery.data ?? []).length === 0;
   const latestReportQuery = useQuery({
     queryKey: ['reports', 'latest'],
+    enabled: activeIsEmpty,
     queryFn: () => client.get<ReportListResponse>('/v1/reports?limit=1'),
   });
   const worldQuery = useQuery({
@@ -76,7 +81,8 @@ export function TransitPage({ guided = false }: TransitPageProps) {
     activeQuery.isLoading ||
     shipsQuery.isLoading ||
     worldQuery.isLoading ||
-    latestReportQuery.isLoading
+    // A previous (stale) answer must not flash the empty state while the fresh one loads.
+    (activeIsEmpty && latestReportQuery.isFetching)
   ) {
     return (
       <main className="app" data-guided={guided ? '' : undefined}>

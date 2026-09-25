@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type PartCatalog as PartCatalogRow } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
 import { localizeDisplayName } from '../common/locale/localize.js';
@@ -12,6 +12,17 @@ export interface CatalogItem {
   partClass: string;
 }
 
+/** What a detail popup shows for a catalog entry (report references, S10.8). */
+export interface CatalogDetail {
+  readonly id: string;
+  readonly kind: 'part' | 'material';
+  readonly displayName: { en: string; 'pt-BR': string };
+  readonly description: { en: string; 'pt-BR': string };
+  /** Part class (parts) or rarity (materials). */
+  readonly category: string;
+  readonly rarity: string;
+}
+
 export interface InventoryItem {
   id: string;
   partType: string;
@@ -21,6 +32,14 @@ export interface InventoryItem {
   location: string;
   shipId: string | null;
   catalog: PartCatalog;
+}
+
+function bilingual(value: unknown): { en: string; 'pt-BR': string } {
+  const record = (value ?? {}) as Record<string, unknown>;
+  return {
+    en: localizeDisplayName(record, 'en'),
+    'pt-BR': localizeDisplayName(record, 'pt-BR'),
+  };
 }
 
 function readFlag(specialProp: unknown, key: string): boolean {
@@ -89,6 +108,34 @@ export class PartsService {
       displayName: localizeDisplayName(row.displayName as Record<string, unknown>, locale),
       partClass: row.partClass,
     }));
+  }
+
+  // Read-only catalog lookups for the report popups. Unknown or retired entries are 404: a
+  // stored log may name a part that has since left the catalog, and the popup handles that.
+  async partDetail(partType: string): Promise<CatalogDetail> {
+    const row = await this.prisma.partCatalog.findUnique({ where: { partType } });
+    if (!row) throw new NotFoundException('part not found');
+    return {
+      id: row.partType,
+      kind: 'part',
+      displayName: bilingual(row.displayName),
+      description: bilingual(row.description),
+      category: row.partClass,
+      rarity: row.rarity,
+    };
+  }
+
+  async materialDetail(id: string): Promise<CatalogDetail> {
+    const row = await this.prisma.material.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('material not found');
+    return {
+      id: row.id,
+      kind: 'material',
+      displayName: bilingual(row.displayName),
+      description: bilingual(row.description),
+      category: row.rarity,
+      rarity: row.rarity,
+    };
   }
 
   async inventory(playerId: string): Promise<InventoryItem[]> {

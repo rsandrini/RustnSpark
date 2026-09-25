@@ -79,6 +79,12 @@ describe('repair job API (S8.4)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    // Repair cost depends on which (randomly-identified) parts a test damages; the 200-credit
+    // start balance cannot cover every combination. Tests about affording set their own balance.
+    await prisma.player.update({
+      where: { id: seeded.player.id },
+      data: { credits: 1_000_000 },
+    });
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -338,5 +344,38 @@ describe('repair job API (S8.4)', () => {
       .set(auth(player.token))
       .send({ targets: [{ partInstanceId: part.id, toCondition: 10 }] });
     expect(invalid.status).toBe(409);
+  });
+
+  it('start refuses with 409 INSUFFICIENT_FUNDS (never 500) and charges nothing', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 10);
+    await prisma.player.update({ where: { id: player.seeded.player.id }, data: { credits: 1 } });
+
+    const res = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ message: { error: 'INSUFFICIENT_FUNDS' } });
+    expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
+    const after = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(after.credits).toBe(1);
+  });
+
+  it('start is blocked while the balance is negative (spending guard, GDD §14)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 50);
+    await prisma.player.update({ where: { id: player.seeded.player.id }, data: { credits: -100 } });
+
+    const res = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ message: { error: 'BALANCE_NEGATIVE' } });
+    expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
   });
 });

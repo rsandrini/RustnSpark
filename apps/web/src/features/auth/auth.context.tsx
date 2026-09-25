@@ -32,11 +32,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
-  const handleUnauthorized = useCallback(() => {
+  const clearSession = useCallback(() => {
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
+  }, []);
+
+  // A session that died mid-use (an API call answered 401 and the silent refresh failed):
+  // clear it and send the player to sign in.
+  const handleUnauthorized = useCallback(() => {
+    clearSession();
     void navigate('/login');
-  }, [navigate]);
+  }, [clearSession, navigate]);
 
   useEffect(() => {
     setOnUnauthorized(handleUnauthorized);
@@ -69,9 +75,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [handleUnauthorized, loadProfile]);
 
+  // First load: try to restore a session from the refresh cookie. A visitor with no session is
+  // simply signed out — NOT redirected: /login and /register are public, and the protected
+  // routes send signed-out players to /login themselves (ProtectedRoute).
   useEffect(() => {
-    void refreshSession();
-  }, [refreshSession]);
+    void (async () => {
+      try {
+        const { accessToken } = await authApi.refresh();
+        setAccessToken(accessToken);
+        await loadProfile(accessToken);
+      } catch {
+        clearSession();
+      }
+    })();
+    // Runs once on mount; the callbacks are stable for the provider's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // After a trade the wallet must update, but a full session refresh would rotate the
   // refresh token on every purchase and log the player out on a transient failure. The

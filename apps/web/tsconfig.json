@@ -7,8 +7,8 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "resolveJsonModule": true,
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["src"],
+  "include": ["src", "e2e", "playwright.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -26,6 +26,12 @@ export interface ReportLog {
   readonly outcome: string;
   readonly events: readonly ParsedMissionEvent[];
   readonly legs: readonly ReportLegRef[];
+  /**
+   * Part instance id → catalog part type, from the mission's dispatch snapshot. Events name
+   * parts by instance id; this is what lets a renderer (and the Admin replay) turn them into
+   * catalog names without reading the player's current parts, which may have been sold.
+   */
+  readonly partTypeById: Readonly<Record<string, string>>;
   /** Wallet movement of the run (PlayerEvent.creditsDelta). */
   readonly credits: number;
   /** D37: balance after the payout; absent on pre-S9.0 PlayerEvents. */

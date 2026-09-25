@@ -1,19 +1,40 @@
 import { http, HttpResponse } from 'msw';
 import type {
   ActiveMission,
+  BuyResponse,
+  DispatchResponse,
   InventoryItem,
   LocalizedText,
+  LoginResponse,
   MarketListing,
+  MarketResponse,
   MaterialHolding,
+  MaterialsResponse,
   MissionOffer,
   Placement,
+  PlayerProfileResponse,
+  PreviewResponse,
+  RefreshResponse,
+  RefuelResponse,
+  RegisterResponse,
+  RepairQuoteResponse,
+  RepairStartResponse,
+  RescueResponse,
+  ReportListResponse,
+  ReportResponse,
+  ScavengeResponse,
+  SellMaterialResponse,
+  SellResponse,
+  CatalogDetail,
   ShipResponse,
+  ShipStatus,
+  UpdateLocaleResponse,
   WorldResponse,
 } from '../../api/generated';
 
 let wallet = 4820;
 let fuelState = 25;
-let shipStatus = 'IN_PORT';
+let shipStatus: ShipStatus = 'IN_PORT';
 
 const accessToken = 'test-access-token';
 
@@ -21,7 +42,7 @@ const profile = (factionId: string | null = null) => ({
   id: 'player-1',
   name: 'Test Pilot',
   credits: wallet,
-  role: 'PLAYER',
+  role: 'PLAYER' as const,
   locale: 'en',
   factionId,
 });
@@ -191,6 +212,7 @@ const ship = (): ShipResponse => ({
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
+  yard: { halfSize: 10 },
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -252,7 +274,7 @@ export const economyState = {
 };
 
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
-export function setShipStatus(status: string): void {
+export function setShipStatus(status: ShipStatus): void {
   shipStatus = status;
 }
 
@@ -311,75 +333,76 @@ const repairTargets = (raw: RepairTargetBody[]) =>
 const repairCostOf = (targets: { fromCondition: number; toCondition: number }[]) =>
   targets.reduce((sum, target) => sum + (target.toCondition - target.fromCondition) * 2, 0);
 
+/**
+ * A 200 response whose body is checked against the shared contract (`packages/contract`): a
+ * mock that drifts from the real response shape fails to compile instead of passing against
+ * a made-up payload. Error bodies stay untyped `HttpResponse.json` on purpose.
+ */
+function ok<T>(body: T): Response {
+  return HttpResponse.json(body as never, { status: 200 });
+}
+
 export const handlers = [
-  http.post('/v1/auth/login', () => HttpResponse.json({ accessToken }, { status: 200 })),
+  http.post('/v1/auth/login', () => ok<LoginResponse>({ accessToken })),
 
   http.post('/v1/auth/register', () =>
-    HttpResponse.json(
-      {
-        accessToken,
-        player: profile(),
-      },
-      { status: 200 },
-    ),
+    ok<RegisterResponse>({
+      accessToken,
+      player: profile(),
+    }),
   ),
 
-  http.post('/v1/auth/refresh', () => HttpResponse.json({ accessToken }, { status: 200 })),
+  http.post('/v1/auth/refresh', () => ok<RefreshResponse>({ accessToken })),
 
   http.post('/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
 
-  http.get('/v1/players/me', () => HttpResponse.json(profile(), { status: 200 })),
+  http.get('/v1/players/me', () => ok<PlayerProfileResponse>(profile())),
 
   http.post('/v1/players/me/locale', async ({ request }) => {
     const body = (await request.json()) as { locale: string };
-    return HttpResponse.json({ locale: body.locale }, { status: 200 });
+    return ok<UpdateLocaleResponse>({ locale: body.locale });
   }),
 
   http.post('/v1/players/me/onboarding', () =>
-    HttpResponse.json(
-      {
-        id: 'ship-1',
-        ownerPlayerId: 'player-1',
-        name: 'luna starter',
-        fuel: fuelState,
-        status: 'IN_PORT',
-        currentLocationId: 'ceres',
-        stance: 'NEUTRAL',
-        layout: [],
-        sheet: sheet(),
-        shipClass: 'MULTIROLE',
-      },
-      { status: 200 },
-    ),
+    ok<ShipResponse>({
+      id: 'ship-1',
+      ownerPlayerId: 'player-1',
+      name: 'luna starter',
+      fuel: fuelState,
+      status: 'IN_PORT',
+      currentLocationId: 'ceres',
+      stance: 'NEUTRAL',
+      layout: [],
+      sheet: sheet(),
+      shipClass: 'MULTIROLE',
+      yard: { halfSize: 10 },
+    }),
   ),
 
-  http.get('/v1/ships', () => HttpResponse.json([ship()], { status: 200 })),
+  http.get('/v1/ships', () => ok<ShipResponse[]>([ship()])),
 
-  http.get('/v1/ships/:id', () => HttpResponse.json(ship(), { status: 200 })),
+  http.get('/v1/ships/:id', () => ok<ShipResponse>(ship())),
 
-  http.get('/v1/inventory', () => HttpResponse.json(inventoryState, { status: 200 })),
+  http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
   http.post('/v1/ships/:id/preview', async ({ request }) => {
     const body = (await request.json()) as { layout?: Placement[] };
-    return HttpResponse.json(
-      {
-        sheet: sheet(),
-        shipClass: 'MULTIROLE',
-        viability: { viable: true, problems: [] },
-        layout: body.layout ?? [],
-        omittedPartInstanceIds: [],
-      },
-      { status: 200 },
-    );
+    return ok<PreviewResponse>({
+      sheet: sheet(),
+      shipClass: 'MULTIROLE',
+      viability: { viable: true, problems: [] },
+      layout: body.layout ?? [],
+      omittedPartInstanceIds: [],
+    });
   }),
 
-  http.post('/v1/ships/:id/assemble', () => HttpResponse.json(ship(), { status: 200 })),
+  http.post('/v1/ships/:id/assemble', () => ok<ShipResponse>(ship())),
 
-  http.post('/v1/ships/:id/auto-assemble', () => HttpResponse.json(ship(), { status: 200 })),
+  http.post('/v1/ships/:id/auto-assemble', () => ok<ShipResponse>(ship())),
 
-  http.get('/v1/locations', () => HttpResponse.json(world(), { status: 200 })),
+  http.get('/v1/locations', () => ok<WorldResponse>(world())),
 
-  http.get('/v1/locations/:id/missions', () => HttpResponse.json(boardState, { status: 200 })),
+  http.get('/v1/locations/:id/missions', () => ok<MissionOffer[]>(boardState)),
   http.post('/v1/missions/:id/accept', ({ params }) => {
     const mission = boardState.find((offer) => offer.id === params.id);
     if (mission !== undefined) {
@@ -408,11 +431,11 @@ export const handlers = [
   }),
 
   http.get('/v1/missions/active', () => {
-    if (activeState === null) return HttpResponse.json([], { status: 200 });
+    if (activeState === null) return ok<ActiveMission[]>([]);
     if (activeState.arrivalAt !== null && Date.parse(activeState.arrivalAt) <= Date.now()) {
-      return HttpResponse.json([], { status: 200 });
+      return ok<ActiveMission[]>([]);
     }
-    return HttpResponse.json([activeState], { status: 200 });
+    return ok<ActiveMission[]>([activeState]);
   }),
   http.post('/v1/ships/:id/dispatch', ({ params }) => {
     if (activeState === null) return HttpResponse.json({}, { status: 404 });
@@ -434,52 +457,76 @@ export const handlers = [
         to: arrivalAt,
       },
     ];
-    return HttpResponse.json(
-      {
-        missionId: activeState.id,
-        arrivalAt,
-        serverTime: new Date().toISOString(),
-        durationSeconds: 3600,
-      },
-      { status: 200 },
-    );
+    return ok<DispatchResponse>({
+      missionId: activeState.id,
+      arrivalAt,
+      serverTime: new Date().toISOString(),
+      durationSeconds: 3600,
+    });
   }),
 
   http.get('/v1/reports', () =>
-    HttpResponse.json(
-      {
-        items: [
-          {
-            missionId: 'm-1',
-            outcome: 'success',
-            credits: 1400,
-            legs: 2,
-            createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
-          },
-        ],
-      },
-      { status: 200 },
-    ),
+    ok<ReportListResponse>({
+      items: [
+        {
+          missionId: 'm-1',
+          outcome: 'success',
+          credits: 1400,
+          legs: 2,
+          createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+        },
+      ],
+    }),
   ),
   http.get('/v1/reports/:missionId', ({ request }) => {
     const view = new URL(request.url).searchParams.get('view') ?? 'summary';
-    return HttpResponse.json(reportFixture(view), { status: 200 });
+    return ok<ReportResponse>(reportFixture(view));
   }),
 
   http.get('/v1/locations/:id/market', ({ params }) =>
-    HttpResponse.json(
-      {
-        locationId: String(params.id),
-        listings: marketListings,
-        sellOffers: inventoryState
-          .filter((entry) => entry.location === 'INVENTORY')
-          .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
-      },
-      { status: 200 },
-    ),
+    ok<MarketResponse>({
+      locationId: String(params.id),
+      listings: marketListings,
+      sellOffers: inventoryState
+        .filter((entry) => entry.location === 'INVENTORY')
+        .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
+    }),
   ),
+  http.get('/v1/catalog/parts/:partType', ({ params }) => {
+    const partType = String(params.partType);
+    const name = PART_NAMES[partType];
+    if (name === undefined) {
+      return HttpResponse.json({ statusCode: 404, message: 'part not found' }, { status: 404 });
+    }
+    return ok<CatalogDetail>({
+      id: partType,
+      kind: 'part',
+      displayName: name,
+      description: {
+        en: `${name.en} — a fitted part.`,
+        'pt-BR': `${name['pt-BR']} — uma peça instalada.`,
+      },
+      category: 'ENGINE',
+      rarity: 'COMMON',
+    });
+  }),
+  http.get('/v1/catalog/materials/:id', ({ params }) => {
+    const holding = materialsState.find((entry) => entry.materialId === String(params.id));
+    if (holding === undefined) {
+      return HttpResponse.json({ statusCode: 404, message: 'material not found' }, { status: 404 });
+    }
+    return ok<CatalogDetail>({
+      id: holding.materialId,
+      kind: 'material',
+      displayName: holding.displayName,
+      description: { en: 'Raw ore.', 'pt-BR': 'Minério bruto.' },
+      category: 'COMMON',
+      rarity: 'COMMON',
+    });
+  }),
+
   http.get('/v1/materials', () =>
-    HttpResponse.json({ locationId: 'ceres', materials: materialsState }, { status: 200 }),
+    ok<MaterialsResponse>({ locationId: 'ceres', materials: materialsState }),
   ),
   http.post('/v1/market/buy', async ({ request }) => {
     const rejected = missingKey(request);
@@ -516,16 +563,13 @@ export const handlers = [
         listing.partClass as InventoryItem['catalog']['partClass'],
       ),
     });
-    return HttpResponse.json(
-      {
-        partInstanceId: id,
-        partType: listing.partType,
-        condition: listing.condition,
-        price: listing.price,
-        credits: wallet,
-      },
-      { status: 200 },
-    );
+    return ok<BuyResponse>({
+      partInstanceId: id,
+      partType: listing.partType,
+      condition: listing.condition,
+      price: listing.price,
+      credits: wallet,
+    });
   }),
   http.post('/v1/market/sell', async ({ request }) => {
     const rejected = missingKey(request);
@@ -546,7 +590,7 @@ export const handlers = [
     }
     inventoryState = inventoryState.filter((entry) => entry.id !== part.id);
     wallet += price;
-    return HttpResponse.json({ partInstanceId: part.id, price, credits: wallet }, { status: 200 });
+    return ok<SellResponse>({ partInstanceId: part.id, price, credits: wallet });
   }),
   http.post('/v1/market/sell-material', async ({ request }) => {
     const rejected = missingKey(request);
@@ -570,10 +614,12 @@ export const handlers = [
     holding.quantity -= body.quantity;
     materialsState = materialsState.filter((entry) => entry.quantity > 0);
     wallet += price;
-    return HttpResponse.json(
-      { materialId: holding.materialId, quantity: body.quantity, price, credits: wallet },
-      { status: 200 },
-    );
+    return ok<SellMaterialResponse>({
+      materialId: holding.materialId,
+      quantity: body.quantity,
+      price,
+      credits: wallet,
+    });
   }),
   http.post('/v1/ships/:id/refuel', async ({ params, request }) => {
     const rejected = missingKey(request);
@@ -597,10 +643,14 @@ export const handlers = [
     }
     wallet -= cost;
     fuelState = fuelCap;
-    return HttpResponse.json(
-      { shipId: String(params.id), units, cost, fuel: fuelState, fuelCap, credits: wallet },
-      { status: 200 },
-    );
+    return ok<RefuelResponse>({
+      shipId: String(params.id),
+      units,
+      cost,
+      fuel: fuelState,
+      fuelCap,
+      credits: wallet,
+    });
   }),
   http.post('/v1/ships/:id/repair/quote', async ({ params, request }) => {
     const body = (await request.json()) as { targets: RepairTargetBody[] };
@@ -611,10 +661,11 @@ export const handlers = [
         { status: 409 },
       );
     }
-    return HttpResponse.json(
-      { shipId: String(params.id), cost: repairCostOf(targets), durationSeconds: 30 },
-      { status: 200 },
-    );
+    return ok<RepairQuoteResponse>({
+      shipId: String(params.id),
+      cost: repairCostOf(targets),
+      durationSeconds: 30,
+    });
   }),
   http.post('/v1/ships/:id/repair', async ({ params, request }) => {
     const rejected = missingKey(request);
@@ -639,17 +690,14 @@ export const handlers = [
       const part = inventoryState.find((entry) => entry.id === target.partInstanceId);
       if (part !== undefined) part.condition = target.toCondition;
     }
-    return HttpResponse.json(
-      {
-        repairJobId: 'job-1',
-        shipId: String(params.id),
-        cost,
-        durationSeconds: 30,
-        completesAt: new Date(Date.now() + 30_000).toISOString(),
-        targets,
-      },
-      { status: 200 },
-    );
+    return ok<RepairStartResponse>({
+      repairJobId: 'job-1',
+      shipId: String(params.id),
+      cost,
+      durationSeconds: 30,
+      completesAt: new Date(Date.now() + 30_000).toISOString(),
+      targets,
+    });
   }),
   http.post('/v1/ships/:id/rescue', ({ params, request }) => {
     const rejected = missingKey(request);
@@ -664,17 +712,14 @@ export const handlers = [
     wallet -= 800;
     fuelState = Math.max(fuelState, 10);
     shipStatus = 'IN_PORT';
-    return HttpResponse.json(
-      {
-        shipId: String(params.id),
-        status: 'IN_PORT',
-        cost: 800,
-        fuel: fuelState,
-        credits: wallet,
-        restartParts: [],
-      },
-      { status: 200 },
-    );
+    return ok<RescueResponse>({
+      shipId: String(params.id),
+      status: 'IN_PORT',
+      cost: 800,
+      fuel: fuelState,
+      credits: wallet,
+      restartParts: [],
+    });
   }),
   http.post('/v1/locations/:id/scavenge', ({ params }) => {
     const now = Date.now();
@@ -697,22 +742,19 @@ export const handlers = [
       shipId: null,
       catalog: catalog('cargo', 'CARGO'),
     });
-    return HttpResponse.json(
-      {
-        locationId: String(params.id),
-        attempt: 1,
-        fieldType: 'common',
-        dropped: true,
-        part: {
-          partInstanceId: id,
-          partType: 'cargo',
-          displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-          condition: 40,
-        },
-        cooldownSeconds: 60,
+    return ok<ScavengeResponse>({
+      locationId: String(params.id),
+      attempt: 1,
+      fieldType: 'common',
+      dropped: true,
+      part: {
+        partInstanceId: id,
+        partType: 'cargo',
+        displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+        condition: 40,
       },
-      { status: 200 },
-    );
+      cooldownSeconds: 60,
+    });
   }),
 ];
 
@@ -721,7 +763,7 @@ const reportLine = (text: string) => ({
   segments: [{ t: 'text' as const, value: text }],
 });
 
-const reportFixture = (view: string): Record<string, unknown> => {
+const reportFixture = (view: string): ReportResponse => {
   if (view === 'narrative') {
     return {
       locale: 'en',
@@ -783,8 +825,6 @@ const acceptedMission = (): ActiveMission => ({
   deadlineAt: iso(60 * 60 * 1000),
   seed: 'seed-1',
   version: 1,
-  rewardEstimate: 1350,
-  eligibility: { eligible: true, reasons: [] },
   legWindows: [],
 });
 

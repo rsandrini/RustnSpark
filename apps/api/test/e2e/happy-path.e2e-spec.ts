@@ -1,3 +1,5 @@
+import { ReportListResponseSchema, ReportResponseSchema } from '@rustandspark/contract';
+import { contract } from '../support/contract.js';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
@@ -258,6 +260,9 @@ describe('happy path over the API (S9.4)', () => {
         return body.items.some((item) => item.missionId === missionId) ? body : undefined;
       },
     );
+    // The list and every report view are validated against the shared contract (real worker,
+    // real resolved mission): the shapes the web client types come from packages/contract.
+    contract(ReportListResponseSchema, listed, 'GET /reports');
     const row = listed.items.find((item) => item.missionId === missionId)!;
     expect(row.outcome).toBe('success');
     expect(row.credits).toBeGreaterThan(0);
@@ -266,6 +271,7 @@ describe('happy path over the API (S9.4)', () => {
     // --- read the report in every view -------------------------------------
     const summary = await request(server).get(`/v1/reports/${missionId}`).set(auth(token));
     expect(summary.status).toBe(200);
+    contract(ReportResponseSchema, summary.body, 'GET /reports/:id?view=summary');
     const summaryBody = summary.body as ReportBody;
     expect(summaryBody.view).toBe('summary');
     expect(summaryBody.lines!.length).toBeGreaterThanOrEqual(2);
@@ -273,12 +279,14 @@ describe('happy path over the API (S9.4)', () => {
 
     const log = await request(server).get(`/v1/reports/${missionId}?view=log`).set(auth(token));
     expect(log.status).toBe(200);
+    contract(ReportResponseSchema, log.body, 'GET /reports/:id?view=log');
     const logBody = log.body as ReportBody;
     expect(logBody.view).toBe('log');
     expect(logBody.lines!.length).toBeGreaterThanOrEqual(2);
     for (const line of logBody.lines!) {
       expect(line.text).toMatch(/^\[\d+ · [^\]]+\] /);
       expect(line.text).not.toMatch(/\{[a-zA-Z]+\}/);
+      expect(line.text).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/); // never an instance id
       expect(line.text).toBe(line.segments.map((segment) => segment.value).join(''));
     }
 
@@ -286,6 +294,7 @@ describe('happy path over the API (S9.4)', () => {
       .get(`/v1/reports/${missionId}?view=narrative`)
       .set(auth(token));
     expect(narrative.status).toBe(200);
+    contract(ReportResponseSchema, narrative.body, 'GET /reports/:id?view=narrative');
     const narrativeBody = narrative.body as ReportBody;
     expect(narrativeBody.view).toBe('narrative');
     expect(narrativeBody.chapters!.length).toBeGreaterThanOrEqual(1);

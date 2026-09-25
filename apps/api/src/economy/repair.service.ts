@@ -9,7 +9,7 @@ import { REPAIR_JOB_NAME, REPAIR_QUEUE_NAME } from '../jobs/queues.js';
 import { PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
-import { WalletService } from '../players/wallet.service.js';
+import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { repairCost } from './repair-cost.calculator.js';
 
@@ -190,6 +190,15 @@ export class RepairService {
         if (active) {
           throw new ConflictException({ error: 'ALREADY_REPAIRING' });
         }
+        // Same spending guard as refuel and the market (GDD §14): while the balance is negative
+        // only missions pay it back, so paying for a repair is refused outright.
+        const player = await tx.player.findUnique({
+          where: { id: playerId },
+          select: { credits: true },
+        });
+        if (player && player.credits < 0) {
+          throw new ConflictException({ error: 'BALANCE_NEGATIVE' });
+        }
         await this.wallet.debit(playerId, cost, `repair.start:${shipId}`, tx);
         const created = await tx.repairJob.create({
           data: {
@@ -222,6 +231,10 @@ export class RepairService {
       // still cannot insert a second PENDING row for this ship.
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException({ error: 'ALREADY_REPAIRING' });
+      }
+      // The wallet refuses a debit the balance cannot cover: a client error (409), never a 500.
+      if (error instanceof InsufficientFundsError) {
+        throw new ConflictException({ error: 'INSUFFICIENT_FUNDS' });
       }
       throw error;
     }

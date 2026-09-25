@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { renderWithProviders } from '../test/utils';
 import { ItemCard } from './ItemCard';
 import { RiskBadge } from './RiskBadge';
@@ -118,5 +120,50 @@ describe('Popup', () => {
     fireEvent.click(screen.getByRole('presentation'));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('Popup keyboard behaviour (modal contract)', () => {
+  // String children come from variables: the web lint bans string literals in JSX.
+  const openLabel = 'Open details';
+  const confirmLabel = 'Confirm';
+  const title = 'Details';
+
+  function Harness() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          {openLabel}
+        </button>
+        <Popup open={open} title={title} onClose={() => setOpen(false)}>
+          <button type="button">{confirmLabel}</button>
+        </Popup>
+      </>
+    );
+  }
+
+  it('moves focus into the dialog, keeps Tab inside it and restores focus on close', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Harness />);
+    const opener = screen.getByRole('button', { name: openLabel });
+    await user.click(opener);
+
+    const dialog = screen.getByRole('dialog', { name: title });
+    // Focus lands on the primary control, inside the dialog.
+    expect(screen.getByRole('button', { name: confirmLabel })).toHaveFocus();
+
+    // Tab past the last control wraps to the first (the Close button), never out of the dialog.
+    await user.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await user.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    // Shift+Tab from the first control wraps to the last.
+    await user.tab({ shift: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(opener).toHaveFocus();
   });
 });

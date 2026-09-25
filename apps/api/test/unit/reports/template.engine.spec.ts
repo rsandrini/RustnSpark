@@ -72,7 +72,7 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
         'combat_loss',
         'mission_wear',
       ].includes(type)
-        ? { engine_chem_small: type === 'tank' ? 7 : 41 }
+        ? { 'part-instance-1': type === 'tank' ? 7 : 41 }
         : {},
       credits:
         type === 'combat_win' || type === 'mission_payout' || type.startsWith('mining')
@@ -86,7 +86,7 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
   if (PART_FAILURE_TYPES.includes(type)) {
     base['effects'] = {
       hp: 0,
-      condByPart: { engine_chem_small: type === 'tank' ? 7 : 41 },
+      condByPart: { 'part-instance-1': type === 'tank' ? 7 : 41 },
       credits: 0,
       loot: [],
     };
@@ -109,7 +109,8 @@ function eventOf(type: (typeof MISSION_EVENT_TYPES)[number]): (typeof ALL_EVENTS
 }
 
 const NAMES = {
-  parts: { engine_chem_small: 'Small Chemical Engine' },
+  // Events carry part INSTANCE ids; the map resolves them to the catalog type + name.
+  parts: { 'part-instance-1': { partType: 'engine_chem_small', name: 'Small Chemical Engine' } },
   materials: { common_ore: 'Common Ore' },
 };
 
@@ -223,7 +224,7 @@ describe('S9.2 — D39 line format', () => {
 
   it('falls back to the raw id when a catalog name is missing', () => {
     const line = renderEventLine(eventOf('weapon'), 0, 'seed-abc', 'en', EMPTY_ENTITY_NAMES);
-    expect(line.text).toContain('engine_chem_small');
+    expect(line.text).toContain('part-instance-1');
   });
 });
 

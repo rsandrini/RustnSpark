@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { client } from '../../api/client';
+import { client, serverNow } from '../../api/client';
 import { errorText } from '../../api/errors';
 import type { MissionOffer, MissionType, ShipResponse, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
@@ -179,7 +179,13 @@ export function BoardPage({ guided = false }: BoardPageProps) {
                       <RiskBadge band={destinationRisk(offer)!} />
                     )}
                     <span className="sub">
-                      {t('board.expires')} <Countdown until={offer.expiresAt} />
+                      {Date.parse(offer.expiresAt) <= serverNow() ? (
+                        t('board.expiredLabel')
+                      ) : (
+                        <>
+                          {t('board.expires')} <Countdown until={offer.expiresAt} />
+                        </>
+                      )}
                     </span>
                     <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
                       {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}

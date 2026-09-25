@@ -1,6 +1,7 @@
 import type { PartCatalog, Placement, LayoutError } from '../parts/part.types.js';
 
-const GRID_HALF_SIZE = 10;
+/** Yard cells run [-GRID_HALF_SIZE, GRID_HALF_SIZE) on both axes; sent to the client (`yard`). */
+export const GRID_HALF_SIZE = 10;
 const RIGHT_ANGLE = 90;
 
 export function validateLayout(

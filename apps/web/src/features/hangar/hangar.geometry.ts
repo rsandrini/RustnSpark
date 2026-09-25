@@ -1,9 +1,8 @@
 import type { PartCatalogStats, Placement } from '../../api/generated';
 
-// The same yard the server validates (geometry.ts): cells [-10, 10), footprints swap on
-// right-angle rotation. This is pure client-side geometry for drag/snap feedback —
-// the server re-validates every preview and the save (D20).
-const GRID_HALF_SIZE = 10;
+// Pure client-side geometry for drag/snap feedback: cells [-halfSize, halfSize), footprints
+// swap on right-angle rotation. The yard size comes from the server (`ship.yard.halfSize`), which
+// also re-validates every preview and the save (D20) — the client owns no copy of the number.
 
 export function footprint(
   catalog: PartCatalogStats,
@@ -21,16 +20,12 @@ export function canPlace(
   gx: number,
   gy: number,
   rot: 0 | 90,
+  halfSize: number,
 ): boolean {
   const catalog = catalogById.get(partInstanceId);
   if (catalog === undefined) return false;
   const { width, height } = footprint(catalog, rot);
-  if (
-    gx < -GRID_HALF_SIZE ||
-    gy < -GRID_HALF_SIZE ||
-    gx + width > GRID_HALF_SIZE ||
-    gy + height > GRID_HALF_SIZE
-  ) {
+  if (gx < -halfSize || gy < -halfSize || gx + width > halfSize || gy + height > halfSize) {
     return false;
   }
   for (const placement of layout) {

@@ -6,3 +6,7 @@ apps/web/src/**/*.js
 apps/web/src/**/*.js.map
 __pycache__
 *.pyc
+
+# Playwright output
+apps/web/test-results
+apps/web/playwright-report

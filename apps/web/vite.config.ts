@@ -22,5 +22,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Playwright owns e2e/ (real-stack browser smoke); Vitest must not try to run it.
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
   },
 });

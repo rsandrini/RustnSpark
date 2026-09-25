@@ -76,26 +76,50 @@
 - Files: `apps/api/src/parts/parts.service.ts`, `apps/api/src/parts/part.types.ts`, `apps/api/test/integration/parts-ships.int-spec.ts`, `apps/web/src/api/generated.ts`, `port.page.tsx`, `hangar.page.tsx`, `ship-yard.tsx`, `msw/handlers.ts`.
 - Acceptance: each inventory item carries `displayName: { en, 'pt-BR' }` (same helper as the market); integration test asserts non-empty names in both locales for the starter kit; the web casts `(item.catalog as { displayName? })` are deleted and use `pickLocalized`; the MSW inventory fixture is generated from the same shape (no name that the API does not send).
 
-**T1.2 Generated contract (F9, S10.1).** Depends on: T0.6, T1.1  · Effort L
-- Files: `apps/api` (add `@nestjs/swagger` + the CLI plugin, dev-only route), `apps/api/openapi.json` (committed), `apps/web/package.json` (`openapi-typescript`), `apps/web/src/api/generated.ts` (now generated), `apps/web/src/test/msw/handlers.ts` (typed from the generated types), `.github/workflows/ci.yml`.
-- Acceptance: `pnpm --filter api openapi:build` writes `openapi.json` from the running app metadata; CI regenerates it plus the TS client and fails on any `git diff`; MSW handlers return values typed by the generated response types, so a shape mismatch is a **compile error**, not a green test; the existing `test/contract/api-contract.spec.ts` keeps guarding routes and error codes; controllers/DTOs missing response types are annotated as part of the task (expect ~40 endpoints).
+**T1.2 Shared contract (F9, S10.1).** Depends on: T0.6, T1.1  · Effort L — **Done (2026-09-25), with a deliberate change of mechanism.**
+- Decision: the plan called for `@nestjs/swagger` + `openapi.json` + `openapi-typescript`. The API's response types are TypeScript **interfaces**, which the Swagger plugin cannot describe (it needs classes; ~45 of them would have been rewritten, and unions/nullability come out loose). Instead the contract is written **once as zod schemas** in a workspace package, `packages/contract` (`@rustandspark/contract`), and everything else derives from it. This gives the same guarantees S10.1 asked for, with more precise types and no controller churn.
+- Delivered: (1) `apps/web/src/api/generated.ts` is now `export type * from '@rustandspark/contract'` — the hand-written file is gone; (2) every 200 body in the MSW handlers goes through `ok<ContractType>(…)`, so a drifting mock is a **compile error** (30 handlers); (3) `test/integration/contract.int-spec.ts` calls every endpoint the UI uses against the real app and `parse`s the answer with the same schemas (10 groups: auth/refresh cookie, player, world, ships/inventory/preview/auto-assemble, market buy/sell, materials, refuel/repair quote+start, scavenging, board→accept→dispatch→active with leg windows, rescue, admin tuning), and the happy-path e2e parses the report list and all three views from a real worker run; (4) `test/contract/api-contract.spec.ts` (web) still pins routes and error-code translations.
+- What it found immediately: `DispatchResponse.durationClass` was typed `'slow'` (API: `'long'`); `ActiveMission` carried `rewardEstimate`/`eligibility` the endpoint never sends; a hangar **Auto layout** bug (the button sent `{}`, so the server arranged only loose parts — an empty, unviable ship for a freshly onboarded player), fixed in the web.
+- Acceptance: contract spec green in CI (part of `test:cov`); web `tsc` fails when a handler body or a screen disagrees with the contract; Docker images (`api`, `web`, `migrate`) build with the workspace package.
 
-**T1.3 Real-API browser smoke (F10; pulls S12.4 forward).** Depends on: T0.5, T1.1  · Effort L
-- Files: `apps/web/e2e/smoke.spec.ts`, `apps/web/playwright.config.ts`, `apps/web/package.json` (`@playwright/test` dev dep), `.github/workflows/ci.yml` (optional job, then required), `README.md`.
-- Approach: run the compose `dev` stack with `missions.time_scale` small (via the admin tuning API in test setup) and drive one player through: register → onboarding (each faction) → hangar auto-assemble → map → board accept → transit dispatch → report (3 views) → port (buy, sell part, sell material, refuel, repair with quote) → force ADRIFT → rescue. Log every failure as an issue and fix in this task; keep screenshots as CI artifacts.
-- Acceptance: the smoke passes for all three factions in CI; a written **manual S10.10 sign-off checklist** (desktop + phone viewport, both locales) is executed once by a person and attached to the plan; any defect found is fixed or filed with an owner.
+**T1.3 Real-API browser smoke (F10; pulls S12.4 forward).** Depends on: T0.5, T1.1  · Effort L — **Done (2026-09-25); runs non-blocking in CI per owner decision 6.**
+- Delivered: `apps/web/e2e/{smoke.spec.ts,global-setup.ts}` + `playwright.config.ts` (desktop 1280×800 and phone 360×740 projects); CI job `browser-smoke` (compose `dev` stack → admin via CLI → Playwright, report and screenshots as artifacts, `continue-on-error`, not part of the aggregate `ci` gate). The suite registers a real player per faction through the UI, then runs hangar → map → board → accept → dispatch → the worker resolves → report (summary/narrative/log) → port tabs → profile, checking every screen for horizontal overflow, raw catalog codes and leaked i18n keys, plus a pt-BR switch test.
+- **Found by running the real thing** (all fixed unless noted): direct visits to `/register` bounced to `/login`; the hangar yard labels rendered at 16 cells (unitless CSS `font-size: 0.42`) and prototype `.block` CSS (`position: absolute`) pulled every `btn block` button out of the layout (916 px overflow); hangar stats printed `hangar.stats.mob`, `port.sellAll` and a raw `{{used}}/{{budget}}`, plus `142857.14285…` for autonomy; the transit page never showed the finished mission's report (the latest-report query was cached from before the mission ended); expired offers read "Expires in Time is up". New guards: a static i18n-key test (literal keys and dynamic key families must exist in both locales) and axe checks.
+- **Open, needs an owner decision (D43):** nothing guarantees a brand-new player can take a first mission. The seeded `missions.board_min_per_location` is **1**, so a port lists a single offer, and most templates need parts the starter ship lacks (TRANSPORT needs pressurized life support, ESCORT needs weapons, MINING a rig...). The smoke tunes the board to 20 offers and records the remaining case as a visible `known-gap` skip. Options: a starter-safe mission guaranteed per home port; a higher board minimum for hubs; or adding the needed part to the starter kit.
+- Local run needs Chromium's system libs (`libnspr4`, `libnss3`); CI installs them with `playwright install --with-deps`.
 
 **T1.4 Client hygiene from the review backlog.** Depends on: T1.2  · Effort M
 - Files: `hangar.geometry.ts`, `ship-yard.tsx`, `report.page.tsx`, `apps/api/src/reports/*`, `apps/api/src/ships/*`.
 - Acceptance: (a) hangar grid half-size comes from the server (ship/preview response) instead of a duplicated constant; (b) report `ref` popups show real detail: for loot, name + rarity + base description; for parts, name + class + description — via either richer `ReportSegment` payloads or a small `GET /v1/catalog/:kind/:id` (decide in the task; must not embed template text in stored logs); (c) invalid `?locale=` keeps falling back to `en` (owner decision 5) — document it and pin it with a test; (d) a11y pass: axe checks in the web tests for each screen, keyboard path through hangar/board/port, focus trap in `Popup`; (e) phone-width layout checked at 360 px for every screen.
 
-**T1.5 Polling and load.** Depends on: T1.3  · Effort M
-- Files: `apps/web/src/features/{transit,board}/*`, `apps/api` (conditional GET).
-- Acceptance: measured request rate per open screen (target ≤ 12 req/min per tab); transit polling backs off (2 s while a leg boundary is near, 10 s otherwise) and pauses when the tab is hidden; `ETag`/`If-None-Match` on `GET /v1/missions/active` and `/v1/locations` so unchanged polls are 304; the throttle stays at the value chosen in D42 with a test that a normal session never nears it.
+**T1.5 Polling and load.** Depends on: T1.3  · Effort M — **Done (2026-09-25).**
+- Files: `apps/web/src/features/transit/{poll.ts,poll.spec.ts,transit.page.tsx}`.
+- Delivered: the transit poll interval follows the mission (15 s far from arrival, 3 s within 30 s of `arrivalAt` or while RESOLVING, 30 s when idle); a hidden tab is not polled (TanStack pauses it). Over a 15-minute mission the old fixed 2 s tick made ~480 requests, the new schedule fewer than 90 (unit-tested, ≤ 4/min far from arrival, ≤ 20/min on final approach).
+- Changed from the plan: **no `ETag`/304**. Express already sends weak ETags, but a 304 still runs the handler and still counts against the throttle, so it saves bandwidth only; the request-rate reduction is what protects the 300/min budget (D42).
 
 **T1.6 Close the old deferrals.** Depends on: —  · Effort M
 - Files: per item.
 - Acceptance: each item from the Step 3/4 review list is either done with a test or explicitly re-deferred with a reason in the plan: S3.7 (`economy.start_credits` HTTP tuning proving Admin changes apply immediately); no-mock admin login test; tier threshold ruling; ion engine energy value; minors M2, M3, M5, M6, M11, M15, M17 (Step 3) and M4, M6, M9, M12 (Step 4); the "config key mutation" test now that Step 5 landed (`economy.rescue_fuel_fraction`, `economy.sell_ratio`, `scavenging.cooldown_seconds` verified live over HTTP).
+
+**T1.6 result (audited 2026-09-25 against the code and the review doc `docs/reviews/2026-09-23-step3-step4-review.md`):**
+
+| Old deferral | Status |
+|---|---|
+| S3.7: Admin change reaches gameplay over HTTP (`economy.start_credits`, then the keys added later: `economy.rescue_fuel_fraction`, `economy.sell_ratio`, `scavenging.cooldown_seconds`) | **Done** — `test/integration/tuning-live.int-spec.ts` (4 tests) |
+| No-mock admin login test | **Already done** — `admin-access.int-spec.ts` creates the admin through the CLI and logs in via `POST /v1/auth/login` |
+| Seeded pt-BR text still English "in one spot" | **Done** — `seed.int-spec.ts` now fails on any seeded pt-BR text identical to its English (only allow-listed names/loanwords: Luna, Sun, Explorers, Laser, Radar); the original defect no longer exists |
+| Language switcher; login/register in Portuguese | **Done** (Step 3 lower-priority commit; keys are parity-tested) |
+| Magic-number guard "checks nothing yet" | **Done** — `test/unit/lint/magic-numbers.spec.ts` covers `resolution/`, `economy/`, `missions/` |
+| Unused code / missing admin-query index | **Done** — `TuningRevision(entityType, entityId, id desc)` index exists |
+| Auto-assemble silently drops parts the player does not own | **Done** — `filterCandidateParts` rejects them (403) |
+| Part load order not stable | **Done** — `findPlayerParts` orders by `id` |
+| Ship class shown nowhere | **Done** — shown in the hangar (Step 10) |
+| Starter kit not validated against active items | **Done** — `ConfigReferenceValidator` (`STARTER_PART_NOT_ACTIVE`) |
+| Onboarding not atomic / repeatable | **Done** — single transaction under a Player row lock, second call returns the existing ship |
+| Fixture "generated from this implementation, not the oracle" | **Done** — Step 5 parity against the Python oracle tapes (600 tournament tapes) |
+| Ship-tier thresholds ruling | **Closed by D14** (installed-part value thresholds, decided by the owner) |
+| Ion engine energy value | **Open (owner content decision)** — `engine_ion_micro` ships with the tournament-validated `energyCont: 0`; it is Admin-tunable, so it needs a ruling, not code |
+| Generated API client | Tracked as T1.2 |
 
 ---
 

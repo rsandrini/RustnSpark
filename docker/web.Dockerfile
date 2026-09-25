@@ -6,9 +6,12 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
 COPY apps/web/package.json ./apps/web/package.json
+COPY packages/contract/package.json ./packages/contract/package.json
 
-RUN pnpm install --frozen-lockfile --filter web
+# `web...` = web plus the workspace packages it depends on (the shared contract types).
+RUN pnpm install --frozen-lockfile --filter web...
 
+COPY packages/contract ./packages/contract
 COPY apps/web ./apps/web
 RUN pnpm --filter web build
 

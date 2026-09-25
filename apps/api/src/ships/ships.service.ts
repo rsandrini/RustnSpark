@@ -1,3 +1,4 @@
+import { GRID_HALF_SIZE } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -33,6 +34,8 @@ export interface ShipResponse {
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
+  /** The assembly yard the layout lives on; the client draws it, the server validates it. */
+  yard: { halfSize: number };
 }
 
 export interface PreviewResponse {
@@ -299,6 +302,7 @@ export class ShipsService implements OnModuleInit {
       layout: (ship.layout as unknown as Placement[]) ?? [],
       sheet,
       shipClass: deriveShipClass(installed, rules),
+      yard: { halfSize: GRID_HALF_SIZE },
     };
   }
 }

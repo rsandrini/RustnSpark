@@ -33,6 +33,8 @@ describe('PingProcessor', () => {
 
     await processor.process(makeJob({ queuedAt: before, workMs }));
 
-    expect(Date.now() - before).toBeGreaterThanOrEqual(workMs);
+    // setTimeout may fire a millisecond before Date.now() has advanced by the full delay
+    // (it failed CI at 29 vs 30); the guarantee under test is "waits ~workMs", not "never early".
+    expect(Date.now() - before).toBeGreaterThanOrEqual(workMs - 2);
   });
 });

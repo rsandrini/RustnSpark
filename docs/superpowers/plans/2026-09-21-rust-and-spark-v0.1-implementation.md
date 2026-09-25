@@ -92,8 +92,13 @@ Every task below implicitly includes these. They are non-negotiable.
 | D37 | The summary view needs the balance after the mission; nothing stores it, and the current balance drifts | **Approved:** `mission.resolved` `PlayerEvent` payload gains `balanceAfter` (no `MissionLog` change); the summary reads it. Logs resolved before this change show no balance line | Keeps "identical log → identical text" honest |
 | D38 | Templates need entity names (`{part}`, `{loot}`) but the dispatch snapshot stores only `partType`/ids | **Approved:** display names come from the live `PartCatalog`/`Material` tables. The byte-identical guarantee covers template text and numbers, not renamed catalog entries | Embedding names in every snapshot is heavier and buys little |
 | D39 | Views must serve both templates-as-text (log) and popup-able references (S10.8) | **Approved wire format:** each line is `{ text, segments: [{ t: 'text', value } or { t: 'ref', kind, id, value }] }`, where `text` is the concatenation of the segments; the client renders refs without parsing strings and holds no rules | Single source for player views and the Admin replay (S11) |
+| D40 | **Rescue soft-lock (2026-09-25):** rescue left fuel unchanged, refuel is blocked while the balance is negative, so a broke player with an empty tank had no way to start a mission | **Approved by the owner:** rescue leaves an emergency fuel ration, `economy.rescue_fuel_fraction` (Admin-tunable, default **0.25** of the tank; never lowers existing fuel, capped at the tank; 0 = old behaviour). GDD §14 gets a matching line | Keeps "the player never gets stuck" (GDD §14) without making rescue a real fuel source |
+| D41 | **Restart-kit arbitrage (2026-09-24):** rescue → free starter kit → sell could print credits on a hostile high-isolation port | **Approved:** the worst-case sell value of the kit (highest isolation × hostile faction × max mood, at `parts.restart_condition_max`) must stay **below `economy.rescue_cost`**; the Admin tuning layer rejects any ruleset that breaks it. `parts.restart_condition_max` default **30** (was 50; still satisfies GDD §14 "≤50%") | Closes a money printer without a special case in the wallet |
+| D42 | **Default rate limit (2026-09-25):** 60 req/min per IP tripped in ordinary play (the client polls; NAT'd players share an IP) | **Approved:** default per-IP limit **300/min** for routes without their own policy (auth routes keep strict ones) until S12.1 delivers the Redis-backed policy matrix | Infra value, not game balance; revisited in S12.1 |
 
 **Status (2026-09-21):** the owner **accepted all technical defaults** (D1–D9, D11, D12, D17, D19, D20, D23, D24) and confirmed D22. **Owner decisions closed:** D10 (simulator values), D13 (GDD integrity rule + sim base formula + production-mode harness), D14 (installed-part value thresholds), D15 (start credits **200**, overriding the recommendation). D16 (port faithfully with `pierce_ratio` inert until a balance pass; slot A = mission owner vs NPCs, aggressor in PvP, SEN ties in a mutual attack by seeded coin flip), D27 (**no faction start discount in v0.1**), D29 (shared board, first accept wins). D21 (~15 min medium: `duration_k` 2.25, fast < 10 min, medium 10–30, long > 30), D25 (every port sells the whole catalog + deterministic used offers), D26 (no abort before Step 10), D28 (per-player scavenging cooldown, 5 min). D18 (rule defaults approved, Appendix E) and ship-class thresholds (approved, Appendix E). Review-pass decisions D30 (full mining), D31 (starter kit and home ports) and D32 (drop `sucata`) were approved the same day. **No owner decisions remain open: the planning phase is complete and Step 1 can start.**
+
+**Status update (2026-09-25):** D30–D35 were added during Steps 3–4, D36–D39 during Step 9 and D40–D42 during the stabilization pass; all are approved by the owner. **No owner decisions are open.** (The paragraph above is the original 2026-09-21 record.)
 
 ## 2.1 Review pass (2026-09-21) — defects found and fixed
 
@@ -659,6 +664,7 @@ Sources: `S` = `simulation/sweep-rust-and-spark.py`, `I` = `simulador-integrado.
 | `economy.combat_loss_penalty` | 120 | S | |
 | `economy.upgrade_costs` | `{2:2500,3:7000,4:16000,5:32000}` | S/G | also tier thresholds (D14) |
 | `economy.start_credits` | 200 | S | D15 decided; GDD's 3,000 superseded |
+| `economy.rescue_fuel_fraction` | 0.25 | D40 | share of the tank a rescued ship keeps |
 | `economy.rescue_cost` | 800 | G §14 | |
 | `economy.sell_ratio` | 0.6 | G §13 | |
 | `economy.isolation_mult` | `{0:0.9,1:1.0,2:1.4,3:2.0}` | G §13 | |
@@ -693,7 +699,7 @@ Sources: `S` = `simulation/sweep-rust-and-spark.py`, `I` = `simulador-integrado.
 | `scavenging.quality_min` / `max` | 30 / 70 | G §14 | |
 | `scavenging.cooldown_seconds` | 300 | D28 decided | |
 | `parts.starter_condition` | 80 | G §9 | |
-| `parts.restart_condition_max` | 50 | G §14 | |
+| `parts.restart_condition_max` | 30 | G §14 (≤50%), D41 | lowered from 50: kit sale value must stay < `economy.rescue_cost` |
 | `onboarding.starter_parts` | `['bridge','engine_chem_small','tank_small','battery_small','cargo','cargo','hull']` | I / D31 | must reference active catalog parts |
 | `onboarding.home_locations` | `{luna:'ceres',sun:'hedus',explorers:'cair'}` | D31 | must reference active locations |
 | `world.seed` | fixed | G §13 | seed-time only: draws each location's initial mood; afterwards mood is a per-location value edited in Admin |

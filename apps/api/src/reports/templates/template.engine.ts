@@ -40,7 +40,12 @@ export interface ReportLine {
  * catalog row still renders instead of breaking the report.
  */
 export interface EntityNames {
-  readonly parts: Readonly<Record<string, string>>;
+  /**
+   * Keyed by part INSTANCE id — the id events carry in `condByPart` — with the catalog type
+   * (the stable key a detail popup looks up) and the localized name. Keying by part type here
+   * would never match a real event and would print the raw instance id in the report.
+   */
+  readonly parts: Readonly<Record<string, { readonly partType: string; readonly name: string }>>;
   readonly materials: Readonly<Record<string, string>>;
 }
 
@@ -237,7 +242,8 @@ function resolveToken(
       return numeric(event.fuelLost ?? 0);
     case 'part': {
       const id = requirePartId(event);
-      return { t: 'ref', kind: 'part', id, value: names.parts[id] ?? id };
+      const entry = names.parts[id];
+      return { t: 'ref', kind: 'part', id: entry?.partType ?? id, value: entry?.name ?? id };
     }
     case 'material': {
       const id = requireMaterial(event);

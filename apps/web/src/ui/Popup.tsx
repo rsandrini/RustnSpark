@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,18 +10,52 @@ export interface PopupProps {
   actions?: ReactNode;
 }
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Centered confirmation/detail dialog (confirmations on every buy/sell, the loot and
-// damage cascades on the report — S10.8/S10.9). Escape and backdrop dismiss it.
+// damage cascades on the report — S10.8/S10.9). Escape and backdrop dismiss it. Keyboard
+// contract of a modal: focus moves into the dialog on open, Tab/Shift+Tab stay inside it,
+// and focus returns to whatever opened it when it closes.
 export function Popup({ open, title, onClose, children, actions }: PopupProps) {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return undefined;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    // Land on the first control in the body (the primary action), else on the dialog itself.
+    const controls = dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [];
+    (controls[1] ?? controls[0] ?? dialog)?.focus();
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || dialog === null) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !dialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      opener?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -29,6 +63,8 @@ export function Popup({ open, title, onClose, children, actions }: PopupProps) {
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="modal"
         role="dialog"
         aria-modal="true"

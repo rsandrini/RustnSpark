@@ -1,13 +1,21 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { PartCatalogStats, Placement } from '../../api/generated';
 import { footprint } from './hangar.geometry';
 
-const GRID_HALF_SIZE = 10;
-const CELL_COUNT = GRID_HALF_SIZE * 2;
+// A cell is small: show the first word of the part name, trimmed to what fits the block
+// (~4 characters per cell at the label size); the full name is the block's <title> tooltip.
+function fitLabel(name: string, blockWidth: number): string {
+  const maxChars = Math.max(2, Math.floor((blockWidth - 0.15) * 4.3));
+  const first = name.split(' ')[0] ?? name;
+  return first.length <= maxChars ? first : `${first.slice(0, maxChars - 1)}…`;
+}
 
 export interface ShipYardProps {
   layout: readonly Placement[];
+  /** Yard extent from the server: cells run [-halfSize, halfSize). */
+  halfSize: number;
   catalogById: ReadonlyMap<string, PartCatalogStats>;
   /** Localized part names by instance id. */
   nameById: ReadonlyMap<string, string>;
@@ -25,6 +33,7 @@ export interface ShipYardProps {
 // pointer events and the cell underneath reports where it would snap.
 export function ShipYard({
   layout,
+  halfSize,
   catalogById,
   nameById,
   selectedId,
@@ -35,20 +44,22 @@ export function ShipYard({
   onDragStart,
   onDragEnd,
 }: ShipYardProps) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
 
   const cells: Array<{ gx: number; gy: number }> = [];
-  for (let gy = -GRID_HALF_SIZE; gy < GRID_HALF_SIZE; gy += 1) {
-    for (let gx = -GRID_HALF_SIZE; gx < GRID_HALF_SIZE; gx += 1) {
+  const cellCount = halfSize * 2;
+  for (let gy = -halfSize; gy < halfSize; gy += 1) {
+    for (let gx = -halfSize; gx < halfSize; gx += 1) {
       cells.push({ gx, gy });
     }
   }
 
   const gridLines: string[] = [];
-  for (let i = 0; i <= CELL_COUNT; i += 1) {
-    const coordinate = -GRID_HALF_SIZE + i;
-    gridLines.push(`M${coordinate},${-GRID_HALF_SIZE} V${GRID_HALF_SIZE}`);
-    gridLines.push(`M${-GRID_HALF_SIZE},${coordinate} H${GRID_HALF_SIZE}`);
+  for (let i = 0; i <= cellCount; i += 1) {
+    const coordinate = -halfSize + i;
+    gridLines.push(`M${coordinate},${-halfSize} V${halfSize}`);
+    gridLines.push(`M${-halfSize},${coordinate} H${halfSize}`);
   }
 
   const handlePointerDown = (event: ReactPointerEvent<SVGRectElement>, placement: Placement) => {
@@ -61,9 +72,9 @@ export function ShipYard({
     <div className="stage hangar-scene">
       <svg
         ref={svgRef}
-        viewBox={`${-GRID_HALF_SIZE} ${-GRID_HALF_SIZE} ${CELL_COUNT} ${CELL_COUNT}`}
-        role="grid"
-        aria-label="assembly grid"
+        viewBox={`${-halfSize} ${-halfSize} ${cellCount} ${cellCount}`}
+        role="group"
+        aria-label={t('hangar.yardLabel')}
         onPointerUp={onDragEnd}
         onPointerLeave={onDragEnd}
       >
@@ -109,13 +120,14 @@ export function ShipYard({
                 }
                 onPointerDown={(event) => handlePointerDown(event, placement)}
               />
+              <title>{nameById.get(placement.partInstanceId) ?? catalog.partType}</title>
               <text
                 className="block-label"
                 x={placement.gx + width / 2}
                 y={placement.gy + height / 2 + 0.2}
                 style={{ pointerEvents: 'none' }}
               >
-                {nameById.get(placement.partInstanceId) ?? catalog.partType}
+                {fitLabel(nameById.get(placement.partInstanceId) ?? catalog.partType, width)}
               </text>
             </g>
           );

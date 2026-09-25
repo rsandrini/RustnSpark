@@ -34,6 +34,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
   });
   const ship = shipsQuery.data?.[0];
+  // Yard size is the server's; before the ship loads nothing is placeable anyway.
+  const yardHalfSize = ship?.yard.halfSize ?? 0;
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -126,7 +128,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
 
   const auto = useMutation({
-    mutationFn: () => client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {}),
+    // Auto-arrange EVERY part the player owns: with no ids the server arranges only loose
+    // inventory parts, which after onboarding (everything installed) is an empty, unviable ship.
+    mutationFn: () =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {
+        partInstanceIds: parts.map((part) => part.id),
+      }),
     onSuccess: (updated) => {
       setLayout(updated.layout);
       setSaved(false);
@@ -147,7 +154,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       (placement) => placement.partInstanceId === partInstanceId,
     );
     const rot = existing?.rot ?? 0;
-    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot)) return;
+    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardHalfSize)) return;
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
@@ -179,7 +186,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
     if (existing === undefined) return;
     const nextRot: 0 | 90 = existing.rot === 0 ? 90 : 0;
-    if (!canPlace(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, nextRot)) {
+    if (
+      !canPlace(
+        effectiveLayout,
+        catalogById,
+        selectedId,
+        existing.gx,
+        existing.gy,
+        nextRot,
+        yardHalfSize,
+      )
+    ) {
       return;
     }
     setLayout(
@@ -201,28 +218,32 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
 
+  // Server values are floats (autonomy is 142857.14…): show at most one decimal, in the
+  // player's locale.
+  const number = (value: number) =>
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
   const statRows: Array<{ key: string; value: string }> =
     sheet === undefined
       ? []
       : [
-          { key: 'mob', value: String(sheet.mob) },
-          { key: 'crg', value: String(sheet.crg) },
-          { key: 'min', value: String(sheet.min) },
-          { key: 'hp', value: String(sheet.hp) },
-          { key: 'pot', value: String(sheet.pot) },
-          { key: 'pdf', value: String(sheet.pdf) },
-          { key: 'mass', value: String(sheet.mass) },
-          { key: 'fuelCap', value: String(sheet.fuelCap) },
-          { key: 'fuelUse', value: String(sheet.fuelUse) },
-          { key: 'energyCont', value: String(sheet.energyCont) },
-          { key: 'energyCombat', value: String(sheet.energyCombat) },
-          { key: 'autonomy', value: String(sheet.autonomy) },
-          { key: 'condition', value: String(sheet.condition) },
+          { key: 'mob', value: number(sheet.mob) },
+          { key: 'crg', value: number(sheet.crg) },
+          { key: 'min', value: number(sheet.min) },
+          { key: 'hp', value: number(sheet.hp) },
+          { key: 'pot', value: number(sheet.pot) },
+          { key: 'pdf', value: number(sheet.pdf) },
+          { key: 'mass', value: number(sheet.mass) },
+          { key: 'fuelCap', value: number(sheet.fuelCap) },
+          { key: 'fuelUse', value: number(sheet.fuelUse) },
+          { key: 'energyCont', value: number(sheet.energyCont) },
+          { key: 'energyCombat', value: number(sheet.energyCombat) },
+          { key: 'autonomy', value: number(sheet.autonomy) },
+          { key: 'condition', value: number(sheet.condition) },
           {
             key: 'structure',
-            value: t('hangar.stats.structure', {
-              used: sheet.structureUsed,
-              budget: sheet.structureBudget,
+            value: t('hangar.stats.structureValue', {
+              used: number(sheet.structureUsed),
+              budget: number(sheet.structureBudget),
             }),
           },
         ];
@@ -293,6 +314,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
         <section>
           <ShipYard
+            halfSize={ship.yard.halfSize}
             layout={effectiveLayout}
             catalogById={catalogById}
             nameById={nameById}

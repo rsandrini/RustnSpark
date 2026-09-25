@@ -4,11 +4,13 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type {
+  CatalogDetail,
   ReportLine,
   ReportResponse,
   ReportSegment,
   ReportViewName,
 } from '../../api/generated';
+import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 
 function verdictClass(outcome: string): string {
@@ -154,14 +156,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
         title={refPopup?.value ?? ''}
         onClose={() => setRefPopup(null)}
       >
-        {refPopup !== null && (
-          <div className="stack">
-            <div className="statrow">
-              <span>{t('report.refDetails')}</span>
-              <b>{t(`report.refKind.${refPopup.kind}`)}</b>
-            </div>
-          </div>
-        )}
+        {refPopup !== null && <RefDetail segment={refPopup} />}
       </Popup>
 
       <Popup
@@ -209,6 +204,42 @@ function CascadeDetail({
           <b>{value}</b>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Detail for a part or loot reference in a report: name, kind, description and class/rarity
+ * from the catalog. A stored log may name something that has since left the catalog (404), in
+ * which case the popup still shows the name and kind the report already carries.
+ */
+function RefDetail({ segment }: { segment: Extract<ReportSegment, { t: 'ref' }> }) {
+  const { t, i18n } = useTranslation();
+  const path =
+    segment.kind === 'part'
+      ? `/v1/catalog/parts/${encodeURIComponent(segment.id)}`
+      : `/v1/catalog/materials/${encodeURIComponent(segment.id)}`;
+  const detail = useQuery({
+    queryKey: ['catalog', segment.kind, segment.id],
+    queryFn: () => client.get<CatalogDetail>(path),
+    retry: false,
+  });
+  return (
+    <div className="stack">
+      <div className="statrow">
+        <span>{t('report.refDetails')}</span>
+        <b>{t(`report.refKind.${segment.kind}`)}</b>
+      </div>
+      {detail.isLoading && <p className="sub">{t('loading')}</p>}
+      {detail.data !== undefined && (
+        <>
+          <p>{pickLocalized(detail.data.description, i18n.language)}</p>
+          <div className="statrow">
+            <span>{t(`report.refCategory.${segment.kind}`)}</span>
+            <b>{detail.data.category}</b>
+          </div>
+        </>
+      )}
     </div>
   );
 }
