@@ -84,6 +84,8 @@ export type ConfigKey =
   | 'mining.richness'
   | 'missions.active_max'
   | 'missions.board_min_per_location'
+  | 'missions.starter_guarantee_max_completed'
+  | 'missions.starter_max_zone'
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
   | 'missions.hold_max'
@@ -253,6 +255,8 @@ export type GameRules = Readonly<{
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;
+    starter_guarantee_max_completed: number;
+    starter_max_zone: number;
   }>;
   scavenging: Readonly<{
     chance: Readonly<Record<string, number>>;

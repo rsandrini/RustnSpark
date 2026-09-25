@@ -352,6 +352,10 @@ model MissionInstance {
   // Deterministic generator input (e.g. "ceres|12|cfg-abc"): always pass the stored string
   // to createRng() — never Number() it, or the stream changes. TEXT so no bit-width ceiling.
   seed          String
+  // D43: set on a player's private start-safe mission — only that player sees it, holds it or
+  // accepts it. NULL for every normal (shared) board offer. Plain column, no relation: it is
+  // never joined, only compared.
+  privatePlayerId String?
   // Optimistic lock (S6.4 state machine increments on every transition).
   version       Int             @default(0)
   template      MissionTemplate @relation(fields: [templateId], references: [id])
@@ -371,6 +375,8 @@ model MissionInstance {
 
   // Board query: what is offerable at this location, soonest deadline first.
   @@index([originId, status, expiresAt])
+  // A player's private offers at a location (D43).
+  @@index([privatePlayerId, originId, status])
 }
 
 model MissionLog {

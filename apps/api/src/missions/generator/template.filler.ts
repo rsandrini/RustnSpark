@@ -78,12 +78,25 @@ export interface FillerWorld {
   readonly materials: readonly FillerMaterial[];
 }
 
+/**
+ * D43 start-safe constraint: only these mission types, and only routes whose every leg stays
+ * within `max(maxZone, origin.zone)` — the safe core, but never stricter than the port the
+ * player already lives in (Sun's home, Hedus, is itself in zone 2, so a hard "zone ≤ 1" would
+ * leave Sun with no route at all). Everything else about generation is unchanged, so a starter
+ * mission is an ordinary mission that happens to be easy to take and hard to lose.
+ */
+export interface StarterConstraint {
+  readonly types: readonly MissionType[];
+  readonly maxZone: number;
+}
+
 export interface FillMissionInput {
   readonly seed: string;
   readonly origin: FillerLocation;
   readonly world: FillerWorld;
   readonly rules: GameRules;
   readonly now: Date;
+  readonly starter?: StarterConstraint;
 }
 
 export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
@@ -266,18 +279,32 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const rng = createRng(input.seed);
   const { origin, world, rules, now } = input;
 
-  const eligible = eligibleTemplates(origin, world);
+  const eligible = eligibleTemplates(origin, world).filter(
+    (candidate) => input.starter === undefined || input.starter.types.includes(candidate.type),
+  );
   const template = eligible.length > 0 ? rng.child('template').pick(eligible) : undefined;
   if (template === undefined) {
     throw new MissionGenerationError(`No eligible mission template at location ${origin.id}`);
   }
 
   const adjacency = buildAdjacency(world.routes);
+  const zoneOf = new Map(world.locations.map((location) => [location.id, location.zone]));
+  const allowedZone =
+    input.starter === undefined
+      ? Number.POSITIVE_INFINITY
+      : Math.max(input.starter.maxZone, origin.zone);
+  const withinStarterZone = (path: FillerRoute[]): boolean =>
+    path.every(
+      (route) =>
+        (zoneOf.get(route.nodeAId) ?? Number.POSITIVE_INFINITY) <= allowedZone &&
+        (zoneOf.get(route.nodeBId) ?? Number.POSITIVE_INFINITY) <= allowedZone,
+    );
   const destinations = world.locations
-    .filter(
-      (location) =>
-        location.id !== origin.id && shortestPath(origin.id, location.id, adjacency) !== null,
-    )
+    .filter((location) => {
+      if (location.id === origin.id) return false;
+      const candidatePath = shortestPath(origin.id, location.id, adjacency);
+      return candidatePath !== null && withinStarterZone(candidatePath);
+    })
     .sort(byId);
   const destination =
     destinations.length > 0 ? rng.child('destination').pick(destinations) : undefined;

@@ -86,18 +86,13 @@ for (const faction of FACTIONS) {
     await expect(page.getByRole('heading', { name: 'Mission board' })).toBeVisible();
     // The board itself must work: offers are listed.
     await expect(page.locator('.item').first()).toBeVisible();
+    // D43: on default settings a freshly onboarded player must always have a mission they can
+    // accept — a private start-safe one when the shared board has nothing takeable.
     const accept = page.locator('button:has-text("Accept"):not([disabled])').first();
-    if ((await accept.count()) === 0) {
-      // KNOWN GAP (stabilization plan, owner decision D43): nothing guarantees a brand-new
-      // player's starter ship can take any mission on the home board (most templates need
-      // weapons, pressurized life support, a mining rig...). Recorded as a visible skip so the
-      // rest of the suite stays meaningful and the gap cannot be forgotten.
-      test.info().annotations.push({
-        type: 'known-gap',
-        description: `${faction}: no acceptable first mission on the home board (D43)`,
-      });
-      test.skip(true, `${faction}: no acceptable first mission on the home board (D43)`);
-    }
+    await expect(
+      accept,
+      `${faction}: a freshly onboarded player has no acceptable mission on the home board`,
+    ).toBeVisible();
     await assertClean(page, 'board');
     await accept.click();
 

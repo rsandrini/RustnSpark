@@ -69,15 +69,7 @@
       }
     },
     "tournament_cargo": {
-      "parts": [
-        "bridge",
-        "engine_chem_small",
-        "tank_small",
-        "cargo",
-        "cargo",
-        "cargo",
-        "hull"
-      ],
+      "parts": ["bridge", "engine_chem_small", "tank_small", "cargo", "cargo", "cargo", "hull"],
       "sheet": {
         "autonomy": 142857.14285714287,
         "batCharge": 0,
@@ -136,13 +128,7 @@
       }
     },
     "tournament_miner": {
-      "parts": [
-        "bridge",
-        "engine_ion_micro",
-        "mining_rig",
-        "reactor_solar",
-        "hull"
-      ],
+      "parts": ["bridge", "engine_ion_micro", "mining_rig", "reactor_solar", "hull"],
       "sheet": {
         "autonomy": 0,
         "batCharge": 0,
@@ -168,13 +154,7 @@
       }
     },
     "tournament_speed": {
-      "parts": [
-        "bridge",
-        "engine_ion_micro",
-        "reactor_solar",
-        "battery_small",
-        "hull"
-      ],
+      "parts": ["bridge", "engine_ion_micro", "reactor_solar", "battery_small", "hull"],
       "sheet": {
         "autonomy": 0,
         "batCharge": 300,

@@ -404,7 +404,8 @@
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
     },
-    "expiredLabel": "Expirada"
+    "expiredLabel": "Expirada",
+    "starterBadge": "Missão inicial"
   },
   "map": {
     "title": "Mapa do setor",

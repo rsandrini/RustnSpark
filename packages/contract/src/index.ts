@@ -291,6 +291,8 @@ export const MissionInstanceDataSchema = z.object({
   expiresAt: IsoDate,
   status: MissionStatusSchema,
   playerId: z.string().nullable(),
+  /** D43: set on a player's private start-safe mission; null for every shared offer. */
+  privatePlayerId: z.string().nullable(),
   shipId: z.string().nullable(),
   acceptedAt: IsoDate.nullable(),
   arrivalAt: IsoDate.nullable(),

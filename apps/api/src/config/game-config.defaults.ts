@@ -122,6 +122,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
     board_min_per_location: 1,
+    // D43: while a player has completed fewer than this many missions and nothing on their
+    // board is takeable, a private start-safe mission is offered. 0 turns the guarantee off.
+    starter_guarantee_max_completed: 3,
+    // Highest zone (0-3) a start-safe mission may cross: 0-1 is the safe core (no PvP, GDD §2).
+    starter_max_zone: 1,
   },
   scavenging: {
     chance: { common: 0.25, mission: 0.55, pirate: 0.75 },

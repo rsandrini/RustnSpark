@@ -1,91 +1,40 @@
 {
   "alvos": {
-    "combate_winrate": [
-      45,
-      60
-    ],
-    "engasgo_pct": [
-      2,
-      12
-    ],
-    "falencia_pct": [
-      2,
-      15
-    ],
-    "margem_mediana": [
-      80,
-      400
-    ],
-    "missoes_tier2": [
-      4,
-      10
-    ],
-    "missoes_tier5": [
-      60,
-      160
-    ],
-    "tier5_pct": [
-      15,
-      55
-    ]
+    "combate_winrate": [45, 60],
+    "engasgo_pct": [2, 12],
+    "falencia_pct": [2, 15],
+    "margem_mediana": [80, 400],
+    "missoes_tier2": [4, 10],
+    "missoes_tier5": [60, 160],
+    "tier5_pct": [15, 55]
   },
   "layer3": {
     "life_sweep": {
       "band": {
         "bankruptcy_pct": 0,
         "choke_pct_max": 3,
-        "combat_winrate": [
-          53.5,
-          57.5
-        ],
-        "median_margin": [
-          760,
-          820
-        ],
-        "missions_tier2_median": [
-          8,
-          10
-        ],
+        "combat_winrate": [53.5, 57.5],
+        "median_margin": [760, 820],
+        "missions_tier2_median": [8, 10],
         "missions_tier5_median": {
-          "manutencao_100": [
-            113,
-            129
-          ],
-          "manutencao_200": [
-            121,
-            137
-          ],
-          "manutencao_350": [
-            136,
-            152
-          ]
+          "manutencao_100": [113, 129],
+          "manutencao_200": [121, 137],
+          "manutencao_350": [136, 152]
         }
       },
       "n_lives": 2000,
       "oracle": {
         "bankruptcy_pct": 0,
-        "choke_pct": [
-          0,
-          2
-        ],
-        "combat_winrate": [
-          55,
-          56
-        ],
-        "median_margin": [
-          778,
-          803
-        ],
+        "choke_pct": [0, 2],
+        "combat_winrate": [55, 56],
+        "median_margin": [778, 803],
         "missions_tier2_median": 9,
         "missions_tier5_median": {
           "manutencao_100": 121,
           "manutencao_200": 129,
           "manutencao_350": 144
         },
-        "tier5_reached_pct": [
-          98,
-          100
-        ]
+        "tier5_reached_pct": [98, 100]
       },
       "seed": 1
     },
@@ -116,51 +65,21 @@
       },
       "n_per_order": 1500,
       "oracle": {
-        "Blindado": [
-          40.6,
-          41.3
-        ],
-        "DanoAlto": [
-          54.4,
-          55.1
-        ],
-        "spread": [
-          13.3,
-          14.0
-        ]
+        "Blindado": [40.6, 41.3],
+        "DanoAlto": [54.4, 55.1],
+        "spread": [13.3, 14.0]
       }
     }
   },
   "layer4": {
     "band": {
-      "combat_winrate": [
-        45,
-        60
-      ],
-      "engasgo_pct": [
-        2,
-        12
-      ],
-      "falencia_pct": [
-        0,
-        15
-      ],
-      "median_margin": [
-        740,
-        850
-      ],
-      "missions_tier2_median": [
-        4,
-        10
-      ],
-      "missions_tier5_median": [
-        60,
-        160
-      ],
-      "tier5_pct": [
-        90,
-        100
-      ]
+      "combat_winrate": [45, 60],
+      "engasgo_pct": [2, 12],
+      "falencia_pct": [0, 15],
+      "median_margin": [740, 850],
+      "missions_tier2_median": [4, 10],
+      "missions_tier5_median": [60, 160],
+      "tier5_pct": [90, 100]
     },
     "baseline": {
       "combat_winrate": 55.1,

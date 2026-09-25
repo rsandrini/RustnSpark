@@ -254,4 +254,65 @@ describe('S6.2 — template filler (pure generation)', () => {
     // A luna-only fixture board read at an explorers location: no eligible template.
     expect(() => fill('gamma|0|v0', LOC_GAMMA, [DELIVERY_LUNA])).toThrow(MissionGenerationError);
   });
+
+  describe('D43 start-safe constraint', () => {
+    const starter = (seed: string, maxZone: number, origin: FillerLocation = LOC_ALPHA) =>
+      fillMission({
+        seed,
+        origin,
+        world: world(),
+        rules,
+        now: NOW,
+        starter: { types: ['DELIVERY'], maxZone },
+      });
+
+    it('only ever yields a DELIVERY whose legs all stay inside the allowed zones', () => {
+      for (let epoch = 0; epoch < 40; epoch += 1) {
+        const draft = starter(`starter|p1|alpha|${epoch}`, 1);
+        expect(draft.type).toBe('DELIVERY');
+        expect(draft.destinationId).toBe('beta'); // gamma is zone 2
+        for (const leg of legsOf(draft)) expect(leg.zone).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('is deterministic for the same seed', () => {
+      expect(starter('starter|p1|alpha|0', 1)).toEqual(starter('starter|p1|alpha|0', 1));
+    });
+
+    it('fails with MissionGenerationError when no route fits the zone limit', () => {
+      // beta is zone 1: with maxZone 0 nothing is reachable from alpha (a zone-0 port).
+      expect(() => starter('starter|p1|alpha|0', 0)).toThrow(MissionGenerationError);
+    });
+
+    it('never asks for a route safer than the port the player already lives in', () => {
+      // gamma is zone 2 and beta zone 1: from gamma, even maxZone 0 must allow beta (zone 1 is
+      // safer than home), while a hard limit would leave a zone-2 home with no route at all.
+      const draft = starter('starter|p1|gamma|0', 0, {
+        id: 'gamma',
+        type: 'port',
+        zone: 2,
+        factionId: 'luna',
+      });
+      expect(draft.type).toBe('DELIVERY');
+      for (const leg of legsOf(draft)) expect(leg.zone).toBeLessThanOrEqual(2);
+    });
+
+    it('fails when the constraint excludes every eligible template type', () => {
+      expect(() =>
+        fillMission({
+          seed: 'starter|p1|alpha|0',
+          origin: LOC_ALPHA,
+          world: world(),
+          rules,
+          now: NOW,
+          starter: { types: ['ESCORT'], maxZone: 1 },
+        }),
+      ).toThrow(MissionGenerationError);
+    });
+
+    it('does not change ordinary generation (no constraint, same seed, same result)', () => {
+      const plain = fill('alpha|3|v1', LOC_ALPHA);
+      expect(plain).toEqual(fill('alpha|3|v1', LOC_ALPHA));
+    });
+  });
 });
