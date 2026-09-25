@@ -95,10 +95,11 @@ Every task below implicitly includes these. They are non-negotiable.
 | D40 | **Rescue soft-lock (2026-09-25):** rescue left fuel unchanged, refuel is blocked while the balance is negative, so a broke player with an empty tank had no way to start a mission | **Approved by the owner:** rescue leaves an emergency fuel ration, `economy.rescue_fuel_fraction` (Admin-tunable, default **0.25** of the tank; never lowers existing fuel, capped at the tank; 0 = old behaviour). GDD §14 gets a matching line | Keeps "the player never gets stuck" (GDD §14) without making rescue a real fuel source |
 | D41 | **Restart-kit arbitrage (2026-09-24):** rescue → free starter kit → sell could print credits on a hostile high-isolation port | **Approved:** the worst-case sell value of the kit (highest isolation × hostile faction × max mood, at `parts.restart_condition_max`) must stay **below `economy.rescue_cost`**; the Admin tuning layer rejects any ruleset that breaks it. `parts.restart_condition_max` default **30** (was 50; still satisfies GDD §14 "≤50%") | Closes a money printer without a special case in the wallet |
 | D42 | **Default rate limit (2026-09-25):** 60 req/min per IP tripped in ordinary play (the client polls; NAT'd players share an IP) | **Approved:** default per-IP limit **300/min** for routes without their own policy (auth routes keep strict ones) until S12.1 delivers the Redis-backed policy matrix | Infra value, not game balance; revisited in S12.1 |
+| D43 | **First mission for a new player (2026-09-25, found by the browser smoke):** the seeded `missions.board_min_per_location` is 1, so a port lists ONE offer, and most templates need parts the starter ship lacks (TRANSPORT needs pressurized life support, ESCORT weapons, MINING a rig). A brand-new player can be left with nothing they can accept | **OPEN — owner decision.** Options: (a) guarantee one starter-safe mission per home port at generation time; (b) raise the board minimum for hubs (GDD: isolated posts offer little, but hubs should offer several); (c) add the missing part to the starter kit. The smoke records the case as a visible `known-gap` skip until decided | The first five minutes decide retention; today they depend on luck |
 
 **Status (2026-09-21):** the owner **accepted all technical defaults** (D1–D9, D11, D12, D17, D19, D20, D23, D24) and confirmed D22. **Owner decisions closed:** D10 (simulator values), D13 (GDD integrity rule + sim base formula + production-mode harness), D14 (installed-part value thresholds), D15 (start credits **200**, overriding the recommendation). D16 (port faithfully with `pierce_ratio` inert until a balance pass; slot A = mission owner vs NPCs, aggressor in PvP, SEN ties in a mutual attack by seeded coin flip), D27 (**no faction start discount in v0.1**), D29 (shared board, first accept wins). D21 (~15 min medium: `duration_k` 2.25, fast < 10 min, medium 10–30, long > 30), D25 (every port sells the whole catalog + deterministic used offers), D26 (no abort before Step 10), D28 (per-player scavenging cooldown, 5 min). D18 (rule defaults approved, Appendix E) and ship-class thresholds (approved, Appendix E). Review-pass decisions D30 (full mining), D31 (starter kit and home ports) and D32 (drop `sucata`) were approved the same day. **No owner decisions remain open: the planning phase is complete and Step 1 can start.**
 
-**Status update (2026-09-25):** D30–D35 were added during Steps 3–4, D36–D39 during Step 9 and D40–D42 during the stabilization pass; all are approved by the owner. **No owner decisions are open.** (The paragraph above is the original 2026-09-21 record.)
+**Status update (2026-09-25):** D30–D35 were added during Steps 3–4, D36–D39 during Step 9 and D40–D42 during the stabilization pass; all are approved by the owner. **One owner decision is open: D43** (first mission for a new player). (The paragraph above is the original 2026-09-21 record.)
 
 ## 2.1 Review pass (2026-09-21) — defects found and fixed
 
@@ -598,9 +599,11 @@ Visual references are the prototypes; they are rebuilt as React components consu
 
 ### Step 12 — Hardening (→ M12)
 
+> **Re-scoped after the stabilization pass (2026-09-25).** Delivered early: the compose `migrate` service (S12.5), a Playwright smoke on the real stack (S12.4, non-blocking in CI), a 300/min default throttle (D42) and the shared HTTP contract (`packages/contract`). What remains of each is listed on its task.
+
 **S12.1 Rate-limit policy.** Depends on: S1.5, S2
 - Files: `apps/api/src/common/throttling/{policies.ts,throttler-redis.storage.ts}`.
-- Acceptance: policy matrix per route class (auth strict, intents moderate, reads generous, preview generous); Redis-backed store so limits hold across instances; tests per class.
+- Acceptance: policy matrix per route class (auth strict, intents moderate, reads generous, preview generous); Redis-backed store so limits hold across instances; tests per class. **Also decide:** registration is 3/min per IP, which players behind one NAT (a household, a school) share — per-IP is too coarse for `register`; the browser smoke had to wait out this limit between players. Replaces the interim 300/min default (D42).
 
 **S12.2 Security automation.** Depends on: all API steps
 - Files: `apps/api/test/security/{route-audit.spec.ts,authz-matrix.spec.ts,forged-payload.spec.ts,idempotency-matrix.spec.ts,redaction.spec.ts}`.
@@ -612,10 +615,10 @@ Visual references are the prototypes; they are rebuilt as React components consu
 
 **S12.4 Browser E2E.** Depends on: S10, S9.4
 - Files: `apps/web/e2e/happy-path.spec.ts` (Playwright), CI job using compose `test` profile and `time_scale`.
-- Acceptance: register → play one full loop → report visible → sell loot, green in CI.
+- Acceptance: register → play one full loop → report visible → sell loot, green in CI. **Status:** the smoke (`apps/web/e2e/smoke.spec.ts`, 3 factions × desktop/phone + pt-BR) exists and passes; remaining: buy/sell/refuel/repair/rescue flows in the browser, a screenshot baseline, and promoting the job from non-blocking to required (owner decision 6: after it has stayed green for a week).
 
 **S12.5 Operations.** Depends on: S1.4, S11
-- Files: README runbook section (migrations/seed on boot, first-admin CLI, backup/restore, env reference), `compose.yaml` prod review.
+- Files: README runbook section (first-admin CLI, backup/restore, env reference), `compose.yaml` prod review. **Delivered:** migrations + insert-only seed run as the one-shot `migrate` / `migrate-prod` services before api and worker.
 - Acceptance: `docker compose --profile prod config` valid against external Postgres/Redis; readiness/liveness endpoints; graceful shutdown drill (SIGTERM mid-job) *manual*.
 
 **S12.6 Security review and release.** Depends on: S12.1–S12.5

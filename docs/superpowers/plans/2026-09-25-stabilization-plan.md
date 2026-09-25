@@ -25,6 +25,31 @@
 | F13 | Known compromises | Report loot/part popup shows name + kind only; `?locale=` invalid falls back silently; hangar grid size (10) duplicated client-side; risk band derived from zone; polling load (transit 2 s, board 15 s); no accessibility or phone-layout pass; earlier deferrals (S3.7 tuning HTTP test, no-mock admin login test, tier threshold ruling, ion engine energy value, minors M2/M3/M5/M6/M11/M15/M17, M4/M6/M9/M12). | Low–Medium |
 | F14 | Housekeeping | Merged branches `feat/step-5…10` and `step-1…4` still exist locally and on origin; Node-20 action deprecation warnings in CI. | Low |
 
+## Status (2026-09-25, end of the stabilization pass)
+
+| Task | Result |
+|---|---|
+| T0.1 job timeouts, T0.8 CI hygiene | **Done** — every job has `timeout-minutes`; actions bumped |
+| T0.2 Jest hang | **Done** — `app.module.spec` stubs the BullMQ queues and closes the module; a network-less run has zero connection errors |
+| T0.3 coverage gate | **Done** — merged run over all projects (`test:cov`, 4 GB heap); specs and test-support excluded (the real cause of "47 %"); measured 91.8 / 75.7 / 95.1 / 93.2 |
+| T0.4 React Router 7 | **Done** — 7.18.4; `pnpm audit` clean |
+| T0.5 migrate service | **Done** — verified from empty volumes; the Docker worker job is green |
+| T0.6 web tests in CI | **Done** |
+| T0.7 market flake | **Done as far as it can be** — shelf is pure + clock-injected, 28,800-offer invariant test, failing assertions print the body; the original 409 never reproduced (12/12 local runs) |
+| T1.1 inventory names | **Done** |
+| T1.2 shared contract | **Done** (zod package instead of Swagger, see the task) |
+| T1.3 browser smoke | **Done**, non-blocking in CI; found ~10 real defects (listed in the task) |
+| T1.4 client hygiene | **Done** — grid size from the server, catalog popups, axe on every screen, modal focus, i18n-key guard; also fixed a report bug (parts printed as instance ids) |
+| T1.5 polling | **Done** — schedule follows the mission (480 → <90 requests per 15-min mission) |
+| T1.6 old deferrals | **Done** except the ion-engine energy value (owner content decision) |
+| T2.1 decisions | **Done** — D40–D42 recorded; **D43 opened** (first mission for a new player) |
+| T2.2 branches | **Done** — every step's merge commit is tagged `m1`…`m10`, `stabilization-1/2`; merged branches deleted |
+| T2.3 re-scope | **Done** — Steps 11–12 notes in the main plan |
+
+**Also found and fixed along the way** (not in the original list): the repair endpoint answered 500 (not 409) when the balance could not cover it and lacked the negative-balance guard; two flaky tests (repair cost depended on random part ids; a 1 ms timer assertion); `/register` bounced to `/login`; the hangar's CSS (unitless font-size, dead absolute-position rule); missing translations; Auto layout sent no part ids; the transit screen showed a stale "no report".
+
+**Still open:** D43 (owner decision), the manual S10.10 sign-off by a person (desktop + phone, both locales), the ion-engine energy value, and promoting the browser smoke to a required check after a week green.
+
 ---
 
 ## Phase 0 — CI green (do first; nothing else merges until this is done)
