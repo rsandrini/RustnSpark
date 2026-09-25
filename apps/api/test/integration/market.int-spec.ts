@@ -34,6 +34,7 @@ interface MarketListingBody {
     price: number;
     condition: number;
   }>;
+  sellOffers: Array<{ partInstanceId: string; price: number }>;
 }
 
 // S8.2 acceptance (plan line 469): buy = validate + debit + deliver in one transaction;
@@ -393,7 +394,9 @@ describe('market API (S8.2)', () => {
       select: { credits: true },
     });
     expect(after.credits).toBe(before.credits + actual);
-    await expect(prisma.partInstance.findUnique({ where: { id: partInstanceId } })).resolves.toBeNull();
+    await expect(
+      prisma.partInstance.findUnique({ where: { id: partInstanceId } }),
+    ).resolves.toBeNull();
   });
 
   it('a 0-base part moves exactly 1¢ each way — never free, never worthless (review item 1)', async () => {
@@ -505,6 +508,37 @@ describe('market API (S8.2)', () => {
       select: { credits: true },
     });
     expect(after.credits).toBe(before.credits + actual);
-    await expect(prisma.partInstance.findUnique({ where: { id: partInstanceId } })).resolves.toBeNull();
+    await expect(
+      prisma.partInstance.findUnique({ where: { id: partInstanceId } }),
+    ).resolves.toBeNull();
+  });
+
+  it('the board quotes what the port pays for each inventory part, and sell accepts that quote first try (S10.9)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    expect((board.body as MarketListingBody).sellOffers).toEqual([]);
+
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
+    )!;
+    const bought = await buy(player.token, randomUUID(), {
+      listingId: listing.listingId,
+      expectedPrice: listing.price,
+    });
+    const partInstanceId = (bought.body as { partInstanceId: string }).partInstanceId;
+
+    const after = await getMarket(player.token, 'ceres');
+    const offers = (after.body as MarketListingBody).sellOffers;
+    expect(offers).toHaveLength(1);
+    expect(offers[0]!.partInstanceId).toBe(partInstanceId);
+
+    // The quote is exactly what sell expects: no PRICE_CHANGED round trip.
+    const sold = await sell(player.token, randomUUID(), {
+      partInstanceId,
+      expectedPrice: offers[0]!.price,
+    });
+    expect(sold.status).toBe(200);
+    expect((sold.body as { price: number }).price).toBe(offers[0]!.price);
   });
 });

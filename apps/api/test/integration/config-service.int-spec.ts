@@ -78,7 +78,14 @@ describe('GameConfigService integration', () => {
     await prismaService.$transaction(async (tx) => {
       await repository.upsert(key, value, 'INTEGER', { en: 'x', 'pt-BR': 'x' }, 'tester', tx);
       await repository.createRevision(
-        { actor: 'tester', entityType: 'GameConfig', entityId: key, before: null as never, after: value as never, reason: 'silent write' },
+        {
+          actor: 'tester',
+          entityType: 'GameConfig',
+          entityId: key,
+          before: null as never,
+          after: value as never,
+          reason: 'silent write',
+        },
         tx,
       );
     });
@@ -117,6 +124,8 @@ describe('GameConfigService integration', () => {
     const after = serviceA!.snapshot();
     expect(after.version).toBe(before.version);
     expect(after.rules.economy.start_credits).toBe(before.rules.economy.start_credits);
-    expect(await prisma.tuningRevision.count({ where: { entityId: 'economy.start_credits' } })).toBe(0);
+    expect(
+      await prisma.tuningRevision.count({ where: { entityId: 'economy.start_credits' } }),
+    ).toBe(0);
   });
 });

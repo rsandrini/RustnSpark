@@ -227,6 +227,51 @@ describe('ship dispatch API (S7.2)', () => {
     expect(snapshot.legs).toHaveLength(2);
   });
 
+  // S10.7: the transit screen counts down per leg against the windows the server
+  // computed at dispatch (pro-rata split of [serverTime, arrivalAt] by leg distance).
+  it('exposes per-leg windows on GET /v1/missions/active: none before dispatch, contiguous after', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [30, 10]);
+    const server = httpServer(testApp.app);
+
+    const before = await request(server).get('/v1/missions/active').set(auth(player.token));
+    expect(before.status).toBe(200);
+    const acceptedRows = before.body as Array<{ id: string; legWindows: unknown[] }>;
+    expect(acceptedRows).toHaveLength(1);
+    expect(acceptedRows[0]!.id).toBe(mission.id);
+    expect(acceptedRows[0]!.legWindows).toEqual([]);
+
+    const dispatched = await dispatch(player.token, player.shipId, mission.id);
+    expect(dispatched.status).toBe(200);
+    const arrivalMs = Date.parse((dispatched.body as { arrivalAt: string }).arrivalAt);
+
+    const active = await request(server).get('/v1/missions/active').set(auth(player.token));
+    expect(active.status).toBe(200);
+    const windows = (
+      active.body as Array<{
+        id: string;
+        legWindows: Array<{ legIndex: number; routeId: string; from: string; to: string }>;
+      }>
+    )[0]!.legWindows;
+    expect(windows).toHaveLength(2);
+    expect(windows[0]!.legIndex).toBe(0);
+    expect(windows[1]!.legIndex).toBe(1);
+
+    const from0 = Date.parse(windows[0]!.from);
+    const to0 = Date.parse(windows[0]!.to);
+    const from1 = Date.parse(windows[1]!.from);
+    const to1 = Date.parse(windows[1]!.to);
+    expect(from0).toBeLessThan(to0);
+    // Contiguous: leg 0 hands off to leg 1, and the last leg lands on arrivalAt.
+    expect(to0).toBe(from1);
+    expect(Math.abs(to1 - arrivalMs)).toBeLessThan(1000);
+    // 30/40 of the trip on leg 0.
+    const serverMs = Date.parse((dispatched.body as { serverTime: string }).serverTime);
+    const durationMs = arrivalMs - serverMs;
+    expect(Math.abs(to0 - (serverMs + (durationMs * 30) / 40))).toBeLessThan(2000);
+  });
+
   it('is idempotent: a repeat dispatch replays the stored arrival and adds no new state', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

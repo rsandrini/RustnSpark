@@ -22,7 +22,10 @@ import {
   type ConfigEntryResponse,
 } from './dto/index.js';
 import { RevisionService } from './revision.service.js';
-import { CurrentUser, type CurrentUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
 
 function serializeRevision(revision: TuningRevision): Record<string, unknown> {

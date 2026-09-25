@@ -47,7 +47,11 @@ describe('AdminGuard coverage', () => {
         const handler = ctor.prototype[name] as object;
         const isRoute = Reflect.getMetadata('path', handler) !== undefined;
         if (isRoute) {
-          expect({ controller: ctor.name, handler: name, guarded: guardsOf(handler).includes(AdminGuard) }).toEqual({
+          expect({
+            controller: ctor.name,
+            handler: name,
+            guarded: guardsOf(handler).includes(AdminGuard),
+          }).toEqual({
             controller: ctor.name,
             handler: name,
             guarded: true,

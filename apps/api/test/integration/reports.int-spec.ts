@@ -64,7 +64,12 @@ const STORED = {
       category: 'loot',
       type: 'mining',
       actors: ACTORS,
-      effects: { hp: 0, condByPart: {}, credits: 0, loot: [{ materialId: 'common_ore', quantity: 3 }] },
+      effects: {
+        hp: 0,
+        condByPart: {},
+        credits: 0,
+        loot: [{ materialId: 'common_ore', quantity: 3 }],
+      },
       magnitude: 3,
     },
   ],
@@ -78,6 +83,7 @@ interface ReportLineBody {
 interface ReportBody {
   view: string;
   locale: string;
+  outcome: string;
   lines?: readonly ReportLineBody[];
   chapters?: readonly {
     leg: number;
@@ -120,9 +126,8 @@ describe('reports API (S9.3)', () => {
 
   beforeEach(async () => {
     await resetDatabase(prisma);
-    rulesHash = (
-      await prisma.rulesSnapshot.create({ data: { hash: 's9.3-rules', rules: {} } })
-    ).hash;
+    rulesHash = (await prisma.rulesSnapshot.create({ data: { hash: 's9.3-rules', rules: {} } }))
+      .hash;
     await prisma.material.create({
       data: {
         id: 'common_ore',
@@ -245,7 +250,7 @@ describe('reports API (S9.3)', () => {
         rulesHash,
         outcome: 'success',
         shipSnapshot: {},
-        legs: (opts.stored ?? STORED),
+        legs: opts.stored ?? STORED,
         schemaVersion: opts.schemaVersion ?? 2,
         ...(opts.createdAt !== undefined ? { createdAt: opts.createdAt } : {}),
       },
@@ -574,5 +579,12 @@ describe('reports API (S9.3)', () => {
     const lines = (res.body as ReportBody).lines!;
     // STORED holds a 742-unit leg_travel and a combat_win: the fight must be listed.
     expect(lines.some((line) => /raiders|answer/i.test(line.text))).toBe(true);
+  });
+
+  it('labels the report with the mission outcome, so the screen needs no second call', async () => {
+    const fixture = await setup();
+    const res = await report(fixture.token, fixture.missionId);
+    expect(res.status).toBe(200);
+    expect((res.body as ReportBody).outcome).toBe('success');
   });
 });

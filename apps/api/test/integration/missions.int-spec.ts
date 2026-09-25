@@ -146,6 +146,65 @@ describe('missions accept/hold API (S6.4)', () => {
     }
   });
 
+  // S10.6: the board disables Accept without the client re-deriving any rule, so the
+  // server composes template requirements + accept's own preconditions per offer.
+  it('reports upfront board eligibility: requirements, origin and one-active preconditions (S10.6)', async () => {
+    await freshSeededApp();
+    const { token, shipId } = await onboardPlayer();
+    const server = httpServer(testApp.app);
+
+    interface EligibilityBody {
+      eligible: boolean;
+      reasons: Array<{ code: string; message: string }>;
+    }
+    type OfferRow = { id: string; type: string; eligibility: EligibilityBody };
+
+    const delivery = await createMission({ type: 'DELIVERY' }); // starter crg 10 ≥ 1
+    const mining = await createMission({ type: 'MINING' }); // starter has no mining rig
+    const transport = await createMission({ type: 'TRANSPORT' }); // no pressurized cabin
+    const rescue = await createMission({ type: 'RESCUE' }); // starter mob below reference
+    const elsewhere = await createMission({ type: 'DELIVERY', originId: 'hedus' });
+
+    const board = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(board.status).toBe(200);
+    const rows = (board.body as OfferRow[]).filter((row) =>
+      [delivery.id, mining.id, transport.id, rescue.id].includes(row.id),
+    );
+    expect(rows).toHaveLength(4);
+
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const codesOf = (id: string): string[] =>
+      (byId.get(id)?.eligibility.reasons ?? []).map((reason) => reason.code);
+
+    expect(byId.get(delivery.id)?.eligibility).toEqual({ eligible: true, reasons: [] });
+    expect(codesOf(mining.id)).toContain('MINER');
+    expect(codesOf(transport.id)).toContain('PRESSURIZED_LIFE_SUPPORT');
+    expect(codesOf(rescue.id)).toContain('SPEED');
+
+    const otherBoard = await request(server).get('/v1/locations/hedus/missions').set(auth(token));
+    expect(otherBoard.status).toBe(200);
+    const foreign = (otherBoard.body as OfferRow[]).find((row) => row.id === elsewhere.id);
+    expect(foreign?.eligibility.eligible).toBe(false);
+    expect(foreign?.eligibility.reasons.map((reason) => reason.code)).toContain(
+      'SHIP_NOT_AT_ORIGIN',
+    );
+
+    // Once a mission is under way every remaining offer reports the accept-time
+    // ACTIVE_MISSION_EXISTS precondition too.
+    const accepted = await request(server)
+      .post(`/v1/missions/${delivery.id}/accept`)
+      .set(auth(token))
+      .send({ shipId });
+    expect(accepted.status).toBe(200);
+
+    const after = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    const miningAfter = (after.body as OfferRow[]).find((row) => row.id === mining.id);
+    expect(miningAfter?.eligibility.eligible).toBe(false);
+    expect(miningAfter?.eligibility.reasons.map((reason) => reason.code)).toContain(
+      'ACTIVE_MISSION_EXISTS',
+    );
+  });
+
   it('holds, re-holds idempotently, and releases a mission (max 1 hold, timer untouched)', async () => {
     await freshSeededApp();
     const { token } = await onboardPlayer();

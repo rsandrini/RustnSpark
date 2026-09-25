@@ -8,6 +8,8 @@ export interface UserProfile {
   credits: number;
   locale: string;
   role: UserRole;
+  /** null until onboarding picks a faction — gates the game routes (S10.2). */
+  factionId: string | null;
 }
 
 export interface LoginCredentials {

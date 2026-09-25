@@ -155,13 +155,13 @@ describe('happy path over the API (S9.4)', () => {
 
     // --- buy the mining rig + solar panel at the home port (spending POSTs
     // carry Idempotency-Key: the header is mandatory on @Idempotent routes) ---
-    const market = await request(server)
-      .get('/v1/locations/cair/market')
-      .set(auth(token));
+    const market = await request(server).get('/v1/locations/cair/market').set(auth(token));
     expect(market.status).toBe(200);
     const listings = (market.body as MarketListingBody).listings;
     const catalog = (partType: string) => {
-      const found = listings.find((entry) => entry.kind === 'catalog' && entry.partType === partType);
+      const found = listings.find(
+        (entry) => entry.kind === 'catalog' && entry.partType === partType,
+      );
       if (!found) throw new Error(`no catalog listing for ${partType} at cair`);
       return found;
     };
@@ -197,9 +197,7 @@ describe('happy path over the API (S9.4)', () => {
     // bounded but guaranteed to find one eventually.
     let mining: { id: string } | undefined;
     for (let attempt = 0; attempt < 8; attempt += 1) {
-      const board = await request(server)
-        .get('/v1/locations/cair/missions')
-        .set(auth(token));
+      const board = await request(server).get('/v1/locations/cair/missions').set(auth(token));
       expect(board.status).toBe(200);
       const offers = board.body as readonly { id: string; type: string; status: string }[];
       mining = offers.find((offer) => offer.type === 'MINING' && offer.status === 'AVAILABLE');
@@ -248,7 +246,7 @@ describe('happy path over the API (S9.4)', () => {
     expect(dispatched.status).toBe(200);
 
     // --- wait for the worker to resolve (a few seconds via time_scale) -----
-    // Polled at 1 s: the hand-rolled throttler allows 60 req/min per IP and this
+    // Polled at 1 s: the hand-rolled throttler allows 300 req/min per IP and this
     // test shares its IP with every other step of the loop.
     const listed = await until(
       'the resolved report to appear in GET /v1/reports',
@@ -266,18 +264,14 @@ describe('happy path over the API (S9.4)', () => {
     expect(row.legs).toBeGreaterThanOrEqual(1);
 
     // --- read the report in every view -------------------------------------
-    const summary = await request(server)
-      .get(`/v1/reports/${missionId}`)
-      .set(auth(token));
+    const summary = await request(server).get(`/v1/reports/${missionId}`).set(auth(token));
     expect(summary.status).toBe(200);
     const summaryBody = summary.body as ReportBody;
     expect(summaryBody.view).toBe('summary');
     expect(summaryBody.lines!.length).toBeGreaterThanOrEqual(2);
     expect(summaryBody.lines![0]!.text).toMatch(/Mission accomplished/);
 
-    const log = await request(server)
-      .get(`/v1/reports/${missionId}?view=log`)
-      .set(auth(token));
+    const log = await request(server).get(`/v1/reports/${missionId}?view=log`).set(auth(token));
     expect(log.status).toBe(200);
     const logBody = log.body as ReportBody;
     expect(logBody.view).toBe('log');
@@ -305,9 +299,8 @@ describe('happy path over the API (S9.4)', () => {
     );
     expect(holding).toBeDefined();
     expect(holding!.quantity).toBeGreaterThan(0);
-    const creditsBeforeSale = (
-      await prisma.player.findUniqueOrThrow({ where: { id: playerId } })
-    ).credits;
+    const creditsBeforeSale = (await prisma.player.findUniqueOrThrow({ where: { id: playerId } }))
+      .credits;
     const sold = await request(server)
       .post('/v1/market/sell-material')
       .set(auth(token))
@@ -358,9 +351,9 @@ describe('happy path over the API (S9.4)', () => {
     expect(job.status).toBe('COMPLETED');
     const repaired = await request(server).get('/v1/inventory').set(auth(token));
     for (const target of targets) {
-      const part = (
-        repaired.body as readonly { id: string; condition: number }[]
-      ).find((entry) => entry.id === target.partInstanceId);
+      const part = (repaired.body as readonly { id: string; condition: number }[]).find(
+        (entry) => entry.id === target.partInstanceId,
+      );
       expect(part?.condition).toBe(100);
     }
   }, 120_000);

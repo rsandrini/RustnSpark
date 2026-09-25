@@ -53,9 +53,10 @@ export class ConfigReferenceValidator {
     const found = new Set(rows.map((row) => row.partType));
     const missing = unique.filter((partType) => !found.has(partType));
     if (missing.length > 0) {
-      throw new GameConfigValidationError(`Starter parts must exist and be active: ${missing.join(', ')}`, [
-        { key, message: 'STARTER_PART_NOT_ACTIVE', value: missing },
-      ]);
+      throw new GameConfigValidationError(
+        `Starter parts must exist and be active: ${missing.join(', ')}`,
+        [{ key, message: 'STARTER_PART_NOT_ACTIVE', value: missing }],
+      );
     }
   }
 

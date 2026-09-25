@@ -79,7 +79,8 @@ async function everyLocationCanServeATemplate(prisma: PrismaClient): Promise<boo
       const requirements = template.requirements as Record<string, unknown> | undefined;
       const originFactions = requirements?.originFactions as string[] | undefined;
       const originTypes = requirements?.originTypes as string[] | undefined;
-      const factionMatch = originFactions === undefined || originFactions.includes(location.factionId);
+      const factionMatch =
+        originFactions === undefined || originFactions.includes(location.factionId);
       const typeMatch = originTypes === undefined || originTypes.includes(location.type);
       return factionMatch && typeMatch;
     });
@@ -245,7 +246,12 @@ describe('database seed (S3.4)', () => {
     const pirates = factions.find((f) => f.id === 'pirates');
     expect(pirates).toBeDefined();
     const pirateRelations = pirates!.relations as Record<string, string>;
-    expect(pirateRelations).toEqual({ luna: 'hostile', sun: 'hostile', explorers: 'hostile', pirates: 'hostile' });
+    expect(pirateRelations).toEqual({
+      luna: 'hostile',
+      sun: 'hostile',
+      explorers: 'hostile',
+      pirates: 'hostile',
+    });
 
     for (const faction of factions.filter((f) => f.playable)) {
       const relations = faction.relations as Record<string, string>;

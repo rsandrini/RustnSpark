@@ -4,10 +4,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
-import {
-  accessTokenFrom,
-  expectRefreshCookieAttributes,
-} from '../support/auth-fixtures.js';
+import { accessTokenFrom, expectRefreshCookieAttributes } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
 function httpServer(app: INestApplication): Server {
@@ -35,13 +32,11 @@ describe('GET /v1/players/me profile shape', () => {
   it('returns id, name, credits, locale, role and no email after register', async () => {
     const server = httpServer(testApp.app);
 
-    const registerResponse = await request(server)
-      .post('/v1/auth/register')
-      .send({
-        email: 'profile@example.com',
-        password: 'profile-password-1',
-        name: 'profile_pilot',
-      });
+    const registerResponse = await request(server).post('/v1/auth/register').send({
+      email: 'profile@example.com',
+      password: 'profile-password-1',
+      name: 'profile_pilot',
+    });
     expect(registerResponse.status).toBe(201);
     expectRefreshCookieAttributes(registerResponse);
 
@@ -57,9 +52,8 @@ describe('GET /v1/players/me profile shape', () => {
       credits: 0,
       locale: 'en',
       role: 'PLAYER',
+      factionId: null,
     });
-    expect(
-      (meResponse.body as Record<string, unknown>).email,
-    ).toBeUndefined();
+    expect((meResponse.body as Record<string, unknown>).email).toBeUndefined();
   });
 });

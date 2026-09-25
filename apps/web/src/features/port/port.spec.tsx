@@ -1,0 +1,267 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { renderWithRouter } from '../../test/utils';
+import { server } from '../../test/msw/server';
+import { economyState, resetEconomyState } from '../../test/msw/handlers';
+import { queryByRoleSafe } from '../../test/queries';
+import { routes } from '../../app/router';
+
+const onboarded = () =>
+  http.get('/v1/players/me', () =>
+    HttpResponse.json(
+      {
+        id: 'player-1',
+        name: 'Test Pilot',
+        credits: economyState.wallet,
+        role: 'PLAYER',
+        locale: 'en',
+        factionId: 'luna',
+      },
+      { status: 200 },
+    ),
+  );
+
+function rowButton(label: string | RegExp): Element {
+  const row = screen.getByText(label).closest('.item');
+  if (row === null) throw new Error('row not found');
+  const button = row.querySelector('button');
+  if (button === null) throw new Error('button not found');
+  return button;
+}
+
+describe('port (S10.9)', () => {
+  beforeEach(() => {
+    resetEconomyState();
+    server.use(onboarded());
+  });
+
+  it('buys a listing behind the confirmation popup and updates the wallet', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
+    expect(screen.getByText('Plated Hull')).toBeInTheDocument();
+
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog', {
+      name: 'Buy Plated Hull for 300 ¢?',
+    });
+    expect(popup).toHaveTextContent('Balance after: 4,520 ¢');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Bought Plated Hull for 300 ¢.');
+    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+  });
+
+  it('disables spending on a negative balance while scavenging stays open', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: -120,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: 'luna',
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    expect(await screen.findByTestId('wallet')).toHaveTextContent('-120 ¢');
+    expect(screen.getByText(/Negative balance/i)).toBeInTheDocument();
+    expect(rowButton('Plated Hull')).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Refuel' }));
+    expect(screen.getByRole('button', { name: 'Fill tank' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
+    expect(screen.getByRole('button', { name: /scavenge/i })).toBeEnabled();
+  });
+
+  it('sells all mined materials after the quote popup', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Market' }));
+    fireEvent.click(rowButton(/Iron/));
+    const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
+    expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Sold Iron for 24 ¢.');
+    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,844 ¢'));
+  });
+
+  it('repairs every damaged installed part from the repair tab', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    expect(screen.getAllByRole('slider')).toHaveLength(6);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Repair all' }));
+    // The exact cost is quoted by the server and confirmed before anything is charged.
+    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
+    expect(popup).toHaveTextContent('Repair cost: 1188 ¢ · 30 s');
+    expect(economyState.wallet).toBe(4820);
+    fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Repair started for 1188 ¢ — completes in 30s.',
+    );
+    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('3,632 ¢'));
+  });
+
+  it('fills the tank and scavenges the field', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    expect(screen.getByText('Fuel 25 / 40')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
+    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Scavenge the field' }));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Salvaged: Cargo Rack (condition 40).'),
+    );
+  });
+
+  it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
+    const requested: string[] = [];
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'sun starter',
+              fuel: 25,
+              status: 'IN_PORT',
+              currentLocationId: 'hedus',
+              stance: 'NEUTRAL',
+              layout: [],
+              sheet: { fuelCap: 40 },
+              shipClass: 'MULTIROLE',
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.get('/v1/locations/:id/market', ({ params }) => {
+        requested.push(String(params.id));
+        return HttpResponse.json(
+          { locationId: String(params.id), listings: [], sellOffers: [] },
+          { status: 200 },
+        );
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    expect(requested).toContain('hedus');
+    expect(requested).not.toContain('ceres');
+  });
+
+  it('sends an Idempotency-Key on every spending POST, reusing it for a retry of the same action', async () => {
+    const keys: string[] = [];
+    let attempts = 0;
+    server.use(
+      http.post('/v1/market/buy', ({ request }) => {
+        keys.push(request.headers.get('idempotency-key') ?? '');
+        attempts += 1;
+        if (attempts === 1) {
+          return HttpResponse.json(
+            { statusCode: 409, message: { error: 'INSUFFICIENT_FUNDS' } },
+            { status: 409 },
+          );
+        }
+        return HttpResponse.json(
+          { partInstanceId: 'p-9', partType: 'hull', condition: 100, price: 300, credits: 4520 },
+          { status: 200 },
+        );
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    await screen.findByText('Plated Hull');
+    fireEvent.click(rowButton('Plated Hull'));
+    let popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    // A translated message, not the generic one.
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not enough credits.');
+
+    popup = screen.getByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    await waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[0]).not.toBe('');
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('refuel, sell and repair are refused by the (strict) mock without a key — and the UI sends one', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    // The strict mock answers 400 IDEMPOTENCY_KEY_REQUIRED if the header is missing.
+    expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units');
+    expect(queryByRoleSafe('alert')).toBeNull();
+  });
+
+  it('a stale buy price updates the popup with the server price instead of failing silently', async () => {
+    server.use(
+      http.post('/v1/market/buy', () =>
+        HttpResponse.json(
+          { statusCode: 409, message: { error: 'PRICE_CHANGED', actual: 320 } },
+          { status: 409 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await screen.findByText('Plated Hull');
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    expect(await screen.findByRole('dialog', { name: /320 ¢/ })).toHaveTextContent(
+      'The price changed to 320 ¢ — confirm again.',
+    );
+  });
+
+  it('sells an inventory part at the port quote on the first click', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await screen.findByText('Plated Hull');
+    fireEvent.click(rowButton('Plated Hull'));
+    let popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    await screen.findByRole('status');
+
+    const sell = await screen.findAllByRole('button', { name: 'Sell' });
+    fireEvent.click(sell[0]!);
+    popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
+    // No PRICE_CHANGED round trip: the sale goes through.
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Sold /));
+    expect(queryByRoleSafe('alert')).toBeNull();
+  });
+
+  it('refreshes the wallet from the profile, never by rotating the session', async () => {
+    let sessionRefreshes = 0;
+    server.use(
+      http.post('/v1/auth/refresh', () => {
+        sessionRefreshes += 1;
+        return HttpResponse.json({ accessToken: 'token-x' }, { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await screen.findByTestId('wallet');
+    const before = sessionRefreshes;
+    await screen.findByText('Plated Hull');
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+    expect(sessionRefreshes).toBe(before);
+  });
+});

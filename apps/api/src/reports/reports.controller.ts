@@ -3,11 +3,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
-import {
-  ReportsService,
-  type ReportListResponse,
-  type ReportResponse,
-} from './reports.service.js';
+import { ReportsService, type ReportListResponse, type ReportResponse } from './reports.service.js';
 
 @Controller()
 export class ReportsController {

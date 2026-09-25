@@ -12,7 +12,10 @@ describe('game rules schema', () => {
   });
 
   it('rejects an out-of-bounds scalar with the key in the issue', () => {
-    const invalid = { ...GAME_CONFIG_DEFAULTS, combat: { ...GAME_CONFIG_DEFAULTS.combat, dodge_factor: 99 } };
+    const invalid = {
+      ...GAME_CONFIG_DEFAULTS,
+      combat: { ...GAME_CONFIG_DEFAULTS.combat, dodge_factor: 99 },
+    };
     expect(() => validateGameRules(invalid)).toThrow(GameConfigValidationError);
     try {
       validateGameRules(invalid);
@@ -23,7 +26,10 @@ describe('game rules schema', () => {
   });
 
   it('rejects an invalid type', () => {
-    const invalid = { ...GAME_CONFIG_DEFAULTS, combat: { ...GAME_CONFIG_DEFAULTS.combat, dc_base: 'ten' } };
+    const invalid = {
+      ...GAME_CONFIG_DEFAULTS,
+      combat: { ...GAME_CONFIG_DEFAULTS.combat, dc_base: 'ten' },
+    };
     expect(() => validateGameRules(invalid)).toThrow(GameConfigValidationError);
   });
 
@@ -35,7 +41,10 @@ describe('game rules schema', () => {
   });
 
   it('rejects an invalid wear.scale_mode', () => {
-    const invalid = { ...GAME_CONFIG_DEFAULTS, wear: { ...GAME_CONFIG_DEFAULTS.wear, scale_mode: 'invalid' } };
+    const invalid = {
+      ...GAME_CONFIG_DEFAULTS,
+      wear: { ...GAME_CONFIG_DEFAULTS.wear, scale_mode: 'invalid' },
+    };
     expect(() => validateGameRules(invalid)).toThrow(GameConfigValidationError);
   });
 
@@ -53,7 +62,9 @@ describe('game rules schema', () => {
     });
 
     it('rejects a scalar out of bounds', () => {
-      expect(() => validateConfigValue('combat.dodge_factor', 99)).toThrow(GameConfigValidationError);
+      expect(() => validateConfigValue('combat.dodge_factor', 99)).toThrow(
+        GameConfigValidationError,
+      );
     });
 
     it('rejects an unknown key', () => {

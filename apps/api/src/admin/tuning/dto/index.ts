@@ -1,4 +1,12 @@
-import { Allow, IsArray, IsNumber, IsObject, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  Allow,
+  IsArray,
+  IsNumber,
+  IsObject,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export interface ConfigEntryResponse {

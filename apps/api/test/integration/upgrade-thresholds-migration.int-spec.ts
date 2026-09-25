@@ -8,7 +8,10 @@ import {
 import { seedGameConfig } from '../../prisma/seed-data/game-config.js';
 
 const MIGRATION_SQL = readFileSync(
-  new URL('../../prisma/migrations/0008_lower_upgrade_cost_thresholds/migration.sql', import.meta.url),
+  new URL(
+    '../../prisma/migrations/0008_lower_upgrade_cost_thresholds/migration.sql',
+    import.meta.url,
+  ),
   'utf8',
 );
 

@@ -29,11 +29,37 @@ describe('checkViability', () => {
       ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'cargo', 'cargo', 'hull'],
       ['bridge', 'engine_chem_medium', 'weapon_ballistic', 'armor_plate', 'tank_small', 'hull'],
       ['bridge', 'engine_ion_micro', 'mining_rig', 'reactor_solar', 'hull'],
-      ['bridge', 'engine_chem_small', 'tank_small', 'battery_small', 'cargo', 'weapon_ballistic', 'hull'],
-      ['bridge', 'engine_ion_micro', 'tank_small', 'battery_small', 'cargo', 'cargo', 'reactor_solar', 'hull'],
+      [
+        'bridge',
+        'engine_chem_small',
+        'tank_small',
+        'battery_small',
+        'cargo',
+        'weapon_ballistic',
+        'hull',
+      ],
+      [
+        'bridge',
+        'engine_ion_micro',
+        'tank_small',
+        'battery_small',
+        'cargo',
+        'cargo',
+        'reactor_solar',
+        'hull',
+      ],
       ['bridge', 'engine_chem_medium', 'tank_small', 'battery_large', 'weapon_laser', 'hull'],
       ['bridge', 'engine_chem_medium', 'tank_small', 'battery_small', 'shield_basic', 'hull'],
-      ['bridge', 'engine_ion_micro', 'tank_small', 'battery_small', 'sensor_radar', 'cargo', 'reactor_solar', 'hull'],
+      [
+        'bridge',
+        'engine_ion_micro',
+        'tank_small',
+        'battery_small',
+        'sensor_radar',
+        'cargo',
+        'reactor_solar',
+        'hull',
+      ],
     ];
     for (const build of builds) {
       const parts = buildInstalled(build);
@@ -118,7 +144,14 @@ describe('checkViability', () => {
   });
 
   it('fails with ENERGY_CRUISE_NEGATIVE when continuous draw exceeds generation', () => {
-    const parts = buildInstalled(['bridge', 'sensor_radar', 'sensor_radar', 'sensor_radar', 'sensor_radar', 'sensor_radar']);
+    const parts = buildInstalled([
+      'bridge',
+      'sensor_radar',
+      'sensor_radar',
+      'sensor_radar',
+      'sensor_radar',
+      'sensor_radar',
+    ]);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
     expect(result.viable).toBe(false);
@@ -129,7 +162,10 @@ describe('checkViability', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'weapon_laser']);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.problems.map((p) => p.code)).toEqual(['BATTERY_OUTPUT_INSUFFICIENT', 'BATTERY_CHARGE_INSUFFICIENT']);
+    expect(result.problems.map((p) => p.code)).toEqual([
+      'BATTERY_OUTPUT_INSUFFICIENT',
+      'BATTERY_CHARGE_INSUFFICIENT',
+    ]);
   });
 
   it('fails with STRUCTURE_EXCEEDED when parts exceed the structure budget', () => {
@@ -152,7 +188,9 @@ describe('checkViability', () => {
   it('fails with BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
     const base = buildInstalled(['bridge', 'battery_small', 'weapon_laser']);
     const battery = { ...CATALOG_BY_TYPE.get('battery_small')!, batCharge: 1, batOutput: 1000 };
-    const parts = base.map((part) => (part.catalog.partType === 'battery_small' ? { ...part, catalog: battery } : part));
+    const parts = base.map((part) =>
+      part.catalog.partType === 'battery_small' ? { ...part, catalog: battery } : part,
+    );
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
     expect(result.problems.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
@@ -162,7 +200,9 @@ describe('checkViability', () => {
   it('fails with NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
     const base = buildInstalled(['bridge', 'cargo']);
     const pressurized = base.map((part) =>
-      part.catalog.partType === 'cargo' ? { ...part, catalog: { ...part.catalog, pressurized: true } } : part,
+      part.catalog.partType === 'cargo'
+        ? { ...part, catalog: { ...part.catalog, pressurized: true } }
+        : part,
     );
     const sheet = deriveSheet(pressurized, rules);
     const result = checkViability(sheet, pressurized, rules);
@@ -172,8 +212,10 @@ describe('checkViability', () => {
   it('does not report NO_LIFE_SUPPORT when a life support part is installed', () => {
     const base = buildInstalled(['bridge', 'cargo', 'sensor_radar']);
     const parts = base.map((part) => {
-      if (part.catalog.partType === 'cargo') return { ...part, catalog: { ...part.catalog, pressurized: true } };
-      if (part.catalog.partType === 'sensor_radar') return { ...part, catalog: { ...part.catalog, lifeSupport: true } };
+      if (part.catalog.partType === 'cargo')
+        return { ...part, catalog: { ...part.catalog, pressurized: true } };
+      if (part.catalog.partType === 'sensor_radar')
+        return { ...part, catalog: { ...part.catalog, lifeSupport: true } };
       return part;
     });
     const sheet = deriveSheet(parts, rules);

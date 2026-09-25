@@ -311,10 +311,9 @@ describe('MissionLog replay determinism (S7.6)', () => {
 
   // S9.0: v1 rows stored the six core keys only. v2 only ADDS optional fields, so
   // projecting a v2 event down to those keys is exactly its v1 shape.
-  function asV1(event: MissionOutcome['events'][number]): Omit<
-    MissionOutcome['events'][number],
-    'cascade' | 'consequence' | 'fuelLost'
-  > {
+  function asV1(
+    event: MissionOutcome['events'][number],
+  ): Omit<MissionOutcome['events'][number], 'cascade' | 'consequence' | 'fuelLost'> {
     return {
       leg: event.leg,
       category: event.category,

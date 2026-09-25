@@ -42,7 +42,7 @@ export interface TestApp {
 // e2e-style tests that need a running HTTP server. EnvModule reads process.env at module-compile
 // time, so this mutates process.env for the app's lifetime; always call close() (e.g. afterAll)
 // to restore it, even on failure.
-// Note: the hand-rolled ThrottlerGuard (60 req/60s per IP, src/common/guards/throttler.guard.ts)
+// Note: the hand-rolled ThrottlerGuard (300 req/60s per IP, src/common/guards/throttler.guard.ts)
 // applies globally, so a test that fires many requests at one endpoint from the same client can
 // trip it within a single test run.
 // `extraImports` lets a test add test-only modules (e.g. test/support/ownership-test.module.ts)

@@ -144,9 +144,9 @@ describe('S9.1 — parseMissionLogEvents (closed union)', () => {
     });
 
     it('rejects an unknown event type', () => {
-      expect(() => parseMissionLogEvents(2, [v2Event('leg_travel', { type: 'hyperspace' })])).toThrow(
-        ZodError,
-      );
+      expect(() =>
+        parseMissionLogEvents(2, [v2Event('leg_travel', { type: 'hyperspace' })]),
+      ).toThrow(ZodError);
     });
   });
 

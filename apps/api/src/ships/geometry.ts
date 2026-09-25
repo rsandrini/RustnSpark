@@ -29,7 +29,12 @@ export function validateLayout(
       for (let dy = 0; dy < height; dy += 1) {
         const x = placement.gx + dx;
         const y = placement.gy + dy;
-        if (x < -GRID_HALF_SIZE || x >= GRID_HALF_SIZE || y < -GRID_HALF_SIZE || y >= GRID_HALF_SIZE) {
+        if (
+          x < -GRID_HALF_SIZE ||
+          x >= GRID_HALF_SIZE ||
+          y < -GRID_HALF_SIZE ||
+          y >= GRID_HALF_SIZE
+        ) {
           if (!hasError(errors, 'OUT_OF_BOUNDS')) {
             errors.push({
               code: 'OUT_OF_BOUNDS',
@@ -68,7 +73,10 @@ export function validateLayout(
     for (const id of placedIds) {
       if (!reachable.has(id)) {
         if (!hasError(errors, 'DISCONNECTED')) {
-          errors.push({ code: 'DISCONNECTED', message: 'Some parts are not connected to the bridge.' });
+          errors.push({
+            code: 'DISCONNECTED',
+            message: 'Some parts are not connected to the bridge.',
+          });
         }
         break;
       }
@@ -82,10 +90,7 @@ function hasError(errors: LayoutError[], code: LayoutError['code']): boolean {
   return errors.some((error) => error.code === code);
 }
 
-function reachablePartIds(
-  occupied: ReadonlyMap<string, string>,
-  start: Placement,
-): Set<string> {
+function reachablePartIds(occupied: ReadonlyMap<string, string>, start: Placement): Set<string> {
   const startKey = `${start.gx},${start.gy}`;
   if (!occupied.has(startKey)) {
     return new Set();
@@ -118,10 +123,5 @@ function edgeNeighbors(cell: string): string[] {
   const [xRaw, yRaw] = cell.split(',');
   const x = Number(xRaw);
   const y = Number(yRaw);
-  return [
-    `${x + 1},${y}`,
-    `${x - 1},${y}`,
-    `${x},${y + 1}`,
-    `${x},${y - 1}`,
-  ];
+  return [`${x + 1},${y}`, `${x - 1},${y}`, `${x},${y + 1}`, `${x},${y - 1}`];
 }

@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import type * as dto from '../../api/generated';
 
@@ -19,8 +15,7 @@ export function RevisionHistory() {
   });
 
   const revertMutation = useMutation({
-    mutationFn: (id: string) =>
-      tuningApi.revertRevision(id, t('tuning.revertReason')),
+    mutationFn: (id: string) => tuningApi.revertRevision(id, t('tuning.revertReason')),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'revisions'] });
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'config'] });
@@ -69,10 +64,7 @@ export function RevisionHistory() {
       {confirmRevert && (
         <div role="dialog" aria-modal="true">
           <p>{t('tuning.revertConfirm', { id: confirmRevert })}</p>
-          <button
-            type="button"
-            onClick={() => revertMutation.mutate(confirmRevert)}
-          >
+          <button type="button" onClick={() => revertMutation.mutate(confirmRevert)}>
             {t('tuning.confirm')}
           </button>
           <button type="button" onClick={() => setConfirmRevert(null)}>

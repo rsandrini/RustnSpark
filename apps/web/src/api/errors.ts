@@ -1,0 +1,58 @@
+import { ApiError } from './client';
+import type { Problem } from './generated';
+
+// Error bodies nest their payloads under `message` (Nest wraps thrown objects:
+// `{ statusCode, message: { error, problems } }`). These extractors give every
+// screen the same view: machine code for i18n lookup, problems for detail lists.
+export function problemsOf(error: unknown): Problem[] {
+  if (!(error instanceof ApiError)) return [];
+  const payload = error.payload;
+  if (typeof payload !== 'object' || payload === null) return [];
+  const record = payload as { problems?: unknown; message?: unknown };
+  if (Array.isArray(record.problems)) return record.problems as Problem[];
+  if (typeof record.message === 'object' && record.message !== null) {
+    const nested = record.message as { problems?: unknown };
+    if (Array.isArray(nested.problems)) return nested.problems as Problem[];
+  }
+  return [];
+}
+
+export function errorCodeOf(error: unknown): string | undefined {
+  return error instanceof ApiError ? (error.code ?? error.message) : undefined;
+}
+
+/** `PRICE_CHANGED` carries the server's actual price in `message.actual` (S10.9). */
+export function priceChangedActualOf(error: unknown): number | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  const payload = error.payload as { message?: { actual?: unknown } } | null | undefined;
+  const actual = payload?.message?.actual;
+  return typeof actual === 'number' ? actual : undefined;
+}
+
+/** Seconds to wait, when the server says so (`SCAVENGE_COOL_DOWN`, 429). */
+export function retryAfterOf(error: unknown): number | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  const payload = error.payload as { message?: { retryAfterSeconds?: unknown } } | null | undefined;
+  const seconds = payload?.message?.retryAfterSeconds;
+  return typeof seconds === 'number' ? seconds : undefined;
+}
+
+/**
+ * The player-facing text for an API failure: the translated `error.<CODE>` when the
+ * server sent a machine code (never the server's English `message`), otherwise the
+ * screen's own fallback. Interpolation values the server provides (e.g. the cooldown)
+ * are passed through.
+ */
+export function errorText(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  error: unknown,
+  fallback: string,
+): string {
+  const code = errorCodeOf(error);
+  if (code === undefined) return fallback;
+  return t(`error.${code}`, {
+    defaultValue: fallback,
+    seconds: retryAfterOf(error),
+    price: priceChangedActualOf(error),
+  });
+}

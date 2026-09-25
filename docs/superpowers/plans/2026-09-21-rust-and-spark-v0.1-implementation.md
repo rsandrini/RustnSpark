@@ -556,7 +556,7 @@ Visual references are the prototypes; they are rebuilt as React components consu
 - Acceptance: 3 views (summary default, narrative and log opt-in); loot and damage cascade (shield → armor → HP) open detail popups.
 
 **S10.9 J5 Port, J7 Inventory, J9 Profile.** Depends on: S10.3, S8 — reference `porto-esboco.html`
-- Acceptance: one screen with tabs market · repair · refuel · scavenging; the market tab sells parts **and mined materials** (D30); confirmation popup on every buy/sell; repair slider per part + "repair all"; "fill tank"; negative balance displayed and spending disabled; inventory install/sell; profile shows wallet and history.
+- Acceptance: one screen with tabs market · repair · refuel · scavenging; the market tab sells parts **and mined materials** (D30); confirmation popup on every buy/sell, priced from the server (`sellOffers` on the market response, so a sale never needs a `PRICE_CHANGED` round trip); repair slider per part + "repair all", each confirmed with the server's exact cost from `POST /v1/ships/:id/repair/quote` (a dry run of the charge); "fill tank"; a rescue banner (`POST /v1/ships/:id/rescue`, behind a confirmation) whenever the ship is ADRIFT, on the port, board and transit screens; every spending POST carries an `Idempotency-Key` per intent; the port is the market of the ship's current location; negative balance displayed and spending disabled; inventory install/sell; profile shows wallet and history.
 
 **S10.10 Navigation flow.** Depends on: S10.4–S10.9 — reference `fluxograma-navegacao.html`
 - Acceptance: Hangar → Map → Board → Transit → Report → Port → Map loop reachable without dead ends; *manual* full playthrough against `docker compose --profile dev up`.

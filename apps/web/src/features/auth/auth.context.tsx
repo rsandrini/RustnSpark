@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +17,8 @@ interface AuthContextValue extends AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** Re-reads the profile (wallet, faction) without touching the session tokens. */
+  reloadProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -48,15 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleUnauthorized]);
 
   const loadProfile = useCallback(
-    async (token: string) => {
+    async (token: string): Promise<UserProfile | null> => {
       try {
         const profile = await authApi.me();
         setState({ user: profile, accessToken: token, isLoading: false });
         if (profile.locale && i18n.language !== profile.locale) {
           await i18n.changeLanguage(profile.locale);
         }
+        return profile;
       } catch {
         handleUnauthorized();
+        return null;
       }
     },
     [handleUnauthorized, i18n],
@@ -76,12 +73,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refreshSession();
   }, [refreshSession]);
 
+  // After a trade the wallet must update, but a full session refresh would rotate the
+  // refresh token on every purchase and log the player out on a transient failure. The
+  // profile read alone is enough; a failure here just leaves the previous balance shown.
+  const reloadProfile = useCallback(async () => {
+    try {
+      const profile = await authApi.me();
+      setState((current) => ({ ...current, user: profile }));
+    } catch {
+      // keep the last known profile
+    }
+  }, []);
+
   const login = useCallback(
     async (credentials: LoginCredentials) => {
       const { accessToken } = await authApi.login(credentials);
       setAccessToken(accessToken);
-      await loadProfile(accessToken);
-      navigate('/');
+      const profile = await loadProfile(accessToken);
+      // loadProfile already sent the player back to /login when the profile failed to
+      // load; navigating again here would override that redirect.
+      if (profile === null) return;
+      // A pilot without a faction has no ship yet: onboarding first (S10.2).
+      navigate(profile.factionId ? '/' : '/onboarding');
     },
     [loadProfile, navigate],
   );
@@ -90,8 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (data: RegisterData) => {
       const { accessToken } = await authApi.register(data);
       setAccessToken(accessToken);
-      await loadProfile(accessToken);
-      navigate('/');
+      const profile = await loadProfile(accessToken);
+      if (profile === null) return;
+      navigate('/onboarding');
     },
     [loadProfile, navigate],
   );
@@ -108,8 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [navigate]);
 
   const value = useMemo(
-    () => ({ ...state, login, register, logout, refresh: refreshSession }),
-    [state, login, register, logout, refreshSession],
+    () => ({ ...state, login, register, logout, refresh: refreshSession, reloadProfile }),
+    [state, login, register, logout, refreshSession, reloadProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

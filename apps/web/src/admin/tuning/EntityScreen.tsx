@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm } from './SchemaForm';
 import type * as dto from '../../api/generated';
@@ -47,9 +43,7 @@ function RelationsMatrix({
             <td>
               <select
                 value={relations[faction.id] ?? 'neutral'}
-                onChange={(event) =>
-                  onChange({ ...relations, [faction.id]: event.target.value })
-                }
+                onChange={(event) => onChange({ ...relations, [faction.id]: event.target.value })}
                 aria-label={`${t('tuning.relation')} ${faction.id}`}
               >
                 <option value="neutral">{t('tuning.neutral')}</option>
@@ -94,8 +88,7 @@ export function EntityScreen() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: dto.CreateEntityRequest) =>
-      tuningApi.createEntity(entityName, body),
+    mutationFn: (body: dto.CreateEntityRequest) => tuningApi.createEntity(entityName, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       setCreating(false);
@@ -124,10 +117,7 @@ export function EntityScreen() {
     },
   });
 
-  const handleSubmit = (
-    data: Record<string, unknown>,
-    reason: string,
-  ) => {
+  const handleSubmit = (data: Record<string, unknown>, reason: string) => {
     if (editingRow) {
       const id = String(editingRow.id ?? editingRow.partType);
       updateMutation.mutate({ id, body: { data, reason } });
@@ -152,9 +142,7 @@ export function EntityScreen() {
         <thead>
           <tr>
             {visibleFields.slice(0, 5).map((field) => (
-              <th key={field.name}>
-                {field.description?.en ?? field.name}
-              </th>
+              <th key={field.name}>{field.description?.en ?? field.name}</th>
             ))}
             <th>{t('tuning.actions')}</th>
           </tr>
@@ -163,9 +151,7 @@ export function EntityScreen() {
           {(rows ?? []).map((row) => (
             <tr key={String(row[idField])}>
               {visibleFields.slice(0, 5).map((field) => (
-                <td key={field.name}>
-                  {formatCellValue(row[field.name], field.type)}
-                </td>
+                <td key={field.name}>{formatCellValue(row[field.name], field.type)}</td>
               ))}
               <td>
                 <button
@@ -198,9 +184,7 @@ export function EntityScreen() {
               factions={factions}
               currentId={String(editingRow.id)}
               relations={(editingRow.relations as Record<string, string>) ?? {}}
-              onChange={(relations) =>
-                setEditingRow({ ...editingRow, relations })
-              }
+              onChange={(relations) => setEditingRow({ ...editingRow, relations })}
             />
           )}
           <SchemaForm
@@ -220,10 +204,7 @@ export function EntityScreen() {
       {confirmRetire && (
         <div role="dialog" aria-modal="true">
           <p>{t('tuning.retireConfirm', { id: confirmRetire })}</p>
-          <button
-            type="button"
-            onClick={() => retireMutation.mutate(confirmRetire)}
-          >
+          <button type="button" onClick={() => retireMutation.mutate(confirmRetire)}>
             {t('tuning.confirm')}
           </button>
           <button type="button" onClick={() => setConfirmRetire(null)}>

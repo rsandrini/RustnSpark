@@ -41,9 +41,9 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
     const rules = GAME_CONFIG_DEFAULTS;
     const defaultCondition = rules.parts.restart_condition_max;
     for (let condition = 0; condition <= defaultCondition; condition += 1) {
-      expect(worstCaseRestartKitValue(rulesWith({ restart_condition_max: condition }), basePriceOf)).toBeLessThan(
-        rules.economy.rescue_cost,
-      );
+      expect(
+        worstCaseRestartKitValue(rulesWith({ restart_condition_max: condition }), basePriceOf),
+      ).toBeLessThan(rules.economy.rescue_cost);
     }
   });
 

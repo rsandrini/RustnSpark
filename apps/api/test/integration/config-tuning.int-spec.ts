@@ -200,7 +200,9 @@ describe('config tuning (S3.7)', () => {
     expect(after.version).toBe(before.version);
     expect(after.rules.economy.start_credits).toBe(before.rules.economy.start_credits);
 
-    const revisions = await prisma.tuningRevision.findMany({ where: { entityId: 'economy.start_credits' } });
+    const revisions = await prisma.tuningRevision.findMany({
+      where: { entityId: 'economy.start_credits' },
+    });
     expect(revisions).toHaveLength(0);
   });
 
@@ -309,7 +311,9 @@ describe('config tuning (S3.7)', () => {
       .send({ value: 500, expectedRevision: 1, reason: 'second' });
 
     const response = await request(server)
-      .get('/v1/admin/tuning/revisions?entityType=GameConfig&entityId=economy.start_credits&limit=10')
+      .get(
+        '/v1/admin/tuning/revisions?entityType=GameConfig&entityId=economy.start_credits&limit=10',
+      )
       .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     const body = response.body as Array<Record<string, unknown>>;

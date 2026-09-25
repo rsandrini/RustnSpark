@@ -1,0 +1,234 @@
+import { describe, it, expect } from 'vitest';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { renderWithRouter } from '../../test/utils';
+import { server } from '../../test/msw/server';
+import { routes } from '../../app/router';
+import type { Placement, ShipSheet } from '../../api/generated';
+
+const onboarded = () =>
+  http.get('/v1/players/me', () =>
+    HttpResponse.json(
+      {
+        id: 'player-1',
+        name: 'Test Pilot',
+        credits: 0,
+        role: 'PLAYER',
+        locale: 'en',
+        factionId: 'luna',
+      },
+      { status: 200 },
+    ),
+  );
+
+const testSheet: ShipSheet = {
+  pot: 25,
+  pdf: 0,
+  bli: 12,
+  esc: 0,
+  sen: 2,
+  crg: 10,
+  min: 0,
+  hp: 40,
+  mass: 24,
+  energyCont: 8,
+  energyCombat: 0,
+  batCharge: 4,
+  batOutput: 10,
+  batInput: 8,
+  fuelCap: 40,
+  fuelUse: 1,
+  structureUsed: 18,
+  structureBudget: 40,
+  autonomy: 40,
+  mob: 2,
+  condition: 1,
+};
+
+function cell(container: Element, gx: number, gy: number): SVGRectElement {
+  const element = container.querySelector(`rect.yard-cell[data-gx="${gx}"][data-gy="${gy}"]`);
+  if (element === null) throw new Error(`cell ${gx},${gy} not found`);
+  return element as SVGRectElement;
+}
+
+function block(container: Element, partId: string): SVGRectElement | null {
+  return container.querySelector(`rect[data-part-id="${partId}"]`);
+}
+
+// Echo the ship with the submitted layout so onSuccess state stays consistent.
+function shipEcho(layout: Placement[]) {
+  return {
+    id: 'ship-1',
+    ownerPlayerId: 'player-1',
+    name: 'luna starter',
+    fuel: 40,
+    status: 'IN_PORT',
+    currentLocationId: 'ceres',
+    stance: 'NEUTRAL',
+    layout,
+    sheet: testSheet,
+    shipClass: 'MULTIROLE',
+  };
+}
+
+describe('hangar (S10.4)', () => {
+  it('renders the ship sheet, class and the loose-parts tray', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    expect(screen.getAllByText('Multirole').length).toBeGreaterThan(0);
+    // crg 10 from the server sheet
+    expect(screen.getByText('10')).toBeInTheDocument();
+    // Only part-cargo-b is in storage; everything else is placed on the yard.
+    expect(await screen.findByRole('button', { name: /cargo/i })).toBeInTheDocument();
+    expect(block(container, 'part-bridge')).not.toBeNull();
+    expect(block(container, 'part-cargo-b')).toBeNull();
+  });
+
+  it('places a tray part on the yard and previews the layout after the debounce', async () => {
+    server.use(onboarded());
+    const previewLayouts: Placement[][] = [];
+    server.use(
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        previewLayouts.push(body.layout);
+        return HttpResponse.json(
+          {
+            sheet: testSheet,
+            shipClass: 'MULTIROLE',
+            viability: { viable: true, problems: [] },
+            layout: body.layout,
+            omittedPartInstanceIds: [],
+          },
+          { status: 200 },
+        );
+      }),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 4, 0));
+
+    const placed = block(container, 'part-cargo-b');
+    expect(placed).not.toBeNull();
+    expect(placed).toHaveAttribute('data-gx', '4');
+    expect(placed).toHaveAttribute('data-gy', '0');
+
+    await waitFor(
+      () =>
+        expect(
+          previewLayouts.some((layout) =>
+            layout.some(
+              (placement) =>
+                placement.partInstanceId === 'part-cargo-b' &&
+                placement.gx === 4 &&
+                placement.gy === 0,
+            ),
+          ),
+        ).toBe(true),
+      { timeout: 3000 },
+    );
+  });
+
+  it('rotates and removes a selected block', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+
+    const beforeWidth = Number(cargo.getAttribute('width'));
+    const beforeHeight = Number(cargo.getAttribute('height'));
+
+    fireEvent.pointerDown(cargo);
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
+
+    const rotated = block(container, 'part-cargo-a');
+    expect(rotated).not.toBeNull();
+    // 2×1 cargo turns to a 1×2 footprint.
+    expect(Number(rotated?.getAttribute('width'))).toBeCloseTo(beforeHeight, 3);
+    expect(Number(rotated?.getAttribute('height'))).toBeCloseTo(beforeWidth, 3);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(block(container, 'part-cargo-a')).toBeNull();
+    // Both cargo units are loose now.
+    expect(screen.getAllByRole('button', { name: /cargo/i })).toHaveLength(2);
+  });
+
+  it('saves the edited layout through assemble', async () => {
+    server.use(onboarded());
+    const assembled: Array<{ layout: Placement[] }> = [];
+    server.use(
+      http.post('/v1/ships/:id/assemble', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        assembled.push(body);
+        return HttpResponse.json(shipEcho(body.layout), { status: 200 });
+      }),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 4, 0));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+
+    await waitFor(() => expect(assembled).toHaveLength(1));
+    expect(assembled[0]?.layout).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ partInstanceId: 'part-cargo-b', gx: 4, gy: 0 }),
+      ]),
+    );
+    expect(await screen.findByText('Layout saved.')).toBeInTheDocument();
+  });
+
+  it('shows translated problems when the server rejects the layout', async () => {
+    server.use(onboarded());
+    server.use(
+      http.post('/v1/ships/:id/assemble', () =>
+        HttpResponse.json(
+          {
+            statusCode: 400,
+            message: {
+              error: 'SHIP_NOT_VIABLE',
+              problems: [{ code: 'NO_ENGINE', message: 'Ship has no engine installed.' }],
+            },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 4, 0));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+
+    expect(await screen.findByText('No engine installed.')).toBeInTheDocument();
+  });
+
+  it('runs the auto layout through the server', async () => {
+    server.use(onboarded());
+    let autoCalls = 0;
+    server.use(
+      http.post('/v1/ships/:id/auto-assemble', () => {
+        autoCalls += 1;
+        return HttpResponse.json(shipEcho([]), { status: 200 });
+      }),
+    );
+
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'Hangar' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Auto layout' }));
+    await waitFor(() => expect(autoCalls).toBe(1));
+  });
+});

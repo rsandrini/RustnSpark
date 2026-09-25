@@ -62,7 +62,16 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
       hp: -12,
       // Mirrors the emitters: only part failures, combat_loss and mission_wear
       // carry per-part conditions; leg_travel (the {part}-throw test) does not.
-      condByPart: ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor', 'combat_loss', 'mission_wear'].includes(type)
+      condByPart: [
+        'motor',
+        'battery',
+        'tank',
+        'shield',
+        'weapon',
+        'sensor',
+        'combat_loss',
+        'mission_wear',
+      ].includes(type)
         ? { engine_chem_small: type === 'tank' ? 7 : 41 }
         : {},
       credits:
@@ -115,9 +124,7 @@ describe('S9.2 — template coverage (union × locales)', () => {
 
   it('keeps the same variant count in every locale', () => {
     for (const type of MISSION_EVENT_TYPES) {
-      const counts = SUPPORTED_LOCALES.map(
-        (locale) => loadTemplateVariants(locale, type).length,
-      );
+      const counts = SUPPORTED_LOCALES.map((locale) => loadTemplateVariants(locale, type).length);
       expect(new Set(counts).size).toBe(1);
     }
   });
@@ -283,9 +290,7 @@ describe('S9.2 — failure modes', () => {
   });
 
   it('fails loudly for a missing template file', () => {
-    expect(() => loadTemplateVariants('en', 'hyperspace')).toThrow(
-      /Report template not found/,
-    );
+    expect(() => loadTemplateVariants('en', 'hyperspace')).toThrow(/Report template not found/);
   });
 
   describe('v1 (pre-S9.0) logs — legacy variants', () => {
@@ -317,32 +322,31 @@ describe('S9.2 — failure modes', () => {
     it('pairs legacy variant i across locales (same placeholders)', () => {
       for (const type of v2TypedTypes) {
         const en = loadLegacyVariants('en', type).map((variant) => templatePlaceholders(variant));
-        const pt = loadLegacyVariants('pt-BR', type).map((variant) => templatePlaceholders(variant));
+        const pt = loadLegacyVariants('pt-BR', type).map((variant) =>
+          templatePlaceholders(variant),
+        );
         expect(pt).toEqual(en);
       }
     });
 
-    it.each(SUPPORTED_LOCALES)(
-      '%s: a v1 event renders without fabricated zeros',
-      (locale) => {
-        for (const type of v2TypedTypes) {
-          const event = { ...(eventOf(type) as object) } as Record<string, unknown>;
-          delete event['cascade'];
-          delete event['fuelLost'];
-          delete event['consequence'];
-          const [parsed] = parseMissionLogEvents(1, [event]);
-          const legacy = loadLegacyVariants(locale, type);
-          for (let index = 0; index < 8; index += 1) {
-            const line = renderEventLine(parsed!, index, 'legacy-seed', locale, NAMES);
-            // The fixture carries no zero anywhere, so a "0" would be a fabricated default.
-            expect(line.text).not.toMatch(/\b0\b/);
-            expect(line.text).not.toMatch(/\{[a-zA-Z]+\}/);
-            const pick = legacy[deriveSeed('legacy-seed', `narr:${index}`) % legacy.length]!;
-            expect(line.text).toBe(renderTemplate(pick, parsed!, locale, NAMES).text);
-          }
+    it.each(SUPPORTED_LOCALES)('%s: a v1 event renders without fabricated zeros', (locale) => {
+      for (const type of v2TypedTypes) {
+        const event = { ...(eventOf(type) as object) } as Record<string, unknown>;
+        delete event['cascade'];
+        delete event['fuelLost'];
+        delete event['consequence'];
+        const [parsed] = parseMissionLogEvents(1, [event]);
+        const legacy = loadLegacyVariants(locale, type);
+        for (let index = 0; index < 8; index += 1) {
+          const line = renderEventLine(parsed!, index, 'legacy-seed', locale, NAMES);
+          // The fixture carries no zero anywhere, so a "0" would be a fabricated default.
+          expect(line.text).not.toMatch(/\b0\b/);
+          expect(line.text).not.toMatch(/\{[a-zA-Z]+\}/);
+          const pick = legacy[deriveSeed('legacy-seed', `narr:${index}`) % legacy.length]!;
+          expect(line.text).toBe(renderTemplate(pick, parsed!, locale, NAMES).text);
         }
-      },
-    );
+      }
+    });
 
     it('leaves v2 rendering untouched (regular variants, same picks as before)', () => {
       const event = parseMissionLogEvents(2, [v2Event('combat_win')])[0]!;

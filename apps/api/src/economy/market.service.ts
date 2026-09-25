@@ -30,9 +30,21 @@ export interface MarketListing {
   readonly price: number;
 }
 
+/** What this port pays for one of the player's uninstalled parts (S10.9). */
+export interface SellOffer {
+  readonly partInstanceId: string;
+  readonly price: number;
+}
+
 export interface MarketResponse {
   readonly locationId: string;
   readonly listings: readonly MarketListing[];
+  /**
+   * The port's quote for each of the player's inventory parts, priced by the same
+   * function `sell` re-derives — so the client sends a real `expectedPrice` on the first
+   * try instead of learning it from a PRICE_CHANGED round trip.
+   */
+  readonly sellOffers: readonly SellOffer[];
 }
 
 export interface BuyResponse {
@@ -186,7 +198,17 @@ export class MarketService {
       });
     }
 
-    return { locationId, listings };
+    const owned = await this.prisma.partInstance.findMany({
+      where: { ownerPlayerId: playerId, location: 'INVENTORY' },
+      include: { partCatalog: { select: { basePrice: true } } },
+      orderBy: { id: 'asc' },
+    });
+    const sellOffers = owned.map((part) => ({
+      partInstanceId: part.id,
+      price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
+    }));
+
+    return { locationId, listings, sellOffers };
   }
 
   async buy(playerId: string, listingId: string, expectedPrice: number): Promise<BuyResponse> {
@@ -371,12 +393,7 @@ export class MarketService {
         }
       }
       await tx.partInstance.delete({ where: { id: fresh.id } });
-      await this.wallet.credit(
-        playerId,
-        freshPrice,
-        `${MARKET_SELL_EVENT}:${partInstanceId}`,
-        tx,
-      );
+      await this.wallet.credit(playerId, freshPrice, `${MARKET_SELL_EVENT}:${partInstanceId}`, tx);
       await this.events.record(
         {
           playerId,

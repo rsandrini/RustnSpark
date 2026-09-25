@@ -32,7 +32,12 @@ describe('parts and ships data model (S4.1)', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
 
-  async function seedPrerequisites(): Promise<{ playerId: string; locationId: string; partType: string; materialId: string }> {
+  async function seedPrerequisites(): Promise<{
+    playerId: string;
+    locationId: string;
+    partType: string;
+    materialId: string;
+  }> {
     const account = await prisma.account.create({
       data: {
         email: 's4.1@example.com',
@@ -239,11 +244,22 @@ describe('parts and ships data model (S4.1)', () => {
     ).rejects.toThrow(/check constraint/i);
 
     const ship = await prisma.ship.create({
-      data: { ownerPlayerId: playerId, name: 'S', layout: [], currentLocationId: (await prisma.location.findFirstOrThrow()).id },
+      data: {
+        ownerPlayerId: playerId,
+        name: 'S',
+        layout: [],
+        currentLocationId: (await prisma.location.findFirstOrThrow()).id,
+      },
     });
     await expect(
       prisma.partInstance.create({
-        data: { partType, ownerPlayerId: playerId, condition: 80, location: 'INVENTORY', shipId: ship.id },
+        data: {
+          partType,
+          ownerPlayerId: playerId,
+          condition: 80,
+          location: 'INVENTORY',
+          shipId: ship.id,
+        },
       }),
     ).rejects.toThrow(/check constraint/i);
   });

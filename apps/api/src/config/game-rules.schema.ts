@@ -205,7 +205,9 @@ export function validateGameRules(rules: unknown): GameRules {
 export function validateConfigValue(key: string, value: unknown): unknown {
   const entry = getRegistryEntry(key);
   if (!entry) {
-    throw new GameConfigValidationError(`Unknown config key: ${key}`, [{ key, message: 'Unknown key' }]);
+    throw new GameConfigValidationError(`Unknown config key: ${key}`, [
+      { key, message: 'Unknown key' },
+    ]);
   }
 
   const fullSchema = buildPerKeySchema(entry);

@@ -20,6 +20,105 @@
       "generic": "Could not create account"
     }
   },
+  "onboarding": {
+    "title": "Choose your faction",
+    "subtitle": "One choice for the whole contract — your flag flies on every mission after this.",
+    "hint": "Pick a faction to receive your starter ship and port.",
+    "confirm": "Launch",
+    "selecting": "Preparing your ship...",
+    "error": {
+      "generic": "Could not complete onboarding",
+      "unknownFaction": "That faction is not playable"
+    },
+    "factions": {
+      "luna": {
+        "name": "Luna Authority",
+        "blurb": "Port clerks, steady freight and the weight of official seals behind every contract."
+      },
+      "sun": {
+        "name": "Sun Traders",
+        "blurb": "Free merchants who answer to no port authority and always know a buyer."
+      },
+      "explorers": {
+        "name": "Explorers",
+        "blurb": "Frontier prospectors pushing past the charted belt for ore nobody has priced yet."
+      }
+    }
+  },
+  "hangar": {
+    "title": "Hangar",
+    "tray": "Parts",
+    "trayEmpty": "No loose parts in storage.",
+    "yardHint": "Select a part, then click a cell to place it. Select a block to move, rotate or remove it.",
+    "sheet": "Ship sheet",
+    "class": "Class",
+    "stats": {
+      "pot": "Power",
+      "pdf": "Firepower",
+      "bli": "Battery life",
+      "esc": "Escaped",
+      "sen": "Sensors",
+      "crg": "Cargo",
+      "min": "Mining",
+      "hp": "Hull points",
+      "mass": "Mass",
+      "fuelCap": "Fuel tank",
+      "fuelUse": "Fuel use",
+      "energyCont": "Energy (continuous)",
+      "energyCombat": "Energy (combat)",
+      "autonomy": "Autonomy",
+      "condition": "Condition",
+      "structure": "Structure {{used}}/{{budget}}"
+    },
+    "classes": {
+      "HAULER": "Hauler",
+      "TRANSPORT": "Transport",
+      "WARSHIP": "Warship",
+      "MINER": "Miner",
+      "MULTIROLE": "Multirole"
+    },
+    "partClasses": {
+      "BRIDGE": "Bridge",
+      "ENGINE": "Engine",
+      "TANK": "Tank",
+      "BATTERY": "Battery",
+      "REACTOR": "Reactor",
+      "WEAPON": "Weapon",
+      "DEFENSE": "Defense",
+      "CARGO": "Cargo",
+      "SENSOR": "Sensor",
+      "UTILITY": "Utility"
+    },
+    "actions": {
+      "save": "Save layout",
+      "auto": "Auto layout",
+      "rotate": "Rotate",
+      "remove": "Remove"
+    },
+    "state": {
+      "selected": "Selected: {{name}}",
+      "saved": "Layout saved.",
+      "saving": "Saving layout...",
+      "previewing": "Updating stats...",
+      "noPreview": "Place at least one part to compute the sheet."
+    },
+    "problems": {
+      "NO_BRIDGE": "No bridge installed.",
+      "NO_ENGINE": "No engine installed.",
+      "MOB_TOO_LOW": "Mobility is below 1.",
+      "NO_FUEL_CAPACITY": "Chemical engine needs a fuel tank.",
+      "NO_LIFE_SUPPORT": "No life support installed.",
+      "STRUCTURE_EXCEEDED": "Structure budget exceeded.",
+      "OUT_OF_BOUNDS": "Part is outside the grid.",
+      "OVERLAP": "Parts overlap.",
+      "DISCONNECTED": "Parts must touch the bridge.",
+      "INVALID_LAYOUT": "The layout is not valid."
+    },
+    "errors": {
+      "SHIP_ON_MISSION": "The ship is on a mission.",
+      "generic": "Could not save the layout."
+    }
+  },
   "home": {
     "title": "Home",
     "greeting": "Welcome, {{name}}",
@@ -106,15 +205,287 @@
       "drop-tables": "Drop tables"
     }
   },
+  "factions": {
+    "luna": "Luna Authority",
+    "sun": "Sun Traders",
+    "explorers": "Explorers",
+    "pirates": "Pirates",
+    "independent": "Independent"
+  },
+  "ui": {
+    "risk": {
+      "lo": "Low risk",
+      "md": "Medium risk",
+      "hi": "High risk"
+    },
+    "close": "Close",
+    "countdown": {
+      "label": "Time remaining",
+      "expired": "Time is up"
+    },
+    "loading": "Loading..."
+  },
+  "nav": {
+    "label": "Game navigation",
+    "hangar": "Hangar",
+    "map": "Map",
+    "board": "Board",
+    "transit": "Transit",
+    "port": "Port",
+    "profile": "Profile"
+  },
+  "port": {
+    "title": "Port",
+    "wallet": "Credits",
+    "negative": "Negative balance — buying and refuelling are disabled.",
+    "at": "Docked at {{location}}",
+    "tabs": {
+      "market": "Market",
+      "repair": "Repair",
+      "refuel": "Refuel",
+      "scavenging": "Scavenging"
+    },
+    "buy": "Buy",
+    "sell": "Sell",
+    "buyConfirm": "Buy {{name}} for {{price}} ¢?",
+    "sellConfirm": "Sell {{name}}?",
+    "sellQuote": "Sell {{name}} for {{price}} ¢?",
+    "balanceAfter": "Balance after: {{balance}} ¢",
+    "priceUpdated": "The price changed to {{price}} ¢ — confirm again.",
+    "insufficient": "Insufficient credits",
+    "bought": "Bought {{name}} for {{price}} ¢.",
+    "sold": "Sold {{name}} for {{price}} ¢.",
+    "failed": "The port rejected that action.",
+    "marketEmpty": "Nothing for sale at this port.",
+    "forSale": "For sale",
+    "yourGoods": "Your goods",
+    "materials": "Mined materials",
+    "quantity": "{{quantity}} ×",
+    "unitPrice": "{{price}} ¢ each",
+    "repairNoDamage": "Every installed part is at full condition.",
+    "repairAll": "Repair all",
+    "repairSlider": "Repair to {{value}}%",
+    "repairStart": "Start repair",
+    "repairStarted": "Repair started for {{cost}} ¢ — completes in {{seconds}}s.",
+    "repairLoading": "Ordering repairs…",
+    "refuelGauge": "Fuel {{fuel}} / {{cap}}",
+    "refuelFill": "Fill tank",
+    "refuelFull": "The tank is already full.",
+    "refueled": "Filled {{units}} units for {{cost}} ¢.",
+    "scavWarn": "Scavenging alone wears your ship down. Scavenging missions pay better — and are far more dangerous.",
+    "scavenge": "Scavenge the field",
+    "scavFound": "Salvaged: {{part}} (condition {{condition}}).",
+    "scavNone": "Nothing salvageable — try again in {{seconds}}s.",
+    "scavBusy": "You are already scavenging.",
+    "repairQuote": "Repair cost: {{cost}} ¢ · {{seconds}} s",
+    "repairConfirmTitle": "Repair for {{cost}} ¢?",
+    "repairConfirm": "Start repair",
+    "noShip": "You have no ship."
+  },
+  "inventory": {
+    "title": "Inventory",
+    "install": "Install in hangar",
+    "installed": "Installed",
+    "sellPart": "Sell this part",
+    "noParts": "No parts in storage or installed.",
+    "noMaterials": "No materials in storage.",
+    "materials": "Materials",
+    "parts": "Parts",
+    "sellAll": "Sell all",
+    "condition": "Condition {{value}}%"
+  },
+  "profile": {
+    "title": "Profile",
+    "wallet": "Wallet",
+    "history": "Mission history",
+    "noHistory": "No completed missions yet.",
+    "legCount": "{{count}} legs",
+    "credits": "+{{amount}} ¢"
+  },
+  "report": {
+    "title": "Mission report",
+    "tabs": {
+      "summary": "Summary",
+      "narrative": "Narrative",
+      "log": "Log"
+    },
+    "noReport": "No report for this mission yet.",
+    "eventDetails": "Event details",
+    "backMap": "Back to the map",
+    "backBoard": "Back to the board",
+    "outcome": {
+      "success": "Mission accomplished",
+      "partial_failure": "Partial success",
+      "failed": "Mission failed",
+      "adrift": "Ship adrift"
+    },
+    "cascade": {
+      "shield": "Shield absorbed",
+      "armor": "Armor absorbed",
+      "hp": "Hull damage"
+    },
+    "refKind": {
+      "loot": "Item",
+      "part": "Part"
+    },
+    "refDetails": "Details"
+  },
+  "transit": {
+    "title": "In transit",
+    "empty": "No active mission. Accept one from the mission board.",
+    "accepted": "Mission accepted — ready for departure.",
+    "dispatch": "Dispatch",
+    "failed": "Could not dispatch the ship.",
+    "leg": "Leg {{index}} of {{total}}",
+    "waitingLeg": "Awaiting the next window",
+    "legDone": "Completed",
+    "arrivesIn": "Arrives in",
+    "startDeadline": "Start deadline",
+    "delivered": "Mission delivered",
+    "viewReport": "View report",
+    "backToMap": "Back to the map",
+    "held": "This mission is only held. Accept it on the board to start it.",
+    "resolving": "Resolving the mission…",
+    "lastMission": "Last mission",
+    "lastReport": "Read the report"
+  },
+  "board": {
+    "title": "Mission board",
+    "filterAll": "All missions",
+    "accept": "Accept",
+    "hold": "Hold",
+    "release": "Release",
+    "eligible": "Eligible",
+    "blocked": "Blocked",
+    "reward": "Reward {{amount}}",
+    "estimate": "Est. {{amount}}",
+    "expires": "Expires in",
+    "empty": "No offers at this location.",
+    "noShip": "No ship assigned — outfit a ship in the hangar first.",
+    "failed": "The server rejected that action.",
+    "type": {
+      "DELIVERY": "Delivery",
+      "TRANSPORT": "Transport",
+      "ESCORT": "Escort",
+      "MINING": "Mining",
+      "RESCUE": "Rescue"
+    },
+    "status": {
+      "AVAILABLE": "Open",
+      "HELD": "On hold",
+      "ACCEPTED": "Accepted",
+      "IN_TRANSIT": "In transit",
+      "EXPIRED": "Expired",
+      "DONE": "Completed",
+      "FAILED": "Failed"
+    },
+    "reasons": {
+      "NO_SHIP": "No ship available",
+      "ACTIVE_MISSION_EXISTS": "A mission is already active",
+      "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location",
+      "CARGO_TYPE": "Cargo hold does not fit this cargo",
+      "PRESSURIZED_LIFE_SUPPORT": "Needs pressurized life support",
+      "WEAPONS": "Needs weapons",
+      "MIN_MOBILITY": "Mobility below the mission minimum",
+      "MINER": "Needs a mining system",
+      "SPEED": "Too slow for this mission",
+      "NO_BRIDGE": "No bridge",
+      "NO_ENGINE": "No engine",
+      "MOB_TOO_LOW": "Mobility too low",
+      "NO_FUEL_CAPACITY": "No fuel capacity",
+      "NO_LIFE_SUPPORT": "No life support",
+      "STRUCTURE_EXCEEDED": "Structure budget exceeded"
+    }
+  },
+  "map": {
+    "title": "Sector map",
+    "hint": "Select a node to inspect it.",
+    "youAreHere": "You are here",
+    "missions": "{{count}} missions on the board",
+    "noMissions": "No offers on the board",
+    "zone": "Zone {{zone}}",
+    "board": "Open mission board",
+    "types": {
+      "port": "Commercial port",
+      "outpost": "Outpost",
+      "shipyard": "Shipyard",
+      "junction": "Junction",
+      "garrison": "Garrison",
+      "scrap_field": "Scrap field",
+      "frontier": "Frontier",
+      "dead_zone": "Dead zone",
+      "relay": "Relay"
+    }
+  },
   "notFound": {
     "title": "Page not found",
     "homeLink": "Go home"
   },
   "loading": "Loading...",
   "error": {
-    "unexpected": "Something went wrong"
+    "unexpected": "Something went wrong",
+    "NO_SHIP": "You have no ship.",
+    "ACTIVE_MISSION_EXISTS": "A mission is already under way.",
+    "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location.",
+    "CARGO_TYPE": "Cargo capacity below the manifest.",
+    "PRESSURIZED_LIFE_SUPPORT": "Ship lacks pressurized life support.",
+    "WEAPONS": "No weapons installed.",
+    "MIN_MOBILITY": "Mobility below the mission minimum.",
+    "MINER": "No mining rig installed.",
+    "SPEED": "Too slow for this contract.",
+    "HOLD_LIMIT": "You already hold a mission.",
+    "UNKNOWN_FACTION": "That faction is not playable.",
+    "ALREADY_REPAIRING": "This ship is already being repaired.",
+    "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
+    "BALANCE_NEGATIVE": "Your balance is negative — earn credits before spending.",
+    "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build.",
+    "CREDIT_OVERFLOW": "That sale is too large to credit.",
+    "DISCONNECTED": "Some parts are not connected to the bridge.",
+    "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — add power.",
+    "FUEL_EMPTY": "The tank is empty.",
+    "HOLD_NOT_OWNED": "You are not holding this mission.",
+    "INSUFFICIENT_FUNDS": "Not enough credits.",
+    "INSUFFICIENT_MATERIALS": "You do not hold that much.",
+    "INVALID_AMOUNT": "Invalid amount.",
+    "INVALID_CURSOR": "Invalid page cursor.",
+    "INVALID_LAYOUT": "That layout is not valid.",
+    "INVALID_LIMIT": "Invalid page size.",
+    "INVALID_LISTING": "That offer is no longer listed.",
+    "INVALID_QUANTITY": "Invalid quantity.",
+    "INVALID_REPAIR_TARGET": "A repair target is invalid.",
+    "MISSION_EXPIRED": "This mission has expired.",
+    "MISSION_MALFORMED": "This mission is malformed.",
+    "MISSION_NOT_ACCEPTED": "Accept the mission first.",
+    "MISSION_REQUIREMENTS_NOT_MET": "Your ship does not meet this mission's requirements.",
+    "NO_REPAIR_TARGETS": "Nothing to repair.",
+    "OUT_OF_BOUNDS": "A part is outside the build area.",
+    "OVERLAP": "Parts overlap.",
+    "PART_NOT_INSTALLED": "That part is not installed.",
+    "PRICE_CHANGED": "The price changed to {{price}} ¢.",
+    "REPORT_NOT_FOUND": "Report not found.",
+    "REPORT_SCHEMA_UNSUPPORTED": "This report cannot be read.",
+    "REVISION_MISMATCH": "The configuration changed — reload and retry.",
+    "SCAVENGE_COOL_DOWN": "Nothing new here yet — try again in {{seconds}} s.",
+    "SHIP_MISMATCH": "That ship does not match this mission.",
+    "SHIP_NOT_ADRIFT": "The ship is not adrift.",
+    "SHIP_NOT_AT_LOCATION": "Your ship is not at this location.",
+    "SHIP_NOT_IN_PORT": "The ship must be in port.",
+    "SHIP_NOT_VIABLE": "The ship is not viable — fix the build first.",
+    "SHIP_ON_MISSION": "The ship is on a mission.",
+    "SHIP_REPAIRING": "The ship is being repaired.",
+    "UNKNOWN_VIEW": "Unknown report view.",
+    "VALIDATION_ERROR": "Some fields are invalid.",
+    "RATE_LIMITED": "Too many requests — slow down for a moment.",
+    "UNAUTHORIZED": "Your session ended — sign in again."
   },
   "language": {
     "label": "Language"
+  },
+  "rescue": {
+    "title": "Ship adrift",
+    "body": "Your ship ran out of fuel and is drifting. A tow brings it back to port — it costs credits and may leave your balance negative.",
+    "action": "Call a tow",
+    "done": "Towed back to port for {{cost}} ¢. Fuel on board: {{fuel}}."
   }
 }

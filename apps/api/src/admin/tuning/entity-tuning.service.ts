@@ -7,11 +7,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { GameConfigRepository } from '../../config/game-config.repository.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import {
-  buildEntityValidator,
-  getEntitySchema,
-  type EntitySchema,
-} from './entity-schemas.js';
+import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 
 const ENTITY_CHANGE_CHANNEL = 'entity:changed';
 
@@ -72,7 +68,8 @@ function getDelegate(client: PrismaClientLike, entity: string): PrismaDelegate {
       { key: entity, message: 'Unknown entity' },
     ]);
   }
-  const delegate = (client as unknown as Record<string, unknown>)[name] as PrismaDelegate | undefined;
+  const delegate = (client as unknown as Record<string, unknown>)[name] as
+    PrismaDelegate | undefined;
   if (!delegate) {
     throw new GameConfigValidationError(`Prisma delegate not found: ${name}`, [
       { key: entity, message: 'Prisma delegate not found' },
@@ -215,10 +212,9 @@ export class EntityTuningService {
     reason: string,
   ): Promise<{ row: Record<string, unknown>; revision: TuningRevision }> {
     if (!['parts', 'materials', 'mission-templates', 'routes'].includes(entity)) {
-      throw new GameConfigValidationError(
-        `Entity ${entity} does not support retirement`,
-        [{ key: entity, message: 'Retirement not supported for this entity' }],
-      );
+      throw new GameConfigValidationError(`Entity ${entity} does not support retirement`, [
+        { key: entity, message: 'Retirement not supported for this entity' },
+      ]);
     }
 
     const schema = this.resolveSchema(entity);
@@ -273,18 +269,14 @@ export class EntityTuningService {
       ]);
     }
     if (revision.before === null || revision.before === undefined) {
-      throw new GameConfigValidationError(`Cannot revert revision ${id.toString()}: no before state`, [
-        { key: revision.entityId, message: 'No before state' },
-      ]);
+      throw new GameConfigValidationError(
+        `Cannot revert revision ${id.toString()}: no before state`,
+        [{ key: revision.entityId, message: 'No before state' }],
+      );
     }
 
     if (revision.entityType === 'GameConfig') {
-      return this.gameConfigService.setValue(
-        revision.entityId,
-        revision.before,
-        actor,
-        reason,
-      );
+      return this.gameConfigService.setValue(revision.entityId, revision.before, actor, reason);
     }
 
     const entity = revision.entityType;
@@ -311,9 +303,11 @@ export class EntityTuningService {
       if (restored.active === false) {
         this.assertCanRetire(entity, rowId);
       }
-      const row = (current
-        ? await getDelegate(tx, entity).update({ where: { [idField]: rowId }, data: restored })
-        : await getDelegate(tx, entity).create({ data: restored })) as Record<string, unknown>;
+      const row = (
+        current
+          ? await getDelegate(tx, entity).update({ where: { [idField]: rowId }, data: restored })
+          : await getDelegate(tx, entity).create({ data: restored })
+      ) as Record<string, unknown>;
       const newRevision = await this.createRevision(
         actor,
         entity,
@@ -371,7 +365,10 @@ export class EntityTuningService {
     }
   }
 
-  private async validateRoute(data: Record<string, unknown>, mode: 'create' | 'update'): Promise<void> {
+  private async validateRoute(
+    data: Record<string, unknown>,
+    mode: 'create' | 'update',
+  ): Promise<void> {
     const nodeAId = data.nodeAId;
     const nodeBId = data.nodeBId;
     if (nodeAId === undefined || nodeBId === undefined) return;
@@ -416,9 +413,10 @@ export class EntityTuningService {
       if (otherId === currentFactionId) continue;
       const other = otherById.get(otherId);
       if (!other) {
-        throw new GameConfigValidationError(`Faction relation references unknown faction: ${otherId}`, [
-          { key: `relations.${otherId}`, message: 'Unknown faction' },
-        ]);
+        throw new GameConfigValidationError(
+          `Faction relation references unknown faction: ${otherId}`,
+          [{ key: `relations.${otherId}`, message: 'Unknown faction' }],
+        );
       }
       const otherRelations = other.relations as Record<string, string> | undefined;
       if (relation === 'hostile' || relation === 'ally') {
@@ -516,7 +514,10 @@ export class EntityTuningService {
     );
   }
 
-  private serializeRow(row: Record<string, unknown>, schema: EntitySchema): Record<string, unknown> {
+  private serializeRow(
+    row: Record<string, unknown>,
+    schema: EntitySchema,
+  ): Record<string, unknown> {
     const serialized: Record<string, unknown> = {};
     for (const field of schema.fields) {
       if (field.name in row) {
@@ -527,6 +528,8 @@ export class EntityTuningService {
   }
 
   private async publishChange(entity: string): Promise<void> {
-    await this.redis.publish(ENTITY_CHANGE_CHANNEL, JSON.stringify({ entity })).catch(() => undefined);
+    await this.redis
+      .publish(ENTITY_CHANGE_CHANNEL, JSON.stringify({ entity }))
+      .catch(() => undefined);
   }
 }

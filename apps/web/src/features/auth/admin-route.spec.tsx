@@ -21,9 +21,7 @@ describe('admin route guard', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: /admin/i })).not.toBeInTheDocument(),
     );
-    expect(
-      await screen.findByRole('heading', { name: /home/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
   });
 
   it('renders the admin shell for an admin user', async () => {
@@ -38,8 +36,6 @@ describe('admin route guard', () => {
 
     renderWithRouter(routes, { initialEntries: ['/admin'] });
 
-    expect(
-      await screen.findByRole('heading', { name: /admin/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /admin/i })).toBeInTheDocument();
   });
 });

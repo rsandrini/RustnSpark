@@ -4,12 +4,14 @@ import type { Locale } from '../common/locale/locale.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // The public shape of a player's own profile: no account PII (email stays on Account).
+// factionId is null until onboarding picks one (S10.2 routes on it client-side).
 export interface PlayerProfile {
   id: string;
   name: string;
   credits: number;
   locale: string;
   role: string;
+  factionId: string | null;
 }
 
 export function toPlayerProfile(player: Player, role: string): PlayerProfile {
@@ -19,6 +21,7 @@ export function toPlayerProfile(player: Player, role: string): PlayerProfile {
     credits: player.credits,
     locale: player.locale,
     role,
+    factionId: player.factionId,
   };
 }
 

@@ -8,7 +8,11 @@ import { getRegistryEntry } from './config-registry.js';
 import { GAME_CONFIG_DEFAULTS } from './game-config.defaults.js';
 import { validateConfigValue, validateGameRules } from './game-rules.schema.js';
 import { GameConfigRepository } from './game-config.repository.js';
-import { ConfigNotLoadedError, GameConfigValidationError, type GameRules } from './game-config.types.js';
+import {
+  ConfigNotLoadedError,
+  GameConfigValidationError,
+  type GameRules,
+} from './game-config.types.js';
 
 const CHANGE_CHANNEL = 'gameconfig:changed';
 // Safety net for a dropped pub/sub message: every instance re-checks the latest revision on this
@@ -109,11 +113,18 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
     await this.publishChange();
   }
 
-  async setValue(key: string, value: unknown, actor: string, reason: string): Promise<TuningRevision> {
+  async setValue(
+    key: string,
+    value: unknown,
+    actor: string,
+    reason: string,
+  ): Promise<TuningRevision> {
     const validated = validateConfigValue(key, value);
     const entry = getRegistryEntry(key);
     if (!entry) {
-      throw new GameConfigValidationError(`Unknown config key: ${key}`, [{ key, message: 'Unknown key' }]);
+      throw new GameConfigValidationError(`Unknown config key: ${key}`, [
+        { key, message: 'Unknown key' },
+      ]);
     }
 
     const before = await this.getCurrentValue(key);
@@ -138,7 +149,10 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
     return revision;
   }
 
-  private async getCurrentValue(key: string, tx?: Parameters<GameConfigRepository['findByKey']>[1]): Promise<unknown> {
+  private async getCurrentValue(
+    key: string,
+    tx?: Parameters<GameConfigRepository['findByKey']>[1],
+  ): Promise<unknown> {
     const row = await this.repository.findByKey(key, tx);
     if (row) return row.value;
     const entry = getRegistryEntry(key);
@@ -217,7 +231,10 @@ export class GameConfigService implements OnModuleInit, OnModuleDestroy {
         await this.reloadKeepingLastGood();
       }
     } catch (error) {
-      this.logger.error(error instanceof Error ? error.message : String(error), 'Config poll failed');
+      this.logger.error(
+        error instanceof Error ? error.message : String(error),
+        'Config poll failed',
+      );
     }
   }
 

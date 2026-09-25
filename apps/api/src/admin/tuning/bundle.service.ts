@@ -59,7 +59,9 @@ export class BundleService {
       exportedAt: new Date().toISOString(),
       entries: CONFIG_REGISTRY.map((entry) => ({
         key: entry.key,
-        value: rowsByKey.has(entry.key) ? structuredClone(rowsByKey.get(entry.key)) : structuredClone(entry.factoryDefault),
+        value: rowsByKey.has(entry.key)
+          ? structuredClone(rowsByKey.get(entry.key))
+          : structuredClone(entry.factoryDefault),
         factoryDefault: entry.factoryDefault,
         type: entry.type,
       })),
@@ -151,9 +153,7 @@ export class BundleService {
     return { key: entry.key, value: validated, before, registryEntry };
   }
 
-  private candidateRules(
-    entries: ReadonlyArray<{ key: string; value: unknown }>,
-  ): GameRules {
+  private candidateRules(entries: ReadonlyArray<{ key: string; value: unknown }>): GameRules {
     return withConfigOverrides(this.gameConfigService.snapshot().rules, entries);
   }
 }

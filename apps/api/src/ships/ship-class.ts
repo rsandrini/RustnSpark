@@ -39,6 +39,9 @@ function structureCostForClasses(parts: InstalledPart[], classes: readonly strin
     .reduce((total, part) => total + part.catalog.structureCost, 0);
 }
 
-function structureCostForFlag(parts: InstalledPart[], predicate: (part: InstalledPart) => boolean): number {
+function structureCostForFlag(
+  parts: InstalledPart[],
+  predicate: (part: InstalledPart) => boolean,
+): number {
   return parts.filter(predicate).reduce((total, part) => total + part.catalog.structureCost, 0);
 }

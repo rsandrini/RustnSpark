@@ -54,19 +54,13 @@ describe('admin tuning routing', () => {
           { status: 200 },
         ),
       ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
     );
 
     renderWithRouter(routes, { initialEntries: ['/admin/tuning/config'] });
 
-    expect(
-      await screen.findByRole('heading', { name: /tuning/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('textbox', { name: /search/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /tuning/i })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /search/i })).toBeInTheDocument();
     expect(screen.getByText('economy.start_credits')).toBeInTheDocument();
   });
 
@@ -75,24 +69,16 @@ describe('admin tuning routing', () => {
     renderWithRouter(routes, { initialEntries: ['/admin/tuning/config'] });
 
     await waitFor(() =>
-      expect(
-        screen.queryByRole('heading', { name: /tuning/i }),
-      ).not.toBeInTheDocument(),
+      expect(screen.queryByRole('heading', { name: /tuning/i })).not.toBeInTheDocument(),
     );
-    expect(
-      await screen.findByRole('heading', { name: /home/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
   });
 
   it('navigates between tuning sections from the admin shell', async () => {
     mockAdminUser();
     server.use(
-      http.get('/v1/admin/tuning/config', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
-      http.get('/v1/admin/tuning/revisions', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json([], { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
       http.get('/v1/admin/tuning/schema/materials', () =>
         HttpResponse.json(
           {
@@ -112,30 +98,30 @@ describe('admin tuning routing', () => {
           { status: 200 },
         ),
       ),
-      http.get('/v1/admin/tuning/materials', () =>
-        HttpResponse.json([], { status: 200 }),
-      ),
+      http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
     );
 
     const user = userEvent.setup();
     renderWithRouter(routes, { initialEntries: ['/admin/tuning/config'] });
 
-    expect(
-      await screen.findByRole('heading', { name: /tuning/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /tuning/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: 'Materials' }));
-    expect(
-      await screen.findByRole('heading', { name: /materials/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /materials/i })).toBeInTheDocument();
 
-    for (const name of ['Parts', 'Factions', 'Locations', 'Routes', 'Environments', 'Mission templates', 'Drop tables']) {
+    for (const name of [
+      'Parts',
+      'Factions',
+      'Locations',
+      'Routes',
+      'Environments',
+      'Mission templates',
+      'Drop tables',
+    ]) {
       expect(screen.getByRole('link', { name })).toBeInTheDocument();
     }
 
     await user.click(screen.getByRole('link', { name: /revision history/i }));
-    expect(
-      await screen.findByRole('heading', { name: /revision history/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /revision history/i })).toBeInTheDocument();
   });
 });

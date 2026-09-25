@@ -348,7 +348,9 @@ describe('entity tuning (S3.8)', () => {
 
     expect(response.status).toBe(400);
     expect((response.body as ErrorResponse).code).toBe('STARTER_PART_REQUIRED');
-    expect((await prisma.partCatalog.findUnique({ where: { partType: 'bridge' } }))?.active).toBe(true);
+    expect((await prisma.partCatalog.findUnique({ where: { partType: 'bridge' } }))?.active).toBe(
+      true,
+    );
   });
 
   it('rejects renaming a part id through PATCH', async () => {
@@ -362,7 +364,9 @@ describe('entity tuning (S3.8)', () => {
       .send({ data: { partType: 'renamed_weapon' }, reason: 'rename' });
 
     expect(response.status).toBe(400);
-    expect(await prisma.partCatalog.findUnique({ where: { partType: 'weapon_ballistic' } })).not.toBeNull();
+    expect(
+      await prisma.partCatalog.findUnique({ where: { partType: 'weapon_ballistic' } }),
+    ).not.toBeNull();
   });
 
   it('rejects onboarding config that points at a missing or inactive part or a missing location', async () => {
@@ -380,7 +384,11 @@ describe('entity tuning (S3.8)', () => {
     const badHome = await request(server)
       .patch('/v1/admin/tuning/config/onboarding.home_locations')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: { luna: 'no_such_location', sun: 'no_such_location' }, reason: 'bad ref', expectedRevision: 0 });
+      .send({
+        value: { luna: 'no_such_location', sun: 'no_such_location' },
+        reason: 'bad ref',
+        expectedRevision: 0,
+      });
     expect(badHome.status).toBe(400);
     expect(JSON.stringify(badHome.body)).toContain('HOME_LOCATION_NOT_FOUND');
   });
@@ -391,7 +399,9 @@ describe('entity tuning (S3.8)', () => {
     const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
     const ids = (await prisma.location.findMany({ orderBy: { id: 'asc' } })).map((l) => l.id);
     const taken = new Set((await prisma.route.findMany()).map((r) => `${r.nodeAId}|${r.nodeBId}`));
-    const pair = ids.flatMap((x, i) => ids.slice(i + 1).map((y) => [x, y] as const)).find(([x, y]) => !taken.has(`${x}|${y}`));
+    const pair = ids
+      .flatMap((x, i) => ids.slice(i + 1).map((y) => [x, y] as const))
+      .find(([x, y]) => !taken.has(`${x}|${y}`));
     const [a, b] = pair!;
 
     const created = await request(server)
@@ -408,11 +418,15 @@ describe('entity tuning (S3.8)', () => {
     expect(await prisma.route.findUnique({ where: { id: 'extra_route_for_revert' } })).toBeNull();
 
     const reverted = await request(server)
-      .post(`/v1/admin/tuning/revisions/${(retired.body as EntityWriteResponse).revision.id}/revert`)
+      .post(
+        `/v1/admin/tuning/revisions/${(retired.body as EntityWriteResponse).revision.id}/revert`,
+      )
       .set('Authorization', `Bearer ${token}`)
       .send({ reason: 'undo retire' });
     expect(reverted.status).toBe(200);
-    expect(await prisma.route.findUnique({ where: { id: 'extra_route_for_revert' } })).not.toBeNull();
+    expect(
+      await prisma.route.findUnique({ where: { id: 'extra_route_for_revert' } }),
+    ).not.toBeNull();
   });
 
   it('reverts an entity revision and restores the prior state', async () => {
@@ -437,7 +451,9 @@ describe('entity tuning (S3.8)', () => {
     expect(updateResponse.status).toBe(200);
     const updateRevisionId = (updateResponse.body as EntityWriteResponse).revision.id;
 
-    const beforeRevert = await prisma.partCatalog.findUnique({ where: { partType: 'revert_part' } });
+    const beforeRevert = await prisma.partCatalog.findUnique({
+      where: { partType: 'revert_part' },
+    });
     expect(beforeRevert?.basePrice).toBe(9999);
 
     const revertResponse = await request(server)
@@ -455,7 +471,10 @@ describe('entity tuning (S3.8)', () => {
       name: 'fake_test_field',
       type: 'string',
       required: false,
-      description: { en: 'Fake field for schema test', 'pt-BR': 'Campo falso para teste de schema' },
+      description: {
+        en: 'Fake field for schema test',
+        'pt-BR': 'Campo falso para teste de schema',
+      },
       configKey: 'test.fake_key',
     };
     registerEntitySchemaField('parts', fakeField);

@@ -16,9 +16,7 @@ export function HomePage() {
           <button type="button" onClick={() => logout.mutate()}>
             {t('home.logout')}
           </button>
-          {user.role === 'ADMIN' && (
-            <Link to="/admin">{t('home.adminLink')}</Link>
-          )}
+          {user.role === 'ADMIN' && <Link to="/admin">{t('home.adminLink')}</Link>}
         </>
       ) : (
         <>

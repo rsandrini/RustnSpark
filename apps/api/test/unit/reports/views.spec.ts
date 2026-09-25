@@ -66,7 +66,12 @@ const RAW_EVENTS: Record<string, unknown>[] = [
     category: 'loot',
     type: 'mining',
     actors: ACTORS,
-    effects: { hp: 0, condByPart: {}, credits: 0, loot: [{ materialId: 'common_ore', quantity: 3 }] },
+    effects: {
+      hp: 0,
+      condByPart: {},
+      credits: 0,
+      loot: [{ materialId: 'common_ore', quantity: 3 }],
+    },
     magnitude: 3,
   },
   {
@@ -106,7 +111,9 @@ function desc(index: number, locale: Locale = 'en'): string {
   return renderEventLine(LOG.events[index]!, index, SEED, locale, NAMES).text;
 }
 
-function expectD39(lines: readonly { text: string; segments: readonly { value: string }[] }[]): void {
+function expectD39(
+  lines: readonly { text: string; segments: readonly { value: string }[] }[],
+): void {
   for (const line of lines) {
     expect(line.text).toBe(line.segments.map((segment) => segment.value).join(''));
     expect(line.text).not.toMatch(/\{[a-zA-Z]+\}/);

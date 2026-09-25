@@ -1,0 +1,89 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { renderWithRouter } from '../test/utils';
+import { server } from '../test/msw/server';
+import { resetActiveState, resetBoardState } from '../test/msw/handlers';
+import { routes } from './router';
+
+const onboarded = () =>
+  http.get('/v1/players/me', () =>
+    HttpResponse.json(
+      {
+        id: 'player-1',
+        name: 'Test Pilot',
+        credits: 4820,
+        role: 'PLAYER',
+        locale: 'en',
+        factionId: 'luna',
+      },
+      { status: 200 },
+    ),
+  );
+
+function gameNav(): HTMLElement {
+  return screen.getByRole('navigation', { name: 'Game navigation' });
+}
+
+describe('navigation flow (S10.10)', () => {
+  beforeEach(() => {
+    resetBoardState();
+    resetActiveState();
+    server.use(onboarded());
+  });
+
+  it('shows the persistent game nav with the whole loop on in-game screens', async () => {
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    const nav = gameNav();
+    const hrefs = within(nav)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual(['/hangar', '/map', '/board', '/transit', '/port', '/profile']);
+  });
+
+  it('jumps from the hangar to the map through the nav', async () => {
+    const { router } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    fireEvent.click(within(gameNav()).getByRole('link', { name: 'Map' }));
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
+    expect(await screen.findByRole('heading', { name: 'Sector map' })).toBeInTheDocument();
+  });
+
+  it('walks report → port → map through the footer and nav', async () => {
+    const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+
+    expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
+    fireEvent.click(within(gameNav()).getByRole('link', { name: 'Port' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/port'));
+
+    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('link', { name: 'Back to the map' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
+  });
+
+  it('hides the game nav before the faction is chosen', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: 0,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: null,
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+
+    expect(await screen.findByRole('heading', { name: 'Choose your faction' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Game navigation' })).not.toBeInTheDocument();
+  });
+});

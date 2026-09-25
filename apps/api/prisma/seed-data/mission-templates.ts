@@ -83,7 +83,10 @@ const TEMPLATES: {
     },
     type: 'MINING',
     factionId: 'explorers',
-    requirements: { originFactions: ['explorers'], originTypes: ['scrap_field', 'outpost', 'frontier'] },
+    requirements: {
+      originFactions: ['explorers'],
+      originTypes: ['scrap_field', 'outpost', 'frontier'],
+    },
   },
   {
     id: 'mining_pirates',
@@ -105,7 +108,10 @@ const TEMPLATES: {
     },
     type: 'RESCUE',
     factionId: 'explorers',
-    requirements: { originFactions: ['explorers'], originTypes: ['outpost', 'relay', 'dead_zone', 'scrap_field'] },
+    requirements: {
+      originFactions: ['explorers'],
+      originTypes: ['outpost', 'relay', 'dead_zone', 'scrap_field'],
+    },
   },
   {
     id: 'rescue_sun',

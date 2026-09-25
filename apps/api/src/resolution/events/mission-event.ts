@@ -129,9 +129,7 @@ function roundInt(value: number): number {
 }
 
 function roundInts(record: Readonly<Record<string, number>>): Readonly<Record<string, number>> {
-  return Object.fromEntries(
-    Object.entries(record).map(([key, value]) => [key, roundInt(value)]),
-  );
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, roundInt(value)]));
 }
 
 export function missionEvent(input: {

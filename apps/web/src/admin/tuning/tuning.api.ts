@@ -10,20 +10,14 @@ export const tuningApi = {
     key: string,
     body: dto.UpdateConfigValueRequest,
   ): Promise<dto.TuningRevisionResponse> {
-    return client.patch<dto.TuningRevisionResponse>(
-      `/v1/admin/tuning/config/${key}`,
-      body,
-    );
+    return client.patch<dto.TuningRevisionResponse>(`/v1/admin/tuning/config/${key}`, body);
   },
 
   async resetConfig(
     key: string,
     body: dto.ResetConfigValueRequest,
   ): Promise<dto.TuningRevisionResponse> {
-    return client.post<dto.TuningRevisionResponse>(
-      `/v1/admin/tuning/config/${key}/reset`,
-      body,
-    );
+    return client.post<dto.TuningRevisionResponse>(`/v1/admin/tuning/config/${key}/reset`, body);
   },
 
   async listRevisions(
@@ -61,29 +55,21 @@ export const tuningApi = {
   async importBundle(
     entries: dto.BundleExportEntry[],
   ): Promise<{ revisions: dto.TuningRevisionResponse[] }> {
-    return client.post<{ revisions: dto.TuningRevisionResponse[] }>(
-      '/v1/admin/tuning/bundle',
-      { entries },
-    );
+    return client.post<{ revisions: dto.TuningRevisionResponse[] }>('/v1/admin/tuning/bundle', {
+      entries,
+    });
   },
 
   async getEntitySchema(entity: string): Promise<dto.EntitySchemaResponse> {
-    return client.get<dto.EntitySchemaResponse>(
-      `/v1/admin/tuning/schema/${entity}`,
-    );
+    return client.get<dto.EntitySchemaResponse>(`/v1/admin/tuning/schema/${entity}`);
   },
 
   async listEntities<T = Record<string, unknown>>(entity: string): Promise<T[]> {
     return client.get<T[]>('/v1/admin/tuning/' + entity);
   },
 
-  async getEntity(
-    entity: string,
-    id: string,
-  ): Promise<Record<string, unknown>> {
-    return client.get<Record<string, unknown>>(
-      '/v1/admin/tuning/' + entity + '/' + id,
-    );
+  async getEntity(entity: string, id: string): Promise<Record<string, unknown>> {
+    return client.get<Record<string, unknown>>('/v1/admin/tuning/' + entity + '/' + id);
   },
 
   async createEntity(
@@ -98,10 +84,7 @@ export const tuningApi = {
     id: string,
     body: dto.UpdateEntityRequest,
   ): Promise<dto.EntityChangeResponse> {
-    return client.patch<dto.EntityChangeResponse>(
-      '/v1/admin/tuning/' + entity + '/' + id,
-      body,
-    );
+    return client.patch<dto.EntityChangeResponse>('/v1/admin/tuning/' + entity + '/' + id, body);
   },
 
   async retireEntity(
@@ -109,19 +92,12 @@ export const tuningApi = {
     id: string,
     body: dto.RetireEntityRequest,
   ): Promise<dto.EntityChangeResponse> {
-    return client.delete<dto.EntityChangeResponse>(
-      '/v1/admin/tuning/' + entity + '/' + id,
-      body,
-    );
+    return client.delete<dto.EntityChangeResponse>('/v1/admin/tuning/' + entity + '/' + id, body);
   },
 
-  async revertRevision(
-    id: string,
-    reason: string,
-  ): Promise<dto.TuningRevisionResponse> {
-    return client.post<dto.TuningRevisionResponse>(
-      `/v1/admin/tuning/revisions/${id}/revert`,
-      { reason },
-    );
+  async revertRevision(id: string, reason: string): Promise<dto.TuningRevisionResponse> {
+    return client.post<dto.TuningRevisionResponse>(`/v1/admin/tuning/revisions/${id}/revert`, {
+      reason,
+    });
   },
 };

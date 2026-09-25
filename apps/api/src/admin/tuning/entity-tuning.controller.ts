@@ -15,9 +15,17 @@ import type { TuningRevision } from '@prisma/client';
 import { AdminGuard } from '../guards/admin.guard.js';
 import { ConfigTuningApiError, ConfigTuningApiErrorFilter } from './config-tuning-error.filter.js';
 import { RevisionMismatchError } from './config-tuning.service.js';
-import { CreateEntityDto, RetireEntityDto, RevertRevisionDto, UpdateEntityDto } from './dto/index.js';
+import {
+  CreateEntityDto,
+  RetireEntityDto,
+  RevertRevisionDto,
+  UpdateEntityDto,
+} from './dto/index.js';
 import { EntityTuningService } from './entity-tuning.service.js';
-import { CurrentUser, type CurrentUserPayload } from '../../common/decorators/current-user.decorator.js';
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
 
 function serializeRevision(revision: TuningRevision): Record<string, unknown> {
@@ -31,9 +39,7 @@ function serializeRevision(revision: TuningRevision): Record<string, unknown> {
 @UseFilters(ConfigTuningApiErrorFilter)
 @Controller('admin/tuning')
 export class EntityTuningController {
-  constructor(
-    private readonly entityTuningService: EntityTuningService,
-  ) {}
+  constructor(private readonly entityTuningService: EntityTuningService) {}
 
   @Get('schema/:entity')
   getSchema(@Param('entity') entity: string): Record<string, unknown> {
@@ -62,7 +68,12 @@ export class EntityTuningController {
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<Record<string, unknown>> {
     try {
-      const result = await this.entityTuningService.create(entity, dto.data, user.accountId, dto.reason);
+      const result = await this.entityTuningService.create(
+        entity,
+        dto.data,
+        user.accountId,
+        dto.reason,
+      );
       return { row: result.row, revision: serializeRevision(result.revision) };
     } catch (error) {
       this.rethrowAsApiError(error);
@@ -78,7 +89,13 @@ export class EntityTuningController {
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<Record<string, unknown>> {
     try {
-      const result = await this.entityTuningService.update(entity, id, dto.data, user.accountId, dto.reason);
+      const result = await this.entityTuningService.update(
+        entity,
+        id,
+        dto.data,
+        user.accountId,
+        dto.reason,
+      );
       return { row: result.row, revision: serializeRevision(result.revision) };
     } catch (error) {
       this.rethrowAsApiError(error);
@@ -111,7 +128,11 @@ export class EntityTuningController {
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<Record<string, unknown>> {
     try {
-      const revision = await this.entityTuningService.revertRevision(BigInt(id), user.accountId, dto.reason);
+      const revision = await this.entityTuningService.revertRevision(
+        BigInt(id),
+        user.accountId,
+        dto.reason,
+      );
       return serializeRevision(revision);
     } catch (error) {
       this.rethrowAsApiError(error);
@@ -125,9 +146,11 @@ export class EntityTuningController {
       throw new ConfigTuningApiError(
         {
           error: 'VALIDATION_ERROR',
-          code: ['STARTER_PART_REQUIRED', 'ROUTE_WOULD_DISCONNECT', 'HOME_LOCATION_REQUIRED'].includes(
-            code ?? '',
-          )
+          code: [
+            'STARTER_PART_REQUIRED',
+            'ROUTE_WOULD_DISCONNECT',
+            'HOME_LOCATION_REQUIRED',
+          ].includes(code ?? '')
             ? code
             : undefined,
           issues: error.issues.map((issue) => ({ key: issue.key, message: issue.message })),

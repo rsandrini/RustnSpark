@@ -68,7 +68,10 @@ export class RescueService {
       // Emergency ration (economy.rescue_fuel_fraction): never lowers fuel, never passes the
       // tank. Rescue stays a poor fuel source, but a broke player can still fly one short job.
       const ration = Math.round(restart.fuelCap * rules.economy.rescue_fuel_fraction);
-      const held = await tx.ship.findUniqueOrThrow({ where: { id: shipId }, select: { fuel: true } });
+      const held = await tx.ship.findUniqueOrThrow({
+        where: { id: shipId },
+        select: { fuel: true },
+      });
       const fuel = Math.min(restart.fuelCap, Math.max(held.fuel, ration));
       if (fuel !== held.fuel) {
         await tx.ship.update({ where: { id: shipId }, data: { fuel } });

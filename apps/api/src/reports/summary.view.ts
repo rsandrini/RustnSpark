@@ -1,10 +1,6 @@
 import type { Locale } from '../common/locale/locale.js';
 import type { EntityNames, ReportLine } from './templates/template.engine.js';
-import {
-  formatNumber,
-  renderEventLine,
-  substituteTokens,
-} from './templates/template.engine.js';
+import { formatNumber, renderEventLine, substituteTokens } from './templates/template.engine.js';
 import { type ReportLog, viewChrome } from './report.types.js';
 
 /**
@@ -35,11 +31,7 @@ function categoryRank(category: string): number {
   return index === -1 ? SUMMARY_CATEGORY_PRIORITY.length : index;
 }
 
-export function renderSummary(
-  log: ReportLog,
-  locale: Locale,
-  names: EntityNames,
-): ReportLine[] {
+export function renderSummary(log: ReportLog, locale: Locale, names: EntityNames): ReportLine[] {
   const chrome = viewChrome(locale);
   const outcome = chrome.outcomes[log.outcome] ?? log.outcome;
   const resultLine =
