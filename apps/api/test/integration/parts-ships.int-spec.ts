@@ -266,6 +266,12 @@ describe('parts and ships API (S4.3)', () => {
       for (const item of items) {
         expect(item.condition).toBe(80);
         expect(item.catalog).toBeDefined();
+        // Owned parts carry a real name in both locales (the UI used to fall back to the raw
+        // part code because the inventory response had no name at all).
+        const name = item.displayName as { en: string; 'pt-BR': string };
+        expect(name.en).not.toBe('');
+        expect(name['pt-BR']).not.toBe('');
+        expect(name.en).not.toBe(item.partType);
       }
     });
   });

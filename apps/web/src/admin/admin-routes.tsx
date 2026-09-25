@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { AdminShell } from '../features/admin/admin-shell';
 import { ConfigScreen } from './tuning/ConfigScreen';
 import { EntityScreen } from './tuning/EntityScreen';

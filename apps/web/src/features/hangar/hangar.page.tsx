@@ -10,6 +10,7 @@ import type {
   Problem,
   ShipResponse,
 } from '../../api/generated';
+import { pickLocalized } from '../../i18n/localized';
 import { ShipYard } from './ship-yard';
 import { canPlace } from './hangar.geometry';
 
@@ -21,7 +22,7 @@ export interface HangarPageProps {
 }
 
 export function HangarPage({ guided = false }: HangarPageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
 
   const shipsQuery = useQuery({
@@ -57,6 +58,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     for (const part of parts) map.set(part.id, part.catalog);
     return map;
   }, [parts]);
+
+  // Player-facing part names (both locales come from the server); never the raw part code.
+  const nameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const part of parts) map.set(part.id, pickLocalized(part.displayName, i18n.language));
+    return map;
+  }, [parts, i18n.language]);
 
   const effectiveLayout = useMemo(() => layout ?? [], [layout]);
   const placedIds = useMemo(
@@ -251,7 +259,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {pendingPartId !== null && (
         <p className="sub" aria-live="polite">
           {t('hangar.state.selected', {
-            name: catalogById.get(pendingPartId)?.partType ?? pendingPartId,
+            name: nameById.get(pendingPartId) ?? pendingPartId,
           })}
         </p>
       )}
@@ -276,7 +284,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   setSelectedId(null);
                 }}
               >
-                {part.partType}
+                {nameById.get(part.id) ?? part.partType}
                 <span className="meta">{metaLabel}</span>
               </button>
             );
@@ -287,6 +295,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           <ShipYard
             layout={effectiveLayout}
             catalogById={catalogById}
+            nameById={nameById}
             selectedId={selectedId}
             draggingId={draggingId}
             onSelect={(id) => {

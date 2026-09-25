@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../test/utils';
@@ -36,8 +36,10 @@ describe('router', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/admin'] });
-    await waitFor(() => expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument());
-    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    // The redirect completes after the refresh fails; wait for where it lands rather than
+    // asserting the absence of the admin page (true before anything has rendered).
+    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByText(/admin dashboard/i)).not.toBeInTheDocument();
   });
 
   it('switches the login screen to Portuguese with the language switcher and remembers it', async () => {

@@ -9,16 +9,19 @@ import { localize } from '../common/i18n/localize.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { stableUnit } from './deterministic.js';
+import { Clock } from '../common/clock/clock.js';
 import { PricingService } from './pricing.service.js';
+import {
+  catalogListingId,
+  dayKey,
+  parseListingId,
+  USED_OFFER_COUNT,
+  usedListingId,
+  usedOffer,
+} from './used-offers.js';
 
 export const MARKET_BUY_EVENT = 'market.buy';
 export const MARKET_SELL_EVENT = 'market.sell';
-
-const USED_OFFER_COUNT = 6;
-const USED_CONDITION_MIN = 40;
-const USED_CONDITION_MAX = 90;
-const DAY_KEY_LENGTH = 10;
 
 export interface MarketListing {
   readonly listingId: string;
@@ -61,67 +64,6 @@ export interface SellResponse {
   readonly credits: number;
 }
 
-function dayKey(at: Date): string {
-  return at.toISOString().slice(0, DAY_KEY_LENGTH);
-}
-
-// The day's shelf: condition (already within the 40–90 band) and part for slot `index`.
-// market() lists it and buy() re-derives it, so both must read this one function or the
-// listed price and the charged price can drift apart.
-function usedOffer<T>(
-  locationId: string,
-  day: string,
-  index: number,
-  catalogs: readonly T[],
-): { condition: number; part: T | undefined } {
-  const roll = stableUnit(`${locationId}:${day}:${index}`);
-  const condition = Math.min(
-    USED_CONDITION_MAX,
-    Math.floor(USED_CONDITION_MIN + roll * (USED_CONDITION_MAX - USED_CONDITION_MIN + 1)),
-  );
-  const part =
-    catalogs[Math.floor(stableUnit(`part:${locationId}:${day}:${index}`) * catalogs.length)];
-  return { condition, part };
-}
-
-function parseListingId(listingId: string): {
-  kind: 'catalog' | 'used';
-  locationId: string;
-  partType: string;
-  day?: string;
-  index?: number;
-} | null {
-  const catalog = /^catalog:(?<locationId>[^:]+):(?<partType>.+)$/.exec(listingId);
-  if (catalog?.groups) {
-    return {
-      kind: 'catalog',
-      locationId: catalog.groups['locationId']!,
-      partType: catalog.groups['partType']!,
-    };
-  }
-  const used =
-    /^used:(?<locationId>[^:]+):(?<day>\d{4}-\d{2}-\d{2}):(?<index>\d+):(?<partType>.+)$/.exec(
-      listingId,
-    );
-  if (used?.groups) {
-    const index = Number(used.groups['index']);
-    // Only the six offers the board actually shows exist. Without this bound a client
-    // could enumerate any date-shaped day and any index to mint arbitrary
-    // (condition, partType) combinations that were never listed.
-    if (!Number.isSafeInteger(index) || index < 0 || index >= USED_OFFER_COUNT) {
-      return null;
-    }
-    return {
-      kind: 'used',
-      locationId: used.groups['locationId']!,
-      day: used.groups['day']!,
-      index,
-      partType: used.groups['partType']!,
-    };
-  }
-  return null;
-}
-
 @Injectable()
 export class MarketService {
   constructor(
@@ -129,6 +71,7 @@ export class MarketService {
     private readonly pricing: PricingService,
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
+    private readonly clock: Clock,
   ) {}
 
   // GDD §13: the board and purchases are the port you are docked at — a ship mid-jump
@@ -165,11 +108,10 @@ export class MarketService {
       where: { active: true },
       orderBy: { partType: 'asc' },
     });
-    const now = new Date();
-    const day = dayKey(now);
+    const day = dayKey(this.clock.now());
 
     const listings: MarketListing[] = catalogs.map((row) => ({
-      listingId: `catalog:${locationId}:${row.partType}`,
+      listingId: catalogListingId(locationId, row.partType),
       kind: 'catalog' as const,
       partType: row.partType,
       partClass: row.partClass,
@@ -185,7 +127,7 @@ export class MarketService {
       const { condition, part: partRow } = usedOffer(locationId, day, index, catalogs);
       if (!partRow) continue;
       listings.push({
-        listingId: `used:${locationId}:${day}:${index}:${partRow.partType}`,
+        listingId: usedListingId(locationId, day, index, partRow.partType),
         kind: 'used',
         partType: partRow.partType,
         partClass: partRow.partClass,
@@ -218,7 +160,7 @@ export class MarketService {
     // used listing id, so buy() accepts only that day. A listing minted yesterday is stale
     // (and a forged day would hand-build conditions the board never showed). A roll-over
     // between listing and purchase fails the same way — re-open the board.
-    if (parsed.kind === 'used' && parsed.day !== dayKey(new Date())) {
+    if (parsed.kind === 'used' && parsed.day !== dayKey(this.clock.now())) {
       throw new BadRequestException({ error: 'INVALID_LISTING' });
     }
 

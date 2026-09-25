@@ -20,12 +20,13 @@ env:
 jobs:
   quality:
     name: Lint & typecheck
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       # The generated Prisma client is local node_modules state, not committed: without it the
@@ -37,6 +38,7 @@ jobs:
 
   unit:
     name: Unit tests
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     # Every spec that compiles AppModule (or EnvModule/PrismaModule/RedisModule) needs these 7 env
     # vars; unit specs set their own copy in process.env too, but this is a safety net for future
@@ -48,19 +50,34 @@ jobs:
       DATABASE_URL: postgresql://rustandspark:rustandspark@127.0.0.1:5433/rustandspark_test
       REDIS_URL: redis://127.0.0.1:6380
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api db:generate
-      # Coverage (and its per-path thresholds, apps/api/jest.config.ts) is enforced on this
-      # project only: it is the one whose tests exercise this whole source tree today.
-      - run: pnpm --filter api test:unit --coverage
+      # Fast, service-free gate. Coverage is enforced on the UNION of every project in the
+      # integration job below (T0.3): unit tests alone no longer exercise the whole tree.
+      - run: pnpm --filter api test:unit
+
+  web:
+    name: Web tests & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with: { version: '${{ env.PNPM_VERSION }}' }
+      - uses: actions/setup-node@v5
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web test
+      - run: pnpm --filter web build
 
   integration:
     name: Integration tests (Postgres + Redis)
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
@@ -72,10 +89,10 @@ jobs:
       # it against the real target would destroy test data - a footgun flagged by S1.3).
       SHADOW_DATABASE_URL: postgresql://rustandspark:rustandspark@127.0.0.1:5433/rustandspark_shadow
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter api db:generate
@@ -95,30 +112,31 @@ jobs:
           --to-schema-datamodel ./prisma/schema.prisma
           --shadow-database-url "$SHADOW_DATABASE_URL"
           --exit-code
-      - run: pnpm --filter api test:int
-      # e2e needs the same compose test profile (already up above); validation needs no services.
-      # Both run here so "all suites green in CI" (M1) is literally true.
-      - run: pnpm --filter api test:e2e
-      - run: pnpm --filter api test:validation
+      # One run over every project (unit + integration + e2e + validation): "all suites green in CI"
+      # (M1) is literally true, and coverage is enforced on the union (jest.config.ts thresholds),
+      # because unit tests alone no longer exercise the request path that integration covers.
+      - run: pnpm --filter api test:cov
       - if: always()
         run: docker compose --profile test down -v
 
   compose-check:
     name: Compose config check
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: bash scripts/check-compose-syntax.sh
       - run: docker compose config --quiet
 
   docker-lifecycle:
     name: Worker lifecycle (Docker, opt-in)
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       # Builds the same image compose.yaml's `worker`/`worker-prod` services run (dist/worker.js,
@@ -137,13 +155,14 @@ jobs:
 
   security:
     name: Dependency audit & secret scan
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { fetch-depth: 0 }
       - uses: pnpm/action-setup@v4
         with: { version: '${{ env.PNPM_VERSION }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version: '${{ env.NODE_VERSION }}', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       # The one known high-severity advisory (GHSA-ggr8-5vv4-36mx, deepmerge-ts via prisma's own
@@ -151,6 +170,8 @@ jobs:
       # only that transitive dependency forward and leaves prisma@6.19.3 itself untouched.
       - run: pnpm audit --prod
       - name: Secret scan (gitleaks)
+        # Runs even when the audit above fails, so one problem never hides the other.
+        if: always()
         run: >
           docker run --rm -v "${{ github.workspace }}:/repo" zricethezav/gitleaks:v8.30.1
           detect --source /repo --redact -v
@@ -159,10 +180,11 @@ jobs:
   # edit under simulation/ (or a generator change without a fixture update) fails here.
   oracle-fixtures-fresh:
     name: Oracle fixtures fresh
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - run: python tools/oracle/gen_fixtures.py --check
@@ -170,9 +192,19 @@ jobs:
   # Single required status check for branch protection; add/remove job names above freely.
   ci:
     name: CI
+    timeout-minutes: 5
     if: always()
     needs:
-      [quality, unit, integration, compose-check, docker-lifecycle, security, oracle-fixtures-fresh]
+      [
+        quality,
+        unit,
+        web,
+        integration,
+        compose-check,
+        docker-lifecycle,
+        security,
+        oracle-fixtures-fresh,
+      ]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

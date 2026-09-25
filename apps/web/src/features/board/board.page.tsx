@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
@@ -70,7 +70,7 @@ export function BoardPage({ guided = false }: BoardPageProps) {
       setActionError(null);
       invalidateBoard();
       // Loop step S10.10: accepted → the transit screen, where dispatch happens.
-      navigate('/transit');
+      void navigate('/transit');
     },
     onError,
   });

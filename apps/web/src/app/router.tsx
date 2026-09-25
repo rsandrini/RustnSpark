@@ -1,4 +1,5 @@
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Outlet } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../i18n/language-switcher';
@@ -148,9 +149,7 @@ export const routes = [
   },
 ];
 
-const browserRouter = createBrowserRouter(routes, {
-  future: { v7_relativeSplatPath: true },
-});
+const browserRouter = createBrowserRouter(routes, {});
 
 export function AppRouter() {
   return <RouterProvider router={browserRouter} />;

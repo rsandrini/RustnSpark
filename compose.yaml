@@ -66,6 +66,21 @@ services:
       timeout: 3s
       retries: 10
 
+  # One-shot: applies migrations and the insert-only seed, then exits. api and worker wait for it
+  # to complete successfully, so `up` works from empty volumes (a bare API crashes on the first
+  # query with Prisma P2021 when the schema does not exist).
+  migrate:
+    profiles: [dev]
+    build:
+      <<: *api-build
+      target: migrate
+    image: rustandspark-migrate:dev
+    restart: 'no'
+    environment: *dev-urls
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     profiles: [dev]
     build: *api-build
@@ -78,6 +93,8 @@ services:
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -96,6 +113,8 @@ services:
       PORT: '3000'
       CORS_ORIGINS: ${CORS_ORIGINS}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -133,6 +152,16 @@ services:
       retries: 15
 
   # prod: no postgres/redis here; DATABASE_URL and REDIS_URL must point at external instances.
+  migrate-prod:
+    profiles: [prod]
+    build:
+      <<: *api-build
+      target: migrate
+    image: rustandspark-migrate:prod
+    restart: 'no'
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+
   api-prod:
     profiles: [prod]
     build: *api-build
@@ -147,6 +176,9 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
+    depends_on:
+      migrate-prod:
+        condition: service_completed_successfully
     healthcheck: *api-healthcheck
 
   worker-prod:
@@ -162,6 +194,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      migrate-prod:
+        condition: service_completed_successfully
 
   web:
     profiles: [dev]

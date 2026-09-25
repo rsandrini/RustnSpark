@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { renderWithProviders } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { EntityScreen } from './EntityScreen';
@@ -84,10 +84,7 @@ describe('EntityScreen', () => {
     );
 
     renderWithProviders(
-      <MemoryRouter
-        initialEntries={['/admin/tuning/entities/materials']}
-        future={{ v7_relativeSplatPath: true }}
-      >
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
         <Routes>
           <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
@@ -110,10 +107,7 @@ describe('EntityScreen', () => {
 
     const user = userEvent.setup();
     renderWithProviders(
-      <MemoryRouter
-        initialEntries={['/admin/tuning/entities/materials']}
-        future={{ v7_relativeSplatPath: true }}
-      >
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
         <Routes>
           <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
@@ -167,10 +161,7 @@ describe('EntityScreen', () => {
 
     const user = userEvent.setup();
     renderWithProviders(
-      <MemoryRouter
-        initialEntries={['/admin/tuning/entities/materials']}
-        future={{ v7_relativeSplatPath: true }}
-      >
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
         <Routes>
           <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>
@@ -243,10 +234,7 @@ describe('EntityScreen', () => {
 
     const user = userEvent.setup();
     renderWithProviders(
-      <MemoryRouter
-        initialEntries={['/admin/tuning/entities/materials']}
-        future={{ v7_relativeSplatPath: true }}
-      >
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
         <Routes>
           <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
         </Routes>

@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { useAuth } from './auth.hooks';
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {

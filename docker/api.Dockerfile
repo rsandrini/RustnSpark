@@ -24,6 +24,14 @@ RUN pnpm --filter api deploy --prod /out
 # again here, run from /out (the Prisma CLI must be a production dependency of api).
 RUN cd /out && node_modules/.bin/prisma generate
 
+# One-shot schema job (compose `migrate` service): the full build tree already holds the Prisma
+# CLI, the migrations, the seed and tsx, none of which the slim runtime image carries. It applies
+# pending migrations, then runs the insert-only seed (D33: it creates missing rows and never
+# updates an existing one, so re-running it on every `up` is a no-op).
+FROM build AS migrate
+WORKDIR /repo/apps/api
+CMD ["sh", "-c", "pnpm exec prisma migrate deploy && pnpm exec prisma db seed"]
+
 FROM node:22-bookworm-slim AS runtime
 # S1.3: if the Prisma engine needs it, install openssl here (the slim image ships none):
 # RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*

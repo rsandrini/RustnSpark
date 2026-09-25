@@ -1,9 +1,10 @@
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, MemoryRouter } from 'react-router';
+import { RouterProvider } from 'react-router/dom';
 import { I18nextProvider } from 'react-i18next';
 import type { ReactElement } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
 import i18n from '../i18n';
 
 export function renderWithProviders(
@@ -22,12 +23,7 @@ export function renderWithProviders(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         {wrapRouter ? (
-          <MemoryRouter
-            initialEntries={options.initialEntries ?? ['/']}
-            future={{ v7_relativeSplatPath: true }}
-          >
-            {ui}
-          </MemoryRouter>
+          <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>{ui}</MemoryRouter>
         ) : (
           ui
         )}
@@ -42,7 +38,6 @@ export function renderWithRouter(
 ) {
   const router = createMemoryRouter(routes, {
     initialEntries: options.initialEntries ?? ['/'],
-    future: { v7_relativeSplatPath: true },
   });
   const view = renderWithProviders(<RouterProvider router={router} />, {
     withRouter: false,

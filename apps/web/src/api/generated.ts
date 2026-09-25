@@ -301,6 +301,7 @@ export interface PartCatalogStats {
 export interface InventoryItem {
   id: string;
   partType: string;
+  displayName: LocalizedText;
   condition: number;
   location: 'INVENTORY' | 'INSTALLED';
   shipId: string | null;

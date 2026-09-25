@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router';
 import { useAuth, useLogout } from '../auth/auth.hooks';
 
 const TUNABLE_ENTITIES = [
