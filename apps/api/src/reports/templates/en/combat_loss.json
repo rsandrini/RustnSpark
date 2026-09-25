@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "They had the angle and used it — {hp} of hull gone; the shields took {shield}, the plate {armor}, the frame {hull}. Engagement settled at {credits}.",
+    "Bad ground, worse timing — {hp} off the hull. Layer by layer: {shield} shields, {armor} armor, {hull} hull. The books recorded {credits}."
+  ],
+  "legacy": [
+    "They had the angle and used it — {hp} of hull gone. Engagement settled at {credits}.",
+    "Bad ground, worse timing — {hp} off the hull. The books recorded {credits}."
+  ]
+}

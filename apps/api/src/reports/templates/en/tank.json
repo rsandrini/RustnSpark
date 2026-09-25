@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "{part} sprang a leak — {fuelLost} fuel gone overboard. Condition {condition} ({conditionLost} points).",
+    "Fuel at the seam: {part} leaking {fuelLost}, condition down to {condition} ({conditionLost} points)."
+  ],
+  "legacy": [
+    "{part} sprang a leak. Condition {condition} ({conditionLost} points).",
+    "Fuel at the seam: {part} leaking, condition down to {condition} ({conditionLost} points)."
+  ]
+}

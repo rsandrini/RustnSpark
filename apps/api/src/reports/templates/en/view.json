@@ -1,0 +1,35 @@
+{
+  "categories": {
+    "combat": "combat",
+    "failure": "failure",
+    "loot": "loot",
+    "payment": "payment",
+    "environment": "environment",
+    "transit": "transit"
+  },
+  "outcomes": {
+    "success": "Mission accomplished",
+    "partial_failure": "Partial success",
+    "failed": "Mission failed",
+    "adrift": "Ship adrift"
+  },
+  "legStatuses": {
+    "completed": "completed",
+    "adrift": "adrift",
+    "escort_destroyed": "escort lost"
+  },
+  "summary": {
+    "result": "{outcome}",
+    "resultBalance": "{outcome} — balance {balance} ¢"
+  },
+  "chapter": "Leg {leg} — {status}",
+  "effects": {
+    "credits": "{value} ¢",
+    "damage": "-{value} HP",
+    "condition": "condition {value}",
+    "wear": "-{value} condition",
+    "loot": "+{value} × {name}",
+    "distance": "route {value}",
+    "none": "—"
+  }
+}

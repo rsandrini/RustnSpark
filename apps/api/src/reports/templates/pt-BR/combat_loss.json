@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Eles tiveram o ângulo e o usaram — {hp} de casco a menos; o escudo levou {shield}, a blindagem {armor}, o casco {hull}. Confronto liquidado em {credits}.",
+    "Terreno ruim, pior timing — {hp} fora do casco. Camada a camada: {shield} de escudo, {armor} de blindagem, {hull} de casco. As contas registraram {credits}."
+  ],
+  "legacy": [
+    "Eles tiveram o ângulo e o usaram — {hp} de casco a menos. Confronto liquidado em {credits}.",
+    "Terreno ruim, pior timing — {hp} fora do casco. As contas registraram {credits}."
+  ]
+}

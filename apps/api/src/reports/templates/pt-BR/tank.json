@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "{part} furou — {fuelLost} de combustível perdido. Condição {condition} ({conditionLost} pontos).",
+    "Combustível na costura: {part} vazando {fuelLost}, condição em {condition} ({conditionLost} pontos)."
+  ],
+  "legacy": [
+    "{part} furou. Condição {condition} ({conditionLost} pontos).",
+    "Combustível na costura: {part} vazando, condição em {condition} ({conditionLost} pontos)."
+  ]
+}

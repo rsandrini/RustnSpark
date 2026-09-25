@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} went blind to close contacts — the next ambush is already found. Condition {condition} ({conditionLost} points).",
+    "Sensor washout: {part} at {condition} after {conditionLost} points. Something is already on top of you."
+  ]
+}

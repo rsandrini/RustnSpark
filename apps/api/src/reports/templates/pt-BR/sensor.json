@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} perdeu os contatos próximos — a próxima emboscada já está achada. Condição {condition} ({conditionLost} pontos).",
+    "Falha de sensores: {part} em {condition} após {conditionLost} pontos. Algo já está em cima de você."
+  ]
+}

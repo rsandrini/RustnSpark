@@ -280,6 +280,12 @@ describe('market API (S8.2)', () => {
     const board = await getMarket(player.token, 'ceres');
     const used = (board.body as MarketListingBody).listings.find((entry) => entry.kind === 'used');
     expect(used).toBeDefined();
+    // Used-offer prices roll by calendar day (D25) and can exceed the onboarding
+    // grant (start_credits=200); this test is about delivery, so fund exactly.
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: used!.price },
+    });
 
     const response = await buy(player.token, randomUUID(), {
       listingId: used!.listingId,

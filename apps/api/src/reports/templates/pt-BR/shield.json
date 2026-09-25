@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} saiu da pilha de camadas — o próximo golpe ignora os escudos. Condição {condition} ({conditionLost} pontos).",
+    "Falha na defesa: {part} em {condition} após {conditionLost} pontos. O que vem agora entra direto."
+  ]
+}

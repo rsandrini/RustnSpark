@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "O comprador pagou integral — {credits} pela carga.",
+    "Carga aceita: {credits} na conta."
+  ]
+}

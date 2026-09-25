@@ -9,6 +9,7 @@ import { Job, Queue, QueueEvents } from 'bullmq';
 import request from 'supertest';
 import { seed } from '../../prisma/seed.js';
 import { EnvService } from '../../src/common/env/env.module.js';
+import { SUPPORTED_LOCALES } from '../../src/common/locale/locale.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
@@ -22,6 +23,8 @@ import {
 import { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
 import { MissionResolveService } from '../../src/missions/resolve.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { MISSION_EVENT_TYPES } from '../../src/reports/events/event.types.js';
+import { loadTemplateVariants } from '../../src/reports/templates/template.engine.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -239,7 +242,7 @@ describe('mission resolve processor (S7.3)', () => {
     expect(log.rulesHash).toBe(hashAtResolution);
     expect(log.seed).toBe(mission.seed);
     expect(log.outcome).toBe('success');
-    expect(log.schemaVersion).toBe(1);
+    expect(log.schemaVersion).toBe(2);
     const embed = log.shipSnapshot as {
       parts: { id: string; catalog: { partClass: string } }[];
       legs: unknown[];
@@ -266,6 +269,34 @@ describe('mission resolve processor (S7.3)', () => {
     });
     expect(resolvedEvent).not.toBeNull();
     expect((resolvedEvent?.payload as { missionId: string }).missionId).toBe(mission.id);
+    // D37 / S9.0: the payload carries the balance the payout closed on, which is
+    // exactly the player's balance now — later spends must not affect it.
+    expect((resolvedEvent?.payload as { balanceAfter: number }).balanceAfter).toBe(
+      creditsAfter.credits,
+    );
+  }, 30_000);
+
+  it('stores no template text: the log is structured events, rendering happens at read time (S9.3)', async () => {
+    const player = await authFor(testApp.app);
+    const mission = await createAcceptedMission(player, 's9.3-notemplate-seed', [150, 100]);
+    const job = await dispatchedJob(player, mission, 10_000);
+    const result = await processor.process(job);
+    expect(result.skipped).toBe(false);
+
+    const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId: mission.id } });
+    const stored = JSON.stringify(log.legs);
+    // No unresolved placeholder ever reaches storage…
+    expect(stored).not.toMatch(/\{[a-zA-Z]+\}/);
+    // …and no rendered template text is embedded either (any type, any locale):
+    // rewriting the templates can therefore change every render without
+    // touching this row.
+    for (const locale of SUPPORTED_LOCALES) {
+      for (const type of MISSION_EVENT_TYPES) {
+        for (const variant of loadTemplateVariants(locale, type)) {
+          expect(stored).not.toContain(variant);
+        }
+      }
+    }
   }, 30_000);
 
   it('double invocation produces a single effect: payout credited once, one log row', async () => {

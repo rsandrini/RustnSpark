@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "The client's ship folded at full structure — {magnitude} and nothing left to tow.",
+    "Escorted vessel lost: the hull failed outright at {magnitude}. No distress beacon."
+  ]
+}

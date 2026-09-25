@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "A escolta absorveu a primeira salva — {magnitude} nunca chegou a você. O resto se repartiu nas suas camadas: {shield} de escudo, {armor} de blindagem, {hull} de casco; você ainda cedeu {hp}.",
+    "Seu par cobriu o cruzamento — {magnitude} absorvidos do lado deles. Seus: {shield}/{armor}/{hull}, variação de casco {hp}."
+  ],
+  "legacy": [
+    "A escolta absorveu a primeira salva — {magnitude} nunca chegou a você; você ainda cedeu {hp}.",
+    "Seu par cobriu o cruzamento — {magnitude} absorvidos do lado deles, variação de casco {hp}."
+  ]
+}

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type PartCatalog as PartCatalogRow } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
-import { parseLocale } from '../common/locale/locale.js';
+import { localizeDisplayName } from '../common/locale/localize.js';
+import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PartCatalog } from './part.types.js';
 
@@ -56,25 +57,24 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
   };
 }
 
-function localize(value: Record<string, unknown>, locale: string): string {
-  const candidate = value[locale] ?? value['en'];
-  return typeof candidate === 'string' ? candidate : '';
-}
-
 @Injectable()
 export class PartsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // An explicit ?locale= wins; otherwise the player's saved locale, then the default.
+  // An explicit ?locale= wins; otherwise the player's saved locale, then the
+  // default — precedence lives in resolveRequestLocale (S9.2, shared with
+  // reports). The player row is only read when there is no explicit value.
   async catalogForPlayer(playerId: string, explicit: string | undefined): Promise<CatalogItem[]> {
-    if (explicit !== undefined) {
-      return this.catalog(parseLocale(explicit));
-    }
-    const player = await this.prisma.player.findUnique({
-      where: { id: playerId },
-      select: { locale: true },
-    });
-    return this.catalog(parseLocale(player?.locale));
+    const saved =
+      explicit === undefined
+        ? (
+            await this.prisma.player.findUnique({
+              where: { id: playerId },
+              select: { locale: true },
+            })
+          )?.locale
+        : undefined;
+    return this.catalog(resolveRequestLocale(explicit, saved));
   }
 
   async catalog(locale: Locale): Promise<CatalogItem[]> {
@@ -84,7 +84,7 @@ export class PartsService {
     });
     return rows.map((row) => ({
       partType: row.partType,
-      displayName: localize(row.displayName as Record<string, unknown>, locale),
+      displayName: localizeDisplayName(row.displayName as Record<string, unknown>, locale),
       partClass: row.partClass,
     }));
   }

@@ -1,0 +1,35 @@
+{
+  "categories": {
+    "combat": "combate",
+    "failure": "falha",
+    "loot": "saque",
+    "payment": "pagamento",
+    "environment": "ambiente",
+    "transit": "trânsito"
+  },
+  "outcomes": {
+    "success": "Missão cumprida",
+    "partial_failure": "Sucesso parcial",
+    "failed": "Missão falhou",
+    "adrift": "Nave à deriva"
+  },
+  "legStatuses": {
+    "completed": "concluída",
+    "adrift": "à deriva",
+    "escort_destroyed": "escolta perdida"
+  },
+  "summary": {
+    "result": "{outcome}",
+    "resultBalance": "{outcome} — saldo {balance} ¢"
+  },
+  "chapter": "Perna {leg} — {status}",
+  "effects": {
+    "credits": "{value} ¢",
+    "damage": "-{value} HP",
+    "condition": "condição {value}",
+    "wear": "-{value} condição",
+    "loot": "+{value} × {name}",
+    "distance": "rota {value}",
+    "none": "—"
+  }
+}

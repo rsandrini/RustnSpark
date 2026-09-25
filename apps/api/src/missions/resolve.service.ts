@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import type { DispatchJobData } from './dispatch.service.js';
 // Constructor-injected services must be value imports: emitDecoratorMetadata cannot
 // reference `import type` bindings, so the DI graph would see `Object`/`?` instead of
@@ -18,6 +17,11 @@ import type { MissionInput, MissionSnapshot } from '../resolution/mission/missio
 import { shipTier } from '../ships/ship-tier.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { EncounterService } from './encounters/encounter.service.js';
+// S9.1: the event union is closed — every log is validated against the zod
+// schema its version selects before it is written.
+import { toJsonInput } from '../common/prisma-json.js';
+import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
+import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 
 const OBJECT_CARRIED_TYPES: readonly string[] = ['DELIVERY', 'TRANSPORT', 'RESCUE'];
 const NO_MISSION_LOG = '';
@@ -221,6 +225,13 @@ export class MissionResolveService {
       // S7.5: detect PvP overlaps against RoutePresence and write at most one
       // Encounter row per (A, B, route, leg); both logs receive the same event.
       const encounterEvents = await this.encounters.collectForResolve(mission, snapshot, tx);
+      // S9.1: validate the full event stream against the closed union before
+      // anything is persisted — an emission that drifted from the schema fails
+      // the resolve (loudly) instead of storing a log no report can read.
+      const events = parseMissionLogEvents(MISSION_LOG_SCHEMA_VERSION, [
+        ...outcome.events,
+        ...encounterEvents,
+      ]);
       await tx.missionLog.create({
         data: {
           missionId,
@@ -228,11 +239,12 @@ export class MissionResolveService {
           seed: mission.seed,
           rulesHash: hash,
           outcome: outcome.status,
-          shipSnapshot: snapshot as unknown as Prisma.InputJsonValue,
-          legs: {
-            legs: outcome.legs,
-            events: [...outcome.events, ...encounterEvents],
-          } as unknown as Prisma.InputJsonValue,
+          // S9.0 / D36: enriched events (cascade, failure consequence, fuelLost)
+          // bump the log schema to 2; v1 rows keep their stored version untouched.
+          schemaVersion: MISSION_LOG_SCHEMA_VERSION,
+          shipSnapshot: toJsonInput(snapshot),
+          // `events` above is the zod-validated stream; legs are the resolver's own output.
+          legs: toJsonInput({ legs: outcome.legs, events }),
         },
       });
       for (const part of outcome.parts) {
@@ -277,12 +289,20 @@ export class MissionResolveService {
           tx,
         );
       }
+      // D37: the summary view renders the balance after the mission. Read it in the
+      // same transaction, after the payout movement, so it is exactly the balance
+      // this event closes on — the current balance drifts as soon as any later
+      // spend happens, which would break "identical log → identical text".
+      const { credits: balanceAfter } = await tx.player.findUniqueOrThrow({
+        where: { id: mission.playerId! },
+        select: { credits: true },
+      });
       await this.events.record(
         {
           playerId: mission.playerId!,
           type: 'mission.resolved',
           creditsDelta: credited,
-          payload: { missionId, outcome: outcome.status, integrity: outcome.integrity },
+          payload: { missionId, outcome: outcome.status, integrity: outcome.integrity, balanceAfter },
         },
         tx,
       );

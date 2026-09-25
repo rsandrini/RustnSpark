@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} travou sob empuxo — condição {condition}, {conditionLost} pontos a menos. A perna é dada como perdida; a missão também.",
+    "A propulsão parou no meio da queimada: {part} em {condition} após {conditionLost} pontos. O aborto vale."
+  ]
+}

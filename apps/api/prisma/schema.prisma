@@ -384,7 +384,9 @@ model MissionLog {
   outcome       String          @db.VarChar(32)
   shipSnapshot  Json
   legs          Json
-  schemaVersion Int             @default(1)
+  // 2 = enriched events (S9.0/D36: cascade, failure consequence, fuelLost);
+  // v1 rows written before the upgrade keep their stored 1 and stay readable.
+  schemaVersion Int             @default(2)
   createdAt     DateTime        @default(now())
   mission       MissionInstance @relation(fields: [missionId], references: [id])
   player        Player          @relation(fields: [playerId], references: [id])

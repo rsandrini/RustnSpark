@@ -12,7 +12,7 @@ import type {
   Stance,
 } from '../encounter/encounter-policy.js';
 import { generatePirate } from '../encounter/pirate.generator.js';
-import type { CombatSheet } from '../combat/combat.types.js';
+import type { CombatSheet, CombatSide } from '../combat/combat.types.js';
 import {
   applyIntegrityLoss,
   combatIntegrityLoss,
@@ -22,7 +22,12 @@ import {
 import type { MiningStop, MinerRig, MiningYield } from '../mining/mining.resolver.js';
 import { resolveMining, toMiningLootEvents } from '../mining/mining.resolver.js';
 import { missionEvent } from '../events/mission-event.js';
-import type { MissionActors, MissionEvent, MissionLoot } from '../events/mission-event.js';
+import type {
+  MissionActors,
+  MissionDamageCascade,
+  MissionEvent,
+  MissionLoot,
+} from '../events/mission-event.js';
 import { applyWear, missionWear, defeatWear } from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
@@ -252,6 +257,10 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         magnitude: event.conditionLost,
         condByPart: { [event.partId]: event.conditionAfter },
         credits: 0,
+        // S9.0: what the choke did. The simulation above deducts the exact
+        // float fuel; missionEvent() stores fuelLost integer-normalized.
+        consequence: event.consequence,
+        fuelLost: event.fuelLost,
       }),
     );
   }
@@ -341,6 +350,10 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       ? { hp: result.final.hpA, esc: result.final.escA }
       : { hp: result.final.hpB, esc: result.final.escB };
     const hpLost = Math.max(0, hpBefore - final.hp);
+    // S9.0 / GDD §15: how the fight's damage split across the player's layers
+    // (shields → armor → hull). One fight-level triple, attached to every
+    // combat event of this fight; the escort share is a separate effect.
+    const cascade = fightCascade(result.rounds, playerIsA ? 'A' : 'B', hpLost);
     let hp: number;
     let esc: number;
 
@@ -359,6 +372,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           actors,
           magnitude: clientTakes,
           hp: -toPlayer,
+          cascade,
         }),
       );
       if (client.hp <= 0) {
@@ -403,6 +417,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           magnitude: combatCredits,
           hp: hp - hpBefore,
           credits: combatCredits,
+          cascade,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
@@ -427,6 +442,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           hp: hp - hpBefore,
           credits: combatCredits,
           condByPart: Object.fromEntries(parts.map((part) => [part.id, part.condition])),
+          cascade,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
@@ -547,6 +563,30 @@ function mergeConditions(
     const condition = wearMap.get(part.id);
     return condition === undefined ? { ...part } : { ...part, condition };
   });
+}
+
+/**
+ * S9.0 layer split: sums what the player's ship soaked across a fight —
+ * attacks against `playerSide` only (misses contribute 0 by construction),
+ * with `hpLost` = hull-pool damage taken (`hpBefore − finalHp`, pre escort share).
+ */
+function fightCascade(
+  rounds: readonly {
+    readonly attacker: CombatSide;
+    readonly armorAbsorbed: number;
+    readonly shieldAbsorbed: number;
+  }[],
+  playerSide: CombatSide,
+  hpLost: number,
+): MissionDamageCascade {
+  let shield = 0;
+  let armor = 0;
+  for (const attack of rounds) {
+    if (attack.attacker === playerSide) continue;
+    shield += attack.shieldAbsorbed;
+    armor += attack.armorAbsorbed;
+  }
+  return { shield, armor, hp: hpLost };
 }
 
 function wearEvents(

@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Power cell sag — {part} at {condition} after {conditionLost} points. The shields stay dark until the next port.",
+    "{part} bled down under load: condition {condition}, {conditionLost} points lost. Shield grid offline for the leg."
+  ]
+}
