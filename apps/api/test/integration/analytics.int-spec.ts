@@ -9,6 +9,12 @@ import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import {
+  AdminWorldResponseSchema,
+  DashboardResponseSchema,
+  EconomyResponseSchema,
+} from '@rustandspark/contract';
+import { contract } from '../support/contract.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { accessTokenFrom, seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -265,6 +271,7 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
       .get(`/v1/admin/analytics/dashboard${query(window)}`)
       .set('Authorization', auth);
     expect(response.status).toBe(200);
+    contract(DashboardResponseSchema, response.body, 'GET /admin/analytics/dashboard');
     expect(response.body).toEqual({
       window: { from: window.from.toISOString(), to: window.to.toISOString() },
       data: {
@@ -320,6 +327,19 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
           creditsDelta: -5,
           payload: { reason: 'market.buy:listing-1' },
         },
+        // Admin adjustments are reported apart, never as organic flow.
+        {
+          playerId: player.player.id,
+          type: 'wallet.credit',
+          creditsDelta: 700,
+          payload: { reason: 'support.grant' },
+        },
+        {
+          playerId: player.player.id,
+          type: 'wallet.debit',
+          creditsDelta: -200,
+          payload: { reason: 'support.remove' },
+        },
         // Outside the window — must not count.
         {
           playerId: player.player.id,
@@ -338,6 +358,7 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
       .get(`/v1/admin/analytics/economy${query(window)}`)
       .set('Authorization', auth);
     expect(response.status).toBe(200);
+    contract(EconomyResponseSchema, response.body, 'GET /admin/analytics/economy');
     expect(response.body).toEqual({
       window: { from: window.from.toISOString(), to: window.to.toISOString() },
       data: {
@@ -353,6 +374,7 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
           { reason: 'refuel', total: 10 },
           { reason: 'market.buy', total: 5 },
         ],
+        adjustments: { granted: 700, removed: 200 },
       },
     });
   });
@@ -430,6 +452,7 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
       .get(`/v1/admin/analytics/world${query(window)}`)
       .set('Authorization', auth);
     expect(response.status).toBe(200);
+    contract(AdminWorldResponseSchema, response.body, 'GET /admin/analytics/world');
     expect(response.body).toEqual({
       window: { from: window.from.toISOString(), to: window.to.toISOString() },
       data: {

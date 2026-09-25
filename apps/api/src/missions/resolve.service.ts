@@ -7,15 +7,8 @@ import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
-import type { InstalledPart } from '../parts/part.types.js';
-import { deriveSheet } from '../ships/sheet.deriver.js';
-import type { EscapePreset } from '../resolution/encounter/escape.resolver.js';
-import type { FactionRelation, Stance } from '../resolution/encounter/encounter-policy.js';
-import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
-import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
-import { shipTier } from '../ships/ship-tier.js';
-import { PROVISIONAL_TIER } from './generator/template.filler.js';
+import { buildResolveInput, contextFromLive } from './resolution-input.js';
 import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
 // schema its version selects before it is written.
@@ -23,7 +16,6 @@ import { toJsonInput } from '../common/prisma-json.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 
-const OBJECT_CARRIED_TYPES: readonly string[] = ['DELIVERY', 'TRANSPORT', 'RESCUE'];
 const NO_MISSION_LOG = '';
 // Hash preview length for the resolve log line — not a balance value (missions/ lint scope).
 const RULES_HASH_PREVIEW_LENGTH = 8;
@@ -34,33 +26,6 @@ export interface ResolveJobResult {
   readonly skipped: boolean;
   readonly rulesHash: string;
   readonly credited: number;
-}
-
-function relationOf(
-  relations: unknown,
-  factionId: string,
-): { key: string; relation: FactionRelation } {
-  let raw: unknown;
-  if (typeof relations === 'object' && relations !== null && !Array.isArray(relations)) {
-    raw = (relations as Record<string, unknown>)[factionId];
-  }
-  const normalized = typeof raw === 'string' ? raw.toLowerCase() : 'neutral';
-  if (normalized === 'ally') return { key: 'ally', relation: 'ALLY' };
-  if (normalized === 'hostile') return { key: 'hostile', relation: 'HOSTILE' };
-  return { key: 'neutral', relation: 'NEUTRAL' };
-}
-
-function parseClient(raw: unknown): EscortClient | null {
-  if (typeof raw !== 'object' || raw === null) return null;
-  const candidate = raw as Record<string, unknown>;
-  if (
-    typeof candidate['shipId'] !== 'string' ||
-    typeof candidate['maxHp'] !== 'number' ||
-    typeof candidate['hp'] !== 'number'
-  ) {
-    return null;
-  }
-  return { shipId: candidate['shipId'], maxHp: candidate['maxHp'], hp: candidate['hp'] };
 }
 
 // Shared resolve step (plan S7.3, D19/D33) extracted in S7.4 so the worker processor,
@@ -127,26 +92,6 @@ export class MissionResolveService {
 
     const { hash, rules } = this.config.snapshot();
 
-    const installed: InstalledPart[] = snapshot.parts.map((part) => ({
-      instance: { id: part.id, partType: part.partType, condition: part.condition },
-      catalog: part.catalog,
-    }));
-    const sheet = deriveSheet(installed, rules);
-    const partSnaps: PartSnapshot[] = snapshot.parts.map((part) => ({
-      id: part.id,
-      partClass: part.catalog.partClass,
-      providesEsc: part.catalog.esc > 0,
-      condition: part.condition,
-    }));
-    const missionSnapshot: MissionSnapshot = {
-      shipId: snapshot.shipId,
-      parts: partSnaps,
-      sheet,
-      fuel: snapshot.fuel,
-      hp: sheet.hp,
-      esc: sheet.esc,
-    };
-
     const player = await this.prisma.player.findUniqueOrThrow({
       where: { id: mission.playerId },
       select: { factionId: true },
@@ -156,67 +101,35 @@ export class MissionResolveService {
       select: { isolation: true },
     });
     const cargo = (mission.cargo ?? {}) as Record<string, unknown>;
-    const policy = (mission.template.encounterPolicy ?? {}) as Record<string, unknown>;
-    const employer = relationOf(mission.faction.relations, player.factionId ?? '');
-
-    const legs: readonly LegRoute[] = snapshot.legs;
-    let mining: MissionInput['mining'];
+    let materialRarity: string | undefined;
     if (mission.type === 'MINING' && typeof cargo['materialId'] === 'string') {
       const material = await this.prisma.material.findUnique({
         where: { id: cargo['materialId'] },
         select: { rarity: true },
       });
-      const lastLeg = legs[legs.length - 1];
-      mining = {
-        stop: {
-          env: lastLeg?.env.id ?? 'open',
-          materialId: cargo['materialId'],
-          materialRarity: material?.rarity.toLowerCase() ?? 'common',
-        },
-        miner: { min: sheet.min, condition: sheet.condition },
-      };
+      materialRarity = material?.rarity.toLowerCase();
     }
-    const contractedMining =
-      cargo['contracted'] === true &&
-      typeof cargo['materialId'] === 'string' &&
-      typeof cargo['quantity'] === 'number'
-        ? { materialId: cargo['materialId'], requiredQuantity: cargo['quantity'] }
-        : undefined;
-
-    // D29: accept finalizes the board reward from the accepting ship's tier; resolve
-    // must rate the payout (and combat win credits, which scale with tier) from the
-    // same tier. The dispatch snapshot carries each part's basePrice for this; older
-    // job payloads without it fall back to PROVISIONAL_TIER (tier 1).
-    const snapshotTier = shipTier(
-      snapshot.parts.map((part) => ({ basePrice: part.catalog.basePrice ?? 0 })),
-      rules,
-    );
-    const missionInput: MissionInput = {
-      id: mission.id,
+    // Everything the engine reads from the live world is captured here and stored in the log
+    // (D19): the admin replay must see this run's values, not whatever the map says later.
+    const context = contextFromLive({
       type: mission.type,
-      legs,
-      tier: snapshot.parts.every((part) => typeof part.catalog.basePrice === 'number')
-        ? snapshotTier
-        : PROVISIONAL_TIER,
-      isolation: destination.isolation,
-      factionRelation: employer.key,
-      relation: employer.relation,
-      stance: snapshot.stance as Stance,
-      preset: ((policy['preset'] as string | undefined) ?? 'CRUISE') as EscapePreset,
-      missionOwner: (policy['missionOwner'] as 'player' | 'enemy' | null | undefined) ?? null,
-      missionForcesFlee: policy['missionForcesFlee'] === true,
-      objectCarried: OBJECT_CARRIED_TYPES.includes(mission.type),
-      client: parseClient(cargo['client']),
-      ...(mining ? { mining } : {}),
-      ...(contractedMining ? { contractedMining } : {}),
-    };
-
-    const outcome = resolveMission({
-      seed: mission.seed,
-      snapshot: missionSnapshot,
-      mission: missionInput,
-      rules,
+      cargo: mission.cargo,
+      encounterPolicy: mission.template.encounterPolicy,
+      employerRelations: mission.faction.relations,
+      playerFactionId: player.factionId,
+      destinationIsolation: destination.isolation,
+      materialRarity,
     });
+    const outcome = resolveMission(
+      buildResolveInput({
+        missionId: mission.id,
+        missionType: mission.type,
+        seed: mission.seed,
+        snapshot,
+        context,
+        rules,
+      }),
+    );
     const finalStatus: 'DONE' | 'FAILED' =
       outcome.status === 'success' || outcome.status === 'partial_failure' ? 'DONE' : 'FAILED';
     const credited = Math.round(outcome.creditsDelta);
@@ -244,7 +157,7 @@ export class MissionResolveService {
           schemaVersion: MISSION_LOG_SCHEMA_VERSION,
           shipSnapshot: toJsonInput(snapshot),
           // `events` above is the zod-validated stream; legs are the resolver's own output.
-          legs: toJsonInput({ legs: outcome.legs, events }),
+          legs: toJsonInput({ legs: outcome.legs, events, context }),
         },
       });
       for (const part of outcome.parts) {

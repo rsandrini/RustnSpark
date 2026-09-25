@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
+import { errorText } from '../../api/errors';
+import { useIntentKey } from '../../api/intent-key';
+import { Popup } from '../../ui/Popup';
 import { adminApi, type SupportResult } from '../admin.api';
+
+const MAX_AMOUNT = 1_000_000_000;
+const MAX_REASON = 500;
 
 export type SupportActionKey = 'grant' | 'remove' | 'clear' | 'unstick' | 'ban' | 'reset';
 
@@ -34,6 +40,7 @@ export function SupportActions({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
+  const intent = useIntentKey();
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('1');
@@ -41,24 +48,27 @@ export function SupportActions({
 
   const mutation = useMutation<SupportResult, Error, ActionContext>({
     mutationFn: async ({ reason: why, amount: value, shipId: hull }) => {
+      // Same intent (action + target + inputs) keeps the same key across retries.
+      const key = intent.keyFor(`${pending?.key}:${playerId}:${hull}:${value}:${why}`);
       switch (pending?.key) {
         case 'grant':
-          return adminApi.grantCredits(playerId, value, why);
+          return adminApi.grantCredits(playerId, value, why, key);
         case 'remove':
-          return adminApi.removeCredits(playerId, value, why);
+          return adminApi.removeCredits(playerId, value, why, key);
         case 'clear':
-          return adminApi.clearBalance(playerId, why);
+          return adminApi.clearBalance(playerId, why, key);
         case 'unstick':
-          return adminApi.unstickShip(playerId, hull, why);
+          return adminApi.unstickShip(playerId, hull, why, key);
         case 'ban':
-          return adminApi.banPlayer(playerId, why);
+          return adminApi.banPlayer(playerId, why, key);
         case 'reset':
-          return adminApi.resetPlayer(playerId, why);
+          return adminApi.resetPlayer(playerId, why, key);
         default:
           throw new Error('no support action selected');
       }
     },
     onSuccess: () => {
+      intent.clear();
       setPending(null);
       setReason('');
       onChanged();
@@ -81,7 +91,9 @@ export function SupportActions({
   const needsAmount = pending?.key === 'grant' || pending?.key === 'remove';
   const needsShip = pending?.key === 'unstick';
   const parsedAmount = Number(amount);
-  const amountValid = !needsAmount || (Number.isInteger(parsedAmount) && parsedAmount >= 1);
+  const amountValid =
+    !needsAmount ||
+    (Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= MAX_AMOUNT);
   const canConfirm = reason.trim() !== '' && amountValid && (!needsShip || shipId !== '');
 
   const submit = () => {
@@ -89,6 +101,7 @@ export function SupportActions({
     mutation.mutate({ reason: reason.trim(), amount: parsedAmount, shipId });
   };
 
+  const destructive = pending?.key === 'ban' || pending?.key === 'reset';
   const label = (key: SupportActionKey): string => t(`admin.actions.${key}`);
 
   return (
@@ -115,50 +128,73 @@ export function SupportActions({
         </button>
       </div>
 
-      {pending !== null && (
-        <div role="dialog" aria-modal="true" aria-label={label(pending.key)}>
-          <h4>{label(pending.key)}</h4>
-          {needsAmount && (
+      <Popup
+        open={pending !== null}
+        title={pending !== null ? label(pending.key) : ''}
+        onClose={close}
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn"
+              onClick={submit}
+              disabled={!canConfirm || mutation.isPending}
+            >
+              {t('admin.confirmAction')}
+            </button>
+            <button type="button" className="btn" onClick={close}>
+              {t('admin.cancelAction')}
+            </button>
+          </>
+        }
+      >
+        {pending !== null && (
+          <>
+            <p className={destructive ? 'error-text' : undefined}>
+              {t(`admin.warnings.${pending.key}`)}
+            </p>
+            {needsAmount && (
+              <label>
+                {t('admin.amount')}
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_AMOUNT}
+                  step={1}
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                />
+              </label>
+            )}
+            {needsShip && (
+              <label>
+                {t('admin.ship')}
+                <select value={shipId} onChange={(event) => setShipId(event.target.value)}>
+                  {ships.map((ship) => (
+                    <option key={ship.id} value={ship.id}>
+                      {ship.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label>
-              {t('admin.amount')}
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
+              {t('admin.reasonLabel')}
+              <textarea
+                value={reason}
+                maxLength={MAX_REASON}
+                onChange={(event) => setReason(event.target.value)}
+                aria-label={t('admin.reasonLabel')}
               />
             </label>
-          )}
-          {needsShip && (
-            <label>
-              {t('admin.ship')}
-              <select value={shipId} onChange={(event) => setShipId(event.target.value)}>
-                {ships.map((ship) => (
-                  <option key={ship.id} value={ship.id}>
-                    {ship.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label>
-            {t('admin.reasonLabel')}
-            <textarea
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              aria-label={t('admin.reasonLabel')}
-            />
-          </label>
-          {mutation.isError && <p role="alert">{mutation.error.message}</p>}
-          <button type="button" onClick={submit} disabled={!canConfirm || mutation.isPending}>
-            {t('admin.confirmAction')}
-          </button>
-          <button type="button" onClick={close}>
-            {t('admin.cancelAction')}
-          </button>
-        </div>
-      )}
+            {mutation.isError && (
+              <p role="alert" className="error-text">
+                {errorText(t, mutation.error, t('error.unexpected'))}
+              </p>
+            )}
+          </>
+        )}
+      </Popup>
     </div>
   );
 }

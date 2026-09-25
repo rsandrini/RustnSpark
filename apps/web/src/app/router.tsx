@@ -17,6 +17,7 @@ import { ReportPage } from '../features/report/report.page';
 import { PortPage } from '../features/port/port.page';
 import { ProfilePage } from '../features/profile/profile.page';
 import { GameNav } from '../ui/GameNav';
+import { NoticeBanner } from '../ui/NoticeBanner';
 import { HomePage } from '../pages/home.page';
 import { NotFoundPage } from '../pages/not-found.page';
 
@@ -32,6 +33,7 @@ function AppChrome() {
   const inGame = user?.factionId != null;
   return (
     <>
+      {inGame && <NoticeBanner />}
       {inGame && <GameNav />}
       <Outlet />
     </>

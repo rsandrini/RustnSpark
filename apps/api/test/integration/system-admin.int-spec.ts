@@ -4,6 +4,13 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import {
+  AdminSystemNoticeSchema,
+  SystemFlagSchema,
+  SystemNoticesResponseSchema,
+} from '@rustandspark/contract';
+import { z } from 'zod';
+import { contract } from '../support/contract.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { accessTokenFrom, seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -87,6 +94,7 @@ describe('admin system: flags, broadcast, maintenance (S11.2)', () => {
       .set('Authorization', auth)
       .send({ value: false });
     expect(first.status).toBe(200);
+    contract(SystemFlagSchema, first.body, 'PUT /admin/system/flags/:key');
     expect(first.body).toMatchObject({
       key: 'register.open',
       value: false,
@@ -249,6 +257,7 @@ describe('admin system: flags, broadcast, maintenance (S11.2)', () => {
     // Effective immediately for players: same app instance, no restart.
     const forPlayer = await request(server).get('/v1/system/notices').set(playerAuth);
     expect(forPlayer.status).toBe(200);
+    contract(SystemNoticesResponseSchema, forPlayer.body, 'GET /system/notices');
     const playerBody = forPlayer.body as { items: Array<{ id: string; message: unknown }> };
     expect(playerBody.items).toEqual([{ id: noticeId, message }]);
 
@@ -274,6 +283,7 @@ describe('admin system: flags, broadcast, maintenance (S11.2)', () => {
     // The admin view keeps the dismissed row for history.
     const adminView = await request(server).get('/v1/admin/system/notices').set(adminAuth);
     expect(adminView.status).toBe(200);
+    contract(z.array(AdminSystemNoticeSchema), adminView.body, 'GET /admin/system/notices');
     const adminBody = adminView.body as Array<{ id: string; active: boolean }>;
     expect(adminBody).toHaveLength(1);
     expect(adminBody[0]).toMatchObject({ id: noticeId, active: false });

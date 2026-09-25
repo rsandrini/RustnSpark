@@ -1,23 +1,33 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../admin.api';
+import { useAnalyticsWindow } from './WindowPicker';
 
 // Screen C (GDD §17): traffic per route, pirate encounters and mission generation vs
 // consumption per zone of the seeded map.
 export function WorldScreen() {
   const { t } = useTranslation();
+  const period = useAnalyticsWindow();
   const query = useQuery({
-    queryKey: ['admin', 'analytics', 'world'],
-    queryFn: adminApi.world,
+    queryKey: ['admin', 'analytics', 'world', period.key],
+    queryFn: () => adminApi.world(period.range()),
   });
 
-  if (query.isLoading) return <p>{t('loading')}</p>;
-  if (query.isError) return <p role="alert">{t('admin.loadError')}</p>;
+  if (query.isLoading || query.isError) {
+    return (
+      <div>
+        <h2>{t('admin.world')}</h2>
+        {period.picker}
+        {query.isLoading ? <p>{t('loading')}</p> : <p role="alert">{t('admin.loadError')}</p>}
+      </div>
+    );
+  }
   const { window: bounds, data } = query.data!;
 
   return (
     <div>
       <h2>{t('admin.world')}</h2>
+      {period.picker}
       <p>
         {t('admin.windowLabel', {
           from: new Date(bounds.from).toLocaleString(),

@@ -15,6 +15,14 @@ import { MissionResolveService } from '../../src/missions/resolve.service.js';
 import { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
 import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import {
+  PlayerListResponseSchema,
+  PlayerSheetSchema,
+  ReplayResponseSchema,
+  SupportResultSchema,
+  TimelinePageSchema,
+} from '@rustandspark/contract';
+import { contract } from '../support/contract.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { accessTokenFrom, seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -93,8 +101,10 @@ describe('admin player inspector (S11.4)', () => {
     await queue.obliterate({ force: true }).catch(() => undefined);
   });
 
-  const auth = (token: string): { Authorization: string } => ({
+  // Support actions are @Idempotent(): every call carries a fresh key unless a test pins one.
+  const auth = (token: string, key: string = randomUUID()): Record<string, string> => ({
     Authorization: `Bearer ${token}`,
+    'Idempotency-Key': key,
   });
 
   async function makePlayer(): Promise<AuthPair> {
@@ -180,6 +190,7 @@ describe('admin player inspector (S11.4)', () => {
       .get(`/v1/admin/players?q=${other.email.slice(0, 12)}`)
       .set(auth(admin.token));
     expect(byEmail.status).toBe(200);
+    contract(PlayerListResponseSchema, byEmail.body, 'GET /admin/players');
     const found = (byEmail.body as { items: Array<{ id: string }> }).items;
     expect(found.map((item) => item.id)).toContain(other.player.id);
     expect(found.map((item) => item.id)).not.toContain(player.playerId);
@@ -194,6 +205,7 @@ describe('admin player inspector (S11.4)', () => {
       .get(`/v1/admin/players/${player.playerId}`)
       .set(auth(admin.token));
     expect(sheet.status).toBe(200);
+    contract(PlayerSheetSchema, sheet.body, 'GET /admin/players/:id');
     expect(sheet.body).toEqual({
       account: {
         id: dbPlayer.account.id,
@@ -264,6 +276,7 @@ describe('admin player inspector (S11.4)', () => {
       .get(`/v1/admin/players/${player.playerId}/events?limit=2`)
       .set(auth(admin.token));
     expect(firstPage.status).toBe(200);
+    contract(TimelinePageSchema, firstPage.body, 'GET /admin/players/:id/events');
     const page1 = firstPage.body as {
       items: Array<{ id: string; at: string; type: string; payload: unknown }>;
       nextCursor?: string;
@@ -303,6 +316,7 @@ describe('admin player inspector (S11.4)', () => {
       .get(`/v1/admin/players/${player.playerId}/reports/${mission.id}/replay?view=narrative`)
       .set(auth(admin.token));
     expect(replay.status).toBe(200);
+    contract(ReplayResponseSchema, replay.body, 'GET /admin/players/:id/reports/:mission/replay');
     const body = replay.body as {
       missionId: string;
       rulesHash: string;
@@ -340,6 +354,14 @@ describe('admin player inspector (S11.4)', () => {
     const configService = testApp.app.get(GameConfigService);
     expect(configService.snapshot().hash).not.toBe(log.rulesHash);
     expect((await configService.byHash(log.rulesHash)).economy.reward_per_tier).toBe(120);
+
+    // The world the run read is stored in the log: re-tuning the map afterwards must not
+    // change what the replay sees.
+    const stored = (log.legs as { context?: { isolation?: unknown; factionRelation?: unknown } })
+      .context;
+    expect(typeof stored?.isolation).toBe('number');
+    expect(typeof stored?.factionRelation).toBe('string');
+    await prisma.location.updateMany({ data: { isolation: 9 } });
 
     const afterEdit = await request(server)
       .get(`/v1/admin/players/${player.playerId}/reports/${mission.id}/replay`)
@@ -416,6 +438,50 @@ describe('admin player inspector (S11.4)', () => {
     expect(await prisma.adminAuditLog.count({ where: { actor: admin.accountId } })).toBe(0);
   });
 
+  it('replays a retried support action instead of applying it twice (same Idempotency-Key)', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+    const before = (await prisma.player.findUniqueOrThrow({ where: { id: player.playerId } }))
+      .credits;
+    const key = randomUUID();
+    const send = () =>
+      request(server)
+        .post(`/v1/admin/players/${player.playerId}/credits/grant`)
+        .set(auth(admin.token, key))
+        .send({ amount: 40, reason: 'double click' });
+    const first = await send();
+    const second = await send();
+    expect(first.status).toBe(200);
+    contract(SupportResultSchema, first.body, 'POST /admin/players/:id/credits/grant');
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual(first.body);
+    const after = (await prisma.player.findUniqueOrThrow({ where: { id: player.playerId } }))
+      .credits;
+    expect(after).toBe(before + 40);
+    expect(await prisma.adminAuditLog.count({ where: { action: 'SUPPORT_GRANT_CREDITS' } })).toBe(
+      1,
+    );
+
+    const missing = await request(server)
+      .post(`/v1/admin/players/${player.playerId}/credits/grant`)
+      .set('Authorization', `Bearer ${admin.token}`)
+      .send({ amount: 1, reason: 'no key' });
+    expect(missing.status).toBe(400);
+  });
+
+  it('a ban cuts the player off even while their access token is still valid', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+    await request(server)
+      .post(`/v1/admin/players/${player.playerId}/ban`)
+      .set(auth(admin.token))
+      .send({ reason: 'abuse' })
+      .expect(200);
+    const after = await request(server).get('/v1/players/me').set(auth(player.token));
+    expect(after.status).toBe(403);
+    expect(after.body).toMatchObject({ message: { error: 'ACCOUNT_BANNED' } });
+  });
+
   it('applies credit actions with audit rows and maps overdraw to 409 without an audit row', async () => {
     const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
     const player = await makePlayer();
@@ -451,7 +517,7 @@ describe('admin player inspector (S11.4)', () => {
     const overdraw = await request(server)
       .post(`/v1/admin/players/${player.playerId}/credits/remove`)
       .set(auth(admin.token))
-      .send({ amount: 2_000_000_000, reason: 'should not fit' });
+      .send({ amount: 1_000_000_000, reason: 'should not fit' });
     expect(overdraw.status).toBe(409);
     expect(overdraw.body).toEqual({
       statusCode: 409,
@@ -594,7 +660,10 @@ describe('admin player inspector (S11.4)', () => {
     const resolvedMission = await createAcceptedMission(player, 's11.4-reset-done');
     await resolveMissionFixture(player, resolvedMission.id);
     const mission = await createAcceptedMission(player, 's11.4-reset-active');
-    await prisma.ship.update({ where: { id: player.shipId }, data: { status: 'ON_MISSION' } });
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { status: 'ON_MISSION', currentLocationId: 'gate' },
+    });
     await prisma.player.update({
       where: { id: player.playerId },
       data: { credits: startCredits + 137 },
@@ -632,6 +701,7 @@ describe('admin player inspector (S11.4)', () => {
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
     expect(ship.status).toBe('IN_PORT');
     expect(ship.stance).toBe('NEUTRAL');
+    expect(ship.currentLocationId).toBe('ceres'); // luna's home port
     expect(
       await prisma.partInstance.count({
         where: { ownerPlayerId: player.playerId, shipId: player.shipId, location: 'INSTALLED' },
@@ -653,5 +723,22 @@ describe('admin player inspector (S11.4)', () => {
     expect((audit.after as { reason: string }).reason).toBe(
       'pilot requested fresh start after corruption',
     );
+  });
+
+  it('reset puts a merely HELD (reserved, not accepted) mission back on the board', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+    const held = await createAcceptedMission(player, 's11.4-reset-held');
+    await prisma.missionInstance.update({
+      where: { id: held.id },
+      data: { status: 'HELD', shipId: null },
+    });
+    await request(server)
+      .post(`/v1/admin/players/${player.playerId}/reset`)
+      .set(auth(admin.token))
+      .send({ reason: 'release the reservation' })
+      .expect(200);
+    const released = await prisma.missionInstance.findUniqueOrThrow({ where: { id: held.id } });
+    expect(released).toMatchObject({ status: 'AVAILABLE', playerId: null });
   });
 });

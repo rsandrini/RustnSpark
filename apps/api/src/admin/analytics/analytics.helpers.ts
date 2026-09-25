@@ -14,46 +14,37 @@ export interface NamedTotal {
   readonly total: number;
 }
 
-export interface WalletFlowEvent {
-  readonly creditsDelta: number | null;
-  readonly payload: unknown;
+/** One SQL group: credits that entered / left wallets for one reason head (`repair.start`, …). */
+export interface WalletFlowRow {
+  readonly reason: string;
+  readonly entering: number;
+  readonly leaving: number;
 }
 
 export interface WalletFlows {
-  /** Credits minted into player wallets in the window (sum of positive deltas). */
+  /** Credits earned or minted by the game's own mechanics (support adjustments excluded). */
   readonly entering: number;
-  /** Credits removed from player wallets in the window (sum of |negative deltas|). */
+  /** Credits spent or removed by the game's own mechanics (support adjustments excluded). */
   readonly leaving: number;
   /** entering − leaving: positive means inflation. */
   readonly net: number;
   readonly sources: NamedTotal[];
   readonly sinks: NamedTotal[];
+  /** Manual support adjustments (grant / remove / reset / clear-balance): NOT organic flow. */
+  readonly adjustments: { readonly granted: number; readonly removed: number };
 }
 
-/** Wallet reasons are dynamic (`repair.start:{shipId}`, `mission:{id}:payout`, …) — bucket
- * them onto the stable category names the economy screen displays. */
+/** Buckets a reason (dynamic ids already stripped in SQL, but tolerated here) onto a stable category. */
 export function normalizeWalletReason(reason: string): string {
-  if (reason.startsWith('mission:') && reason.endsWith(':payout')) return 'mission.payout';
-  if (reason === 'onboarding starter credits') return 'onboarding';
+  if (/^mission:[^:]+:payout$/.test(reason)) return 'mission.payout';
+  if (reason.startsWith('onboarding')) return 'onboarding';
   const head = reason.split(':')[0] ?? reason;
-  switch (head) {
-    case 'repair.start':
-      return 'repair';
-    case 'market.sell':
-    case 'market.sell_material':
-      return 'market.sell';
-    default:
-      return head;
-  }
+  if (head === 'repair.start') return 'repair';
+  if (head.startsWith('market.sell')) return 'market.sell';
+  return head;
 }
 
-function payloadReason(payload: unknown): string {
-  if (typeof payload === 'object' && payload !== null && 'reason' in payload) {
-    const reason = (payload as { reason?: unknown }).reason;
-    if (typeof reason === 'string') return reason;
-  }
-  return 'unknown';
-}
+const SUPPORT_REASON_PREFIX = 'support.';
 
 function toSortedTotals(totals: Map<string, number>): NamedTotal[] {
   return [...totals.entries()]
@@ -61,21 +52,31 @@ function toSortedTotals(totals: Map<string, number>): NamedTotal[] {
     .sort((a, b) => b.total - a.total || a.reason.localeCompare(b.reason));
 }
 
-export function sumWalletFlows(events: readonly WalletFlowEvent[]): WalletFlows {
+/**
+ * Folds SQL-grouped wallet rows into the economy screen: organic flow (sources/sinks) is kept
+ * apart from support adjustments, so an admin grant never shows up as game inflation.
+ */
+export function sumWalletFlows(rows: readonly WalletFlowRow[]): WalletFlows {
   const sourceTotals = new Map<string, number>();
   const sinkTotals = new Map<string, number>();
   let entering = 0;
   let leaving = 0;
-  for (const event of events) {
-    const delta = event.creditsDelta ?? 0;
-    const reason = normalizeWalletReason(payloadReason(event.payload));
-    if (delta > 0) {
-      entering += delta;
-      sourceTotals.set(reason, (sourceTotals.get(reason) ?? 0) + delta);
-    } else if (delta < 0) {
-      const amount = -delta;
-      leaving += amount;
-      sinkTotals.set(reason, (sinkTotals.get(reason) ?? 0) + amount);
+  let granted = 0;
+  let removed = 0;
+  for (const row of rows) {
+    const reason = normalizeWalletReason(row.reason);
+    if (reason.startsWith(SUPPORT_REASON_PREFIX)) {
+      granted += row.entering;
+      removed += row.leaving;
+      continue;
+    }
+    if (row.entering > 0) {
+      entering += row.entering;
+      sourceTotals.set(reason, (sourceTotals.get(reason) ?? 0) + row.entering);
+    }
+    if (row.leaving > 0) {
+      leaving += row.leaving;
+      sinkTotals.set(reason, (sinkTotals.get(reason) ?? 0) + row.leaving);
     }
   }
   return {
@@ -84,6 +85,7 @@ export function sumWalletFlows(events: readonly WalletFlowEvent[]): WalletFlows 
     net: entering - leaving,
     sources: toSortedTotals(sourceTotals),
     sinks: toSortedTotals(sinkTotals),
+    adjustments: { granted, removed },
   };
 }
 
@@ -97,18 +99,19 @@ export interface MissionOutcomeCounts {
   readonly successRate: number;
 }
 
+export interface OutcomeRow {
+  readonly outcome: string;
+  readonly count: number;
+}
+
 /** MissionLog.outcome union from mission.resolver.ts: 'success' | 'failed' | 'adrift' | 'partial_failure'. */
-export function summarizeOutcomes(outcomes: readonly string[]): MissionOutcomeCounts {
-  let success = 0;
-  let partialFailure = 0;
-  let failed = 0;
-  let adrift = 0;
-  for (const outcome of outcomes) {
-    if (outcome === 'success') success += 1;
-    else if (outcome === 'partial_failure') partialFailure += 1;
-    else if (outcome === 'failed') failed += 1;
-    else if (outcome === 'adrift') adrift += 1;
-  }
+export function summarizeOutcomes(rows: readonly OutcomeRow[]): MissionOutcomeCounts {
+  const count = (name: string): number =>
+    rows.filter((row) => row.outcome === name).reduce((sum, row) => sum + row.count, 0);
+  const success = count('success');
+  const partialFailure = count('partial_failure');
+  const failed = count('failed');
+  const adrift = count('adrift');
   const total = success + partialFailure + failed + adrift;
   return {
     total,
@@ -130,31 +133,11 @@ export interface CombatSummary {
 }
 
 /**
- * MissionLog.legs stores `{ legs, events }` (resolve.service / D36). combat_win and
- * combat_loss carry `actors.enemy`; leg.resolver only ever emits those for pirate fights,
- * so counting `enemy === 'pirate'` keeps PvP (pvp_encounter) out of the sweep baseline.
+ * Pirate fights are counted in SQL (`combat_win` / `combat_loss` events whose `actors.enemy` is
+ * `pirate` — PvP `pvp_encounter` markers never count toward the sweep baseline); this only turns
+ * the two counts into the screen's numbers.
  */
-export function summarizeCombat(legsBlobs: readonly unknown[]): CombatSummary {
-  let wins = 0;
-  let losses = 0;
-  for (const blob of legsBlobs) {
-    if (typeof blob !== 'object' || blob === null) continue;
-    const events = (blob as { events?: unknown }).events;
-    if (!Array.isArray(events)) continue;
-    for (const raw of events) {
-      if (typeof raw !== 'object' || raw === null) continue;
-      const type = (raw as { type?: unknown }).type;
-      if (type !== 'combat_win' && type !== 'combat_loss') continue;
-      const actors = (raw as { actors?: unknown }).actors;
-      const enemy =
-        typeof actors === 'object' && actors !== null
-          ? (actors as { enemy?: unknown }).enemy
-          : undefined;
-      if (enemy !== 'pirate') continue;
-      if (type === 'combat_win') wins += 1;
-      else losses += 1;
-    }
-  }
+export function summarizeCombat(wins: number, losses: number): CombatSummary {
   const encounters = wins + losses;
   return {
     encounters,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { summarizeCombat, summarizeZones, type ZoneTraffic } from './analytics.helpers.js';
+import { countPirateFights } from './analytics.queries.js';
 import type { AnalyticsWindow } from './window.js';
 
 export interface RouteTraffic {
@@ -26,7 +27,7 @@ export class WorldService {
 
   async summary(window: AnalyticsWindow): Promise<WorldSummary> {
     const range = { gte: window.from, lte: window.to };
-    const [traffic, logs, generated, consumed, locations] = await Promise.all([
+    const [traffic, fights, generated, consumed, locations] = await Promise.all([
       this.prisma.$queryRaw<RouteTraffic[]>`
         SELECT p."routeId" AS "routeId", COUNT(*)::int AS "crossings"
         FROM "RoutePresence" p
@@ -37,10 +38,7 @@ export class WorldService {
         GROUP BY p."routeId"
         ORDER BY "crossings" DESC, p."routeId" ASC
       `,
-      this.prisma.missionLog.findMany({
-        where: { createdAt: range },
-        select: { legs: true },
-      }),
+      countPirateFights(this.prisma, window),
       this.prisma.missionInstance.groupBy({
         by: ['originId'],
         where: { createdAt: range },
@@ -56,7 +54,7 @@ export class WorldService {
     const zoneByOrigin = new Map(locations.map((location) => [location.id, location.zone]));
     return {
       traffic,
-      encounters: summarizeCombat(logs.map((log) => log.legs)).encounters,
+      encounters: summarizeCombat(fights.wins, fights.losses).encounters,
       zones: summarizeZones(
         generated.map((row) => ({ originId: row.originId, count: row._count._all })),
         consumed.map((row) => ({ originId: row.originId, count: row._count._all })),

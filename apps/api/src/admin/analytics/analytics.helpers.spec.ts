@@ -9,19 +9,6 @@ import {
   tierHistogram,
 } from './analytics.helpers.js';
 
-const combatEvent = (type: string, enemy: string) => ({
-  leg: 0,
-  category: 'combat',
-  type,
-  actors: { enemy },
-  magnitude: 1,
-});
-
-const storedLegs = (...events: unknown[]) => ({
-  legs: [{ index: 0, status: 'completed' }],
-  events,
-});
-
 describe('normalizeWalletReason (S11.3)', () => {
   it('buckets dynamic wallet reasons onto stable categories', () => {
     expect(normalizeWalletReason('repair.start:ship-1')).toBe('repair');
@@ -38,13 +25,15 @@ describe('normalizeWalletReason (S11.3)', () => {
 describe('sumWalletFlows (S11.3)', () => {
   it('splits entering vs leaving with per-reason breakdowns sorted by total', () => {
     const flows = sumWalletFlows([
-      { creditsDelta: 100, payload: { reason: 'onboarding starter credits' } },
-      { creditsDelta: 50, payload: { reason: 'mission:m1:payout' } },
-      { creditsDelta: -30, payload: { reason: 'repair.start:s1' } },
-      { creditsDelta: -10, payload: { reason: 'refuel:s1' } },
-      { creditsDelta: -5, payload: { reason: 'market.buy:l1' } },
-      { creditsDelta: null, payload: null },
+      { reason: 'onboarding starter credits', entering: 100, leaving: 0 },
+      { reason: 'mission.payout', entering: 50, leaving: 0 },
+      { reason: 'repair.start', entering: 0, leaving: 30 },
+      { reason: 'refuel', entering: 0, leaving: 10 },
+      { reason: 'market.buy', entering: 0, leaving: 5 },
+      { reason: 'support.grant', entering: 1000, leaving: 0 },
+      { reason: 'support.remove', entering: 0, leaving: 200 },
     ]);
+    expect(flows.adjustments).toEqual({ granted: 1000, removed: 200 });
     expect(flows.entering).toBe(150);
     expect(flows.leaving).toBe(45);
     expect(flows.net).toBe(105);
@@ -66,6 +55,7 @@ describe('sumWalletFlows (S11.3)', () => {
       net: 0,
       sources: [],
       sinks: [],
+      adjustments: { granted: 0, removed: 0 },
     });
   });
 });
@@ -73,7 +63,12 @@ describe('sumWalletFlows (S11.3)', () => {
 describe('summarizeOutcomes (S11.3)', () => {
   it('counts the outcome union and derives success / total', () => {
     expect(
-      summarizeOutcomes(['success', 'success', 'partial_failure', 'failed', 'adrift']),
+      summarizeOutcomes([
+        { outcome: 'success', count: 2 },
+        { outcome: 'partial_failure', count: 1 },
+        { outcome: 'failed', count: 1 },
+        { outcome: 'adrift', count: 1 },
+      ]),
     ).toEqual({
       total: 5,
       success: 2,
@@ -85,7 +80,7 @@ describe('summarizeOutcomes (S11.3)', () => {
   });
 
   it('ignores unknown outcome strings and reports 0 on an empty window', () => {
-    expect(summarizeOutcomes(['something_else'])).toEqual({
+    expect(summarizeOutcomes([{ outcome: 'something_else', count: 3 }])).toEqual({
       total: 0,
       success: 0,
       partialFailure: 0,
@@ -97,26 +92,13 @@ describe('summarizeOutcomes (S11.3)', () => {
 });
 
 describe('summarizeCombat (S11.3)', () => {
-  it('counts pirate fights only and rounds the winrate to 4 decimals', () => {
-    const summary = summarizeCombat([
-      storedLegs(
-        combatEvent('combat_win', 'pirate'),
-        combatEvent('combat_win', 'pirate'),
-        combatEvent('combat_loss', 'pirate'),
-        combatEvent('leg_travel', 'pirate'),
-        combatEvent('combat_win', 'ship-2'),
-        { type: 'pvp_encounter' },
-      ),
-      storedLegs(combatEvent('combat_loss', 'pirate')),
-      { legs: [] },
-      null,
-      'not-an-object',
-    ]);
-    expect(summary).toEqual({ encounters: 4, wins: 2, losses: 2, winrate: 0.5 });
+  it('derives encounters and the winrate rounded to 4 decimals', () => {
+    expect(summarizeCombat(2, 2)).toEqual({ encounters: 4, wins: 2, losses: 2, winrate: 0.5 });
+    expect(summarizeCombat(1, 2).winrate).toBe(0.3333);
   });
 
   it('reports zero when nothing fought', () => {
-    expect(summarizeCombat([])).toEqual({ encounters: 0, wins: 0, losses: 0, winrate: 0 });
+    expect(summarizeCombat(0, 0)).toEqual({ encounters: 0, wins: 0, losses: 0, winrate: 0 });
   });
 
   it('exposes the sweep baseline constant (GDD §17 screen A)', () => {

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module.js';
 import { PlayersModule } from '../players/players.module.js';
 import { ReportsModule } from '../reports/reports.module.js';
+import { AccountStatusCache } from '../common/guards/account-status.cache.js';
 import { AdminController } from './admin.controller.js';
 import { AdminAuditService } from './audit/admin-audit.service.js';
 import { AdminGuard } from './guards/admin.guard.js';
@@ -54,10 +55,11 @@ import { RevisionService } from './tuning/revision.service.js';
     ReplayService,
     SupportService,
     InspectorService,
+    AccountStatusCache,
   ],
   // Consumed outside this module: AuthController gates register.open on SystemFlagService,
   // the global MaintenanceGuard reads the maintenance flag, and S11.4's support actions
   // write audit rows — all without importing each other's modules (no cycles).
-  exports: [AdminAuditService, SystemFlagService, SystemNoticeService],
+  exports: [AdminAuditService, SystemFlagService, SystemNoticeService, AccountStatusCache],
 })
 export class AdminModule {}

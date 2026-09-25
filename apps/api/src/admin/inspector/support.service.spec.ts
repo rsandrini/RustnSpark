@@ -5,6 +5,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { OnboardingService } from '../../players/onboarding.service.js';
 import { InsufficientFundsError, WalletService } from '../../players/wallet.service.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
+import type { AccountStatusCache } from '../../common/guards/account-status.cache.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 import { SupportService, type SupportContext } from './support.service.js';
 
@@ -34,6 +35,8 @@ function makeFixture() {
   const shipUpdate = jest.fn<(args: unknown) => Promise<unknown>>();
   const shipUpdateMany = jest.fn<(args: unknown) => Promise<unknown>>();
   const missionUpdateMany = jest.fn<(args: unknown) => Promise<unknown>>();
+  const missionFindMany = jest.fn<(args: unknown) => Promise<unknown[]>>().mockResolvedValue([]);
+  const executeRaw = jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(0);
   const missionCount = jest.fn<(args: unknown) => Promise<number>>();
   const partDeleteMany = jest.fn<(args: unknown) => Promise<unknown>>();
   const partCount = jest.fn<(args: unknown) => Promise<number>>();
@@ -53,7 +56,12 @@ function makeFixture() {
     account: { findUnique: accountFindUnique, update: accountUpdate },
     refreshToken: { deleteMany: refreshDeleteMany },
     ship: { findFirst: shipFindFirst, update: shipUpdate, updateMany: shipUpdateMany },
-    missionInstance: { updateMany: missionUpdateMany, count: missionCount },
+    missionInstance: {
+      updateMany: missionUpdateMany,
+      count: missionCount,
+      findMany: missionFindMany,
+    },
+    $executeRaw: executeRaw,
     partInstance: { deleteMany: partDeleteMany, count: partCount },
     playerMaterial: { deleteMany: materialDeleteMany, count: materialCount },
     repairJob: { deleteMany: repairDeleteMany },
@@ -70,12 +78,19 @@ function makeFixture() {
     debitAllowingNegative: walletDebitAllowing,
   } as unknown as WalletService;
   const config = {
-    snapshot: () => ({ rules: { economy: { start_credits: 1_000 } } }),
+    snapshot: () => ({
+      rules: {
+        economy: { start_credits: 1_000 },
+        onboarding: { home_locations: { luna: 'ceres' } },
+      },
+    }),
   } as unknown as GameConfigService;
   const onboarding = { applyStarterKit } as unknown as OnboardingService;
 
   return {
-    service: new SupportService(prisma, audit, wallet, config, onboarding),
+    service: new SupportService(prisma, audit, wallet, config, onboarding, {
+      forget: jest.fn(),
+    } as unknown as AccountStatusCache),
     playerFindUnique,
     playerFindUniqueOrThrow,
     accountFindUnique,

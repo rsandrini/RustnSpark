@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -37,6 +38,7 @@ describe('admin analytics screens A–C', () => {
 
     renderWithProviders(<DashboardScreen />);
 
+    await screen.findByText(/Window:/); // data loaded (the heading is there while loading)
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByText('New players')).toBeInTheDocument();
     expect(screen.getByText('13')).toBeInTheDocument();
@@ -65,6 +67,7 @@ describe('admin analytics screens A–C', () => {
               { reason: 'repair', total: 30 },
               { reason: 'refuel', total: 15 },
             ],
+            adjustments: { granted: 700, removed: 200 },
           },
         }),
       ),
@@ -72,6 +75,7 @@ describe('admin analytics screens A–C', () => {
 
     renderWithProviders(<EconomyScreen />);
 
+    await screen.findByText(/Window:/); // data loaded (the heading is there while loading)
     expect(await screen.findByRole('heading', { name: 'Economy' })).toBeInTheDocument();
     expect(screen.getByText('Credits entering')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
@@ -105,6 +109,7 @@ describe('admin analytics screens A–C', () => {
 
     renderWithProviders(<WorldScreen />);
 
+    await screen.findByText(/Window:/); // data loaded (the heading is there while loading)
     expect(await screen.findByRole('heading', { name: 'World' })).toBeInTheDocument();
     expect(screen.getByText('3 pirate encounters')).toBeInTheDocument();
     expect(screen.getByText('route-alpha')).toBeInTheDocument();
@@ -122,5 +127,35 @@ describe('admin analytics screens A–C', () => {
     renderWithProviders(<DashboardScreen />);
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('re-queries with an explicit window when the operator picks another period', async () => {
+    const seen: URL[] = [];
+    server.use(
+      http.get('/v1/admin/analytics/economy', ({ request }) => {
+        seen.push(new URL(request.url));
+        return HttpResponse.json({
+          window,
+          data: {
+            entering: 0,
+            leaving: 0,
+            net: 0,
+            sources: [],
+            sinks: [],
+            adjustments: { granted: 0, removed: 0 },
+          },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<EconomyScreen />);
+
+    await user.selectOptions(await screen.findByLabelText('Period'), '30d');
+    await waitFor(() => {
+      const last = seen[seen.length - 1]!;
+      const days = (Date.now() - new Date(last.searchParams.get('from')!).getTime()) / 86_400_000;
+      expect(days).toBeGreaterThan(29.9);
+      expect(days).toBeLessThan(30.1);
+    });
   });
 });

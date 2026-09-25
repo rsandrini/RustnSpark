@@ -11,6 +11,7 @@ import {
   type MissionOutcomeCounts,
   type TierHistogram,
 } from './analytics.helpers.js';
+import { countActivePlayers, countPirateFights } from './analytics.queries.js';
 import type { AnalyticsWindow } from './window.js';
 
 export interface DashboardSummary {
@@ -32,13 +33,15 @@ export class DashboardService {
 
   async summary(window: AnalyticsWindow): Promise<DashboardSummary> {
     const range = { gte: window.from, lte: window.to };
-    const [newPlayers, activePlayers, logs, ships] = await Promise.all([
+    const [newPlayers, activePlayers, outcomes, fights, ships] = await Promise.all([
       this.prisma.player.count({ where: { createdAt: range } }),
-      this.prisma.playerEvent.groupBy({ by: ['playerId'], where: { at: range } }),
-      this.prisma.missionLog.findMany({
+      countActivePlayers(this.prisma, window),
+      this.prisma.missionLog.groupBy({
+        by: ['outcome'],
         where: { createdAt: range },
-        select: { outcome: true, legs: true },
+        _count: { _all: true },
       }),
+      countPirateFights(this.prisma, window),
       this.prisma.ship.findMany({
         select: {
           parts: {
@@ -56,9 +59,11 @@ export class DashboardService {
       ),
     );
     return {
-      players: { new: newPlayers, active: activePlayers.length },
-      missions: summarizeOutcomes(logs.map((log) => log.outcome)),
-      combat: { ...summarizeCombat(logs.map((log) => log.legs)), baseline: SWEEP_WINRATE_BASELINE },
+      players: { new: newPlayers, active: activePlayers },
+      missions: summarizeOutcomes(
+        outcomes.map((row) => ({ outcome: row.outcome, count: row._count._all })),
+      ),
+      combat: { ...summarizeCombat(fights.wins, fights.losses), baseline: SWEEP_WINRATE_BASELINE },
       tiers: tierHistogram(tiers),
     };
   }

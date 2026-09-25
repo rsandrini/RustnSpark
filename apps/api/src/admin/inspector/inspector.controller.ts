@@ -14,7 +14,9 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../../common/decorators/current-user.decorator.js';
+import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { ReportsService } from '../../reports/reports.service.js';
+import { AdminAuditService } from '../audit/admin-audit.service.js';
 import { AdminGuard } from '../guards/admin.guard.js';
 import { CreditsActionDto, ReasonDto } from './dto/index.js';
 import { InspectorService } from './inspector.service.js';
@@ -30,6 +32,7 @@ export class InspectorController {
     private readonly inspector: InspectorService,
     private readonly support: SupportService,
     private readonly reports: ReportsService,
+    private readonly audit: AdminAuditService,
   ) {}
 
   @Get()
@@ -37,9 +40,22 @@ export class InspectorController {
     return this.inspector.list(q);
   }
 
+  // Reading a player's account sheet exposes an email address and the whole wallet, so it leaves
+  // a trace like a write does (who looked at whom): support work is accountable both ways.
   @Get(':playerId')
-  sheet(@Param('playerId') playerId: string): Promise<Record<string, unknown>> {
-    return this.inspector.sheet(playerId);
+  async sheet(
+    @Param('playerId') playerId: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ): Promise<Record<string, unknown>> {
+    const sheet = await this.inspector.sheet(playerId);
+    await this.audit.record({
+      actor: user.accountId,
+      action: 'PLAYER_SHEET_VIEW',
+      target: playerId,
+      ip: request.ip ?? null,
+    });
+    return sheet;
   }
 
   @Get(':playerId/events')
@@ -72,6 +88,7 @@ export class InspectorController {
 
   @Post(':playerId/credits/grant')
   @HttpCode(200)
+  @Idempotent()
   grantCredits(
     @Param('playerId') playerId: string,
     @Body() dto: CreditsActionDto,
@@ -83,6 +100,7 @@ export class InspectorController {
 
   @Post(':playerId/credits/remove')
   @HttpCode(200)
+  @Idempotent()
   removeCredits(
     @Param('playerId') playerId: string,
     @Body() dto: CreditsActionDto,
@@ -98,6 +116,7 @@ export class InspectorController {
 
   @Post(':playerId/clear-balance')
   @HttpCode(200)
+  @Idempotent()
   clearBalance(
     @Param('playerId') playerId: string,
     @Body() dto: ReasonDto,
@@ -109,6 +128,7 @@ export class InspectorController {
 
   @Post(':playerId/ban')
   @HttpCode(200)
+  @Idempotent()
   ban(
     @Param('playerId') playerId: string,
     @Body() dto: ReasonDto,
@@ -120,6 +140,7 @@ export class InspectorController {
 
   @Post(':playerId/reset')
   @HttpCode(200)
+  @Idempotent()
   reset(
     @Param('playerId') playerId: string,
     @Body() dto: ReasonDto,
@@ -131,6 +152,7 @@ export class InspectorController {
 
   @Post(':playerId/ships/:shipId/unstick')
   @HttpCode(200)
+  @Idempotent()
   unstick(
     @Param('playerId') playerId: string,
     @Param('shipId') shipId: string,

@@ -141,6 +141,15 @@
     "world": "Mundo",
     "players": "Jogadores",
     "system": "Sistema",
+    "window": {
+      "label": "Período",
+      "24h": "Últimas 24 horas",
+      "7d": "Últimos 7 dias",
+      "30d": "Últimos 30 dias",
+      "custom": "Intervalo personalizado",
+      "from": "De",
+      "to": "Até"
+    },
     "windowLabel": "Janela: {{from}} – {{to}}",
     "playersNew": "Jogadores novos",
     "playersActive": "Jogadores ativos",
@@ -160,6 +169,9 @@
     "creditsEntering": "Créditos entrando",
     "creditsLeaving": "Créditos saindo",
     "creditsNet": "Saldo",
+    "adjustmentsGranted": "Concessões do suporte (não orgânico)",
+    "adjustmentsRemoved": "Remoções do suporte (não orgânico)",
+    "adjustmentsNote": "Ajustes manuais do suporte ficam fora de entrada / saída / saldo.",
     "sources": "Fontes",
     "sinks": "Ralos",
     "reason": "Motivo",
@@ -203,6 +215,14 @@
       "unstick": "Destravar nave",
       "ban": "Banir",
       "reset": "Resetar"
+    },
+    "warnings": {
+      "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
+      "remove": "Remove créditos da carteira (não pode ficar abaixo de zero).",
+      "clear": "Leva um saldo negativo de volta a zero.",
+      "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",
+      "ban": "Suspende a conta imediatamente e encerra todas as sessões. Contas de admin não podem ser banidas.",
+      "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito."
     },
     "amount": "Quantidade",
     "ship": "Nave",
@@ -331,6 +351,7 @@
     "independent": "Independente"
   },
   "ui": {
+    "dismiss": "Dispensar",
     "risk": {
       "lo": "Risco baixo",
       "md": "Risco médio",
@@ -562,6 +583,7 @@
     "UNKNOWN_FACTION": "Essa facção não é jogável.",
     "ALREADY_REPAIRING": "Esta nave já está em reparo.",
     "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
+    "ACCOUNT_BANNED": "Esta conta foi suspensa.",
     "BALANCE_NEGATIVE": "Seu saldo está negativo — ganhe créditos antes de gastar.",
     "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem.",
     "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem.",

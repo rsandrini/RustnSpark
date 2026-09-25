@@ -6,6 +6,7 @@ import type {
   InventoryItem,
   LocalizedText,
   LoginResponse,
+  SystemNoticesResponse,
   MarketListing,
   MarketResponse,
   MaterialHolding,
@@ -355,6 +356,8 @@ export const handlers = [
   http.post('/v1/auth/refresh', () => ok<RefreshResponse>({ accessToken })),
 
   http.post('/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
+
+  http.get('/v1/system/notices', () => ok<SystemNoticesResponse>({ items: [] })),
 
   http.get('/v1/players/me', () => ok<PlayerProfileResponse>(profile())),
 

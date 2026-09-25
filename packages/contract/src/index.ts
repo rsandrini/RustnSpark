@@ -653,3 +653,166 @@ export const SystemNoticesResponseSchema = z.object({
   items: z.array(SystemNoticeSchema),
 });
 export type SystemNoticesResponse = z.infer<typeof SystemNoticesResponseSchema>;
+
+// Admin (S11): analytics, system flags/notices, player inspector and support actions. Written
+// against the API responses and pinned by the API integration specs, like the player contract.
+const AnalyticsWindowSchema = z.object({ from: z.string(), to: z.string() });
+
+export const DashboardDataSchema = z.object({
+  players: z.object({ new: z.number(), active: z.number() }),
+  missions: z.object({
+    total: z.number(),
+    success: z.number(),
+    partialFailure: z.number(),
+    failed: z.number(),
+    adrift: z.number(),
+    successRate: z.number(),
+  }),
+  combat: z.object({
+    encounters: z.number(),
+    wins: z.number(),
+    losses: z.number(),
+    winrate: z.number(),
+    baseline: z.number(),
+  }),
+  tiers: z.object({ tiers: z.record(z.string(), z.number()), ships: z.number() }),
+});
+export type DashboardData = z.infer<typeof DashboardDataSchema>;
+export const DashboardResponseSchema = z.object({
+  window: AnalyticsWindowSchema,
+  data: DashboardDataSchema,
+});
+
+const NamedTotalSchema = z.object({ reason: z.string(), total: z.number() });
+export const EconomyDataSchema = z.object({
+  entering: z.number(),
+  leaving: z.number(),
+  net: z.number(),
+  sources: z.array(NamedTotalSchema),
+  sinks: z.array(NamedTotalSchema),
+  adjustments: z.object({ granted: z.number(), removed: z.number() }),
+});
+export type EconomyData = z.infer<typeof EconomyDataSchema>;
+export const EconomyResponseSchema = z.object({
+  window: AnalyticsWindowSchema,
+  data: EconomyDataSchema,
+});
+
+export const AdminWorldDataSchema = z.object({
+  traffic: z.array(z.object({ routeId: z.string(), crossings: z.number() })),
+  encounters: z.number(),
+  zones: z.array(
+    z.object({
+      zone: z.union([z.string(), z.number()]),
+      generated: z.number(),
+      consumed: z.number(),
+    }),
+  ),
+});
+export type AdminWorldData = z.infer<typeof AdminWorldDataSchema>;
+export const AdminWorldResponseSchema = z.object({
+  window: AnalyticsWindowSchema,
+  data: AdminWorldDataSchema,
+});
+
+export const SystemFlagSchema = z.object({
+  key: z.string(),
+  value: z.boolean(),
+  updatedAt: z.string(),
+  updatedBy: z.string().nullable(),
+});
+export type SystemFlag = z.infer<typeof SystemFlagSchema>;
+export const SystemFlagListSchema = z.array(SystemFlagSchema);
+
+export const AdminSystemNoticeSchema = z.object({
+  id: z.string(),
+  message: LocalizedTextSchema,
+  active: z.boolean(),
+  createdBy: z.string(),
+  createdAt: z.string(),
+  dismissedAt: z.string().nullable(),
+});
+export type AdminSystemNotice = z.infer<typeof AdminSystemNoticeSchema>;
+
+export const PlayerListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  credits: z.number(),
+  factionId: z.string().nullable(),
+  accountEmail: z.string(),
+  accountStatus: z.string(),
+});
+export type PlayerListItem = z.infer<typeof PlayerListItemSchema>;
+export const PlayerListResponseSchema = z.object({ items: z.array(PlayerListItemSchema) });
+
+export const PlayerSheetSchema = z.object({
+  account: z.object({
+    id: z.string(),
+    email: z.string(),
+    role: z.string(),
+    status: z.string(),
+    createdAt: z.string(),
+  }),
+  player: z.object({
+    id: z.string(),
+    name: z.string(),
+    credits: z.number(),
+    locale: z.string(),
+    factionId: z.string().nullable(),
+    createdAt: z.string(),
+  }),
+  ships: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      status: z.string(),
+      stance: z.string(),
+      fuel: z.number(),
+      currentLocationId: z.string().nullable(),
+    }),
+  ),
+  materials: z.array(z.object({ materialId: z.string(), quantity: z.number() })),
+  activeMissions: z.array(
+    z.object({
+      id: z.string(),
+      type: z.string(),
+      status: z.string(),
+      originId: z.string(),
+      destinationId: z.string(),
+      acceptedAt: z.string().nullable(),
+    }),
+  ),
+});
+export type PlayerSheet = z.infer<typeof PlayerSheetSchema>;
+
+export const TimelineEventSchema = z.object({
+  id: z.string(),
+  at: z.string(),
+  type: z.string(),
+  creditsDelta: z.number().nullable(),
+  payload: z.unknown(),
+});
+export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
+export const TimelinePageSchema = z.object({
+  items: z.array(TimelineEventSchema),
+  nextCursor: z.string().optional(),
+});
+export type TimelinePage = z.infer<typeof TimelinePageSchema>;
+
+export const ReplayResponseSchema = z.object({
+  missionId: z.string(),
+  rulesHash: z.string(),
+  stored: z.object({ outcome: z.string(), events: z.number() }),
+  replay: z.object({ outcome: z.string(), creditsDelta: z.number(), events: z.array(z.unknown()) }),
+  matchesStored: z.boolean(),
+  report: ReportResponseSchema,
+});
+export type ReplayResponse = z.infer<typeof ReplayResponseSchema>;
+
+export const SupportResultSchema = z.object({
+  action: z.string(),
+  target: z.string(),
+  before: z.record(z.string(), z.unknown()),
+  after: z.record(z.string(), z.unknown()),
+});
+export type SupportResult = z.infer<typeof SupportResultSchema>;

@@ -9,6 +9,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { OnboardingService } from '../../players/onboarding.service.js';
 import { WalletError, WalletService } from '../../players/wallet.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { AccountStatusCache } from '../../common/guards/account-status.cache.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 
 // Support actions (GDD §17 screen D): grant/remove credits, unstick ship, clear negative
@@ -60,6 +61,7 @@ export class SupportService {
     private readonly wallet: WalletService,
     private readonly config: GameConfigService,
     private readonly onboarding: OnboardingService,
+    private readonly accounts: AccountStatusCache,
   ) {}
 
   async grantCredits(
@@ -108,7 +110,8 @@ export class SupportService {
   }
 
   async ban(playerId: string, context: SupportContext): Promise<SupportActionResult> {
-    return this.run(playerId, context, 'SUPPORT_BAN', async (tx, player) => {
+    let bannedAccountId: string | undefined;
+    const result = await this.run(playerId, context, 'SUPPORT_BAN', async (tx, player) => {
       const account = await tx.account.findUnique({ where: { id: player.accountId } });
       if (account === null) throw new NotFoundException('account not found');
       if (account.role === 'ADMIN') {
@@ -119,8 +122,12 @@ export class SupportService {
       // Ban ends the session too: refresh tokens are deleted (both login and refresh
       // already refuse non-ACTIVE accounts, this just stops the current one sliding).
       await tx.refreshToken.deleteMany({ where: { accountId: account.id } });
+      bannedAccountId = account.id;
       return { before, after: { status: 'BANNED' } };
     });
+    // After the commit, so a request racing the transaction cannot re-cache the old status.
+    if (bannedAccountId !== undefined) this.accounts.forget(bannedAccountId);
+    return result;
   }
 
   async unstickShip(
@@ -137,7 +144,16 @@ export class SupportService {
       // The mission attached to this ship is what pins it ON_MISSION (or the ship got
       // stuck ADRIFT): expire active missions on this hull — freeing the
       // one-active-mission slot — and park the ship in port. Presences and logs stay:
-      // history is never rewritten by support.
+      // history is never rewritten by support, but presences still ahead are dropped: a ghost
+      // ship must not keep meeting other players on a route it no longer sails.
+      const pinned = await tx.missionInstance.findMany({
+        where: { shipId: ship.id, status: { in: [...ACTIVE_MISSION_STATUSES] } },
+        select: { id: true },
+      });
+      await this.dropFuturePresences(
+        tx,
+        pinned.map((mission) => mission.id),
+      );
       const detached = await tx.missionInstance.updateMany({
         where: { shipId: ship.id, status: { in: [...ACTIVE_MISSION_STATUSES] } },
         data: { status: 'EXPIRED', shipId: null },
@@ -175,13 +191,36 @@ export class SupportService {
       await tx.repairJob.deleteMany({ where: { playerId } });
       await tx.scavengeCounter.deleteMany({ where: { playerId } });
       await tx.idempotencyKey.deleteMany({ where: { playerId } });
+      const active = await tx.missionInstance.findMany({
+        where: { playerId, status: { in: [...ACTIVE_MISSION_STATUSES] } },
+        select: { id: true },
+      });
+      await this.dropFuturePresences(
+        tx,
+        active.map((mission) => mission.id),
+      );
       await tx.missionInstance.updateMany({
         where: { playerId, status: { in: [...ACTIVE_MISSION_STATUSES] } },
         data: { status: 'EXPIRED', shipId: null, playerId: null },
       });
+      // A mission merely HELD (reserved, not accepted) goes back on the board.
+      await tx.missionInstance.updateMany({
+        where: { playerId, status: 'HELD' },
+        data: { status: 'AVAILABLE', playerId: null },
+      });
+      // Back to the faction's home port, exactly where onboarding put the first hull.
+      const homeLocations = rules.onboarding.home_locations as Record<string, string>;
+      const home =
+        player.factionId !== null && Object.hasOwn(homeLocations, player.factionId)
+          ? homeLocations[player.factionId]
+          : undefined;
       await tx.ship.updateMany({
         where: { ownerPlayerId: playerId },
-        data: { status: 'IN_PORT', stance: 'NEUTRAL' },
+        data: {
+          status: 'IN_PORT',
+          stance: 'NEUTRAL',
+          ...(home !== undefined ? { currentLocationId: home } : {}),
+        },
       });
 
       // Wallet back to the onboarding grant — through the wallet so the economy
@@ -261,6 +300,18 @@ export class SupportService {
       if (error instanceof WalletError) throw walletHttpException(error);
       throw error;
     }
+  }
+
+  // Deletes the route presences of these missions that have not ended yet.
+  private async dropFuturePresences(
+    tx: Prisma.TransactionClient,
+    missionIds: readonly string[],
+  ): Promise<void> {
+    if (missionIds.length === 0) return;
+    await tx.$executeRaw`
+      DELETE FROM "RoutePresence"
+      WHERE "missionId" = ANY(${missionIds as string[]}) AND upper("window") > now()
+    `;
   }
 
   private async creditsOf(tx: Prisma.TransactionClient, playerId: string): Promise<number> {

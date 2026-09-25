@@ -141,6 +141,15 @@
     "world": "World",
     "players": "Players",
     "system": "System",
+    "window": {
+      "label": "Period",
+      "24h": "Last 24 hours",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "custom": "Custom range",
+      "from": "From",
+      "to": "To"
+    },
     "windowLabel": "Window: {{from}} – {{to}}",
     "playersNew": "New players",
     "playersActive": "Active players",
@@ -160,6 +169,9 @@
     "creditsEntering": "Credits entering",
     "creditsLeaving": "Credits leaving",
     "creditsNet": "Net",
+    "adjustmentsGranted": "Support grants (not organic)",
+    "adjustmentsRemoved": "Support removals (not organic)",
+    "adjustmentsNote": "Manual support adjustments are excluded from entering / leaving / net.",
     "sources": "Sources",
     "sinks": "Sinks",
     "reason": "Reason",
@@ -203,6 +215,14 @@
       "unstick": "Unstick ship",
       "ban": "Ban",
       "reset": "Reset"
+    },
+    "warnings": {
+      "grant": "Adds credits to the player's wallet. Recorded in the audit log.",
+      "remove": "Removes credits from the wallet (cannot go below zero).",
+      "clear": "Sets a negative balance back to zero.",
+      "unstick": "Expires the ship's active mission and parks the ship in port. Its future route presence is deleted.",
+      "ban": "Suspends the account at once and ends all sessions. Admin accounts cannot be banned.",
+      "reset": "Wipes parts, materials, repairs, missions and sessions, returns the ship to the home port and re-applies the starter kit and credits. History is kept. This cannot be undone."
     },
     "amount": "Amount",
     "ship": "Ship",
@@ -331,6 +351,7 @@
     "independent": "Independent"
   },
   "ui": {
+    "dismiss": "Dismiss",
     "risk": {
       "lo": "Low risk",
       "md": "Medium risk",
@@ -562,6 +583,7 @@
     "UNKNOWN_FACTION": "That faction is not playable.",
     "ALREADY_REPAIRING": "This ship is already being repaired.",
     "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
+    "ACCOUNT_BANNED": "This account has been suspended.",
     "BALANCE_NEGATIVE": "Your balance is negative — earn credits before spending.",
     "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build.",
     "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build.",

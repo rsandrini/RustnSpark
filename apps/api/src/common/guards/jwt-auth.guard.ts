@@ -11,9 +11,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 
 // Global guard (registered as APP_GUARD in app.module.ts, after ThrottlerGuard, R28): every
 // route is authenticated by default, except one marked @Public(). Stateless by design (R29):
-// verifies the access JWT via TokenService only, no Prisma lookup, so a banned account's
-// outstanding access tokens are accepted until they expire naturally (ban status is re-checked
-// at login/refresh, S2.3) — do not add a database call here.
+// verifies the access JWT via TokenService only, no Prisma lookup — do not add a database call
+// here. Account status (bans) is enforced by AccountStatusGuard, which runs right after.
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(

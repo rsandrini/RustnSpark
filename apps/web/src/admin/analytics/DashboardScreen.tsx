@@ -1,23 +1,33 @@
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../admin.api';
+import { useAnalyticsWindow } from './WindowPicker';
 
 // Screen A (GDD §17): players, mission success, real winrate vs the 55% sweep baseline,
 // tier distribution — all over the API's default last-7-days window.
 export function DashboardScreen() {
   const { t } = useTranslation();
+  const period = useAnalyticsWindow();
   const query = useQuery({
-    queryKey: ['admin', 'analytics', 'dashboard'],
-    queryFn: adminApi.dashboard,
+    queryKey: ['admin', 'analytics', 'dashboard', period.key],
+    queryFn: () => adminApi.dashboard(period.range()),
   });
 
-  if (query.isLoading) return <p>{t('loading')}</p>;
-  if (query.isError) return <p role="alert">{t('admin.loadError')}</p>;
+  if (query.isLoading || query.isError) {
+    return (
+      <div>
+        <h2>{t('admin.dashboard')}</h2>
+        {period.picker}
+        {query.isLoading ? <p>{t('loading')}</p> : <p role="alert">{t('admin.loadError')}</p>}
+      </div>
+    );
+  }
   const { window: bounds, data } = query.data!;
 
   return (
     <div>
       <h2>{t('admin.dashboard')}</h2>
+      {period.picker}
       <p>
         {t('admin.windowLabel', {
           from: new Date(bounds.from).toLocaleString(),

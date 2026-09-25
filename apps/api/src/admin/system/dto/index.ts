@@ -1,5 +1,7 @@
-import { IsBoolean, IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export const NOTICE_MAX_LENGTH = 500;
 
 export class SetFlagDto {
   @IsBoolean()
@@ -10,10 +12,12 @@ export class SetFlagDto {
 export class LocalizedMessageDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(NOTICE_MAX_LENGTH)
   en!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(NOTICE_MAX_LENGTH)
   'pt-BR'!: string;
 }
 
