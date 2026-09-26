@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { shipTier } from '../ships/ship-tier.js';
-import { repairCost } from './repair-cost.calculator.js';
+import { locationFactor, repairCost } from './repair-cost.calculator.js';
 
 export const REPAIR_STARTED_EVENT = 'repair.started';
 export const REPAIR_COMPLETED_EVENT = 'repair.completed';
@@ -77,8 +77,8 @@ export class RepairService {
    * between the two calls, which start() re-derives and charges at the new value).
    */
   async quote(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
-    const { cost, durationSeconds } = await this.plan(shipId, playerId, targets);
-    return { shipId, cost, durationSeconds };
+    const { cost, durationSeconds, items, fee } = await this.plan(shipId, playerId, targets);
+    return { shipId, cost, durationSeconds, items, fee };
   }
 
   private async plan(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
@@ -117,7 +117,8 @@ export class RepairService {
       if (!part) {
         throw new ConflictException({ error: 'PART_NOT_INSTALLED' });
       }
-      if (target.toCondition < part.condition) {
+      // A hair of float noise (a stored 79.999999 shown as 80) must not make a fair target invalid.
+      if (target.toCondition < part.condition - 1e-6) {
         throw new ConflictException({ error: 'INVALID_REPAIR_TARGET' });
       }
       stored.push({
@@ -161,7 +162,29 @@ export class RepairService {
     );
     const secondsPerPoint = repairSecondsPerPoint(rules, ship.location.zone);
     const durationSeconds = points * secondsPerPoint;
-    return { stored, cost, durationSeconds };
+
+    // Per-part breakdown for the repair screen: each part's own share of the price and time, and
+    // the workshop fee (the per-action maintenance charge) as whatever is left, so the lines
+    // always add up to exactly the total that start() charges.
+    const location = locationFactor(ship.location.isolation, relationKey, rules);
+    const items = stored.map((target) => {
+      const part = byId.get(target.partInstanceId)!;
+      const lost = Math.max(0, target.toCondition - target.fromCondition);
+      const itemCost = Math.round(
+        part.partCatalog.basePrice *
+          (lost / 100) *
+          rules.economy.repair_factor *
+          (rules.economy.repair_price / rules.economy.repair_price_ref) *
+          location,
+      );
+      return {
+        partInstanceId: target.partInstanceId,
+        cost: itemCost,
+        durationSeconds: lost * secondsPerPoint,
+      };
+    });
+    const fee = cost - items.reduce((sum, item) => sum + item.cost, 0);
+    return { stored, cost, durationSeconds, items, fee };
   }
 
   async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {

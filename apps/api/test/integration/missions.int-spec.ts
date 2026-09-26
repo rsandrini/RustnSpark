@@ -238,6 +238,52 @@ describe('missions accept/hold API (S6.4)', () => {
     expect(activeAfter.body).toEqual([]);
   });
 
+  it('backs out of an accepted mission before dispatch: it returns to the board and frees the player', async () => {
+    await freshSeededApp();
+    const { token, shipId } = await onboardPlayer();
+    const server = httpServer(testApp.app);
+    const mission = await createMission();
+
+    const accepted = await request(server)
+      .post(`/v1/missions/${mission.id}/accept`)
+      .set(auth(token))
+      .send({ shipId });
+    expect(accepted.status).toBe(200);
+
+    const abandoned = await request(server)
+      .post(`/v1/missions/${mission.id}/abandon`)
+      .set(auth(token));
+    expect(abandoned.status).toBe(200);
+    expect(abandoned.body).toMatchObject({
+      id: mission.id,
+      status: 'AVAILABLE',
+      playerId: null,
+      shipId: null,
+      acceptedAt: null,
+    });
+    expect((await request(server).get('/v1/missions/active').set(auth(token))).body).toEqual([]);
+
+    // A repeat is a 409 with no second effect, and the offer can be accepted again.
+    const again = await request(server).post(`/v1/missions/${mission.id}/abandon`).set(auth(token));
+    expect(again.status).toBe(404);
+    const reAccepted = await request(server)
+      .post(`/v1/missions/${mission.id}/accept`)
+      .set(auth(token))
+      .send({ shipId });
+    expect(reAccepted.status).toBe(200);
+
+    // Someone else cannot abandon it, and an in-flight mission cannot be abandoned.
+    await prisma.missionInstance.update({
+      where: { id: mission.id },
+      data: { status: 'IN_TRANSIT' },
+    });
+    const inFlight = await request(server)
+      .post(`/v1/missions/${mission.id}/abandon`)
+      .set(auth(token));
+    expect(inFlight.status).toBe(409);
+    expect(inFlight.body).toMatchObject({ message: { error: 'MISSION_NOT_ABANDONABLE' } });
+  });
+
   it('enforces hold_max = 1 across different missions', async () => {
     await freshSeededApp();
     const { token } = await onboardPlayer();

@@ -452,6 +452,10 @@ export const handlers = [
     }
     return HttpResponse.json(mission ?? {}, { status: 200 });
   }),
+  http.post('/v1/missions/:id/abandon', () => {
+    activeState = null;
+    return HttpResponse.json({ status: 'AVAILABLE' }, { status: 200 });
+  }),
   http.delete('/v1/missions/:id/hold', ({ params }) => {
     const mission = boardState.find((offer) => offer.id === params.id);
     if (mission !== undefined) {
@@ -694,10 +698,18 @@ export const handlers = [
         { status: 409 },
       );
     }
+    const cost = repairCostOf(targets);
+    const items = targets.map((target) => ({
+      partInstanceId: target.partInstanceId,
+      cost: repairCostOf([target]),
+      durationSeconds: 5,
+    }));
     return ok<RepairQuoteResponse>({
       shipId: String(params.id),
-      cost: repairCostOf(targets),
-      durationSeconds: 30,
+      cost,
+      durationSeconds: items.length * 5,
+      items,
+      fee: cost - items.reduce((sum, item) => sum + item.cost, 0),
     });
   }),
   http.post('/v1/ships/:id/repair', async ({ params, request }) => {

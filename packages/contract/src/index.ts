@@ -501,6 +501,11 @@ export const RepairQuoteResponseSchema = z.object({
   shipId: z.string(),
   cost: z.number(),
   durationSeconds: z.number(),
+  /** Each target's own price and time; `fee` is the workshop charge, so items + fee = cost. */
+  items: z.array(
+    z.object({ partInstanceId: z.string(), cost: z.number(), durationSeconds: z.number() }),
+  ),
+  fee: z.number(),
 });
 export type RepairQuoteResponse = z.infer<typeof RepairQuoteResponseSchema>;
 

@@ -240,4 +240,31 @@ describe('transit (S10.7)', () => {
       '/report/m-9',
     );
   });
+
+  it('lets the pilot back out: cancel an accepted mission, release a held one', async () => {
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByText('Mission accepted — ready for departure.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel mission' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Cancel mission' })).toBeNull(),
+    );
+    expect(screen.queryByText('Mission accepted — ready for departure.')).toBeNull();
+  });
+
+  it('offers Release on a held mission', async () => {
+    let released = 0;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([{ ...mission(), status: 'HELD' }], { status: 200 }),
+      ),
+      http.delete('/v1/missions/:id/hold', () => {
+        released += 1;
+        return HttpResponse.json({ status: 'AVAILABLE' }, { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const held = await screen.findByTestId('held');
+    fireEvent.click(within(held).getByRole('button', { name: 'Release' }));
+    await waitFor(() => expect(released).toBe(1));
+  });
 });

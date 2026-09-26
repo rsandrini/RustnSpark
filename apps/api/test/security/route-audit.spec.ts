@@ -41,6 +41,8 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'GET /v1/locations/:id/scavenge': 'world odds plus the caller’s own attempt counter only',
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
   'POST /v1/missions/:id/accept': 'service checks holder/private owner against the caller',
+  'POST /v1/missions/:id/abandon':
+    'service only lets the accepting player back out (404 otherwise)',
   'POST /v1/missions/:id/hold': 'service checks the mission is takeable by the caller',
   'DELETE /v1/missions/:id/hold': 'service releases only the caller’s own hold',
   'GET /v1/reports/:missionId': 'service scopes the log by the caller’s playerId (404 otherwise)',
@@ -51,6 +53,7 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
   'POST /v1/locations/:id/scavenge',
+  'POST /v1/missions/:id/abandon',
   'POST /v1/missions/:id/hold',
   'DELETE /v1/missions/:id/hold',
   'POST /v1/ships/:id/rescue',

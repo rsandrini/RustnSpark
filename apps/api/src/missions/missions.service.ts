@@ -20,6 +20,7 @@ import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
+import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import { checkMissionRequirements } from './requirements.checker.js';
@@ -297,6 +298,37 @@ export class MissionsService implements OnModuleInit {
       }
       return tx.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
     });
+  }
+
+  /**
+   * Backs out of an accepted mission that has not left port: it returns to the board (or expires,
+   * if its offer window closed meanwhile) and the reward goes back to the provisional estimate.
+   * Once dispatched it is a flight, not an offer, so this refuses with a 409.
+   */
+  async abandon(missionId: string, playerId: string): Promise<MissionInstance> {
+    const { rules } = this.config.snapshot();
+    const mission = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
+    if (!mission || mission.playerId !== playerId) throw new NotFoundException('mission not found');
+    if (mission.status !== 'ACCEPTED') {
+      throw new ConflictException({ error: 'MISSION_NOT_ABANDONABLE' });
+    }
+
+    const expired = mission.expiresAt.getTime() <= Date.now();
+    const updated = await this.prisma.missionInstance.updateMany({
+      where: { id: mission.id, playerId, status: 'ACCEPTED' },
+      data: {
+        status: expired ? 'EXPIRED' : 'AVAILABLE',
+        playerId: null,
+        shipId: null,
+        acceptedAt: null,
+        reward: missionReward(mission, PROVISIONAL_TIER, rules),
+        version: { increment: 1 },
+      },
+    });
+    if (updated.count === 0) {
+      throw new ConflictException({ error: 'MISSION_NOT_ABANDONABLE' });
+    }
+    return this.prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
   }
 
   async release(missionId: string, playerId: string): Promise<MissionInstance> {

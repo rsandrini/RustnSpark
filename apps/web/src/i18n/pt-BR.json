@@ -444,7 +444,7 @@
     "repairAll": "Reparar tudo",
     "repairSlider": "Reparar para {{value}}%",
     "repairStart": "Iniciar reparo",
-    "repairStarted": "Reparo iniciado por {{cost}} ¢ — conclui em {{seconds}}s.",
+    "repairStarted": "Reparo iniciado por {{cost}} ¢ — termina em {{time}}.",
     "repairLoading": "Encomendando reparos…",
     "refuelGauge": "Combustível {{fuel}} / {{cap}}",
     "refuelFill": "Encher o tanque",
@@ -454,7 +454,7 @@
     "scavFound": "Salvou: {{part}} (condição {{condition}}).",
     "scavNone": "Nada aproveitável — tente de novo em {{seconds}}s.",
     "scavBusy": "Você já está vasculhando.",
-    "repairQuote": "Custo do reparo: {{cost}} ¢ · {{seconds}} s",
+    "repairQuote": "Custo do reparo: {{cost}} ¢ · {{time}}",
     "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
     "noShip": "Você não tem uma nave.",
@@ -479,7 +479,14 @@
         "mission": "um local de missão",
         "pirate": "um campo de destroços pirata"
       }
-    }
+    },
+    "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
+    "repairNoChange": "Sem mudança",
+    "repairNothingSelected": "Nada selecionado ainda: mova um controle ou ponha tudo em 100%.",
+    "repairFee": "Taxa da oficina",
+    "repairTotal": "Total",
+    "repairAllTo100": "Tudo em 100%",
+    "repairReset": "Voltar ao atual"
   },
   "inventory": {
     "title": "Inventário",
@@ -567,7 +574,8 @@
       "legs": "Trechos",
       "danger": "Perigo",
       "zone": "Zona"
-    }
+    },
+    "cancelMission": "Cancelar missão"
   },
   "board": {
     "title": "Quadro de missões",
@@ -684,7 +692,7 @@
     "INVALID_LIMIT": "Tamanho de página inválido.",
     "INVALID_LISTING": "Essa oferta não está mais disponível.",
     "INVALID_QUANTITY": "Quantidade inválida.",
-    "INVALID_REPAIR_TARGET": "Um alvo de reparo é inválido.",
+    "INVALID_REPAIR_TARGET": "Esse reparo ficaria abaixo da condição atual da peça. Recarregue a aba de reparo e tente de novo.",
     "MAINTENANCE": "O jogo está em manutenção. Tente novamente em breve.",
     "MISSION_EXPIRED": "Esta missão expirou.",
     "MISSION_MALFORMED": "Esta missão está malformada.",
@@ -711,7 +719,8 @@
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "RATE_LIMITED": "Requisições demais — aguarde um instante.",
     "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
-    "LISTING_SOLD": "Essa peça usada acabou de ser vendida."
+    "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
+    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada."
   },
   "language": {
     "label": "Idioma"
@@ -851,5 +860,10 @@
       "body": "Nada está instalado ainda, então a nave não pode aceitar missões. Monte seu kit inicial no Hangar primeiro.",
       "action": "Ir ao Hangar"
     }
+  },
+  "duration": {
+    "s": "{{s}}s",
+    "ms": "{{m}}min {{s}}s",
+    "hm": "{{h}}h {{m}}min"
   }
 }

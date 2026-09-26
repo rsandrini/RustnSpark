@@ -55,6 +55,12 @@ export class MissionsController {
     return this.missions.hold(missionId, user.playerId);
   }
 
+  @Post('missions/:id/abandon')
+  @HttpCode(HttpStatus.OK)
+  abandon(@CurrentUser() user: CurrentUserPayload, @Param('id') missionId: string) {
+    return this.missions.abandon(missionId, user.playerId);
+  }
+
   @Delete('missions/:id/hold')
   @HttpCode(HttpStatus.OK)
   releaseHold(@CurrentUser() user: CurrentUserPayload, @Param('id') missionId: string) {

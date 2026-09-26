@@ -27,6 +27,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'conditional ACCEPTED→IN_TRANSIT and IN_PORT→ON_MISSION updates: a repeat is a 409 with no second effect',
   'POST /v1/locations/:id/scavenge':
     'per-location cooldown (D28): a repeat inside the window is a 409 SCAVENGE_COOL_DOWN with no second roll',
+  'POST /v1/missions/:id/abandon':
+    'conditional ACCEPTED→AVAILABLE update: a repeat is a 409 with no second effect',
   'POST /v1/missions/:id/hold': 'holding what you already hold is a no-op',
   'DELETE /v1/missions/:id/hold': 'releasing an already released hold is a no-op',
   'POST /v1/admin/tuning/bundle':

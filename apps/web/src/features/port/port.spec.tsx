@@ -96,21 +96,38 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,844 ¢'));
   });
 
-  it('repairs every damaged installed part from the repair tab', async () => {
+  it('repair starts at the current state, prices each part and the total, then charges once', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
-    expect(screen.getAllByRole('slider')).toHaveLength(6);
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders).toHaveLength(6);
+    // Nothing is selected by default: every slider sits at the part's current condition.
+    for (const slider of sliders) {
+      expect((slider as HTMLInputElement).value).toBe((slider as HTMLInputElement).min);
+    }
+    const summary = screen.getByTestId('repair-summary');
+    expect(summary).toHaveTextContent('Nothing selected yet');
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Repair all' }));
-    // The exact cost is quoted by the server and confirmed before anything is charged.
+    // One click sets everything to 100 %: each row shows its own price and time, then a total.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(
+      screen.getAllByTestId('repair-line').every((line) => /¢/.test(line.textContent ?? '')),
+    ).toBe(true);
+
+    // ...and "Back to current" undoes it without repairing anything.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
+    expect(screen.getByTestId('repair-summary')).toHaveTextContent('Nothing selected yet');
+    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+
+    fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
     const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
-    expect(popup).toHaveTextContent('Repair cost: 1188 ¢ · 30 s');
     expect(economyState.wallet).toBe(4820);
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Repair started for 1188 ¢ — completes in 30s.',
-    );
+    expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('3,632 ¢'));
   });
 

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
@@ -24,6 +24,7 @@ import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
+import { formatDuration } from '../../ui/duration';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PortTabs } from '../../ui/PortTabs';
 import { MarketPanel } from '../market/market-panel';
@@ -98,6 +99,33 @@ export function PortPage({ guided = false }: PortPageProps) {
     queryKey: ['scavenge', locationId],
     enabled: locationId !== undefined && tab === 'scavenging',
     queryFn: () => client.get<ScavengeInfo>(`/v1/locations/${locationId ?? ''}/scavenge`),
+  });
+  // The repair plan: only parts the pilot moved past their current condition are repaired.
+  const damagedInstalled = useMemo(
+    () =>
+      (inventoryQuery.data ?? []).filter(
+        (entry) => entry.location === 'INSTALLED' && entry.condition < 100,
+      ),
+    [inventoryQuery.data],
+  );
+  const changedTargets = useMemo<RepairTarget[]>(
+    () =>
+      damagedInstalled.flatMap((item) => {
+        const target = repairTargets[item.id];
+        return target !== undefined && target > item.condition
+          ? [{ partInstanceId: item.id, toCondition: target }]
+          : [];
+      }),
+    [damagedInstalled, repairTargets],
+  );
+  const repairQuoteQuery = useQuery({
+    queryKey: ['repairQuote', ship?.id, changedTargets],
+    enabled: tab === 'repair' && ship !== undefined && changedTargets.length > 0,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      client.post<RepairQuoteResponse>(`/v1/ships/${ship?.id ?? ''}/repair/quote`, {
+        targets: changedTargets,
+      }),
   });
   const worldQuery = useQuery({
     queryKey: ['world'],
@@ -186,21 +214,9 @@ export function PortPage({ guided = false }: PortPageProps) {
     onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
   });
 
-  // Repair is priced by the server before it is charged: the player sees the exact cost
-  // and duration in a confirmation, and only then does the paying request go out.
-  const repairQuote = useMutation({
-    mutationFn: (targets: RepairTarget[]) =>
-      client
-        .post<RepairQuoteResponse>(`/v1/ships/${ship?.id ?? ''}/repair/quote`, { targets })
-        .then((quote) => ({ targets, quote })),
-    onSuccess: ({ targets, quote }) => {
-      setActionError(null);
-      setNotice(null);
-      setRepairPlan({ targets, cost: quote.cost, seconds: quote.durationSeconds });
-    },
-    onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
-  });
-
+  // Repair is priced by the server before it is charged. The quote is asked for every time the
+  // plan changes (per-part price and time plus the workshop fee), so the screen always shows
+  // exactly what start will charge; only the paying request carries an Idempotency-Key.
   const repair = useMutation({
     mutationFn: (targets: RepairTarget[]) =>
       client.post<RepairStartResponse>(
@@ -215,7 +231,7 @@ export function PortPage({ guided = false }: PortPageProps) {
       setNotice(
         t('port.repairStarted', {
           cost: response.cost,
-          seconds: response.durationSeconds,
+          time: formatDuration(response.durationSeconds, t),
         }),
       );
       afterTrade();
@@ -308,11 +324,6 @@ export function PortPage({ guided = false }: PortPageProps) {
         expectedPrice: confirm.price,
       });
     }
-  };
-
-  const startRepair = (targets: RepairTarget[]) => {
-    if (targets.length === 0) return;
-    repairQuote.mutate(targets);
   };
 
   // When the next attempt opens, on the server clock (the info endpoint says how long is left).
@@ -455,12 +466,19 @@ export function PortPage({ guided = false }: PortPageProps) {
       )}
 
       {tab === 'repair' && (
-        <section className="stack">
+        <section className="stack" data-testid="repair">
           {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
+          {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
           <div className="repair-list">
             {damaged.map((item) => {
-              const target = repairTargets[item.id] ?? 100;
               const condition = Math.round(item.condition);
+              // The slider starts at the part's current state; nothing is repaired until it moves.
+              const floor = Math.ceil(item.condition);
+              const target = repairTargets[item.id] ?? floor;
+              const changed = target > item.condition;
+              const line = repairQuoteQuery.data?.items.find(
+                (entry) => entry.partInstanceId === item.id,
+              );
               const name = partName(item);
               // Two identical parts (two Cargo Holds) are told apart by a stable number.
               const same = damaged.filter((entry) => partName(entry) === name);
@@ -475,22 +493,22 @@ export function PortPage({ guided = false }: PortPageProps) {
                   <Gauge
                     value={condition}
                     max={100}
-                    planned={target}
+                    planned={changed ? target : undefined}
                     tone={conditionTone(condition)}
-                    ariaLabel={`${name}${suffix}: ${t('port.conditionNow', { value: condition })}`}
+                    ariaLabel={`${rowName}: ${t('port.conditionNow', { value: condition })}`}
                     label={
-                      target > condition
+                      changed
                         ? t('port.conditionToTarget', { from: condition, to: target })
                         : t('port.conditionNow', { value: condition })
                     }
                   />
                   <input
                     type="range"
-                    min={condition}
+                    min={floor}
                     max={100}
                     step={1}
                     value={target}
-                    aria-label={`${name}${suffix} ${t('port.repairSlider', { value: target })}`}
+                    aria-label={`${rowName} ${t('port.repairSlider', { value: target })}`}
                     onChange={(event) =>
                       setRepairTargets((current) => ({
                         ...current,
@@ -498,37 +516,84 @@ export function PortPage({ guided = false }: PortPageProps) {
                       }))
                     }
                   />
+                  <div className="rcost" data-testid="repair-line">
+                    {changed && line !== undefined
+                      ? [money(line.cost), formatDuration(line.durationSeconds, t)].join(' · ')
+                      : changed
+                        ? t('loading')
+                        : t('port.repairNoChange')}
+                  </div>
                 </div>
               );
             })}
           </div>
-          <div className="row-between">
-            <button
-              type="button"
-              className="btn"
-              disabled={damaged.length === 0 || repair.isPending || repairQuote.isPending}
-              onClick={() =>
-                startRepair(
-                  damaged.map((item) => ({
-                    partInstanceId: item.id,
-                    toCondition: repairTargets[item.id] ?? 100,
-                  })),
-                )
-              }
-            >
-              {t('port.repairStart')}
-            </button>
-            <button
-              type="button"
-              className="btn primary"
-              disabled={damaged.length === 0 || repair.isPending || repairQuote.isPending}
-              onClick={() =>
-                startRepair(damaged.map((item) => ({ partInstanceId: item.id, toCondition: 100 })))
-              }
-            >
-              {t('port.repairAll')}
-            </button>
-          </div>
+
+          {damaged.length > 0 && (
+            <div className="panel repair-summary" data-testid="repair-summary">
+              {changedTargets.length === 0 ? (
+                <p className="sub">{t('port.repairNothingSelected')}</p>
+              ) : repairQuoteQuery.data === undefined ? (
+                <p className="sub">{t('loading')}</p>
+              ) : (
+                <>
+                  <div className="statrow">
+                    <span>{t('port.repairFee')}</span>
+                    <b>{money(repairQuoteQuery.data.fee)}</b>
+                  </div>
+                  <div className="statrow total">
+                    <span>{t('port.repairTotal')}</span>
+                    <b data-testid="repair-total">
+                      {[
+                        money(repairQuoteQuery.data.cost),
+                        formatDuration(repairQuoteQuery.data.durationSeconds, t),
+                      ].join(' · ')}
+                    </b>
+                  </div>
+                </>
+              )}
+              <div className="row-between" style={{ marginTop: 10 }}>
+                <span className="stack-h">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      setRepairTargets(Object.fromEntries(damaged.map((entry) => [entry.id, 100])))
+                    }
+                  >
+                    {t('port.repairAllTo100')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={changedTargets.length === 0}
+                    onClick={() => setRepairTargets({})}
+                  >
+                    {t('port.repairReset')}
+                  </button>
+                </span>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={
+                    changedTargets.length === 0 ||
+                    repairQuoteQuery.data === undefined ||
+                    repair.isPending
+                  }
+                  onClick={() => {
+                    const quote = repairQuoteQuery.data;
+                    if (quote === undefined) return;
+                    setRepairPlan({
+                      targets: changedTargets,
+                      cost: quote.cost,
+                      seconds: quote.durationSeconds,
+                    });
+                  }}
+                >
+                  {t('port.repairStart')}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -621,7 +686,12 @@ export function PortPage({ guided = false }: PortPageProps) {
       >
         {repairPlan !== null && (
           <div className="stack">
-            <p>{t('port.repairQuote', { cost: repairPlan.cost, seconds: repairPlan.seconds })}</p>
+            <p>
+              {t('port.repairQuote', {
+                cost: repairPlan.cost,
+                time: formatDuration(repairPlan.seconds, t),
+              })}
+            </p>
             {wallet < repairPlan.cost && <p className="error-text">{t('port.insufficient')}</p>}
             <button
               type="button"

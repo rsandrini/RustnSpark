@@ -324,8 +324,17 @@ describe('repair job API (S8.4)', () => {
       .set(auth(player.token))
       .send({ targets });
     expect(quoted.status).toBe(200);
-    const quote = quoted.body as { cost: number; durationSeconds: number };
+    const quote = quoted.body as {
+      cost: number;
+      durationSeconds: number;
+      fee: number;
+      items: Array<{ partInstanceId: string; cost: number; durationSeconds: number }>;
+    };
     expect(quote.durationSeconds).toBe(50 * 3);
+    // The per-part lines plus the workshop fee are exactly the total that start() charges.
+    expect(quote.items).toHaveLength(1);
+    expect(quote.items[0]).toMatchObject({ partInstanceId: part.id, durationSeconds: 50 * 3 });
+    expect(quote.items.reduce((sum, item) => sum + item.cost, 0) + quote.fee).toBe(quote.cost);
     expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
     const unchanged = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },

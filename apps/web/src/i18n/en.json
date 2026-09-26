@@ -444,7 +444,7 @@
     "repairAll": "Repair all",
     "repairSlider": "Repair to {{value}}%",
     "repairStart": "Start repair",
-    "repairStarted": "Repair started for {{cost}} ¢ — completes in {{seconds}}s.",
+    "repairStarted": "Repair started for {{cost}} ¢ — completes in {{time}}.",
     "repairLoading": "Ordering repairs…",
     "refuelGauge": "Fuel {{fuel}} / {{cap}}",
     "refuelFill": "Fill tank",
@@ -454,7 +454,7 @@
     "scavFound": "Salvaged: {{part}} (condition {{condition}}).",
     "scavNone": "Nothing salvageable — try again in {{seconds}}s.",
     "scavBusy": "You are already scavenging.",
-    "repairQuote": "Repair cost: {{cost}} ¢ · {{seconds}} s",
+    "repairQuote": "Repair cost: {{cost}} ¢ · {{time}}",
     "repairConfirmTitle": "Repair for {{cost}} ¢?",
     "repairConfirm": "Start repair",
     "noShip": "You have no ship.",
@@ -479,7 +479,14 @@
         "mission": "a mission site",
         "pirate": "a pirate-held debris field"
       }
-    }
+    },
+    "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
+    "repairNoChange": "No change",
+    "repairNothingSelected": "Nothing selected yet: move a slider, or set everything to 100%.",
+    "repairFee": "Workshop fee",
+    "repairTotal": "Total",
+    "repairAllTo100": "Set all to 100%",
+    "repairReset": "Back to current"
   },
   "inventory": {
     "title": "Inventory",
@@ -567,7 +574,8 @@
       "legs": "Legs",
       "danger": "Danger",
       "zone": "Zone"
-    }
+    },
+    "cancelMission": "Cancel mission"
   },
   "board": {
     "title": "Mission board",
@@ -684,7 +692,7 @@
     "INVALID_LIMIT": "Invalid page size.",
     "INVALID_LISTING": "That offer is no longer listed.",
     "INVALID_QUANTITY": "Invalid quantity.",
-    "INVALID_REPAIR_TARGET": "A repair target is invalid.",
+    "INVALID_REPAIR_TARGET": "That repair would go below the part’s current condition. Reload the repair tab and try again.",
     "MAINTENANCE": "The game is down for maintenance. Try again shortly.",
     "MISSION_EXPIRED": "This mission has expired.",
     "MISSION_MALFORMED": "This mission is malformed.",
@@ -711,7 +719,8 @@
     "VALIDATION_ERROR": "Some fields are invalid.",
     "RATE_LIMITED": "Too many requests — slow down for a moment.",
     "UNAUTHORIZED": "Your session ended — sign in again.",
-    "LISTING_SOLD": "That used part was just sold."
+    "LISTING_SOLD": "That used part was just sold.",
+    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled."
   },
   "language": {
     "label": "Language"
@@ -851,5 +860,10 @@
       "body": "Nothing is installed yet, so the ship cannot take a mission. Assemble your starter kit in the Hangar first.",
       "action": "Go to the Hangar"
     }
+  },
+  "duration": {
+    "s": "{{s}}s",
+    "ms": "{{m}}m {{s}}s",
+    "hm": "{{h}}h {{m}}m"
   }
 }

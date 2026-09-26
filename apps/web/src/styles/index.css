@@ -1813,7 +1813,10 @@ svg .block.floating {
 
 .repair-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1.2fr) minmax(160px, 2fr) minmax(110px, 1fr);
+  grid-template-columns: minmax(110px, 1.1fr) minmax(150px, 2fr) minmax(90px, 1fr) minmax(
+      120px,
+      0.9fr
+    );
   align-items: center;
   gap: 10px;
   padding: 5px 10px;
@@ -2057,4 +2060,21 @@ svg .block.cond-bad {
 .part-btn .gauge-label {
   line-height: 12px;
   font-size: 10px;
+}
+
+.repair-row .rcost {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
+.repair-summary .statrow.total {
+  font-size: 16px;
+}
+
+.stack-h {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }

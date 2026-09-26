@@ -80,6 +80,21 @@ export function TransitPage({ guided = false }: TransitPageProps) {
     },
   });
 
+  // Backing out: a held offer is released, an accepted one (not yet dispatched) is abandoned.
+  // Either way the offer returns to the board and the pilot is free to pick another.
+  const backOut = useMutation({
+    mutationFn: () =>
+      mission?.status === 'HELD'
+        ? client.delete(`/v1/missions/${mission.id}/hold`)
+        : client.post(`/v1/missions/${mission?.id ?? ''}/abandon`),
+    onSuccess: () => {
+      setActionError(null);
+      invalidateActive();
+      void queryClient.invalidateQueries({ queryKey: ['board'] });
+    },
+    onError: (error) => setActionError(errorText(t, error, t('transit.failed'))),
+  });
+
   if (
     activeQuery.isLoading ||
     shipsQuery.isLoading ||
@@ -201,9 +216,19 @@ export function TransitPage({ guided = false }: TransitPageProps) {
       {mission.status === 'HELD' ? (
         <section data-testid="held">
           <p>{t('transit.held')}</p>
-          <Link className="btn primary" to="/board">
-            {t('board.title')}
-          </Link>
+          <div className="actions">
+            <Link className="btn primary" to="/board">
+              {t('board.title')}
+            </Link>
+            <button
+              type="button"
+              className="btn"
+              disabled={backOut.isPending}
+              onClick={() => backOut.mutate()}
+            >
+              {t('board.release')}
+            </button>
+          </div>
         </section>
       ) : mission.status === 'RESOLVING' ? (
         <p data-testid="resolving">{t('transit.resolving')}</p>
@@ -223,6 +248,14 @@ export function TransitPage({ guided = false }: TransitPageProps) {
             onClick={() => dispatch.mutate()}
           >
             {t('transit.dispatch')}
+          </button>{' '}
+          <button
+            type="button"
+            className="btn"
+            disabled={backOut.isPending}
+            onClick={() => backOut.mutate()}
+          >
+            {t('transit.cancelMission')}
           </button>
           {ship === undefined && <p className="sub">{t('board.noShip')}</p>}
         </section>
