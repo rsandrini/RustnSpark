@@ -33,7 +33,8 @@ async function loadWorld(tx: Prisma.TransactionClient) {
       tx.routeEnvironment.findMany(),
       tx.environment.findMany(),
       tx.missionTemplate.findMany({ where: { active: true } }),
-      tx.material.findMany({ where: { active: true } }),
+      // Scrap (fixed-price materials) is a find, never something a mining offer asks you to dig.
+      tx.material.findMany({ where: { active: true, fixedPrice: false } }),
     ]);
   return { locations, routes, routeEnvironments, environments, templates, materials };
 }

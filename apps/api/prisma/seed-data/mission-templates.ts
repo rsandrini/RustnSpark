@@ -326,6 +326,19 @@ const TEMPLATES: {
     requirements: { originFactions: ['sun'], originTypes: ['garrison', 'junction'] },
   },
   {
+    // Scavenging jobs (POST /v1/locations/:id/scavenge): inactive, created by the job service.
+    id: 'scavenge_generic',
+    displayName: { en: 'Scavenging', 'pt-BR': 'Saque de destroços' },
+    description: {
+      en: 'A search of the wreckage around the port: no pay, only what you find.',
+      'pt-BR': 'Uma busca nos destroços ao redor do porto: sem pagamento, só o que você achar.',
+    },
+    type: 'SCAVENGE',
+    factionId: 'luna',
+    requirements: {},
+    active: false,
+  },
+  {
     // Pilot-requested trips (POST /v1/travel). Inactive on purpose: the board generator must
     // never offer it; the travel service creates instances from it directly.
     id: 'travel_generic',

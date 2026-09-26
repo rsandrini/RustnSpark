@@ -71,6 +71,7 @@ describe('computeReportStats', () => {
       damage: { shield: 8, armor: 3, hull: 5 },
       partFailures: 2,
       fuelLost: 7,
+      found: [],
       loot: [{ materialId: 'iron', name: 'Iron', quantity: 10 }],
     });
   });

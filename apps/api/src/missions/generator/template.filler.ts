@@ -135,7 +135,7 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
     world.templates
       .filter((template) => template.active)
       // Pilot-requested trips are never board offers.
-      .filter((template) => template.type !== 'TRAVEL')
+      .filter((template) => template.type !== 'TRAVEL' && template.type !== 'SCAVENGE')
       // A mining board offer is meaningless without a material to name.
       .filter((template) => template.type !== 'MINING' || world.materials.length > 0)
       .filter((template) => {

@@ -29,7 +29,6 @@ import {
   RescueResponseSchema,
   ScavengeInfoSchema,
   TravelQuoteSchema,
-  ScavengeResponseSchema,
   SellMaterialResponseSchema,
   SellResponseSchema,
   ShipResponseSchema,
@@ -288,7 +287,17 @@ describe('HTTP contract: real responses match packages/contract', () => {
     contract(ScavengeInfoSchema, scavengeInfo.body, 'GET /locations/:id/scavenge');
     const scavenge = await request(server).post('/v1/locations/ceres/scavenge').set(auth(token));
     expect(scavenge.status).toBe(200);
-    contract(ScavengeResponseSchema, scavenge.body, 'POST /locations/:id/scavenge');
+    contract(DispatchResponseSchema, scavenge.body, 'POST /locations/:id/scavenge');
+    // Leave the ship free for the tests that follow.
+    const jobs = await prisma.missionInstance.findMany({
+      where: { type: 'SCAVENGE' },
+      select: { id: true },
+    });
+    await prisma.routePresence.deleteMany({
+      where: { missionId: { in: jobs.map((job) => job.id) } },
+    });
+    await prisma.missionInstance.deleteMany({ where: { id: { in: jobs.map((job) => job.id) } } });
+    await prisma.ship.update({ where: { id: shipId }, data: { status: 'IN_PORT' } });
   });
 
   it('board, accept, dispatch and the active mission with its leg windows', async () => {

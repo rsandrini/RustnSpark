@@ -36,6 +36,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mission_wear: 'environment',
   mission_payout: 'payment',
   pirate_demand: 'failure',
+  scavenge_find: 'loot',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -85,6 +86,9 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
     magnitude: type === 'leg_travel' ? 742 : type === 'mining' ? 3 : 26,
   };
   if (CASCADE_TYPES.includes(type)) base['cascade'] = { shield: 18, armor: 9, hp: 4 };
+  if (type === 'scavenge_find') {
+    base['found'] = { kind: 'part', partType: 'cargo', condition: 55 };
+  }
   if (type === 'pirate_demand') {
     base['motive'] = 'parts';
     base['stolen'] = ['part-instance-1'];

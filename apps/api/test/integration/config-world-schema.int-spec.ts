@@ -75,7 +75,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'active',
   ],
   DropTable: ['id', 'source', 'tiers'],
-  Material: ['id', 'displayName', 'description', 'rarity', 'basePrice', 'active'],
+  Material: ['id', 'displayName', 'description', 'rarity', 'basePrice', 'active', 'fixedPrice'],
 };
 
 const LOCALE_MAP = JSON.stringify({ en: 'English', 'pt-BR': 'Português' });

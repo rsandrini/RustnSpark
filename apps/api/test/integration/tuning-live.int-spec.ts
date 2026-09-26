@@ -189,6 +189,19 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
       request(httpServer(testApp.app)).post('/v1/locations/ceres/scavenge').set(auth(player.token));
 
     expect((await scavenge()).status).toBe(200);
+    // Free the ship (as if the job had ended) so what stops the next job is the cooldown itself.
+    const jobs = await prisma.missionInstance.findMany({
+      where: { type: 'SCAVENGE' },
+      select: { id: true },
+    });
+    await prisma.routePresence.deleteMany({
+      where: { missionId: { in: jobs.map((job) => job.id) } },
+    });
+    await prisma.missionInstance.deleteMany({ where: { id: { in: jobs.map((job) => job.id) } } });
+    await prisma.ship.updateMany({
+      where: { ownerPlayerId: player.playerId },
+      data: { status: 'IN_PORT' },
+    });
     const blocked = await scavenge();
     expect(blocked.status).toBe(409);
     expect(blocked.body).toMatchObject({ message: { error: 'SCAVENGE_COOL_DOWN' } });

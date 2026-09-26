@@ -53,6 +53,7 @@ const CATEGORY_OF = {
   mission_wear: 'environment',
   mission_payout: 'payment',
   pirate_demand: 'failure',
+  scavenge_find: 'loot',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -122,6 +123,13 @@ function eventMembers(
             shield: num,
             armor: num,
             hp: num,
+          });
+        }
+        if (type === 'scavenge_find') {
+          extras['found'] = object({
+            kind: z.enum(['part', 'scrap']),
+            partType: z.string().min(1),
+            condition: num,
           });
         }
         if (type === 'pirate_demand') {

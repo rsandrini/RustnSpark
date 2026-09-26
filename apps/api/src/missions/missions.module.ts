@@ -9,6 +9,7 @@ import {
   RESOLVE_JOB_ATTEMPTS,
   bullConnectionOptions,
 } from '../jobs/queues.js';
+import { Clock } from '../common/clock/clock.js';
 import { PartsModule } from '../parts/parts.module.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
@@ -19,6 +20,8 @@ import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
+import { ScavengeJobController } from './scavenge-job.controller.js';
+import { ScavengeJobService } from './scavenge-job.service.js';
 import { TravelController } from './travel.controller.js';
 import { TravelService } from './travel.service.js';
 
@@ -49,7 +52,7 @@ import { TravelService } from './travel.service.js';
       },
     }),
   ],
-  controllers: [MissionsController, TravelController],
+  controllers: [MissionsController, TravelController, ScavengeJobController],
   providers: [
     BoardService,
     MissionsService,
@@ -57,6 +60,8 @@ import { TravelService } from './travel.service.js';
     MissionProducer,
     MissionResolveService,
     TravelService,
+    ScavengeJobService,
+    Clock,
     EncounterService,
     RoutePresenceService,
     WalletService,

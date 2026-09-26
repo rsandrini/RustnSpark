@@ -343,6 +343,12 @@ export class ReportsService {
           localizeDisplayName(row.displayName as Record<string, unknown>, locale),
         ]),
       ),
+      partTypes: Object.fromEntries(
+        parts.map((row) => [
+          row.partType,
+          localizeDisplayName(row.displayName as Record<string, unknown>, locale),
+        ]),
+      ),
     };
   }
 }

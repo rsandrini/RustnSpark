@@ -1218,6 +1218,58 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'scavenging.duration_seconds',
+    group: 'scavenging',
+    type: 'integer',
+    min: 1,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.duration_seconds),
+    description: {
+      en: 'How long a scavenging job takes, in mission time (scaled by missions.time_scale).',
+      'pt-BR':
+        'Quanto dura um trabalho de saque, em tempo de missão (escalado por missions.time_scale).',
+    },
+  },
+  {
+    key: 'scavenging.scrap_share',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_share),
+    description: {
+      en: 'In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap instead of parts.',
+      'pt-BR':
+        'Em lugares de sucata (campos de detritos, zonas mortas, relés) a fração dos achados que é sucata em vez de peças.',
+    },
+  },
+  {
+    key: 'scavenging.zone_quality_bonus',
+    group: 'scavenging',
+    type: 'integer',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.zone_quality_bonus),
+    description: {
+      en: 'Condition points added to the quality range per zone: riskier places give better finds.',
+      'pt-BR':
+        'Pontos de condição somados à faixa de qualidade por zona: lugares mais arriscados dão achados melhores.',
+    },
+  },
+  {
+    key: 'scavenging.zone_rarity_bias',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.zone_rarity_bias),
+    description: {
+      en: 'Extra weight of the rarer drop tiers per zone (0 = none): riskier places give rarer finds.',
+      'pt-BR':
+        'Peso extra das faixas de drop mais raras por zona (0 = nenhum): lugares mais arriscados dão achados mais raros.',
+    },
+  },
+  {
     key: 'parts.starter_condition',
     group: 'parts',
     type: 'integer',

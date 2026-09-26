@@ -88,7 +88,12 @@ export class PricingService {
   }
 
   // Plan S8.7: `material.basePrice × isolation × faction × mood × sell_ratio`.
-  sellMaterial(context: MarketContext, material: Pick<Material, 'basePrice'>): number {
+  sellMaterial(
+    context: MarketContext,
+    material: Pick<Material, 'basePrice'> & { fixedPrice?: boolean },
+  ): number {
+    // Scrap sells for exactly its price everywhere: no place, faction, mood or sell-ratio effect.
+    if (material.fixedPrice === true) return Math.max(1, material.basePrice);
     return sellPrice(this.priceInput(context, material, FULL_CONDITION), context.rules);
   }
 

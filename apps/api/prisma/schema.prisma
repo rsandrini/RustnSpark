@@ -147,6 +147,9 @@ enum MissionType {
   RESCUE
   // A trip the pilot asks for on their own: no cargo, no reward, only fuel (never on a board).
   TRAVEL
+  // A timed search of the wreckage around a port: starts and ends in the same place, no reward,
+  // finds used parts or scrap when it resolves (never on a board).
+  SCAVENGE
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union
@@ -509,6 +512,8 @@ model Material {
   description     Json
   rarity          Rarity
   basePrice       Int
+  // Sells for exactly basePrice at every port (scrap): no isolation, faction, mood or sell ratio.
+  fixedPrice      Boolean          @default(false)
   active          Boolean          @default(true)
   playerMaterials PlayerMaterial[]
 }

@@ -149,6 +149,10 @@ const scavengingSchema = z.object({
   quality_min: z.number().int().min(0).max(100),
   quality_max: z.number().int().min(0).max(100),
   cooldown_seconds: z.number().int().min(0).max(86400),
+  duration_seconds: z.number().int().min(1).max(86400),
+  scrap_share: z.number().min(0).max(1),
+  zone_quality_bonus: z.number().int().min(0).max(50),
+  zone_rarity_bias: z.number().min(0).max(10),
 });
 
 const partsSchema = z.object({

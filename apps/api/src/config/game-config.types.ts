@@ -103,6 +103,10 @@ export type ConfigKey =
   | 'rescue.reference_mob'
   | 'scavenging.chance'
   | 'scavenging.cooldown_seconds'
+  | 'scavenging.duration_seconds'
+  | 'scavenging.scrap_share'
+  | 'scavenging.zone_quality_bonus'
+  | 'scavenging.zone_rarity_bias'
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
   | 'ship_class.cargo_share'
@@ -275,6 +279,14 @@ export type GameRules = Readonly<{
     quality_min: number;
     quality_max: number;
     cooldown_seconds: number;
+    /** How long a scavenging job takes (like a mission: scaled by `missions.time_scale`). */
+    duration_seconds: number;
+    /** In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap. */
+    scrap_share: number;
+    /** Condition points added to the quality range per zone: riskier places, better finds. */
+    zone_quality_bonus: number;
+    /** Extra weight of the rarer drop tiers per zone (0 = none). */
+    zone_rarity_bias: number;
   }>;
   parts: Readonly<{
     starter_condition: number;

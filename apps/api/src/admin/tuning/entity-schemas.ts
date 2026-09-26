@@ -86,7 +86,15 @@ const PART_CLASS_VALUES = [
   'UTILITY',
   'BRIDGE',
 ];
-const MISSION_TYPE_VALUES = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE', 'TRAVEL'];
+const MISSION_TYPE_VALUES = [
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'TRAVEL',
+  'SCAVENGE',
+];
 
 const PART_FIELDS: EntitySchemaField[] = [
   {

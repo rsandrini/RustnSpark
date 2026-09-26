@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { PrismaClient } from '@prisma/client';
+import { PARTS } from '../../prisma/seed-data/parts.js';
 import { seed } from '../../prisma/seed.js';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
@@ -112,13 +113,14 @@ describe('database seed (S3.4)', () => {
     await seed(prisma);
 
     const counts = await countRows(prisma);
-    expect(counts.gameConfig).toBe(105);
+    expect(counts.gameConfig).toBe(109);
     expect(counts.locations).toBe(12);
     expect(counts.routes).toBe(17);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
-    expect(counts.materials).toBe(3);
+    // 3 ores + one fixed-price scrap material per scavengeable part (every part but the bridge).
+    expect(counts.materials).toBe(3 + (PARTS.length - 1));
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
   });

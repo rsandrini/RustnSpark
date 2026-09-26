@@ -103,6 +103,7 @@ export function checkMissionRequirements(
       }
       break;
     case 'TRAVEL':
+    case 'SCAVENGE':
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       break;
     case 'RESCUE':

@@ -24,6 +24,13 @@ export interface ReportStats {
   readonly partFailures: number;
   readonly fuelLost: number;
   /** What pirates took: parts from storage, or the cargo / the ground (`motive`). */
+  /** What a scavenging job turned up. */
+  readonly found: readonly {
+    readonly kind: 'part' | 'scrap';
+    readonly partType: string;
+    readonly name: string;
+    readonly condition: number;
+  }[];
   readonly pirates: { readonly stolenParts: number; readonly motive: string | null };
   readonly loot: readonly {
     readonly materialId: string;
@@ -54,6 +61,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let motive: string | null = null;
   const damage = { shield: 0, armor: 0, hull: 0 };
   const loot = new Map<string, number>();
+  const found: ReportStats['found'][number][] = [];
 
   for (const event of log.events) {
     if (event.type === 'leg_travel') distance += Math.abs(event.magnitude);
@@ -64,6 +72,14 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     if (event.type === 'pvp_encounter') pvp += 1;
     if (PART_FAILURE_TYPES.has(event.type)) partFailures += 1;
     if (event.fuelLost !== undefined) fuelLost += event.fuelLost;
+    if (event.type === 'scavenge_find' && event.found !== undefined) {
+      found.push({
+        kind: event.found.kind,
+        partType: event.found.partType,
+        name: names.partTypes?.[event.found.partType] ?? event.found.partType,
+        condition: event.found.condition,
+      });
+    }
     if (event.type === 'pirate_demand') {
       stolenParts += event.stolen?.length ?? 0;
       motive = event.motive ?? motive;
@@ -93,6 +109,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     damage,
     partFailures,
     fuelLost,
+    found,
     pirates: { stolenParts, motive },
     loot: [...loot.entries()]
       .filter(([, quantity]) => quantity > 0)

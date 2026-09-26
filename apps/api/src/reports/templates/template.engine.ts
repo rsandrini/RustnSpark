@@ -47,6 +47,8 @@ export interface EntityNames {
    */
   readonly parts: Readonly<Record<string, { readonly partType: string; readonly name: string }>>;
   readonly materials: Readonly<Record<string, string>>;
+  /** Catalog part type → localized name (scavenging finds name a TYPE, not an instance). */
+  readonly partTypes?: Readonly<Record<string, string>>;
 }
 
 export const EMPTY_ENTITY_NAMES: EntityNames = { parts: {}, materials: {} };
@@ -220,6 +222,21 @@ function demandLine(event: ParsedMissionEvent, locale: Locale, names: EntityName
   return template.replace('{parts}', list);
 }
 
+// A scavenging find in words: a used part with its condition, or scrap. Named from the live catalog
+// (the log stores the part type, never a name).
+function findLine(event: ParsedMissionEvent, locale: Locale, names: EntityNames): string {
+  const found = event.found;
+  if (found === undefined) return locale === 'pt-BR' ? 'algo' : 'something';
+  const name = names.partTypes?.[found.partType] ?? found.partType;
+  if (found.kind === 'scrap') {
+    return locale === 'pt-BR' ? `sucata de ${name}` : `scrap of a ${name}`;
+  }
+  const condition = formatNumber(found.condition, locale);
+  return locale === 'pt-BR'
+    ? `${name} usada (condição ${condition}%)`
+    : `a used ${name} (condition ${condition}%)`;
+}
+
 function requirePartId(event: ParsedMissionEvent): string {
   const id = Object.keys(event.effects.condByPart)[0];
   if (id === undefined) {
@@ -272,6 +289,8 @@ function resolveToken(
       return numeric(event.fuelLost ?? 0);
     case 'demand':
       return { t: 'text', value: demandLine(event, locale, names) };
+    case 'find':
+      return { t: 'text', value: findLine(event, locale, names) };
     case 'part': {
       const id = requirePartId(event);
       const entry = names.parts[id];

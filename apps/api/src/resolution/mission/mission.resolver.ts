@@ -22,6 +22,7 @@ import type { EscapePreset } from '../encounter/escape.resolver.js';
 import type { FactionRelation, MissionType, Stance } from '../encounter/encounter-policy.js';
 import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
 import type { StoredPart } from '../encounter/pirate-motive.js';
+import { rollScavengeFinds, type ScavengeContext } from '../scavenge/scavenge.resolver.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
 
@@ -56,6 +57,8 @@ export interface MissionInput {
     readonly materialId: string;
     readonly requiredQuantity: number;
   };
+  /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
+  readonly scavenge?: ScavengeContext;
 }
 
 export interface ResolveMissionInput {
@@ -169,8 +172,30 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
   // no payout) is debited by the resolve service — it is not dropped.
   let creditsDelta = legs.reduce((sum, leg) => sum + leg.combatCredits, 0);
 
-  // Payment only when every leg completed.
-  if (status === 'success') {
+  // A scavenging job that came back turns up its finds (seeded, on its own stream).
+  if (status === 'success' && input.mission.scavenge !== undefined) {
+    for (const find of rollScavengeFinds(
+      input.mission.scavenge,
+      input.rules,
+      root.child('scavenge'),
+    )) {
+      events.push(
+        missionEvent({
+          leg: lastLeg,
+          category: 'loot',
+          type: 'scavenge_find',
+          actors,
+          magnitude: find.kind === 'part' ? find.condition : 0,
+          found: find,
+        }),
+      );
+    }
+  }
+
+  // Payment only when every leg completed. Trips and scavenging jobs pay nothing, so they write
+  // no payment line either.
+  const paysNothing = input.mission.type === 'TRAVEL' || input.mission.type === 'SCAVENGE';
+  if (status === 'success' && !paysNothing) {
     const totalDistance = input.mission.legs.reduce((sum, leg) => sum + leg.distance, 0);
     const maxDanger = input.mission.legs.reduce(
       (peak, leg) => (leg.danger > peak ? leg.danger : peak),

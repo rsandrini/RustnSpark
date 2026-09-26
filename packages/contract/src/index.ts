@@ -193,6 +193,12 @@ export const ShipResponseSchema = z.object({
   shipClass: ShipClassTypeSchema,
   /** The assembly yard: cells run [-halfSize, halfSize) on both axes. */
   yard: z.object({ halfSize: z.number() }),
+  /** What the ship is doing now: drives the animated ship stage. */
+  activity: z.object({
+    kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
+    until: IsoDate.nullable(),
+    missionId: z.string().nullable(),
+  }),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
 
@@ -229,6 +235,7 @@ export const MissionTypeSchema = z.enum([
   'MINING',
   'RESCUE',
   'TRAVEL',
+  'SCAVENGE',
 ]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
@@ -420,6 +427,14 @@ export const ReportStatsSchema = z.object({
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
   partFailures: z.number(),
   fuelLost: z.number(),
+  found: z.array(
+    z.object({
+      kind: z.enum(['part', 'scrap']),
+      partType: z.string(),
+      name: z.string(),
+      condition: z.number(),
+    }),
+  ),
   pirates: z.object({ stolenParts: z.number(), motive: z.string().nullable() }),
   loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
 });
@@ -601,27 +616,15 @@ export const RepairStartResponseSchema = z.object({
 });
 export type RepairStartResponse = z.infer<typeof RepairStartResponseSchema>;
 
-export const ScavengeResponseSchema = z.object({
-  locationId: z.string(),
-  attempt: z.number(),
-  fieldType: z.enum(['common', 'mission', 'pirate']),
-  dropped: z.boolean(),
-  part: z
-    .object({
-      partInstanceId: z.string(),
-      partType: z.string(),
-      displayName: LocalizedTextSchema,
-      condition: z.number(),
-    })
-    .nullable(),
-  cooldownSeconds: z.number(),
-});
-export type ScavengeResponse = z.infer<typeof ScavengeResponseSchema>;
-
 export const ScavengeInfoSchema = z.object({
   locationId: z.string(),
   fieldType: z.enum(['common', 'mission', 'pirate']),
+  /** Chance of each extra find beyond the guaranteed first one. */
   dropChance: z.number(),
+  zone: z.number(),
+  scrapPlace: z.boolean(),
+  /** How long a job takes (mission time). */
+  durationSeconds: z.number(),
   cooldownSeconds: z.number(),
   retryAfterSeconds: z.number(),
   attempts: z.number(),

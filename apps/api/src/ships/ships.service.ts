@@ -23,6 +23,14 @@ import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { checkViability, type ViabilityProblem } from './viability.js';
 
+/** What the ship is doing now (drives the ship stage on the client). */
+export interface ShipActivity {
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  /** When it ends (arrival or repair completion), if it does. */
+  readonly until: string | null;
+  readonly missionId: string | null;
+}
+
 export interface ShipResponse {
   id: string;
   ownerPlayerId: string;
@@ -36,6 +44,16 @@ export interface ShipResponse {
   shipClass: ShipClassType;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
   yard: { halfSize: number };
+  /** What the ship is doing now: drives the animated ship stage. */
+  activity: ShipActivity;
+}
+
+/** What the ship is doing now (flying, scavenging, repairing or idle). */
+export interface ShipActivity {
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  /** When it ends (arrival or repair completion), if it does. */
+  readonly until: string | null;
+  readonly missionId: string | null;
 }
 
 export interface PreviewResponse {
@@ -291,6 +309,7 @@ export class ShipsService implements OnModuleInit {
       .filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id)
       .map(toInstalledPart);
     const sheet = deriveSheet(installed, rules);
+    const activity = await this.activityOf(ship);
     return {
       id: ship.id,
       ownerPlayerId: ship.ownerPlayerId,
@@ -303,7 +322,37 @@ export class ShipsService implements OnModuleInit {
       sheet,
       shipClass: deriveShipClass(installed, rules),
       yard: { halfSize: GRID_HALF_SIZE },
+      activity,
     };
+  }
+
+  /**
+   * What the ship is doing right now, for the animated ship stage: flying (a mission or a trip in
+   * flight), scavenging (a scavenging job), repairing (a pending repair job) or idle. Read from the
+   * mission and repair rows, so it can never disagree with them.
+   */
+  private async activityOf(ship: Ship): Promise<ShipActivity> {
+    const [mission, repair] = await Promise.all([
+      this.prisma.missionInstance.findFirst({
+        where: { shipId: ship.id, status: { in: ['IN_TRANSIT', 'RESOLVING'] } },
+        select: { id: true, type: true, arrivalAt: true },
+      }),
+      this.prisma.repairJob.findFirst({
+        where: { shipId: ship.id, status: 'PENDING' },
+        select: { completesAt: true },
+      }),
+    ]);
+    if (mission !== null) {
+      return {
+        kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : 'flying',
+        until: mission.arrivalAt?.toISOString() ?? null,
+        missionId: mission.id,
+      };
+    }
+    if (repair !== null) {
+      return { kind: 'repairing', until: repair.completesAt.toISOString(), missionId: null };
+    }
+    return { kind: 'idle', until: null, missionId: null };
   }
 }
 

@@ -138,6 +138,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     quality_min: 30,
     quality_max: 70,
     cooldown_seconds: 300,
+    duration_seconds: 300,
+    scrap_share: 0.5,
+    zone_quality_bonus: 5,
+    zone_rarity_bias: 0.6,
   },
   parts: {
     starter_condition: 80,

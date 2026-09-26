@@ -29,6 +29,7 @@ export const MISSION_EVENT_TYPES = [
   'mission_wear',
   'mission_payout',
   'pirate_demand',
+  'scavenge_find',
   'pvp_encounter',
   'mining',
   'mining_paid',
@@ -113,6 +114,12 @@ export interface MissionEvent {
   readonly motive?: 'cargo' | 'parts' | 'territory';
   /** v2, `pirate_demand` only: instance ids of the storage parts taken. */
   readonly stolen?: readonly string[];
+  /** v2, `scavenge_find` only: what the search turned up. */
+  readonly found?: {
+    readonly kind: 'part' | 'scrap';
+    readonly partType: string;
+    readonly condition: number;
+  };
 }
 
 /**
@@ -153,6 +160,7 @@ export function missionEvent(input: {
   fuelLost?: number;
   motive?: 'cargo' | 'parts' | 'territory';
   stolen?: readonly string[];
+  found?: { kind: 'part' | 'scrap'; partType: string; condition: number };
 }): MissionEvent {
   return {
     leg: input.leg,
@@ -182,5 +190,14 @@ export function missionEvent(input: {
     ...(input.fuelLost !== undefined ? { fuelLost: roundInt(input.fuelLost) } : {}),
     ...(input.motive !== undefined ? { motive: input.motive } : {}),
     ...(input.stolen !== undefined ? { stolen: [...input.stolen] } : {}),
+    ...(input.found !== undefined
+      ? {
+          found: {
+            kind: input.found.kind,
+            partType: input.found.partType,
+            condition: roundInt(input.found.condition),
+          },
+        }
+      : {}),
   };
 }

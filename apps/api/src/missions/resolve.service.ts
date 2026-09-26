@@ -5,6 +5,7 @@ import type { DispatchJobData } from './dispatch.service.js';
 // the classes (Nest boot fails without this).
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { loadScavengeContext } from './scavenge-context.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
@@ -119,6 +120,10 @@ export class MissionResolveService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      scavenge:
+        mission.type === 'SCAVENGE'
+          ? await loadScavengeContext(this.prisma, mission.destinationId)
+          : null,
     });
     const outcome = resolveMission(
       buildResolveInput({
@@ -178,6 +183,35 @@ export class MissionResolveService {
             },
             tx,
           );
+        }
+      }
+      // A scavenging job's finds land in the inventory in the same transaction as the log: used
+      // parts as new part instances, scrap as fixed-price materials.
+      for (const event of outcome.events) {
+        const found = event.found;
+        if (event.type !== 'scavenge_find' || found === undefined) continue;
+        if (found.kind === 'part') {
+          await tx.partInstance.create({
+            data: {
+              partType: found.partType,
+              ownerPlayerId: mission.playerId!,
+              condition: found.condition,
+              location: 'INVENTORY',
+            },
+          });
+        } else {
+          const materialId = `scrap_${found.partType}`;
+          const exists = await tx.material.findUnique({
+            where: { id: materialId },
+            select: { id: true },
+          });
+          if (exists !== null) {
+            await tx.playerMaterial.upsert({
+              where: { playerId_materialId: { playerId: mission.playerId!, materialId } },
+              create: { playerId: mission.playerId!, materialId, quantity: 1 },
+              update: { quantity: { increment: 1 } },
+            });
+          }
         }
       }
       for (const part of outcome.parts) {
