@@ -44,5 +44,11 @@ Auth/Home styling, register field rules and specific error messages (409 / 400 /
 - **Pay at accept:** a draft ship whose parts are paid when the mission is accepted (needs a rule against accept-then-back-out exploits).
 - Faction-specific starter kits.
 
-## Incoming feedback
-_(append here)_
+## Incoming feedback (second batch, 2026-09-26) — to be planned, not started
+- **F. Map: show where I am.** The player's ship position must be unmistakable on the sector map (marker, label "You are here", pulse), not just a dashed ring.
+- **G. In-transit animation.** The Transit screen shows a moving scene: a star field scrolling past, the ship hovering slightly at the centre. Reuses the existing mission countdown; respects `prefers-reduced-motion`.
+- **H. Missions need more information.** Cards and the accept flow lack detail (what is carried, where, the risk and why, requirements, reward breakdown, what the ship is missing).
+- **I. Map interaction.** Nodes are hard to click; clicking a place should open a popup with its missions (and services) instead of a small side sheet.
+- **J. Mission variety.** The board has about one offer per place and too few kinds. Needs more templates and more offers per port (Admin-tunable `missions.board_min_per_location`, new template content, en + pt-BR).
+- **K. Mission report screen is boring.** Rework the last screen (the report): a narrated timeline of the trip and fights, visible payoffs, loot and damage, a clear next step.
+
