@@ -41,7 +41,7 @@ const wearSchema = z.object({
 });
 
 const economySchema = z.object({
-  fuel_price: z.number().int().min(1).max(20),
+  fuel_price: z.number().min(0.1).max(20),
   repair_price: z.number().int().min(1).max(20),
   repair_price_ref: z.number().int().min(1).max(20),
   repair_factor: z.number().min(0.1).max(2.0),

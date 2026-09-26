@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { addWreck, economyState, resetEconomyState } from '../../test/msw/handlers';
+import { addWreck, destroyEngine, economyState, resetEconomyState } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
 
@@ -94,6 +94,19 @@ describe('port (S10.9)', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent('Sold Iron for 24 ¢.');
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,844 ¢'));
+  });
+
+  it('a destroyed part has no repair slider and is skipped by "set all to 100%"', async () => {
+    destroyEngine();
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    expect(
+      await screen.findByText('A destroyed part cannot be repaired: replace it.'),
+    ).toBeInTheDocument();
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders).toHaveLength(6);
+    expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
   });
 
   it('repair starts at the current state, prices each part and the total, then charges once', async () => {

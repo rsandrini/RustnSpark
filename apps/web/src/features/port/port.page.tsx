@@ -94,6 +94,8 @@ export function PortPage({ guided = false }: PortPageProps) {
   });
   const inventoryQuery = useQuery({
     queryKey: ['inventory'],
+    // While the workshop is at work the parts' condition climbs: keep the numbers moving.
+    refetchInterval: ship?.activity.kind === 'repairing' ? 4000 : false,
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
   });
   const materialsQuery = useQuery({
@@ -109,7 +111,7 @@ export function PortPage({ guided = false }: PortPageProps) {
   const damagedInstalled = useMemo(
     () =>
       (inventoryQuery.data ?? []).filter(
-        (entry) => entry.location === 'INSTALLED' && entry.condition < 100,
+        (entry) => entry.location === 'INSTALLED' && entry.condition < 100 && !entry.broken,
       ),
     [inventoryQuery.data],
   );
@@ -546,7 +548,11 @@ export function PortPage({ guided = false }: PortPageProps) {
                     <PartThumb name={name} rarity={item.rarity} className="small" />
                     {rowName}
                     {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
-                    <small>{t(`hangar.partClasses.${item.catalog.partClass}`)}</small>
+                    <small>
+                      {item.broken
+                        ? t('port.repairDestroyed')
+                        : t(`hangar.partClasses.${item.catalog.partClass}`)}
+                    </small>
                   </div>
                   <Gauge
                     value={condition}
@@ -565,6 +571,7 @@ export function PortPage({ guided = false }: PortPageProps) {
                     min={floor}
                     max={100}
                     step={1}
+                    disabled={item.broken}
                     value={target}
                     aria-label={`${rowName} ${t('port.repairSlider', { value: target })}`}
                     onChange={(event) =>
@@ -610,7 +617,9 @@ export function PortPage({ guided = false }: PortPageProps) {
                     type="button"
                     className="btn"
                     onClick={() =>
-                      setRepairTargets(Object.fromEntries(damaged.map((entry) => [entry.id, 100])))
+                      setRepairTargets(
+                        Object.fromEntries(damagedInstalled.map((entry) => [entry.id, 100])),
+                      )
                     }
                   >
                     {t('port.repairAllTo100')}

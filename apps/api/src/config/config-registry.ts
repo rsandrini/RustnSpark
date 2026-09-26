@@ -341,8 +341,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
     key: 'economy.fuel_price',
     group: 'economy',
-    type: 'integer',
-    min: 1,
+    type: 'number',
+    min: 0.1,
     max: 20,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.fuel_price),

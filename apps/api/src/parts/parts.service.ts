@@ -147,11 +147,8 @@ export class PartsService {
   }
 
   async inventory(playerId: string): Promise<InventoryItem[]> {
-    const rows = await this.prisma.partInstance.findMany({
-      where: { ownerPlayerId: playerId },
-      include: { partCatalog: true },
-      orderBy: { id: 'asc' },
-    });
+    // Through findPlayerParts so a repair in progress shows its gradual condition here too.
+    const rows = await this.findPlayerParts(playerId);
     return rows.map((row) => ({
       id: row.id,
       partType: row.partType,
@@ -204,10 +201,61 @@ export class PartsService {
     playerId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<Prisma.PartInstanceGetPayload<{ include: { partCatalog: true } }>[]> {
-    return (tx ?? this.prisma).partInstance.findMany({
+    const client = tx ?? this.prisma;
+    const rows = await client.partInstance.findMany({
       where: { ownerPlayerId: playerId },
       include: { partCatalog: true },
       orderBy: { id: 'asc' },
     });
+    const jobs = await client.repairJob.findMany({
+      where: { playerId, status: 'PENDING' },
+      select: { targets: true, startedAt: true, completesAt: true },
+    });
+    if (jobs.length === 0) return rows;
+    // A repair in progress restores condition gradually: the part shows the share of the work
+    // done so far (whole points, never past the target). The stored value is written at the end.
+    const now = Date.now();
+    const live = new Map<string, number>();
+    for (const job of jobs) {
+      const span = job.completesAt.getTime() - job.startedAt.getTime();
+      const done = span <= 0 ? 1 : Math.min(1, Math.max(0, (now - job.startedAt.getTime()) / span));
+      for (const target of repairTargetsOf(job.targets)) {
+        const value = target.fromCondition + (target.toCondition - target.fromCondition) * done;
+        live.set(target.partInstanceId, Math.floor(value));
+      }
+    }
+    return rows.map((row) => {
+      const value = live.get(row.id);
+      return value === undefined ? row : { ...row, condition: Math.max(row.condition, value) };
+    });
   }
+}
+
+interface RepairTargetRow {
+  readonly partInstanceId: string;
+  readonly fromCondition: number;
+  readonly toCondition: number;
+}
+
+function repairTargetsOf(raw: unknown): RepairTargetRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    const c = entry as Record<string, unknown> | null;
+    if (
+      c === null ||
+      typeof c !== 'object' ||
+      typeof c['partInstanceId'] !== 'string' ||
+      typeof c['fromCondition'] !== 'number' ||
+      typeof c['toCondition'] !== 'number'
+    ) {
+      return [];
+    }
+    return [
+      {
+        partInstanceId: c['partInstanceId'],
+        fromCondition: c['fromCondition'],
+        toCondition: c['toCondition'],
+      },
+    ];
+  });
 }

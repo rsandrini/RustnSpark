@@ -313,6 +313,15 @@ export const economyState = {
 };
 
 /** Adds a loose part too damaged to sell (below the 15 % threshold) to the fixture inventory. */
+/** Destroys the installed engine (condition 0): the workshop cannot repair it. */
+export function destroyEngine(): void {
+  const engine = inventoryState.find((entry) => entry.id === 'part-engine');
+  if (engine !== undefined) {
+    engine.condition = 0;
+    engine.broken = true;
+  }
+}
+
 export function addWreck(): void {
   inventoryState.push({
     id: 'part-wreck',

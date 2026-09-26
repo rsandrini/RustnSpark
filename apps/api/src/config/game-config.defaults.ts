@@ -36,8 +36,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     scale_mode: 'all_stats',
   },
   economy: {
-    fuel_price: 3,
-    repair_price: 6,
+    fuel_price: 1.5,
+    repair_price: 3,
     repair_price_ref: 4,
     repair_factor: 0.8,
     maintenance_per_tier: 100,

@@ -13,6 +13,7 @@ import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { PartsService } from '../../src/parts/parts.service.js';
 import { RepairService } from '../../src/economy/repair.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
@@ -306,6 +307,49 @@ describe('repair job API (S8.4)', () => {
     expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
     const after = await prisma.partInstance.findUniqueOrThrow({ where: { id: part.id } });
     expect(after.condition).toBe(70);
+  });
+
+  it('a destroyed part (condition 0) cannot be repaired, and nothing is charged', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 0);
+
+    const response = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ message: { error: 'PART_DESTROYED' } });
+    expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
+  });
+
+  it('while a repair runs the part shows the share of the work done so far', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 40);
+    const started = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(started.status).toBe(200);
+
+    const conditionNow = async () => {
+      const rows = await testApp.app.get(PartsService).findPlayerParts(player.seeded.player.id);
+      return rows.find((row) => row.id === part.id)?.condition ?? -1;
+    };
+    // Just started: still (about) the starting value; halfway: about halfway; the stored value
+    // stays untouched until the job completes.
+    expect(await conditionNow()).toBeLessThanOrEqual(45);
+    await prisma.repairJob.updateMany({
+      where: { shipId: player.shipId },
+      data: {
+        startedAt: new Date(Date.now() - 90_000),
+        completesAt: new Date(Date.now() + 90_000),
+      },
+    });
+    const half = await conditionNow();
+    expect(half).toBeGreaterThanOrEqual(69);
+    expect(half).toBeLessThanOrEqual(71);
+    const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: part.id } });
+    expect(stored.condition).toBe(40);
   });
 
   it('quote returns the exact cost and duration start will charge, without charging (S10.9)', async () => {

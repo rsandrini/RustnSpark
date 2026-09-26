@@ -120,6 +120,10 @@ export class RepairService {
       if (!part) {
         throw new ConflictException({ error: 'PART_NOT_INSTALLED' });
       }
+      // A destroyed part is beyond a workshop: it can only be replaced (or discarded).
+      if (part.condition <= rules.wear.dead_at_or_below) {
+        throw new ConflictException({ error: 'PART_DESTROYED' });
+      }
       // A hair of float noise (a stored 79.999999 shown as 80) must not make a fair target invalid.
       if (target.toCondition < part.condition - CONDITION_EPSILON) {
         throw new ConflictException({ error: 'INVALID_REPAIR_TARGET' });
