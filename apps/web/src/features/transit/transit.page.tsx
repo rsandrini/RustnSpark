@@ -150,6 +150,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
       : 0;
 
   const summary = summarizeLegs(mission.legs);
+  const rewardText = `${new Intl.NumberFormat(i18n.language).format(mission.reward)} ¢`;
   const destinationRisk = worldQuery.data?.locations.find(
     (entry) => entry.id === mission.destinationId,
   )?.risk;
@@ -169,9 +170,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
       <div className="briefing" data-testid="briefing">
         <div className="fact">
           <div className="k">{t('transit.facts.reward')}</div>
-          <div className="v spark">
-            {`${new Intl.NumberFormat(i18n.language).format(mission.reward)} ¢`}
-          </div>
+          <div className="v spark">{rewardText}</div>
         </div>
         <div className="fact">
           <div className="k">{t('transit.facts.distance')}</div>
