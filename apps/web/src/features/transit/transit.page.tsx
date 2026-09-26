@@ -183,10 +183,12 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <span className="sub">{routeLabel}</span>
       </header>
       <div className="briefing" data-testid="briefing">
-        <div className="fact">
-          <div className="k">{t('transit.facts.reward')}</div>
-          <div className="v spark">{rewardText}</div>
-        </div>
+        {mission.type !== 'TRAVEL' && (
+          <div className="fact">
+            <div className="k">{t('transit.facts.reward')}</div>
+            <div className="v spark">{rewardText}</div>
+          </div>
+        )}
         <div className="fact">
           <div className="k">{t('transit.facts.distance')}</div>
           <div className="v">{summary.totalDistance}</div>

@@ -7,6 +7,7 @@ const TEMPLATES: {
   type: MissionType;
   factionId: string;
   requirements: Record<string, unknown>;
+  active?: boolean;
 }[] = [
   {
     id: 'delivery_luna',
@@ -135,6 +136,20 @@ const TEMPLATES: {
     factionId: 'luna',
     requirements: { originFactions: ['luna'], originTypes: ['port', 'shipyard'] },
   },
+  {
+    // Pilot-requested trips (POST /v1/travel). Inactive on purpose: the board generator must
+    // never offer it; the travel service creates instances from it directly.
+    id: 'travel_generic',
+    displayName: { en: 'Travel', 'pt-BR': 'Viagem' },
+    description: {
+      en: 'A trip you asked for: no cargo and no pay, only the fuel it burns.',
+      'pt-BR': 'Uma viagem que você pediu: sem carga e sem pagamento, só o combustível que ela gasta.',
+    },
+    type: 'TRAVEL',
+    factionId: 'luna',
+    requirements: {},
+    active: false,
+  },
 ];
 
 export async function seedMissionTemplates(prisma: PrismaClient): Promise<void> {
@@ -148,6 +163,7 @@ export async function seedMissionTemplates(prisma: PrismaClient): Promise<void> 
           rewardCalc: {},
           deadlineCalc: {},
           encounterPolicy: {},
+          active: template.active ?? true,
         },
       });
     }

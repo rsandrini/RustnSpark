@@ -24,6 +24,7 @@ import type {
   ReportListResponse,
   ReportResponse,
   ScavengeInfo,
+  TravelQuote,
   ScavengeResponse,
   SellMaterialResponse,
   SellResponse,
@@ -766,6 +767,37 @@ export const handlers = [
       restartParts: [],
     });
   }),
+  http.get('/v1/travel/quote', ({ request }) => {
+    const destinationId = new URL(request.url).searchParams.get('destinationId') ?? '';
+    return ok<TravelQuote>({
+      originId: 'ceres',
+      destinationId,
+      legs: [
+        {
+          routeId: 'ceres-gate',
+          fromId: 'ceres',
+          toId: destinationId,
+          distance: 400,
+          danger: 5,
+          zone: 1,
+        },
+      ],
+      totalDistance: 400,
+      durationSeconds: 150,
+      fuelNeeded: 12,
+      fuelHave: 25,
+      peakDanger: 5,
+      blockers: [],
+      canDepart: true,
+    });
+  }),
+  http.post('/v1/travel', () =>
+    ok<DispatchResponse>({
+      missionId: 'travel-1',
+      arrivalAt: new Date(Date.now() + 150_000).toISOString(),
+      serverTime: new Date().toISOString(),
+    }),
+  ),
   http.get('/v1/locations/:id/scavenge', ({ params }) => {
     const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
     return ok<ScavengeInfo>({

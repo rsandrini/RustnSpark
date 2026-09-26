@@ -57,6 +57,9 @@ function repairSecondsPerPoint(rules: GameRules, zone: number): number {
   return table[key] ?? table['hub'] ?? 0;
 }
 
+// Float noise (79.999999 stored, 80 shown) must not turn a fair repair target into an invalid one.
+const CONDITION_EPSILON = 0.000001;
+
 @Injectable()
 export class RepairService {
   private readonly logger = new Logger(RepairService.name);
@@ -118,7 +121,7 @@ export class RepairService {
         throw new ConflictException({ error: 'PART_NOT_INSTALLED' });
       }
       // A hair of float noise (a stored 79.999999 shown as 80) must not make a fair target invalid.
-      if (target.toCondition < part.condition - 1e-6) {
+      if (target.toCondition < part.condition - CONDITION_EPSILON) {
         throw new ConflictException({ error: 'INVALID_REPAIR_TARGET' });
       }
       stored.push({

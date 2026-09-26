@@ -596,7 +596,8 @@
       "TRANSPORT": "Transport",
       "ESCORT": "Escort",
       "MINING": "Mining",
-      "RESCUE": "Rescue"
+      "RESCUE": "Rescue",
+      "TRAVEL": "Travel"
     },
     "status": {
       "AVAILABLE": "Open",
@@ -653,6 +654,26 @@
     "popup": {
       "missionsHere": "Missions here",
       "to": "To {{destination}}"
+    },
+    "travel": {
+      "title": "Fly there without a mission",
+      "time": "Flight time",
+      "distance": "Distance",
+      "fuel": "Fuel for the trip",
+      "fuelNeeded": "Fuel {{needed}} of {{have}} on board",
+      "noPay": "A trip costs only the fuel it burns and pays nothing. Pirates and other pilots can still find you on the way.",
+      "go": "Fly to {{place}}",
+      "failed": "The trip could not start.",
+      "blockers": {
+        "NO_SHIP": "You have no ship.",
+        "SAME_PLACE": "You are already here.",
+        "NO_ROUTE": "There is no route to this place.",
+        "ACTIVE_MISSION_EXISTS": "Finish or cancel your current mission first.",
+        "SHIP_NOT_IN_PORT": "The ship must be docked to leave.",
+        "SHIP_REPAIRING": "The ship is being repaired.",
+        "SHIP_NOT_VIABLE": "The ship cannot fly yet: assemble it in the Hangar first.",
+        "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
+      }
     }
   },
   "notFound": {

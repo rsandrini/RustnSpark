@@ -19,6 +19,8 @@ import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
+import { TravelController } from './travel.controller.js';
+import { TravelService } from './travel.service.js';
 
 // The API process enqueues resolve jobs here (S7.2/S7.3 via MissionProducer); the worker
 // process registers the same queue name with MissionProcessor inside JobsModule — separate
@@ -47,13 +49,14 @@ import { MissionResolveService } from './resolve.service.js';
       },
     }),
   ],
-  controllers: [MissionsController],
+  controllers: [MissionsController, TravelController],
   providers: [
     BoardService,
     MissionsService,
     DispatchService,
     MissionProducer,
     MissionResolveService,
+    TravelService,
     EncounterService,
     RoutePresenceService,
     WalletService,

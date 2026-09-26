@@ -4,7 +4,8 @@ import type { GameRules } from '../../config/game-config.types.js';
 export type PolicyDecision = 'IGNORE' | 'FLEE' | 'ATTACK';
 export type FactionRelation = 'ALLY' | 'HOSTILE' | 'NEUTRAL';
 export type Stance = 'DEFENSIVE' | 'NEUTRAL' | 'AGGRESSIVE';
-export type MissionType = 'DELIVERY' | 'TRANSPORT' | 'ESCORT' | 'MINING' | 'RESCUE' | 'HUNT' | null;
+export type MissionType =
+  'DELIVERY' | 'TRANSPORT' | 'ESCORT' | 'MINING' | 'RESCUE' | 'TRAVEL' | 'HUNT' | null;
 
 /**
  * GDD §8 policy tree, top-down; `decidePolicy` stops at the first applicable

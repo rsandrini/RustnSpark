@@ -70,6 +70,24 @@ describe('map (S10.5)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('offers a trip to another place: route, time, fuel, and a button that starts it', async () => {
+    const { svg } = await renderMap();
+    fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    const box = await screen.findByTestId('travel');
+    expect(within(box).getByText('Fly there without a mission')).toBeInTheDocument();
+    expect(await within(box).findByText('2m 30s')).toBeInTheDocument();
+    expect(within(box).getByText(/Fuel 12 of 25 on board/)).toBeInTheDocument();
+    expect(within(box).getByText(/pays nothing/)).toBeInTheDocument();
+    expect(within(box).getByRole('button', { name: /Fly to Estaleiro Tycho/ })).toBeEnabled();
+  });
+
+  it('does not offer a trip to the place you are already at', async () => {
+    const { svg } = await renderMap();
+    fireEvent.click(node(svg, 'Porto Ceres — You are here'));
+    await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    expect(screen.queryByTestId('travel')).toBeNull();
+  });
+
   it('selects a node with the keyboard', async () => {
     const { svg } = await renderMap();
 

@@ -1,21 +1,26 @@
 import { useMemo, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client, serverNow } from '../../api/client';
 import type {
   ActiveMission,
+  DispatchResponse,
   MissionOffer,
   ShipResponse,
+  TravelQuote,
   WorldLocation,
   WorldResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { Countdown } from '../../ui/Countdown';
+import { formatDuration } from '../../ui/duration';
+import { Gauge } from '../../ui/Gauge';
 import { Popup } from '../../ui/Popup';
+import { errorText } from '../../api/errors';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
@@ -283,6 +288,7 @@ export function MapPage({ guided = false }: MapPageProps) {
       >
         {selected !== undefined && (
           <PlaceDetails
+            canTravel={shipLocation !== null && !inFlight}
             place={selected}
             description={descriptionOf(selected)}
             isHere={selected.id === shipLocation && !inFlight}
@@ -295,6 +301,8 @@ export function MapPage({ guided = false }: MapPageProps) {
 }
 
 interface PlaceDetailsProps {
+  /** The ship is docked (not flying): only then can the pilot ask for a trip. */
+  canTravel: boolean;
   place: WorldLocation;
   description: string;
   isHere: boolean;
@@ -304,7 +312,7 @@ interface PlaceDetailsProps {
 // What a place offers, in one dialog: who runs it, how risky it is, and the missions on its
 // board (each with reward, destination and whether the ship can take it). The pilot decides
 // where to go from here without leaving the map.
-function PlaceDetails({ place, description, isHere, byId }: PlaceDetailsProps) {
+function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDetailsProps) {
   const { t, i18n } = useTranslation();
   const boardQuery = useQuery({
     queryKey: ['board', place.id],
@@ -335,6 +343,8 @@ function PlaceDetails({ place, description, isHere, byId }: PlaceDetailsProps) {
         </p>
       )}
 
+      {!isHere && canTravel && <TravelSection place={place} byId={byId} />}
+
       <h3>{t('map.popup.missionsHere')}</h3>
       {boardQuery.isLoading && <p className="sub">{t('loading')}</p>}
       {boardQuery.isSuccess && offers.length === 0 && <p className="sub">{t('map.noMissions')}</p>}
@@ -363,5 +373,88 @@ function PlaceDetails({ place, description, isHere, byId }: PlaceDetailsProps) {
         {t('map.board')}
       </Link>
     </div>
+  );
+}
+
+interface TravelSectionProps {
+  place: WorldLocation;
+  byId: ReadonlyMap<string, WorldLocation>;
+}
+
+// "Fly there without a mission": the server prices the trip (route, time, fuel) and says
+// whether the ship can leave; the pilot only confirms. The trip costs fuel and pays nothing.
+function TravelSection({ place, byId }: TravelSectionProps) {
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const quoteQuery = useQuery({
+    queryKey: ['travelQuote', place.id],
+    queryFn: () => client.get<TravelQuote>(`/v1/travel/quote?destinationId=${place.id}`),
+  });
+  const fly = useMutation({
+    mutationFn: () => client.post<DispatchResponse>('/v1/travel', { destinationId: place.id }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['active'] });
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void navigate('/transit');
+    },
+  });
+  const quote = quoteQuery.data;
+  const nameOf = (id: string) => {
+    const found = byId.get(id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
+  };
+
+  return (
+    <section className="travel-box" data-testid="travel">
+      <h3>{t('map.travel.title')}</h3>
+      {quoteQuery.isLoading && <p className="sub">{t('loading')}</p>}
+      {quote !== undefined && quote.legs.length > 0 && (
+        <>
+          <p className="sub">
+            {[nameOf(quote.originId), ...quote.legs.map((leg) => nameOf(leg.toId))].join(' → ')}
+          </p>
+          <div className="statrow">
+            <span>{t('map.travel.time')}</span>
+            <b>{formatDuration(quote.durationSeconds, t)}</b>
+          </div>
+          <div className="statrow">
+            <span>{t('map.travel.distance')}</span>
+            <b>{quote.totalDistance}</b>
+          </div>
+          <Gauge
+            value={Math.min(quote.fuelNeeded, quote.fuelHave)}
+            max={Math.max(quote.fuelHave, quote.fuelNeeded, 1)}
+            tone={quote.fuelNeeded > quote.fuelHave ? 'bad' : 'fuel'}
+            ariaLabel={t('map.travel.fuel')}
+            label={t('map.travel.fuelNeeded', {
+              needed: Math.round(quote.fuelNeeded),
+              have: Math.round(quote.fuelHave),
+            })}
+          />
+          <p className="sub">{t('map.travel.noPay')}</p>
+        </>
+      )}
+      {quote !== undefined && quote.blockers.length > 0 && (
+        <ul className="reasons">
+          {quote.blockers.map((blocker) => (
+            <li key={blocker}>{t(`map.travel.blockers.${blocker}`)}</li>
+          ))}
+        </ul>
+      )}
+      {fly.isError && (
+        <p className="error-text" role="alert">
+          {errorText(t, fly.error, t('map.travel.failed'))}
+        </p>
+      )}
+      <button
+        type="button"
+        className="btn primary block"
+        disabled={quote === undefined || !quote.canDepart || fly.isPending}
+        onClick={() => fly.mutate()}
+      >
+        {t('map.travel.go', { place: nameOf(place.id) })}
+      </button>
+    </section>
   );
 }

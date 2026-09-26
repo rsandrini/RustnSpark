@@ -102,6 +102,9 @@ export function checkMissionRequirements(
         reasons.push(CARGO_TYPE);
       }
       break;
+    case 'TRAVEL':
+      // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
+      break;
     case 'RESCUE':
       if (sheet.crg < cargoNeeded && !hasCabin) {
         reasons.push(CARGO_TYPE);

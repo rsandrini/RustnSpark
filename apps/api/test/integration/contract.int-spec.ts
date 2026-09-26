@@ -26,6 +26,7 @@ import {
   RepairStartResponseSchema,
   RescueResponseSchema,
   ScavengeInfoSchema,
+  TravelQuoteSchema,
   ScavengeResponseSchema,
   SellMaterialResponseSchema,
   SellResponseSchema,
@@ -260,6 +261,14 @@ describe('HTTP contract: real responses match packages/contract', () => {
     // Leave no pending repair blocking the board/dispatch steps below.
     await prisma.repairJob.updateMany({ where: { shipId }, data: { status: 'COMPLETED' } });
     await prisma.partInstance.update({ where: { id: installed.id }, data: { condition: 100 } });
+  });
+
+  it('travel quote', async () => {
+    const travelQuote = await request(server)
+      .get('/v1/travel/quote?destinationId=hedus')
+      .set(auth(token));
+    expect(travelQuote.status).toBe(200);
+    contract(TravelQuoteSchema, travelQuote.body, 'GET /travel/quote');
   });
 
   it('scavenging', async () => {

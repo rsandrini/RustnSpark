@@ -220,7 +220,14 @@ export type RescueResponse = z.infer<typeof RescueResponseSchema>;
 // World, board, missions
 // ---------------------------------------------------------------------------------------------
 
-export const MissionTypeSchema = z.enum(['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE']);
+export const MissionTypeSchema = z.enum([
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'TRAVEL',
+]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
 export const MissionStatusSchema = z.enum([
@@ -553,6 +560,45 @@ export const ScavengeInfoSchema = z.object({
   qualityMax: z.number(),
 });
 export type ScavengeInfo = z.infer<typeof ScavengeInfoSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Travel without a quest
+// ---------------------------------------------------------------------------------------------
+
+export const TravelBlockerSchema = z.enum([
+  'NO_SHIP',
+  'SAME_PLACE',
+  'NO_ROUTE',
+  'ACTIVE_MISSION_EXISTS',
+  'SHIP_NOT_IN_PORT',
+  'SHIP_REPAIRING',
+  'SHIP_NOT_VIABLE',
+  'NOT_ENOUGH_FUEL',
+]);
+export type TravelBlocker = z.infer<typeof TravelBlockerSchema>;
+
+export const TravelQuoteSchema = z.object({
+  originId: z.string(),
+  destinationId: z.string(),
+  legs: z.array(
+    z.object({
+      routeId: z.string(),
+      fromId: z.string(),
+      toId: z.string(),
+      distance: z.number(),
+      danger: z.number(),
+      zone: z.number(),
+    }),
+  ),
+  totalDistance: z.number(),
+  durationSeconds: z.number(),
+  fuelNeeded: z.number(),
+  fuelHave: z.number(),
+  peakDanger: z.number(),
+  blockers: z.array(TravelBlockerSchema),
+  canDepart: z.boolean(),
+});
+export type TravelQuote = z.infer<typeof TravelQuoteSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Admin tuning

@@ -134,6 +134,8 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
   return (
     world.templates
       .filter((template) => template.active)
+      // Pilot-requested trips are never board offers.
+      .filter((template) => template.type !== 'TRAVEL')
       // A mining board offer is meaningless without a material to name.
       .filter((template) => template.type !== 'MINING' || world.materials.length > 0)
       .filter((template) => {
@@ -149,7 +151,7 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
   );
 }
 
-function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]> {
+export function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]> {
   const adjacency = new Map<string, Adjacent[]>();
   const sorted = [...routes].sort(byId);
   for (const route of sorted) {
@@ -174,7 +176,7 @@ function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]>
 
 // Deterministic Dijkstra by distance: adjacency is pre-sorted and equal distances never
 // displace an earlier discovery, so the same world always yields the same path.
-function shortestPath(
+export function shortestPath(
   originId: string,
   destinationId: string,
   adjacency: Map<string, Adjacent[]>,
@@ -235,7 +237,7 @@ function environmentForRoute(routeId: string, world: FillerWorld): FillerEnviron
 
 // Zone of a leg is the riskier of its endpoints — same "max of the two nodes" rule the
 // world builder uses for route danger (D24).
-function legForRoute(
+export function legForRoute(
   route: FillerRoute,
   locationsById: Map<string, FillerLocation>,
   world: FillerWorld,

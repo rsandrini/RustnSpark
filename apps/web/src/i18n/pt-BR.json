@@ -596,7 +596,8 @@
       "TRANSPORT": "Transporte",
       "ESCORT": "Escolta",
       "MINING": "Mineração",
-      "RESCUE": "Resgate"
+      "RESCUE": "Resgate",
+      "TRAVEL": "Viagem"
     },
     "status": {
       "AVAILABLE": "Aberta",
@@ -653,6 +654,26 @@
     "popup": {
       "missionsHere": "Missões aqui",
       "to": "Para {{destination}}"
+    },
+    "travel": {
+      "title": "Voar até lá sem missão",
+      "time": "Tempo de voo",
+      "distance": "Distância",
+      "fuel": "Combustível da viagem",
+      "fuelNeeded": "Combustível {{needed}} de {{have}} a bordo",
+      "noPay": "Uma viagem custa só o combustível que queima e não paga nada. Piratas e outros pilotos ainda podem te encontrar no caminho.",
+      "go": "Voar para {{place}}",
+      "failed": "A viagem não pôde começar.",
+      "blockers": {
+        "NO_SHIP": "Você não tem nave.",
+        "SAME_PLACE": "Você já está aqui.",
+        "NO_ROUTE": "Não há rota até este lugar.",
+        "ACTIVE_MISSION_EXISTS": "Termine ou cancele sua missão atual primeiro.",
+        "SHIP_NOT_IN_PORT": "A nave precisa estar atracada para partir.",
+        "SHIP_REPAIRING": "A nave está em reparo.",
+        "SHIP_NOT_VIABLE": "A nave ainda não pode voar: monte-a no Hangar primeiro.",
+        "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
+      }
     }
   },
   "notFound": {

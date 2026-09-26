@@ -145,6 +145,8 @@ enum MissionType {
   ESCORT
   MINING
   RESCUE
+  // A trip the pilot asks for on their own: no cargo, no reward, only fuel (never on a board).
+  TRAVEL
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union

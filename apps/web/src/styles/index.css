@@ -2078,3 +2078,16 @@ svg .block.cond-bad {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.travel-box {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--spark);
+  border-radius: 10px;
+  background: rgba(240, 165, 0, 0.06);
+}
+
+.travel-box h3 {
+  margin: 0;
+}

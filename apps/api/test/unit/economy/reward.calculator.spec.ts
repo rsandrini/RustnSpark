@@ -11,6 +11,15 @@ import {
 const rules: GameRules = GAME_CONFIG_DEFAULTS;
 
 describe('S5.6 — reward base (D13)', () => {
+  it('a pilot-requested trip pays nothing, whatever the distance and danger', () => {
+    expect(rewardBase({ tier: 3, danger: 9, distance: 5000, missionType: 'TRAVEL' }, rules)).toBe(
+      0,
+    );
+    expect(rewardBase({ tier: 3, danger: 9, distance: 5000, missionType: 'travel' }, rules)).toBe(
+      0,
+    );
+  });
+
   it('matches the D13 formula at the reference distance and zero danger', () => {
     // (200 + 1 × 120) × (1 + 0) × (1 + 0) × 1 = 320
     expect(
