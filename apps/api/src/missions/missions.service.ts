@@ -9,6 +9,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma, type MissionInstance, type Ship } from '@prisma/client';
 import type { Queue } from 'bullmq';
+import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
@@ -21,6 +22,9 @@ import { checkViability } from '../ships/viability.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import { bilingual } from '../parts/parts.service.js';
+import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import { checkMissionRequirements } from './requirements.checker.js';
@@ -55,7 +59,30 @@ export interface BoardEligibility {
   readonly reasons: readonly EligibilityReason[];
 }
 
-export type BoardOffer = BoardMission & { readonly eligibility: BoardEligibility };
+/**
+ * What a pilot needs to judge an offer without leaving the board: the template's own words,
+ * the size of the trip, an estimate for THEIR ship, and (mining) what to dig for.
+ */
+export interface OfferInfo {
+  readonly title: { readonly en: string; readonly 'pt-BR': string };
+  readonly description: { readonly en: string; readonly 'pt-BR': string };
+  readonly legCount: number;
+  readonly totalDistance: number;
+  readonly peakDanger: number;
+  readonly peakZone: number;
+  /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
+  readonly estimate: { readonly durationSeconds: number; readonly fuelNeeded: number } | null;
+  readonly material: {
+    readonly name: { readonly en: string; readonly 'pt-BR': string };
+    readonly contracted: boolean;
+    readonly quantity: number | null;
+  } | null;
+}
+
+export type BoardOffer = BoardMission & {
+  readonly eligibility: BoardEligibility;
+  readonly info: OfferInfo;
+};
 
 // Per-leg transit windows (S10.7) served from RoutePresence — written pro-rata by leg
 // distance at dispatch (S7.1), so the client shows the current leg without deriving time.
@@ -515,9 +542,23 @@ export class MissionsService implements OnModuleInit {
 
     const templates = await this.prisma.missionTemplate.findMany({
       where: { id: { in: [...new Set(rows.map((row) => row.templateId))] } },
-      select: { id: true, requirements: true },
+      select: { id: true, requirements: true, displayName: true, description: true },
     });
     const requirementsById = new Map(templates.map((entry) => [entry.id, entry.requirements]));
+    const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+
+    const materialIds = rows.flatMap((row) => {
+      const id = (row.cargo as { materialId?: unknown } | null)?.materialId;
+      return typeof id === 'string' ? [id] : [];
+    });
+    const materials =
+      materialIds.length === 0
+        ? []
+        : await this.prisma.material.findMany({
+            where: { id: { in: [...new Set(materialIds)] } },
+            select: { id: true, displayName: true },
+          });
+    const materialsById = new Map(materials.map((entry) => [entry.id, entry.displayName]));
 
     const active = await this.prisma.missionInstance.count({
       where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
@@ -554,7 +595,11 @@ export class MissionsService implements OnModuleInit {
           reasons.push(...check.reasons);
         }
       }
-      return { ...row, eligibility: { eligible: reasons.length === 0, reasons } };
+      return {
+        ...row,
+        eligibility: { eligible: reasons.length === 0, reasons },
+        info: offerInfo(row, wordsById.get(row.templateId), materialsById, sheet, viability, rules),
+      };
     });
   }
 
@@ -564,4 +609,73 @@ export class MissionsService implements OnModuleInit {
       data: { status: 'EXPIRED', playerId: null },
     });
   }
+}
+
+interface OfferLeg {
+  readonly distance?: number;
+  readonly danger?: number;
+  readonly zone?: number;
+  readonly env?: { readonly fuelMult?: number };
+}
+
+function offerInfo(
+  row: BoardMission,
+  template: { displayName: unknown; description: unknown } | undefined,
+  materialsById: ReadonlyMap<string, unknown>,
+  sheet: ReturnType<typeof deriveSheet> | null,
+  viability: { readonly viable: boolean } | null,
+  rules: GameRules,
+): OfferInfo {
+  const legs = (Array.isArray(row.legs) ? row.legs : []) as OfferLeg[];
+  const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
+  const peakDanger = legs.reduce((peak, leg) => Math.max(peak, leg.danger ?? 0), 0);
+  const peakZone = legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
+
+  let estimate: OfferInfo['estimate'] = null;
+  if (sheet !== null && viability?.viable === true && sheet.mob > 0) {
+    estimate = {
+      durationSeconds: missionDuration({
+        totalDistance,
+        mobility: sheet.mob,
+        durationK: rules.missions.duration_k,
+        timeScale: rules.missions.time_scale,
+        classCutoffs: rules.missions.duration_class_cutoffs,
+      }).durationSeconds,
+      fuelNeeded: legs.reduce(
+        (sum, leg) =>
+          sum +
+          fuelUnits({
+            fuelUse: sheet.fuelUse,
+            distance: leg.distance ?? 0,
+            envFuelMult: leg.env?.fuelMult ?? 1,
+          }),
+        0,
+      ),
+    };
+  }
+
+  const cargo = (row.cargo ?? {}) as {
+    materialId?: unknown;
+    contracted?: unknown;
+    quantity?: unknown;
+  };
+  const materialName =
+    typeof cargo.materialId === 'string' ? materialsById.get(cargo.materialId) : undefined;
+  return {
+    title: bilingual(template?.displayName),
+    description: bilingual(template?.description),
+    legCount: legs.length,
+    totalDistance,
+    peakDanger,
+    peakZone,
+    estimate,
+    material:
+      materialName === undefined
+        ? null
+        : {
+            name: bilingual(materialName),
+            contracted: cargo.contracted === true,
+            quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
+          },
+  };
 }

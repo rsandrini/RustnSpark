@@ -2091,3 +2091,159 @@ svg .block.cond-bad {
 .travel-box h3 {
   margin: 0;
 }
+
+/* mission cards ------------------------------------------------------------------ */
+.mcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.mcard {
+  --accent: var(--blue);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.mcard.type-transport {
+  --accent: var(--luna);
+}
+
+.mcard.type-escort {
+  --accent: var(--pirata);
+}
+
+.mcard.type-mining {
+  --accent: var(--explorers);
+}
+
+.mcard.type-rescue {
+  --accent: var(--risk-md);
+}
+
+.mcard.type-travel {
+  --accent: var(--mut);
+}
+
+.mcard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.mcard-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.mcard-title {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.mcard-reward {
+  text-align: right;
+}
+
+.mcard-reward b {
+  display: block;
+  font-size: 18px;
+  color: var(--spark);
+}
+
+.mcard-reward small {
+  color: var(--mut);
+  font-size: 11px;
+}
+
+.mcard-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.mcard-route .arrow {
+  color: var(--mut);
+}
+
+.mcard-desc,
+.mcard-material,
+.mcard-needs {
+  margin: 0;
+  font-size: 13px;
+}
+
+.mcard-desc {
+  color: var(--mut);
+}
+
+.mcard-material {
+  color: var(--explorers);
+  font-weight: 600;
+}
+
+.mcard-needs {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--panel2);
+}
+
+.mcard-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 0;
+}
+
+.mcard-facts div {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mcard-facts dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--mut);
+}
+
+.mcard-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mcard-facts .bad dd {
+  color: var(--bad);
+}
+
+.mcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcard-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.mcard-actions .btn.primary {
+  flex: 1;
+}

@@ -31,19 +31,25 @@ describe('board (S10.6)', () => {
     renderWithRouter(routes, { initialEntries: ['/board'] });
 
     expect(await screen.findByRole('heading', { name: 'Mission board' })).toBeInTheDocument();
-    expect(await screen.findByText('Delivery — Porto Ceres → Portão Kessler')).toBeInTheDocument();
+    // Each offer says what the job is (title), where it goes, and what it needs.
+    expect((await screen.findAllByText('Corporate Delivery')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Deliver sealed cargo to the destination.').length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getAllByText('Flight time').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('You need:').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Eligible')).toHaveLength(3);
     expect(screen.getByText('Blocked')).toBeInTheDocument();
     expect(screen.getByText('Needs a mining system')).toBeInTheDocument();
     expect(screen.getByText('Mobility too low')).toBeInTheDocument();
     expect(screen.getByText('On hold')).toBeInTheDocument();
-    expect(screen.getByText(/Reward 1200/)).toBeInTheDocument();
+    expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
 
-    expect(document.querySelectorAll('.item')).toHaveLength(4);
+    expect(document.querySelectorAll('.mcard')).toHaveLength(4);
     fireEvent.click(screen.getByRole('tab', { name: 'Mining' }));
-    expect(document.querySelectorAll('.item')).toHaveLength(1);
+    expect(document.querySelectorAll('.mcard')).toHaveLength(1);
     fireEvent.click(screen.getByRole('tab', { name: 'All missions' }));
-    expect(document.querySelectorAll('.item')).toHaveLength(4);
+    expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
   it('accepts an eligible offer and moves on to the transit screen', async () => {
@@ -76,7 +82,7 @@ describe('board (S10.6)', () => {
 
     const heading = await screen.findByRole('heading', { name: 'Mission board' });
     expect(heading.nextElementSibling?.textContent).toBe('Portão Kessler');
-    expect(document.querySelectorAll('.item')).toHaveLength(4);
+    expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
   it("labels the player's private start-safe mission (D43) and no shared offer", async () => {
@@ -106,6 +112,16 @@ describe('board (S10.6)', () => {
               version: 0,
               rewardEstimate: 300,
               eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'First Steps', 'pt-BR': 'Primeiros Passos' },
+                description: { en: 'An easy first run.', 'pt-BR': 'Uma primeira viagem fácil.' },
+                legCount: 1,
+                totalDistance: 400,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: { durationSeconds: 120, fuelNeeded: 4 },
+                material: null,
+              },
             },
           ],
           { status: 200 },

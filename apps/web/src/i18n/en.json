@@ -626,7 +626,28 @@
       "STRUCTURE_EXCEEDED": "Structure budget exceeded"
     },
     "expiredLabel": "Expired",
-    "starterBadge": "Starter mission"
+    "starterBadge": "Starter mission",
+    "arrow": "→",
+    "facts": {
+      "distance": "Distance",
+      "legs": "Legs",
+      "time": "Flight time",
+      "fuel": "Fuel needed"
+    },
+    "lowFuel": "Your ship does not carry enough fuel for this trip: refuel first.",
+    "needsTitle": "You need:",
+    "needs": {
+      "DELIVERY": "cargo space for the load (see Cargo in the Hangar).",
+      "TRANSPORT": "a Passenger Cabin plus a Life Support module.",
+      "ESCORT": "at least one weapon and good mobility to keep up.",
+      "MINING": "a Mining Rig and cargo space for the ore.",
+      "RESCUE": "a fast ship (mobility) and room for the survivors.",
+      "TRAVEL": "nothing special: fuel for the trip."
+    },
+    "mining": {
+      "contracted": "Contract: mine {{quantity}} × {{material}}. It pays only if you bring the full amount.",
+      "free": "Mine {{material}}: you keep what you dig up and sell it at a port."
+    }
   },
   "map": {
     "title": "Sector map",

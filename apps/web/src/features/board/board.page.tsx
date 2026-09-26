@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { MissionCard } from './mission-card';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
-import { client, serverNow } from '../../api/client';
+import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
 import type { MissionOffer, MissionType, ShipResponse, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
-import { Countdown } from '../../ui/Countdown';
-import { ItemCard } from '../../ui/ItemCard';
-import { RiskBadge } from '../../ui/RiskBadge';
 
 const BOARD_REFETCH_MS = 15000;
 
@@ -109,9 +107,6 @@ export function BoardPage({ guided = false }: BoardPageProps) {
   const offers = (boardQuery.data ?? []).filter(
     (offer) => typeFilter === 'all' || offer.type === typeFilter,
   );
-  // Unknown destination → no badge: inventing a risk band would be a made-up rule.
-  const destinationRisk = (offer: MissionOffer) =>
-    worldQuery.data?.locations.find((entry) => entry.id === offer.destinationId)?.risk;
 
   return (
     <main className="app" data-guided={guided ? '' : undefined}>
@@ -156,67 +151,24 @@ export function BoardPage({ guided = false }: BoardPageProps) {
       {boardQuery.isLoading && <p>{t('loading')}</p>}
       {!boardQuery.isLoading && offers.length === 0 && <p className="sub">{t('board.empty')}</p>}
 
-      <div className="stack">
+      <div className="mcard-grid">
         {offers.map((offer) => {
-          const routeLabel = `${locationName(offer.originId)} → ${locationName(offer.destinationId)}`;
           const mine = offer.playerId === user?.id;
           const canAccept =
             ship !== undefined &&
             offer.eligibility.eligible &&
             (offer.status === 'AVAILABLE' || (offer.status === 'HELD' && mine));
           return (
-            <ItemCard
+            <MissionCard
               key={offer.id}
-              name={`${t(`board.type.${offer.type}`)} — ${routeLabel}`}
-              description={
-                <>
-                  <div className="sub">
-                    {[
-                      t('board.reward', { amount: offer.reward }),
-                      t('board.estimate', { amount: offer.rewardEstimate }),
-                    ].join(' · ')}
-                  </div>
-                  <div className="row-between">
-                    {destinationRisk(offer) !== undefined && (
-                      <RiskBadge band={destinationRisk(offer)!} />
-                    )}
-                    <span className="sub">
-                      {Date.parse(offer.expiresAt) <= serverNow() ? (
-                        t('board.expiredLabel')
-                      ) : (
-                        <>
-                          {t('board.expires')} <Countdown until={offer.expiresAt} />
-                        </>
-                      )}
-                    </span>
-                    <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-                      {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-                    </span>
-                    {offer.privatePlayerId !== null && (
-                      <span className="badge ok" data-testid="starter-badge">
-                        {t('board.starterBadge')}
-                      </span>
-                    )}
-                    {offer.status !== 'AVAILABLE' && (
-                      <span className="badge">{t(`board.status.${offer.status}`)}</span>
-                    )}
-                  </div>
-                  {!offer.eligibility.eligible && (
-                    <ul className="reasons">
-                      {offer.eligibility.reasons.map((reason, index) => (
-                        <li key={`${reason.code}-${index}`}>
-                          {t(`board.reasons.${reason.code}`, {
-                            defaultValue: t(`error.${reason.code}`, {
-                              defaultValue: reason.message,
-                            }),
-                          })}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              }
-              action={
+              offer={offer}
+              origin={worldQuery.data?.locations.find((entry) => entry.id === offer.originId)}
+              destination={worldQuery.data?.locations.find(
+                (entry) => entry.id === offer.destinationId,
+              )}
+              fuelHave={ship?.fuel}
+              mine={mine}
+              actions={
                 <>
                   {offer.status === 'AVAILABLE' && (
                     <button

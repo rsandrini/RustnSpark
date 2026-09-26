@@ -312,9 +312,26 @@ export const MissionInstanceDataSchema = z.object({
 export type MissionInstanceData = z.infer<typeof MissionInstanceDataSchema>;
 
 /** GET /v1/locations/:id/missions — board rows carry the estimate and the upfront verdict. */
+export const OfferInfoSchema = z.object({
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  legCount: z.number(),
+  totalDistance: z.number(),
+  peakDanger: z.number(),
+  peakZone: z.number(),
+  /** Time and fuel for the viewer's own ship; null when they have no flyable ship. */
+  estimate: z.object({ durationSeconds: z.number(), fuelNeeded: z.number() }).nullable(),
+  /** Mining offers: what to dig for. */
+  material: z
+    .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })
+    .nullable(),
+});
+export type OfferInfo = z.infer<typeof OfferInfoSchema>;
+
 export const MissionOfferSchema = MissionInstanceDataSchema.extend({
   rewardEstimate: z.number(),
   eligibility: BoardEligibilitySchema,
+  info: OfferInfoSchema,
 });
 export type MissionOffer = z.infer<typeof MissionOfferSchema>;
 

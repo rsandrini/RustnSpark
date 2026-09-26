@@ -121,7 +121,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     duration_k: 2.25,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
-    board_min_per_location: 1,
+    // Several offers per port: one at a time made every board look the same.
+    board_min_per_location: 4,
     // D43: while a player has completed fewer than this many missions and nothing on their
     // board is takeable, a private start-safe mission is offered. 0 turns the guarantee off.
     starter_guarantee_max_completed: 3,

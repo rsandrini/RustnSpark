@@ -949,6 +949,19 @@ const boardOffer = (over: Partial<MissionOffer> & { id: string }): MissionOffer 
   version: 1,
   rewardEstimate: 1350,
   eligibility: { eligible: true, reasons: [] },
+  info: {
+    title: { en: 'Corporate Delivery', 'pt-BR': 'Entrega Corporativa' },
+    description: {
+      en: 'Deliver sealed cargo to the destination.',
+      'pt-BR': 'Entregue a carga lacrada no destino.',
+    },
+    legCount: 2,
+    totalDistance: 820,
+    peakDanger: 5,
+    peakZone: 1,
+    estimate: { durationSeconds: 300, fuelNeeded: 8 },
+    material: null,
+  },
   ...over,
 });
 

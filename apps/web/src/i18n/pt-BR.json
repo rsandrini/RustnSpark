@@ -626,7 +626,28 @@
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
     },
     "expiredLabel": "Expirada",
-    "starterBadge": "Missão inicial"
+    "starterBadge": "Missão inicial",
+    "arrow": "→",
+    "facts": {
+      "distance": "Distância",
+      "legs": "Trechos",
+      "time": "Tempo de voo",
+      "fuel": "Combustível"
+    },
+    "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: reabasteça primeiro.",
+    "needsTitle": "Você precisa de:",
+    "needs": {
+      "DELIVERY": "espaço de carga para o pacote (veja Carga no Hangar).",
+      "TRANSPORT": "uma Cabine de Passageiros e um módulo de Suporte de Vida.",
+      "ESCORT": "pelo menos uma arma e boa mobilidade para acompanhar.",
+      "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
+      "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
+      "TRAVEL": "nada especial: combustível para a viagem."
+    },
+    "mining": {
+      "contracted": "Contrato: minere {{quantity}} × {{material}}. Só paga se trouxer a quantidade completa.",
+      "free": "Minere {{material}}: você fica com o que extrair e vende num porto."
+    }
   },
   "map": {
     "title": "Mapa do setor",
