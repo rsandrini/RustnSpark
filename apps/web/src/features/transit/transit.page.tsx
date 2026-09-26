@@ -13,6 +13,7 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { journeyNodeIds } from './journey';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { RiskBadge } from '../../ui/RiskBadge';
@@ -170,7 +171,14 @@ export function TransitPage({ guided = false }: TransitPageProps) {
     (entry) => entry.id === mission.destinationId,
   )?.risk;
 
-  const legLabel = (routeId: string) => {
+  // Each leg reads "from → to" in the direction the ship flies (routes themselves are undirected).
+  const nodeIds = journeyNodeIds(mission.originId, windows, worldQuery.data?.routes ?? []);
+  const legLabel = (routeId: string, index: number) => {
+    const from = nodeIds[index];
+    const to = nodeIds[index + 1];
+    if (from !== undefined && to !== undefined) {
+      return `${locationName(from)} → ${locationName(to)}`;
+    }
     const route = worldQuery.data?.routes.find((entry) => entry.id === routeId);
     if (route === undefined) return routeId;
     return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
@@ -266,7 +274,9 @@ export function TransitPage({ guided = false }: TransitPageProps) {
           <TransitScene moving />
           {currentIndex !== -1 && windows[currentIndex] !== undefined && (
             <p className="now-flying">
-              {t('transit.nowFlying', { route: legLabel(windows[currentIndex].routeId) })}
+              {t('transit.nowFlying', {
+                route: legLabel(windows[currentIndex].routeId, currentIndex),
+              })}
             </p>
           )}
           <p className="sub">
@@ -292,7 +302,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
                 return (
                   <li key={window.legIndex} className={`leg ${state}`}>
                     <b>{t('transit.leg', { index: index + 1, total: windows.length })}</b>
-                    <span>{legLabel(window.routeId)}</span>
+                    <span>{legLabel(window.routeId, index)}</span>
                     <span className="sub">
                       {state === 'done'
                         ? t('transit.legDone')
