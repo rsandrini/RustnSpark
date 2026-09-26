@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Gauge, conditionTone } from '../../ui/Gauge';
+import { PartThumb } from '../../ui/PartThumb';
 import { partSummary, useNumberFormat, type PartInfoData } from './part-detail';
 import { PartInfoButton } from './part-info-button';
 
@@ -45,7 +46,10 @@ export function PartCard({
       className={`pcard rarity-${part.rarity.toLowerCase()}${part.broken === true ? ' broken' : ''}`}
     >
       <header className="pcard-head">
-        <h3 className="pcard-name">{name}</h3>
+        <div className="pcard-title-row">
+          <PartThumb name={name} rarity={part.rarity} />
+          <h3 className="pcard-name">{name}</h3>
+        </div>
         {price !== undefined && (
           <div className="pcard-price">
             <b>{money(price)}</b>

@@ -28,6 +28,8 @@ import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { Gauge, conditionTone } from '../../ui/Gauge';
+import { PartThumb } from '../../ui/PartThumb';
+import { PlaceBanner } from '../../ui/PlaceArt';
 import { PortTabs } from '../../ui/PortTabs';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
@@ -394,6 +396,10 @@ export function PortPage({ guided = false }: PortPageProps) {
         </div>
       </header>
 
+      <PlaceBanner placeId={ship.currentLocationId} className="port-banner">
+        <h2>{locationName(ship.currentLocationId)}</h2>
+      </PlaceBanner>
+
       <RescueBanner />
 
       <PortTabs
@@ -539,6 +545,7 @@ export function PortPage({ guided = false }: PortPageProps) {
               return (
                 <div key={item.id} className="repair-row">
                   <div className="rname">
+                    <PartThumb name={name} rarity={item.rarity} className="small" />
                     {rowName}
                     {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
                     <small>{t(`hangar.partClasses.${item.catalog.partClass}`)}</small>

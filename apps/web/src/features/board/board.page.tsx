@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { PlaceBanner } from '../../ui/PlaceArt';
 import { MissionCard } from './mission-card';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client } from '../../api/client';
@@ -114,6 +115,11 @@ export function BoardPage({ guided = false }: BoardPageProps) {
         <h1>{t('board.title')}</h1>
         <span className="sub">{originId === null ? '' : locationName(originId)}</span>
       </header>
+      {originId !== null && (
+        <PlaceBanner placeId={originId}>
+          <h2>{locationName(originId)}</h2>
+        </PlaceBanner>
+      )}
       <EmptyShipNotice />
 
       <RescueBanner />

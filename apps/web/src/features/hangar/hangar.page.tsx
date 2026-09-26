@@ -15,6 +15,7 @@ import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
 import { useAuthContext } from '../auth/auth.context';
 import { Gauge, conditionTone } from '../../ui/Gauge';
+import { PartThumb } from '../../ui/PartThumb';
 import { MarketPanel } from '../market/market-panel';
 import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
@@ -382,7 +383,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       setSelectedId(null);
                     }}
                   >
-                    {nameById.get(part.id) ?? part.partType}
+                    <span className="part-line">
+                      <PartThumb
+                        name={nameById.get(part.id) ?? part.partType}
+                        rarity={part.rarity}
+                      />
+                      {nameById.get(part.id) ?? part.partType}
+                    </span>
                     <span className="meta">
                       {[
                         t(`hangar.partClasses.${part.catalog.partClass}`),

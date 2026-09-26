@@ -16,6 +16,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { placeArtUrl } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
 
 const infoGlyph = 'i';
@@ -300,6 +301,13 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
 
   return (
     <section className={`debrief ${tone}`} data-testid="debrief">
+      {mission !== undefined && (
+        <div
+          className="debrief-art"
+          aria-hidden="true"
+          style={{ backgroundImage: `url(${placeArtUrl(mission.destinationId, 'wide')})` }}
+        />
+      )}
       <div className="debrief-verdict">
         <span className="debrief-glyph" aria-hidden="true">
           {t(`report.glyph.${tone}`)}

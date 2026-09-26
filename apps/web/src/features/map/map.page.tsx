@@ -21,6 +21,7 @@ import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
 import { Popup } from '../../ui/Popup';
 import { errorText } from '../../api/errors';
+import { PlaceArt } from '../../ui/PlaceArt';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
@@ -326,6 +327,7 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
 
   return (
     <div className="stack place-details">
+      <PlaceArt placeId={place.id} variant="square" />
       <p className="sub">
         {[
           t(`map.types.${place.type}`, { defaultValue: place.type }),
