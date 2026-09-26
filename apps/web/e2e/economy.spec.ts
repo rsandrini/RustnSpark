@@ -11,7 +11,7 @@ import { assertClean, flyOneMission, registerAndLaunch, walletOf } from './suppo
 test('buy a part, see it in your goods, sell it back for less than you paid', async ({ page }) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/port');
-  await expect(page.getByRole('heading', { name: 'Port' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Port', exact: true })).toBeVisible();
   const before = await walletOf(page);
 
   // Cheapest thing the player can afford.
