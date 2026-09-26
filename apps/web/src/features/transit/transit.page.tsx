@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
@@ -59,6 +59,29 @@ export function TransitPage({ guided = false }: TransitPageProps) {
 
   const missions = activeQuery.data ?? [];
   const mission = missions[0] ?? null;
+
+  // A pilot watching this screen when the mission ends is taken to its report: remember the flight
+  // being watched, and once the active list is empty and the newest report is that mission, go.
+  const navigate = useNavigate();
+  const watched = useRef<string | null>(null);
+  useEffect(() => {
+    if (mission !== null && (mission.status === 'IN_TRANSIT' || mission.status === 'RESOLVING')) {
+      watched.current = mission.id;
+    }
+  }, [mission]);
+  const newestReport = latestReportQuery.data?.items[0];
+  useEffect(() => {
+    if (
+      activeIsEmpty &&
+      !latestReportQuery.isFetching &&
+      watched.current !== null &&
+      newestReport?.missionId === watched.current
+    ) {
+      const finished = watched.current;
+      watched.current = null;
+      void navigate(`/report/${finished}`);
+    }
+  }, [activeIsEmpty, latestReportQuery.isFetching, newestReport?.missionId, navigate]);
 
   const ship = shipsQuery.data?.[0];
 

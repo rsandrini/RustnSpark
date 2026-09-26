@@ -409,7 +409,8 @@
     "board": "Quadro",
     "transit": "Trânsito",
     "port": "Porto",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro."
   },
   "port": {
     "title": "Porto",

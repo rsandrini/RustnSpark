@@ -2411,3 +2411,8 @@ svg .block.cond-bad {
   margin: 0;
   padding-left: 18px;
 }
+
+.nav-link.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

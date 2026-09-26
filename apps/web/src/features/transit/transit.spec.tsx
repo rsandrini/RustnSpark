@@ -267,4 +267,43 @@ describe('transit (S10.7)', () => {
     fireEvent.click(within(held).getByRole('button', { name: 'Release' }));
     await waitFor(() => expect(released).toBe(1));
   });
+
+  it('takes a pilot who is watching to the report when the mission ends, and refreshes the wallet', async () => {
+    let profileReads = 0;
+    server.use(
+      http.get('/v1/players/me', () => {
+        profileReads += 1;
+        return HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: 100,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: 'luna',
+          },
+          { status: 200 },
+        );
+      }),
+      // In flight for ~4 s (the poll is fast that close to arrival), then gone.
+      http.get('/v1/missions/active', () =>
+        Date.now() < endsAt
+          ? HttpResponse.json(
+              [{ ...mission(), status: 'IN_TRANSIT', arrivalAt: iso(endsAt - Date.now()) }],
+              { status: 200 },
+            )
+          : HttpResponse.json([], { status: 200 }),
+      ),
+    );
+    const endsAt = Date.now() + 4000;
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByTestId('in-transit')).toBeInTheDocument();
+    const readsWhileFlying = profileReads;
+
+    // The mission ends while the pilot is on this screen: the report opens on its own.
+    expect(
+      await screen.findByRole('heading', { name: 'Mission report' }, { timeout: 12_000 }),
+    ).toBeInTheDocument();
+    expect(profileReads).toBeGreaterThan(readsWhileFlying);
+  }, 20_000);
 });

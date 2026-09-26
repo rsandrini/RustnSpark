@@ -409,7 +409,8 @@
     "board": "Board",
     "transit": "Transit",
     "port": "Port",
-    "profile": "Profile"
+    "profile": "Profile",
+    "transitDisabled": "Nothing to watch: accept a mission or start a trip first."
   },
   "port": {
     "title": "Port",

@@ -65,6 +65,14 @@ describe('navigation flow (S10.10)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
   });
 
+  it('disables the Transit entry while there is no mission to watch', async () => {
+    server.use(http.get('/v1/missions/active', () => HttpResponse.json([], { status: 200 })));
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const nav = await screen.findByRole('navigation', { name: 'Game navigation' });
+    await waitFor(() => expect(within(nav).queryByRole('link', { name: 'Transit' })).toBeNull());
+    expect(within(nav).getByText('Transit')).toHaveAttribute('aria-disabled', 'true');
+  });
+
   it('hides the game nav before the faction is chosen', async () => {
     server.use(
       http.get('/v1/players/me', () =>

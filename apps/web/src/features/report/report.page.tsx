@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import type {
   ReportViewName,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { Popup } from '../../ui/Popup';
 
@@ -26,6 +27,11 @@ export interface ReportPageProps {
 
 export function ReportPage({ guided = false }: ReportPageProps) {
   const { missionId = '' } = useParams();
+  const { reloadProfile } = useAuthContext();
+  // Opening a report is the moment a pilot looks at the money: make sure it is current.
+  useEffect(() => {
+    void reloadProfile();
+  }, [reloadProfile]);
   const { t } = useTranslation();
   const [view, setView] = useState<ReportViewName>('narrative');
   const [popupLine, setPopupLine] = useState<string | null>(null);

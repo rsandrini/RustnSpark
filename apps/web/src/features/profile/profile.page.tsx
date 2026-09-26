@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,16 @@ export interface ProfilePageProps {
 
 export function ProfilePage({ guided = false }: ProfilePageProps) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthContext();
+  const { user, reloadProfile } = useAuthContext();
+
+  // The balance may have moved while this tab was in the background (a mission ending): re-read
+  // it on entry and whenever the window regains focus.
+  useEffect(() => {
+    void reloadProfile();
+    const onFocus = () => void reloadProfile();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [reloadProfile]);
 
   const reportsQuery = useQuery({
     queryKey: ['reports'],

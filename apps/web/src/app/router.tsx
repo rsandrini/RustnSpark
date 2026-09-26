@@ -17,6 +17,7 @@ import { ReportPage } from '../features/report/report.page';
 import { PortPage } from '../features/port/port.page';
 import { ProfilePage } from '../features/profile/profile.page';
 import { GameNav } from '../ui/GameNav';
+import { useWalletSync } from '../features/transit/use-active-mission';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { HomePage } from '../pages/home.page';
 import { NotFoundPage } from '../pages/not-found.page';
@@ -28,13 +29,22 @@ function AdminFallback() {
   return <p>{t('tuning.loading')}</p>;
 }
 
+function InGameChrome() {
+  useWalletSync();
+  return (
+    <>
+      <NoticeBanner />
+      <GameNav />
+    </>
+  );
+}
+
 function AppChrome() {
   const { user } = useAuthContext();
   const inGame = user?.factionId != null;
   return (
     <>
-      {inGame && <NoticeBanner />}
-      {inGame && <GameNav />}
+      {inGame && <InGameChrome />}
       <Outlet />
     </>
   );
