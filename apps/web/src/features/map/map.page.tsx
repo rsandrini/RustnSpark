@@ -352,7 +352,7 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
         {offers.map((offer) => (
           <li key={offer.id} className="place-mission">
             <div className="row-between">
-              <b>{t(`board.type.${offer.type}`)}</b>
+              <b>{pickLocalized(offer.info.title, i18n.language)}</b>
               <span className="spark">{t('board.reward', { amount: offer.reward })}</span>
             </div>
             <div className="sub">

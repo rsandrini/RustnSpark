@@ -87,6 +87,16 @@ describe('mission board (S6.2)', () => {
     expect(live).toBe(3);
   }, 15000);
 
+  it('fills a port with different offers: no two share both template and destination', async () => {
+    await config!.setValue('missions.board_min_per_location', 6, 'tester', 'integration-test');
+    for (const port of ['ceres', 'hedus', 'cair']) {
+      const rows = await board!.getBoard(port, 1);
+      expect(rows.length).toBeGreaterThanOrEqual(6);
+      const pairs = rows.map((row) => `${row.templateId}>${row.destinationId}`);
+      expect(new Set(pairs).size).toBe(pairs.length);
+    }
+  }, 30000);
+
   it('gives every location at least one mission (GDD §12)', async () => {
     const locations = await prisma.location.findMany({ select: { id: true } });
     expect(locations.length).toBe(12);

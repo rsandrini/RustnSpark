@@ -29,6 +29,7 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   await assertClean(page, 'port after buy');
 
   // The purchase is now in "Your goods" and can be sold (used parts sell for less than new).
+  await page.getByRole('tab', { name: 'Your goods' }).click();
   const sell = page.locator('button:has-text("Sell"):not(:has-text("Sell all"))').first();
   await expect(sell).toBeVisible();
   await sell.click();
@@ -70,8 +71,13 @@ test('repair: worn parts are quoted, confirmed and charged; a clean ship says so
     return;
   }
   const before = await walletOf(page);
-  // "Repair all" quotes the whole ship and opens the confirmation dialog.
-  await page.getByRole('button', { name: 'Repair all' }).click();
+  // Nothing is selected until the pilot moves a slider; "Set all to 100%" selects the whole ship,
+  // the screen shows the server's price and time per part and in total, and "Start repair"
+  // opens the confirmation dialog.
+  await expect(page.getByTestId('repair-summary')).toContainText('Nothing selected yet');
+  await page.getByRole('button', { name: 'Set all to 100%' }).click();
+  await expect(page.getByTestId('repair-total')).toContainText('¢');
+  await page.getByTestId('repair-summary').getByRole('button', { name: 'Start repair' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Repair cost');
   await dialog.getByRole('button', { name: 'Start repair' }).click();

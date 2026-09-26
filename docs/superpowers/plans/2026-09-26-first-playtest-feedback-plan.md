@@ -1,6 +1,31 @@
 # Rust and Spark v0.1 — First-playtest feedback plan
 
-> Source: the owner's first hands-on session (2026-09-26) on the compose dev stack. Status: **planned, nothing implemented yet**. More feedback is expected; append it to "Incoming feedback" and re-order before starting.
+> Source: the owner's first hands-on session (2026-09-26) on the compose dev stack. Status: **implemented on `feat/playtest-feedback`** (see "Status" below). More feedback is expected; append it to "Incoming feedback" and re-order before starting.
+
+## Status (end of the first playtest pass)
+
+| Item | Result |
+|---|---|
+| Auth/home styling, register rules and messages | Done. The 401 on page load is now skipped once the app knows there is no session |
+| A zoom/pan, readable parts | Done (buttons, wheel, pinch, fit; longer labels when zoomed) |
+| B market filter | Done (type chips, search, new/used, sort); bridges hidden from stores |
+| C1 Store tab in the Hangar | Done, with the balance on screen |
+| D kit uninstalled | Done (D44), rescue kit too |
+| E descriptions/details/requirements | Done (E1–E4); 19 rewritten descriptions + Passenger Cabin and Life Support parts |
+| F/M position on the map, live flight | Done |
+| G/N transit screen | Done (animated scene, briefing, leg-by-leg) |
+| H mission information | Done (title, description, trip estimate, needs, mining goal) |
+| I map popup | Done |
+| J variety | Done: 16 more templates, 4 offers per port, no duplicate offers |
+| K report | Done: debrief header, story tab first |
+| L travel without a quest | Done: `TRAVEL` missions, fuel only, no reward |
+| Port: repair rows, fuel gauge, scavenging explained, Your goods tab, part cards | Done |
+| Hangar: rarity colours + condition bars/mode | Done |
+| Ship class always Multirole | Done (D45) |
+| Release a held mission / cancel an accepted one | Done |
+| Used parts unlimited | Fixed (one-of-a-kind, shared shelf); NEW parts stay unlimited (D25) pending owner decision |
+| Hover popup for part details | Not done (a close button was built instead) |
+
 
 ## Already done in this session (uncommitted)
 Auth/Home styling, register field rules and specific error messages (409 / 400 / 429), language switcher style. See `apps/web/src/features/auth`, `pages/home.page.tsx`, `styles/index.css`.

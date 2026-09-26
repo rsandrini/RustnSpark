@@ -23,6 +23,29 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// The refresh cookie is httpOnly, so the page cannot see whether a session exists; asking costs a
+// request that answers 401 (and the browser logs it in red) for every signed-out visitor. Once we
+// KNOW there is no session (sign-out, or a refresh that failed), remember it and skip the probe
+// until the next sign-in. Absent = unknown = ask, so nobody with a live cookie is locked out.
+const SIGNED_OUT_KEY = 'rs.signedOut';
+
+function knownSignedOut(): boolean {
+  try {
+    return window.localStorage.getItem(SIGNED_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function rememberSignedOut(signedOut: boolean): void {
+  try {
+    if (signedOut) window.localStorage.setItem(SIGNED_OUT_KEY, '1');
+    else window.localStorage.removeItem(SIGNED_OUT_KEY);
+  } catch {
+    // storage blocked: the probe simply keeps running
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -33,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const clearSession = useCallback(() => {
+    rememberSignedOut(true);
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
   }, []);
@@ -52,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (token: string): Promise<UserProfile | null> => {
       try {
         const profile = await authApi.me();
+        rememberSignedOut(false);
         setState({ user: profile, accessToken: token, isLoading: false });
         if (profile.locale && i18n.language !== profile.locale) {
           await i18n.changeLanguage(profile.locale);
@@ -80,6 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // routes send signed-out players to /login themselves (ProtectedRoute).
   useEffect(() => {
     void (async () => {
+      if (knownSignedOut()) {
+        clearSession();
+        return;
+      }
       try {
         const { accessToken } = await authApi.refresh();
         setAccessToken(accessToken);

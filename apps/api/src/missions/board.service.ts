@@ -18,6 +18,8 @@ const BOARD_LOCK_CLASS = 6200;
 const STARTER_LOCK_CLASS = 6201;
 // Seeds tried before giving up on finding a mission this player's ship can take.
 const STARTER_ATTEMPTS = 12;
+// Reseeds tried to make a new board offer differ from the live ones.
+const DEDUPE_ATTEMPTS = 8;
 
 export type BoardMission = MissionInstance & { readonly rewardEstimate: number };
 
@@ -249,10 +251,43 @@ export class BoardService {
 
     const worldTables = await world();
     let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
+    // A board of four identical offers is not a board: a new offer must differ from the live
+    // ones in template or destination. A few reseeds are tried; if the world is too small to
+    // differ, the duplicate is accepted rather than leaving the board short.
+    const live = await tx.missionInstance.findMany({
+      where: {
+        originId: locationId,
+        status: 'AVAILABLE',
+        expiresAt: { gt: now },
+        privatePlayerId: null,
+      },
+      select: { templateId: true, destinationId: true },
+    });
+    const seen = new Set(live.map((row) => `${row.templateId}>${row.destinationId}`));
     while (available < boardMin) {
-      const seed = missionSeed({ locationId, epoch, configVersion });
       try {
-        const draft = fillMission({ seed, origin: location, world: worldTables, rules, now });
+        let draft = fillMission({
+          seed: missionSeed({ locationId, epoch, configVersion }),
+          origin: location,
+          world: worldTables,
+          rules,
+          now,
+        });
+        for (
+          let retry = 0;
+          retry < DEDUPE_ATTEMPTS && seen.has(`${draft.templateId}>${draft.destinationId}`);
+          retry += 1
+        ) {
+          epoch += 1;
+          draft = fillMission({
+            seed: missionSeed({ locationId, epoch, configVersion }),
+            origin: location,
+            world: worldTables,
+            rules,
+            now,
+          });
+        }
+        seen.add(`${draft.templateId}>${draft.destinationId}`);
         await tx.missionInstance.create({ data: draft });
       } catch (error) {
         // S3.4 guarantees every seeded location can serve a template; if the data
