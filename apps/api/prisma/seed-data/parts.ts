@@ -29,6 +29,8 @@ type SeedPart = {
   batCharge?: number;
   batOutput?: number;
   batInput?: number;
+  /** Flags read by mission requirements: `pressurized` (passenger space), `lifeSupport`. */
+  specialProp?: { pressurized?: boolean; lifeSupport?: boolean };
 };
 
 export const PARTS: SeedPart[] = [
@@ -349,6 +351,46 @@ export const PARTS: SeedPart[] = [
     scrapValue: 20,
     partHp: 15,
     crg: 5,
+  },
+  {
+    partType: 'passenger_cabin',
+    displayName: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
+    description: {
+      en: 'A pressurized cabin for people instead of freight. Transport missions need one, and so do some rescues. It only works together with a Life Support module, and adds mass.',
+      'pt-BR':
+        'Uma cabine pressurizada para pessoas em vez de carga. Missões de transporte precisam de uma, e alguns resgates também. Só funciona junto com um módulo de Suporte de Vida e adiciona massa.',
+    },
+    partClass: 'CARGO',
+    rarity: 'COMMON',
+    w: 1,
+    h: 2,
+    mass: 6,
+    structureCost: 8,
+    basePrice: 260,
+    scrapValue: 60,
+    partHp: 25,
+    energyCont: -1,
+    specialProp: { pressurized: true },
+  },
+  {
+    partType: 'life_support',
+    displayName: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
+    description: {
+      en: 'Air, heat and water for everyone aboard. Any ship with a Passenger Cabin must carry one or it is not allowed to fly. Draws steady power all the time.',
+      'pt-BR':
+        'Ar, calor e água para todos a bordo. Toda nave com uma Cabine de Passageiros precisa carregar um, senão não pode voar. Consome energia constante o tempo todo.',
+    },
+    partClass: 'UTILITY',
+    rarity: 'COMMON',
+    w: 1,
+    h: 1,
+    mass: 3,
+    structureCost: 4,
+    basePrice: 300,
+    scrapValue: 70,
+    partHp: 15,
+    energyCont: -3,
+    specialProp: { lifeSupport: true },
   },
   {
     partType: 'mining_rig',
