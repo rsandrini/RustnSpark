@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import { errorText, priceChangedActualOf } from '../../api/errors';
+import { errorCodeOf, errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type { BuyResponse, MarketListing, MarketResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
@@ -28,12 +28,19 @@ export interface MarketPanelProps {
   presetClass?: string | null;
   /** When the host page shows notices itself (the Port does), purchases report here instead. */
   onNotice?: (message: string | null) => void;
+  /** Show the pilot's credits above the offers (the Hangar has no wallet header of its own). */
+  showBalance?: boolean;
 }
 
 // The buy side of a port: a filterable list of offers with the full explanation of each part
 // one click away, and the confirm-then-buy flow. Used by the Port's market tab and by the
 // Hangar's Store tab, so both behave (and read) the same.
-export function MarketPanel({ locationId, presetClass = null, onNotice }: MarketPanelProps) {
+export function MarketPanel({
+  locationId,
+  presetClass = null,
+  onNotice,
+  showBalance = false,
+}: MarketPanelProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
@@ -88,6 +95,11 @@ export function MarketPanel({ locationId, presetClass = null, onNotice }: Market
         void queryClient.invalidateQueries({ queryKey: ['market'] });
         return;
       }
+      if (errorCodeOf(error) === 'LISTING_SOLD') {
+        // Someone took the used part first: close the dialog and redraw the shelf without it.
+        setConfirm(null);
+        void queryClient.invalidateQueries({ queryKey: ['market'] });
+      }
       setActionError(errorText(t, error, t('port.failed')));
     },
   });
@@ -123,6 +135,11 @@ export function MarketPanel({ locationId, presetClass = null, onNotice }: Market
   return (
     <section className="stack market-panel">
       <h2>{t('port.forSale')}</h2>
+      {showBalance && (
+        <p className="balance" data-testid="store-balance">
+          <span className="muted">{t('port.wallet')}</span> <b>{money(wallet)}</b>
+        </p>
+      )}
 
       {notice !== null && (
         <p className="notice" role="status">

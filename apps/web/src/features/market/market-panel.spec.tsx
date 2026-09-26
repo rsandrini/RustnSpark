@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -69,5 +69,26 @@ describe('market panel: descriptions and filters', () => {
     fireEvent.change(screen.getByLabelText('Search parts'), { target: { value: 'zzz' } });
     expect(list()).toHaveLength(0);
     expect(screen.getByText('No parts match these filters.')).toBeInTheDocument();
+  });
+
+  it('shows the pilot balance in the Hangar store and lets the part details be closed', async () => {
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    // Selecting a placed part opens its detail panel, below the ship sheet; it can be dismissed.
+    const block = await waitFor(() => {
+      const found = document.querySelector('rect.block');
+      if (found === null) throw new Error('no block yet');
+      return found;
+    });
+    fireEvent.pointerDown(block);
+    const detail = await screen.findByLabelText('Part details');
+    expect(detail).toBeInTheDocument();
+    const sheet = screen.getByRole('region', { name: 'Ship sheet' });
+    expect(sheet.querySelector('.panel')!.textContent).toMatch(/Ship sheet/);
+    fireEvent.click(within(detail).getByRole('button', { name: 'Close details' }));
+    expect(screen.queryByLabelText('Part details')).toBeNull();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Store' }));
+    expect(await screen.findByTestId('store-balance')).toHaveTextContent('4,820 ¢');
+    expect(screen.getByTestId('hangar-balance')).toHaveTextContent('4,820 ¢');
   });
 });

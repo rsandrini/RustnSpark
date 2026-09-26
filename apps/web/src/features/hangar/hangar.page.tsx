@@ -13,6 +13,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard } from './ship-yard';
 import { canPlace } from './hangar.geometry';
+import { useAuthContext } from '../auth/auth.context';
 import { MarketPanel } from '../market/market-panel';
 import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
@@ -61,9 +62,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [previewProblems, setPreviewProblems] = useState<Problem[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
+  // The part-detail panel stays closed for a part the player dismissed, until they pick another.
+  const [dismissedDetailId, setDismissedDetailId] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const format = useNumberFormat();
+  const { user } = useAuthContext();
+  const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.
@@ -295,6 +300,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           <b>{ship.name}</b>
           {shipSuffix}
         </span>
+        <span className="sub" data-testid="hangar-balance">
+          <span className="muted">{t('port.wallet')}</span> <b>{credits}</b>
+        </span>
       </header>
       <p className="sub">{t('hangar.yardHint')}</p>
       {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
@@ -360,7 +368,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
           {sideTab === 'store' &&
             (ship.status === 'IN_PORT' ? (
-              <MarketPanel locationId={ship.currentLocationId} presetClass={storeClass} />
+              <MarketPanel
+                locationId={ship.currentLocationId}
+                presetClass={storeClass}
+                showBalance
+              />
             ) : (
               <p className="muted">{t('hangar.side.storeUnavailable')}</p>
             ))}
@@ -404,12 +416,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         </section>
 
         <section aria-label={t('hangar.sheet')}>
-          {focusPart !== null && (
-            <div className="panel" aria-label={t('hangar.detail')}>
-              <h2>{nameById.get(focusPart.id) ?? focusPart.partType}</h2>
-              <PartDetail part={focusPart} />
-            </div>
-          )}
           <div className="panel">
             <h2>{t('hangar.sheet')}</h2>
             <div className="statrow">
@@ -427,6 +433,23 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               <p className="muted">{t('hangar.state.noPreview')}</p>
             )}
           </div>
+
+          {focusPart !== null && dismissedDetailId !== focusPart.id && (
+            <div className="panel" aria-label={t('hangar.detail')}>
+              <div className="row-between">
+                <h2>{nameById.get(focusPart.id) ?? focusPart.partType}</h2>
+                <button
+                  type="button"
+                  className="btn"
+                  aria-label={t('hangar.detailClose')}
+                  onClick={() => setDismissedDetailId(focusPart.id)}
+                >
+                  {t('hangar.detailCloseGlyph')}
+                </button>
+              </div>
+              <PartDetail part={focusPart} />
+            </div>
+          )}
 
           {allProblems.length > 0 && (
             <div className="panel">

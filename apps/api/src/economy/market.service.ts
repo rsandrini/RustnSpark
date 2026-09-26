@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -150,6 +151,10 @@ export class MarketService {
       });
     }
 
+    const usedIds = listings.filter((l) => l.kind === 'used').map((l) => l.listingId);
+    const sold = await this.soldListingIds(usedIds);
+    const shelf = listings.filter((l) => l.kind !== 'used' || !sold.has(l.listingId));
+
     const owned = await this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId, location: 'INVENTORY' },
       include: { partCatalog: { select: { basePrice: true } } },
@@ -160,7 +165,23 @@ export class MarketService {
       price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
     }));
 
-    return { locationId, listings, sellOffers };
+    return { locationId, listings: shelf, sellOffers };
+  }
+
+  /** Which of these used listings already have a purchase on record (any player). */
+  private async soldListingIds(
+    listingIds: readonly string[],
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Set<string>> {
+    if (listingIds.length === 0) return new Set();
+    const rows = await tx.playerEvent.findMany({
+      where: {
+        type: MARKET_BUY_EVENT,
+        OR: listingIds.map((id) => ({ payload: { path: ['listingId'], equals: id } })),
+      },
+      select: { payload: true },
+    });
+    return new Set(rows.map((row) => (row.payload as { listingId: string }).listingId));
   }
 
   async buy(playerId: string, listingId: string, expectedPrice: number): Promise<BuyResponse> {
@@ -204,6 +225,14 @@ export class MarketService {
 
     try {
       const part = await this.prisma.$transaction(async (tx) => {
+        if (parsed.kind === 'used') {
+          // A used part is one physical item: the first buyer takes it off the shelf for the
+          // day. The lock serializes two buyers of the same listing; the second sees the sale.
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${listingId}::text))::text`;
+          if ((await this.soldListingIds([listingId], tx)).size > 0) {
+            throw new ConflictException({ error: 'LISTING_SOLD' });
+          }
+        }
         const player = await tx.player.findUnique({
           where: { id: playerId },
           select: { credits: true },

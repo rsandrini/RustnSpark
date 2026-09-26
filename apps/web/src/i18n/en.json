@@ -150,7 +150,9 @@
     "fix": {
       "needs": " Add a {{part}} part.",
       "findInStore": "Find in store"
-    }
+    },
+    "detailClose": "Close details",
+    "detailCloseGlyph": "×"
   },
   "home": {
     "play": "Play",
@@ -657,7 +659,8 @@
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
     "RATE_LIMITED": "Too many requests — slow down for a moment.",
-    "UNAUTHORIZED": "Your session ended — sign in again."
+    "UNAUTHORIZED": "Your session ended — sign in again.",
+    "LISTING_SOLD": "That used part was just sold."
   },
   "language": {
     "label": "Language"

@@ -150,7 +150,9 @@
     "fix": {
       "needs": " Adicione uma peça de {{part}}.",
       "findInStore": "Ver na loja"
-    }
+    },
+    "detailClose": "Fechar detalhes",
+    "detailCloseGlyph": "×"
   },
   "home": {
     "play": "Jogar",
@@ -657,7 +659,8 @@
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "RATE_LIMITED": "Requisições demais — aguarde um instante.",
-    "UNAUTHORIZED": "Sua sessão terminou — entre novamente."
+    "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
+    "LISTING_SOLD": "Essa peça usada acabou de ser vendida."
   },
   "language": {
     "label": "Idioma"

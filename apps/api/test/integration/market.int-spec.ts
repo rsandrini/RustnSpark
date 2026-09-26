@@ -310,6 +310,49 @@ describe('market API (S8.2)', () => {
     });
   });
 
+  it('a used part is one item: after it is bought it leaves the shelf and cannot be bought again', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const used = (board.body as MarketListingBody).listings.find((entry) => entry.kind === 'used')!;
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: used.price * 3 },
+    });
+
+    const first = await buy(player.token, randomUUID(), {
+      listingId: used.listingId,
+      expectedPrice: used.price,
+    });
+    expect(first.status).toBe(200);
+
+    const again = await buy(player.token, randomUUID(), {
+      listingId: used.listingId,
+      expectedPrice: used.price,
+    });
+    expect(again.status).toBe(409);
+    expect(again.body).toMatchObject({ message: { error: 'LISTING_SOLD' } });
+
+    const after = await getMarket(player.token, 'ceres');
+    const ids = (after.body as MarketListingBody).listings.map((entry) => entry.listingId);
+    expect(ids).not.toContain(used.listingId);
+    // New parts are a different story: the port restocks them (D25), so they stay for sale.
+    expect((after.body as MarketListingBody).listings.some((e) => e.kind === 'catalog')).toBe(true);
+    // Exactly one part was created and paid for.
+    await expect(
+      prisma.partInstance.count({
+        where: { ownerPlayerId: player.seeded.player.id, partType: used.partType },
+      }),
+    ).resolves.toBeGreaterThanOrEqual(1);
+    const bought = await prisma.playerEvent.count({
+      where: {
+        type: 'market.buy',
+        payload: { path: ['listingId'], equals: used.listingId },
+      },
+    });
+    expect(bought).toBe(1);
+  });
+
   it('parallel buys cannot overspend: exactly floor(balance/price) succeed', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

@@ -1406,3 +1406,12 @@ svg .block.floating {
   font-weight: 700;
   text-transform: uppercase;
 }
+
+.balance {
+  margin: 0;
+  font-size: 14px;
+}
+
+.balance b {
+  color: var(--spark);
+}
