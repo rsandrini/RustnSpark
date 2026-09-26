@@ -72,7 +72,7 @@ export const PARTS: SeedPart[] = [
     partHp: 20,
     pot: 25,
     energyCont: 2,
-    fuelUse: 0.7,
+    fuelUse: 7,
   },
   {
     partType: 'engine_chem_medium',
@@ -93,7 +93,7 @@ export const PARTS: SeedPart[] = [
     partHp: 30,
     pot: 40,
     energyCont: 4,
-    fuelUse: 1.2,
+    fuelUse: 12,
   },
   {
     partType: 'engine_chem_large',
@@ -114,7 +114,7 @@ export const PARTS: SeedPart[] = [
     partHp: 45,
     pot: 70,
     energyCont: 7,
-    fuelUse: 2.5,
+    fuelUse: 25,
   },
   {
     partType: 'engine_ion_micro',

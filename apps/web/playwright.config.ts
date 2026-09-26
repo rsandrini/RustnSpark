@@ -17,6 +17,7 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080',
     trace: 'retain-on-failure',
