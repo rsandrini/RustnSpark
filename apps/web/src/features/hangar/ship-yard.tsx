@@ -340,7 +340,8 @@ export function ShipYard({
           const lines = labelLines(name, width, height, zoom);
           const look = lookById?.get(placement.partInstanceId);
           const lineHeight = labelFont * 1.15;
-          const firstY = placement.gy + height / 2 - ((lines.length - 1) * lineHeight) / 2;
+          // Nudged up so the condition bar along the bottom edge never sits on the text.
+          const firstY = placement.gy + height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
           return (
             <g key={placement.partInstanceId} className="yard-block">
               <rect
