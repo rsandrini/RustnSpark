@@ -67,7 +67,7 @@ describe('computeReportStats', () => {
       balanceAfter: 450,
       legs: 2,
       distance: 400,
-      fights: { won: 1, lost: 1, escaped: 1, pvp: 0 },
+      fights: { won: 1, lost: 1, escaped: 1, drawn: 0, pvp: 0 },
       damage: { shield: 8, armor: 3, hull: 5 },
       partFailures: 2,
       fuelLost: 7,
@@ -77,7 +77,7 @@ describe('computeReportStats', () => {
 
   it('is empty and zeroed for a quiet trip', () => {
     const stats = computeReportStats(log([]), { parts: {}, materials: {} });
-    expect(stats.fights).toEqual({ won: 0, lost: 0, escaped: 0, pvp: 0 });
+    expect(stats.fights).toEqual({ won: 0, lost: 0, escaped: 0, drawn: 0, pvp: 0 });
     expect(stats.loot).toEqual([]);
   });
 });

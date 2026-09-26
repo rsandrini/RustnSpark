@@ -410,10 +410,17 @@ export const ReportStatsSchema = z.object({
   balanceAfter: z.number().nullable(),
   legs: z.number(),
   distance: z.number(),
-  fights: z.object({ won: z.number(), lost: z.number(), escaped: z.number(), pvp: z.number() }),
+  fights: z.object({
+    won: z.number(),
+    lost: z.number(),
+    escaped: z.number(),
+    drawn: z.number(),
+    pvp: z.number(),
+  }),
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
   partFailures: z.number(),
   fuelLost: z.number(),
+  pirates: z.object({ stolenParts: z.number(), motive: z.string().nullable() }),
   loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
 });
 export type ReportStats = z.infer<typeof ReportStatsSchema>;

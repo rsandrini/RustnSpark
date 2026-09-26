@@ -290,7 +290,12 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
   const earned = stats.credits;
   const creditsText = `${earned >= 0 ? '+' : '−'}${number(Math.abs(earned))} ¢`;
   const hasFights =
-    stats.fights.won + stats.fights.lost + stats.fights.escaped + stats.fights.pvp > 0;
+    stats.fights.won +
+      stats.fights.lost +
+      stats.fights.escaped +
+      stats.fights.drawn +
+      stats.fights.pvp >
+    0;
   const damageTotal = stats.damage.shield + stats.damage.armor + stats.damage.hull;
 
   return (
@@ -336,11 +341,17 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
           <dt>{t('report.debrief.fights')}</dt>
           <dd>
             {hasFights
-              ? t('report.debrief.fightsValue', {
-                  won: stats.fights.won,
-                  lost: stats.fights.lost,
-                  escaped: stats.fights.escaped,
-                })
+              ? t(
+                  stats.fights.drawn > 0
+                    ? 'report.debrief.fightsValueDrawn'
+                    : 'report.debrief.fightsValue',
+                  {
+                    won: stats.fights.won,
+                    lost: stats.fights.lost,
+                    escaped: stats.fights.escaped,
+                    drawn: stats.fights.drawn,
+                  },
+                )
               : t('report.debrief.noFights')}
           </dd>
         </div>
@@ -356,6 +367,24 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
               : t('report.debrief.noDamage')}
           </dd>
         </div>
+        {stats.pirates.stolenParts > 0 && (
+          <div className="bad">
+            <dt>{t('report.debrief.stolen')}</dt>
+            <dd>{stats.pirates.stolenParts}</dd>
+          </div>
+        )}
+        {stats.pirates.motive === 'territory' && (
+          <div className="bad">
+            <dt>{t('report.debrief.pirates')}</dt>
+            <dd>{t('report.debrief.drivenOff')}</dd>
+          </div>
+        )}
+        {stats.pirates.motive === 'cargo' && (
+          <div className="bad">
+            <dt>{t('report.debrief.pirates')}</dt>
+            <dd>{t('report.debrief.cargoLost')}</dd>
+          </div>
+        )}
         {stats.partFailures > 0 && (
           <div className="bad">
             <dt>{t('report.debrief.failures')}</dt>

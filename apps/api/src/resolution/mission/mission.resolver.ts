@@ -21,6 +21,7 @@ import {
 import type { EscapePreset } from '../encounter/escape.resolver.js';
 import type { FactionRelation, MissionType, Stance } from '../encounter/encounter-policy.js';
 import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
+import type { StoredPart } from '../encounter/pirate-motive.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
 
@@ -31,6 +32,8 @@ export interface MissionSnapshot {
   readonly fuel: number;
   readonly hp: number;
   readonly esc: number;
+  /** Loose parts at dispatch (a frozen copy, D19): the only parts a pirate can take. */
+  readonly storage?: readonly StoredPart[];
 }
 
 export interface MissionInput {
@@ -107,6 +110,8 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
   let status: MissionStatus = 'success';
   let shipStatus: MissionOutcome['shipStatus'] = 'ON_MISSION';
   const loot: MissionLoot[] = [];
+  // Storage parts still on the shelf: a part taken by a pirate on one leg cannot be taken again.
+  let storage: readonly StoredPart[] = input.snapshot.storage ?? [];
 
   for (let index = 0; index < input.mission.legs.length; index += 1) {
     const legRng = root.child(`leg:${index}`);
@@ -127,6 +132,7 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       context: {
         ...context,
         client,
+        storage,
         mining: isLast ? (input.mission.mining ?? null) : null,
       },
       objectIntegrity: integrity,
@@ -138,6 +144,8 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     integrity = outcome.objectIntegrity;
     client = outcome.client;
     loot.push(...outcome.loot);
+    const taken = new Set(outcome.events.flatMap((event) => event.stolen ?? []));
+    if (taken.size > 0) storage = storage.filter((part) => !taken.has(part.id));
 
     if (outcome.status === 'adrift') {
       status = 'adrift';
@@ -249,5 +257,6 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
     objectCarried: mission.objectCarried,
     client: mission.client,
     mining: mission.mining ?? null,
+    storage: [],
   }));
 }

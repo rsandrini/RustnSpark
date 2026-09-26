@@ -39,6 +39,8 @@ export interface DispatchSnapshot {
     readonly catalog: ReturnType<typeof pickCatalogStats>;
   }>;
   readonly legs: readonly DispatchLeg[];
+  /** Loose parts when the ship left port: the only parts a pirate can take (frozen, D19). */
+  readonly storage?: ReadonlyArray<{ readonly id: string; readonly partType: string }>;
 }
 
 export interface DispatchJobData {
@@ -117,6 +119,9 @@ export async function rebuildDispatchData(
         catalog: pickCatalogStats(part.partCatalog),
       })),
       legs,
+      storage: rows
+        .filter((part) => part.location === 'INVENTORY')
+        .map((part) => ({ id: part.id, partType: part.partType })),
     },
   };
 }
@@ -240,6 +245,9 @@ export class DispatchService {
           catalog: part.catalog,
         })),
         legs,
+        storage: rows
+          .filter((part) => part.location === 'INVENTORY')
+          .map((part) => ({ id: part.id, partType: part.partType })),
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({

@@ -36,7 +36,7 @@ const FAILURE_CONSEQUENCE_VALUES = [
 const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
 
 /** Combat events carry the GDD §15 layer split from S9.0 on. */
-const CASCADE_TYPES = ['combat_win', 'combat_loss', 'escort_absorbed'] as const;
+const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
 
 /** The category every event type is emitted under — checked against the
  *  `MissionEventCategory` union at compile time and against every emitter
@@ -46,11 +46,13 @@ const CATEGORY_OF = {
   fuel_exhausted: 'transit',
   combat_win: 'combat',
   combat_loss: 'combat',
+  combat_draw: 'combat',
   escaped: 'combat',
   escort_absorbed: 'combat',
   escort_client_destroyed: 'failure',
   mission_wear: 'environment',
   mission_payout: 'payment',
+  pirate_demand: 'failure',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -121,6 +123,10 @@ function eventMembers(
             armor: num,
             hp: num,
           });
+        }
+        if (type === 'pirate_demand') {
+          extras['motive'] = z.enum(['cargo', 'parts', 'territory']);
+          extras['stolen'] = z.array(z.string().min(1));
         }
         if ((PART_FAILURE_TYPES as readonly string[]).includes(type)) {
           extras['consequence'] = z.enum(FAILURE_CONSEQUENCE_VALUES);

@@ -164,7 +164,12 @@ export function loadLegacyVariants(locale: Locale, file: string): readonly strin
 /** Tokens whose value exists only on schemaVersion 2 events (S9.0). */
 export const V2_ONLY_TOKENS: readonly string[] = ['shield', 'armor', 'hull', 'fuelLost'];
 
-const CASCADE_EVENT_TYPES: readonly string[] = ['combat_win', 'combat_loss', 'escort_absorbed'];
+const CASCADE_EVENT_TYPES: readonly string[] = [
+  'combat_win',
+  'combat_loss',
+  'combat_draw',
+  'escort_absorbed',
+];
 
 /** True when the event predates S9.0 and lacks the data its regular variants print. */
 export function lacksV2Data(event: ParsedMissionEvent): boolean {
@@ -188,6 +193,31 @@ const PLACEHOLDER_GLOBAL = /\{([a-zA-Z]+)\}/g;
 export function firstCondition(event: ParsedMissionEvent, locale: Locale): string {
   const value = Object.values(event.effects.condByPart)[0];
   return formatNumber(value ?? 0, locale);
+}
+
+// What the pirate who won wanted, in words. The wording lives here (not in the JSON variants)
+// because it depends on the motive and on the parts taken; both locales carry the same three cases.
+const DEMAND_LINES: Record<Locale, Record<'cargo' | 'parts' | 'territory', string>> = {
+  en: {
+    cargo: 'The raiders went for the cargo and took all of it.',
+    parts: 'The raiders broke into your hold and made off with {parts}.',
+    territory: 'You had strayed into their territory: they drove you off and you turned back.',
+  },
+  'pt-BR': {
+    cargo: 'Os saqueadores foram atrás da carga e levaram tudo.',
+    parts: 'Os saqueadores arrombaram o seu depósito e levaram {parts}.',
+    territory: 'Você invadiu o território deles: eles o expulsaram e você teve de voltar.',
+  },
+};
+
+function demandLine(event: ParsedMissionEvent, locale: Locale, names: EntityNames): string {
+  const motive = event.motive ?? 'territory';
+  const template = DEMAND_LINES[locale][motive];
+  if (motive !== 'parts') return template;
+  const stolen = (event.stolen ?? []).map((id) => names.parts[id]?.name ?? id);
+  const list =
+    stolen.length === 0 ? (locale === 'pt-BR' ? 'algumas peças' : 'some parts') : stolen.join(', ');
+  return template.replace('{parts}', list);
 }
 
 function requirePartId(event: ParsedMissionEvent): string {
@@ -240,6 +270,8 @@ function resolveToken(
       return { t: 'text', value: firstCondition(event, locale) };
     case 'fuelLost':
       return numeric(event.fuelLost ?? 0);
+    case 'demand':
+      return { t: 'text', value: demandLine(event, locale, names) };
     case 'part': {
       const id = requirePartId(event);
       const entry = names.parts[id];

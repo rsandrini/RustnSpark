@@ -132,6 +132,7 @@ export function buildResolveInput(args: {
     fuel: snapshot.fuel,
     hp: sheet.hp,
     esc: sheet.esc,
+    storage: snapshot.storage ?? [],
   };
 
   // D29: accept finalizes the board reward from the accepting ship's tier; the resolution rates

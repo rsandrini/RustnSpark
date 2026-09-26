@@ -160,6 +160,26 @@ export class MissionResolveService {
           legs: toJsonInput({ legs: outcome.legs, events, context }),
         },
       });
+      // What the pirates took from storage (chosen by the seeded engine and frozen in the log):
+      // the parts leave the player's inventory in the same transaction as everything else.
+      const stolenIds = outcome.events.flatMap((event) => event.stolen ?? []);
+      if (stolenIds.length > 0) {
+        const taken = await tx.partInstance.findMany({
+          where: { id: { in: stolenIds }, ownerPlayerId: mission.playerId!, location: 'INVENTORY' },
+          select: { id: true, partType: true },
+        });
+        if (taken.length > 0) {
+          await tx.partInstance.deleteMany({ where: { id: { in: taken.map((part) => part.id) } } });
+          await this.events.record(
+            {
+              playerId: mission.playerId!,
+              type: 'pirate.theft',
+              payload: { missionId, partTypes: taken.map((part) => part.partType) },
+            },
+            tx,
+          );
+        }
+      }
       for (const part of outcome.parts) {
         await tx.partInstance.updateMany({
           where: { id: part.id },

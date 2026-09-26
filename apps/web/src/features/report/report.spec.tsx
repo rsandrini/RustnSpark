@@ -10,10 +10,11 @@ const STATS = {
   balanceAfter: null,
   legs: 1,
   distance: 0,
-  fights: { won: 0, lost: 0, escaped: 0, pvp: 0 },
+  fights: { won: 0, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
   damage: { shield: 0, armor: 0, hull: 0 },
   partFailures: 0,
   fuelLost: 0,
+  pirates: { stolenParts: 0, motive: null },
   loot: [],
 };
 
@@ -224,5 +225,30 @@ describe('report (S10.8)', () => {
     expect(popup).toHaveTextContent('Part');
     // The lookup 404s and the popup settles on what the report itself carried.
     await waitFor(() => expect(popup).not.toHaveTextContent('Loading'));
+  });
+
+  it('the debrief says what pirates took and how the fights went', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'failed',
+            stats: {
+              ...STATS,
+              fights: { won: 0, lost: 1, escaped: 1, drawn: 2, pvp: 0 },
+              pirates: { stolenParts: 2, motive: 'parts' },
+            },
+            view: 'summary',
+            lines: [{ text: 'Lost', segments: [{ t: 'text', value: 'Lost' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const debrief = await screen.findByTestId('debrief');
+    expect(debrief).toHaveTextContent('Parts stolen');
+    expect(debrief).toHaveTextContent('0 won · 1 lost · 1 escaped · 2 drawn');
   });
 });

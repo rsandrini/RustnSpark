@@ -109,6 +109,23 @@ _(updated as each workstream lands)_
 - **W3 done:** Transit menu disabled when idle; auto-redirect to the report; wallet refreshes when a mission ends, on report open and on window focus.
 - **W4 done:** whole-number condition (migration 0027 + rounding when wear is stored); repair screen starts at zeros, no "Loading", red over budget; refuel slider with a server quote (`POST ships/:id/refuel/quote`); `economy.repair_min_base_price` (50) so the bridge is not free; BROKEN badge + pulsing red outline in the Hangar, cards and repair list (`broken` flag from the server).
 - **W5 done:** `economy.sell_min_condition` (15): no quote and a 409 `TOO_DAMAGED_TO_SELL` below it; `POST /v1/inventory/discard` with a confirmation popup. **Exploit audit** (unit test): loops at ONE place never pay (buy → repair → sell, repair → sell), for every part, condition, isolation, faction and mood. **Owner note:** the cross-place gap is large: buying a part at the cheapest place (isolation 0.9, ally, mood 0.85) and selling it at the dearest (isolation 2, hostile, mood 1.15) returns about **5.6×** the price (`0.6×5.75 ÷ 0.61`). The design notes call this the future trading profession; it is now measured and recorded, not changed.
+- **W1 done:** the policy uses the met ship's relation (pirates hostile to everyone); an attacking pirate can no longer be "ignored"; delivery and transport templates flee (migration 0028); pirate strength scales with the zone (`encounter.pirate_zone_strength`); a winning pirate demands `cargo` (mission over), `parts` (1–2 from **storage** only, removed in the resolve transaction and named in the report) or `territory` (driven off, mission failed), weights in `encounter.pirate_motive_weights`; every contact leaves a trace (escapes and draws get events: new `pirate_demand` and `combat_draw`); the wear event now reports the condition really lost. Old stored logs will not replay byte-identically (the wear magnitude changed); new logs do.
+  **Balance table** (unit simulation, 1500 runs per cell, two legs of 500, danger 2/5/8/8 for zones 0–3; `test/unit/resolution/danger-balance.spec.ts` prints it):
+
+  | ship / zone | flee | fights won+lost | lost | escaped | mission failed | hull lost / run | credits / run |
+  |---|---|---|---|---|---|---|---|
+  | armed / 0 | no | 19 % | 0 % | – | 0 % | 2 | 410 |
+  | armed / 1 | no | 44 % | 0.1 % | – | 0.1 % | 10 | 507 |
+  | armed / 2 | no | 65 % | 1.3 % | – | 1.3 % | 24 | 574 |
+  | armed / 3 | no | 63 % | 5.9 % | – | 5.9 % | 31 | 529 |
+  | armed / 3 | yes | 47 % | 3.5 % | 22 % | 3.5 % | 21 | 530 |
+  | starter (no weapon) / 0 | no | 4 % | 1.1 % | – | 1.1 % | 3 | 379 |
+  | starter / 1 | no | 9 % | 4.6 % | – | 4.6 % | 6 | 426 |
+  | starter / 2 | no | 21 % | 13.6 % | – | 13.6 % | 13 | 432 |
+  | starter / 3 | no | 20 % | 14.8 % | – | 14.8 % | 13 | 424 |
+  | starter / 3 | yes | 6 % | 3.9 % | 38 % | 3.9 % | 4 | 494 |
+
+  Reading: a well-armed ship now meets pirates in 20–65 % of missions and wins most of them (combat pays, so danger is a real prize); the weaponless starter ship loses 14–15 % of its zone 2–3 runs unless it flees, and fleeing deliveries cut that to about 4 %. These are the numbers to tune from (danger, `chance_divisor`, zone strength, motive weights are all Admin values).
 - **W6 done:** auto layout arranges only the parts in the ship (the kit only when it is empty); rotate explains 1×1, nudges a blocked rotation, and says when nothing fits.
 
 ## 5b. TODO — next after the current workstreams (owner request, 2026-09-27)
@@ -116,6 +133,7 @@ _(updated as each workstream lands)_
 1. **Menus follow the ship's status (W3b).** While the ship is on a mission (or otherwise not docked) the screens that need a port are blocked with the reason: Port tabs (shop, goods, repair, refuel, scavenging) and the Hangar's Store. The Hangar stays readable but not editable (it already refuses edits in flight). Same rule as the Transit menu: disabled entry with a hint, and a friendly "the ship is flying, back in 12:30" on a direct visit, driven by the ship `activity` field planned for W9.
 2. **Ship status on the home screen (W9b).** A ship card on Home (and in the stage header): status (docked / flying / repairing / scavenging), fuel bar, condition of the hull, location; click it to open the full ship status: sheet (mobility, cargo, firepower, energy, structure), fuel and range in trips, every part with its condition, and what is broken.
 3. **Requirements with numbers (H2).** On mission cards and in the map popup, every blocker shows what is needed against what the ship has ("Mobility 1.4 of 2 required", "Cargo 5 of 10", "Passenger Cabin: none", "Mining rig: none"), so the pilot sees exactly what to change. Server: the eligibility reasons carry `have` and `need` values (the requirement checker already has both); the client formats them and links to the Hangar/Store part class that fixes it.
+4. **Compare a market part with the one in the ship (B2).** A "Compare" option on market cards and in the part popup: pick the installed part of the same class (or the closest by class and size) and show the difference stat by stat with the sign and colour (thrust +12, mass −2, structure +3, price, condition), plus the effect on the ship sheet if swapped (mobility, cargo, energy, structure budget) using the existing server preview. Client: a `PartCompare` component shared by the Port market and the Hangar Store; server: reuse `POST ships/:id/preview` with the swapped layout (no new rules on the client).
 
 ## 6. Risks
 - W1 changes difficulty everywhere: gated by the simulation and by Admin-tunable values; roll out with the numbers in the plan.

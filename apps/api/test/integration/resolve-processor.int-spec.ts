@@ -278,6 +278,80 @@ describe('mission resolve processor (S7.3)', () => {
     );
   }, 30_000);
 
+  it('pirates take parts from STORAGE (never installed ones) in the resolve transaction, and the log names them', async () => {
+    const player = await authFor(testApp.app);
+    const playerId = player.seeded.player.id;
+    const spares = await Promise.all(
+      ['cargo', 'hull', 'tank_small'].map((partType) =>
+        prisma.partInstance.create({
+          data: { partType, ownerPlayerId: playerId, condition: 80, location: 'INVENTORY' },
+        }),
+      ),
+    );
+    const installedIds = (
+      await prisma.partInstance.findMany({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+        select: { id: true },
+      })
+    ).map((part) => part.id);
+
+    let theft: { stolen: string[] } | undefined;
+    for (let attempt = 0; attempt < 80 && theft === undefined; attempt += 1) {
+      // A clean ship for every try: repaired parts, docked, and a mission through zone-3 danger.
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+        data: { condition: 100 },
+      });
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { status: 'IN_PORT', currentLocationId: 'ceres' },
+      });
+      const mission = await createAcceptedMission(player, `w1-theft-${attempt}`, [150]);
+      await prisma.missionInstance.update({
+        where: { id: mission.id },
+        data: {
+          legs: [
+            {
+              routeId: (await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } })).id,
+              distance: 150,
+              danger: 20,
+              zone: 3,
+              env: { id: 'open', level: 1, fuelMult: 1 },
+            },
+          ],
+        },
+      });
+      const job = await dispatchedJob(player, mission, 10_000);
+      await processor.process(job);
+
+      const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId: mission.id } });
+      const events = (
+        log.legs as { events: Array<{ type: string; motive?: string; stolen?: string[] }> }
+      ).events;
+      const demand = events.find(
+        (event) => event.type === 'pirate_demand' && event.motive === 'parts',
+      );
+      if (demand !== undefined) theft = { stolen: demand.stolen ?? [] };
+    }
+
+    expect(theft).toBeDefined();
+    expect(theft!.stolen.length).toBeGreaterThan(0);
+    const spareIds = spares.map((part) => part.id);
+    for (const id of theft!.stolen) {
+      expect(spareIds).toContain(id);
+      expect(await prisma.partInstance.findUnique({ where: { id } })).toBeNull();
+    }
+    // Installed parts are never touched, and the parts that were not taken are still there.
+    expect(await prisma.partInstance.count({ where: { id: { in: installedIds } } })).toBe(
+      installedIds.length,
+    );
+    const kept = spareIds.filter((id) => !theft!.stolen.includes(id));
+    expect(await prisma.partInstance.count({ where: { id: { in: kept } } })).toBe(kept.length);
+    expect(
+      await prisma.playerEvent.count({ where: { playerId, type: 'pirate.theft' } }),
+    ).toBeGreaterThan(0);
+  }, 120_000);
+
   it('stores no template text: the log is structured events, rendering happens at read time (S9.3)', async () => {
     const player = await authFor(testApp.app);
     const mission = await createAcceptedMission(player, 's9.3-notemplate-seed', [150, 100]);

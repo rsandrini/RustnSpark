@@ -12,6 +12,7 @@ import type {
   Stance,
 } from '../encounter/encounter-policy.js';
 import { generatePirate } from '../encounter/pirate.generator.js';
+import { rollPirateDemand, type StoredPart } from '../encounter/pirate-motive.js';
 import type { CombatSheet, CombatSide } from '../combat/combat.types.js';
 import {
   applyIntegrityLoss,
@@ -76,6 +77,8 @@ export interface LegMissionContext {
   readonly objectCarried: boolean;
   readonly client: EscortClient | null;
   readonly mining: { readonly stop: MiningStop; readonly miner: MinerRig } | null;
+  /** Parts kept in storage when the ship left port: what a pirate may take (never installed ones). */
+  readonly storage: readonly StoredPart[];
 }
 
 export interface LegShipState {
@@ -457,8 +460,26 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         objectIntegrity,
         combatIntegrityLoss(hpBefore, Math.max(0, hpBefore - hp), rules),
       );
+      // The pirate who won says what it wanted (seeded, on its own RNG stream so nothing else moves).
+      const demand = rollPirateDemand(
+        { objectCarried: input.context.objectCarried, storage: input.context.storage },
+        rules,
+        encounterRng.child('motive'),
+      );
+      events.push(
+        missionEvent({
+          leg: input.index,
+          category: 'failure',
+          type: 'pirate_demand',
+          actors: { ...actors, enemy: 'pirate' },
+          magnitude: demand.stolen.length,
+          motive: demand.motive,
+          stolen: demand.stolen,
+        }),
+      );
       ship = { ...ship, parts, hp, esc };
-      if (input.context.objectCarried) {
+      // Cargo taken, or driven off their territory: the mission is over.
+      if (input.context.objectCarried || demand.motive === 'territory') {
         return {
           index: input.index,
           status: 'defeat_failed',
@@ -475,6 +496,20 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }
     } else {
       combatResult = winner === 'draw' ? 'loss' : 'escape';
+      if (winner === 'draw') {
+        // Nobody won: the fight still happened and still cost hull, so the report says so.
+        events.push(
+          missionEvent({
+            leg: input.index,
+            category: 'combat',
+            type: 'combat_draw',
+            actors: { ...actors, enemy: 'pirate' },
+            magnitude: 0,
+            hp: hp - hpBefore,
+            cascade,
+          }),
+        );
+      }
       if (encounter.escaped) {
         combatResult = 'escape';
         events.push(

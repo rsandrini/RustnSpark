@@ -576,7 +576,12 @@
       "loot": "Loot",
       "lootItem": "{{quantity}} × {{name}}",
       "repairHint": "Your parts took a beating: check the Repair tab at the port before the next run.",
-      "next": "What next?"
+      "next": "What next?",
+      "fightsValueDrawn": "{{won}} won · {{lost}} lost · {{escaped}} escaped · {{drawn}} drawn",
+      "stolen": "Parts stolen",
+      "pirates": "Pirates",
+      "drivenOff": "Drove you off",
+      "cargoLost": "Took the cargo"
     }
   },
   "transit": {

@@ -16,12 +16,15 @@ export interface ReportStats {
     readonly won: number;
     readonly lost: number;
     readonly escaped: number;
+    readonly drawn: number;
     readonly pvp: number;
   };
   readonly damage: { readonly shield: number; readonly armor: number; readonly hull: number };
   /** Parts that failed (motor, battery, tank, shield, weapon, sensor). */
   readonly partFailures: number;
   readonly fuelLost: number;
+  /** What pirates took: parts from storage, or the cargo / the ground (`motive`). */
+  readonly pirates: { readonly stolenParts: number; readonly motive: string | null };
   readonly loot: readonly {
     readonly materialId: string;
     readonly name: string;
@@ -42,10 +45,13 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let won = 0;
   let lost = 0;
   let escaped = 0;
+  let drawn = 0;
   let pvp = 0;
   let distance = 0;
   let partFailures = 0;
   let fuelLost = 0;
+  let stolenParts = 0;
+  let motive: string | null = null;
   const damage = { shield: 0, armor: 0, hull: 0 };
   const loot = new Map<string, number>();
 
@@ -54,10 +60,20 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     if (event.type === 'combat_win') won += 1;
     if (event.type === 'combat_loss') lost += 1;
     if (event.type === 'escaped') escaped += 1;
+    if (event.type === 'combat_draw') drawn += 1;
     if (event.type === 'pvp_encounter') pvp += 1;
     if (PART_FAILURE_TYPES.has(event.type)) partFailures += 1;
     if (event.fuelLost !== undefined) fuelLost += event.fuelLost;
-    if ((event.type === 'combat_win' || event.type === 'combat_loss') && event.cascade) {
+    if (event.type === 'pirate_demand') {
+      stolenParts += event.stolen?.length ?? 0;
+      motive = event.motive ?? motive;
+    }
+    if (
+      (event.type === 'combat_win' ||
+        event.type === 'combat_loss' ||
+        event.type === 'combat_draw') &&
+      event.cascade
+    ) {
       damage.shield += event.cascade.shield;
       damage.armor += event.cascade.armor;
       damage.hull += event.cascade.hp;
@@ -73,10 +89,11 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     balanceAfter: log.balanceAfter ?? null,
     legs: log.legs.length,
     distance,
-    fights: { won, lost, escaped, pvp },
+    fights: { won, lost, escaped, drawn, pvp },
     damage,
     partFailures,
     fuelLost,
+    pirates: { stolenParts, motive },
     loot: [...loot.entries()]
       .filter(([, quantity]) => quantity > 0)
       .map(([materialId, quantity]) => ({

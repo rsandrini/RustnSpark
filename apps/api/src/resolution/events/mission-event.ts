@@ -21,12 +21,14 @@ export const MISSION_EVENT_TYPES = [
   'leg_travel',
   'combat_win',
   'combat_loss',
+  'combat_draw',
   'escaped',
   'escort_absorbed',
   'escort_client_destroyed',
   'fuel_exhausted',
   'mission_wear',
   'mission_payout',
+  'pirate_demand',
   'pvp_encounter',
   'mining',
   'mining_paid',
@@ -107,6 +109,10 @@ export interface MissionEvent {
   /** v2: fuel units a tank leak cost (S9.0). Present on `tank` only; stored
    *  half-even rounded to an integer so the jsonb round-trip is exact. */
   readonly fuelLost?: number;
+  /** v2, `pirate_demand` only: what the pirate who won wanted. */
+  readonly motive?: 'cargo' | 'parts' | 'territory';
+  /** v2, `pirate_demand` only: instance ids of the storage parts taken. */
+  readonly stolen?: readonly string[];
 }
 
 /**
@@ -145,6 +151,8 @@ export function missionEvent(input: {
   cascade?: MissionDamageCascade;
   consequence?: FailureConsequence;
   fuelLost?: number;
+  motive?: 'cargo' | 'parts' | 'territory';
+  stolen?: readonly string[];
 }): MissionEvent {
   return {
     leg: input.leg,
@@ -172,5 +180,7 @@ export function missionEvent(input: {
       : {}),
     ...(input.consequence !== undefined ? { consequence: input.consequence } : {}),
     ...(input.fuelLost !== undefined ? { fuelLost: roundInt(input.fuelLost) } : {}),
+    ...(input.motive !== undefined ? { motive: input.motive } : {}),
+    ...(input.stolen !== undefined ? { stolen: [...input.stolen] } : {}),
   };
 }

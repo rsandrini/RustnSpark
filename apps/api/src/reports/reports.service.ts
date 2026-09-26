@@ -71,8 +71,13 @@ export function encodeCursor(createdAt: Date, id: string): string {
 // Dispatch snapshot (D19) → instance id → catalog type; exported so the admin replay
 // (S11.4) builds the same ReportLog.partTypeById the player path builds.
 export function partTypesOf(snapshot: unknown): Record<string, string> {
-  const parts = (snapshot as { parts?: unknown } | null)?.parts;
-  if (!Array.isArray(parts)) return {};
+  const record = snapshot as { parts?: unknown; storage?: unknown } | null;
+  const parts = [
+    ...(Array.isArray(record?.parts) ? (record.parts as unknown[]) : []),
+    // Storage parts too: the report names what a pirate took from the hold.
+    ...(Array.isArray(record?.storage) ? (record.storage as unknown[]) : []),
+  ];
+  if (parts.length === 0) return {};
   const out: Record<string, string> = {};
   for (const entry of parts) {
     const candidate = entry as { id?: unknown; partType?: unknown };

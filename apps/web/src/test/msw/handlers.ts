@@ -906,10 +906,11 @@ const reportExtras = {
     balanceAfter: 1400,
     legs: 2,
     distance: 820,
-    fights: { won: 1, lost: 0, escaped: 0, pvp: 0 },
+    fights: { won: 1, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
     damage: { shield: 4, armor: 3, hull: 2 },
     partFailures: 0,
     fuelLost: 0,
+    pirates: { stolenParts: 0, motive: null },
     loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
   },
   mission: {

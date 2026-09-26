@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Neither side could finish it — {hp} off the hull; the shields took {shield}, the plate {armor}, the frame {hull}. The raiders broke off and so did you.",
+    "A long, ugly exchange with no winner — {shield} on the shields, {armor} on the armor, {hull} into the hull. Both ships limped away."
+  ],
+  "legacy": [
+    "Neither side could finish it — {hp} off the hull. The raiders broke off and so did you.",
+    "A long, ugly exchange with no winner. Both ships limped away."
+  ]
+}
