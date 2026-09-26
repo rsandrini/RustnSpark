@@ -28,9 +28,14 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div>
+    <div className="lang-switch">
       <label htmlFor="language-switcher">{t('language.label')}</label>{' '}
-      <select id="language-switcher" value={i18n.language} onChange={(e) => void handleChange(e)}>
+      <select
+        className="input"
+        id="language-switcher"
+        value={i18n.language}
+        onChange={(e) => void handleChange(e)}
+      >
         {supportedLngs.map((lng) => (
           <option key={lng} value={lng}>
             {LANGUAGE_NAMES[lng]}

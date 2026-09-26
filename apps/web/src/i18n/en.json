@@ -10,6 +10,8 @@
     }
   },
   "register": {
+    "nameHint": "3–24 characters: letters, digits, _ or -",
+    "passwordHint": "At least 10 characters",
     "title": "Create account",
     "nameLabel": "Name",
     "emailLabel": "Email",
@@ -17,6 +19,8 @@
     "submit": "Create account",
     "loginLink": "Already have an account? Sign in",
     "error": {
+      "conflict": "That email or player name is already taken",
+      "invalid": "Check the fields: name 3–24 characters (letters, digits, _ or -), password at least 10 characters",
       "generic": "Could not create account"
     }
   },
@@ -123,6 +127,7 @@
     "yardLabel": "Assembly yard"
   },
   "home": {
+    "play": "Play",
     "title": "Home",
     "greeting": "Welcome, {{name}}",
     "loginLink": "Sign in",

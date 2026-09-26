@@ -8,22 +8,39 @@ export function HomePage() {
   const logout = useLogout();
 
   return (
-    <main>
-      <h1>{t('home.title')}</h1>
-      {user ? (
-        <>
-          <p>{t('home.greeting', { name: user.name })}</p>
-          <button type="button" onClick={() => logout.mutate()}>
-            {t('home.logout')}
-          </button>
-          {user.role === 'ADMIN' && <Link to="/admin">{t('home.adminLink')}</Link>}
-        </>
-      ) : (
-        <>
-          <Link to="/login">{t('home.loginLink')}</Link>
-          <Link to="/register">{t('home.registerLink')}</Link>
-        </>
-      )}
+    <main className="app auth">
+      <section className="panel">
+        <h1>{t('home.title')}</h1>
+        {user ? (
+          <>
+            <p>{t('home.greeting', { name: user.name })}</p>
+            <p className="stack">
+              <Link className="btn primary block" to="/hangar">
+                {t('home.play')}
+              </Link>
+              {user.role === 'ADMIN' && (
+                <Link className="btn block" to="/admin">
+                  {t('home.adminLink')}
+                </Link>
+              )}
+              <button className="btn block" type="button" onClick={() => logout.mutate()}>
+                {t('home.logout')}
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="stack">
+              <Link className="btn primary block" to="/login">
+                {t('home.loginLink')}
+              </Link>
+              <Link className="btn block" to="/register">
+                {t('home.registerLink')}
+              </Link>
+            </p>
+          </>
+        )}
+      </section>
     </main>
   );
 }

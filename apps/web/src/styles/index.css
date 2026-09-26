@@ -1173,3 +1173,47 @@ svg .block.floating {
     grid-template-columns: 1fr;
   }
 }
+
+/* auth + home ---------------------------------------------------------- */
+.auth {
+  max-width: 420px;
+  padding-top: 8vh;
+}
+
+.auth h1 {
+  margin: 0 0 14px;
+  font-size: 22px;
+}
+
+.auth .hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.auth .btn.block {
+  text-align: center;
+  text-decoration: none;
+  padding: 10px 13px;
+}
+
+.auth-alt {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.lang-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 14px 0;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.lang-switch .input {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+}

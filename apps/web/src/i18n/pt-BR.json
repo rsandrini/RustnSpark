@@ -10,6 +10,8 @@
     }
   },
   "register": {
+    "nameHint": "3 a 24 caracteres: letras, dígitos, _ ou -",
+    "passwordHint": "Pelo menos 10 caracteres",
     "title": "Criar conta",
     "nameLabel": "Nome",
     "emailLabel": "E-mail",
@@ -17,6 +19,8 @@
     "submit": "Criar conta",
     "loginLink": "Já tem uma conta? Entre",
     "error": {
+      "conflict": "Esse e-mail ou nome de jogador já está em uso",
+      "invalid": "Confira os campos: nome de 3 a 24 caracteres (letras, dígitos, _ ou -), senha com pelo menos 10 caracteres",
       "generic": "Não foi possível criar a conta"
     }
   },
@@ -123,6 +127,7 @@
     "yardLabel": "Área de montagem"
   },
   "home": {
+    "play": "Jogar",
     "title": "Início",
     "greeting": "Bem-vindo, {{name}}",
     "loginLink": "Entrar",
