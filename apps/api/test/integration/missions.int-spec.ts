@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import type { INestApplication } from '@nestjs/common';
 import type { MissionInstance, MissionType } from '@prisma/client';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { PasswordService } from '../../src/auth/password.service.js';
@@ -67,6 +68,7 @@ describe('missions accept/hold API (S6.4)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 

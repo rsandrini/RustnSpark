@@ -58,6 +58,12 @@ export async function registerAndLaunch(
   await page.locator('label.faction-card', { hasText: new RegExp(faction, 'i') }).click();
   await page.getByRole('button', { name: 'Launch' }).click();
   await expect(page.getByRole('navigation')).toBeVisible();
+
+  // The starter kit arrives loose (D44): assemble it the way a new pilot does, with Auto layout.
+  await expect(page).toHaveURL(/\/hangar/);
+  const assembled = page.waitForResponse((response) => response.url().includes('/auto-assemble'));
+  await page.getByRole('button', { name: 'Auto layout' }).click();
+  expect((await assembled).ok()).toBe(true);
 }
 
 /** Credits shown in the port header, as a number. */

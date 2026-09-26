@@ -6,6 +6,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import type { MissionInstance } from '@prisma/client';
 import { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -120,6 +121,7 @@ describe('admin player inspector (S11.4)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(server, token, (onboarded.body as { id: string }).id);
     return { playerId: seeded.player.id, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -702,9 +704,15 @@ describe('admin player inspector (S11.4)', () => {
     expect(ship.status).toBe('IN_PORT');
     expect(ship.stance).toBe('NEUTRAL');
     expect(ship.currentLocationId).toBe('ceres'); // luna's home port
+    // The kit is re-applied the way onboarding applies it (D44): loose, not installed.
     expect(
       await prisma.partInstance.count({
         where: { ownerPlayerId: player.playerId, shipId: player.shipId, location: 'INSTALLED' },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.partInstance.count({
+        where: { ownerPlayerId: player.playerId, location: 'INVENTORY' },
       }),
     ).toBeGreaterThan(0);
     expect(await prisma.refreshToken.count({ where: { accountId: dbPlayer.accountId } })).toBe(0);

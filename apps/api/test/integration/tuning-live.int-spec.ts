@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -117,6 +118,7 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(response.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (response.body as { id: string }).id);
     return { playerId: seeded.player.id, token, shipId: (response.body as { id: string }).id };
   }
 

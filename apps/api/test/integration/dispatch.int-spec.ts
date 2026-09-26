@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import type { MissionInstance } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { AppModule } from '../../src/app.module.js';
 import { EnvService } from '../../src/common/env/env.module.js';
@@ -78,6 +79,7 @@ describe('ship dispatch API (S7.2)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 

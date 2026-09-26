@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import type { INestApplication } from '@nestjs/common';
 import type { PartInstance } from '@prisma/client';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { PasswordService } from '../../src/auth/password.service.js';
@@ -111,7 +112,7 @@ describe('parts and ships API (S4.3)', () => {
 
   describe('onboarding', () => {
     it.each(['luna', 'sun', 'explorers'] as const)(
-      'creates a viable ship at the %s home port with a full tank',
+      'creates the %s ship with the starter kit loose (D44), a full tank, and a kit that assembles into a viable ship',
       async (faction) => {
         await freshSeededApp();
         const { token } = await seedAndToken();
@@ -123,10 +124,10 @@ describe('parts and ships API (S4.3)', () => {
         expect(ship.status).toBe('IN_PORT');
         expect(ship.stance).toBe('NEUTRAL');
         expect(ship.currentLocationId).toBe(HOME_LOCATIONS[faction]);
-        expect(ship.fuel).toBe(ship.sheet.fuelCap);
-        expect(ship.sheet.pot).toBeGreaterThan(0);
-        expect(ship.sheet.hp).toBeGreaterThan(0);
-        expect(ship.sheet.mob).toBeGreaterThanOrEqual(1);
+        // Nothing is installed: the pilot assembles the kit in the Hangar.
+        expect(ship.layout).toEqual([]);
+        expect(ship.sheet.pot).toBe(0);
+        expect(ship.fuel).toBeGreaterThan(0);
 
         const player = await prisma.player.findUniqueOrThrow({ where: { id: ship.ownerPlayerId } });
         expect(player.credits).toBe(200);
@@ -136,7 +137,23 @@ describe('parts and ships API (S4.3)', () => {
         expect(parts.length).toBe(7);
         for (const part of parts) {
           expect(part.condition).toBe(80);
+          expect(part.location).toBe('INVENTORY');
+          expect(part.shipId).toBeNull();
         }
+
+        // Assembling the kit (the Hangar's Auto layout) gives a viable ship whose tank holds
+        // exactly the fuel the ship was created with.
+        await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+        const assembled = asShip(
+          await request(httpServer(testApp.app))
+            .get(`/v1/ships/${ship.id}`)
+            .set('Authorization', `Bearer ${token}`),
+        );
+        expect(assembled.layout).toHaveLength(7);
+        expect(assembled.sheet.pot).toBeGreaterThan(0);
+        expect(assembled.sheet.hp).toBeGreaterThan(0);
+        expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
+        expect(assembled.fuel).toBe(assembled.sheet.fuelCap);
       },
     );
 
@@ -608,6 +625,7 @@ describe('parts and ships API (S4.3)', () => {
       const { token, seeded } = await seedAndToken();
       const onboarded = await onboard(token, 'luna');
       const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
       await prisma.ship.update({ where: { id: shipId }, data: { status: 'ON_MISSION' } });
 
       const layout = (await prisma.ship.findUniqueOrThrow({ where: { id: shipId } }))

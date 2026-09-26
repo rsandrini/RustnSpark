@@ -31,7 +31,7 @@ type SeedPart = {
   batInput?: number;
 };
 
-const PARTS: SeedPart[] = [
+export const PARTS: SeedPart[] = [
   {
     partType: 'bridge',
     displayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },

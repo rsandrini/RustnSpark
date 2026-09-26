@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import type { MissionInstance } from '@prisma/client';
 import { Job, Queue, QueueEvents } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { EnvService } from '../../src/common/env/env.module.js';
 import { SUPPORTED_LOCALES } from '../../src/common/locale/locale.js';
@@ -94,6 +95,7 @@ describe('mission resolve processor (S7.3)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 

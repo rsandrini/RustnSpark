@@ -4,6 +4,7 @@ import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -96,6 +97,7 @@ describe('private start-safe mission (D43)', () => {
       .set(auth(token))
       .send({ faction });
     expect(res.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (res.body as { id: string }).id);
     return {
       playerId: seeded.player.id,
       token,

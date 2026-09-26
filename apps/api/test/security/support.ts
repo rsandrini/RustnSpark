@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -64,6 +65,7 @@ export async function createSecurityWorld(): Promise<SecurityWorld> {
       if (onboarded.status !== 200) {
         throw new Error(`onboarding failed: ${onboarded.status} ${JSON.stringify(onboarded.body)}`);
       }
+      await assembleStarterKit(server, token, (onboarded.body as { id: string }).id);
       return {
         accountId: seeded.account.id,
         playerId: seeded.player.id,

@@ -6,6 +6,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import type { MissionInstance } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -79,6 +80,7 @@ describe('repair job API (S8.4)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     // Repair cost depends on which (randomly-identified) parts a test damages; the 200-credit
     // start balance cannot cover every combination. Tests about affording set their own balance.
     await prisma.player.update({

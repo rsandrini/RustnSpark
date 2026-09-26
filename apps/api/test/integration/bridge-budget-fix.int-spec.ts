@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -116,7 +117,12 @@ describe('bridge structure budget fix migration (S4 C1)', () => {
       .send({ faction: 'luna' });
 
     expect(response.status).toBe(200);
-    const ship = asShip(response);
+    await assembleStarterKit(httpServer(testApp.app), token, asShip(response).id);
+    const ship = asShip(
+      await request(httpServer(testApp.app))
+        .get(`/v1/ships/${asShip(response).id}`)
+        .set('Authorization', `Bearer ${token}`),
+    );
     expect(ship.sheet.structureBudget).toBe(100);
     expect(ship.sheet.structureUsed).toBeLessThanOrEqual(ship.sheet.structureBudget);
     expect(ship.sheet.hp).toBeGreaterThan(0);
