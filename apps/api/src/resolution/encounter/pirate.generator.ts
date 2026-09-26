@@ -21,9 +21,21 @@ import type { CombatSheet } from '../combat/combat.types.js';
  * - SEN = max(0, player.sen + senJitter)
  * - HP = max(pirate_min_hp, roundHalfEven(player.hp × strength))
  */
-export function generatePirate(player: CombatSheet, rules: GameRules, rng: Rng): CombatSheet {
+export function generatePirate(
+  player: CombatSheet,
+  rules: GameRules,
+  rng: Rng,
+  /** Zone cap on the strength multiplier (safer zones, weaker pirates); absent = no cap. */
+  maxStrength?: number,
+): CombatSheet {
   const e = rules.encounter;
-  const strength = rng.pick(e.pirate_strength_options);
+  const allowed =
+    maxStrength === undefined
+      ? e.pirate_strength_options
+      : e.pirate_strength_options.filter((option) => option <= maxStrength);
+  // A cap below every option still leaves the weakest pirate, never nobody.
+  const options = allowed.length > 0 ? allowed : [Math.min(...e.pirate_strength_options)];
+  const strength = rng.pick(options);
   const mobJitter = rng.pick(e.pirate_mob_jitter);
   const senJitter = rng.pick(e.pirate_sen_jitter);
 

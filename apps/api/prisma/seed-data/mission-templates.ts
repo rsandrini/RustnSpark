@@ -352,7 +352,11 @@ export async function seedMissionTemplates(prisma: PrismaClient): Promise<void> 
           requirements: template.requirements as Prisma.InputJsonValue,
           rewardCalc: {},
           deadlineCalc: {},
-          encounterPolicy: {},
+          // GDD §8: deliveries and transports try to flee an attacker instead of fighting it.
+          encounterPolicy:
+            template.type === 'DELIVERY' || template.type === 'TRANSPORT'
+              ? { missionForcesFlee: true }
+              : {},
           active: template.active ?? true,
         },
       });

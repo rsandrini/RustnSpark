@@ -708,6 +708,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'encounter.pirate_zone_strength',
+    group: 'encounter',
+    type: 'json',
+    min: 0.1,
+    max: 5.0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_zone_strength),
+    description: {
+      en: 'Strongest pirate strength multiplier per zone: safer zones meet weaker pirates.',
+      'pt-BR':
+        'Maior multiplicador de força pirata por zona: zonas mais seguras têm piratas mais fracos.',
+    },
+  },
+  {
+    key: 'encounter.pirate_motive_weights',
+    group: 'encounter',
+    type: 'json',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_motive_weights),
+    description: {
+      en: 'What a winning pirate wants, as relative weights: cargo (the mission cargo), parts (from storage) or territory (drives the ship off).',
+      'pt-BR':
+        'O que um pirata vencedor quer, em pesos relativos: cargo (a carga da missão), parts (peças do depósito) ou territory (expulsa a nave).',
+    },
+  },
+  {
     key: 'encounter.pirate_mob_jitter',
     group: 'encounter',
     type: 'json',

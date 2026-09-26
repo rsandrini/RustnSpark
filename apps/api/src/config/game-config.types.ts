@@ -69,8 +69,10 @@ export type ConfigKey =
   | 'encounter.pirate_min_hp'
   | 'encounter.pirate_min_pdf'
   | 'encounter.pirate_mob_jitter'
+  | 'encounter.pirate_motive_weights'
   | 'encounter.pirate_sen_jitter'
   | 'encounter.pirate_strength_options'
+  | 'encounter.pirate_zone_strength'
   | 'escape.enemy_sen_weight'
   | 'escape.preset_bonus'
   | 'escort.client_target_share'
@@ -207,6 +209,10 @@ export type GameRules = Readonly<{
   encounter: Readonly<{
     chance_divisor: number;
     pirate_strength_options: readonly number[];
+    /** Zone → the strongest pirate multiplier met there (safer zones, weaker pirates). */
+    pirate_zone_strength: Readonly<Record<string, number>>;
+    /** What a pirate who wins wants: relative weights of cargo, parts (from storage), territory. */
+    pirate_motive_weights: Readonly<Record<string, number>>;
     pirate_mob_jitter: readonly number[];
     pirate_sen_jitter: readonly number[];
     pirate_bli_ratio: number;

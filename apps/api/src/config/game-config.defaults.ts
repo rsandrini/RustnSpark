@@ -70,6 +70,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   encounter: {
     chance_divisor: 20,
     pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
+    pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
+    pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],
     pirate_bli_ratio: 0.6,

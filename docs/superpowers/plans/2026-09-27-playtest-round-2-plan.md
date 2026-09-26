@@ -111,6 +111,12 @@ _(updated as each workstream lands)_
 - **W5 done:** `economy.sell_min_condition` (15): no quote and a 409 `TOO_DAMAGED_TO_SELL` below it; `POST /v1/inventory/discard` with a confirmation popup. **Exploit audit** (unit test): loops at ONE place never pay (buy → repair → sell, repair → sell), for every part, condition, isolation, faction and mood. **Owner note:** the cross-place gap is large: buying a part at the cheapest place (isolation 0.9, ally, mood 0.85) and selling it at the dearest (isolation 2, hostile, mood 1.15) returns about **5.6×** the price (`0.6×5.75 ÷ 0.61`). The design notes call this the future trading profession; it is now measured and recorded, not changed.
 - **W6 done:** auto layout arranges only the parts in the ship (the kit only when it is empty); rotate explains 1×1, nudges a blocked rotation, and says when nothing fits.
 
+## 5b. TODO — next after the current workstreams (owner request, 2026-09-27)
+
+1. **Menus follow the ship's status (W3b).** While the ship is on a mission (or otherwise not docked) the screens that need a port are blocked with the reason: Port tabs (shop, goods, repair, refuel, scavenging) and the Hangar's Store. The Hangar stays readable but not editable (it already refuses edits in flight). Same rule as the Transit menu: disabled entry with a hint, and a friendly "the ship is flying, back in 12:30" on a direct visit, driven by the ship `activity` field planned for W9.
+2. **Ship status on the home screen (W9b).** A ship card on Home (and in the stage header): status (docked / flying / repairing / scavenging), fuel bar, condition of the hull, location; click it to open the full ship status: sheet (mobility, cargo, firepower, energy, structure), fuel and range in trips, every part with its condition, and what is broken.
+3. **Requirements with numbers (H2).** On mission cards and in the map popup, every blocker shows what is needed against what the ship has ("Mobility 1.4 of 2 required", "Cargo 5 of 10", "Passenger Cabin: none", "Mining rig: none"), so the pilot sees exactly what to change. Server: the eligibility reasons carry `have` and `need` values (the requirement checker already has both); the client formats them and links to the Hangar/Store part class that fixes it.
+
 ## 6. Risks
 - W1 changes difficulty everywhere: gated by the simulation and by Admin-tunable values; roll out with the numbers in the plan.
 - W4's condition rounding touches stored data: a reversible migration and a rounding test.

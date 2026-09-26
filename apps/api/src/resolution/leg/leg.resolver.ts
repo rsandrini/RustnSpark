@@ -294,13 +294,14 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   // Motor abort: fuel burned + wear still apply; no encounter, no pay path.
   if (motorAbort) {
     const wearMap = applyPartsWear(parts, input.route.env.level, rules, wearRng);
+    const partsBeforeWear = parts;
     parts = mergeConditions(parts, wearMap);
     ship = { ...ship, parts };
     objectIntegrity = applyIntegrityLoss(
       objectIntegrity,
       environmentIntegrityLoss(input.route.env.level, rules),
     );
-    events.push(...wearEvents(input.index, actors, parts, wearMap));
+    events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
     return {
       index: input.index,
       status: 'motor_abort',
@@ -317,7 +318,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   }
 
   // 3. Encounter (D17: per leg).
-  const pirate = generatePirate(combatSheetFor(ship, chokeFlags), rules, encounterRng);
+  const pirate = generatePirate(
+    combatSheetFor(ship, chokeFlags),
+    rules,
+    encounterRng,
+    rules.encounter.pirate_zone_strength[String(input.route.zone)],
+  );
   const encounter: EncounterOutcome = resolveEncounter(
     {
       zone: input.route.zone,
@@ -330,7 +336,9 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         sensorAlive: chokeFlags.sensorAlive,
       },
       enemy: { sheet: pirate },
-      relation: input.context.relation,
+      // The ship met is a generated pirate: hostile to everyone, whatever the employer thinks of
+      // the player's faction (that relation is about the employer, not about who attacks).
+      relation: 'HOSTILE',
       mission: input.context.type,
       missionForcesFlee: input.context.missionForcesFlee,
       huntTargetMatch: false,
@@ -484,19 +492,33 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     ship = { ...ship, hp, esc };
   } else if (encounter.escaped) {
     combatResult = 'escape';
+    // Slipping away is part of the story too: the report says so.
+    events.push(
+      missionEvent({
+        leg: input.index,
+        category: 'combat',
+        type: 'escaped',
+        actors: { ...actors, enemy: 'pirate' },
+        magnitude: 0,
+        hp: 0,
+      }),
+    );
   } else if (encounter.encountered && encounter.decision === 'IGNORE') {
     combatResult = 'ignore';
   }
 
   // 4. Environment wear + integrity (production per-part draws).
   const wearMap = applyPartsWear(ship.parts, input.route.env.level, rules, wearRng);
+  // The event reports how much condition was lost, so it needs the parts as they were BEFORE
+  // the wear (reading them after made every leg say "0 worn" while the parts really wore down).
+  const partsBeforeWear = ship.parts;
   parts = mergeConditions(ship.parts, wearMap);
   ship = { ...ship, parts };
   objectIntegrity = applyIntegrityLoss(
     objectIntegrity,
     environmentIntegrityLoss(input.route.env.level, rules),
   );
-  events.push(...wearEvents(input.index, actors, parts, wearMap));
+  events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
 
   // Escort object integrity IS the client HP share (Appendix E identity).
   if (input.context.type === 'ESCORT' && client !== null) {

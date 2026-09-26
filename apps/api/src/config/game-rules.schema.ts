@@ -74,6 +74,8 @@ const economySchema = z.object({
 const encounterSchema = z.object({
   chance_divisor: z.number().int().min(1).max(100),
   pirate_strength_options: z.array(z.number().min(0.1).max(5.0)),
+  pirate_zone_strength: z.record(z.string(), z.number().min(0.1).max(5.0)),
+  pirate_motive_weights: z.record(z.string(), z.number().min(0).max(100)),
   pirate_mob_jitter: z.array(z.number().int().min(-5).max(5)),
   pirate_sen_jitter: z.array(z.number().int().min(-5).max(5)),
   pirate_bli_ratio: z.number().min(0).max(1),
