@@ -37,6 +37,21 @@ export interface ScavengeResponse {
   readonly cooldownSeconds: number;
 }
 
+/** What the pilot needs to know before trying: the odds here and when the next attempt is allowed. */
+export interface ScavengeInfo {
+  readonly locationId: string;
+  readonly fieldType: FieldType;
+  /** Chance (0..1) that an attempt at this place finds anything. */
+  readonly dropChance: number;
+  readonly cooldownSeconds: number;
+  /** Seconds until the next attempt is allowed here; 0 when ready. */
+  readonly retryAfterSeconds: number;
+  readonly attempts: number;
+  /** Condition range (percent) of a salvaged part. */
+  readonly qualityMin: number;
+  readonly qualityMax: number;
+}
+
 export interface DropTier {
   readonly tier: string;
   readonly chance: number;
@@ -140,6 +155,36 @@ export class ScavengingService {
     private readonly events: PlayerEventService,
     private readonly clock: Clock,
   ) {}
+
+  async info(locationId: string, playerId: string): Promise<ScavengeInfo> {
+    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
+    if (!location) {
+      throw new NotFoundException('location not found');
+    }
+    const rules = this.config.snapshot().rules;
+    const fieldType = fieldTypeOf(location);
+    const counter = await this.prisma.scavengeCounter.findUnique({
+      where: { playerId_locationId: { playerId, locationId } },
+    });
+    const cooldownSeconds = rules.scavenging.cooldown_seconds;
+    let retryAfterSeconds = 0;
+    if (counter !== null && counter.attemptCount > 0 && counter.lastAttemptAt !== null) {
+      const elapsed = Math.floor(
+        (this.clock.now().getTime() - counter.lastAttemptAt.getTime()) / MS_PER_SECOND,
+      );
+      retryAfterSeconds = Math.max(0, cooldownSeconds - elapsed);
+    }
+    return {
+      locationId,
+      fieldType,
+      dropChance: rules.scavenging.chance[fieldType] ?? DEFAULT_DROP_CHANCE,
+      cooldownSeconds,
+      retryAfterSeconds,
+      attempts: counter?.attemptCount ?? 0,
+      qualityMin: rules.scavenging.quality_min,
+      qualityMax: rules.scavenging.quality_max,
+    };
+  }
 
   async scavenge(locationId: string, playerId: string): Promise<ScavengeResponse> {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });

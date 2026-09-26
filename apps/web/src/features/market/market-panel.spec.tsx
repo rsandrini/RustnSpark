@@ -32,7 +32,7 @@ describe('market panel: descriptions and filters', () => {
   it('shows every offer with its description, never just a name and a price', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
     await screen.findByText('Plated Hull');
-    const cards = document.querySelectorAll('.market-panel .item');
+    const cards = document.querySelectorAll('.market-panel .pcard');
     expect(cards.length).toBeGreaterThan(0);
     for (const card of Array.from(cards)) {
       expect(card.querySelector('.part-desc-short')?.textContent ?? '').not.toBe('');
@@ -51,7 +51,7 @@ describe('market panel: descriptions and filters', () => {
   it('filters by part type, by new/used and by search text', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
     await screen.findByText('Plated Hull');
-    const list = () => document.querySelectorAll('.market-panel .grid-cards .item');
+    const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     const total = list().length;
 
     fireEvent.click(screen.getByRole('button', { name: 'Defense' }));

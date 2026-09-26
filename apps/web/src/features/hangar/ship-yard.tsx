@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { PartCatalogStats, Placement } from '../../api/generated';
+import { conditionTone } from '../../ui/Gauge';
 import { footprint } from './hangar.geometry';
 
 const MIN_SPAN = 4;
@@ -50,8 +51,16 @@ export function labelLines(name: string, width: number, height: number, zoom: nu
   return shown;
 }
 
+export interface PartLook {
+  readonly rarity: string;
+  /** Condition in percent (0..100). */
+  readonly condition: number;
+}
+
 export interface ShipYardProps {
   layout: readonly Placement[];
+  /** Rarity and condition by instance id: blocks are coloured by one of them. */
+  lookById?: ReadonlyMap<string, PartLook>;
   /** Yard extent from the server: cells run [-halfSize, halfSize). */
   halfSize: number;
   catalogById: ReadonlyMap<string, PartCatalogStats>;
@@ -72,6 +81,7 @@ export interface ShipYardProps {
 // the fixed grid, so the geometry the server validates never changes.
 export function ShipYard({
   layout,
+  lookById,
   halfSize,
   catalogById,
   nameById,
@@ -123,6 +133,7 @@ export function ShipYard({
     });
   }, [layout, catalogById, cellCount, clampView]);
 
+  const [colorBy, setColorBy] = useState<'rarity' | 'condition'>('rarity');
   const [view, setView] = useState<View>(() => clampView({ cx: 0, cy: 0, span: 20 }));
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -278,6 +289,19 @@ export function ShipYard({
         <button type="button" className="btn" onClick={() => setView(fitView())}>
           {t('hangar.zoom.fit')}
         </button>
+        <span className="yard-color-toggle" role="group" aria-label={t('hangar.colorBy.label')}>
+          {(['rarity', 'condition'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={`btn${colorBy === mode ? ' on' : ''}`}
+              aria-pressed={colorBy === mode}
+              onClick={() => setColorBy(mode)}
+            >
+              {t(`hangar.colorBy.${mode}`)}
+            </button>
+          ))}
+        </span>
       </div>
       <svg
         ref={svgRef}
@@ -314,6 +338,7 @@ export function ShipYard({
           const { width, height } = footprint(catalog, placement.rot);
           const name = nameById.get(placement.partInstanceId) ?? catalog.partType;
           const lines = labelLines(name, width, height, zoom);
+          const look = lookById?.get(placement.partInstanceId);
           const lineHeight = labelFont * 1.15;
           const firstY = placement.gy + height / 2 - ((lines.length - 1) * lineHeight) / 2;
           return (
@@ -324,6 +349,11 @@ export function ShipYard({
                 data-gy={placement.gy}
                 className={[
                   'block',
+                  look === undefined
+                    ? ''
+                    : colorBy === 'rarity'
+                      ? `rar-${look.rarity.toLowerCase()}`
+                      : `cond-${conditionTone(look.condition)}`,
                   catalog.partClass === 'BRIDGE' ? 'bridge' : '',
                   selectedId === placement.partInstanceId ? 'selected' : '',
                   draggingId === placement.partInstanceId ? 'floating' : '',
@@ -339,7 +369,31 @@ export function ShipYard({
                 }
                 onPointerDown={(event) => handleBlockDown(event, placement)}
               />
-              <title>{name}</title>
+              <title>
+                {look === undefined
+                  ? name
+                  : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`}
+              </title>
+              {look !== undefined && (
+                <g style={{ pointerEvents: 'none' }}>
+                  <rect
+                    className="cond-track"
+                    x={placement.gx + 0.14}
+                    y={placement.gy + height - 0.24}
+                    width={width - 0.28}
+                    height={0.1}
+                    rx={0.05}
+                  />
+                  <rect
+                    className={`cond-bar cond-${conditionTone(look.condition)}`}
+                    x={placement.gx + 0.14}
+                    y={placement.gy + height - 0.24}
+                    width={((width - 0.28) * Math.min(100, Math.max(0, look.condition))) / 100}
+                    height={0.1}
+                    rx={0.05}
+                  />
+                </g>
+              )}
               <text
                 className="block-label"
                 x={placement.gx + width / 2}

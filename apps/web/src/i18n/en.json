@@ -152,7 +152,12 @@
       "findInStore": "Find in store"
     },
     "detailClose": "Close details",
-    "detailCloseGlyph": "×"
+    "detailCloseGlyph": "×",
+    "colorBy": {
+      "label": "Colour blocks by",
+      "rarity": "Rarity",
+      "condition": "Condition"
+    }
   },
   "home": {
     "play": "Play",
@@ -415,7 +420,8 @@
       "market": "Market",
       "repair": "Repair",
       "refuel": "Refuel",
-      "scavenging": "Scavenging"
+      "scavenging": "Scavenging",
+      "goods": "Your goods"
     },
     "buy": "Buy",
     "sell": "Sell",
@@ -444,7 +450,6 @@
     "refuelFill": "Fill tank",
     "refuelFull": "The tank is already full.",
     "refueled": "Filled {{units}} units for {{cost}} ¢.",
-    "scavWarn": "Scavenging alone wears your ship down. Scavenging missions pay better — and are far more dangerous.",
     "scavenge": "Scavenge the field",
     "scavFound": "Salvaged: {{part}} (condition {{condition}}).",
     "scavNone": "Nothing salvageable — try again in {{seconds}}s.",
@@ -453,7 +458,28 @@
     "repairConfirmTitle": "Repair for {{cost}} ¢?",
     "repairConfirm": "Start repair",
     "noShip": "You have no ship.",
-    "sellAll": "Sell all"
+    "sellAll": "Sell all",
+    "portPays": "Port pays",
+    "noLooseParts": "You have no loose parts to sell.",
+    "conditionNow": "{{value}}%",
+    "conditionToTarget": "{{from}}% → {{to}}%",
+    "fuelBar": "Fuel tank",
+    "refuelHint": "Fuel is bought by the unit; a full tank costs the price shown when you confirm.",
+    "scav": {
+      "title": "Scavenge the wreckage",
+      "what": "Search the debris around {{place}} for parts other pilots left behind. It is free, needs no mission, and only works where your ship is docked.",
+      "chance": "Odds of finding something here: {{percent}}% ({{place}}).",
+      "quality": "What you find is damaged: about {{min}}–{{max}}% condition. Repair it, install it or sell it.",
+      "cooldown": "After every attempt, found or not, you wait about {{minutes}} minutes before trying again here.",
+      "where": "Debris fields held by pirates have far better odds, but they are dangerous places. Every place counts its own waiting time.",
+      "ready": "Ready to search.",
+      "nextAttempt": "Next attempt in",
+      "field": {
+        "common": "an ordinary port",
+        "mission": "a mission site",
+        "pirate": "a pirate-held debris field"
+      }
+    }
   },
   "inventory": {
     "title": "Inventory",
@@ -816,7 +842,8 @@
     "sortPriceDesc": "Price: high to low",
     "sortCondition": "Best condition",
     "noMatches": "No parts match these filters.",
-    "used": "Used"
+    "used": "Used",
+    "youPay": "You pay"
   },
   "ship": {
     "empty": {

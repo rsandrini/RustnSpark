@@ -38,6 +38,7 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'GET /v1/catalog/parts/:partType': 'public catalog data',
   'GET /v1/locations/:id/market': 'world data; prices computed for the caller',
   'GET /v1/locations/:id/missions': 'world data; the board hides other players’ private missions',
+  'GET /v1/locations/:id/scavenge': 'world odds plus the caller’s own attempt counter only',
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
   'POST /v1/missions/:id/accept': 'service checks holder/private owner against the caller',
   'POST /v1/missions/:id/hold': 'service checks the mission is takeable by the caller',

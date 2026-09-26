@@ -11,9 +11,10 @@ import type {
   ShipResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
-import { ShipYard } from './ship-yard';
+import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
 import { useAuthContext } from '../auth/auth.context';
+import { Gauge, conditionTone } from '../../ui/Gauge';
 import { MarketPanel } from '../market/market-panel';
 import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
@@ -90,6 +91,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     for (const part of parts) map.set(part.id, pickLocalized(part.displayName, i18n.language));
     return map;
   }, [parts, i18n.language]);
+
+  const lookById = useMemo(() => {
+    const map = new Map<string, PartLook>();
+    for (const part of parts) map.set(part.id, { rarity: part.rarity, condition: part.condition });
+    return map;
+  }, [parts]);
 
   const effectiveLayout = useMemo(() => layout ?? [], [layout]);
   const placedIds = useMemo(
@@ -344,7 +351,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 <div key={part.id} className="part-row">
                   <button
                     type="button"
-                    className={`part-btn${pendingPartId === part.id ? ' on' : ''}`}
+                    className={`part-btn rarity-${part.rarity.toLowerCase()}${pendingPartId === part.id ? ' on' : ''}`}
                     disabled={modifyBlocked}
                     onClick={() => {
                       setPendingPartId(part.id);
@@ -359,6 +366,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       ].join(' · ')}
                     </span>
                     <span className="meta">{partSummary(part.catalog, t, format)}</span>
+                    <Gauge
+                      value={Math.round(part.condition)}
+                      max={100}
+                      tone={conditionTone(part.condition)}
+                      ariaLabel={t('port.conditionNow', { value: Math.round(part.condition) })}
+                      label={t('port.conditionNow', { value: Math.round(part.condition) })}
+                    />
                   </button>
                   <PartInfoButton part={part} />
                 </div>
@@ -380,6 +394,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
         <section>
           <ShipYard
+            lookById={lookById}
             halfSize={ship.yard.halfSize}
             layout={effectiveLayout}
             catalogById={catalogById}

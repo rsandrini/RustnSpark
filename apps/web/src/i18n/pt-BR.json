@@ -152,7 +152,12 @@
       "findInStore": "Ver na loja"
     },
     "detailClose": "Fechar detalhes",
-    "detailCloseGlyph": "×"
+    "detailCloseGlyph": "×",
+    "colorBy": {
+      "label": "Colorir blocos por",
+      "rarity": "Raridade",
+      "condition": "Condição"
+    }
   },
   "home": {
     "play": "Jogar",
@@ -415,7 +420,8 @@
       "market": "Mercado",
       "repair": "Reparo",
       "refuel": "Abastecer",
-      "scavenging": "Scavenging"
+      "scavenging": "Scavenging",
+      "goods": "Seus bens"
     },
     "buy": "Comprar",
     "sell": "Vender",
@@ -444,7 +450,6 @@
     "refuelFill": "Encher o tanque",
     "refuelFull": "O tanque já está cheio.",
     "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
-    "scavWarn": "Vasculhar sozinho desgasta sua nave. Missões de scavenging rendem melhor — e são muito mais perigosas.",
     "scavenge": "Vasculhar o campo",
     "scavFound": "Salvou: {{part}} (condição {{condition}}).",
     "scavNone": "Nada aproveitável — tente de novo em {{seconds}}s.",
@@ -453,7 +458,28 @@
     "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
     "noShip": "Você não tem uma nave.",
-    "sellAll": "Vender tudo"
+    "sellAll": "Vender tudo",
+    "portPays": "Porto paga",
+    "noLooseParts": "Você não tem peças soltas para vender.",
+    "conditionNow": "{{value}}%",
+    "conditionToTarget": "{{from}}% → {{to}}%",
+    "fuelBar": "Tanque de combustível",
+    "refuelHint": "O combustível é vendido por unidade; o tanque cheio custa o valor mostrado ao confirmar.",
+    "scav": {
+      "title": "Vasculhar os destroços",
+      "what": "Procure nos destroços ao redor de {{place}} peças que outros pilotos deixaram. É grátis, não precisa de missão e só funciona onde sua nave está atracada.",
+      "chance": "Chance de achar algo aqui: {{percent}}% ({{place}}).",
+      "quality": "O que você acha vem danificado: cerca de {{min}}–{{max}}% de condição. Conserte, instale ou venda.",
+      "cooldown": "Depois de cada tentativa, achando ou não, você espera cerca de {{minutes}} minutos para tentar de novo aqui.",
+      "where": "Campos de destroços dominados por piratas têm chance bem maior, mas são lugares perigosos. Cada lugar conta o próprio tempo de espera.",
+      "ready": "Pronto para vasculhar.",
+      "nextAttempt": "Próxima tentativa em",
+      "field": {
+        "common": "um porto comum",
+        "mission": "um local de missão",
+        "pirate": "um campo de destroços pirata"
+      }
+    }
   },
   "inventory": {
     "title": "Inventário",
@@ -816,7 +842,8 @@
     "sortPriceDesc": "Preço: maior para menor",
     "sortCondition": "Melhor condição",
     "noMatches": "Nenhuma peça combina com esses filtros.",
-    "used": "Usada"
+    "used": "Usada",
+    "youPay": "Você paga"
   },
   "ship": {
     "empty": {

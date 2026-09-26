@@ -234,6 +234,32 @@ describe('scavenging API (S8.5)', () => {
     }
   });
 
+  it('tells the pilot the odds, and how long until the next attempt (GET info)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const info = (locationId: string) =>
+      request(httpServer(testApp.app))
+        .get(`/v1/locations/${locationId}/scavenge`)
+        .set('Authorization', `Bearer ${player.token}`);
+
+    const before = await info('ceres');
+    expect(before.status).toBe(200);
+    expect(before.body).toMatchObject({
+      fieldType: 'common',
+      dropChance: 0.25,
+      cooldownSeconds: 300,
+      retryAfterSeconds: 0,
+      attempts: 0,
+    });
+
+    expect((await scavenge(player.token, 'ceres')).status).toBe(200);
+    const after = await info('ceres');
+    expect(after.body).toMatchObject({ attempts: 1 });
+    expect((after.body as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(0);
+
+    expect((await info('nowhere')).status).toBe(404);
+  });
+
   it('enforces the per-player cooldown (D28): second attempt 409 with retry hint', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

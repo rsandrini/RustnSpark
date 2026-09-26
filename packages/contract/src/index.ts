@@ -537,6 +537,18 @@ export const ScavengeResponseSchema = z.object({
 });
 export type ScavengeResponse = z.infer<typeof ScavengeResponseSchema>;
 
+export const ScavengeInfoSchema = z.object({
+  locationId: z.string(),
+  fieldType: z.enum(['common', 'mission', 'pirate']),
+  dropChance: z.number(),
+  cooldownSeconds: z.number(),
+  retryAfterSeconds: z.number(),
+  attempts: z.number(),
+  qualityMin: z.number(),
+  qualityMax: z.number(),
+});
+export type ScavengeInfo = z.infer<typeof ScavengeInfoSchema>;
+
 // ---------------------------------------------------------------------------------------------
 // Admin tuning
 // ---------------------------------------------------------------------------------------------

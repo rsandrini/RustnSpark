@@ -23,7 +23,7 @@ const onboarded = () =>
   );
 
 function rowButton(label: string | RegExp): Element {
-  const row = screen.getByText(label).closest('.item');
+  const row = screen.getByText(label).closest('.pcard');
   if (row === null) throw new Error('row not found');
   const button = row.querySelector('button:not(.info-btn)');
   if (button === null) throw new Error('button not found');
@@ -86,7 +86,7 @@ describe('port (S10.9)', () => {
   it('sells all mined materials after the quote popup', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Market' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
     fireEvent.click(rowButton(/Iron/));
     const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
     expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
@@ -124,10 +124,24 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
+    // The tab explains itself: odds, condition, waiting time and where it works.
+    const scav = await screen.findByTestId('scavenging');
+    expect(
+      await within(scav).findByText(/Odds of finding something here: 25%/),
+    ).toBeInTheDocument();
+    expect(within(scav).getByText(/30–70% condition/)).toBeInTheDocument();
+    expect(within(scav).getByText(/5 minutes/)).toBeInTheDocument();
+    expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: 'Scavenge the field' }));
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('Salvaged: Cargo Rack (condition 40).'),
     );
+    // Afterwards the button is closed and a countdown says when it reopens.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Scavenge the field' })).toBeDisabled(),
+    );
+    expect(await within(scav).findByText('Next attempt in')).toBeInTheDocument();
   });
 
   it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
@@ -237,6 +251,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
     await screen.findByRole('status');
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Your goods' }));
     const sell = await screen.findAllByRole('button', { name: 'Sell' });
     fireEvent.click(sell[0]!);
     popup = await screen.findByRole('dialog');

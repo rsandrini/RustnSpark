@@ -6,11 +6,9 @@ import { errorCodeOf, errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type { BuyResponse, MarketListing, MarketResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
-import { ItemCard } from '../../ui/ItemCard';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
-import { partSummary, useNumberFormat } from '../parts/part-detail';
-import { PartInfoButton } from '../parts/part-info-button';
+import { PartCard } from '../parts/part-card';
 
 interface ConfirmBuy {
   name: string;
@@ -45,7 +43,6 @@ export function MarketPanel({
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
   const buyKey = useIntentKey();
-  const format = useNumberFormat();
   const [confirm, setConfirm] = useState<ConfirmBuy | null>(null);
   const [ownNotice, setOwnNotice] = useState<string | null>(null);
   const notice = onNotice === undefined ? ownNotice : null;
@@ -104,7 +101,12 @@ export function MarketPanel({
     },
   });
 
-  const listings = useMemo(() => marketQuery.data?.listings ?? [], [marketQuery.data]);
+  // A bridge is not something you shop for: every ship has exactly one and it comes with the kit
+  // (or the restart kit), so it never appears among the offers.
+  const listings = useMemo(
+    () => (marketQuery.data?.listings ?? []).filter((l) => l.catalog.partClass !== 'BRIDGE'),
+    [marketQuery.data],
+  );
   const classes = useMemo(
     () => Array.from(new Set(listings.map((listing) => listing.catalog.partClass))).sort(),
     [listings],
@@ -214,47 +216,29 @@ export function MarketPanel({
         <p className="sub">{t('market.noMatches')}</p>
       )}
 
-      <div className="grid-cards">
+      <div className="pcard-grid">
         {visible.map((listing) => {
           const name = pickLocalized(listing.displayName, i18n.language);
           const affordable = wallet >= listing.price;
           return (
-            <ItemCard
+            <PartCard
               key={listing.listingId}
-              name={name}
-              description={
-                <>
-                  <span className="part-summary">{partSummary(listing.catalog, t, format)}</span>
-                  <span className="part-desc-short">
-                    {pickLocalized(listing.description, i18n.language)}
-                  </span>
-                  <span className="part-price">
-                    {listing.kind === 'used' && (
-                      <span className="used-tag">{t('market.used')}</span>
-                    )}
-                    {[
-                      t(`hangar.partClasses.${listing.catalog.partClass}`),
-                      `${listing.condition}%`,
-                      money(listing.price),
-                    ].join(' · ')}
-                  </span>
-                </>
-              }
-              action={
-                <span className="row-between">
-                  <PartInfoButton part={listing} />
-                  <button
-                    type="button"
-                    className="btn primary"
-                    disabled={!affordable}
-                    onClick={() => {
-                      setNotice(null);
-                      setConfirm({ name, price: listing.price, listingId: listing.listingId });
-                    }}
-                  >
-                    {t('port.buy')}
-                  </button>
-                </span>
+              part={{ ...listing }}
+              price={listing.price}
+              priceCaption={t('market.youPay')}
+              used={listing.kind === 'used'}
+              actions={
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!affordable}
+                  onClick={() => {
+                    setNotice(null);
+                    setConfirm({ name, price: listing.price, listingId: listing.listingId });
+                  }}
+                >
+                  {t('port.buy')}
+                </button>
               }
             />
           );

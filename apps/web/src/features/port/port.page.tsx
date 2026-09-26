@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { client } from '../../api/client';
+import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type {
@@ -12,6 +12,7 @@ import type {
   RefuelResponse,
   RepairQuoteResponse,
   RepairStartResponse,
+  ScavengeInfo,
   ScavengeResponse,
   SellResponse,
   SellMaterialResponse,
@@ -21,13 +22,14 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
-import { ItemCard } from '../../ui/ItemCard';
 import { Popup } from '../../ui/Popup';
+import { Countdown } from '../../ui/Countdown';
+import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PortTabs } from '../../ui/PortTabs';
 import { MarketPanel } from '../market/market-panel';
-import { PartInfoButton } from '../parts/part-info-button';
+import { PartCard } from '../parts/part-card';
 
-const PORT_TABS = ['market', 'repair', 'refuel', 'scavenging'] as const;
+const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'scavenging'] as const;
 type PortTabId = (typeof PORT_TABS)[number];
 
 interface RepairTarget {
@@ -91,6 +93,11 @@ export function PortPage({ guided = false }: PortPageProps) {
   const materialsQuery = useQuery({
     queryKey: ['materials'],
     queryFn: () => client.get<MaterialsResponse>('/v1/materials'),
+  });
+  const scavengeInfoQuery = useQuery({
+    queryKey: ['scavenge', locationId],
+    enabled: locationId !== undefined && tab === 'scavenging',
+    queryFn: () => client.get<ScavengeInfo>(`/v1/locations/${locationId ?? ''}/scavenge`),
   });
   const worldQuery = useQuery({
     queryKey: ['world'],
@@ -234,8 +241,12 @@ export function PortPage({ guided = false }: PortPageProps) {
         setNotice(t('port.scavNone', { seconds: response.cooldownSeconds }));
       }
       afterTrade();
+      void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
     },
-    onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
+    onError: (error) => {
+      setActionError(errorText(t, error, t('port.failed')));
+      void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
+    },
   });
 
   if (
@@ -304,6 +315,10 @@ export function PortPage({ guided = false }: PortPageProps) {
     repairQuote.mutate(targets);
   };
 
+  // When the next attempt opens, on the server clock (the info endpoint says how long is left).
+  const scavengeRetryAt = new Date(
+    serverNow() + (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) * 1000,
+  ).toISOString();
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
   return (
@@ -352,104 +367,130 @@ export function PortPage({ guided = false }: PortPageProps) {
       {tab === 'market' && (
         <section className="stack">
           <MarketPanel locationId={ship.currentLocationId} onNotice={setNotice} />
+        </section>
+      )}
 
+      {tab === 'goods' && (
+        <section className="stack">
           <h2>{t('port.yourGoods')}</h2>
-          {partsOnSale.map((item) => {
-            const offer = sellOfferOf(item.id);
-            return (
-              <ItemCard
-                key={item.id}
-                name={partName(item)}
-                description={
-                  <>
-                    <span className="part-desc-short">
-                      {pickLocalized(item.description, i18n.language)}
-                    </span>
-                    <span className="part-price">
-                      {t('inventory.condition', { value: item.condition })}
-                    </span>
-                  </>
-                }
-                action={
-                  <span className="row-between">
-                    <PartInfoButton part={item} />
-                    <Link className="btn" to="/hangar">
-                      {t('inventory.install')}
-                    </Link>
-                    <button
-                      type="button"
-                      className="btn primary"
-                      disabled={offer === null}
-                      onClick={() => {
-                        setNotice(null);
-                        setConfirm({
-                          kind: 'sellPart',
-                          name: partName(item),
-                          price: offer,
-                          partInstanceId: item.id,
-                        });
-                      }}
-                    >
-                      {t('port.sell')}
-                    </button>
-                  </span>
-                }
-              />
-            );
-          })}
+          {partsOnSale.length === 0 && <p className="sub">{t('port.noLooseParts')}</p>}
+          <div className="pcard-grid">
+            {partsOnSale.map((item) => {
+              const offer = sellOfferOf(item.id);
+              return (
+                <PartCard
+                  key={item.id}
+                  part={item}
+                  price={offer ?? undefined}
+                  priceCaption={t('port.portPays')}
+                  actions={
+                    <>
+                      <Link className="btn" to="/hangar">
+                        {t('inventory.install')}
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn primary"
+                        disabled={offer === null}
+                        onClick={() => {
+                          setNotice(null);
+                          setConfirm({
+                            kind: 'sellPart',
+                            name: partName(item),
+                            price: offer,
+                            partInstanceId: item.id,
+                          });
+                        }}
+                      >
+                        {t('port.sell')}
+                      </button>
+                    </>
+                  }
+                />
+              );
+            })}
+          </div>
 
           <h3>{t('port.materials')}</h3>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
-          {materials.map((holding) => {
-            const name = pickLocalized(holding.displayName, i18n.language);
-            const total = holding.unitPrice * holding.quantity;
-            return (
-              <ItemCard
-                key={holding.materialId}
-                name={t('port.quantity', { quantity: holding.quantity }) + ` ${name}`}
-                description={t('port.unitPrice', { price: holding.unitPrice })}
-                action={
-                  <button
-                    type="button"
-                    className="btn primary"
-                    onClick={() => {
-                      setNotice(null);
-                      setConfirm({
-                        kind: 'sellMaterial',
-                        name,
-                        price: total,
-                        materialId: holding.materialId,
-                        quantity: holding.quantity,
-                      });
-                    }}
-                  >
-                    {t('port.sellAll')}
-                  </button>
-                }
-              />
-            );
-          })}
+          <div className="pcard-grid">
+            {materials.map((holding) => {
+              const name = pickLocalized(holding.displayName, i18n.language);
+              const total = holding.unitPrice * holding.quantity;
+              const materialTitle = [t('port.quantity', { quantity: holding.quantity }), name].join(
+                ' ',
+              );
+              return (
+                <article key={holding.materialId} className="pcard rarity-common">
+                  <header className="pcard-head">
+                    <h3 className="pcard-name">{materialTitle}</h3>
+                    <div className="pcard-price">
+                      <b>{money(total)}</b>
+                      <small>{t('port.unitPrice', { price: holding.unitPrice })}</small>
+                    </div>
+                  </header>
+                  <footer className="pcard-actions">
+                    <button
+                      type="button"
+                      className="btn primary"
+                      onClick={() => {
+                        setNotice(null);
+                        setConfirm({
+                          kind: 'sellMaterial',
+                          name,
+                          price: total,
+                          materialId: holding.materialId,
+                          quantity: holding.quantity,
+                        });
+                      }}
+                    >
+                      {t('port.sellAll')}
+                    </button>
+                  </footer>
+                </article>
+              );
+            })}
+          </div>
         </section>
       )}
 
       {tab === 'repair' && (
         <section className="stack">
           {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
-          {damaged.map((item) => {
-            const target = repairTargets[item.id] ?? 100;
-            return (
-              <ItemCard
-                key={item.id}
-                name={partName(item)}
-                description={t('port.repairSlider', { value: target })}
-                action={
+          <div className="repair-list">
+            {damaged.map((item) => {
+              const target = repairTargets[item.id] ?? 100;
+              const condition = Math.round(item.condition);
+              const name = partName(item);
+              // Two identical parts (two Cargo Holds) are told apart by a stable number.
+              const same = damaged.filter((entry) => partName(entry) === name);
+              const suffix = same.length > 1 ? ` #${same.indexOf(item) + 1}` : '';
+              const rowName = `${name}${suffix}`;
+              return (
+                <div key={item.id} className="repair-row">
+                  <div className="rname">
+                    {rowName}
+                    <small>{t(`hangar.partClasses.${item.catalog.partClass}`)}</small>
+                  </div>
+                  <Gauge
+                    value={condition}
+                    max={100}
+                    planned={target}
+                    tone={conditionTone(condition)}
+                    ariaLabel={`${name}${suffix}: ${t('port.conditionNow', { value: condition })}`}
+                    label={
+                      target > condition
+                        ? t('port.conditionToTarget', { from: condition, to: target })
+                        : t('port.conditionNow', { value: condition })
+                    }
+                  />
                   <input
                     type="range"
-                    min={item.condition}
+                    min={condition}
                     max={100}
                     step={1}
                     value={target}
-                    aria-label={`${partName(item)} ${t('port.repairSlider', { value: target })}`}
+                    aria-label={`${name}${suffix} ${t('port.repairSlider', { value: target })}`}
                     onChange={(event) =>
                       setRepairTargets((current) => ({
                         ...current,
@@ -457,10 +498,10 @@ export function PortPage({ guided = false }: PortPageProps) {
                       }))
                     }
                   />
-                }
-              />
-            );
-          })}
+                </div>
+              );
+            })}
+          </div>
           <div className="row-between">
             <button
               type="button"
@@ -493,7 +534,14 @@ export function PortPage({ guided = false }: PortPageProps) {
 
       {tab === 'refuel' && (
         <section className="stack">
-          <p>{t('port.refuelGauge', { fuel, cap: fuelCap })}</p>
+          <Gauge
+            value={fuel}
+            max={fuelCap}
+            tone="fuel"
+            ariaLabel={t('port.fuelBar')}
+            label={t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })}
+          />
+          <p className="sub">{t('port.refuelHint')}</p>
           {tankFull && <p className="sub">{t('port.refuelFull')}</p>}
           <button
             type="button"
@@ -507,12 +555,46 @@ export function PortPage({ guided = false }: PortPageProps) {
       )}
 
       {tab === 'scavenging' && (
-        <section className="stack">
-          <p className="sub">{t('port.scavWarn')}</p>
+        <section className="stack scav" data-testid="scavenging">
+          <h2>{t('port.scav.title')}</h2>
+          <p>{t('port.scav.what', { place: locationName(ship.currentLocationId) })}</p>
+          {scavengeInfoQuery.data !== undefined && (
+            <ul className="scav-facts">
+              <li>
+                {t('port.scav.chance', {
+                  percent: Math.round(scavengeInfoQuery.data.dropChance * 100),
+                  place: t(`port.scav.field.${scavengeInfoQuery.data.fieldType}`),
+                })}
+              </li>
+              <li>
+                {t('port.scav.quality', {
+                  min: scavengeInfoQuery.data.qualityMin,
+                  max: scavengeInfoQuery.data.qualityMax,
+                })}
+              </li>
+              <li>
+                {t('port.scav.cooldown', {
+                  minutes: Math.max(1, Math.round(scavengeInfoQuery.data.cooldownSeconds / 60)),
+                })}
+              </li>
+              <li>{t('port.scav.where')}</li>
+            </ul>
+          )}
+          {scavengeInfoQuery.data !== undefined && scavengeInfoQuery.data.retryAfterSeconds > 0 ? (
+            <p className="notice" role="status">
+              {t('port.scav.nextAttempt')}{' '}
+              <Countdown
+                until={scavengeRetryAt}
+                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['scavenge'] })}
+              />
+            </p>
+          ) : (
+            <p className="sub">{t('port.scav.ready')}</p>
+          )}
           <button
             type="button"
             className="btn primary"
-            disabled={scavenge.isPending}
+            disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
             onClick={() => scavenge.mutate()}
           >
             {t('port.scavenge')}

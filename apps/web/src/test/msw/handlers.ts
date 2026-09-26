@@ -23,6 +23,7 @@ import type {
   RescueResponse,
   ReportListResponse,
   ReportResponse,
+  ScavengeInfo,
   ScavengeResponse,
   SellMaterialResponse,
   SellResponse,
@@ -751,6 +752,19 @@ export const handlers = [
       fuel: fuelState,
       credits: wallet,
       restartParts: [],
+    });
+  }),
+  http.get('/v1/locations/:id/scavenge', ({ params }) => {
+    const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
+    return ok<ScavengeInfo>({
+      locationId: String(params.id),
+      fieldType: 'common',
+      dropChance: 0.25,
+      cooldownSeconds: 300,
+      retryAfterSeconds: retry,
+      attempts: retry > 0 ? 1 : 0,
+      qualityMin: 30,
+      qualityMax: 70,
     });
   }),
   http.post('/v1/locations/:id/scavenge', ({ params }) => {

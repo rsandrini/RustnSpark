@@ -25,6 +25,7 @@ import {
   RepairQuoteResponseSchema,
   RepairStartResponseSchema,
   RescueResponseSchema,
+  ScavengeInfoSchema,
   ScavengeResponseSchema,
   SellMaterialResponseSchema,
   SellResponseSchema,
@@ -262,6 +263,9 @@ describe('HTTP contract: real responses match packages/contract', () => {
   });
 
   it('scavenging', async () => {
+    const scavengeInfo = await request(server).get('/v1/locations/ceres/scavenge').set(auth(token));
+    expect(scavengeInfo.status).toBe(200);
+    contract(ScavengeInfoSchema, scavengeInfo.body, 'GET /locations/:id/scavenge');
     const scavenge = await request(server).post('/v1/locations/ceres/scavenge').set(auth(token));
     expect(scavenge.status).toBe(200);
     contract(ScavengeResponseSchema, scavenge.body, 'POST /locations/:id/scavenge');
