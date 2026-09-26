@@ -78,5 +78,6 @@ export async function flyOneMission(page: Page): Promise<void> {
   await page.locator('button:has-text("Accept"):not([disabled])').first().click();
   await expect(page).toHaveURL(/\/transit/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
-  await expect(page.getByTestId('last-mission')).toBeVisible({ timeout: 90_000 });
+  // The transit screen sends the pilot to the report when the flight ends.
+  await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 }

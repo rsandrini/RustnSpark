@@ -46,10 +46,11 @@ test('after a flight: fill the tank for credits, then the tank is full', async (
   await page.goto('/port');
   await page.getByRole('tab', { name: 'Refuel' }).click();
 
-  const fill = page.getByRole('button', { name: 'Fill tank' });
-  if (await fill.isEnabled()) {
+  // The slider opens on "fill the tank"; buying that amount empties the panel.
+  const buy = page.getByRole('button', { name: /^Buy \d+$/ });
+  if (await buy.isVisible()) {
     const before = await walletOf(page);
-    await fill.click();
+    await buy.click();
     await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
     expect(await walletOf(page)).toBeLessThanOrEqual(before);
   }

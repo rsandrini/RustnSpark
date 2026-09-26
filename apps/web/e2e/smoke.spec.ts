@@ -45,10 +45,9 @@ for (const faction of FACTIONS) {
     await page.getByRole('button', { name: 'Dispatch' }).click();
     await expect(page.getByTestId('in-transit')).toBeVisible();
     await assertClean(page, 'transit');
-    await expect(page.getByTestId('last-mission')).toBeVisible({ timeout: 90_000 });
+    await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 
     // --- report: all three views ---------------------------------------------------------------
-    await page.getByRole('link', { name: 'Read the report' }).click();
     await expect(page.getByRole('heading', { name: 'Mission report' })).toBeVisible();
     // The debrief leads (verdict, mission, credits, fights), then the story.
     await expect(page.getByTestId('debrief')).toBeVisible();

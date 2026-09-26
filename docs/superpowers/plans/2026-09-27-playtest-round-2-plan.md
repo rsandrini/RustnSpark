@@ -127,6 +127,9 @@ _(updated as each workstream lands)_
 
   Reading: a well-armed ship now meets pirates in 20–65 % of missions and wins most of them (combat pays, so danger is a real prize); the weaponless starter ship loses 14–15 % of its zone 2–3 runs unless it flees, and fleeing deliveries cut that to about 4 %. These are the numbers to tune from (danger, `chance_divisor`, zone strength, motive weights are all Admin values).
 - **W6 done:** auto layout arranges only the parts in the ship (the kit only when it is empty); rotate explains 1×1, nudges a blocked rotation, and says when nothing fits.
+- **W2 done:** 39 generated place SVGs (`apps/web/public/places`, script `apps/web/scripts/generate-place-art.mjs`), replaceable by file name; first-letter part thumbnails; banners and the report backdrop use them.
+- **W8 done:** scavenging is a 5-minute `SCAVENGE` job from the Port (migration 0029, `Material.fixedPrice` scrap), risk and finds by zone, always used parts, finds and scrap shown in the debrief; the Transit screen auto-redirects to the report (it now keeps asking until the report exists, fixing a race found by the browser smoke).
+- **W9 done:** `ShipResponse.activity` and the `ShipStage` scenes (parked backdrop, repairing drones/sparks, scavenging debris, flying) on Home, Hangar, Port and Transit. Browser specs updated for the redirect and the refuel slider.
 
 ## 5b. TODO — next after the current workstreams (owner request, 2026-09-27)
 
