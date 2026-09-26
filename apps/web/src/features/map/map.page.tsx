@@ -215,7 +215,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                       className="you-tag"
                       transform={`translate(${location.x} ${location.y - 34})`}
                     >
-                      <rect x={-38} y={-11} width={76} height={18} rx={9} />
+                      <rect x={-50} y={-11} width={100} height={18} rx={9} />
                       <text y={2}>{t('map.youAreHere')}</text>
                       <path d="M-5,7 L0,13 L5,7 Z" />
                     </g>

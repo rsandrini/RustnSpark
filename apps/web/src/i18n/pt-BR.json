@@ -524,7 +524,24 @@
     "held": "Esta missão está apenas reservada. Aceite-a no quadro para começar.",
     "resolving": "Resolvendo a missão…",
     "lastMission": "Última missão",
-    "lastReport": "Ler o relatório"
+    "lastReport": "Ler o relatório",
+    "scene": {
+      "alt": "Sua nave em voo"
+    },
+    "stakes": "Em jogo",
+    "cargo": "Carga",
+    "distance": "Distância",
+    "danger": "Perigo",
+    "legsCount": "{{count}} trechos",
+    "nowFlying": "Voando agora {{route}}",
+    "readyTitle": "Pronta para partir",
+    "facts": {
+      "reward": "Recompensa",
+      "distance": "Distância",
+      "legs": "Trechos",
+      "danger": "Perigo",
+      "zone": "Zona"
+    }
   },
   "board": {
     "title": "Quadro de missões",

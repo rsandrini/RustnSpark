@@ -15,6 +15,9 @@ import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
+import { RiskBadge } from '../../ui/RiskBadge';
+import { summarizeLegs } from '../missions/mission-facts';
+import { TransitScene } from './transit-scene';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -146,6 +149,11 @@ export function TransitPage({ guided = false }: TransitPageProps) {
       ? Math.min(100, Math.max(0, ((now - firstFrom) / (lastTo - firstFrom)) * 100))
       : 0;
 
+  const summary = summarizeLegs(mission.legs);
+  const destinationRisk = worldQuery.data?.locations.find(
+    (entry) => entry.id === mission.destinationId,
+  )?.risk;
+
   const legLabel = (routeId: string) => {
     const route = worldQuery.data?.routes.find((entry) => entry.id === routeId);
     if (route === undefined) return routeId;
@@ -158,7 +166,30 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <h1>{t('transit.title')}</h1>
         <span className="sub">{routeLabel}</span>
       </header>
-      <p className="sub">{t('board.reward', { amount: mission.reward })}</p>
+      <div className="briefing" data-testid="briefing">
+        <div className="fact">
+          <div className="k">{t('transit.facts.reward')}</div>
+          <div className="v spark">
+            {`${new Intl.NumberFormat(i18n.language).format(mission.reward)} ¢`}
+          </div>
+        </div>
+        <div className="fact">
+          <div className="k">{t('transit.facts.distance')}</div>
+          <div className="v">{summary.totalDistance}</div>
+        </div>
+        <div className="fact">
+          <div className="k">{t('transit.facts.legs')}</div>
+          <div className="v">{summary.legCount}</div>
+        </div>
+        {destinationRisk !== undefined && (
+          <div className="fact">
+            <div className="k">{t('transit.facts.danger')}</div>
+            <div className="v">
+              <RiskBadge band={destinationRisk} />
+            </div>
+          </div>
+        )}
+      </div>
 
       {actionError !== null && (
         <p className="error-text" role="alert">
@@ -179,6 +210,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <p data-testid="resolving">{t('transit.resolving')}</p>
       ) : mission.status === 'ACCEPTED' ? (
         <section>
+          <TransitScene moving={false} />
           <p>{t('transit.accepted')}</p>
           {mission.deadlineAt !== null && (
             <p className="sub">
@@ -197,6 +229,12 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         </section>
       ) : (
         <section data-testid="in-transit">
+          <TransitScene moving />
+          {currentIndex !== -1 && windows[currentIndex] !== undefined && (
+            <p className="now-flying">
+              {t('transit.nowFlying', { route: legLabel(windows[currentIndex].routeId) })}
+            </p>
+          )}
           <p className="sub">
             {t('transit.arrivesIn')}{' '}
             {(mission.arrivalAt ?? '') !== '' && (

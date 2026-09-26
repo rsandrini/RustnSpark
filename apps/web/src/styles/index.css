@@ -1548,3 +1548,196 @@ svg .block.floating {
     animation: none;
   }
 }
+
+/* transit: the moving scene ------------------------------------------------ */
+.transit-scene {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 60% 50%, #0d1622 0%, #05070b 75%);
+  margin: 12px 0;
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  will-change: background-position;
+}
+
+.stars-far {
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 90px 120px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 160px 70px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 230px 200px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 150px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 60px 240px, #8aa0c0 50%, transparent 51%);
+  background-size: 320px 280px;
+  opacity: 0.55;
+}
+
+.stars-mid {
+  background-image:
+    radial-gradient(1.5px 1.5px at 40px 60px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 140px 190px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 250px 110px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 340px 250px, #cfe0ff 55%, transparent 56%);
+  background-size: 380px 300px;
+  opacity: 0.8;
+}
+
+.stars-near {
+  background-image:
+    radial-gradient(2.2px 2.2px at 70px 90px, #fff 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 240px 220px, #fff 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 400px 40px, #ffe9b0 55%, transparent 56%);
+  background-size: 480px 300px;
+}
+
+.scene-ship {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -40px 0 0 -80px;
+}
+
+.scene-ship svg {
+  display: block;
+  overflow: visible;
+}
+
+.ship-hull {
+  fill: #2b3947;
+  stroke: #6f8296;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.ship-wing {
+  fill: #223040;
+  stroke: #56697d;
+  stroke-width: 1.2;
+}
+
+.ship-cockpit {
+  fill: #f0a500;
+  opacity: 0.9;
+}
+
+.ship-engine {
+  fill: #4a5a6b;
+}
+
+.ship-flame {
+  fill: #ff8a2b;
+  opacity: 0;
+}
+
+.transit-scene.moving .stars-far {
+  animation: stars-scroll-far 40s linear infinite;
+}
+
+.transit-scene.moving .stars-mid {
+  animation: stars-scroll-mid 22s linear infinite;
+}
+
+.transit-scene.moving .stars-near {
+  animation: stars-scroll-near 9s linear infinite;
+}
+
+.transit-scene.moving .scene-ship {
+  animation: ship-hover 4.5s ease-in-out infinite;
+}
+
+.transit-scene.moving .ship-flame {
+  opacity: 1;
+  animation: flame-flicker 0.18s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+@keyframes stars-scroll-far {
+  to {
+    background-position-x: -320px;
+  }
+}
+
+@keyframes stars-scroll-mid {
+  to {
+    background-position-x: -380px;
+  }
+}
+
+@keyframes stars-scroll-near {
+  to {
+    background-position-x: -480px;
+  }
+}
+
+@keyframes ship-hover {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  30% {
+    transform: translate(6px, -7px) rotate(-1.2deg);
+  }
+  65% {
+    transform: translate(-5px, 6px) rotate(1deg);
+  }
+}
+
+@keyframes flame-flicker {
+  from {
+    transform: scaleX(0.7);
+    opacity: 0.75;
+  }
+  to {
+    transform: scaleX(1.25);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.moving .stars-far,
+  .transit-scene.moving .stars-mid,
+  .transit-scene.moving .stars-near,
+  .transit-scene.moving .scene-ship,
+  .transit-scene.moving .ship-flame {
+    animation: none;
+  }
+}
+
+.briefing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.briefing .fact {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.briefing .fact .k {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mut);
+}
+
+.briefing .fact .v {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.now-flying {
+  font-weight: 700;
+  margin: 4px 0;
+}

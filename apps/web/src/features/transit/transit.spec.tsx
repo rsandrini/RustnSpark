@@ -76,6 +76,8 @@ describe('transit (S10.7)', () => {
 
     const view = await screen.findByTestId('in-transit');
     expect(view).toBeInTheDocument();
+    expect(screen.getByTestId('transit-scene')).toHaveClass('moving');
+    expect(screen.getByTestId('briefing')).toBeInTheDocument();
     expect(screen.getByRole('timer')).toBeInTheDocument();
     expect(screen.getByText('Leg 1 of 2')).toBeInTheDocument();
     expect(screen.getByText('Leg 2 of 2')).toBeInTheDocument();

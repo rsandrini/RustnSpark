@@ -524,7 +524,24 @@
     "held": "This mission is only held. Accept it on the board to start it.",
     "resolving": "Resolving the mission…",
     "lastMission": "Last mission",
-    "lastReport": "Read the report"
+    "lastReport": "Read the report",
+    "scene": {
+      "alt": "Your ship in flight"
+    },
+    "stakes": "At stake",
+    "cargo": "Cargo",
+    "distance": "Distance",
+    "danger": "Danger",
+    "legsCount": "{{count}} legs",
+    "nowFlying": "Now flying {{route}}",
+    "readyTitle": "Ready to depart",
+    "facts": {
+      "reward": "Reward",
+      "distance": "Distance",
+      "legs": "Legs",
+      "danger": "Danger",
+      "zone": "Zone"
+    }
   },
   "board": {
     "title": "Mission board",
