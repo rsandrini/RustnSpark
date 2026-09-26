@@ -855,11 +855,33 @@ const reportLine = (text: string) => ({
   segments: [{ t: 'text' as const, value: text }],
 });
 
+const reportExtras = {
+  stats: {
+    credits: 1400,
+    balanceAfter: 1400,
+    legs: 2,
+    distance: 820,
+    fights: { won: 1, lost: 0, escaped: 0, pvp: 0 },
+    damage: { shield: 4, armor: 3, hull: 2 },
+    partFailures: 0,
+    fuelLost: 0,
+    loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
+  },
+  mission: {
+    type: 'DELIVERY' as const,
+    originId: 'ceres',
+    destinationId: 'hedus',
+    reward: 1200,
+    title: { en: 'Corporate Delivery', 'pt-BR': 'Entrega Corporativa' },
+  },
+};
+
 const reportFixture = (view: string): ReportResponse => {
   if (view === 'narrative') {
     return {
       locale: 'en',
       outcome: 'success',
+      ...reportExtras,
       view: 'narrative',
       chapters: [
         {
@@ -880,6 +902,7 @@ const reportFixture = (view: string): ReportResponse => {
     return {
       locale: 'en',
       outcome: 'success',
+      ...reportExtras,
       view: 'log',
       lines: [
         reportLine('[00:00] depart ceres'),
@@ -891,6 +914,7 @@ const reportFixture = (view: string): ReportResponse => {
   return {
     locale: 'en',
     outcome: 'success',
+    ...reportExtras,
     view: 'summary',
     lines: [reportLine('Mission accomplished — balance 1400 ¢'), reportLine('Payment +1400 ¢')],
   };

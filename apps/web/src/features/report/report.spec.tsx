@@ -5,6 +5,18 @@ import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
 
+const STATS = {
+  credits: 0,
+  balanceAfter: null,
+  legs: 1,
+  distance: 0,
+  fights: { won: 0, lost: 0, escaped: 0, pvp: 0 },
+  damage: { shield: 0, armor: 0, hull: 0 },
+  partFailures: 0,
+  fuelLost: 0,
+  loot: [],
+};
+
 const onboarded = () =>
   http.get('/v1/players/me', () =>
     HttpResponse.json(
@@ -29,8 +41,15 @@ describe('report (S10.8)', () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
 
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
-    expect(screen.getByText('Mission accomplished')).toBeInTheDocument();
-    expect(screen.getByText('Mission accomplished — balance 1400 ¢')).toBeInTheDocument();
+    // The debrief leads: verdict, what the mission was, what it paid and what it cost.
+    const debrief = await screen.findByTestId('debrief');
+    expect(debrief).toHaveTextContent('Mission accomplished');
+    expect(debrief).toHaveTextContent('Corporate Delivery');
+    expect(debrief).toHaveTextContent('+1,400 ¢');
+    expect(debrief).toHaveTextContent('Shield 4 · armor 3 · hull 2');
+    expect(debrief).toHaveTextContent('6 × Iron');
+    fireEvent.click(await screen.findByRole('tab', { name: 'Summary' }));
+    expect(await screen.findByText('Mission accomplished — balance 1400 ¢')).toBeInTheDocument();
     expect(screen.getByText('Payment +1400 ¢')).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'Back to the map' })).toHaveAttribute('href', '/map');
@@ -43,8 +62,6 @@ describe('report (S10.8)', () => {
 
   it('renders the narrative chapters and opens the event popup', async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
-
-    fireEvent.click(await screen.findByRole('tab', { name: 'Narrative' }));
 
     expect(await screen.findByText('Leg 1 — completed')).toBeInTheDocument();
     expect(screen.getByText('Departed Porto Ceres on schedule.')).toBeInTheDocument();
@@ -91,6 +108,7 @@ describe('report (S10.8)', () => {
           {
             locale: 'en',
             outcome: 'adrift',
+            stats: STATS,
             view: 'summary',
             lines: [{ text: 'Ship adrift', segments: [{ t: 'text', value: 'Ship adrift' }] }],
           },
@@ -100,24 +118,32 @@ describe('report (S10.8)', () => {
       http.get('/v1/reports', () => HttpResponse.json({ items: [] }, { status: 200 })),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-99'] });
-    expect(await screen.findByText('Ship adrift', { selector: '.verdict' })).toBeInTheDocument();
+    expect(await screen.findByTestId('debrief')).toHaveTextContent('Ship adrift');
   });
 
   it('keeps the tab bar on screen while the next view loads', async () => {
     server.use(
       http.get('/v1/reports/:missionId', async ({ request }) => {
-        const view = new URL(request.url).searchParams.get('view') ?? 'summary';
-        if (view === 'narrative') await delay(200);
+        const view = new URL(request.url).searchParams.get('view') ?? 'narrative';
+        if (view === 'log') await delay(200);
         return HttpResponse.json(
           {
             locale: 'en',
             outcome: 'success',
-            view: view === 'narrative' ? 'narrative' : 'summary',
-            ...(view === 'narrative'
-              ? { chapters: [] }
+            stats: STATS,
+            view: view === 'log' ? 'log' : 'narrative',
+            ...(view === 'log'
+              ? { lines: [{ text: 'Log line', segments: [{ t: 'text', value: 'Log line' }] }] }
               : {
-                  lines: [
-                    { text: 'Summary line', segments: [{ t: 'text', value: 'Summary line' }] },
+                  chapters: [
+                    {
+                      leg: 1,
+                      header: {
+                        text: 'Story line',
+                        segments: [{ t: 'text', value: 'Story line' }],
+                      },
+                      lines: [],
+                    },
                   ],
                 }),
           },
@@ -126,17 +152,14 @@ describe('report (S10.8)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
-    await screen.findByText('Summary line');
+    await screen.findByText('Story line');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Narrative' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Log' }));
     // Mid-load: still the previous view, still the tabs — no full-page "Loading".
     expect(screen.getByRole('tab', { name: 'Summary' })).toBeInTheDocument();
-    expect(screen.getByText('Summary line')).toBeInTheDocument();
+    expect(screen.getByText('Story line')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Narrative' })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      ),
+      expect(screen.getByRole('tab', { name: 'Log' })).toHaveAttribute('aria-selected', 'true'),
     );
   });
 
@@ -147,6 +170,7 @@ describe('report (S10.8)', () => {
           {
             locale: 'en',
             outcome: 'success',
+            stats: STATS,
             view: 'summary',
             lines: [
               {
@@ -178,6 +202,7 @@ describe('report (S10.8)', () => {
           {
             locale: 'en',
             outcome: 'success',
+            stats: STATS,
             view: 'summary',
             lines: [
               {

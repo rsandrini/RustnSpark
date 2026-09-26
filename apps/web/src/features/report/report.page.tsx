@@ -5,18 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type {
   CatalogDetail,
+  ReportMission,
+  ReportStats,
+  WorldResponse,
   ReportLine,
   ReportResponse,
   ReportSegment,
   ReportViewName,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { FactionBadge } from '../../ui/FactionBadge';
 import { Popup } from '../../ui/Popup';
-
-function verdictClass(outcome: string): string {
-  if (outcome === 'failed' || outcome === 'adrift') return 'verdict bad';
-  return 'verdict ok';
-}
 
 const infoGlyph = 'i';
 
@@ -28,7 +27,7 @@ export interface ReportPageProps {
 export function ReportPage({ guided = false }: ReportPageProps) {
   const { missionId = '' } = useParams();
   const { t } = useTranslation();
-  const [view, setView] = useState<ReportViewName>('summary');
+  const [view, setView] = useState<ReportViewName>('narrative');
   const [popupLine, setPopupLine] = useState<string | null>(null);
   const [refPopup, setRefPopup] = useState<Extract<ReportSegment, { t: 'ref' }> | null>(null);
 
@@ -38,6 +37,11 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     // Switching tabs keeps the current view on screen until the next one arrives, instead
     // of blanking the whole page (and its tab bar) behind a loading message.
     placeholderData: keepPreviousData,
+  });
+
+  const worldQuery = useQuery({
+    queryKey: ['world'],
+    queryFn: () => client.get<WorldResponse>('/v1/locations'),
   });
 
   if (reportQuery.isLoading) {
@@ -65,18 +69,23 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     </span>
   );
 
-  const views: readonly ReportViewName[] = ['summary', 'narrative', 'log'];
+  const views: readonly ReportViewName[] = ['narrative', 'summary', 'log'];
 
   return (
     <main className="app" data-guided={guided ? '' : undefined}>
       <header className="topbar">
         <h1>{t('report.title')}</h1>
-        {report !== undefined && (
-          <span className={verdictClass(report.outcome)}>
-            {t(`report.outcome.${report.outcome}`, { defaultValue: report.outcome })}
-          </span>
-        )}
       </header>
+
+      {report !== undefined && (
+        <Debrief
+          outcome={report.outcome}
+          stats={report.stats}
+          mission={report.mission}
+          world={worldQuery.data}
+          onRef={setRefPopup}
+        />
+      )}
 
       {report === undefined && <p className="sub">{t('report.noReport')}</p>}
 
@@ -116,7 +125,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
           )}
 
           {report.view === 'narrative' && (
-            <section className="stack">
+            <section className="stack report-story">
               {report.chapters.map((chapter) => (
                 <article key={chapter.leg} className="event">
                   <h2>{renderLine(chapter.header, `h${chapter.leg}`)}</h2>
@@ -241,5 +250,139 @@ function RefDetail({ segment }: { segment: Extract<ReportSegment, { t: 'ref' }> 
         </>
       )}
     </div>
+  );
+}
+
+function outcomeTone(outcome: string): 'ok' | 'warn' | 'bad' {
+  if (outcome === 'failed' || outcome === 'adrift') return 'bad';
+  if (outcome === 'partial_failure') return 'warn';
+  return 'ok';
+}
+
+interface DebriefProps {
+  outcome: string;
+  stats: ReportStats;
+  mission: ReportMission | undefined;
+  world: WorldResponse | undefined;
+  onRef: (segment: Extract<ReportSegment, { t: 'ref' }>) => void;
+}
+
+// The first thing after a flight: how it ended, what it was, what it paid, and what it cost.
+// Everything here is read from the stored run (stats), never worked out on the client.
+function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
+  const { t, i18n } = useTranslation();
+  const tone = outcomeTone(outcome);
+  const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
+  const place = (id: string) => {
+    const found = world?.locations.find((entry) => entry.id === id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
+  };
+  const destination =
+    mission === undefined
+      ? undefined
+      : world?.locations.find((entry) => entry.id === mission.destinationId);
+  const earned = stats.credits;
+  const creditsText = `${earned >= 0 ? '+' : '−'}${number(Math.abs(earned))} ¢`;
+  const hasFights =
+    stats.fights.won + stats.fights.lost + stats.fights.escaped + stats.fights.pvp > 0;
+  const damageTotal = stats.damage.shield + stats.damage.armor + stats.damage.hull;
+
+  return (
+    <section className={`debrief ${tone}`} data-testid="debrief">
+      <div className="debrief-verdict">
+        <span className="debrief-glyph" aria-hidden="true">
+          {t(`report.glyph.${tone}`)}
+        </span>
+        <div>
+          <div className="debrief-outcome">
+            {t(`report.outcome.${outcome}`, { defaultValue: outcome })}
+          </div>
+          {mission !== undefined && (
+            <div className="debrief-mission">
+              {[
+                mission.type === 'TRAVEL'
+                  ? t('board.type.TRAVEL')
+                  : pickLocalized(mission.title, i18n.language),
+                [place(mission.originId), place(mission.destinationId)].join(' → '),
+              ].join(' · ')}
+              {destination !== undefined && <FactionBadge factionId={destination.factionId} />}
+            </div>
+          )}
+        </div>
+        <div className="debrief-credits">
+          <b className={earned < 0 ? 'neg' : earned > 0 ? 'pos' : undefined}>{creditsText}</b>
+          {stats.balanceAfter !== null && (
+            <small>{t('report.debrief.balance', { balance: number(stats.balanceAfter) })}</small>
+          )}
+        </div>
+      </div>
+
+      <dl className="debrief-tiles">
+        <div>
+          <dt>{t('report.debrief.legs')}</dt>
+          <dd>{stats.legs}</dd>
+        </div>
+        <div>
+          <dt>{t('report.debrief.distance')}</dt>
+          <dd>{number(stats.distance)}</dd>
+        </div>
+        <div>
+          <dt>{t('report.debrief.fights')}</dt>
+          <dd>
+            {hasFights
+              ? t('report.debrief.fightsValue', {
+                  won: stats.fights.won,
+                  lost: stats.fights.lost,
+                  escaped: stats.fights.escaped,
+                })
+              : t('report.debrief.noFights')}
+          </dd>
+        </div>
+        <div className={damageTotal > 0 ? 'bad' : undefined}>
+          <dt>{t('report.debrief.damage')}</dt>
+          <dd>
+            {damageTotal > 0
+              ? t('report.debrief.damageValue', {
+                  shield: stats.damage.shield,
+                  armor: stats.damage.armor,
+                  hull: stats.damage.hull,
+                })
+              : t('report.debrief.noDamage')}
+          </dd>
+        </div>
+        {stats.partFailures > 0 && (
+          <div className="bad">
+            <dt>{t('report.debrief.failures')}</dt>
+            <dd>{stats.partFailures}</dd>
+          </div>
+        )}
+        {stats.fuelLost > 0 && (
+          <div className="bad">
+            <dt>{t('report.debrief.fuelLost')}</dt>
+            <dd>{stats.fuelLost}</dd>
+          </div>
+        )}
+      </dl>
+
+      {stats.loot.length > 0 && (
+        <div className="debrief-loot">
+          <b>{t('report.debrief.loot')}</b>
+          {stats.loot.map((entry) => (
+            <button
+              key={entry.materialId}
+              type="button"
+              className="ref loot-chip"
+              onClick={() =>
+                onRef({ t: 'ref', kind: 'loot', id: entry.materialId, value: entry.name })
+              }
+            >
+              {t('report.debrief.lootItem', { quantity: entry.quantity, name: entry.name })}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {damageTotal > 0 && <p className="debrief-hint">{t('report.debrief.repairHint')}</p>}
+    </section>
   );
 }

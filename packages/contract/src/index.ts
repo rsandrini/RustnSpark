@@ -403,7 +403,34 @@ export const NarrativeChapterSchema = z.object({
 });
 export type NarrativeChapter = z.infer<typeof NarrativeChapterSchema>;
 
-const reportBase = { locale: z.string(), outcome: z.string() };
+export const ReportStatsSchema = z.object({
+  credits: z.number(),
+  balanceAfter: z.number().nullable(),
+  legs: z.number(),
+  distance: z.number(),
+  fights: z.object({ won: z.number(), lost: z.number(), escaped: z.number(), pvp: z.number() }),
+  damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+  partFailures: z.number(),
+  fuelLost: z.number(),
+  loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
+});
+export type ReportStats = z.infer<typeof ReportStatsSchema>;
+
+export const ReportMissionSchema = z.object({
+  type: MissionTypeSchema,
+  originId: z.string(),
+  destinationId: z.string(),
+  reward: z.number(),
+  title: LocalizedTextSchema,
+});
+export type ReportMission = z.infer<typeof ReportMissionSchema>;
+
+const reportBase = {
+  locale: z.string(),
+  outcome: z.string(),
+  stats: ReportStatsSchema,
+  mission: ReportMissionSchema.optional(),
+};
 export const ReportResponseSchema = z.discriminatedUnion('view', [
   z.object({ ...reportBase, view: z.literal('summary'), lines: z.array(ReportLineSchema) }),
   z.object({ ...reportBase, view: z.literal('log'), lines: z.array(ReportLineSchema) }),

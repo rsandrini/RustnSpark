@@ -512,7 +512,7 @@
     "title": "Relatório da missão",
     "tabs": {
       "summary": "Resumo",
-      "narrative": "Narrativa",
+      "narrative": "A história",
       "log": "Registro"
     },
     "noReport": "Ainda não há relatório para esta missão.",
@@ -538,6 +538,28 @@
     "refCategory": {
       "part": "Classe",
       "loot": "Raridade"
+    },
+    "glyph": {
+      "ok": "✔",
+      "warn": "◐",
+      "bad": "✖"
+    },
+    "debrief": {
+      "balance": "Saldo {{balance}} ¢",
+      "legs": "Trechos",
+      "distance": "Distância",
+      "fights": "Combates",
+      "fightsValue": "{{won}} vencidos · {{lost}} perdidos · {{escaped}} fugas",
+      "noFights": "Nenhum",
+      "damage": "Dano recebido",
+      "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
+      "noDamage": "Nenhum",
+      "failures": "Peças com falha",
+      "fuelLost": "Combustível vazado",
+      "loot": "Espólio",
+      "lootItem": "{{quantity}} × {{name}}",
+      "repairHint": "Suas peças apanharam: confira a aba Reparo no porto antes da próxima viagem.",
+      "next": "E agora?"
     }
   },
   "transit": {

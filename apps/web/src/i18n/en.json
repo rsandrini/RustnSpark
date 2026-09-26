@@ -512,7 +512,7 @@
     "title": "Mission report",
     "tabs": {
       "summary": "Summary",
-      "narrative": "Narrative",
+      "narrative": "The story",
       "log": "Log"
     },
     "noReport": "No report for this mission yet.",
@@ -538,6 +538,28 @@
     "refCategory": {
       "part": "Class",
       "loot": "Rarity"
+    },
+    "glyph": {
+      "ok": "✔",
+      "warn": "◐",
+      "bad": "✖"
+    },
+    "debrief": {
+      "balance": "Balance {{balance}} ¢",
+      "legs": "Legs",
+      "distance": "Distance",
+      "fights": "Fights",
+      "fightsValue": "{{won}} won · {{lost}} lost · {{escaped}} escaped",
+      "noFights": "None",
+      "damage": "Damage taken",
+      "damageValue": "Shield {{shield}} · armor {{armor}} · hull {{hull}}",
+      "noDamage": "None",
+      "failures": "Parts failed",
+      "fuelLost": "Fuel leaked",
+      "loot": "Loot",
+      "lootItem": "{{quantity}} × {{name}}",
+      "repairHint": "Your parts took a beating: check the Repair tab at the port before the next run.",
+      "next": "What next?"
     }
   },
   "transit": {

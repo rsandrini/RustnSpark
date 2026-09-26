@@ -9,6 +9,7 @@ import type { Locale } from '../common/locale/locale.js';
 import { localizeDisplayName } from '../common/locale/localize.js';
 import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
+import { bilingual } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { renderReport, type ViewResult } from './report.render.js';
 import { type ReportLegRef, type ReportLog, VIEW_NAMES, type ViewName } from './report.types.js';
@@ -17,6 +18,7 @@ import {
   UnsupportedMissionLogSchemaError,
   type ParsedMissionEvent,
 } from './events/event.schema.js';
+import { computeReportStats, type ReportStats } from './report.stats.js';
 import { type EntityNames } from './templates/template.engine.js';
 
 const DEFAULT_LIST_LIMIT = 20;
@@ -39,7 +41,19 @@ export type ReportResponse = {
   readonly locale: Locale;
   /** Mission outcome, so the report screen needs no second call to label itself. */
   readonly outcome: string;
+  /** The run in numbers, for the debrief header (same on every view). */
+  readonly stats: ReportStats;
+  /** What the mission was, when its row still exists. */
+  readonly mission?: ReportMission;
 } & ViewResult;
+
+export interface ReportMission {
+  readonly type: string;
+  readonly originId: string;
+  readonly destinationId: string;
+  readonly title: { readonly en: string; readonly 'pt-BR': string };
+  readonly reward: number;
+}
 
 interface StoredLogJson {
   readonly legs?: unknown;
@@ -182,7 +196,33 @@ export class ReportsService {
     const locale = await this.localeFor(playerId, explicitLocale);
     const names = await this.entityNames(locale, log.partTypeById);
     const result = renderReport(log, locale, view as ViewName, names);
-    return { locale, outcome: log.outcome, ...result };
+    const mission = await this.prisma.missionInstance.findUnique({
+      where: { id: log.missionId },
+      select: {
+        type: true,
+        originId: true,
+        destinationId: true,
+        reward: true,
+        template: { select: { displayName: true } },
+      },
+    });
+    return {
+      locale,
+      outcome: log.outcome,
+      stats: computeReportStats(log, names),
+      ...(mission === null
+        ? {}
+        : {
+            mission: {
+              type: mission.type,
+              originId: mission.originId,
+              destinationId: mission.destinationId,
+              reward: mission.reward,
+              title: bilingual(mission.template.displayName),
+            },
+          }),
+      ...result,
+    };
   }
 
   private async loadReportLog(missionId: string): Promise<ReportLog | null> {

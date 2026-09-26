@@ -2247,3 +2247,167 @@ svg .block.cond-bad {
 .mcard-actions .btn.primary {
   flex: 1;
 }
+
+/* report debrief --------------------------------------------------------------- */
+.debrief {
+  --tone: var(--ok);
+  margin: 12px 0 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--tone);
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tone) 18%, var(--panel)),
+    var(--panel) 70%
+  );
+}
+
+.debrief.warn {
+  --tone: var(--risk-md);
+}
+
+.debrief.bad {
+  --tone: var(--bad);
+}
+
+.debrief-verdict {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.debrief-glyph {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--tone);
+  color: var(--tone);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.debrief-outcome {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--tone);
+}
+
+.debrief-mission {
+  margin-top: 2px;
+  color: var(--mut);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.debrief-credits {
+  margin-left: auto;
+  text-align: right;
+}
+
+.debrief-credits b {
+  display: block;
+  font-size: 30px;
+}
+
+.debrief-credits b.pos {
+  color: var(--ok);
+}
+
+.debrief-credits b.neg {
+  color: var(--bad);
+}
+
+.debrief-credits small {
+  color: var(--mut);
+}
+
+.debrief-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.debrief-tiles div {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.debrief-tiles dt {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mut);
+}
+
+.debrief-tiles dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.debrief-tiles .bad dd {
+  color: var(--bad);
+}
+
+.debrief-loot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.loot-chip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--explorers);
+  background: rgba(63, 166, 106, 0.14);
+  color: var(--ink);
+}
+
+.debrief-hint {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.1);
+  color: var(--ink);
+}
+
+/* the story as a timeline */
+.report-story .event {
+  position: relative;
+  margin-left: 12px;
+  padding: 10px 14px 12px 20px;
+  border-left: 3px solid var(--line-strong);
+}
+
+.report-story .event::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 14px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--spark);
+  border: 2px solid var(--bg);
+}
+
+.report-story .event h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--spark);
+}
+
+.report-story .event ol {
+  margin: 0;
+  padding-left: 18px;
+}
