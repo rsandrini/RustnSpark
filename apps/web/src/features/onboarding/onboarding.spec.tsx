@@ -53,7 +53,7 @@ describe('onboarding (S10.2)', () => {
     await user.click(await screen.findByLabelText(/sun traders/i));
     await user.click(screen.getByRole('button', { name: /launch/i }));
 
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /hangar/i })).toBeInTheDocument();
     expect(requests).toEqual([{ faction: 'sun' }]);
   });
 

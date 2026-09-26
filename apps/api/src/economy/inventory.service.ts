@@ -86,12 +86,9 @@ export class InventoryService {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
     }
 
-    for (const placement of layout) {
-      await tx.partInstance.update({
-        where: { id: placement.partInstanceId },
-        data: { location: 'INSTALLED', shipId },
-      });
-    }
+    // The kit comes back loose (D44), like the onboarding kit: the pilot re-assembles in the
+    // Hangar. The layout above only proves the kit can fly. Everything that was installed is
+    // already back in inventory, so the hull is empty until the player assembles it.
     // The hull can drift in with more fuel than the kit's tank holds (the old tank was
     // sold off while ADRIFT, or swapped for a smaller one), so the stored fuel is clamped
     // to the new ceiling — fuel above fuelCap is unspendable at the pump (refuel sees no
@@ -103,7 +100,7 @@ export class InventoryService {
     const fuel = Math.min(shipRow.fuel, kitSheet.fuelCap);
     await tx.ship.update({
       where: { id: shipId },
-      data: { layout: toJsonInput(layout), fuel },
+      data: { layout: [], fuel },
     });
 
     return { restartParts: starterParts, viability, fuelCap: kitSheet.fuelCap };

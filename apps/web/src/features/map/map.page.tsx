@@ -3,6 +3,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client } from '../../api/client';
 import type { ShipResponse, WorldLocation, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
@@ -83,6 +84,7 @@ export function MapPage({ guided = false }: MapPageProps) {
         <h1>{t('map.title')}</h1>
         <span className="sub">{t('map.hint')}</span>
       </header>
+      <EmptyShipNotice />
 
       <div className="stage">
         <svg

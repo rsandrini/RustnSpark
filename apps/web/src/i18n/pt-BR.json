@@ -787,6 +787,14 @@
     "sortPriceAsc": "Preço: menor para maior",
     "sortPriceDesc": "Preço: maior para menor",
     "sortCondition": "Melhor condição",
-    "noMatches": "Nenhuma peça combina com esses filtros."
+    "noMatches": "Nenhuma peça combina com esses filtros.",
+    "used": "Usada"
+  },
+  "ship": {
+    "empty": {
+      "title": "Sua nave não está montada",
+      "body": "Nada está instalado ainda, então a nave não pode aceitar missões. Monte seu kit inicial no Hangar primeiro.",
+      "action": "Ir ao Hangar"
+    }
   }
 }

@@ -93,8 +93,8 @@ export class OnboardingService {
   }
 
   /**
-   * The starter loadout: create `onboarding.starter_parts` in INVENTORY, auto-layout them
-   * onto the ship, verify viability, install and fill the tank. Extracted from `onboard`
+   * The starter loadout: create `onboarding.starter_parts` in INVENTORY (uninstalled, D44),
+   * verify the kit is viable when assembled, and fill the tank. Extracted from `onboard`
    * so the S11.4 support reset can re-kit an existing hull with the exact same proven
    * path (and the same conflict errors) instead of a second implementation.
    */
@@ -143,16 +143,12 @@ export class OnboardingService {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems });
     }
 
-    for (const placement of layout) {
-      await tx.partInstance.update({
-        where: { id: placement.partInstanceId },
-        data: { location: 'INSTALLED', shipId },
-      });
-    }
-
+    // The kit arrives as loose parts (D44): the player assembles the ship in the Hangar. The
+    // auto-layout above only proves the kit *can* fly; nothing is installed here. The tank is
+    // filled for the kit's capacity so the ship is ready the moment it is assembled.
     await tx.ship.update({
       where: { id: shipId },
-      data: { layout: toJsonInput(layout), fuel: sheet.fuelCap },
+      data: { layout: [], fuel: sheet.fuelCap },
     });
   }
 }

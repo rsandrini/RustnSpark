@@ -787,6 +787,14 @@
     "sortPriceAsc": "Price: low to high",
     "sortPriceDesc": "Price: high to low",
     "sortCondition": "Best condition",
-    "noMatches": "No parts match these filters."
+    "noMatches": "No parts match these filters.",
+    "used": "Used"
+  },
+  "ship": {
+    "empty": {
+      "title": "Your ship is not assembled",
+      "body": "Nothing is installed yet, so the ship cannot take a mission. Assemble your starter kit in the Hangar first.",
+      "action": "Go to the Hangar"
+    }
   }
 }

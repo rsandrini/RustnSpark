@@ -5,7 +5,7 @@ import type { PartCatalogStats, Placement } from '../../api/generated';
 import { footprint } from './hangar.geometry';
 
 const MIN_SPAN = 4;
-const FIT_MARGIN = 3;
+const FIT_MARGIN = 2;
 const ZOOM_STEP = 1.4;
 // Pointer travel (px) below which a press is a click, not the start of a pan.
 const PAN_THRESHOLD = 5;

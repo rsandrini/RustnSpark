@@ -40,7 +40,7 @@ export function OnboardingPage() {
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
-      void navigate('/');
+      void navigate('/hangar');
     },
   });
 

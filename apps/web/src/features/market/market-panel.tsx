@@ -212,6 +212,9 @@ export function MarketPanel({ locationId, presetClass = null, onNotice }: Market
                     {pickLocalized(listing.description, i18n.language)}
                   </span>
                   <span className="part-price">
+                    {listing.kind === 'used' && (
+                      <span className="used-tag">{t('market.used')}</span>
+                    )}
                     {[
                       t(`hangar.partClasses.${listing.catalog.partClass}`),
                       `${listing.condition}%`,
