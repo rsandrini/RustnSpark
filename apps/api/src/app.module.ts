@@ -1,3 +1,10 @@
+import type { Redis } from 'ioredis';
+import { REDIS_CLIENT } from './common/redis/redis.module.js';
+import {
+  RedisThrottleStore,
+  THROTTLE_STORE,
+  type ThrottleStore,
+} from './common/throttling/throttle-store.js';
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerGuard } from './common/guards/throttler.guard.js';
@@ -63,6 +70,12 @@ import { TokenService } from './auth/token.service.js';
     // AuthModule will add its own instance for its controllers (TokenService is stateless, so a
     // second instance is harmless).
     TokenService,
+    // S12.1: the throttle counters live in Redis so limits hold across API instances.
+    {
+      provide: THROTTLE_STORE,
+      inject: [REDIS_CLIENT],
+      useFactory: (redis: Redis): ThrottleStore => new RedisThrottleStore(redis),
+    },
   ],
 })
 export class AppModule {}

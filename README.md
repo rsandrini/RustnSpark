@@ -49,6 +49,11 @@ NestJS (TypeScript) · PostgreSQL · Redis + BullMQ (tick/jobs) · React + Vite 
 JWT · Docker Compose. Servidor autoritativo: o cliente envia intenções, o servidor
 resolve tudo. Seguro e testado desde o primeiro commit. Detalhes na arquitetura.
 
+## Operação
+
+**[docs/operations.md](./docs/operations.md)** — runbook: topologia, variáveis de ambiente,
+deploy, primeiro admin, backup/restore, operação do jogo, drill de shutdown.
+
 ## Estado do projeto
 
 - **Design:** ✅ travado (v0.1)

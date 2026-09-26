@@ -93,4 +93,14 @@ describe('HealthController', () => {
     const reflector = new Reflector();
     expect(reflector.get(IS_PUBLIC_KEY, HealthController)).toBe(true);
   });
+
+  it('liveness answers without touching any dependency', () => {
+    const controller = new HealthController(
+      undefined as never,
+      undefined as never,
+      undefined as never,
+      undefined as never,
+    );
+    expect(controller.live()).toEqual({ status: 'ok' });
+  });
 });

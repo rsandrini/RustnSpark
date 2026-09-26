@@ -125,6 +125,12 @@ const config: Config = {
     },
     {
       ...base,
+      displayName: 'security',
+      rootDir: '.',
+      testMatch: ['<rootDir>/test/security/**/*.spec.ts'],
+    },
+    {
+      ...base,
       displayName: 'validation',
       rootDir: '.',
       testMatch: ['<rootDir>/test/validation/**/*.spec.ts'],

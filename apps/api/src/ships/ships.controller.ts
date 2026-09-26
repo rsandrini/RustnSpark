@@ -1,3 +1,5 @@
+import { ThrottleRoute } from '../common/decorators/throttle-route.decorator.js';
+import { PREVIEW_POLICY } from '../common/throttling/policies.js';
 import {
   Body,
   Controller,
@@ -50,6 +52,7 @@ export class ShipsController {
   }
 
   @Post(':id/preview')
+  @ThrottleRoute(PREVIEW_POLICY)
   @HttpCode(HttpStatus.OK)
   @UseGuards(OwnershipGuard)
   @OwnedResource({ type: 'ship', param: 'id' })

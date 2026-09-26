@@ -35,6 +35,17 @@ describe('GET /v1/health against the real compose stack', () => {
     });
   });
 
+  it('splits readiness (dependencies) from liveness (process only), both public', async () => {
+    const ready = await request(httpServer(testApp.app)).get('/v1/health/ready');
+    expect(ready.status).toBe(200);
+    expect(ready.body).toMatchObject({
+      details: { database: { status: 'up' }, redis: { status: 'up' } },
+    });
+    const live = await request(httpServer(testApp.app)).get('/v1/health/live');
+    expect(live.status).toBe(200);
+    expect(live.body).toEqual({ status: 'ok' });
+  });
+
   // Regression for S2.4: the global JwtAuthGuard (APP_GUARD) now runs on every route by default.
   // Without @Public() on HealthController, this request would 401 and the Docker healthchecks
   // (compose.yaml) plus CI would break the whole stack.

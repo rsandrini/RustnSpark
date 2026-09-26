@@ -1,6 +1,7 @@
 import { SetMetadata } from '@nestjs/common';
 
-export type ThrottleKeyStrategy = 'ip' | 'ip+email';
+// 'account' keys by the authenticated account (falling back to the IP without a valid token).
+export type ThrottleKeyStrategy = 'ip' | 'ip+email' | 'account';
 
 export interface ThrottleRoutePolicy {
   limit: number;

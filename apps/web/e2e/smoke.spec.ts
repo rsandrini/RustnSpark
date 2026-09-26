@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { FACTIONS, LEAKED_KEY, assertClean, registerAndLaunch } from './support';
 
 /**
  * One player's whole loop against the real stack, for each playable faction, in both a desktop
@@ -7,63 +8,6 @@ import { expect, test, type Page } from '@playwright/test';
  * horizontal overflow, raw part codes and untranslated i18n keys — the failure modes the
  * MSW-backed tests cannot see.
  */
-
-const FACTIONS = ['luna', 'sun', 'explorers'] as const;
-
-// A raw catalog code (engine_chem_small) or an i18n key that leaked into the UI (port.title).
-const RAW_CODE = /\b[a-z]{3,}_[a-z_]{2,}\b/;
-const LEAKED_KEY =
-  /\b(?:port|board|hangar|report|transit|error|nav|profile|inventory|rescue|ui)\.[A-Za-z_.]{2,}/;
-
-async function assertClean(page: Page, screen: string): Promise<void> {
-  const text = await page.locator('body').innerText();
-  expect(text, `${screen}: raw catalog code visible`).not.toMatch(RAW_CODE);
-  expect(text, `${screen}: untranslated i18n key visible`).not.toMatch(LEAKED_KEY);
-  const overflow = await page.evaluate(() => {
-    const extra = document.documentElement.scrollWidth - window.innerWidth;
-    if (extra <= 1) return { extra, culprits: [] as string[] };
-    // Name the elements that stick out, so a failure says what to fix, not just "916px".
-    const culprits = Array.from(document.body.querySelectorAll('*'))
-      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
-      .slice(0, 5)
-      .map((el) => `${el.tagName.toLowerCase()}.${String(el.getAttribute('class'))}`);
-    return { extra, culprits };
-  });
-  expect(
-    overflow.extra,
-    `${screen}: horizontal overflow ${overflow.extra}px — ${overflow.culprits.join(', ')}`,
-  ).toBeLessThanOrEqual(1);
-}
-
-async function registerAndLaunch(page: Page, faction: (typeof FACTIONS)[number]): Promise<void> {
-  const id = `${faction}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
-  const heading = page.getByRole('heading', { name: 'Choose your faction' });
-
-  // Registration is throttled to 3 per minute per IP (auth policy), and this suite registers
-  // several players in a row from one IP: when the form answers with an error, wait out the
-  // window and try again instead of failing on a rate limit that is not what is under test.
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    await page.goto('/register');
-    await page.getByLabel('Name').fill(id.slice(0, 20));
-    await page.getByLabel('Email').fill(`${id}@e2e.test`);
-    await page.getByLabel('Password').fill('e2e-player-password-1');
-    await page.getByRole('button', { name: 'Create account' }).click();
-    const outcome = await Promise.race([
-      heading.waitFor({ timeout: 10_000 }).then(() => 'ok' as const),
-      page
-        .getByRole('alert')
-        .waitFor({ timeout: 10_000 })
-        .then(() => 'error' as const),
-    ]).catch(() => 'error' as const);
-    if (outcome === 'ok') break;
-    await page.waitForTimeout(22_000);
-  }
-
-  await expect(heading).toBeVisible();
-  await page.locator('label.faction-card', { hasText: new RegExp(faction, 'i') }).click();
-  await page.getByRole('button', { name: 'Launch' }).click();
-  await expect(page.getByRole('navigation')).toBeVisible();
-}
 
 for (const faction of FACTIONS) {
   test(`${faction}: register, fly a mission, read the report, visit the port`, async ({ page }) => {

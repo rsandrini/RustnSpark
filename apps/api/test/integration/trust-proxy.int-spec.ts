@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { REGISTER_POLICY } from '../../src/common/throttling/policies.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 
 function httpServer(app: INestApplication): Server {
@@ -29,8 +30,8 @@ describe('trust proxy', () => {
     const register = (clientIp: string) =>
       request(server).post('/v1/auth/register').set('X-Forwarded-For', clientIp).send({});
 
-    // register allows 3 per minute per IP (auth policy): the 4th from ONE client is refused...
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    // register allows REGISTER_POLICY.limit per minute per IP: the next one from ONE client is refused...
+    for (let attempt = 0; attempt < REGISTER_POLICY.limit; attempt += 1) {
       expect((await register('203.0.113.10')).status).toBe(400);
     }
     expect((await register('203.0.113.10')).status).toBe(429);

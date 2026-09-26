@@ -1,3 +1,4 @@
+import { MemoryThrottleStore, THROTTLE_STORE } from '../../src/common/throttling/throttle-store.js';
 import type { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
@@ -57,7 +58,12 @@ export async function createTestApp(
 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule, ...extraImports],
-  }).compile();
+  })
+    // Each test app counts on its own in-memory window: Redis counters would outlive the app
+    // and leak between test files (the Redis store has its own integration spec).
+    .overrideProvider(THROTTLE_STORE)
+    .useValue(new MemoryThrottleStore())
+    .compile();
   // bodyParser: false mirrors main.ts: configureApp() installs the size-limited parsers,
   // and Nest's default parser must not shadow them or BODY_SIZE_LIMIT would not govern tests.
   const app = moduleRef.createNestApplication({ bodyParser: false });
