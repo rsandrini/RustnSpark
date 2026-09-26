@@ -62,7 +62,7 @@ describe('onboarding (S10.2)', () => {
 
     renderWithRouter(routes, { initialEntries: ['/onboarding'] });
 
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /hangar/i })).toBeInTheDocument();
   });
 
   it('surfaces a translated server rejection', async () => {

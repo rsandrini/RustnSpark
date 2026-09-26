@@ -24,7 +24,7 @@ export function OnboardingRoute() {
     return <Navigate to="/login" replace />;
   }
   if (user.factionId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/hangar" replace />;
   }
   return <OnboardingPage />;
 }
