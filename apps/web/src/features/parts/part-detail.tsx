@@ -10,6 +10,8 @@ export interface PartInfoData {
   rarity: string;
   catalog: PartCatalogStats;
   condition?: number;
+  /** Dead: counts for nothing until repaired. */
+  broken?: boolean;
   price?: number;
 }
 
@@ -95,6 +97,7 @@ export function PartDetail({ part }: { part: PartInfoData }) {
           .filter((piece) => piece !== null)
           .join(' · ')}
       </p>
+      {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
       {description !== '' && <p className="part-desc">{description}</p>}
       <h3>{t('parts.whyTitle')}</h3>
       <p>{t(`parts.role.${catalog.partClass}`)}</p>

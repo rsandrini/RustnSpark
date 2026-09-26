@@ -27,6 +27,9 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'conditional ACCEPTED→IN_TRANSIT and IN_PORT→ON_MISSION updates: a repeat is a 409 with no second effect',
   'POST /v1/locations/:id/scavenge':
     'per-location cooldown (D28): a repeat inside the window is a 409 SCAVENGE_COOL_DOWN with no second roll',
+  'POST /v1/ships/:id/refuel/quote': 'read-shaped: no state change',
+  'POST /v1/inventory/discard':
+    'destroys what is currently below the threshold: a repeat finds nothing',
   'POST /v1/travel':
     'the one-active-mission unique index: a repeat while the trip is flying is a 409 with no second effect',
   'POST /v1/missions/:id/abandon':

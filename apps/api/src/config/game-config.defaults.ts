@@ -56,6 +56,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player
     // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
     rescue_fuel_fraction: 0.25,
+    repair_min_base_price: 50,
+    sell_min_condition: 15,
     sell_ratio: 0.6,
     isolation_mult: { 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 },
     faction_mult: { ally: 0.8, neutral: 1.0, hostile: 2.5 },

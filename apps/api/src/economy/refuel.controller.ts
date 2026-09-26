@@ -13,6 +13,18 @@ import { RefuelService } from './refuel.service.js';
 export class RefuelController {
   constructor(private readonly refuel: RefuelService) {}
 
+  @Post(':id/refuel/quote')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  quoteRefuel(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') shipId: string,
+    @Body() dto: RefuelDto,
+  ) {
+    return this.refuel.quote(shipId, user.playerId, dto.mode, dto.amount);
+  }
+
   @Post(':id/refuel')
   @HttpCode(HttpStatus.OK)
   @Idempotent()

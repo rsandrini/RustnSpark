@@ -174,7 +174,7 @@ export class RepairService {
       const part = byId.get(target.partInstanceId)!;
       const lost = Math.max(0, target.toCondition - target.fromCondition);
       const itemCost = Math.round(
-        part.partCatalog.basePrice *
+        Math.max(part.partCatalog.basePrice, rules.economy.repair_min_base_price) *
           (lost / 100) *
           rules.economy.repair_factor *
           (rules.economy.repair_price / rules.economy.repair_price_ref) *

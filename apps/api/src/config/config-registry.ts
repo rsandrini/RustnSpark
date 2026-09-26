@@ -559,6 +559,34 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.repair_min_base_price',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 1000,
+    unit: '¢',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_min_base_price),
+    description: {
+      en: 'Repair price base for cheap parts: a part worth less than this is repaired as if it were worth this (keeps the bridge from being repaired for free).',
+      'pt-BR':
+        'Base do preço de reparo para peças baratas: uma peça que vale menos que isso é reparada como se valesse isso (impede reparar a ponte de graça).',
+    },
+  },
+  {
+    key: 'economy.sell_min_condition',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 100,
+    unit: '%',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.sell_min_condition),
+    description: {
+      en: 'Parts below this condition cannot be sold (a port never takes a part for nothing). They can be repaired or discarded.',
+      'pt-BR':
+        'Peças abaixo desta condição não podem ser vendidas (o porto nunca leva uma peça por nada). Podem ser consertadas ou descartadas.',
+    },
+  },
+  {
     key: 'economy.sell_ratio',
     group: 'economy',
     type: 'number',

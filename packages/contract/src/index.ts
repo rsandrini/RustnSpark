@@ -130,6 +130,8 @@ export const InventoryItemSchema = z.object({
   description: LocalizedTextSchema,
   rarity: z.string(),
   condition: z.number(),
+  /** Dead: at or below the wear threshold, it counts for nothing until repaired. */
+  broken: z.boolean(),
   location: PartLocationSchema,
   shipId: z.string().nullable(),
   catalog: PartCatalogStatsSchema,
@@ -496,8 +498,13 @@ export const MarketResponseSchema = z.object({
   locationId: z.string(),
   listings: z.array(MarketListingSchema),
   sellOffers: z.array(SellOfferSchema),
+  /** Parts below this condition (%) are refused at every port: no quote is given for them. */
+  sellMinCondition: z.number(),
 });
 export type MarketResponse = z.infer<typeof MarketResponseSchema>;
+
+export const DiscardResponseSchema = z.object({ discarded: z.number() });
+export type DiscardResponse = z.infer<typeof DiscardResponseSchema>;
 
 export const BuyResponseSchema = z.object({
   partInstanceId: z.string(),
@@ -547,6 +554,17 @@ export const RefuelResponseSchema = z.object({
   credits: z.number(),
 });
 export type RefuelResponse = z.infer<typeof RefuelResponseSchema>;
+
+export const RefuelQuoteResponseSchema = z.object({
+  shipId: z.string(),
+  units: z.number(),
+  cost: z.number(),
+  fuel: z.number(),
+  fuelCap: z.number(),
+  /** Room left in the tank. */
+  space: z.number(),
+});
+export type RefuelQuoteResponse = z.infer<typeof RefuelQuoteResponseSchema>;
 
 export const RepairQuoteResponseSchema = z.object({
   shipId: z.string(),

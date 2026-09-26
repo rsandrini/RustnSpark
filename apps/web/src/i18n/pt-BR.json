@@ -157,6 +157,11 @@
       "label": "Colorir blocos por",
       "rarity": "Raridade",
       "condition": "Condição"
+    },
+    "rotate": {
+      "square": "Esta peça é 1×1: ela fica igual girada. A rotação só muda peças que não são quadradas.",
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
+      "nudged": "Girada (movida uma ou duas casas para abrir espaço)."
     }
   },
   "home": {
@@ -487,7 +492,18 @@
     "repairFee": "Taxa da oficina",
     "repairTotal": "Total",
     "repairAllTo100": "Tudo em 100%",
-    "repairReset": "Voltar ao atual"
+    "repairReset": "Voltar ao atual",
+    "repairOverBudget": "Créditos insuficientes para este reparo: reduza alguns alvos.",
+    "refuelAmount": "Quanto combustível comprar",
+    "refuelUnits": "{{units}} unidades",
+    "refuelBuy": "Comprar {{units}}",
+    "tooDamaged": "Danificada demais para vender",
+    "discardNote": "{{count}} peça(s) solta(s) com menos de {{min}}% de condição: nenhum porto compra. Conserte (instale primeiro) ou descarte.",
+    "discardAction": "Descartar {{count}}",
+    "discarded": "{{count}} peça(s) danificada(s) descartada(s).",
+    "discardConfirmTitle": "Destruir {{count}} peça(s) danificada(s)?",
+    "discardConfirmBody": "Toda peça solta com menos de {{min}}% de condição é destruída de vez. Peças instaladas na nave nunca são tocadas. Não dá para desfazer.",
+    "discardConfirm": "Destruir"
   },
   "inventory": {
     "title": "Inventário",
@@ -785,7 +801,8 @@
     "RATE_LIMITED": "Requisições demais — aguarde um instante.",
     "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
     "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
-    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada."
+    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
+    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte."
   },
   "language": {
     "label": "Idioma"
@@ -899,7 +916,9 @@
       }
     },
     "summaryNone": "Peça estrutural",
-    "infoGlyph": "i"
+    "infoGlyph": "i",
+    "broken": "QUEBRADA",
+    "brokenNote": "Quebrada: não conta para nada até ser consertada."
   },
   "market": {
     "all": "Todas",

@@ -353,6 +353,57 @@ describe('market API (S8.2)', () => {
     expect(bought).toBe(1);
   });
 
+  it('a part below the sell threshold gets no quote and cannot be sold; discard destroys it (W5)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const playerId = player.seeded.player.id;
+    const wreck = await prisma.partInstance.create({
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 9, location: 'INVENTORY' },
+    });
+    const worn = await prisma.partInstance.create({
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 40, location: 'INVENTORY' },
+    });
+
+    const board = (await getMarket(player.token, 'ceres')).body as {
+      sellOffers: Array<{ partInstanceId: string }>;
+      sellMinCondition: number;
+    };
+    expect(board.sellMinCondition).toBe(15);
+    const quoted = board.sellOffers.map((offer) => offer.partInstanceId);
+    expect(quoted).not.toContain(wreck.id);
+    expect(quoted).toContain(worn.id);
+
+    const refused = await sell(player.token, randomUUID(), {
+      partInstanceId: wreck.id,
+      expectedPrice: 0,
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ message: { error: 'TOO_DAMAGED_TO_SELL' } });
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).not.toBeNull();
+
+    // Discard destroys exactly the too-damaged parts that are in storage; nothing installed.
+    const installedBefore = await prisma.partInstance.count({
+      where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+    });
+    const discarded = await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token));
+    expect(discarded.status).toBe(200);
+    expect(discarded.body).toEqual({ discarded: 1 });
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).toBeNull();
+    expect(await prisma.partInstance.findUnique({ where: { id: worn.id } })).not.toBeNull();
+    expect(
+      await prisma.partInstance.count({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+      }),
+    ).toBe(installedBefore);
+    // Naturally idempotent.
+    const again = await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token));
+    expect(again.body).toEqual({ discarded: 0 });
+  });
+
   it('parallel buys cannot overspend: exactly floor(balance/price) succeed', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

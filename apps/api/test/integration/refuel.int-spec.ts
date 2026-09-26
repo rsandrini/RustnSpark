@@ -238,6 +238,36 @@ describe('refuel API (S8.3)', () => {
     expect(await currentCredits(player.seeded.player.id)).toBe(100000 - cost);
   });
 
+  it('quotes an amount without charging: the slider price is exactly what refuel then charges', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const fuelCap = await fuelCapOf(player.shipId);
+    await setCredits(player.seeded.player.id, 100000);
+    await setShipFuel(player.shipId, 200);
+
+    const quote = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/refuel/quote`)
+      .set(auth(player.token))
+      .send({ mode: 'partial', amount: 150 });
+    expect(quote.status).toBe(200);
+    const body = quote.body as { units: number; cost: number; fuel: number; space: number };
+    expect(body).toMatchObject({ units: 150, fuel: 200, fuelCap, space: fuelCap - 200 });
+    expect(await currentCredits(player.seeded.player.id)).toBe(100000);
+
+    // More than the tank can hold is capped at the free space.
+    const capped = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/refuel/quote`)
+      .set(auth(player.token))
+      .send({ mode: 'partial', amount: fuelCap * 10 });
+    expect((capped.body as { units: number }).units).toBe(fuelCap - 200);
+
+    const paid = await refuel(player.token, player.shipId, randomUUID(), {
+      mode: 'partial',
+      amount: 150,
+    });
+    expect((paid.body as RefuelBody).cost).toBe(body.cost);
+  });
+
   it('refueling a full tank is a free no-op', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

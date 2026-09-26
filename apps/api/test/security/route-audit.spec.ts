@@ -50,6 +50,7 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
 
 /** Mutating routes with no @Body(): they act on the caller / a path param only. */
 const BODYLESS_MUTATIONS = new Set([
+  'POST /v1/inventory/discard',
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
   'POST /v1/locations/:id/scavenge',

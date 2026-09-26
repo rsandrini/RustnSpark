@@ -59,6 +59,8 @@ const economySchema = z.object({
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
   rescue_fuel_fraction: z.number().min(0).max(1),
+  repair_min_base_price: z.number().min(0).max(1000),
+  sell_min_condition: z.number().min(0).max(100),
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),

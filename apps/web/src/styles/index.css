@@ -2416,3 +2416,72 @@ svg .block.cond-bad {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.repair-row .rcost.over,
+.repair-summary .statrow.over b {
+  color: var(--bad);
+}
+
+.refuel-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.refuel-panel input[type='range'] {
+  width: 100%;
+}
+
+.refuel-panel .over {
+  color: var(--bad);
+}
+
+.discard-note {
+  border-color: var(--bad);
+  display: grid;
+  gap: 8px;
+}
+
+.discard-note p {
+  margin: 0;
+}
+
+.pcard-note {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* broken parts (condition at zero): a red, pulsing outline everywhere the part shows */
+svg .block.broken {
+  fill: rgba(248, 81, 73, 0.22);
+  stroke: var(--bad);
+  stroke-width: 0.14;
+  stroke-dasharray: 0.25 0.15;
+  animation: broken-pulse 1.4s ease-in-out infinite;
+}
+
+.part-btn.broken,
+.pcard.broken {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad) inset;
+}
+
+@keyframes broken-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg .block.broken {
+    animation: none;
+  }
+}

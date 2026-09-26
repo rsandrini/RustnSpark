@@ -11,6 +11,8 @@ export interface PartCardProps {
   price?: number;
   /** Small text under the price ("You pay", "Port pays"). */
   priceCaption?: string;
+  /** A short warning under the meta line ("too damaged to sell"). */
+  note?: string;
   /** A used listing: tagged so it is never mistaken for a new part. */
   used?: boolean;
   /** Buttons on the card's footer; the details button is always added. */
@@ -19,7 +21,14 @@ export interface PartCardProps {
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
 // does, then the buttons. The rarity is the accent colour of the card.
-export function PartCard({ part, price, priceCaption, used = false, actions }: PartCardProps) {
+export function PartCard({
+  part,
+  price,
+  priceCaption,
+  note,
+  used = false,
+  actions,
+}: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const name = pickLocalized(part.displayName, i18n.language);
@@ -32,7 +41,9 @@ export function PartCard({ part, price, priceCaption, used = false, actions }: P
   ].join(' · ');
 
   return (
-    <article className={`pcard rarity-${part.rarity.toLowerCase()}`}>
+    <article
+      className={`pcard rarity-${part.rarity.toLowerCase()}${part.broken === true ? ' broken' : ''}`}
+    >
       <header className="pcard-head">
         <h3 className="pcard-name">{name}</h3>
         {price !== undefined && (
@@ -46,6 +57,9 @@ export function PartCard({ part, price, priceCaption, used = false, actions }: P
         {used && <span className="used-tag">{t('market.used')}</span>}
         {meta}
       </div>
+      {(part.broken === true || note !== undefined) && (
+        <div className="pcard-note">{part.broken === true ? t('parts.broken') : note}</div>
+      )}
       {condition !== undefined && (
         <Gauge
           value={condition}

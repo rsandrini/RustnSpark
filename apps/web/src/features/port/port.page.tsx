@@ -9,6 +9,8 @@ import type {
   InventoryItem,
   MarketResponse,
   MaterialsResponse,
+  DiscardResponse,
+  RefuelQuoteResponse,
   RefuelResponse,
   RepairQuoteResponse,
   RepairStartResponse,
@@ -198,15 +200,31 @@ export function PortPage({ guided = false }: PortPageProps) {
     onError: onTradeError,
   });
 
+  // Refuel: choose how much (slider); the server prices that exact amount before anything is charged.
+  const [refuelUnits, setRefuelUnits] = useState<number | null>(null);
+  const tankSpace =
+    ship === undefined ? 0 : Math.max(0, Math.floor(ship.sheet.fuelCap - ship.fuel));
+  const wantedUnits = Math.min(refuelUnits ?? tankSpace, tankSpace);
+  const refuelQuoteQuery = useQuery({
+    queryKey: ['refuelQuote', ship?.id, wantedUnits],
+    enabled: tab === 'refuel' && ship !== undefined && wantedUnits > 0,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      client.post<RefuelQuoteResponse>(`/v1/ships/${ship?.id ?? ''}/refuel/quote`, {
+        mode: 'partial',
+        amount: wantedUnits,
+      }),
+  });
   const refuel = useMutation({
-    mutationFn: () =>
+    mutationFn: (units: number) =>
       client.post<RefuelResponse>(
         `/v1/ships/${ship?.id ?? ''}/refuel`,
-        { mode: 'full' },
-        { idempotencyKey: refuelKey.keyFor(`refuel:${ship?.id ?? ''}`) },
+        units >= tankSpace ? { mode: 'full' } : { mode: 'partial', amount: units },
+        { idempotencyKey: refuelKey.keyFor(`refuel:${ship?.id ?? ''}:${units}`) },
       ),
     onSuccess: (response) => {
       refuelKey.clear();
+      setRefuelUnits(null);
       setActionError(null);
       setNotice(t('port.refueled', { units: response.units, cost: response.cost }));
       afterTrade();
@@ -238,6 +256,21 @@ export function PortPage({ guided = false }: PortPageProps) {
     },
     onError: (error) => {
       setRepairPlan(null);
+      setActionError(errorText(t, error, t('port.failed')));
+    },
+  });
+
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const discard = useMutation({
+    mutationFn: () => client.post<DiscardResponse>('/v1/inventory/discard', {}),
+    onSuccess: (response) => {
+      setDiscardOpen(false);
+      setActionError(null);
+      setNotice(t('port.discarded', { count: response.discarded }));
+      afterTrade();
+    },
+    onError: (error) => {
+      setDiscardOpen(false);
       setActionError(errorText(t, error, t('port.failed')));
     },
   });
@@ -330,6 +363,15 @@ export function PortPage({ guided = false }: PortPageProps) {
   const scavengeRetryAt = new Date(
     serverNow() + (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) * 1000,
   ).toISOString();
+  // Totals come from the server's quote of the CURRENT plan; nothing selected is exactly zero.
+  const repairQuote = changedTargets.length === 0 ? undefined : repairQuoteQuery.data;
+  const repairTotalCost = repairQuote?.cost ?? 0;
+  const repairTotalSeconds = repairQuote?.durationSeconds ?? 0;
+  const repairOver = repairTotalCost > wallet;
+  // Parts under the threshold are refused at every port; they can be repaired or discarded.
+  const sellMin = marketQuery.data?.sellMinCondition ?? 15;
+  const damagedCount = partsOnSale.filter((item) => item.condition < sellMin).length;
+  const refuelCost = wantedUnits <= 0 ? 0 : (refuelQuoteQuery.data?.cost ?? 0);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
   return (
@@ -385,15 +427,25 @@ export function PortPage({ guided = false }: PortPageProps) {
         <section className="stack">
           <h2>{t('port.yourGoods')}</h2>
           {partsOnSale.length === 0 && <p className="sub">{t('port.noLooseParts')}</p>}
+          {damagedCount > 0 && (
+            <div className="panel discard-note" role="note" data-testid="discard-note">
+              <p>{t('port.discardNote', { count: damagedCount, min: sellMin })}</p>
+              <button type="button" className="btn danger" onClick={() => setDiscardOpen(true)}>
+                {t('port.discardAction', { count: damagedCount })}
+              </button>
+            </div>
+          )}
           <div className="pcard-grid">
             {partsOnSale.map((item) => {
               const offer = sellOfferOf(item.id);
+              const tooDamaged = item.condition < sellMin;
               return (
                 <PartCard
                   key={item.id}
                   part={item}
                   price={offer ?? undefined}
                   priceCaption={t('port.portPays')}
+                  note={tooDamaged ? t('port.tooDamaged') : undefined}
                   actions={
                     <>
                       <Link className="btn" to="/hangar">
@@ -488,6 +540,7 @@ export function PortPage({ guided = false }: PortPageProps) {
                 <div key={item.id} className="repair-row">
                   <div className="rname">
                     {rowName}
+                    {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
                     <small>{t(`hangar.partClasses.${item.catalog.partClass}`)}</small>
                   </div>
                   <Gauge
@@ -516,12 +569,14 @@ export function PortPage({ guided = false }: PortPageProps) {
                       }))
                     }
                   />
-                  <div className="rcost" data-testid="repair-line">
-                    {changed && line !== undefined
-                      ? [money(line.cost), formatDuration(line.durationSeconds, t)].join(' · ')
-                      : changed
-                        ? t('loading')
-                        : t('port.repairNoChange')}
+                  <div
+                    className={`rcost${changed && line !== undefined && line.cost > wallet ? ' over' : ''}`}
+                    data-testid="repair-line"
+                  >
+                    {[
+                      money(changed ? (line?.cost ?? 0) : 0),
+                      formatDuration(changed ? (line?.durationSeconds ?? 0) : 0, t),
+                    ].join(' · ')}
                   </div>
                 </div>
               );
@@ -530,27 +585,20 @@ export function PortPage({ guided = false }: PortPageProps) {
 
           {damaged.length > 0 && (
             <div className="panel repair-summary" data-testid="repair-summary">
-              {changedTargets.length === 0 ? (
+              <div className="statrow">
+                <span>{t('port.repairFee')}</span>
+                <b>{money(changedTargets.length === 0 ? 0 : (repairQuoteQuery.data?.fee ?? 0))}</b>
+              </div>
+              <div className={`statrow total${repairOver ? ' over' : ''}`}>
+                <span>{t('port.repairTotal')}</span>
+                <b data-testid="repair-total">
+                  {[money(repairTotalCost), formatDuration(repairTotalSeconds, t)].join(' · ')}
+                </b>
+              </div>
+              {changedTargets.length === 0 && (
                 <p className="sub">{t('port.repairNothingSelected')}</p>
-              ) : repairQuoteQuery.data === undefined ? (
-                <p className="sub">{t('loading')}</p>
-              ) : (
-                <>
-                  <div className="statrow">
-                    <span>{t('port.repairFee')}</span>
-                    <b>{money(repairQuoteQuery.data.fee)}</b>
-                  </div>
-                  <div className="statrow total">
-                    <span>{t('port.repairTotal')}</span>
-                    <b data-testid="repair-total">
-                      {[
-                        money(repairQuoteQuery.data.cost),
-                        formatDuration(repairQuoteQuery.data.durationSeconds, t),
-                      ].join(' · ')}
-                    </b>
-                  </div>
-                </>
               )}
+              {repairOver && <p className="error-text">{t('port.repairOverBudget')}</p>}
               <div className="row-between" style={{ marginTop: 10 }}>
                 <span className="stack-h">
                   <button
@@ -577,6 +625,7 @@ export function PortPage({ guided = false }: PortPageProps) {
                   disabled={
                     changedTargets.length === 0 ||
                     repairQuoteQuery.data === undefined ||
+                    repairOver ||
                     repair.isPending
                   }
                   onClick={() => {
@@ -607,15 +656,49 @@ export function PortPage({ guided = false }: PortPageProps) {
             label={t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })}
           />
           <p className="sub">{t('port.refuelHint')}</p>
-          {tankFull && <p className="sub">{t('port.refuelFull')}</p>}
-          <button
-            type="button"
-            className="btn primary"
-            disabled={tankFull || refuel.isPending || broke}
-            onClick={() => refuel.mutate()}
-          >
-            {t('port.refuelFill')}
-          </button>
+          {tankFull ? (
+            <p className="sub">{t('port.refuelFull')}</p>
+          ) : (
+            <div className="panel refuel-panel" data-testid="refuel-panel">
+              <label className="lbl" htmlFor="refuel-amount">
+                {t('port.refuelAmount')}
+              </label>
+              <input
+                id="refuel-amount"
+                type="range"
+                min={0}
+                max={tankSpace}
+                step={1}
+                value={wantedUnits}
+                onChange={(event) => setRefuelUnits(Number(event.target.value))}
+              />
+              <div className="statrow">
+                <span>{t('port.refuelUnits', { units: wantedUnits })}</span>
+                <b className={refuelCost > wallet ? 'over' : undefined} data-testid="refuel-cost">
+                  {money(refuelCost)}
+                </b>
+              </div>
+              {refuelCost > wallet && <p className="error-text">{t('port.insufficient')}</p>}
+              <div className="row-between">
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={wantedUnits === tankSpace}
+                  onClick={() => setRefuelUnits(tankSpace)}
+                >
+                  {t('port.refuelFill')}
+                </button>
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={wantedUnits <= 0 || refuel.isPending || broke || refuelCost > wallet}
+                  onClick={() => refuel.mutate(wantedUnits)}
+                >
+                  {t('port.refuelBuy', { units: wantedUnits })}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -703,6 +786,24 @@ export function PortPage({ guided = false }: PortPageProps) {
             </button>
           </div>
         )}
+      </Popup>
+
+      <Popup
+        open={discardOpen}
+        title={t('port.discardConfirmTitle', { count: damagedCount })}
+        onClose={() => setDiscardOpen(false)}
+      >
+        <div className="stack">
+          <p>{t('port.discardConfirmBody', { min: sellMin })}</p>
+          <button
+            type="button"
+            className="btn danger"
+            disabled={discard.isPending}
+            onClick={() => discard.mutate()}
+          >
+            {t('port.discardConfirm')}
+          </button>
+        </div>
       </Popup>
 
       <Popup

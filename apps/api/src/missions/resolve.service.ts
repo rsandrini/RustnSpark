@@ -163,7 +163,9 @@ export class MissionResolveService {
       for (const part of outcome.parts) {
         await tx.partInstance.updateMany({
           where: { id: part.id },
-          data: { condition: part.condition },
+          // Whole numbers only: the screen shows whole percent, and a stored 79.6 shown as 80 made
+          // "no change" repairs cost money. The log's events are integers already.
+          data: { condition: Math.round(part.condition) },
         });
       }
       await tx.ship.update({

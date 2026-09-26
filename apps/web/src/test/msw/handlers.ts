@@ -16,6 +16,8 @@ import type {
   PlayerProfileResponse,
   PreviewResponse,
   RefreshResponse,
+  DiscardResponse,
+  RefuelQuoteResponse,
   RefuelResponse,
   RegisterResponse,
   RepairQuoteResponse,
@@ -131,6 +133,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('bridge'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('bridge', 'BRIDGE', { w: 2, h: 2, mass: 6, structureCost: 0 }),
@@ -142,6 +145,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('engine_chem_small'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('engine_chem_small', 'ENGINE', {
@@ -158,6 +162,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('tank_small'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('tank_small', 'TANK', { fuelCap: 40, mass: 5 }),
@@ -169,6 +174,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('battery_small'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('battery_small', 'BATTERY', {
@@ -185,6 +191,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('hull'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('hull', 'DEFENSE', { partHp: 40, mass: 4, w: 2, h: 2 }),
@@ -196,6 +203,7 @@ const starterInventory = (): InventoryItem[] => [
     description: partDescriptionOf('cargo'),
     rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
@@ -206,7 +214,8 @@ const starterInventory = (): InventoryItem[] => [
     displayName: partNameOf('cargo'),
     description: partDescriptionOf('cargo'),
     rarity: 'COMMON',
-    condition: 1,
+    condition: 80,
+    broken: false,
     location: 'INVENTORY',
     shipId: null,
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
@@ -302,6 +311,22 @@ export const economyState = {
     return shipStatus;
   },
 };
+
+/** Adds a loose part too damaged to sell (below the 15 % threshold) to the fixture inventory. */
+export function addWreck(): void {
+  inventoryState.push({
+    id: 'part-wreck',
+    partType: 'cargo',
+    displayName: partNameOf('cargo'),
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
+    condition: 6,
+    broken: false,
+    location: 'INVENTORY',
+    shipId: null,
+    catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+  });
+}
 
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
 export function setShipStatus(status: ShipStatus): void {
@@ -523,8 +548,9 @@ export const handlers = [
     ok<MarketResponse>({
       locationId: String(params.id),
       listings: marketListings,
+      sellMinCondition: 15,
       sellOffers: inventoryState
-        .filter((entry) => entry.location === 'INVENTORY')
+        .filter((entry) => entry.location === 'INVENTORY' && entry.condition >= 15)
         .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
     }),
   ),
@@ -594,6 +620,7 @@ export const handlers = [
       description: listing.description,
       rarity: listing.rarity,
       condition: listing.condition,
+      broken: false,
       location: 'INVENTORY',
       shipId: null,
       catalog: catalog(
@@ -659,19 +686,36 @@ export const handlers = [
       credits: wallet,
     });
   }),
+  http.post('/v1/ships/:id/refuel/quote', async ({ params, request }) => {
+    const body = (await request.json()) as { mode: string; amount?: number };
+    const fuelCap = 40;
+    const space = Math.max(0, fuelCap - fuelState);
+    const units = body.mode === 'full' ? space : Math.min(body.amount ?? 0, space);
+    return ok<RefuelQuoteResponse>({
+      shipId: String(params.id),
+      units,
+      cost: units * 3,
+      fuel: fuelState,
+      fuelCap,
+      space,
+    });
+  }),
+  http.post('/v1/inventory/discard', () => {
+    const before = inventoryState.length;
+    inventoryState = inventoryState.filter(
+      (entry) => !(entry.location === 'INVENTORY' && entry.condition < 15),
+    );
+    return ok<DiscardResponse>({ discarded: before - inventoryState.length });
+  }),
   http.post('/v1/ships/:id/refuel', async ({ params, request }) => {
     const rejected = missingKey(request);
     if (rejected !== null) return rejected;
-    const body = (await request.json()) as { mode: string };
+    const body = (await request.json()) as { mode: string; amount?: number };
     const fuelCap = 40;
-    if (body.mode !== 'full') {
-      return HttpResponse.json(
-        { statusCode: 400, message: 'partial not used in fixtures' },
-        { status: 400 },
-      );
-    }
-    // Like the real API: a full tank is a free no-op (units 0), not an error.
-    const units = Math.max(0, fuelCap - fuelState);
+    // Like the real API: a full tank is a free no-op (units 0), not an error; a partial amount is
+    // capped by the free space.
+    const space = Math.max(0, fuelCap - fuelState);
+    const units = body.mode === 'full' ? space : Math.min(body.amount ?? 0, space);
     const cost = units * 3;
     if (wallet < cost) {
       return HttpResponse.json(
@@ -680,7 +724,7 @@ export const handlers = [
       );
     }
     wallet -= cost;
-    fuelState = fuelCap;
+    fuelState = Math.min(fuelCap, fuelState + units);
     return ok<RefuelResponse>({
       shipId: String(params.id),
       units,
@@ -830,6 +874,7 @@ export const handlers = [
       description: partDescriptionOf('cargo'),
       rarity: 'COMMON',
       condition: 40,
+      broken: false,
       location: 'INVENTORY',
       shipId: null,
       catalog: catalog('cargo', 'CARGO'),

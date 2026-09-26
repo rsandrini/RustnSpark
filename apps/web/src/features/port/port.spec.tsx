@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { economyState, resetEconomyState } from '../../test/msw/handlers';
+import { addWreck, economyState, resetEconomyState } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
 
@@ -77,7 +77,7 @@ describe('port (S10.9)', () => {
     expect(rowButton('Plated Hull')).toBeDisabled();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Refuel' }));
-    expect(screen.getByRole('button', { name: 'Fill tank' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Buy \d+/ })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
     expect(screen.getByRole('button', { name: /scavenge/i })).toBeEnabled();
@@ -136,7 +136,9 @@ describe('port (S10.9)', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     expect(screen.getByText('Fuel 25 / 40')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    // The slider defaults to filling the tank; the price shown is the server's quote of that amount.
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
 
@@ -235,7 +237,8 @@ describe('port (S10.9)', () => {
   it('refuel, sell and repair are refused by the (strict) mock without a key — and the UI sends one', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     // The strict mock answers 400 IDEMPOTENCY_KEY_REQUIRED if the header is missing.
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units');
     expect(queryByRoleSafe('alert')).toBeNull();
@@ -295,5 +298,30 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
     expect(sessionRefreshes).toBe(before);
+  });
+
+  it('refuel: the slider picks how much to buy and the price follows the amount', async () => {
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    const slider = await screen.findByLabelText('How much fuel to buy');
+    fireEvent.change(slider, { target: { value: '5' } });
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('15 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 5' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Filled 5 units for 15 ¢.');
+  });
+
+  it('a too-damaged loose part cannot be sold; discard asks first, then destroys it', async () => {
+    addWreck();
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const note = await screen.findByTestId('discard-note');
+    expect(note).toHaveTextContent('under 15% condition');
+    expect(screen.getByText('Too damaged to sell')).toBeInTheDocument();
+
+    fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
+    const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Discarded 1 damaged part(s).');
+    await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
   });
 });

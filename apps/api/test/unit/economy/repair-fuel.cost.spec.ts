@@ -173,3 +173,22 @@ describe('S8.3 — refuel cost (raw tank units × fuel_price × location factor)
     );
   });
 });
+
+describe('repair of a part worth nothing (the bridge)', () => {
+  it('is never free: a part cheaper than the minimum base is repaired as if it cost the minimum', () => {
+    const parts = [{ basePrice: 0, fromCondition: 0, toCondition: 100 }];
+    const cost = repairCost(parts, 0, 1, 'neutral', rules);
+    // 50 (min base) × 100 % × 0.8 (repair_factor) × 6/4 (price ratio) = 60
+    expect(cost).toBe(60);
+    // ...and a part worth more than the minimum is unaffected by it.
+    expect(
+      repairCost([{ basePrice: 200, fromCondition: 0, toCondition: 100 }], 0, 1, 'neutral', rules),
+    ).toBe(240);
+  });
+
+  it('a no-change target costs nothing', () => {
+    expect(
+      repairCost([{ basePrice: 0, fromCondition: 80, toCondition: 80 }], 0, 1, 'neutral', rules),
+    ).toBe(0);
+  });
+});

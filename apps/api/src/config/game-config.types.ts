@@ -50,6 +50,7 @@ export type ConfigKey =
   | 'economy.repair_factor'
   | 'economy.repair_price'
   | 'economy.repair_price_ref'
+  | 'economy.repair_min_base_price'
   | 'economy.repair_seconds_per_point'
   | 'economy.rescue_cost'
   | 'economy.rescue_fuel_fraction'
@@ -59,6 +60,7 @@ export type ConfigKey =
   | 'economy.reward_distance_ref'
   | 'economy.reward_per_tier'
   | 'economy.reward_type_bonus'
+  | 'economy.sell_min_condition'
   | 'economy.sell_ratio'
   | 'economy.start_credits'
   | 'economy.upgrade_costs'
@@ -189,6 +191,10 @@ export type GameRules = Readonly<{
     start_credits: number;
     rescue_cost: number;
     rescue_fuel_fraction: number;
+    /** Cheap parts (the bridge) are repaired as if they cost at least this much. */
+    repair_min_base_price: number;
+    /** Parts below this condition (%) cannot be sold: no port takes them, even for nothing. */
+    sell_min_condition: number;
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;

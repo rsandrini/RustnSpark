@@ -20,7 +20,9 @@ import {
   PlayerProfileResponseSchema,
   PreviewResponseSchema,
   RefreshResponseSchema,
+  RefuelQuoteResponseSchema,
   RefuelResponseSchema,
+  DiscardResponseSchema,
   RegisterResponseSchema,
   RepairQuoteResponseSchema,
   RepairStartResponseSchema,
@@ -241,6 +243,15 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
   it('refuel and repair (quote and start)', async () => {
     await prisma.ship.update({ where: { id: shipId }, data: { fuel: 1 } });
+    const refuelQuote = await post(`/v1/ships/${shipId}/refuel/quote`, {
+      mode: 'partial',
+      amount: 10,
+    });
+    expect(refuelQuote.status).toBe(200);
+    contract(RefuelQuoteResponseSchema, refuelQuote.body, 'POST /ships/:id/refuel/quote');
+    const discard = await post('/v1/inventory/discard', {});
+    expect(discard.status).toBe(200);
+    contract(DiscardResponseSchema, discard.body, 'POST /inventory/discard');
     const refuel = await post(`/v1/ships/${shipId}/refuel`, { mode: 'full' });
     expect(refuel.status).toBe(200);
     contract(RefuelResponseSchema, refuel.body, 'POST /ships/:id/refuel');

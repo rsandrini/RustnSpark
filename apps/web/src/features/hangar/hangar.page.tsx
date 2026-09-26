@@ -63,6 +63,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [previewProblems, setPreviewProblems] = useState<Problem[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [rotateHint, setRotateHint] = useState<string | null>(null);
   // The part-detail panel stays closed for a part the player dismissed, until they pick another.
   const [dismissedDetailId, setDismissedDetailId] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
@@ -94,7 +95,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   const lookById = useMemo(() => {
     const map = new Map<string, PartLook>();
-    for (const part of parts) map.set(part.id, { rarity: part.rarity, condition: part.condition });
+    for (const part of parts)
+      map.set(part.id, {
+        rarity: part.rarity,
+        condition: part.condition,
+        broken: part.broken,
+      });
     return map;
   }, [parts]);
 
@@ -161,11 +167,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
 
   const auto = useMutation({
-    // Auto-arrange EVERY part the player owns: with no ids the server arranges only loose
-    // inventory parts, which after onboarding (everything installed) is an empty, unviable ship.
+    // Auto layout re-arranges the parts that are IN the ship. Only an empty ship (a new pilot, or
+    // after a rescue) has nothing to arrange, and then it assembles the loose kit; spares in
+    // storage are never pulled onto a ship that already has parts.
     mutationFn: () =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {
-        partInstanceIds: parts.map((part) => part.id),
+        partInstanceIds:
+          effectiveLayout.length > 0
+            ? effectiveLayout.map((placement) => placement.partInstanceId)
+            : parts.filter((part) => part.location === 'INVENTORY').map((part) => part.id),
       }),
     onSuccess: (updated) => {
       setLayout(updated.layout);
@@ -214,27 +224,41 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     if (draggingId !== null) placePart(draggingId, gx, gy);
   };
 
+  // Rotate: a 1×1 part looks the same rotated (say so); a rotation that would overlap a neighbour
+  // is tried on nearby cells before giving up, and the pilot is told when nothing fits.
   const rotateSelected = () => {
     if (selectedId === null || modifyBlocked) return;
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
-    if (existing === undefined) return;
+    const catalog = catalogById.get(selectedId);
+    if (existing === undefined || catalog === undefined) return;
+    if (catalog.w === catalog.h) {
+      setRotateHint(t('hangar.rotate.square'));
+      return;
+    }
     const nextRot: 0 | 90 = existing.rot === 0 ? 90 : 0;
-    if (
-      !canPlace(
+    const offsets = [0, 1, -1, 2, -2].flatMap((dx) => [0, 1, -1, 2, -2].map((dy) => [dx, dy]));
+    offsets.sort((a, b) => Math.abs(a[0]!) + Math.abs(a[1]!) - (Math.abs(b[0]!) + Math.abs(b[1]!)));
+    const spot = offsets.find(([dx, dy]) =>
+      canPlace(
         effectiveLayout,
         catalogById,
         selectedId,
-        existing.gx,
-        existing.gy,
+        existing.gx + dx!,
+        existing.gy + dy!,
         nextRot,
         yardHalfSize,
-      )
-    ) {
+      ),
+    );
+    if (spot === undefined) {
+      setRotateHint(t('hangar.rotate.blocked'));
       return;
     }
+    setRotateHint(spot[0] === 0 && spot[1] === 0 ? null : t('hangar.rotate.nudged'));
     setLayout(
       effectiveLayout.map((placement) =>
-        placement.partInstanceId === selectedId ? { ...placement, rot: nextRot } : placement,
+        placement.partInstanceId === selectedId
+          ? { ...placement, gx: existing.gx + spot[0]!, gy: existing.gy + spot[1]!, rot: nextRot }
+          : placement,
       ),
     );
     setSaved(false);
@@ -351,7 +375,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 <div key={part.id} className="part-row">
                   <button
                     type="button"
-                    className={`part-btn rarity-${part.rarity.toLowerCase()}${pendingPartId === part.id ? ' on' : ''}`}
+                    className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${pendingPartId === part.id ? ' on' : ''}`}
                     disabled={modifyBlocked}
                     onClick={() => {
                       setPendingPartId(part.id);
@@ -428,6 +452,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               {t('hangar.actions.remove')}
             </button>
           </div>
+          {rotateHint !== null && (
+            <p className="sub" role="status" data-testid="rotate-hint">
+              {rotateHint}
+            </p>
+          )}
         </section>
 
         <section aria-label={t('hangar.sheet')}>

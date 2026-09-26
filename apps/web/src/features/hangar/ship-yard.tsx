@@ -55,6 +55,8 @@ export interface PartLook {
   readonly rarity: string;
   /** Condition in percent (0..100). */
   readonly condition: number;
+  /** Dead: at or below the wear threshold. */
+  readonly broken: boolean;
 }
 
 export interface ShipYardProps {
@@ -350,6 +352,7 @@ export function ShipYard({
                 data-gy={placement.gy}
                 className={[
                   'block',
+                  look?.broken === true ? 'broken' : '',
                   look === undefined
                     ? ''
                     : colorBy === 'rarity'
@@ -400,15 +403,17 @@ export function ShipYard({
                 x={placement.gx + width / 2}
                 style={{ pointerEvents: 'none', fontSize: `${labelFont}px` }}
               >
-                {lines.map((line, index) => (
-                  <tspan
-                    key={line + String(index)}
-                    x={placement.gx + width / 2}
-                    y={firstY + index * lineHeight + labelFont * 0.35}
-                  >
-                    {line}
-                  </tspan>
-                ))}
+                {(look?.broken === true ? [...lines.slice(0, 1), t('parts.broken')] : lines).map(
+                  (line, index) => (
+                    <tspan
+                      key={line + String(index)}
+                      x={placement.gx + width / 2}
+                      y={firstY + index * lineHeight + labelFont * 0.35}
+                    >
+                      {line}
+                    </tspan>
+                  ),
+                )}
               </text>
             </g>
           );

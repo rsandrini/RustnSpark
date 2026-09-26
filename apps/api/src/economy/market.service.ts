@@ -10,6 +10,7 @@ import { localize } from '../common/i18n/localize.js';
 import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
+import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Clock } from '../common/clock/clock.js';
 import { PricingService } from './pricing.service.js';
@@ -53,6 +54,8 @@ export interface MarketResponse {
    * try instead of learning it from a PRICE_CHANGED round trip.
    */
   readonly sellOffers: readonly SellOffer[];
+  /** Parts below this condition (%) are refused at every port. */
+  readonly sellMinCondition: number;
 }
 
 export interface BuyResponse {
@@ -77,6 +80,7 @@ export class MarketService {
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
     private readonly clock: Clock,
+    private readonly config: GameConfigService,
   ) {}
 
   // GDD §13: the board and purchases are the port you are docked at — a ship mid-jump
@@ -160,12 +164,16 @@ export class MarketService {
       include: { partCatalog: { select: { basePrice: true } } },
       orderBy: { id: 'asc' },
     });
-    const sellOffers = owned.map((part) => ({
-      partInstanceId: part.id,
-      price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
-    }));
+    const sellMinCondition = this.config.snapshot().rules.economy.sell_min_condition;
+    const sellOffers = owned
+      // A part too damaged to sell gets no quote: the port never takes it, not even for nothing.
+      .filter((part) => part.condition >= sellMinCondition)
+      .map((part) => ({
+        partInstanceId: part.id,
+        price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
+      }));
 
-    return { locationId, listings: shelf, sellOffers };
+    return { locationId, listings: shelf, sellOffers, sellMinCondition };
   }
 
   /** Which of these used listings already have a purchase on record (any player). */
@@ -289,6 +297,9 @@ export class MarketService {
     });
     if (!part || part.ownerPlayerId !== playerId) {
       throw new NotFoundException('part not found');
+    }
+    if (part.condition < this.config.snapshot().rules.economy.sell_min_condition) {
+      throw new ConflictException({ error: 'TOO_DAMAGED_TO_SELL' });
     }
 
     // A ship in transit trades nothing (S7.7 lock family), and a sale is the port action

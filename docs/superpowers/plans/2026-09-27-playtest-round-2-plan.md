@@ -106,6 +106,11 @@
 ## 5. Status
 _(updated as each workstream lands)_
 
+- **W3 done:** Transit menu disabled when idle; auto-redirect to the report; wallet refreshes when a mission ends, on report open and on window focus.
+- **W4 done:** whole-number condition (migration 0027 + rounding when wear is stored); repair screen starts at zeros, no "Loading", red over budget; refuel slider with a server quote (`POST ships/:id/refuel/quote`); `economy.repair_min_base_price` (50) so the bridge is not free; BROKEN badge + pulsing red outline in the Hangar, cards and repair list (`broken` flag from the server).
+- **W5 done:** `economy.sell_min_condition` (15): no quote and a 409 `TOO_DAMAGED_TO_SELL` below it; `POST /v1/inventory/discard` with a confirmation popup. **Exploit audit** (unit test): loops at ONE place never pay (buy → repair → sell, repair → sell), for every part, condition, isolation, faction and mood. **Owner note:** the cross-place gap is large: buying a part at the cheapest place (isolation 0.9, ally, mood 0.85) and selling it at the dearest (isolation 2, hostile, mood 1.15) returns about **5.6×** the price (`0.6×5.75 ÷ 0.61`). The design notes call this the future trading profession; it is now measured and recorded, not changed.
+- **W6 done:** auto layout arranges only the parts in the ship (the kit only when it is empty); rotate explains 1×1, nudges a blocked rotation, and says when nothing fits.
+
 ## 6. Risks
 - W1 changes difficulty everywhere: gated by the simulation and by Admin-tunable values; roll out with the numbers in the plan.
 - W4's condition rounding touches stored data: a reversible migration and a rounding test.

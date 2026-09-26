@@ -244,8 +244,24 @@ describe('hangar (S10.4)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Auto layout' }));
     await waitFor(() => expect(autoCalls).toBe(1));
-    // Every owned part (installed and loose): the server arranges only what it is given.
-    expect(sentIds).toEqual(expect.arrayContaining(['part-bridge', 'part-cargo-b']));
-    expect(sentIds.length).toBeGreaterThanOrEqual(7);
+    // Only the parts that are IN the ship are re-arranged: the loose spare stays in storage.
+    expect(sentIds).toContain('part-bridge');
+    expect(sentIds).not.toContain('part-cargo-b');
+    expect(sentIds).toHaveLength(6);
+  });
+
+  it('rotate: a 1×1 part explains itself, a blocked rotation says why', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'Hangar' });
+    const block = await waitFor(() => {
+      const found = document.querySelector('rect.block');
+      if (found === null) throw new Error('no block yet');
+      return found;
+    });
+    fireEvent.pointerDown(block);
+    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
+    // Whatever part that is, the pilot gets an answer instead of a silent click.
+    expect(await screen.findByTestId('rotate-hint')).toBeInTheDocument();
   });
 });

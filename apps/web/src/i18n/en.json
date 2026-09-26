@@ -157,6 +157,11 @@
       "label": "Colour blocks by",
       "rarity": "Rarity",
       "condition": "Condition"
+    },
+    "rotate": {
+      "square": "This part is 1×1: it looks the same rotated. Rotation only changes parts that are not square.",
+      "blocked": "There is no room to rotate this part here: move a neighbour away first.",
+      "nudged": "Rotated (moved a cell or two to make room)."
     }
   },
   "home": {
@@ -487,7 +492,18 @@
     "repairFee": "Workshop fee",
     "repairTotal": "Total",
     "repairAllTo100": "Set all to 100%",
-    "repairReset": "Back to current"
+    "repairReset": "Back to current",
+    "repairOverBudget": "Not enough credits for this repair: lower some targets.",
+    "refuelAmount": "How much fuel to buy",
+    "refuelUnits": "{{units}} units",
+    "refuelBuy": "Buy {{units}}",
+    "tooDamaged": "Too damaged to sell",
+    "discardNote": "{{count}} loose part(s) are under {{min}}% condition: no port buys them. Repair them (fit them first) or discard them.",
+    "discardAction": "Discard {{count}}",
+    "discarded": "Discarded {{count}} damaged part(s).",
+    "discardConfirmTitle": "Destroy {{count}} damaged part(s)?",
+    "discardConfirmBody": "Every loose part under {{min}}% condition is destroyed for good. Parts installed on the ship are never touched. This cannot be undone.",
+    "discardConfirm": "Destroy them"
   },
   "inventory": {
     "title": "Inventory",
@@ -785,7 +801,8 @@
     "RATE_LIMITED": "Too many requests — slow down for a moment.",
     "UNAUTHORIZED": "Your session ended — sign in again.",
     "LISTING_SOLD": "That used part was just sold.",
-    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled."
+    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
+    "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it."
   },
   "language": {
     "label": "Language"
@@ -899,7 +916,9 @@
       }
     },
     "summaryNone": "Structural part",
-    "infoGlyph": "i"
+    "infoGlyph": "i",
+    "broken": "BROKEN",
+    "brokenNote": "Broken: it counts for nothing until it is repaired."
   },
   "market": {
     "all": "All",

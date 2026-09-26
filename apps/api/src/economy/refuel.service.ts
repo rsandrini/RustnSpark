@@ -146,6 +146,42 @@ export class RefuelService {
     };
   }
 
+  /**
+   * What a refuel would buy and cost, without touching the wallet: the screen's slider asks this
+   * for each amount, and start (`refuel`) prices with the very same functions.
+   */
+  async quote(shipId: string, playerId: string, mode: RefuelMode, amount?: number) {
+    const ship = await this.prisma.ship.findFirst({
+      where: { id: shipId, ownerPlayerId: playerId },
+      select: { id: true, status: true, currentLocationId: true, fuel: true },
+    });
+    if (!ship) {
+      throw new NotFoundException('ship not found');
+    }
+    assertRefuelable(ship.status);
+    if (
+      mode === 'partial' &&
+      !(typeof amount === 'number' && Number.isFinite(amount) && amount > ZERO)
+    ) {
+      throw new BadRequestException({ error: 'INVALID_AMOUNT' });
+    }
+    const rules = this.config.snapshot().rules;
+    const context = await this.pricing.contextForLocation(ship.currentLocationId, playerId);
+    const fuelCap = await this.fuelCapOf(playerId, shipId, rules);
+    const space = Math.max(ZERO, fuelCap - ship.fuel);
+    const units = mode === 'full' ? space : Math.min(amount ?? ZERO, space);
+    const cost =
+      units <= ZERO
+        ? ZERO
+        : Math.max(
+            1,
+            Math.round(
+              refuelCost(units, context.location.isolation, context.factionRelation, rules),
+            ),
+          );
+    return { shipId, units, cost, fuel: ship.fuel, fuelCap, space };
+  }
+
   // fuelCap is derived from installed parts (sum of `fuelCap` stats), so it is
   // recomputed per call — refitting the tank mid-session changes the ceiling.
   private async fuelCapOf(playerId: string, shipId: string, rules: GameRules): Promise<number> {
