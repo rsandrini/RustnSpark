@@ -578,7 +578,7 @@
   },
   "map": {
     "title": "Mapa do setor",
-    "hint": "Selecione um nó para inspecioná-lo.",
+    "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",
     "missions": "{{count}} missões no quadro",
     "noMissions": "Sem ofertas no quadro",
@@ -594,6 +594,14 @@
       "frontier": "Fronteira",
       "dead_zone": "Zona morta",
       "relay": "Relé"
+    },
+    "inTransit": "Em voo",
+    "headingTo": "rumo a {{destination}}, chegando em",
+    "dockedAt": "Atracado em {{place}}",
+    "shipHere": "Sua nave",
+    "popup": {
+      "missionsHere": "Missões aqui",
+      "to": "Para {{destination}}"
     }
   },
   "notFound": {

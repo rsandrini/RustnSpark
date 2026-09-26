@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -47,7 +47,7 @@ describe('map (S10.5)', () => {
     expect(screen.getByText('Low risk')).toBeInTheDocument();
     expect(screen.getByText('Medium risk')).toBeInTheDocument();
     expect(screen.getByText('High risk')).toBeInTheDocument();
-    expect(screen.getByText('You are here')).toBeInTheDocument();
+    expect(screen.getAllByText('You are here').length).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -58,8 +58,8 @@ describe('map (S10.5)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
     expect(withinText(dialog, /Porto Ceres — a node/i)).toBeInTheDocument();
     expect(screen.getByText('Luna Authority')).toBeInTheDocument();
-    expect(screen.getByText('Zone 0')).toBeInTheDocument();
-    expect(screen.getByText('5 missions on the board')).toBeInTheDocument();
+    expect(dialog.textContent).toContain('Zone 0');
+    expect(await within(dialog).findByText('Missions here')).toBeInTheDocument();
 
     const boardLink = dialog.querySelector('a[href="/board?location=ceres"]');
     expect(boardLink).not.toBeNull();
@@ -86,6 +86,50 @@ describe('map (S10.5)', () => {
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
     const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
     expect(dialog.textContent).toContain('You are here');
+  });
+
+  it('shows the ship on its route while a mission is in flight', async () => {
+    const now = Date.now();
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([
+          {
+            id: 'm1',
+            templateId: 'delivery_luna',
+            type: 'DELIVERY',
+            factionId: 'luna',
+            originId: 'ceres',
+            destinationId: 'gate',
+            legs: [],
+            cargo: {},
+            reward: 100,
+            expiresAt: new Date(now + 3_600_000).toISOString(),
+            status: 'IN_TRANSIT',
+            playerId: 'player-1',
+            privatePlayerId: null,
+            shipId: 'ship-1',
+            acceptedAt: new Date(now - 60_000).toISOString(),
+            arrivalAt: new Date(now + 600_000).toISOString(),
+            deadlineAt: null,
+            seed: 's',
+            version: 1,
+            legWindows: [
+              {
+                legIndex: 0,
+                routeId: 'ceres-gate',
+                from: new Date(now - 300_000).toISOString(),
+                to: new Date(now + 300_000).toISOString(),
+              },
+            ],
+          },
+        ]),
+      ),
+    );
+    const { svg } = await renderMap();
+    await waitFor(() => expect(svg.querySelector('.ship-marker')).not.toBeNull());
+    expect(svg.querySelector('polyline.flight-path')).not.toBeNull();
+    expect(screen.getByTestId('map-status')).toHaveTextContent(/In flight/);
+    expect(svg.querySelector('.you-tag')).toBeNull();
   });
 
   it('highlights corridors from the server hot flag, with no threshold of its own', async () => {

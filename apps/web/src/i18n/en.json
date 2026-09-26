@@ -578,7 +578,7 @@
   },
   "map": {
     "title": "Sector map",
-    "hint": "Select a node to inspect it.",
+    "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",
     "missions": "{{count}} missions on the board",
     "noMissions": "No offers on the board",
@@ -594,6 +594,14 @@
       "frontier": "Frontier",
       "dead_zone": "Dead zone",
       "relay": "Relay"
+    },
+    "inTransit": "In flight",
+    "headingTo": "heading to {{destination}}, arriving in",
+    "dockedAt": "Docked at {{place}}",
+    "shipHere": "Your ship",
+    "popup": {
+      "missionsHere": "Missions here",
+      "to": "To {{destination}}"
     }
   },
   "notFound": {
