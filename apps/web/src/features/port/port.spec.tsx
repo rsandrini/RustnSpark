@@ -39,7 +39,7 @@ describe('port (S10.9)', () => {
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
-    expect(await screen.findByRole('heading', { name: 'Port', exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Port$/ })).toBeInTheDocument();
     expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
     expect(screen.getByText('Plated Hull')).toBeInTheDocument();
 
@@ -187,7 +187,7 @@ describe('port (S10.9)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/port'] });
-    expect(await screen.findByRole('heading', { name: 'Port', exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /^Port$/ })).toBeInTheDocument();
     expect(requested).toContain('hedus');
     expect(requested).not.toContain('ceres');
   });
