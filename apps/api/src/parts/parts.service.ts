@@ -28,13 +28,15 @@ export interface InventoryItem {
   partType: string;
   /** Both locales, like the market and scavenging: the client picks one, never shows the code. */
   displayName: { en: string; 'pt-BR': string };
+  description: { en: string; 'pt-BR': string };
+  rarity: string;
   condition: number;
   location: string;
   shipId: string | null;
   catalog: PartCatalog;
 }
 
-function bilingual(value: unknown): { en: string; 'pt-BR': string } {
+export function bilingual(value: unknown): { en: string; 'pt-BR': string } {
   const record = (value ?? {}) as Record<string, unknown>;
   return {
     en: localizeDisplayName(record, 'en'),
@@ -154,6 +156,8 @@ export class PartsService {
           'pt-BR',
         ),
       },
+      description: bilingual(row.partCatalog.description),
+      rarity: row.partCatalog.rarity,
       condition: row.condition,
       location: row.location,
       shipId: row.shipId,

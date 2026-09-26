@@ -25,7 +25,7 @@ const onboarded = () =>
 function rowButton(label: string | RegExp): Element {
   const row = screen.getByText(label).closest('.item');
   if (row === null) throw new Error('row not found');
-  const button = row.querySelector('button');
+  const button = row.querySelector('button:not(.info-btn)');
   if (button === null) throw new Error('button not found');
   return button;
 }

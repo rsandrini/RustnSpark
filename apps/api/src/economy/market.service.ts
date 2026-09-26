@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { localize } from '../common/i18n/localize.js';
+import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -29,6 +30,9 @@ export interface MarketListing {
   readonly partType: string;
   readonly partClass: string;
   readonly displayName: { en: string; 'pt-BR': string };
+  readonly description: { en: string; 'pt-BR': string };
+  readonly rarity: string;
+  readonly catalog: ReturnType<typeof pickCatalogStats>;
   readonly condition: number;
   readonly price: number;
 }
@@ -119,6 +123,9 @@ export class MarketService {
         en: localize(row.displayName, 'en'),
         'pt-BR': localize(row.displayName, 'pt-BR'),
       },
+      description: bilingual(row.description),
+      rarity: row.rarity,
+      catalog: pickCatalogStats(row),
       condition: 100,
       price: this.pricing.buy(context, row, 100),
     }));
@@ -135,6 +142,9 @@ export class MarketService {
           en: localize(partRow.displayName, 'en'),
           'pt-BR': localize(partRow.displayName, 'pt-BR'),
         },
+        description: bilingual(partRow.description),
+        rarity: partRow.rarity,
+        catalog: pickCatalogStats(partRow),
         condition,
         price: this.pricing.buy(context, partRow, condition),
       });

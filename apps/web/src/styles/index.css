@@ -811,10 +811,7 @@ a {
 
 /* hangar (montagem) ---------------------------------------------------- */
 .hangar-scene {
-  background:
-    linear-gradient(var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
-    radial-gradient(circle at 50% 40%, #171d22, #0e1215);
+  background: radial-gradient(circle at 50% 40%, #171d22, #0e1215);
   border: 1px solid var(--steel);
   border-radius: 12px;
 }
@@ -1162,7 +1159,7 @@ svg .block.floating {
 
 .hangar-layout {
   display: grid;
-  grid-template-columns: 220px 1fr 260px;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
   gap: 12px;
   margin-top: 14px;
   align-items: start;
@@ -1216,4 +1213,180 @@ svg .block.floating {
   width: auto;
   padding: 4px 8px;
   font-size: 12px;
+}
+
+/* part details, market filters ----------------------------------------- */
+.info-btn {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 50%;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.part-summary,
+.part-desc-short,
+.part-price {
+  display: block;
+}
+
+.part-summary {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.part-desc-short {
+  color: var(--mut);
+  font-size: 12px;
+  margin: 2px 0;
+}
+
+.part-price {
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.part-detail h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--spark);
+}
+
+.part-detail p {
+  margin: 4px 0;
+}
+
+.part-desc {
+  font-size: 15px;
+}
+
+.part-stats {
+  margin: 12px 0 0;
+}
+
+.part-stats .statrow {
+  align-items: baseline;
+  gap: 12px;
+}
+
+.part-stats dt {
+  min-width: 110px;
+}
+
+.part-stats dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.stat-hint {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.market-filters {
+  display: grid;
+  gap: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--mut);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip.on {
+  border-color: var(--spark);
+  color: var(--spark);
+  background: rgba(240, 165, 0, 0.12);
+}
+
+.market-controls {
+  display: grid;
+  grid-template-columns: minmax(140px, 2fr) 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .market-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* hangar: zoom tools, side tabs, kit note ------------------------------ */
+.yard-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.yard-tools .btn {
+  padding: 4px 10px;
+}
+
+.yard-zoom {
+  min-width: 44px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.hangar-side .tabs {
+  margin-bottom: 10px;
+}
+
+.hangar-side .grid-cards {
+  grid-template-columns: 1fr;
+}
+
+.part-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.part-row .part-btn {
+  flex: 1;
+}
+
+.kit-note {
+  margin-bottom: 10px;
+  border-color: var(--spark);
+}
+
+.kit-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.fix-hint {
+  display: block;
+  color: var(--mut);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.fix-hint .btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
 }

@@ -118,13 +118,39 @@
       "OUT_OF_BOUNDS": "Peça fora da grade.",
       "OVERLAP": "Peças sobrepostas.",
       "DISCONNECTED": "Peças precisam tocar a ponte.",
-      "INVALID_LAYOUT": "O layout não é válido."
+      "INVALID_LAYOUT": "O layout não é válido.",
+      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Os sistemas de combate exigem mais potência do que as baterias entregam.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Os sistemas de combate exigem mais energia do que as baterias guardam."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
       "generic": "Não foi possível salvar o layout."
     },
-    "yardLabel": "Área de montagem"
+    "yardLabel": "Área de montagem",
+    "zoom": {
+      "label": "Zoom",
+      "out": "Diminuir zoom",
+      "in": "Aumentar zoom",
+      "minus": "−",
+      "plus": "+",
+      "fit": "Enquadrar nave",
+      "percent": "{{value}}%"
+    },
+    "side": {
+      "parts": "Peças",
+      "store": "Loja",
+      "storeUnavailable": "A loja só está disponível com a nave atracada."
+    },
+    "kit": {
+      "title": "Seu kit inicial",
+      "body": "Estas são as peças com que sua nave começa. Nada está instalado ainda: use Layout automático para montar, ou selecione uma peça e clique na grade."
+    },
+    "detail": "Detalhes da peça",
+    "fix": {
+      "needs": " Adicione uma peça de {{part}}.",
+      "findInStore": "Ver na loja"
+    }
   },
   "home": {
     "play": "Jogar",
@@ -641,5 +667,126 @@
     "body": "Sua nave ficou sem combustível e está à deriva. Um reboque a traz de volta ao porto — custa créditos e pode deixar seu saldo negativo.",
     "action": "Chamar reboque",
     "done": "Rebocada de volta ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
+  },
+  "parts": {
+    "info": "Detalhes",
+    "close": "Fechar",
+    "size": "Tamanho",
+    "price": "Preço",
+    "condition": "Condição",
+    "class": "Classe",
+    "rarity": "Raridade",
+    "rarities": {
+      "COMMON": "Comum",
+      "UNCOMMON": "Incomum",
+      "RARE": "Rara",
+      "EPIC": "Épica",
+      "LEGENDARY": "Lendária"
+    },
+    "whyTitle": "Por que você precisa",
+    "role": {
+      "BRIDGE": "Obrigatória. Toda nave precisa de exatamente uma: é o núcleo de comando, mantém o piloto vivo se a nave for destruída e define quanta estrutura a nave aguenta.",
+      "ENGINE": "Obrigatório: sem motor a nave não anda. Motores químicos também precisam de tanque; motores iônicos precisam de energia constante.",
+      "TANK": "Guarda o combustível. Toda nave com motor químico precisa de pelo menos um, e tanque maior significa viagens mais longas entre reabastecimentos.",
+      "BATTERY": "Guarda energia para o combate. Armas e escudos consomem dela; ela precisa cobrir a demanda ou a nave não pode voar.",
+      "REACTOR": "Gera energia continuamente. Motores e sistemas consomem o tempo todo, então a geração total precisa cobrir isso.",
+      "WEAPON": "Aumenta o poder de fogo. Necessária para missões de escolta e para vencer combates; gasta energia em combate.",
+      "DEFENSE": "Aumenta blindagem, escudo e pontos de casco para a nave sobreviver a ataques. Não dá velocidade, carga nem poder de fogo, e a massa deixa a nave mais lenta.",
+      "CARGO": "Aumenta a capacidade de carga. Mais carga significa entregas maiores e melhor pagamento, mas adiciona massa.",
+      "SENSOR": "Detecta problemas cedo, reduzindo a chance de emboscada na rota.",
+      "UTILITY": "Equipamento especial que libera certas missões (mineradoras, suporte de vida etc.)."
+    },
+    "flag": {
+      "pressurized": "Módulo de passageiros: uma nave que leva um precisa de suporte de vida.",
+      "lifeSupport": "Suporte de vida: obrigatório assim que a nave tem um módulo de passageiros."
+    },
+    "stat": {
+      "pot": {
+        "label": "Empuxo",
+        "hint": "Empurra a nave. A mobilidade é o empuxo total dividido pela massa total."
+      },
+      "pdf": {
+        "label": "Poder de fogo",
+        "hint": "Dano causado em combate."
+      },
+      "bli": {
+        "label": "Blindagem",
+        "hint": "Reduz o dano recebido dos ataques."
+      },
+      "esc": {
+        "label": "Escudo",
+        "hint": "Absorve o dano primeiro e recarrega durante a luta."
+      },
+      "sen": {
+        "label": "Sensores",
+        "hint": "Detecta emboscadas cedo, reduzindo a chance de ser surpreendido."
+      },
+      "crg": {
+        "label": "Carga",
+        "hint": "Capacidade de carga para entregas."
+      },
+      "min": {
+        "label": "Mineração",
+        "hint": "Poder de mineração para missões de minério."
+      },
+      "fuelCap": {
+        "label": "Tanque",
+        "hint": "Quanto combustível cabe."
+      },
+      "fuelUse": {
+        "label": "Consumo",
+        "hint": "Quão rápido o motor queima combustível; menor é melhor."
+      },
+      "energyCont": {
+        "label": "Energia (voo)",
+        "hint": "Energia gerada (+) ou consumida (−) continuamente em voo."
+      },
+      "energyCombat": {
+        "label": "Energia (combate)",
+        "hint": "Energia extra consumida durante a luta."
+      },
+      "batCharge": {
+        "label": "Carga da bateria",
+        "hint": "Energia guardada para o combate."
+      },
+      "batOutput": {
+        "label": "Saída da bateria",
+        "hint": "O máximo de energia que a bateria entrega de uma vez."
+      },
+      "batInput": {
+        "label": "Recarga",
+        "hint": "Quão rápido a bateria recarrega."
+      },
+      "mass": {
+        "label": "Massa",
+        "hint": "Naves mais pesadas são mais lentas."
+      },
+      "structureCost": {
+        "label": "Estrutura",
+        "hint": "Usa parte do orçamento de estrutura da ponte; o total precisa ficar dentro dele."
+      },
+      "partHp": {
+        "label": "Pontos de casco",
+        "hint": "Dano que esta peça aguenta antes de quebrar."
+      }
+    },
+    "summaryNone": "Peça estrutural",
+    "infoGlyph": "i"
+  },
+  "market": {
+    "all": "Todas",
+    "filterByType": "Filtrar por tipo de peça",
+    "search": "Buscar peças",
+    "searchPlaceholder": "Buscar peças…",
+    "condition": "Condição",
+    "conditionAll": "Novas e usadas",
+    "conditionNew": "Só novas",
+    "conditionUsed": "Só usadas",
+    "sort": "Ordenar",
+    "sortName": "Nome",
+    "sortPriceAsc": "Preço: menor para maior",
+    "sortPriceDesc": "Preço: maior para menor",
+    "sortCondition": "Melhor condição",
+    "noMatches": "Nenhuma peça combina com esses filtros."
   }
 }

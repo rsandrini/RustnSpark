@@ -81,7 +81,7 @@ describe('hangar (S10.4)', () => {
     // crg 10 from the server sheet
     expect(screen.getByText('10')).toBeInTheDocument();
     // Only part-cargo-b is in storage; everything else is placed on the yard.
-    expect(await screen.findByRole('button', { name: /cargo/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
     expect(block(container, 'part-cargo-b')).toBeNull();
   });
@@ -92,7 +92,7 @@ describe('hangar (S10.4)', () => {
 
     await screen.findByRole('heading', { name: 'Hangar' });
     // Tray button and the placed block's label both use the server-provided name.
-    expect(await screen.findByRole('button', { name: /Cargo Rack/ })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^Cargo Rack/ })).toBeInTheDocument();
     expect(container.textContent).toContain('Small Chemical Engine');
     expect(container.textContent).not.toContain('engine_chem_small');
     expect(container.textContent).not.toMatch(/\bcargo\b(?! Rack)/);
@@ -119,7 +119,7 @@ describe('hangar (S10.4)', () => {
     );
 
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
 
     fireEvent.click(trayButton);
     fireEvent.click(cell(container, 4, 0));
@@ -170,7 +170,7 @@ describe('hangar (S10.4)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
     expect(block(container, 'part-cargo-a')).toBeNull();
     // Both cargo units are loose now.
-    expect(screen.getAllByRole('button', { name: /cargo/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
   });
 
   it('saves the edited layout through assemble', async () => {
@@ -185,7 +185,7 @@ describe('hangar (S10.4)', () => {
     );
 
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
     fireEvent.click(trayButton);
     fireEvent.click(cell(container, 4, 0));
 
@@ -218,7 +218,7 @@ describe('hangar (S10.4)', () => {
     );
 
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    const trayButton = await screen.findByRole('button', { name: /cargo/i });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
     fireEvent.click(trayButton);
     fireEvent.click(cell(container, 4, 0));
 

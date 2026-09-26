@@ -118,13 +118,39 @@
       "OUT_OF_BOUNDS": "Part is outside the grid.",
       "OVERLAP": "Parts overlap.",
       "DISCONNECTED": "Parts must touch the bridge.",
-      "INVALID_LAYOUT": "The layout is not valid."
+      "INVALID_LAYOUT": "The layout is not valid.",
+      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Combat systems need more power than the batteries can deliver.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Combat systems need more energy than the batteries can store."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
       "generic": "Could not save the layout."
     },
-    "yardLabel": "Assembly yard"
+    "yardLabel": "Assembly yard",
+    "zoom": {
+      "label": "Zoom",
+      "out": "Zoom out",
+      "in": "Zoom in",
+      "minus": "−",
+      "plus": "+",
+      "fit": "Fit ship",
+      "percent": "{{value}}%"
+    },
+    "side": {
+      "parts": "Parts",
+      "store": "Store",
+      "storeUnavailable": "The store is only available while the ship is docked."
+    },
+    "kit": {
+      "title": "Your starter kit",
+      "body": "These are the parts your ship starts with. Nothing is installed yet: press Auto layout to assemble them, or select a part and click the grid."
+    },
+    "detail": "Part details",
+    "fix": {
+      "needs": " Add a {{part}} part.",
+      "findInStore": "Find in store"
+    }
   },
   "home": {
     "play": "Play",
@@ -641,5 +667,126 @@
     "body": "Your ship ran out of fuel and is drifting. A tow brings it back to port — it costs credits and may leave your balance negative.",
     "action": "Call a tow",
     "done": "Towed back to port for {{cost}} ¢. Fuel on board: {{fuel}}."
+  },
+  "parts": {
+    "info": "Details",
+    "close": "Close",
+    "size": "Size",
+    "price": "Price",
+    "condition": "Condition",
+    "class": "Class",
+    "rarity": "Rarity",
+    "rarities": {
+      "COMMON": "Common",
+      "UNCOMMON": "Uncommon",
+      "RARE": "Rare",
+      "EPIC": "Epic",
+      "LEGENDARY": "Legendary"
+    },
+    "whyTitle": "Why you need it",
+    "role": {
+      "BRIDGE": "Required. Every ship needs exactly one: it is the command core, keeps the pilot alive if the ship is destroyed, and sets how much structure the ship can carry.",
+      "ENGINE": "Required: a ship with no engine cannot move. Chemical engines also need a fuel tank; ion engines need steady power instead.",
+      "TANK": "Holds the fuel. Any ship with a chemical engine needs at least one, and a bigger tank means longer trips between refuels.",
+      "BATTERY": "Stores energy for combat. Weapons and shields draw from it, so it must cover their demand or the ship is not allowed to fly.",
+      "REACTOR": "Generates energy continuously. Engines and systems draw power all the time, so total generation must cover them.",
+      "WEAPON": "Adds firepower. Needed for escort missions and to win fights; costs energy in combat.",
+      "DEFENSE": "Adds armor, shield and hit points so the ship survives attacks. It adds no speed, cargo or firepower, and its mass slows you down.",
+      "CARGO": "Adds cargo capacity. More cargo means bigger deliveries and better pay, but adds mass.",
+      "SENSOR": "Spots trouble early, which lowers the chance of being ambushed on a route.",
+      "UTILITY": "Special equipment that unlocks certain missions (mining rigs, life support, and so on)."
+    },
+    "flag": {
+      "pressurized": "Passenger module: a ship carrying one needs a life support part.",
+      "lifeSupport": "Life support: required as soon as the ship has a passenger module."
+    },
+    "stat": {
+      "pot": {
+        "label": "Thrust",
+        "hint": "Pushes the ship. Mobility is total thrust divided by total mass."
+      },
+      "pdf": {
+        "label": "Firepower",
+        "hint": "Damage dealt in combat."
+      },
+      "bli": {
+        "label": "Armor",
+        "hint": "Reduces the damage taken from hits."
+      },
+      "esc": {
+        "label": "Shield",
+        "hint": "Absorbs damage first and recharges during a fight."
+      },
+      "sen": {
+        "label": "Sensors",
+        "hint": "Spots ambushes early, lowering the chance of being surprised."
+      },
+      "crg": {
+        "label": "Cargo",
+        "hint": "Cargo capacity for deliveries."
+      },
+      "min": {
+        "label": "Mining",
+        "hint": "Mining power for ore missions."
+      },
+      "fuelCap": {
+        "label": "Fuel tank",
+        "hint": "How much fuel it holds."
+      },
+      "fuelUse": {
+        "label": "Fuel use",
+        "hint": "How fast the engine burns fuel; lower is better."
+      },
+      "energyCont": {
+        "label": "Energy (flight)",
+        "hint": "Energy generated (+) or drawn (−) continuously while flying."
+      },
+      "energyCombat": {
+        "label": "Energy (combat)",
+        "hint": "Extra energy drawn while fighting."
+      },
+      "batCharge": {
+        "label": "Battery charge",
+        "hint": "Energy stored for combat."
+      },
+      "batOutput": {
+        "label": "Battery output",
+        "hint": "The most energy the battery can deliver at once."
+      },
+      "batInput": {
+        "label": "Recharge",
+        "hint": "How fast the battery recharges."
+      },
+      "mass": {
+        "label": "Mass",
+        "hint": "Heavier ships are slower."
+      },
+      "structureCost": {
+        "label": "Structure",
+        "hint": "Uses part of the bridge's structure budget; the total must stay within it."
+      },
+      "partHp": {
+        "label": "Hit points",
+        "hint": "Damage this part can take before it breaks."
+      }
+    },
+    "summaryNone": "Structural part",
+    "infoGlyph": "i"
+  },
+  "market": {
+    "all": "All",
+    "filterByType": "Filter by part type",
+    "search": "Search parts",
+    "searchPlaceholder": "Search parts…",
+    "condition": "Condition",
+    "conditionAll": "New and used",
+    "conditionNew": "New only",
+    "conditionUsed": "Used only",
+    "sort": "Sort",
+    "sortName": "Name",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low",
+    "sortCondition": "Best condition",
+    "noMatches": "No parts match these filters."
   }
 }

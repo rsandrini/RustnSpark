@@ -127,6 +127,8 @@ export const InventoryItemSchema = z.object({
   id: z.string(),
   partType: z.string(),
   displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  rarity: z.string(),
   condition: z.number(),
   location: PartLocationSchema,
   shipId: z.string().nullable(),
@@ -426,6 +428,10 @@ export const MarketListingSchema = z.object({
   partType: z.string(),
   partClass: z.string(),
   displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  rarity: z.string(),
+  /** The part's stats, so a listing can be inspected before buying. */
+  catalog: PartCatalogStatsSchema,
   condition: z.number(),
   price: z.number(),
 });

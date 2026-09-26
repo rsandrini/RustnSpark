@@ -13,6 +13,21 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard } from './ship-yard';
 import { canPlace } from './hangar.geometry';
+import { MarketPanel } from '../market/market-panel';
+import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
+import { PartInfoButton } from '../parts/part-info-button';
+
+// Which kind of part fixes each viability problem: the hint names it and offers the store filter.
+const FIX_CLASS: Record<string, string> = {
+  NO_BRIDGE: 'BRIDGE',
+  NO_ENGINE: 'ENGINE',
+  MOB_TOO_LOW: 'ENGINE',
+  NO_FUEL_CAPACITY: 'TANK',
+  ENERGY_CRUISE_NEGATIVE: 'REACTOR',
+  BATTERY_OUTPUT_INSUFFICIENT: 'BATTERY',
+  BATTERY_CHARGE_INSUFFICIENT: 'BATTERY',
+  NO_LIFE_SUPPORT: 'UTILITY',
+};
 
 const PREVIEW_DEBOUNCE_MS = 400;
 
@@ -46,6 +61,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [previewProblems, setPreviewProblems] = useState<Problem[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
+  const [storeClass, setStoreClass] = useState<string | null>(null);
+  const format = useNumberFormat();
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.
@@ -74,6 +92,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     [effectiveLayout],
   );
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
+  // Nothing installed yet: the loose parts are the starter kit the player still has to assemble.
+  const isKit = effectiveLayout.length === 0 && trayParts.length > 0;
+  const focusPart = parts.find((part) => part.id === (pendingPartId ?? selectedId)) ?? null;
   const dirty =
     ship !== undefined && layout !== null && JSON.stringify(layout) !== JSON.stringify(ship.layout);
 
@@ -286,30 +307,63 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       )}
 
       <div className="hangar-layout">
-        <section aria-label={t('hangar.tray')}>
-          <h2>{t('hangar.tray')}</h2>
-          {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
-          {trayParts.map((part) => {
-            const metaLabel = [
-              t(`hangar.partClasses.${part.catalog.partClass}`),
-              `${part.catalog.w}×${part.catalog.h}`,
-            ].join(' · ');
-            return (
+        <section aria-label={t('hangar.tray')} className="hangar-side">
+          <div className="tabs" role="tablist">
+            {(['parts', 'store'] as const).map((id) => (
               <button
-                key={part.id}
+                key={id}
                 type="button"
-                className={`part-btn${pendingPartId === part.id ? ' on' : ''}`}
-                disabled={modifyBlocked}
-                onClick={() => {
-                  setPendingPartId(part.id);
-                  setSelectedId(null);
-                }}
+                role="tab"
+                aria-selected={sideTab === id}
+                className={`tab${sideTab === id ? ' on' : ''}`}
+                onClick={() => setSideTab(id)}
               >
-                {nameById.get(part.id) ?? part.partType}
-                <span className="meta">{metaLabel}</span>
+                {t(`hangar.side.${id}`)}
               </button>
-            );
-          })}
+            ))}
+          </div>
+
+          {sideTab === 'parts' && (
+            <>
+              {isKit && (
+                <div className="panel kit-note" role="note">
+                  <b>{t('hangar.kit.title')}</b>
+                  <p className="muted">{t('hangar.kit.body')}</p>
+                </div>
+              )}
+              {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
+              {trayParts.map((part) => (
+                <div key={part.id} className="part-row">
+                  <button
+                    type="button"
+                    className={`part-btn${pendingPartId === part.id ? ' on' : ''}`}
+                    disabled={modifyBlocked}
+                    onClick={() => {
+                      setPendingPartId(part.id);
+                      setSelectedId(null);
+                    }}
+                  >
+                    {nameById.get(part.id) ?? part.partType}
+                    <span className="meta">
+                      {[
+                        t(`hangar.partClasses.${part.catalog.partClass}`),
+                        `${part.catalog.w}×${part.catalog.h}`,
+                      ].join(' · ')}
+                    </span>
+                    <span className="meta">{partSummary(part.catalog, t, format)}</span>
+                  </button>
+                  <PartInfoButton part={part} />
+                </div>
+              ))}
+            </>
+          )}
+
+          {sideTab === 'store' &&
+            (ship.status === 'IN_PORT' ? (
+              <MarketPanel locationId={ship.currentLocationId} presetClass={storeClass} />
+            ) : (
+              <p className="muted">{t('hangar.side.storeUnavailable')}</p>
+            ))}
         </section>
 
         <section>
@@ -350,6 +404,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         </section>
 
         <section aria-label={t('hangar.sheet')}>
+          {focusPart !== null && (
+            <div className="panel" aria-label={t('hangar.detail')}>
+              <h2>{nameById.get(focusPart.id) ?? focusPart.partType}</h2>
+              <PartDetail part={focusPart} />
+            </div>
+          )}
           <div className="panel">
             <h2>{t('hangar.sheet')}</h2>
             <div className="statrow">
@@ -372,13 +432,35 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             <div className="panel">
               <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
               <ul>
-                {allProblems.map((problem) => (
-                  <li key={problem.code} className="error-text">
-                    {t(`hangar.problems.${problem.code}`, {
-                      defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-                    })}
-                  </li>
-                ))}
+                {allProblems.map((problem) => {
+                  const fixClass = FIX_CLASS[problem.code];
+                  return (
+                    <li key={problem.code} className="error-text">
+                      {t(`hangar.problems.${problem.code}`, {
+                        defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
+                      })}
+                      {fixClass !== undefined && (
+                        <span className="fix-hint">
+                          {t('hangar.fix.needs', {
+                            part: t(`hangar.partClasses.${fixClass}`),
+                          })}
+                          {ship.status === 'IN_PORT' && (
+                            <button
+                              type="button"
+                              className="btn"
+                              onClick={() => {
+                                setStoreClass(fixClass);
+                                setSideTab('store');
+                              }}
+                            >
+                              {t('hangar.fix.findInStore')}
+                            </button>
+                          )}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

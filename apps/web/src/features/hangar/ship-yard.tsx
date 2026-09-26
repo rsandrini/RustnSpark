@@ -1,15 +1,53 @@
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { PartCatalogStats, Placement } from '../../api/generated';
 import { footprint } from './hangar.geometry';
 
-// A cell is small: show the first word of the part name, trimmed to what fits the block
-// (~4 characters per cell at the label size); the full name is the block's <title> tooltip.
-function fitLabel(name: string, blockWidth: number): string {
-  const maxChars = Math.max(2, Math.floor((blockWidth - 0.15) * 4.3));
-  const first = name.split(' ')[0] ?? name;
-  return first.length <= maxChars ? first : `${first.slice(0, maxChars - 1)}…`;
+const MIN_SPAN = 4;
+const FIT_MARGIN = 3;
+const ZOOM_STEP = 1.4;
+// Pointer travel (px) below which a press is a click, not the start of a pan.
+const PAN_THRESHOLD = 5;
+
+interface View {
+  cx: number;
+  cy: number;
+  /** Visible width in cells (the yard is square). */
+  span: number;
+}
+
+// Text is in yard units, so it grows with the zoom. To make names readable the label font
+// shrinks (in units) as the player zooms in, which lets more characters and lines fit a block;
+// past LABEL_ZOOM_CAP the labels just keep growing on screen.
+const LABEL_ZOOM_CAP = 2.4;
+const LABEL_FONT = 0.42;
+
+/** Word-wrap a part name into the lines that fit a block of the given size at this zoom. */
+export function labelLines(name: string, width: number, height: number, zoom: number): string[] {
+  const boost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
+  const maxChars = Math.max(2, Math.floor((width - 0.15) * 4.3 * boost));
+  const maxLines = Math.max(1, Math.floor((height - 0.1) * 2 * boost));
+  const lines: string[] = [];
+  let current = '';
+  for (const word of name.split(' ')) {
+    const next = current === '' ? word : `${current} ${word}`;
+    if (next.length <= maxChars) {
+      current = next;
+    } else {
+      if (current !== '') lines.push(current);
+      current = word;
+    }
+  }
+  if (current !== '') lines.push(current);
+  const shown = lines.slice(0, maxLines).map((line) => {
+    return line.length <= maxChars ? line : `${line.slice(0, maxChars - 1)}…`;
+  });
+  if (lines.length > maxLines) {
+    const last = shown[shown.length - 1] ?? '';
+    shown[shown.length - 1] = last.endsWith('…') ? last : `${last.slice(0, maxChars - 1)}…`;
+  }
+  return shown;
 }
 
 export interface ShipYardProps {
@@ -28,9 +66,10 @@ export interface ShipYardProps {
   onDragEnd: () => void;
 }
 
-// The 20×20 assembly yard. Cells are transparent rects (data-gx/gy) so placement and
-// drag feedback come from real geometry: while a block is dragged it stops capturing
-// pointer events and the cell underneath reports where it would snap.
+// The assembly yard. Cells are transparent rects (data-gx/gy) so placement and drag feedback
+// come from real geometry: while a block is dragged it stops capturing pointer events and the
+// cell underneath reports where it would snap. The view (zoom + pan) is a viewBox window onto
+// the fixed grid, so the geometry the server validates never changes.
 export function ShipYard({
   layout,
   halfSize,
@@ -46,9 +85,149 @@ export function ShipYard({
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  const cellCount = halfSize * 2;
+
+  const clampView = useCallback(
+    (view: View): View => {
+      const span = Math.min(cellCount, Math.max(MIN_SPAN, view.span));
+      const limit = halfSize - span / 2;
+      return {
+        span,
+        cx: Math.min(limit, Math.max(-limit, view.cx)),
+        cy: Math.min(limit, Math.max(-limit, view.cy)),
+      };
+    },
+    [cellCount, halfSize],
+  );
+
+  const fitView = useCallback((): View => {
+    if (layout.length === 0) return clampView({ cx: 0, cy: 0, span: Math.min(cellCount, 20) });
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const placement of layout) {
+      const catalog = catalogById.get(placement.partInstanceId);
+      if (catalog === undefined) continue;
+      const { width, height } = footprint(catalog, placement.rot);
+      minX = Math.min(minX, placement.gx);
+      minY = Math.min(minY, placement.gy);
+      maxX = Math.max(maxX, placement.gx + width);
+      maxY = Math.max(maxY, placement.gy + height);
+    }
+    if (!Number.isFinite(minX)) return clampView({ cx: 0, cy: 0, span: Math.min(cellCount, 20) });
+    return clampView({
+      cx: (minX + maxX) / 2,
+      cy: (minY + maxY) / 2,
+      span: Math.max(maxX - minX, maxY - minY) + FIT_MARGIN * 2,
+    });
+  }, [layout, catalogById, cellCount, clampView]);
+
+  const [view, setView] = useState<View>(() => clampView({ cx: 0, cy: 0, span: 20 }));
+  const viewRef = useRef(view);
+  viewRef.current = view;
+
+  // Frame the ship the first time it has parts (the page seeds the layout after loading).
+  const fitted = useRef(false);
+  useEffect(() => {
+    if (!fitted.current && layout.length > 0) {
+      fitted.current = true;
+      setView(fitView());
+    }
+  }, [layout, fitView]);
+
+  const zoomBy = useCallback(
+    (factor: number, anchor?: { x: number; y: number }) => {
+      setView((current) => {
+        const span = Math.min(cellCount, Math.max(MIN_SPAN, current.span / factor));
+        // Keep the point under the cursor fixed while the window resizes around it.
+        const ax = anchor?.x ?? current.cx;
+        const ay = anchor?.y ?? current.cy;
+        const ratio = span / current.span;
+        return clampView({
+          span,
+          cx: ax + (current.cx - ax) * ratio,
+          cy: ay + (current.cy - ay) * ratio,
+        });
+      });
+    },
+    [cellCount, clampView],
+  );
+
+  // Wheel zoom needs a non-passive listener to stop the page from scrolling under the yard.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (svg === null) return undefined;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const current = viewRef.current;
+      const anchor = {
+        x:
+          current.cx - current.span / 2 + ((event.clientX - rect.left) / rect.width) * current.span,
+        y:
+          current.cy - current.span / 2 + ((event.clientY - rect.top) / rect.height) * current.span,
+      };
+      zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, anchor);
+    };
+    svg.addEventListener('wheel', onWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  }, [zoomBy]);
+
+  // Pan (one pointer on the background) and pinch (two pointers), tracked by pointer id.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ moved: boolean; pinchDistance: number | null }>({
+    moved: false,
+    pinchDistance: null,
+  });
+
+  const handleBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.current.size === 1) gesture.current.moved = false;
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    const previous = pointers.current.get(event.pointerId);
+    if (previous === undefined || draggingId !== null) return;
+    const svg = svgRef.current;
+    if (svg === null) return;
+    const rect = svg.getBoundingClientRect();
+    const current = viewRef.current;
+    const unitsPerPx = current.span / rect.width;
+    const next = { x: event.clientX, y: event.clientY };
+
+    if (pointers.current.size >= 2) {
+      pointers.current.set(event.pointerId, next);
+      const [a, b] = Array.from(pointers.current.values());
+      if (a === undefined || b === undefined) return;
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      const last = gesture.current.pinchDistance;
+      gesture.current.pinchDistance = distance;
+      gesture.current.moved = true;
+      if (last !== null && last > 0) zoomBy(distance / last);
+      return;
+    }
+
+    const travelled = Math.hypot(next.x - previous.x, next.y - previous.y);
+    if (!gesture.current.moved && travelled < PAN_THRESHOLD) return;
+    gesture.current.moved = true;
+    pointers.current.set(event.pointerId, next);
+    setView(
+      clampView({
+        span: current.span,
+        cx: current.cx - (next.x - previous.x) * unitsPerPx,
+        cy: current.cy - (next.y - previous.y) * unitsPerPx,
+      }),
+    );
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<SVGSVGElement>) => {
+    pointers.current.delete(event.pointerId);
+    if (pointers.current.size < 2) gesture.current.pinchDistance = null;
+    onDragEnd();
+  };
 
   const cells: Array<{ gx: number; gy: number }> = [];
-  const cellCount = halfSize * 2;
   for (let gy = -halfSize; gy < halfSize; gy += 1) {
     for (let gx = -halfSize; gx < halfSize; gx += 1) {
       cells.push({ gx, gy });
@@ -62,21 +241,53 @@ export function ShipYard({
     gridLines.push(`M${-halfSize},${coordinate} H${halfSize}`);
   }
 
-  const handlePointerDown = (event: ReactPointerEvent<SVGRectElement>, placement: Placement) => {
+  const handleBlockDown = (event: ReactPointerEvent<SVGRectElement>, placement: Placement) => {
     onSelect(placement.partInstanceId);
     onDragStart(placement.partInstanceId);
     event.stopPropagation();
   };
 
+  const zoom = cellCount / view.span;
+  const labelBoost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
+  const labelFont = LABEL_FONT / labelBoost;
+
   return (
     <div className="stage hangar-scene">
+      <div className="yard-tools" role="group" aria-label={t('hangar.zoom.label')}>
+        <button
+          type="button"
+          className="btn"
+          aria-label={t('hangar.zoom.out')}
+          disabled={view.span >= cellCount}
+          onClick={() => zoomBy(1 / ZOOM_STEP)}
+        >
+          {t('hangar.zoom.minus')}
+        </button>
+        <span className="yard-zoom" aria-live="polite">
+          {t('hangar.zoom.percent', { value: Math.round(zoom * 100) })}
+        </span>
+        <button
+          type="button"
+          className="btn"
+          aria-label={t('hangar.zoom.in')}
+          disabled={view.span <= MIN_SPAN}
+          onClick={() => zoomBy(ZOOM_STEP)}
+        >
+          {t('hangar.zoom.plus')}
+        </button>
+        <button type="button" className="btn" onClick={() => setView(fitView())}>
+          {t('hangar.zoom.fit')}
+        </button>
+      </div>
       <svg
         ref={svgRef}
-        viewBox={`${-halfSize} ${-halfSize} ${cellCount} ${cellCount}`}
+        viewBox={`${view.cx - view.span / 2} ${view.cy - view.span / 2} ${view.span} ${view.span}`}
         role="group"
         aria-label={t('hangar.yardLabel')}
-        onPointerUp={onDragEnd}
-        onPointerLeave={onDragEnd}
+        onPointerDown={handleBackgroundDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
       >
         <path className="yard-grid" d={gridLines.join(' ')} />
         {cells.map((cell) => (
@@ -89,7 +300,11 @@ export function ShipYard({
             y={cell.gy}
             width={1}
             height={1}
-            onClick={() => onCellClick(cell.gx, cell.gy)}
+            onClick={() => {
+              // A drag that panned the view is not a click on the cell it ended over.
+              if (gesture.current.moved) return;
+              onCellClick(cell.gx, cell.gy);
+            }}
             onPointerEnter={() => onCellHover(cell.gx, cell.gy)}
           />
         ))}
@@ -97,6 +312,10 @@ export function ShipYard({
           const catalog = catalogById.get(placement.partInstanceId);
           if (catalog === undefined) return null;
           const { width, height } = footprint(catalog, placement.rot);
+          const name = nameById.get(placement.partInstanceId) ?? catalog.partType;
+          const lines = labelLines(name, width, height, zoom);
+          const lineHeight = labelFont * 1.15;
+          const firstY = placement.gy + height / 2 - ((lines.length - 1) * lineHeight) / 2;
           return (
             <g key={placement.partInstanceId} className="yard-block">
               <rect
@@ -118,16 +337,23 @@ export function ShipYard({
                 style={
                   draggingId === placement.partInstanceId ? { pointerEvents: 'none' } : undefined
                 }
-                onPointerDown={(event) => handlePointerDown(event, placement)}
+                onPointerDown={(event) => handleBlockDown(event, placement)}
               />
-              <title>{nameById.get(placement.partInstanceId) ?? catalog.partType}</title>
+              <title>{name}</title>
               <text
                 className="block-label"
                 x={placement.gx + width / 2}
-                y={placement.gy + height / 2 + 0.2}
-                style={{ pointerEvents: 'none' }}
+                style={{ pointerEvents: 'none', fontSize: `${labelFont}px` }}
               >
-                {fitLabel(nameById.get(placement.partInstanceId) ?? catalog.partType, width)}
+                {lines.map((line, index) => (
+                  <tspan
+                    key={line + String(index)}
+                    x={placement.gx + width / 2}
+                    y={firstY + index * lineHeight + labelFont * 0.35}
+                  >
+                    {line}
+                  </tspan>
+                ))}
               </text>
             </g>
           );

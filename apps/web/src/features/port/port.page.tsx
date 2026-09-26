@@ -6,7 +6,6 @@ import { client } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type {
-  BuyResponse,
   InventoryItem,
   MarketResponse,
   MaterialsResponse,
@@ -25,6 +24,8 @@ import { RescueBanner } from '../rescue/rescue-banner';
 import { ItemCard } from '../../ui/ItemCard';
 import { Popup } from '../../ui/Popup';
 import { PortTabs } from '../../ui/PortTabs';
+import { MarketPanel } from '../market/market-panel';
+import { PartInfoButton } from '../parts/part-info-button';
 
 const PORT_TABS = ['market', 'repair', 'refuel', 'scavenging'] as const;
 type PortTabId = (typeof PORT_TABS)[number];
@@ -41,10 +42,9 @@ interface RepairPlan {
 }
 
 interface ConfirmTrade {
-  kind: 'buy' | 'sellPart' | 'sellMaterial';
+  kind: 'sellPart' | 'sellMaterial';
   name: string;
   price: number | null;
-  listingId?: string;
   partInstanceId?: string;
   materialId?: string;
   quantity?: number;
@@ -66,7 +66,6 @@ export function PortPage({ guided = false }: PortPageProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [repairTargets, setRepairTargets] = useState<Record<string, number>>({});
   const [repairPlan, setRepairPlan] = useState<RepairPlan | null>(null);
-  const buyKey = useIntentKey();
   const sellKey = useIntentKey();
   const materialKey = useIntentKey();
   const refuelKey = useIntentKey();
@@ -129,22 +128,6 @@ export function PortPage({ guided = false }: PortPageProps) {
     }
     setActionError(errorText(t, error, t('port.failed')));
   };
-
-  const buy = useMutation({
-    mutationFn: (args: { listingId: string; expectedPrice: number }) =>
-      client.post<BuyResponse>('/v1/market/buy', args, {
-        idempotencyKey: buyKey.keyFor(`${args.listingId}:${args.expectedPrice}`),
-      }),
-    onSuccess: (response) => {
-      buyKey.clear();
-      const boughtName = confirm?.name ?? '';
-      setConfirm(null);
-      setActionError(null);
-      setNotice(t('port.bought', { name: boughtName, price: response.price }));
-      afterTrade();
-    },
-    onError: onTradeError,
-  });
 
   const sellPart = useMutation({
     mutationFn: (args: { partInstanceId: string; expectedPrice: number }) =>
@@ -292,9 +275,6 @@ export function PortPage({ guided = false }: PortPageProps) {
 
   const confirmTrade = () => {
     if (confirm === null) return;
-    if (confirm.kind === 'buy' && confirm.listingId !== undefined && confirm.price !== null) {
-      buy.mutate({ listingId: confirm.listingId, expectedPrice: confirm.price });
-    }
     if (
       confirm.kind === 'sellPart' &&
       confirm.partInstanceId !== undefined &&
@@ -371,41 +351,7 @@ export function PortPage({ guided = false }: PortPageProps) {
 
       {tab === 'market' && (
         <section className="stack">
-          <h2>{t('port.forSale')}</h2>
-          {marketQuery.data?.listings.length === 0 && (
-            <p className="sub">{t('port.marketEmpty')}</p>
-          )}
-          <div className="grid-cards">
-            {marketQuery.data?.listings.map((listing) => {
-              const name = pickLocalized(listing.displayName, i18n.language);
-              const affordable = wallet >= listing.price;
-              return (
-                <ItemCard
-                  key={listing.listingId}
-                  name={name}
-                  description={`${listing.partClass} · ${listing.condition}% · ${money(listing.price)}`}
-                  action={
-                    <button
-                      type="button"
-                      className="btn primary"
-                      disabled={!affordable}
-                      onClick={() => {
-                        setNotice(null);
-                        setConfirm({
-                          kind: 'buy',
-                          name,
-                          price: listing.price,
-                          listingId: listing.listingId,
-                        });
-                      }}
-                    >
-                      {t('port.buy')}
-                    </button>
-                  }
-                />
-              );
-            })}
-          </div>
+          <MarketPanel locationId={ship.currentLocationId} onNotice={setNotice} />
 
           <h2>{t('port.yourGoods')}</h2>
           {partsOnSale.map((item) => {
@@ -414,9 +360,19 @@ export function PortPage({ guided = false }: PortPageProps) {
               <ItemCard
                 key={item.id}
                 name={partName(item)}
-                description={t('inventory.condition', { value: item.condition })}
+                description={
+                  <>
+                    <span className="part-desc-short">
+                      {pickLocalized(item.description, i18n.language)}
+                    </span>
+                    <span className="part-price">
+                      {t('inventory.condition', { value: item.condition })}
+                    </span>
+                  </>
+                }
                 action={
                   <span className="row-between">
+                    <PartInfoButton part={item} />
                     <Link className="btn" to="/hangar">
                       {t('inventory.install')}
                     </Link>
@@ -602,11 +558,9 @@ export function PortPage({ guided = false }: PortPageProps) {
         title={
           confirm === null
             ? ''
-            : confirm.kind === 'buy' && confirm.price !== null
-              ? t('port.buyConfirm', { name: confirm.name, price: confirm.price })
-              : confirm.price !== null
-                ? t('port.sellQuote', { name: confirm.name, price: confirm.price })
-                : t('port.sellConfirm', { name: confirm.name })
+            : confirm.price !== null
+              ? t('port.sellQuote', { name: confirm.name, price: confirm.price })
+              : t('port.sellConfirm', { name: confirm.name })
         }
         onClose={() => setConfirm(null)}
       >
@@ -616,21 +570,13 @@ export function PortPage({ guided = false }: PortPageProps) {
               <p>{t('port.balanceAfter', { balance: money(tradeBalance(confirm, wallet)) })}</p>
             )}
             {confirm.hint !== undefined && <p className="sub">{confirm.hint}</p>}
-            {confirm.kind === 'buy' && confirm.price !== null && wallet < confirm.price && (
-              <p className="error-text">{t('port.insufficient')}</p>
-            )}
             <button
               type="button"
               className="btn primary"
-              disabled={
-                buy.isPending ||
-                sellPart.isPending ||
-                sellMaterial.isPending ||
-                (confirm.kind === 'buy' && confirm.price !== null && wallet < confirm.price)
-              }
+              disabled={sellPart.isPending || sellMaterial.isPending}
               onClick={confirmTrade}
             >
-              {confirm.kind === 'buy' ? t('port.buy') : t('port.sell')}
+              {t('port.sell')}
             </button>
           </div>
         )}
@@ -641,6 +587,5 @@ export function PortPage({ guided = false }: PortPageProps) {
 
 function tradeBalance(confirm: ConfirmTrade, wallet: number): number {
   if (confirm.price === null) return wallet;
-  if (confirm.kind === 'buy') return wallet - confirm.price;
   return wallet + confirm.price;
 }
