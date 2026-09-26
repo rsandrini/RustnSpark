@@ -52,3 +52,12 @@ Auth/Home styling, register field rules and specific error messages (409 / 400 /
 - **J. Mission variety.** The board has about one offer per place and too few kinds. Needs more templates and more offers per port (Admin-tunable `missions.board_min_per_location`, new template content, en + pt-BR).
 - **K. Mission report screen is boring.** Rework the last screen (the report): a narrated timeline of the trip and fights, visible payoffs, loot and damage, a clear next step.
 
+
+## Incoming feedback (third batch, 2026-09-26) — to be planned, not started
+- **L. Travel without quests.** A way to fly to another port on its own, from the map (pick a port, see the route, fuel and time, confirm). Today the ship only moves by finishing a mission (dispatch is `POST ships/:id/dispatch` on an accepted mission; there is no travel command).
+  - *Proposed shape:* a new mission type `TRAVEL` created on demand for the chosen route, with no cargo and no reward, that goes through the normal accept, dispatch, legs, fuel, encounter and report machinery. This reuses everything already tested (idempotency, ON_MISSION lock, resolve, reports) and only adds: a travel-quote endpoint (route, fuel, duration, risk), a create-and-accept step, and a report template for a trip with no cargo.
+  - *Rules to decide:* fuel is the cost (already spent per leg); is there a per-trip fee; can the pilot travel with an unviable or empty ship (no: same viability gate as missions); risk (encounters on dangerous legs) stays.
+- **M. Position during travel.** While a mission or trip is in progress the map draws the ship on its route (interpolated from the leg windows the server already sends), plus "you are here" when docked. Merges with F.
+- **N. Transit/mission screen is boring.** Merges with G and K: animated star field and ship while in transit, a live leg-by-leg progress line, ETA, and what is at stake (cargo, reward, risk); the report screen tells the story of the trip.
+
+Suggested order for F, G, I, M, N and L: map first (F + I + M, one screen), then transit (G + N), then travel (L), then mission variety and information (H + J), then the report (K).
