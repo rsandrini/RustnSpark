@@ -18,7 +18,7 @@ import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { summarizeLegs } from '../missions/mission-facts';
-import { TransitScene } from './transit-scene';
+import { ShipStage } from '../../ui/ShipStage';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -214,20 +214,24 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <span className="sub">{routeLabel}</span>
       </header>
       <div className="briefing" data-testid="briefing">
-        {mission.type !== 'TRAVEL' && (
+        {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
           <div className="fact">
             <div className="k">{t('transit.facts.reward')}</div>
             <div className="v spark">{rewardText}</div>
           </div>
         )}
-        <div className="fact">
-          <div className="k">{t('transit.facts.distance')}</div>
-          <div className="v">{summary.totalDistance}</div>
-        </div>
-        <div className="fact">
-          <div className="k">{t('transit.facts.legs')}</div>
-          <div className="v">{summary.legCount}</div>
-        </div>
+        {mission.type !== 'SCAVENGE' && (
+          <>
+            <div className="fact">
+              <div className="k">{t('transit.facts.distance')}</div>
+              <div className="v">{summary.totalDistance}</div>
+            </div>
+            <div className="fact">
+              <div className="k">{t('transit.facts.legs')}</div>
+              <div className="v">{summary.legCount}</div>
+            </div>
+          </>
+        )}
         {destinationRisk !== undefined && (
           <div className="fact">
             <div className="k">{t('transit.facts.danger')}</div>
@@ -267,7 +271,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <p data-testid="resolving">{t('transit.resolving')}</p>
       ) : mission.status === 'ACCEPTED' ? (
         <section>
-          <TransitScene moving={false} />
+          <ShipStage mode="idle" placeId={mission.originId} />
           <p>{t('transit.accepted')}</p>
           {mission.deadlineAt !== null && (
             <p className="sub">
@@ -294,7 +298,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         </section>
       ) : (
         <section data-testid="in-transit">
-          <TransitScene moving />
+          <ShipStage mode={mission.type === 'SCAVENGE' ? 'scavenging' : 'flying'} />
           {currentIndex !== -1 && windows[currentIndex] !== undefined && (
             <p className="now-flying">
               {t('transit.nowFlying', {

@@ -14,6 +14,7 @@ const STATS = {
   damage: { shield: 0, armor: 0, hull: 0 },
   partFailures: 0,
   fuelLost: 0,
+  found: [],
   pirates: { stolenParts: 0, motive: null },
   loot: [],
 };

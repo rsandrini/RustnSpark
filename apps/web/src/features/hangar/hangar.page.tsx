@@ -16,6 +16,7 @@ import { canPlace } from './hangar.geometry';
 import { useAuthContext } from '../auth/auth.context';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
+import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
@@ -336,6 +337,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           <span className="muted">{t('port.wallet')}</span> <b>{credits}</b>
         </span>
       </header>
+      <ActiveShipStage size="compact" />
       <p className="sub">{t('hangar.yardHint')}</p>
       {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
       {pendingPartId !== null && (

@@ -2602,3 +2602,144 @@ svg .block.broken {
   align-items: center;
   gap: 8px;
 }
+
+/* ship stage: modes ------------------------------------------------------------------ */
+.ship-stage-wrap {
+  margin: 12px 0;
+}
+
+.transit-scene.stage-compact {
+  height: 170px;
+  margin: 0;
+}
+
+.transit-scene.stage-compact .scene-ship {
+  transform: scale(0.75);
+  transform-origin: center;
+}
+
+.transit-scene.parked {
+  background-size: cover;
+  background-position: center;
+}
+
+.transit-scene.parked .stars {
+  opacity: 0.15;
+}
+
+.transit-scene.parked .scene-ship {
+  animation: ship-idle 7s ease-in-out infinite;
+}
+
+.transit-scene.parked .ship-flame {
+  opacity: 0.35;
+  animation: flame-flicker 0.9s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.stage-caption {
+  margin: 6px 2px 0;
+  font-size: 14px;
+}
+
+.debris {
+  position: absolute;
+  right: -40px;
+  background: #3a3f47;
+  border: 1px solid #6b7480;
+  clip-path: polygon(10% 30%, 40% 0, 90% 20%, 100% 60%, 60% 100%, 15% 85%);
+  animation: debris-drift linear infinite;
+  opacity: 0.9;
+}
+
+.drone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  animation: drone-orbit linear infinite;
+}
+
+.drone-body {
+  position: absolute;
+  left: -7px;
+  top: -5px;
+  width: 14px;
+  height: 10px;
+  border-radius: 5px;
+  background: #cfd8e3;
+  border: 1px solid #56697d;
+  box-shadow: 0 0 8px rgba(120, 190, 255, 0.7);
+}
+
+.drone-beam {
+  position: absolute;
+  left: -1px;
+  top: 5px;
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(#7fd0ff, transparent);
+  opacity: 0.8;
+}
+
+.spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffd76a;
+  box-shadow: 0 0 10px 3px rgba(255, 190, 60, 0.9);
+  animation: spark-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes ship-idle {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, -4px);
+  }
+}
+
+@keyframes drone-orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--r)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--r)) rotate(-360deg);
+  }
+}
+
+@keyframes spark-blink {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes debris-drift {
+  from {
+    transform: translateX(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(-140vw) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.parked .scene-ship,
+  .transit-scene.parked .ship-flame,
+  .drone,
+  .spark,
+  .debris {
+    animation: none;
+  }
+}

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useAuth, useLogout } from '../features/auth/auth.hooks';
+import { ActiveShipStage } from '../features/ship/active-ship-stage';
 
 export function HomePage() {
   const { t } = useTranslation();
@@ -8,7 +9,8 @@ export function HomePage() {
   const logout = useLogout();
 
   return (
-    <main className="app auth">
+    <main className={user?.factionId ? 'app' : 'app auth'}>
+      {user?.factionId ? <ActiveShipStage /> : null}
       <section className="panel">
         <h1>{t('home.title')}</h1>
         {user ? (

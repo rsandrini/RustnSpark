@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
@@ -15,7 +15,7 @@ import type {
   RepairQuoteResponse,
   RepairStartResponse,
   ScavengeInfo,
-  ScavengeResponse,
+  DispatchResponse,
   SellResponse,
   SellMaterialResponse,
   ShipResponse,
@@ -31,6 +31,7 @@ import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { PortTabs } from '../../ui/PortTabs';
+import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 
@@ -277,22 +278,17 @@ export function PortPage({ guided = false }: PortPageProps) {
     },
   });
 
+  // Scavenging is a timed job (a mission of its own): starting it sends the ship out and the pilot
+  // to the Transit screen, where the report arrives when it ends.
+  const navigate = useNavigate();
   const scavenge = useMutation({
-    mutationFn: () => client.post<ScavengeResponse>(`/v1/locations/${locationId ?? ''}/scavenge`),
-    onSuccess: (response) => {
+    mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`),
+    onSuccess: () => {
       setActionError(null);
-      if (response.part !== null) {
-        setNotice(
-          t('port.scavFound', {
-            part: pickLocalized(response.part.displayName, i18n.language),
-            condition: response.part.condition,
-          }),
-        );
-      } else {
-        setNotice(t('port.scavNone', { seconds: response.cooldownSeconds }));
-      }
-      afterTrade();
+      void queryClient.invalidateQueries({ queryKey: ['active'] });
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
+      void navigate('/transit');
     },
     onError: (error) => {
       setActionError(errorText(t, error, t('port.failed')));
@@ -399,6 +395,8 @@ export function PortPage({ guided = false }: PortPageProps) {
       <PlaceBanner placeId={ship.currentLocationId} className="port-banner">
         <h2>{locationName(ship.currentLocationId)}</h2>
       </PlaceBanner>
+
+      <ActiveShipStage size="compact" />
 
       <RescueBanner />
 
@@ -716,11 +714,11 @@ export function PortPage({ guided = false }: PortPageProps) {
           {scavengeInfoQuery.data !== undefined && (
             <ul className="scav-facts">
               <li>
-                {t('port.scav.chance', {
-                  percent: Math.round(scavengeInfoQuery.data.dropChance * 100),
-                  place: t(`port.scav.field.${scavengeInfoQuery.data.fieldType}`),
+                {t('port.scav.time', {
+                  minutes: Math.max(1, Math.round(scavengeInfoQuery.data.durationSeconds / 60)),
                 })}
               </li>
+              <li>{t('port.scav.risk', { zone: scavengeInfoQuery.data.zone })}</li>
               <li>
                 {t('port.scav.quality', {
                   min: scavengeInfoQuery.data.qualityMin,
@@ -728,10 +726,11 @@ export function PortPage({ guided = false }: PortPageProps) {
                 })}
               </li>
               <li>
-                {t('port.scav.cooldown', {
-                  minutes: Math.max(1, Math.round(scavengeInfoQuery.data.cooldownSeconds / 60)),
+                {t('port.scav.finds', {
+                  place: t(`port.scav.field.${scavengeInfoQuery.data.fieldType}`),
                 })}
               </li>
+              {scavengeInfoQuery.data.scrapPlace && <li>{t('port.scav.scrap')}</li>}
               <li>{t('port.scav.where')}</li>
             </ul>
           )}

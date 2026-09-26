@@ -39,7 +39,7 @@ describe('port (S10.9)', () => {
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 
-    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Port', exact: true })).toBeInTheDocument();
     expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
     expect(screen.getByText('Plated Hull')).toBeInTheDocument();
 
@@ -80,7 +80,7 @@ describe('port (S10.9)', () => {
     expect(screen.getByRole('button', { name: /^Buy \d+/ })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
-    expect(screen.getByRole('button', { name: /scavenge/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
   });
 
   it('sells all mined materials after the quote popup', async () => {
@@ -143,24 +143,16 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
-    // The tab explains itself: odds, condition, waiting time and where it works.
+    // The tab explains itself: time, risk, what you find, and where it works.
     const scav = await screen.findByTestId('scavenging');
-    expect(
-      await within(scav).findByText(/Odds of finding something here: 25%/),
-    ).toBeInTheDocument();
-    expect(within(scav).getByText(/30–70% condition/)).toBeInTheDocument();
-    expect(within(scav).getByText(/5 minutes/)).toBeInTheDocument();
+    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
+    expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Scavenge the field' }));
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Salvaged: Cargo Rack (condition 40).'),
-    );
-    // Afterwards the button is closed and a countdown says when it reopens.
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Scavenge the field' })).toBeDisabled(),
-    );
-    expect(await within(scav).findByText('Next attempt in')).toBeInTheDocument();
+    // Starting the job sends the ship out and the pilot to the Transit screen.
+    fireEvent.click(screen.getByRole('button', { name: 'Send the ship scavenging' }));
+    expect(await screen.findByRole('heading', { name: 'In transit' })).toBeInTheDocument();
   });
 
   it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
@@ -180,6 +172,7 @@ describe('port (S10.9)', () => {
               layout: [],
               sheet: { fuelCap: 40 },
               shipClass: 'MULTIROLE',
+              activity: { kind: 'idle', until: null, missionId: null },
             },
           ],
           { status: 200 },
@@ -188,13 +181,13 @@ describe('port (S10.9)', () => {
       http.get('/v1/locations/:id/market', ({ params }) => {
         requested.push(String(params.id));
         return HttpResponse.json(
-          { locationId: String(params.id), listings: [], sellOffers: [] },
+          { locationId: String(params.id), listings: [], sellOffers: [], sellMinCondition: 15 },
           { status: 200 },
         );
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/port'] });
-    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Port', exact: true })).toBeInTheDocument();
     expect(requested).toContain('hedus');
     expect(requested).not.toContain('ceres');
   });

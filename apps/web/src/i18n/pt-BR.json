@@ -456,10 +456,7 @@
     "refuelFill": "Encher o tanque",
     "refuelFull": "O tanque já está cheio.",
     "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
-    "scavenge": "Vasculhar o campo",
-    "scavFound": "Salvou: {{part}} (condição {{condition}}).",
-    "scavNone": "Nada aproveitável — tente de novo em {{seconds}}s.",
-    "scavBusy": "Você já está vasculhando.",
+    "scavenge": "Mandar a nave vasculhar",
     "repairQuote": "Custo do reparo: {{cost}} ¢ · {{time}}",
     "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
@@ -472,19 +469,21 @@
     "fuelBar": "Tanque de combustível",
     "refuelHint": "O combustível é vendido por unidade; o tanque cheio custa o valor mostrado ao confirmar.",
     "scav": {
-      "title": "Vasculhar os destroços",
-      "what": "Procure nos destroços ao redor de {{place}} peças que outros pilotos deixaram. É grátis, não precisa de missão e só funciona onde sua nave está atracada.",
-      "chance": "Chance de achar algo aqui: {{percent}}% ({{place}}).",
-      "quality": "O que você acha vem danificado: cerca de {{min}}–{{max}}% de condição. Conserte, instale ou venda.",
-      "cooldown": "Depois de cada tentativa, achando ou não, você espera cerca de {{minutes}} minutos para tentar de novo aqui.",
-      "where": "Campos de destroços dominados por piratas têm chance bem maior, mas são lugares perigosos. Cada lugar conta o próprio tempo de espera.",
-      "ready": "Pronto para vasculhar.",
-      "nextAttempt": "Próxima tentativa em",
+      "what": "Mande sua nave vasculhar os destroços ao redor de {{place}} atrás de peças que outros pilotos deixaram. É um trabalho como uma missão: a nave fica fora do porto enquanto trabalha, e um relatório conta o que ela achou.",
+      "time": "Leva cerca de {{minutes}} minutos, e a nave não pode ser usada nesse tempo.",
+      "risk": "O risco vem do lugar (zona {{zone}}): piratas podem te encontrar durante a busca, e quanto mais arriscado o lugar, melhores os achados.",
+      "quality": "Tudo o que você acha é USADO: cerca de {{min}}–{{max}}% de condição neste lugar. Conserte, instale ou venda.",
+      "finds": "Em {{place}} você pode achar uma ou mais peças; um campo dominado por piratas rende mais.",
+      "scrap": "Os destroços daqui também têm sucata: restos gastos que vendem por preço fixo em qualquer porto.",
       "field": {
         "common": "um porto comum",
         "mission": "um local de missão",
         "pirate": "um campo de destroços pirata"
-      }
+      },
+      "where": "Só funciona onde sua nave está atracada, e cada lugar tem o próprio tempo de espera entre trabalhos.",
+      "ready": "Pronto para partir.",
+      "nextAttempt": "Próximo trabalho em",
+      "title": "Vasculhar os destroços"
     },
     "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
     "repairNoChange": "Sem mudança",
@@ -581,7 +580,10 @@
       "stolen": "Peças roubadas",
       "pirates": "Piratas",
       "drivenOff": "Expulsaram você",
-      "cargoLost": "Levaram a carga"
+      "cargoLost": "Levaram a carga",
+      "found": "Achados",
+      "foundPart": "{{name}} ({{condition}}%)",
+      "foundScrap": "Sucata: {{name}}"
     }
   },
   "transit": {
@@ -619,7 +621,8 @@
       "danger": "Perigo",
       "zone": "Zona"
     },
-    "cancelMission": "Cancelar missão"
+    "cancelMission": "Cancelar missão",
+    "scavengeTitle": "Saque de destroços"
   },
   "board": {
     "title": "Quadro de missões",
@@ -641,7 +644,8 @@
       "ESCORT": "Escolta",
       "MINING": "Mineração",
       "RESCUE": "Resgate",
-      "TRAVEL": "Viagem"
+      "TRAVEL": "Viagem",
+      "SCAVENGE": "Saque"
     },
     "status": {
       "AVAILABLE": "Aberta",
@@ -807,7 +811,8 @@
     "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
     "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
     "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
-    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte."
+    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
+    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto."
   },
   "language": {
     "label": "Idioma"
@@ -954,5 +959,15 @@
     "s": "{{s}}s",
     "ms": "{{m}}min {{s}}s",
     "hm": "{{h}}h {{m}}min"
+  },
+  "stage": {
+    "mode": {
+      "idle": "Atracada e pronta",
+      "flying": "Em voo",
+      "scavenging": "Vasculhando os destroços",
+      "repairing": "Reparos em andamento"
+    },
+    "docked": "Atracada em {{place}}",
+    "repairingAt": "na oficina de {{place}}"
   }
 }

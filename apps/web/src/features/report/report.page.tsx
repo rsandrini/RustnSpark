@@ -322,7 +322,9 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                 mission.type === 'TRAVEL'
                   ? t('board.type.TRAVEL')
                   : pickLocalized(mission.title, i18n.language),
-                [place(mission.originId), place(mission.destinationId)].join(' → '),
+                mission.originId === mission.destinationId
+                  ? place(mission.originId)
+                  : [place(mission.originId), place(mission.destinationId)].join(' → '),
               ].join(' · ')}
               {destination !== undefined && <FactionBadge factionId={destination.factionId} />}
             </div>
@@ -406,6 +408,19 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
           </div>
         )}
       </dl>
+
+      {stats.found.length > 0 && (
+        <div className="debrief-loot" data-testid="debrief-found">
+          <b>{t('report.debrief.found')}</b>
+          {stats.found.map((entry, index) => (
+            <span key={`${entry.partType}-${index}`} className="loot-chip">
+              {entry.kind === 'scrap'
+                ? t('report.debrief.foundScrap', { name: entry.name })
+                : t('report.debrief.foundPart', { name: entry.name, condition: entry.condition })}
+            </span>
+          ))}
+        </div>
+      )}
 
       {stats.loot.length > 0 && (
         <div className="debrief-loot">

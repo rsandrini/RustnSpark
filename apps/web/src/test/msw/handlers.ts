@@ -27,7 +27,6 @@ import type {
   ReportResponse,
   ScavengeInfo,
   TravelQuote,
-  ScavengeResponse,
   SellMaterialResponse,
   SellResponse,
   CatalogDetail,
@@ -243,6 +242,7 @@ const ship = (): ShipResponse => ({
   sheet: sheet(),
   shipClass: 'MULTIROLE',
   yard: { halfSize: 10 },
+  activity: { kind: 'idle', until: null, missionId: null },
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -433,6 +433,7 @@ export const handlers = [
       sheet: sheet(),
       shipClass: 'MULTIROLE',
       yard: { halfSize: 10 },
+      activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
 
@@ -848,6 +849,9 @@ export const handlers = [
       locationId: String(params.id),
       fieldType: 'common',
       dropChance: 0.25,
+      zone: 1,
+      scrapPlace: false,
+      durationSeconds: 300,
       cooldownSeconds: 300,
       retryAfterSeconds: retry,
       attempts: retry > 0 ? 1 : 0,
@@ -855,7 +859,7 @@ export const handlers = [
       qualityMax: 70,
     });
   }),
-  http.post('/v1/locations/:id/scavenge', ({ params }) => {
+  http.post('/v1/locations/:id/scavenge', () => {
     const now = Date.now();
     if (now < scavCooldownUntil) {
       const seconds = Math.ceil((scavCooldownUntil - now) / 1000);
@@ -865,32 +869,11 @@ export const handlers = [
       );
     }
     scavCooldownUntil = now + 60_000;
-    buyCounter += 1;
-    const id = `part-scav-${buyCounter}`;
-    inventoryState.push({
-      id,
-      partType: 'cargo',
-      displayName: partNameOf('cargo'),
-      description: partDescriptionOf('cargo'),
-      rarity: 'COMMON',
-      condition: 40,
-      broken: false,
-      location: 'INVENTORY',
-      shipId: null,
-      catalog: catalog('cargo', 'CARGO'),
-    });
-    return ok<ScavengeResponse>({
-      locationId: String(params.id),
-      attempt: 1,
-      fieldType: 'common',
-      dropped: true,
-      part: {
-        partInstanceId: id,
-        partType: 'cargo',
-        displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-        condition: 40,
-      },
-      cooldownSeconds: 60,
+    return ok<DispatchResponse>({
+      missionId: 'scavenge-1',
+      arrivalAt: new Date(now + 300_000).toISOString(),
+      serverTime: new Date(now).toISOString(),
+      durationSeconds: 300,
     });
   }),
 ];
@@ -910,6 +893,7 @@ const reportExtras = {
     damage: { shield: 4, armor: 3, hull: 2 },
     partFailures: 0,
     fuelLost: 0,
+    found: [],
     pirates: { stolenParts: 0, motive: null },
     loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
   },
