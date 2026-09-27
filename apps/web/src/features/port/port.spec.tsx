@@ -3,7 +3,13 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { addWreck, destroyEngine, economyState, resetEconomyState } from '../../test/msw/handlers';
+import {
+  addWreck,
+  destroyEngine,
+  economyState,
+  setWallet,
+  resetEconomyState,
+} from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
 
@@ -304,6 +310,15 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
     expect(sessionRefreshes).toBe(before);
+  });
+
+  it('refuel opens on what the pilot can afford, never on a price they cannot pay', async () => {
+    setWallet(30);
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    // 3 ¢ a unit and 30 ¢ in the wallet: ten units, not the whole tank.
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('30 ¢'));
+    expect(screen.getByRole('button', { name: 'Buy 10' })).toBeEnabled();
   });
 
   it('refuel: the slider picks how much to buy and the price follows the amount', async () => {

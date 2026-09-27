@@ -2684,7 +2684,7 @@ svg .block.broken {
   opacity: 0.8;
 }
 
-.spark {
+.stage-spark {
   position: absolute;
   width: 5px;
   height: 5px;

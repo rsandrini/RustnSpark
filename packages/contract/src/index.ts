@@ -581,6 +581,8 @@ export const RefuelQuoteResponseSchema = z.object({
   shipId: z.string(),
   units: z.number(),
   cost: z.number(),
+  /** Price of one unit here; cost for n units is max(1, round(n × unitPrice)). */
+  unitPrice: z.number(),
   fuel: z.number(),
   fuelCap: z.number(),
   /** Room left in the tank. */

@@ -209,22 +209,28 @@ export function PortPage({ guided = false }: PortPageProps) {
   const [refuelUnits, setRefuelUnits] = useState<number | null>(null);
   const tankSpace =
     ship === undefined ? 0 : Math.max(0, Math.floor(ship.sheet.fuelCap - ship.fuel));
-  const wantedUnits = Math.min(refuelUnits ?? tankSpace, tankSpace);
+  // One quote gives the price of a unit here; the slider prices itself from it (the same formula the
+  // server charges with), so dragging is instant and never shows a stale figure.
   const refuelQuoteQuery = useQuery({
-    queryKey: ['refuelQuote', ship?.id, wantedUnits],
-    enabled: tab === 'refuel' && ship !== undefined && wantedUnits > 0,
-    placeholderData: keepPreviousData,
+    queryKey: ['refuelQuote', ship?.id, ship?.fuel],
+    enabled: tab === 'refuel' && ship !== undefined && tankSpace > 0,
     queryFn: () =>
       client.post<RefuelQuoteResponse>(`/v1/ships/${ship?.id ?? ''}/refuel/quote`, {
-        mode: 'partial',
-        amount: wantedUnits,
+        mode: 'full',
       }),
   });
+  const unitPrice = refuelQuoteQuery.data?.unitPrice ?? 0;
+  const costOf = (units: number) => (units <= 0 ? 0 : Math.max(1, Math.round(units * unitPrice)));
+  // It opens on what the pilot can pay for (the whole tank when affordable), never on a price
+  // they cannot meet.
+  const affordableUnits =
+    unitPrice > 0 ? Math.min(tankSpace, Math.max(0, Math.floor(wallet / unitPrice))) : tankSpace;
+  const wantedUnits = Math.min(refuelUnits ?? affordableUnits, tankSpace);
   const refuel = useMutation({
     mutationFn: (units: number) =>
       client.post<RefuelResponse>(
         `/v1/ships/${ship?.id ?? ''}/refuel`,
-        units >= tankSpace ? { mode: 'full' } : { mode: 'partial', amount: units },
+        { mode: 'partial', amount: units },
         { idempotencyKey: refuelKey.keyFor(`refuel:${ship?.id ?? ''}:${units}`) },
       ),
     onSuccess: (response) => {
@@ -371,7 +377,7 @@ export function PortPage({ guided = false }: PortPageProps) {
   // Parts under the threshold are refused at every port; they can be repaired or discarded.
   const sellMin = marketQuery.data?.sellMinCondition ?? 15;
   const damagedCount = partsOnSale.filter((item) => item.condition < sellMin).length;
-  const refuelCost = wantedUnits <= 0 ? 0 : (refuelQuoteQuery.data?.cost ?? 0);
+  const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
   return (
@@ -687,7 +693,11 @@ export function PortPage({ guided = false }: PortPageProps) {
                 onChange={(event) => setRefuelUnits(Number(event.target.value))}
               />
               <div className="statrow">
-                <span>{t('port.refuelUnits', { units: wantedUnits })}</span>
+                <span>
+                  {t('port.refuelUnits', { units: wantedUnits })}
+                  {unitPrice > 0 &&
+                    ` · ${t('port.refuelUnitPrice', { price: unitPrice.toFixed(2) })}`}
+                </span>
                 <b className={refuelCost > wallet ? 'over' : undefined} data-testid="refuel-cost">
                   {money(refuelCost)}
                 </b>
@@ -701,6 +711,14 @@ export function PortPage({ guided = false }: PortPageProps) {
                   onClick={() => setRefuelUnits(tankSpace)}
                 >
                   {t('port.refuelFill')}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={wantedUnits === affordableUnits}
+                  onClick={() => setRefuelUnits(affordableUnits)}
+                >
+                  {t('port.refuelAfford')}
                 </button>
                 <button
                   type="button"

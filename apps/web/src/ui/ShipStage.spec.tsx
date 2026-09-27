@@ -35,7 +35,7 @@ describe('ship stage', () => {
     const scene = screen.getByTestId('transit-scene');
     expect(scene).toHaveClass('parked');
     expect(scene.querySelectorAll('.drone').length).toBeGreaterThan(0);
-    expect(scene.querySelectorAll('.spark').length).toBeGreaterThan(0);
+    expect(scene.querySelectorAll('.stage-spark').length).toBeGreaterThan(0);
     expect(scene.getAttribute('style')).toContain('/places/ceres.wide.svg');
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('Repairs under way');
   });

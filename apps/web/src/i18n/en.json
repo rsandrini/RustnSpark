@@ -454,6 +454,8 @@
     "repairStarted": "Repair started for {{cost}} ¢ — completes in {{time}}.",
     "repairLoading": "Ordering repairs…",
     "refuelGauge": "Fuel {{fuel}} / {{cap}}",
+    "refuelAfford": "Max I can afford",
+    "refuelUnitPrice": "{{price}} ¢ per unit",
     "refuelFill": "Fill tank",
     "refuelFull": "The tank is already full.",
     "refueled": "Filled {{units}} units for {{cost}} ¢.",

@@ -116,7 +116,7 @@ export function ShipStage({
               {SPARKS.map((spark, index) => (
                 <span
                   key={index}
-                  className="spark"
+                  className="stage-spark"
                   style={{
                     left: `${spark.x}%`,
                     top: `${spark.y}%`,

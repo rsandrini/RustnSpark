@@ -40,22 +40,26 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   expect(afterSell).toBeLessThan(before + 1);
 });
 
-test('after a flight: fill the tank for credits, then the tank is full', async ({ page }) => {
+test('after a flight: refuel opens on what the pilot can afford, and paying debits the wallet', async ({
+  page,
+}) => {
   await registerAndLaunch(page, 'sun');
   await flyOneMission(page);
   await page.goto('/port');
   await page.getByRole('tab', { name: 'Refuel' }).click();
 
-  // The slider opens on "fill the tank"; buying that amount empties the panel.
+  // The slider opens on what the wallet covers (the whole tank only when affordable).
   const buy = page.getByRole('button', { name: /^Buy \d+$/ });
   if (await buy.isVisible()) {
     const before = await walletOf(page);
+    await expect(buy).toBeEnabled();
     await buy.click();
     await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
     expect(await walletOf(page)).toBeLessThanOrEqual(before);
+  } else {
+    await expect(page.getByText('The tank is already full.')).toBeVisible();
   }
-  await expect(page.getByText('The tank is already full.')).toBeVisible();
-  await assertClean(page, 'port refuel after fill');
+  await assertClean(page, 'port refuel');
 });
 
 test('repair: worn parts are quoted, confirmed and charged; a clean ship says so', async ({

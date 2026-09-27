@@ -179,7 +179,10 @@ export class RefuelService {
               refuelCost(units, context.location.isolation, context.factionRelation, rules),
             ),
           );
-    return { shipId, units, cost, fuel: ship.fuel, fuelCap, space };
+    // What one unit costs here (before whole-credit rounding): the screen prices its slider with
+    // it, so dragging never waits on the server. `cost` for `units` is max(1, round(units × unitPrice)).
+    const unitPrice = refuelCost(1, context.location.isolation, context.factionRelation, rules);
+    return { shipId, units, cost, unitPrice, fuel: ship.fuel, fuelCap, space };
   }
 
   // fuelCap is derived from installed parts (sum of `fuelCap` stats), so it is

@@ -312,7 +312,11 @@ export const economyState = {
   },
 };
 
-/** Adds a loose part too damaged to sell (below the 15 % threshold) to the fixture inventory. */
+/** Sets the fixture wallet (a pilot who cannot afford a full tank). */
+export function setWallet(value: number): void {
+  wallet = value;
+}
+
 /** Destroys the installed engine (condition 0): the workshop cannot repair it. */
 export function destroyEngine(): void {
   const engine = inventoryState.find((entry) => entry.id === 'part-engine');
@@ -322,6 +326,7 @@ export function destroyEngine(): void {
   }
 }
 
+/** Adds a loose part too damaged to sell (below the 15 % threshold) to the fixture inventory. */
 export function addWreck(): void {
   inventoryState.push({
     id: 'part-wreck',
@@ -705,6 +710,7 @@ export const handlers = [
       shipId: String(params.id),
       units,
       cost: units * 3,
+      unitPrice: 3,
       fuel: fuelState,
       fuelCap,
       space,
