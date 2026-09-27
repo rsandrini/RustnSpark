@@ -3,6 +3,11 @@ import type { GameRules } from './game-config.types.js';
 import { GameConfigValidationError } from './game-config.types.js';
 import { getRegistryEntry } from './config-registry.js';
 
+const adminSchema = z.object({
+  debug_fast_ops: z.boolean(),
+  debug_fast_ops_seconds: z.number().int().min(1).max(300),
+});
+
 const combatSchema = z.object({
   dodge_factor: z.number().min(0.1).max(5.0),
   dc_base: z.number().int().min(1).max(50),
@@ -170,6 +175,7 @@ const worldSchema = z.object({
 });
 
 const gameRulesSchema = z.object({
+  admin: adminSchema,
   combat: combatSchema,
   ship: shipSchema,
   wear: wearSchema,

@@ -13,6 +13,7 @@ import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 
@@ -309,7 +310,10 @@ export class DispatchService {
         arrivalAt: arrivalAt.toISOString(),
         snapshot: outcome.snapshot,
       };
-      await this.producer.enqueueResolve(data, arrivalAt.getTime() - serverTime.getTime());
+      await this.producer.enqueueResolve(
+        data,
+        jobDelayMs(arrivalAt.getTime() - serverTime.getTime(), rules),
+      );
     } catch (error) {
       // Enqueue runs after commit by design: the mission is already reconcilable state,
       // so a Redis blip must not fail the dispatch (S7.2 acceptance, plan line 435).

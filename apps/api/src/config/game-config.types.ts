@@ -1,6 +1,7 @@
 export type ConfigValueType = 'number' | 'integer' | 'boolean' | 'string' | 'json';
 
 export type ConfigGroup =
+  | 'admin'
   | 'combat'
   | 'detection'
   | 'economy'
@@ -22,6 +23,8 @@ export type ConfigGroup =
   | 'world';
 
 export type ConfigKey =
+  | 'admin.debug_fast_ops'
+  | 'admin.debug_fast_ops_seconds'
   | 'combat.armor_cap'
   | 'combat.attack_die'
   | 'combat.damage_die'
@@ -132,6 +135,12 @@ export type ConfigKey =
   | 'wear.scale_mode'
   | 'world.seed';
 
+export type GameRulesAdmin = Readonly<{
+  /** Owner-only debug switch: shortens every job's actual delay, never its displayed duration. */
+  debug_fast_ops: boolean;
+  debug_fast_ops_seconds: number;
+}>;
+
 export interface ConfigRegistryEntry {
   key: string;
   group: string;
@@ -144,6 +153,7 @@ export interface ConfigRegistryEntry {
 }
 
 export type GameRules = Readonly<{
+  admin: GameRulesAdmin;
   combat: Readonly<{
     armor_cap: number;
     attack_die: number;

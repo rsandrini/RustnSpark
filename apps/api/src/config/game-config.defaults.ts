@@ -1,6 +1,10 @@
 import type { GameRules } from './game-config.types.js';
 
 export const GAME_CONFIG_DEFAULTS: GameRules = {
+  admin: {
+    debug_fast_ops: false,
+    debug_fast_ops_seconds: 5,
+  },
   combat: {
     dodge_factor: 1.5,
     dc_base: 10,

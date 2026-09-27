@@ -352,6 +352,41 @@ describe('repair job API (S8.4)', () => {
     expect(stored.condition).toBe(40);
   });
 
+  it('admin.debug_fast_ops shortens the queued repair delay without touching the displayed duration', async () => {
+    await freshSeededApp();
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops' },
+      data: { value: true },
+    });
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops_seconds' },
+      data: { value: 5 },
+    });
+    await configService.refresh();
+    try {
+      const player = await onboardPlayer();
+      const part = await damagedInstalledPart(player, 5);
+
+      const started = await startRepair(player.token, player.shipId, randomUUID(), [
+        { partInstanceId: part.id, toCondition: 100 },
+      ]);
+      expect(started.status).toBe(200);
+      const body = started.body as { repairJobId: string; durationSeconds: number };
+      // Hub k = 3 s/point × 99 points is well over 5 seconds; the figure charged and shown is real.
+      expect(body.durationSeconds).toBeGreaterThan(5);
+
+      const job = await repairQueue.getJob(body.repairJobId);
+      expect(job).toBeDefined();
+      expect(job?.opts.delay).toBeLessThanOrEqual(5000);
+    } finally {
+      await prisma.gameConfig.update({
+        where: { key: 'admin.debug_fast_ops' },
+        data: { value: false },
+      });
+      await configService.refresh();
+    }
+  });
+
   it('quote returns the exact cost and duration start will charge, without charging (S10.9)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

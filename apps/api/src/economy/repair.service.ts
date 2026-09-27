@@ -3,6 +3,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma } from '@prisma/client';
 import type { Queue } from 'bullmq';
+import { jobDelayMs } from '../config/debug-timing.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 import { REPAIR_JOB_NAME, REPAIR_QUEUE_NAME } from '../jobs/queues.js';
@@ -197,6 +198,7 @@ export class RepairService {
   async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
     const { stored, cost, durationSeconds } = await this.plan(shipId, playerId, targets);
     const completesAt = new Date(Date.now() + durationSeconds * MS_PER_SECOND);
+    const rules = this.config.snapshot().rules;
 
     let job: Awaited<ReturnType<typeof this.prisma.repairJob.create>>;
     try {
@@ -275,7 +277,7 @@ export class RepairService {
       await this.repairs.add(
         REPAIR_JOB_NAME,
         { repairJobId: job.id },
-        { jobId: job.id, delay: durationSeconds * MS_PER_SECOND },
+        { jobId: job.id, delay: jobDelayMs(durationSeconds * MS_PER_SECOND, rules) },
       );
     } catch (error) {
       this.logger.warn(

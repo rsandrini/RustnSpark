@@ -229,6 +229,46 @@ describe('ship dispatch API (S7.2)', () => {
     expect(snapshot.legs).toHaveLength(2);
   });
 
+  // Owner debug switch (playtest round 2): the displayed duration and arrivalAt stay the real,
+  // computed ones; only the queued job's actual delay is capped.
+  it('admin.debug_fast_ops shortens the queued delay without touching the displayed duration', async () => {
+    await freshSeededApp();
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops' },
+      data: { value: true },
+    });
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops_seconds' },
+      data: { value: 5 },
+    });
+    await configService.refresh();
+    try {
+      const player = await onboardPlayer();
+      const mission = await createMission(player, [750, 250]);
+      const serverTime = new Date();
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/dispatch`)
+        .set(auth(player.token))
+        .send({ missionId: mission.id });
+      expect(response.status).toBe(200);
+      const body = response.body as { arrivalAt: string };
+      const realDelayMs = new Date(body.arrivalAt).getTime() - serverTime.getTime();
+      // A fresh delivery mission's real trip is well over 5 seconds; the displayed figure is
+      // untouched by the debug switch.
+      expect(realDelayMs).toBeGreaterThan(5000);
+
+      const job = await queue.getJob(mission.id);
+      expect(job).toBeDefined();
+      expect(job?.opts.delay).toBeLessThanOrEqual(5000);
+    } finally {
+      await prisma.gameConfig.update({
+        where: { key: 'admin.debug_fast_ops' },
+        data: { value: false },
+      });
+      await configService.refresh();
+    }
+  });
+
   // S10.7: the transit screen counts down per leg against the windows the server
   // computed at dispatch (pro-rata split of [serverTime, arrivalAt] by leg distance).
   it('exposes per-leg windows on GET /v1/missions/active: none before dispatch, contiguous after', async () => {

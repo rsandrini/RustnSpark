@@ -63,6 +63,7 @@ describe('hashGameRules', () => {
   it('ignores key insertion order in canonical JSON', () => {
     const reordered = {
       combat: GAME_CONFIG_DEFAULTS.combat,
+      admin: GAME_CONFIG_DEFAULTS.admin,
       economy: GAME_CONFIG_DEFAULTS.economy,
       ship: GAME_CONFIG_DEFAULTS.ship,
       wear: GAME_CONFIG_DEFAULTS.wear,
