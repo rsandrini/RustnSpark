@@ -705,7 +705,7 @@
       "time": "Flight time",
       "fuel": "Fuel needed"
     },
-    "fuelGauge": "Fuel {{have}} / {{cap}} — this trip uses {{needed}}",
+    "fuelUses": "uses {{needed}}",
     "lowFuel": "Your ship does not carry enough fuel for this trip: refuel first.",
     "needsTitle": "You need:",
     "needs": {
@@ -746,7 +746,9 @@
     "shipHere": "Your ship",
     "popup": {
       "missionsHere": "Missions here",
-      "to": "To {{destination}}"
+      "missionsToHere": "Missions to here",
+      "to": "To {{destination}}",
+      "from": "From {{origin}}"
     },
     "travel": {
       "title": "Fly there without a mission",

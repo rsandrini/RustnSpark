@@ -705,7 +705,7 @@
       "time": "Tempo de voo",
       "fuel": "Combustível"
     },
-    "fuelGauge": "Combustível {{have}} / {{cap}} — esta viagem consome {{needed}}",
+    "fuelUses": "consome {{needed}}",
     "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: reabasteça primeiro.",
     "needsTitle": "Você precisa de:",
     "needs": {
@@ -746,7 +746,9 @@
     "shipHere": "Sua nave",
     "popup": {
       "missionsHere": "Missões aqui",
-      "to": "Para {{destination}}"
+      "missionsToHere": "Missões para cá",
+      "to": "Para {{destination}}",
+      "from": "De {{origin}}"
     },
     "travel": {
       "title": "Voar até lá sem missão",

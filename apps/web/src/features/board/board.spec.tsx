@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -118,7 +118,8 @@ describe('board (S10.6)', () => {
     expect(gauge).toHaveAttribute('aria-valuemax', '40');
     expect(gauge).not.toHaveClass('bad');
     expect(gauge.querySelector('.gauge-consume')).not.toBeNull();
-    expect(screen.getAllByText('Fuel 25 / 40 — this trip uses 8').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('25/40').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('uses 8').length).toBeGreaterThan(0);
   });
 
   it('flags the fuel bar red when the ship does not carry enough for the trip', async () => {
@@ -151,6 +152,65 @@ describe('board (S10.6)', () => {
     expect(gauge).toHaveClass('bad');
     expect(gauge).toHaveAttribute('aria-valuenow', '5');
     expect(screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.').length).toBeGreaterThan(0);
+  });
+
+  it('keeps the fuel gauge out of the cramped facts grid, and hides a redundant equal estimate', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'b-eq',
+              templateId: 'tpl-b-eq',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'gate',
+              legs: [],
+              cargo: {},
+              reward: 900,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-eq',
+              version: 1,
+              // Same as reward — the "Est." line must not repeat it.
+              rewardEstimate: 900,
+              eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'Equal Estimate Run', 'pt-BR': 'Corrida com Estimativa Igual' },
+                description: { en: 'Same numbers, no point saying it twice.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 300,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 100, fuelNeeded: 8 },
+                material: null,
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findByText('Equal Estimate Run');
+
+    expect(screen.getAllByText('900 ¢')).toHaveLength(1);
+    expect(screen.queryByText(/Est\. 900 ¢/)).toBeNull();
+
+    // The facts grid (Distance/Legs/Flight time) no longer includes Fuel as a fourth column —
+    // its gauge lives in its own full-width row, outside the grid.
+    const factsGrid = document.querySelector<HTMLElement>('.mcard-facts')!;
+    expect(within(factsGrid).queryByText('Fuel needed')).toBeNull();
+    const fuelRow = document.querySelector<HTMLElement>('.mcard-fuel')!;
+    expect(fuelRow).not.toBeNull();
+    expect(within(fuelRow).getByText('Fuel needed')).toBeInTheDocument();
   });
 
   it("labels the player's private start-safe mission (D43) and no shared offer", async () => {

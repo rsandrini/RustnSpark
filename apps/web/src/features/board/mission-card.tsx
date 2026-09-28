@@ -51,7 +51,12 @@ export function MissionCard({
         </div>
         <div className="mcard-reward">
           <b>{money(offer.reward)}</b>
-          <small>{t('board.estimate', { amount: money(offer.rewardEstimate) })}</small>
+          {/* The estimate is only worth a second line when it actually differs from the
+              reward — showing the same number twice was noise (owner: "kinda bullshit if
+              it's all equal"). */}
+          {offer.rewardEstimate !== offer.reward && (
+            <small>{t('board.estimate', { amount: money(offer.rewardEstimate) })}</small>
+          )}
         </div>
       </header>
 
@@ -92,38 +97,43 @@ export function MissionCard({
           <dt>{t('board.facts.time')}</dt>
           <dd>{info.estimate === null ? '—' : formatDuration(info.estimate.durationSeconds, t)}</dd>
         </div>
-        <div className={notEnoughFuel ? 'bad' : undefined}>
-          <dt>{t('board.facts.fuel')}</dt>
-          <dd>
-            {info.estimate === null ? (
-              '—'
-            ) : fuelHave !== undefined && fuelCap !== undefined && fuelCap > 0 ? (
-              // The fuel aboard as a bar, not just a number: the amount this trip would burn is
-              // carved out of the current fill in a highlighted colour, so the pilot sees both
-              // what they have and how much of it this trip would take at a glance.
+      </dl>
+
+      <p className="mcard-needs">
+        <b>{t('board.needsTitle')}</b> {t(`board.needs.${offer.type}`)}
+      </p>
+
+      {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
+          text has no room in a narrow 1/4-width grid cell) and placed after what the mission
+          needs, as its own full-width row. */}
+      {info.estimate !== null && (
+        <div className={`mcard-fuel${notEnoughFuel ? ' bad' : ''}`}>
+          <span className="k">{t('board.facts.fuel')}</span>
+          {fuelHave !== undefined && fuelCap !== undefined && fuelCap > 0 ? (
+            <>
+              {/* The fuel aboard as a bar, not just a number: the amount this trip would burn is
+                  carved out of the current fill in a highlighted colour. The in-bar label stays
+                  short (a bar has no room for a sentence, even a full-width one); the full
+                  wording is still the accessible name, and "uses N" sits beside the bar where
+                  there's no width limit. */}
               <Gauge
                 value={fuelHave}
                 max={fuelCap}
                 remainingAfter={fuelHave - info.estimate.fuelNeeded}
                 tone={notEnoughFuel ? 'bad' : 'fuel'}
                 ariaLabel={t('board.facts.fuel')}
-                label={t('board.fuelGauge', {
-                  have: Math.round(fuelHave),
-                  cap: Math.round(fuelCap),
-                  needed: Math.round(info.estimate.fuelNeeded),
-                })}
+                label={`${Math.round(fuelHave)}/${Math.round(fuelCap)}`}
               />
-            ) : (
-              Math.round(info.estimate.fuelNeeded)
-            )}
-          </dd>
+              <span className="mcard-fuel-need">
+                {t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}
+              </span>
+            </>
+          ) : (
+            <b>{Math.round(info.estimate.fuelNeeded)}</b>
+          )}
         </div>
-      </dl>
+      )}
       {notEnoughFuel && <p className="error-text">{t('board.lowFuel')}</p>}
-
-      <p className="mcard-needs">
-        <b>{t('board.needsTitle')}</b> {t(`board.needs.${offer.type}`)}
-      </p>
 
       <div className="mcard-meta">
         {origin !== undefined && <FactionBadge factionId={offer.factionId} />}

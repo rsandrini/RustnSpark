@@ -271,6 +271,7 @@ export function MapPage({ guided = false }: MapPageProps) {
             place={selected}
             description={descriptionOf(selected)}
             isHere={selected.id === shipLocation && !inFlight}
+            shipLocation={shipLocation}
             byId={byId}
           />
         )}
@@ -285,22 +286,32 @@ interface PlaceDetailsProps {
   place: WorldLocation;
   description: string;
   isHere: boolean;
+  /** Where the ship actually is, so a place that isn't it can suggest missions from the
+      pilot's own board that deliver there, instead of that remote place's own board (which the
+      ship isn't at and can't accept from). Null with no ship. */
+  shipLocation: string | null;
   byId: ReadonlyMap<string, WorldLocation>;
 }
 
-// What a place offers, in one dialog: who runs it, how risky it is, and the missions on its
-// board (each with reward, destination and whether the ship can take it). The pilot decides
-// where to go from here without leaving the map.
-function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDetailsProps) {
+// What a place offers, in one dialog: who runs it, how risky it is, and missions relevant to it.
+// Clicking the place the ship is already at shows that place's own board (what you could accept
+// right now). Clicking anywhere else instead suggests missions from the pilot's OWN board that
+// are headed there — the ones actually worth anything, since a remote board's offers can't be
+// accepted from here (owner: "suggest quests to deliver that, not the remote quests").
+function PlaceDetails({ canTravel, place, description, isHere, shipLocation, byId }: PlaceDetailsProps) {
   const { t, i18n } = useTranslation();
+  const suggestingDeliveries = !isHere && shipLocation !== null;
+  const boardLocationId = suggestingDeliveries ? shipLocation : place.id;
   const boardQuery = useQuery({
-    queryKey: ['board', place.id],
-    queryFn: () => client.get<MissionOffer[]>(`/v1/locations/${place.id}/missions`),
+    queryKey: ['board', boardLocationId],
+    queryFn: () => client.get<MissionOffer[]>(`/v1/locations/${boardLocationId}/missions`),
   });
-  const offers = boardQuery.data ?? [];
-  const destinationName = (id: string) => {
-    const destination = byId.get(id);
-    return destination === undefined ? id : pickLocalized(destination.displayName, i18n.language);
+  const offers = (boardQuery.data ?? []).filter(
+    (offer) => !suggestingDeliveries || offer.destinationId === place.id,
+  );
+  const placeName = (id: string) => {
+    const found = byId.get(id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
   };
 
   return (
@@ -325,7 +336,7 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
 
       {!isHere && canTravel && <TravelSection place={place} byId={byId} />}
 
-      <h3>{t('map.popup.missionsHere')}</h3>
+      <h3>{suggestingDeliveries ? t('map.popup.missionsToHere') : t('map.popup.missionsHere')}</h3>
       {boardQuery.isLoading && <p className="sub">{t('loading')}</p>}
       {boardQuery.isSuccess && offers.length === 0 && <p className="sub">{t('map.noMissions')}</p>}
       <ul className="place-missions">
@@ -336,7 +347,9 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
               <span className="spark">{t('board.reward', { amount: offer.reward })}</span>
             </div>
             <div className="sub">
-              {t('map.popup.to', { destination: destinationName(offer.destinationId) })}
+              {suggestingDeliveries
+                ? t('map.popup.from', { origin: placeName(offer.originId) })
+                : t('map.popup.to', { destination: placeName(offer.destinationId) })}
             </div>
             <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
               {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
@@ -361,7 +374,9 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
 
       <Link
         className="btn primary block"
-        to={`/board?location=${place.id}`}
+        // Suggested deliveries live on the pilot's OWN board (their ship's location), not this
+        // place's — that's the whole point (the remote board's offers can't be accepted here).
+        to={suggestingDeliveries ? '/board' : `/board?location=${place.id}`}
         style={{ textAlign: 'center', textDecoration: 'none' }}
       >
         {t('map.board')}

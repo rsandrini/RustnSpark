@@ -90,6 +90,101 @@ describe('map (S10.5)', () => {
     expect(within(box).getByRole('button', { name: /Fly to Estaleiro Tycho/ })).toBeEnabled();
   });
 
+  it('suggests missions from the pilot\'s own board that deliver to a place other than "here", not that place\'s own (remote) board', async () => {
+    const requested: string[] = [];
+    server.use(
+      http.get('/v1/locations/:id/missions', ({ params }) => {
+        requested.push(String(params.id));
+        return HttpResponse.json(
+          [
+            {
+              id: 'to-tycho',
+              templateId: 'tpl-to-tycho',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'tycho',
+              legs: [],
+              cargo: {},
+              reward: 500,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-tycho',
+              version: 1,
+              rewardEstimate: 500,
+              eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'Parts Run', 'pt-BR': 'Corrida de Peças' },
+                description: { en: 'Deliver parts to the shipyard.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 420,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 200, fuelNeeded: 5 },
+                material: null,
+              },
+            },
+            {
+              // Same fixture endpoint answers for every location id in this mock; a mission
+              // whose destination is NOT the clicked place must not show up as "suggested".
+              id: 'elsewhere',
+              templateId: 'tpl-elsewhere',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'hedus',
+              legs: [],
+              cargo: {},
+              reward: 300,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-elsewhere',
+              version: 1,
+              rewardEstimate: 300,
+              eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'Elsewhere Run', 'pt-BR': '' },
+                description: { en: 'Goes somewhere else entirely.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 300,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: { durationSeconds: 150, fuelNeeded: 4 },
+                material: null,
+              },
+            },
+          ],
+          { status: 200 },
+        );
+      }),
+    );
+    const { svg } = await renderMap();
+
+    fireEvent.click(node(svg, 'Estaleiro Tycho'));
+    const dialog = await screen.findByRole('dialog', { name: 'Estaleiro Tycho' });
+    expect(await within(dialog).findByText('Missions to here')).toBeInTheDocument();
+    expect(within(dialog).getByText('Parts Run')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Elsewhere Run')).toBeNull();
+    // Fetched from the ship's own board (Porto Ceres, where the ship actually is), never from
+    // Tycho's own — the whole point is these are missions the pilot can actually accept.
+    expect(requested).toContain('ceres');
+    expect(requested).not.toContain('tycho');
+    // The board link goes to the pilot's own board, not a query string for the remote place.
+    expect(dialog.querySelector('a[href="/board"]')).not.toBeNull();
+  });
+
   it('does not offer a trip to the place you are already at', async () => {
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
