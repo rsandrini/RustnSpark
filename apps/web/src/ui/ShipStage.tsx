@@ -135,7 +135,14 @@ export function ShipStage({
           )}
         </div>
       </div>
-      <p className="stage-caption" data-testid="stage-caption">
+      {/* Docked has no countdown and nothing left to say that the scene (parked ship) and the
+          place-name overlay on it don't already — owner request: no text below the animation
+          for that case. Still in the DOM (sr-only), not gone, for the same reason as elsewhere:
+          screen readers and the tests that already cover every mode's wording. */}
+      <p
+        className={`stage-caption${mode === 'idle' ? ' sr-only' : ''}`}
+        data-testid="stage-caption"
+      >
         <b>{t(`stage.mode.${mode}`)}</b>
         {until !== undefined && until !== null && (
           <>

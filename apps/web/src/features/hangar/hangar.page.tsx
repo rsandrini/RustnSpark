@@ -346,9 +346,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('hangar.title')}</h1>
-      </header>
+      {/* Owner request: no "My Ship" line above the animation — the title stays for the
+          heading-based ready signal every screen uses, just not shown on screen. */}
+      <h1 className="sr-only">{t('hangar.title')}</h1>
       <ActiveShipStage size="compact" />
 
       <div className="page-tabs-row">

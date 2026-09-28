@@ -212,7 +212,7 @@ a {
 /* A tab strip nested one level down (My Ship's Parts/Store, inside the Ship tab): its own
    accent colour and a gap above, so it doesn't read as a continuation of the tabs above it. */
 .tabs-sub {
-  margin-top: 22px;
+  margin-top: 6px;
 }
 
 .tabs-sub .tab.on {
@@ -1240,7 +1240,7 @@ svg .block.floating {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) 300px;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 10px;
   align-items: start;
 }
 
@@ -1715,14 +1715,14 @@ svg .block.floating {
 
 .stage-place-label {
   position: absolute;
-  top: 10px;
-  left: 12px;
+  bottom: 12px;
+  left: 14px;
   z-index: 1;
-  padding: 3px 10px;
+  padding: 5px 14px;
   border-radius: 999px;
   background: rgba(5, 7, 11, 0.55);
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
