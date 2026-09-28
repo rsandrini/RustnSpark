@@ -13,8 +13,7 @@ import { HangarPage } from '../features/hangar/hangar.page';
 import { MapPage } from '../features/map/map.page';
 import { ReportPage } from '../features/report/report.page';
 import { ProfilePage } from '../features/profile/profile.page';
-import { GameNav } from '../ui/GameNav';
-import { AccountMenu } from '../ui/AccountMenu';
+import { TopBar } from '../ui/TopBar';
 import { useWalletSync } from '../features/transit/use-active-mission';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { NotFoundPage } from '../pages/not-found.page';
@@ -30,9 +29,8 @@ function InGameChrome() {
   useWalletSync();
   return (
     <>
-      <AccountMenu />
+      <TopBar />
       <NoticeBanner />
-      <GameNav />
     </>
   );
 }
@@ -42,7 +40,7 @@ function AppChrome() {
   const inGame = user?.factionId != null;
   return (
     <>
-      {inGame && <InGameChrome />}
+      {inGame ? <InGameChrome /> : <LanguageSwitcher />}
       <Outlet />
     </>
   );
@@ -51,7 +49,6 @@ function AppChrome() {
 function RootLayout() {
   return (
     <AuthProvider>
-      <LanguageSwitcher />
       <AppChrome />
     </AuthProvider>
   );

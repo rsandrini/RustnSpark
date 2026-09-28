@@ -981,6 +981,36 @@ a {
 }
 
 /* navigation (S10.10) ---------------------------------------------------- */
+/* One merged top bar: game nav, language and account menu in a single row instead of three
+   stacked bars. .game-nav/.lang-switch/.account-menu keep their own rules below (each is also
+   used standalone — .lang-switch alone on the signed-out layout) but lose their own border/
+   background/padding once nested inside .top-bar, which owns the outer chrome instead. */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.top-bar .game-nav,
+.top-bar .lang-switch,
+.top-bar .account-menu {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
 .game-nav {
   display: flex;
   flex-wrap: wrap;
