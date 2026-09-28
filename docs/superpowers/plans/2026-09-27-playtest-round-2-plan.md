@@ -159,7 +159,7 @@ Each workstream ships with tests (unit + integration + web + the browser specs o
 
 ## 8. Round 3 — navigation consolidation & detail views (owner, 2026-09-28)
 
-Two feedback messages, combined here. **Status: planned, not started** (owner asked to plan first — "so we can plan" — before implementing). Supersedes §5b items 1–3 (menus-follow-status, ship-status card, requirements-with-numbers), which fold into R3-2/R3-4/R3-5 below rather than shipping separately.
+Two feedback messages, combined here. **Status (2026-09-28): R3-1, R3-4, R3-5 done. R3-2 and R3-3 — the actual tab-count reduction (Board/Port folded into My Ship with ship-status gating, Transit removed) — are the remaining, largest piece; deliberately not rushed at the tail of an already large session (4 stateful pages, ~2000 lines, to merge safely). Next up.** (owner asked to plan first — "so we can plan" — before implementing). Supersedes §5b items 1–3 (menus-follow-status, ship-status card, requirements-with-numbers), which fold into R3-2/R3-4/R3-5 below rather than shipping separately.
 
 ### 8.1 Findings
 Today: a thin Home screen for onboarded players; `GameNav` always shows Hangar / Map / Board / Transit / Port / Profile (Transit greyed out when idle); Port is its own page with its own tabs (market/goods/repair/refuel/scavenging); the Hangar has its own tabs (Parts/Store); part details open in a side panel; the market/store list and the ship yard share the screen with no independent scroll; the map's mission popup shows eligibility (`board.eligible`/`board.blocked`) but not *why* (Board's own mission card already renders `offer.eligibility.reasons` — the map popup just never reuses it); the Report page has a narrated "story" tab but nothing that lists every resolved event in full.
