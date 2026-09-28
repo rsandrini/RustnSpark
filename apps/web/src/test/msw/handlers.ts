@@ -906,6 +906,16 @@ const reportExtras = {
     distance: 820,
     fights: { won: 1, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
     damage: { shield: 4, armor: 3, hull: 2 },
+    hasShield: true,
+    partsDamage: [
+      {
+        partId: 'part-engine',
+        partType: 'engine_chem_small',
+        name: 'Small Chem Engine',
+        before: 100,
+        after: 82,
+      },
+    ],
     partFailures: 0,
     fuelLost: 0,
     found: [],

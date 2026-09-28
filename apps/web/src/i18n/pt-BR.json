@@ -532,7 +532,16 @@
     "tabs": {
       "summary": "Resumo",
       "narrative": "A história",
-      "log": "Registro"
+      "log": "Registro",
+      "detail": "Detalhes"
+    },
+    "detail": {
+      "partsDamage": "Peças que sofreram dano",
+      "partsDamageIntro": "Toda peça cuja condição caiu durante a corrida, no despacho comparado a agora.",
+      "noDamage": "Nada sofreu dano nesta corrida.",
+      "before": "Antes",
+      "after": "Agora",
+      "lost": "−{{amount}}"
     },
     "noReport": "Ainda não há relatório para esta missão.",
     "eventDetails": "Detalhes do evento",
@@ -571,6 +580,7 @@
       "fightsValue": "{{won}} vencidos · {{lost}} perdidos · {{escaped}} fugas",
       "noFights": "Nenhum",
       "damage": "Dano recebido",
+      "damageValueNoShield": "Blindagem {{armor}} · casco {{hull}}",
       "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
       "noDamage": "Nenhum",
       "failures": "Peças com falha",

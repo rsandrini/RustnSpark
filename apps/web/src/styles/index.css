@@ -2881,3 +2881,28 @@ svg .block.broken {
   border-radius: 10px;
   padding: 14px;
 }
+
+/* report: parts-damage table (Details tab) ------------------------------------------------ */
+.parts-damage-list {
+  padding: 0;
+  list-style: none;
+}
+
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.parts-damage-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.parts-damage-lost {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}

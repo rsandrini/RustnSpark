@@ -88,6 +88,49 @@ export function partTypesOf(snapshot: unknown): Record<string, string> {
   return out;
 }
 
+interface SnapshotPartEntry {
+  readonly id?: unknown;
+  readonly partType?: unknown;
+  readonly condition?: unknown;
+  readonly catalog?: { readonly partClass?: unknown; readonly esc?: unknown };
+}
+
+function installedPartsOf(snapshot: unknown): SnapshotPartEntry[] {
+  const record = snapshot as { parts?: unknown } | null;
+  return Array.isArray(record?.parts) ? (record.parts as SnapshotPartEntry[]) : [];
+}
+
+/** Every installed part's condition at dispatch — the Details tab's "before" column. */
+export function partsBeforeOf(
+  snapshot: unknown,
+): readonly { id: string; partType: string; condition: number }[] {
+  const out: { id: string; partType: string; condition: number }[] = [];
+  for (const entry of installedPartsOf(snapshot)) {
+    if (
+      typeof entry.id === 'string' &&
+      typeof entry.partType === 'string' &&
+      typeof entry.condition === 'number'
+    ) {
+      out.push({ id: entry.id, partType: entry.partType, condition: entry.condition });
+    }
+  }
+  return out;
+}
+
+/**
+ * True when the dispatched ship had a shield: a DEFENSE part whose catalog ESC is > 0 — the same
+ * test `failureCategory('DEFENSE', providesEsc)` uses to decide choke-criticality. Armor plates
+ * (DEFENSE without ESC) do not count.
+ */
+export function hasShieldOf(snapshot: unknown): boolean {
+  return installedPartsOf(snapshot).some(
+    (entry) =>
+      entry.catalog?.partClass === 'DEFENSE' &&
+      typeof entry.catalog.esc === 'number' &&
+      entry.catalog.esc > 0,
+  );
+}
+
 function readBalanceAfter(payload: unknown): number | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;
   const value = (payload as { balanceAfter?: unknown }).balanceAfter;
@@ -249,6 +292,8 @@ export class ReportsService {
       events,
       legs,
       partTypeById: partTypesOf(log.shipSnapshot),
+      hasShield: hasShieldOf(log.shipSnapshot),
+      partsBefore: partsBeforeOf(log.shipSnapshot),
       credits: resolved?.creditsDelta ?? sumStoredCredits(events),
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
     };

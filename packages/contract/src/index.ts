@@ -425,6 +425,18 @@ export const ReportStatsSchema = z.object({
     pvp: z.number(),
   }),
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+  /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
+  hasShield: z.boolean(),
+  /** Every part that lost condition during the run, dispatch vs final. */
+  partsDamage: z.array(
+    z.object({
+      partId: z.string(),
+      partType: z.string(),
+      name: z.string(),
+      before: z.number(),
+      after: z.number(),
+    }),
+  ),
   partFailures: z.number(),
   fuelLost: z.number(),
   found: z.array(

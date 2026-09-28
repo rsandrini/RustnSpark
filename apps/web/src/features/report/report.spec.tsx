@@ -12,6 +12,8 @@ const STATS = {
   distance: 0,
   fights: { won: 0, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
   damage: { shield: 0, armor: 0, hull: 0 },
+  hasShield: true,
+  partsDamage: [],
   partFailures: 0,
   fuelLost: 0,
   found: [],
@@ -251,5 +253,67 @@ describe('report (S10.8)', () => {
     const debrief = await screen.findByTestId('debrief');
     expect(debrief).toHaveTextContent('Parts stolen');
     expect(debrief).toHaveTextContent('0 won · 1 lost · 1 escaped · 2 drawn');
+  });
+
+  it('never says a shield took 0 damage on a ship that never had one', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              damage: { shield: 0, armor: 6, hull: 2 },
+              hasShield: false,
+            },
+            view: 'summary',
+            lines: [{ text: 'Summary', segments: [{ t: 'text', value: 'Summary' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const debrief = await screen.findByTestId('debrief');
+    expect(debrief).toHaveTextContent('Armor 6 · hull 2');
+    expect(debrief).not.toHaveTextContent('Shield');
+  });
+
+  it('the Details tab shows the parts-damage table (before/after bars), and nothing for a quiet run', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              partsDamage: [
+                {
+                  partId: 'p1',
+                  partType: 'engine_chem_small',
+                  name: 'Small Chem Engine',
+                  before: 80,
+                  after: 55,
+                },
+              ],
+            },
+            view: 'summary',
+            lines: [{ text: 'Summary', segments: [{ t: 'text', value: 'Summary' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Details' }));
+    const table = await screen.findByTestId('parts-damage');
+    expect(table).toHaveTextContent('Small Chem Engine');
+    expect(table).toHaveTextContent('80% → 55%');
+    expect(table).toHaveTextContent('−25');
+    // Switching back to Summary hides the damage table (it only shows on its own tab).
+    fireEvent.click(screen.getByRole('tab', { name: 'Summary' }));
+    await waitFor(() => expect(screen.queryByTestId('parts-damage')).not.toBeInTheDocument());
   });
 });

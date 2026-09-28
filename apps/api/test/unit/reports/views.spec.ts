@@ -104,6 +104,8 @@ const LOG: ReportLog = {
     { index: 2, status: 'completed' },
   ],
   partTypeById: { 'part-instance-1': 'engine_chem_small' },
+  hasShield: true,
+  partsBefore: [{ id: 'part-instance-1', partType: 'engine_chem_small', condition: 80 }],
   credits: 994,
   balanceAfter: 1500,
 };

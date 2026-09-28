@@ -532,7 +532,16 @@
     "tabs": {
       "summary": "Summary",
       "narrative": "The story",
-      "log": "Log"
+      "log": "Log",
+      "detail": "Details"
+    },
+    "detail": {
+      "partsDamage": "Parts that took damage",
+      "partsDamageIntro": "Every part whose condition dropped during the run, dispatch versus now.",
+      "noDamage": "Nothing took damage on this run.",
+      "before": "Before",
+      "after": "Now",
+      "lost": "−{{amount}}"
     },
     "noReport": "No report for this mission yet.",
     "eventDetails": "Event details",
@@ -571,6 +580,7 @@
       "fightsValue": "{{won}} won · {{lost}} lost · {{escaped}} escaped",
       "noFights": "None",
       "damage": "Damage taken",
+      "damageValueNoShield": "Armor {{armor}} · hull {{hull}}",
       "damageValue": "Shield {{shield}} · armor {{armor}} · hull {{hull}}",
       "noDamage": "None",
       "failures": "Parts failed",

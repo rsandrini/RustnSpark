@@ -23,6 +23,8 @@ const log = (events: unknown[]): ReportLog => ({
     { index: 1, status: 'done' },
   ],
   partTypeById: {},
+  hasShield: true,
+  partsBefore: [],
   credits: 250,
   balanceAfter: 450,
 });
@@ -80,5 +82,53 @@ describe('computeReportStats', () => {
     const stats = computeReportStats(log([]), { parts: {}, materials: {} });
     expect(stats.fights).toEqual({ won: 0, lost: 0, escaped: 0, drawn: 0, pvp: 0 });
     expect(stats.loot).toEqual([]);
+  });
+
+  it('passes hasShield through from the log unchanged', () => {
+    expect(
+      computeReportStats({ ...log([]), hasShield: true }, { parts: {}, materials: {} }),
+    ).toMatchObject({ hasShield: true });
+    expect(
+      computeReportStats({ ...log([]), hasShield: false }, { parts: {}, materials: {} }),
+    ).toMatchObject({ hasShield: false });
+  });
+
+  it("partsDamage reconstructs each part's dispatch-vs-final condition from condByPart, and skips parts that never changed", () => {
+    const withParts: ReportLog = {
+      ...log([
+        event({
+          type: 'mission_wear',
+          category: 'environment',
+          effects: { hp: 0, condByPart: { 'engine-1': 70, 'bridge-1': 99 }, credits: 0, loot: [] },
+        }),
+        event({
+          type: 'combat_loss',
+          cascade: { shield: 0, armor: 0, hp: 0 },
+          effects: { hp: 0, condByPart: { 'engine-1': 55 }, credits: 0, loot: [] },
+        }),
+      ]),
+      partsBefore: [
+        { id: 'engine-1', partType: 'engine_chem_small', condition: 80 },
+        { id: 'bridge-1', partType: 'bridge', condition: 100 },
+        { id: 'cargo-1', partType: 'cargo', condition: 80 },
+      ],
+    };
+    const stats = computeReportStats(withParts, {
+      parts: { 'engine-1': { partType: 'engine_chem_small', name: 'Small Chem Engine' } },
+      materials: {},
+    });
+    // engine-1: last condByPart entry wins (55, from the later combat_loss event) — a real drop.
+    // bridge-1: only ticked from 100 to 99 — still a drop, still listed.
+    // cargo-1: never appears in any condByPart — untouched, excluded from the table entirely.
+    expect(stats.partsDamage).toEqual([
+      {
+        partId: 'engine-1',
+        partType: 'engine_chem_small',
+        name: 'Small Chem Engine',
+        before: 80,
+        after: 55,
+      },
+      { partId: 'bridge-1', partType: 'bridge', name: 'bridge', before: 100, after: 99 },
+    ]);
   });
 });
