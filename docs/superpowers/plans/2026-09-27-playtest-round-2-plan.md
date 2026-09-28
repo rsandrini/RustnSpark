@@ -156,3 +156,36 @@ _(updated as each workstream lands)_
 
 ## 7. Done means
 Each workstream ships with tests (unit + integration + web + the browser specs on the real stack), lint/types clean, the plan status updated, and the browser specs restoring any config they touch.
+
+## 8. Round 3 — navigation consolidation & detail views (owner, 2026-09-28)
+
+Two feedback messages, combined here. **Status: planned, not started** (owner asked to plan first — "so we can plan" — before implementing). Supersedes §5b items 1–3 (menus-follow-status, ship-status card, requirements-with-numbers), which fold into R3-2/R3-4/R3-5 below rather than shipping separately.
+
+### 8.1 Findings
+Today: a thin Home screen for onboarded players; `GameNav` always shows Hangar / Map / Board / Transit / Port / Profile (Transit greyed out when idle); Port is its own page with its own tabs (market/goods/repair/refuel/scavenging); the Hangar has its own tabs (Parts/Store); part details open in a side panel; the market/store list and the ship yard share the screen with no independent scroll; the map's mission popup shows eligibility (`board.eligible`/`board.blocked`) but not *why* (Board's own mission card already renders `offer.eligibility.reasons` — the map popup just never reuses it); the Report page has a narrated "story" tab but nothing that lists every resolved event in full.
+
+Owner's ask, verbatim themes: too many tabs; Home is weak — make Hangar the landing page; Admin + Logout belong in a top-right menu; while docked, all port operations should live inside the same Hangar screen (remove a whole top menu level); a real ship-stats view is missing (part HP/detail today = a side panel; wants click → popup instead); the parts list needs its own scroll so the ship stays in view; mission popups on the map need the same requirement detail the Board already has, on hover; repair race (fixed, Round 2 §"never lets Start repair open on a stale quote"); a full/detailed battle log (today's report is too short to follow).
+
+### 8.2 Decisions (proposed defaults — flag if any should change before I start)
+1. **Home removed.** `/` redirects an onboarded player straight to `/hangar`; a player with no faction still lands on `/onboarding` (unchanged). `HomePage`/`pages/home.page.tsx` retired.
+2. **Hangar is the landing page**, labelled **"My Ship"** in the nav/UI copy (route stays `/hangar` — no link rot, no test-path churn for the sake of a URL).
+3. **Top-right account menu**: Profile, **Admin** (only when `user.role === 'ADMIN'` — first time the client branches on role for a nav item), **Logout**. Replaces the Profile nav-bar link.
+4. **`GameNav` trimmed to My Ship + Map.** Board becomes a tab *inside* My Ship, enabled only while the ship is `IN_PORT` (disabled elsewhere with a reason, same pattern as today's Transit-disabled entry) — this is where §5b item 1 (menus follow ship status) actually lands.
+5. **Port's tabs (market/goods/repair/refuel/scavenging) move inside My Ship**, alongside Parts/Store/Board, all gated the same way (enabled only in port). The standalone `/port` route is dropped (or kept as a redirect to `/hangar?tab=...` for any stray bookmark/link — cheap to keep, no reason not to).
+6. **`/transit` removed.** Its content (ship-stage animation, leg-by-leg breakdown, Release/Cancel) becomes a section of My Ship that appears whenever the ship isn't idle — "the resume of the travel on main page," per the owner. Dispatch still happens from the Board tab right after accepting a mission (unchanged trigger, new destination).
+7. **Part details: side panel → click-to-open popup.** Same content (name, description, stats, condition), styled as a modal/card over the yard instead of pushing the layout sideways. Hover/tooltip preview is explicitly deferred (owner asked for click).
+8. **Store/market list gets its own scroll region** (`overflow-y: auto`, fixed height tied to the viewport) so the ship yard stays visible while scrolling parts — a layout change, no new data.
+9. **Map mission hover popup** reuses the Board's own eligibility renderer (`offer.eligibility.reasons`) — same data already on the wire, just not shown on the map today. On desktop this is a hover card; touch devices get it on tap (no true "hover"), matching how the existing map popup already opens on click/tap.
+10. **Detailed battle/event log**: a new expandable section (or a distinct "Full log" sub-tab) on the Report page that lists every stored `MissionEvent` in order — not just the narrated highlights — leg by leg, round by round where combat happened. Server already stores everything needed (`MissionLog.legs`/events, already fetched for the story tab); this is a client rendering job, reusing the existing report-template event data rather than adding new fields.
+
+### 8.3 Workstreams (proposed order — each independently shippable/testable)
+- **R3-1**: Home removal + redirect; My Ship label; top-right Profile/Admin/Logout menu.
+- **R3-2**: Ship-status gating (`IN_PORT` vs not) on Board and the Port tabs, all folded into My Ship; drop/redirect `/port`.
+- **R3-3**: Drop `/transit`; travel/mission summary + leg detail becomes a My Ship section; dispatch flow re-pointed.
+- **R3-4**: Part detail → click popup (retires the side panel); Store/market internal scroll.
+- **R3-5**: Map mission hover popup with eligibility reasons (reuses Board's renderer).
+- **R3-6**: Detailed/full event log on the Report page.
+
+### 8.4 Risks
+- This is the biggest surface-area change of the playtest so far: 3 routes disappear (`/`, `/transit`, and `/port` folds in), `GameNav` shrinks from 6 links to 2, and one page (My Ship) absorbs three others' worth of tabs. Expect rework across `app/router.tsx`, `GameNav`, `hangar.page.tsx`, `port.page.tsx`, `transit.page.tsx`, `home.page.tsx` (deleted), the browser smoke (`e2e/smoke.spec.ts`, `e2e/economy.spec.ts` — both navigate through `/port` and `/transit` today) and several unit specs.
+- Doing it in the R3-1→R3-6 order keeps each step small enough to test and roll out on its own, rather than one giant change.
