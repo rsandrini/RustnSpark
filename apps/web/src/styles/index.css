@@ -2748,3 +2748,136 @@ svg .block.broken {
     animation: none;
   }
 }
+
+/* admin (S11): the screens were built with no CSS hooks of their own — every element below is
+   bare markup in ~15 different files. This skins them generically under one wrapper instead of
+   a className in each file; a per-screen layout pass (grouped filter bars, grid forms) can
+   follow later. ------------------------------------------------------------------------------ */
+.admin-shell {
+  padding-top: 14px;
+}
+
+.admin-nav {
+  margin: 10px 0 18px;
+  border-radius: 10px;
+}
+
+.admin-shell h2 {
+  margin: 22px 0 10px;
+  font-size: 18px;
+}
+
+.admin-shell h2:first-child {
+  margin-top: 0;
+}
+
+.admin-shell h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  color: var(--mut);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-shell section {
+  margin-bottom: 22px;
+}
+
+.admin-shell p {
+  color: var(--mut);
+  margin: 4px 0;
+}
+
+.admin-shell a:not(.nav-link) {
+  color: var(--blue);
+}
+
+.admin-shell table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.admin-shell th,
+.admin-shell td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.admin-shell th {
+  color: var(--mut);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.admin-shell tbody tr:hover {
+  background: var(--panel2);
+}
+
+.admin-shell button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 2px 4px 2px 0;
+}
+
+.admin-shell button:hover:not(:disabled) {
+  border-color: var(--mut);
+}
+
+.admin-shell button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.admin-shell input:focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.admin-shell label {
+  display: block;
+  font-size: 12px;
+  color: var(--mut);
+  margin: 10px 0 4px;
+}
+
+.admin-shell ul {
+  padding-left: 18px;
+  color: var(--mut);
+}
+
+/* A dialog-like confirm/import panel (BundleDialog and friends): plain divs today, but this
+   keeps them from reading as part of the page flow if a screen adds a fixed/floating one. */
+.admin-shell .panel,
+.admin-shell dialog {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}

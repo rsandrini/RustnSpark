@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 import { useAuth, useLogout } from '../auth/auth.hooks';
 
 const TUNABLE_ENTITIES = [
@@ -13,34 +13,57 @@ const TUNABLE_ENTITIES = [
   'drop-tables',
 ] as const;
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' on' : ''}`;
+
+// The admin screens (S11) were built functionally with no CSS hooks of their own — every
+// h2/h3/table/input/button in them is bare markup. Rather than touch a class name into each of
+// the ~15 screen files, this shell wraps them in `.admin-shell` and styles/index.css skins every
+// plain element under that one selector, the same way `.hangar`/`.report-story` scope their own
+// screens. A per-screen layout polish (grouped filter bars, grid forms) can follow later.
 export function AdminShell() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const logout = useLogout();
 
   return (
-    <div>
-      <header>
+    <div className="app wide admin-shell">
+      <header className="topbar">
         <h1>{t('admin.title')}</h1>
-        <nav aria-label={t('admin.navigation')}>
-          <Link to="/admin">{t('admin.dashboard')}</Link>
-          <Link to="/admin/analytics/economy">{t('admin.economy')}</Link>
-          <Link to="/admin/analytics/world">{t('admin.world')}</Link>
-          <Link to="/admin/players">{t('admin.players')}</Link>
-          <Link to="/admin/system">{t('admin.system')}</Link>
-          <Link to="/admin/tuning/config">{t('tuning.configTitle')}</Link>
-          {TUNABLE_ENTITIES.map((entity) => (
-            <Link key={entity} to={`/admin/tuning/entities/${entity}`}>
-              {t(`tuning.entityNames.${entity}`)}
-            </Link>
-          ))}
-          <Link to="/admin/tuning/revisions">{t('tuning.revisionHistoryTitle')}</Link>
-        </nav>
-        <span>{user?.name}</span>
-        <button type="button" onClick={() => logout.mutate()}>
-          {t('admin.logout')}
-        </button>
+        <div className="row-between">
+          <span className="sub">{user?.name}</span>
+          <button type="button" className="btn" onClick={() => logout.mutate()}>
+            {t('admin.logout')}
+          </button>
+        </div>
       </header>
+      <nav className="game-nav admin-nav" aria-label={t('admin.navigation')}>
+        <NavLink to="/admin" end className={navLinkClass}>
+          {t('admin.dashboard')}
+        </NavLink>
+        <NavLink to="/admin/analytics/economy" className={navLinkClass}>
+          {t('admin.economy')}
+        </NavLink>
+        <NavLink to="/admin/analytics/world" className={navLinkClass}>
+          {t('admin.world')}
+        </NavLink>
+        <NavLink to="/admin/players" className={navLinkClass}>
+          {t('admin.players')}
+        </NavLink>
+        <NavLink to="/admin/system" className={navLinkClass}>
+          {t('admin.system')}
+        </NavLink>
+        <NavLink to="/admin/tuning/config" className={navLinkClass}>
+          {t('tuning.configTitle')}
+        </NavLink>
+        {TUNABLE_ENTITIES.map((entity) => (
+          <NavLink key={entity} to={`/admin/tuning/entities/${entity}`} className={navLinkClass}>
+            {t(`tuning.entityNames.${entity}`)}
+          </NavLink>
+        ))}
+        <NavLink to="/admin/tuning/revisions" className={navLinkClass}>
+          {t('tuning.revisionHistoryTitle')}
+        </NavLink>
+      </nav>
       <main>
         <Outlet />
       </main>
