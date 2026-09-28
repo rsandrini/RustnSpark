@@ -110,6 +110,9 @@ const EXPECTED_KEYS: readonly string[] = [
   'wear.choke_loss_max',
   'wear.choke_loss_min',
   'wear.choke_threshold',
+  'wear.danger_cap',
+  'wear.danger_floor',
+  'wear.danger_ref',
   'wear.dead_at_or_below',
   'wear.defeat_loss_max',
   'wear.defeat_loss_min',
@@ -119,6 +122,9 @@ const EXPECTED_KEYS: readonly string[] = [
   'wear.performance_floor',
   'wear.performance_slope',
   'wear.scale_mode',
+  'wear.system_base_max',
+  'wear.system_base_min',
+  'wear.system_defeat_share',
   'world.seed',
 ];
 

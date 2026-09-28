@@ -40,6 +40,71 @@ export function applyWear(condition: number, loss: number): number {
 }
 
 /**
+ * Round-2 playtest fix: `missionWear` used to land on every part alike, so a bridge or a cargo
+ * hold wore out from merely existing exactly as fast as an engine or the hull — a "simple,
+ * direct" mission could cost a clean ship ~9% on parts that never did anything. The classes
+ * below never fail from operational stress (`failureCategory` already never picks them as
+ * choke-critical — see failure.resolver.ts): they only get old from being used, so they take a
+ * tiny, near-flat `systemWear` instead of `missionWear`. Every other class (the ones the game
+ * already treats as exposed — engine, tank, battery, weapon, defense, sensor) keeps taking real,
+ * route-scaled wear via `dangerFactor`.
+ */
+const PASSIVE_WEAR_CLASSES: ReadonlySet<string> = new Set([
+  'BRIDGE',
+  'CARGO',
+  'REACTOR',
+  'UTILITY',
+]);
+
+export function isPassiveWearClass(partClass: string): boolean {
+  return PASSIVE_WEAR_CLASSES.has(partClass);
+}
+
+/**
+ * How much a leg's own danger scales exposed-part wear: `clamp(danger / danger_ref,
+ * danger_floor, danger_cap)`. A safe, simple leg (low danger) costs a small fraction of the base
+ * roll; a genuinely dangerous one costs multiples of it — wear now tracks the difficulty of the
+ * path, not just its mere existence.
+ */
+export function dangerFactor(danger: number, rules: GameRules): number {
+  const raw = danger / rules.wear.danger_ref;
+  return Math.min(rules.wear.danger_cap, Math.max(rules.wear.danger_floor, raw));
+}
+
+/** Flat per-leg "usage" wear for a passive-class part: `uniform(system_base_min, system_base_max)`. */
+export function systemWear(rules: GameRules, rng: Rng): number {
+  return rng.uniform(rules.wear.system_base_min, rules.wear.system_base_max);
+}
+
+/**
+ * One part's ambient per-leg wear, routed by its class: passive classes take the tiny flat
+ * `systemWear`; every exposed class takes `missionWear`'s base+environment roll scaled by the
+ * leg's own danger.
+ */
+export function partAmbientWear(
+  partClass: string,
+  danger: number,
+  envNivel: number,
+  rules: GameRules,
+  rng: Rng,
+): number {
+  if (isPassiveWearClass(partClass)) {
+    return systemWear(rules, rng);
+  }
+  const { total } = missionWear(envNivel, rules, rng);
+  return total * dangerFactor(danger, rules);
+}
+
+/**
+ * A combat defeat still hits every part (losing a fight is "a reason"), but a passive-class part
+ * only takes `system_defeat_share` of the roll — a lost fight dents the hull and the engine far
+ * more than it dents the cargo hold's fixtures.
+ */
+export function partDefeatWear(partClass: string, defeatLoss: number, rules: GameRules): number {
+  return isPassiveWearClass(partClass) ? defeatLoss * rules.wear.system_defeat_share : defeatLoss;
+}
+
+/**
  * Apply independent mission wear to each part (production `scale_mode:
  * all_stats`). The parity harness uses one ship-wide draw instead.
  */

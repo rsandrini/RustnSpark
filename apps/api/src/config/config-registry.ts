@@ -353,6 +353,84 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.danger_ref',
+    group: 'wear',
+    type: 'number',
+    min: 0.1,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_ref),
+    description: {
+      en: "Leg danger that scales an exposed part's ambient wear ×1 (danger / danger_ref, clamped by danger_floor/danger_cap). A safe, simple leg costs a small fraction of the base roll; a dangerous one costs multiples of it.",
+      'pt-BR':
+        'Perigo do trecho que escala em ×1 o desgaste ambiente de uma peça exposta (perigo / danger_ref, limitado por danger_floor/danger_cap). Um trecho seguro e simples custa uma fração do sorteio base; um perigoso custa múltiplos dele.',
+    },
+  },
+  {
+    key: 'wear.danger_floor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_floor),
+    description: {
+      en: "Lowest danger multiplier an exposed part's ambient wear can fall to, so even a danger-0 leg still costs a little.",
+      'pt-BR':
+        'Menor multiplicador de perigo ao qual o desgaste ambiente de uma peça exposta pode cair, para que mesmo um trecho com perigo 0 custe um pouco.',
+    },
+  },
+  {
+    key: 'wear.danger_cap',
+    group: 'wear',
+    type: 'number',
+    min: 1,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_cap),
+    description: {
+      en: "Highest danger multiplier an exposed part's ambient wear can reach, capping the worst legs.",
+      'pt-BR':
+        'Maior multiplicador de perigo que o desgaste ambiente de uma peça exposta pode atingir, limitando os trechos mais perigosos.',
+    },
+  },
+  {
+    key: 'wear.system_base_min',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_base_min),
+    description: {
+      en: 'Minimum flat per-leg "usage" wear for passive-class parts (bridge, cargo, reactor, utility) — not scaled by environment or danger.',
+      'pt-BR':
+        'Desgaste mínimo fixo de "uso" por trecho para peças de classe passiva (ponte, carga, reator, utilidade) — não escalado por ambiente ou perigo.',
+    },
+  },
+  {
+    key: 'wear.system_base_max',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_base_max),
+    description: {
+      en: 'Maximum flat per-leg "usage" wear for passive-class parts (bridge, cargo, reactor, utility) — not scaled by environment or danger.',
+      'pt-BR':
+        'Desgaste máximo fixo de "uso" por trecho para peças de classe passiva (ponte, carga, reator, utilidade) — não escalado por ambiente ou perigo.',
+    },
+  },
+  {
+    key: 'wear.system_defeat_share',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_defeat_share),
+    description: {
+      en: "Share of a combat defeat's rolled condition loss a passive-class part takes (0–1); exposed classes take the full roll.",
+      'pt-BR':
+        'Fração da perda de condição sorteada numa derrota em combate que uma peça de classe passiva sofre (0–1); classes expostas sofrem o sorteio inteiro.',
+    },
+  },
+  {
     key: 'economy.fuel_price',
     group: 'economy',
     type: 'number',

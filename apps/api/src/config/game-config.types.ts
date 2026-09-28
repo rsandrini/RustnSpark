@@ -123,6 +123,9 @@ export type ConfigKey =
   | 'wear.choke_loss_max'
   | 'wear.choke_loss_min'
   | 'wear.choke_threshold'
+  | 'wear.danger_cap'
+  | 'wear.danger_floor'
+  | 'wear.danger_ref'
   | 'wear.dead_at_or_below'
   | 'wear.defeat_loss_max'
   | 'wear.defeat_loss_min'
@@ -132,6 +135,9 @@ export type ConfigKey =
   | 'wear.performance_floor'
   | 'wear.performance_slope'
   | 'wear.scale_mode'
+  | 'wear.system_base_max'
+  | 'wear.system_base_min'
+  | 'wear.system_defeat_share'
   | 'world.seed';
 
 export type GameRulesAdmin = Readonly<{
@@ -188,6 +194,16 @@ export type GameRules = Readonly<{
     overload_min: number;
     overload_max: number;
     scale_mode: 'all_stats' | 'hp_only';
+    // Round-2 playtest fix (owner: bridge/cargo should not degrade like an engine): passive
+    // classes (bridge, cargo, reactor, utility) take this tiny flat wear instead of base/env;
+    // every exposed class's base+environment roll is scaled by dangerFactor(leg.danger).
+    danger_ref: number;
+    danger_floor: number;
+    danger_cap: number;
+    system_base_min: number;
+    system_base_max: number;
+    /** Share of a combat-defeat's rolled loss a passive-class part takes (see partDefeatWear). */
+    system_defeat_share: number;
   }>;
   economy: Readonly<{
     fuel_price: number;

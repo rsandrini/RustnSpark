@@ -42,6 +42,12 @@ const wearSchema = z.object({
   overload_min: z.number().int().min(0).max(50),
   overload_max: z.number().int().min(0).max(50),
   scale_mode: z.enum(['all_stats', 'hp_only']),
+  danger_ref: z.number().min(0.1).max(50),
+  danger_floor: z.number().min(0).max(1),
+  danger_cap: z.number().min(1).max(10),
+  system_base_min: z.number().min(0).max(10),
+  system_base_max: z.number().min(0).max(10),
+  system_defeat_share: z.number().min(0).max(1),
 });
 
 const economySchema = z.object({

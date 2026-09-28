@@ -37,6 +37,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     overload_min: 8,
     overload_max: 15,
     scale_mode: 'all_stats',
+    danger_ref: 6,
+    danger_floor: 0.1,
+    danger_cap: 2.5,
+    system_base_min: 0.05,
+    system_base_max: 0.15,
+    system_defeat_share: 0.25,
   },
   economy: {
     fuel_price: 1.5,

@@ -29,7 +29,7 @@ import type {
   MissionEvent,
   MissionLoot,
 } from '../events/mission-event.js';
-import { applyWear, missionWear, defeatWear } from '../wear/wear.calculator.js';
+import { applyWear, partAmbientWear, partDefeatWear, defeatWear } from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
 
@@ -296,7 +296,13 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   // Motor abort: fuel burned + wear still apply; no encounter, no pay path.
   if (motorAbort) {
-    const wearMap = applyPartsWear(parts, input.route.env.level, rules, wearRng);
+    const wearMap = applyPartsWear(
+      parts,
+      input.route.danger,
+      input.route.env.level,
+      rules,
+      wearRng,
+    );
     const partsBeforeWear = parts;
     parts = mergeConditions(parts, wearMap);
     ship = { ...ship, parts };
@@ -441,7 +447,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
       parts = parts.map((part) => ({
         ...part,
-        condition: applyWear(part.condition, defeatLoss),
+        condition: applyWear(part.condition, partDefeatWear(part.partClass, defeatLoss, rules)),
       }));
       events.push(
         missionEvent({
@@ -543,7 +549,13 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   }
 
   // 4. Environment wear + integrity (production per-part draws).
-  const wearMap = applyPartsWear(ship.parts, input.route.env.level, rules, wearRng);
+  const wearMap = applyPartsWear(
+    ship.parts,
+    input.route.danger,
+    input.route.env.level,
+    rules,
+    wearRng,
+  );
   // The event reports how much condition was lost, so it needs the parts as they were BEFORE
   // the wear (reading them after made every leg say "0 worn" while the parts really wore down).
   const partsBeforeWear = ship.parts;
@@ -600,14 +612,15 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
 function applyPartsWear(
   parts: readonly PartSnapshot[],
+  danger: number,
   envNivel: number,
   rules: GameRules,
   rng: Rng,
 ): ReadonlyMap<string, number> {
   const next = new Map<string, number>();
   for (const part of parts) {
-    const { total } = missionWear(envNivel, rules, rng);
-    next.set(part.id, applyWear(part.condition, total));
+    const loss = partAmbientWear(part.partClass, danger, envNivel, rules, rng);
+    next.set(part.id, applyWear(part.condition, loss));
   }
   return next;
 }

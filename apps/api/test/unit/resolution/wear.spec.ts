@@ -21,9 +21,14 @@ import {
   applyMissionWearToParts,
   applyWear,
   chokeWear,
+  dangerFactor,
   defeatWear,
+  isPassiveWearClass,
   missionWear,
   overloadWear,
+  partAmbientWear,
+  partDefeatWear,
+  systemWear,
 } from '../../../src/resolution/wear/wear.calculator.js';
 import { CHOKE_CASES, CHOKE_CONSEQUENCE_CASES } from '../../fixtures/appendix-e.js';
 
@@ -146,6 +151,84 @@ describe('S5.5 — wear calculator', () => {
     expect(next.get('a')).toBe(46);
     expect(next.get('b')).toBe(15);
     rng.assertDrained();
+  });
+});
+
+describe('round-2 playtest fix — passive classes wear from usage only, exposed classes scale by danger', () => {
+  it('bridge, cargo, reactor and utility are the passive classes; everything else is exposed', () => {
+    expect(isPassiveWearClass('BRIDGE')).toBe(true);
+    expect(isPassiveWearClass('CARGO')).toBe(true);
+    expect(isPassiveWearClass('REACTOR')).toBe(true);
+    expect(isPassiveWearClass('UTILITY')).toBe(true);
+    for (const exposed of ['ENGINE', 'TANK', 'BATTERY', 'WEAPON', 'DEFENSE', 'SENSOR']) {
+      expect(isPassiveWearClass(exposed)).toBe(false);
+    }
+  });
+
+  it('dangerFactor scales linearly between the floor and the cap', () => {
+    expect(dangerFactor(0, rules)).toBe(rules.wear.danger_floor);
+    expect(dangerFactor(rules.wear.danger_ref, rules)).toBeCloseTo(1, 12);
+    expect(dangerFactor(1000, rules)).toBe(rules.wear.danger_cap);
+  });
+
+  it('systemWear draws uniform(system_base_min, system_base_max), tiny and unscaled', () => {
+    const rng = new ScriptedRng(
+      [
+        {
+          fn: 'uniform',
+          args: [rules.wear.system_base_min, rules.wear.system_base_max],
+          value: 0.1,
+        },
+      ],
+      [],
+      'system-wear',
+    );
+    expect(systemWear(rules, rng)).toBe(0.1);
+    rng.assertDrained();
+  });
+
+  it('partAmbientWear routes a passive class to systemWear, ignoring danger and environment', () => {
+    const rng = new ScriptedRng(
+      [
+        {
+          fn: 'uniform',
+          args: [rules.wear.system_base_min, rules.wear.system_base_max],
+          value: 0.12,
+        },
+      ],
+      [],
+      'passive-ambient',
+    );
+    // A high-danger, high-env leg still costs the passive class only its flat usage tick.
+    expect(partAmbientWear('CARGO', 8, 3, rules, rng)).toBe(0.12);
+    rng.assertDrained();
+  });
+
+  it('partAmbientWear scales an exposed class by the leg danger', () => {
+    const rng = new ScriptedRng([{ fn: 'uniform', args: [3, 5], value: 4 }], [], 'exposed-ambient');
+    // total = 4 + 1×1.2 = 5.2; danger 0 floors at danger_floor (0.1) → 0.52.
+    expect(partAmbientWear('ENGINE', 0, 1, rules, rng)).toBeCloseTo(
+      5.2 * rules.wear.danger_floor,
+      10,
+    );
+    rng.assertDrained();
+  });
+
+  it("a simple, safe leg (low danger) barely touches an exposed part — the owner's complaint", () => {
+    // Two legs at danger 2 (zone 0, the mildest), env level 1: with the shipped defaults this
+    // must cost an exposed part a small fraction of what the old flat formula did (~4-6/leg).
+    let condition = 80;
+    for (let i = 0; i < 2; i += 1) {
+      const rng = createRng(1000 + i);
+      const loss = partAmbientWear('ENGINE', 2, 1, rules, rng);
+      condition = applyWear(condition, loss);
+    }
+    expect(80 - condition).toBeLessThan(4);
+  });
+
+  it('partDefeatWear gives a passive class only system_defeat_share of the roll; exposed the whole roll', () => {
+    expect(partDefeatWear('CARGO', 12, rules)).toBeCloseTo(12 * rules.wear.system_defeat_share, 10);
+    expect(partDefeatWear('ENGINE', 12, rules)).toBe(12);
   });
 });
 
