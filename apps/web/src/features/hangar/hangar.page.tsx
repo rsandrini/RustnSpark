@@ -16,7 +16,6 @@ import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
-import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartStatsCard, partSummary, useNumberFormat } from '../parts/part-detail';
@@ -86,10 +85,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const format = useNumberFormat();
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
   // The last-finished mission used to be an inline card between the ship animation and the
-  // tabs; it is a link near the tabs now, opening the same summary as a small popup instead
-  // (owner request — fewer lines on the page).
+  // tabs; it is a link near the tabs now, going straight to its report (owner request —
+  // fewer lines on the page, and one click instead of a popup in between).
   const [lastMission, setLastMission] = useState<LastMission | undefined>(undefined);
-  const [showLastMission, setShowLastMission] = useState(false);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.
   useEffect(() => {
@@ -390,40 +388,21 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           })}
         </div>
         {lastMission !== undefined && (
-          <button
-            type="button"
-            className="nav-link"
-            onClick={() => setShowLastMission(true)}
-          >
+          <Link className="nav-link" to={`/report/${lastMission.missionId}`}>
             {t('transit.lastMission')}
-          </button>
+          </Link>
         )}
       </div>
 
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
-          mission no longer renders inline here; it reaches the pilot as the link above instead. */}
+          mission no longer renders inline here; it reaches the pilot as the link above instead,
+          straight to its report — not a popup, so it doesn't take two clicks. */}
       <TransitPage
         embedded
         onGoToBoard={() => setPageTab('board')}
         onLastMission={setLastMission}
       />
-      <Popup
-        open={showLastMission}
-        title={t('transit.lastMission')}
-        onClose={() => setShowLastMission(false)}
-      >
-        {lastMission !== undefined && (
-          <div className="stack" data-testid="last-mission">
-            <p className="sub">
-              {t(`report.outcome.${lastMission.outcome}`, { defaultValue: lastMission.outcome })}
-            </p>
-            <Link className="btn primary" to={`/report/${lastMission.missionId}`}>
-              {t('transit.lastReport')}
-            </Link>
-          </div>
-        )}
-      </Popup>
 
       {pageTab === 'board' && <BoardPage embedded onGoToShip={() => setPageTab('ship')} />}
       {pageTab === 'port' && <PortPage embedded onGoToShip={() => setPageTab('ship')} />}
@@ -441,7 +420,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
           <div className="hangar-layout">
             <section aria-label={t('hangar.tray')} className="hangar-side">
-              <div className="tabs" role="tablist">
+              {/* A nested sub-menu (Parts/Store) inside the Ship tab: a different accent colour
+                  and a bit of breathing room from the Ship/Board/Port tabs above it, so it
+                  reads as a level down rather than a continuation of the same tab strip. */}
+              <div className="tabs tabs-sub" role="tablist">
                 {(['parts', 'store'] as const).map((id) => (
                   <button
                     key={id}

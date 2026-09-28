@@ -16,7 +16,6 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
-import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
 import { Popup } from '../../ui/Popup';
@@ -104,10 +103,6 @@ export function MapPage({ guided = false }: MapPageProps) {
   }
 
   const nameOf = (location: WorldLocation) => pickLocalized(location.displayName, i18n.language);
-  const placeName = (id: string) => {
-    const place = byId.get(id);
-    return place === undefined ? id : nameOf(place);
-  };
   const descriptionOf = (location: WorldLocation) =>
     pickLocalized(location.description, i18n.language);
 
@@ -122,26 +117,9 @@ export function MapPage({ guided = false }: MapPageProps) {
 
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('map.title')}</h1>
-        <span className="sub">{t('map.hint')}</span>
-      </header>
-      <p className="map-status" role="status" data-testid="map-status">
-        {inFlight && flight !== undefined ? (
-          <>
-            <span className="you-badge">{t('map.inTransit')}</span>{' '}
-            {t('map.headingTo', {
-              destination: placeName(flight.destinationId),
-            })}{' '}
-            <Countdown until={flight.arrivalAt ?? ''} />
-          </>
-        ) : shipLocation !== null && byId.get(shipLocation) !== undefined ? (
-          <>
-            <span className="you-badge">{t('map.youAreHere')}</span>{' '}
-            {t('map.dockedAt', { place: nameOf(byId.get(shipLocation)!) })}
-          </>
-        ) : null}
-      </p>
+      {/* Owner request: no text before the map — "you are here" and the in-flight ship are
+          already shown directly on the map itself (the you-tag label and the moving marker). */}
+      <h1 className="sr-only">{t('map.title')}</h1>
       <EmptyShipNotice />
 
       <div className="stage">

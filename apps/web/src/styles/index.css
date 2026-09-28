@@ -209,6 +209,16 @@ a {
   border-bottom-color: var(--spark);
 }
 
+/* A tab strip nested one level down (My Ship's Parts/Store, inside the Ship tab): its own
+   accent colour and a gap above, so it doesn't read as a continuation of the tabs above it. */
+.tabs-sub {
+  margin-top: 22px;
+}
+
+.tabs-sub .tab.on {
+  border-bottom-color: var(--blue);
+}
+
 .tab .count {
   font-size: 10px;
   background: var(--panel2);
@@ -620,11 +630,14 @@ a {
   background: radial-gradient(circle at 50% 40%, #101720, var(--bg));
   border: 1px solid var(--line);
   border-radius: 12px;
+  /* Bounded so the map fits on screen without scrolling in fullscreen (owner: "today is bigger
+     than that") — the svg's own viewBox scales to fit inside this, letterboxed, not stretched. */
+  height: min(68vh, 620px);
 }
 
 .stage svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   touch-action: none;
 }
@@ -1698,6 +1711,20 @@ svg .block.floating {
   border-radius: 14px;
   background: radial-gradient(ellipse at 60% 50%, #0d1622 0%, #05070b 75%);
   margin: 12px 0;
+}
+
+.stage-place-label {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  z-index: 1;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(5, 7, 11, 0.55);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .stars {

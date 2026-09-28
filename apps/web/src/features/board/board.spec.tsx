@@ -92,12 +92,19 @@ describe('board (S10.6)', () => {
   });
 
   it('reads the board location from the query string', async () => {
+    // The place banner is gone from the embedded board now (the ship stage at the top of My
+    // Ship already shows it); what's left to check is that the query string actually drove
+    // which location's offers were requested.
+    const requested: string[] = [];
+    server.use(
+      http.get('/v1/locations/:id/missions', ({ params }) => {
+        requested.push(String(params.id));
+        return HttpResponse.json([], { status: 200 });
+      }),
+    );
     await renderBoard('?location=gate');
-
-    expect(
-      await screen.findByRole('heading', { name: 'Portão Kessler', level: 2 }),
-    ).toBeInTheDocument();
-    expect(document.querySelectorAll('.mcard')).toHaveLength(4);
+    await waitFor(() => expect(requested).toContain('gate'));
+    expect(requested).not.toContain('ceres');
   });
 
   it('shows fuel aboard as a bar with the trip cost carved out, not just a number', async () => {

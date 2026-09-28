@@ -153,9 +153,11 @@ describe('map (S10.5)', () => {
       ),
     );
     const { svg } = await renderMap();
+    // The status text above the map is gone (owner request); the marker itself is the
+    // "in flight" indicator now — moving along the drawn route.
     await waitFor(() => expect(svg.querySelector('.ship-marker')).not.toBeNull());
     expect(svg.querySelector('polyline.flight-path')).not.toBeNull();
-    expect(screen.getByTestId('map-status')).toHaveTextContent(/In flight/);
+    expect(svg.querySelector('[aria-label="Your ship"]')).not.toBeNull();
     expect(svg.querySelector('.you-tag')).toBeNull();
   });
 

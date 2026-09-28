@@ -43,6 +43,7 @@ export function ActiveShipStage({ size = 'hero' }: { size?: 'hero' | 'compact' }
       until={until}
       size={size}
       detail={detail}
+      placeName={placeName}
       onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
     />
   );

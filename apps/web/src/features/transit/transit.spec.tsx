@@ -158,12 +158,10 @@ describe('transit (S10.7)', () => {
 
     // The last run comes from the server's report list, so it survives a reload and shows
     // the real outcome — not just "no active mission". It reaches the pilot as a "Last
-    // mission" link next to the Ship/Board/Port tabs, opening a popup with the report link
+    // mission" link next to the Ship/Board/Port tabs, going straight to its report.
     // (Embedded, the old "Back to the map" shortcut is gone — Map is always one click away
     // in the persistent GameNav now.)
-    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
-    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
-    const reportLink = within(popup).getByRole('link', { name: 'Read the report' });
+    const reportLink = await screen.findByRole('link', { name: 'Last mission' });
     expect(reportLink).toHaveAttribute('href', '/report/m-1');
   });
 
@@ -188,10 +186,7 @@ describe('transit (S10.7)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
-    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
-    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
-    expect(popup).toHaveTextContent('Mission failed');
-    expect(within(popup).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Last mission' })).toHaveAttribute(
       'href',
       '/report/m-7',
     );
@@ -253,9 +248,7 @@ describe('transit (S10.7)', () => {
 
     resolved = true;
     await queryClient.invalidateQueries({ queryKey: ['active'] });
-    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
-    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
-    expect(within(popup).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Last mission' })).toHaveAttribute(
       'href',
       '/report/m-9',
     );

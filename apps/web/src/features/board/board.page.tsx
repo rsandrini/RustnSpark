@@ -128,7 +128,9 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
           <span className="sub">{originId === null ? '' : locationName(originId)}</span>
         </header>
       )}
-      {originId !== null && (
+      {/* The place is already shown in the ship stage at the top of My Ship when embedded (owner
+          request — this banner duplicated it); the standalone page still gets its own. */}
+      {!embedded && originId !== null && (
         <PlaceBanner placeId={originId}>
           <h2>{locationName(originId)}</h2>
         </PlaceBanner>

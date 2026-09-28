@@ -14,6 +14,9 @@ export interface ShipStageProps {
   size?: 'hero' | 'compact';
   /** Extra line under the scene (what exactly is going on). */
   detail?: string;
+  /** The place's display name, shown as a small label over the scene itself while parked (owner
+      request — Board's own place banner was dropped as a duplicate of this). */
+  placeName?: string;
   /** Called when the countdown reaches zero (the caller refetches what changed). */
   onElapsed?: () => void;
 }
@@ -50,6 +53,7 @@ export function ShipStage({
   until,
   size = 'hero',
   detail,
+  placeName,
   onElapsed,
 }: ShipStageProps) {
   const { t } = useTranslation();
@@ -73,6 +77,9 @@ export function ShipStage({
         <div className="stars stars-far" />
         <div className="stars stars-mid" />
         <div className="stars stars-near" />
+        {parked && placeName !== undefined && (
+          <span className="stage-place-label">{placeName}</span>
+        )}
         {mode === 'scavenging' &&
           DEBRIS.map((piece, index) => (
             <span
