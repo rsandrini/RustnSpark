@@ -73,19 +73,19 @@ describe('market panel: descriptions and filters', () => {
 
   it('shows the pilot balance in the Hangar store and lets the part details be closed', async () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    // Selecting a placed part opens its detail panel, below the ship sheet; it can be dismissed.
+    // Selecting a placed part opens its stats as a popup (not a side panel); it can be dismissed.
     const block = await waitFor(() => {
       const found = document.querySelector('rect.block');
       if (found === null) throw new Error('no block yet');
       return found;
     });
     fireEvent.pointerDown(block);
-    const detail = await screen.findByLabelText('Part details');
+    const detail = await screen.findByRole('dialog');
     expect(detail).toBeInTheDocument();
     const sheet = screen.getByRole('region', { name: 'Ship sheet' });
     expect(sheet.querySelector('.panel')!.textContent).toMatch(/Ship sheet/);
-    fireEvent.click(within(detail).getByRole('button', { name: 'Close details' }));
-    expect(screen.queryByLabelText('Part details')).toBeNull();
+    fireEvent.click(within(detail).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Store' }));
     expect(await screen.findByTestId('store-balance')).toHaveTextContent('4,820 ¢');

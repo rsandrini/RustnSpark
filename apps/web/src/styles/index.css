@@ -1174,6 +1174,12 @@ svg .block.floating {
   .hangar-layout {
     grid-template-columns: 1fr;
   }
+
+  /* Stacked layout: nothing to "keep in view" beside it, so let the list flow naturally. */
+  .hangar-side {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 /* auth + home ---------------------------------------------------------- */
@@ -1374,8 +1380,21 @@ svg .block.floating {
   color: var(--mut);
 }
 
+/* Its own scroll region (owner request): a long parts/store list scrolls in place instead of
+   carrying the ship yard out of view with it. */
+.hangar-side {
+  max-height: calc(100vh - 260px);
+  min-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .hangar-side .tabs {
   margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
 }
 
 .hangar-side .grid-cards {

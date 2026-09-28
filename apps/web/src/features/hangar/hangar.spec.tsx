@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -84,6 +84,20 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
     expect(block(container, 'part-cargo-b')).toBeNull();
+  });
+
+  it('clicking a part opens its stats as a popup, not an inline side panel (owner request)', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+    fireEvent.click(trayButton);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { level: 2 })).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('labels parts with their localized names, never the raw part code', async () => {

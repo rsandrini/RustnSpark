@@ -19,6 +19,7 @@ import { PartThumb } from '../../ui/PartThumb';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
+import { Popup } from '../../ui/Popup';
 import { PartInfoButton } from '../parts/part-info-button';
 
 // Which kind of part fixes each viability problem: the hint names it and offers the store filter.
@@ -487,22 +488,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             )}
           </div>
 
-          {focusPart !== null && dismissedDetailId !== focusPart.id && (
-            <div className="panel" aria-label={t('hangar.detail')}>
-              <div className="row-between">
-                <h2>{nameById.get(focusPart.id) ?? focusPart.partType}</h2>
-                <button
-                  type="button"
-                  className="btn"
-                  aria-label={t('hangar.detailClose')}
-                  onClick={() => setDismissedDetailId(focusPart.id)}
-                >
-                  {t('hangar.detailCloseGlyph')}
-                </button>
-              </div>
-              <PartDetail part={focusPart} />
-            </div>
-          )}
+          {/* Click a part (tray or placed) to see its full stats — a popup, not a side panel,
+              so it never crowds the ship sheet or pushes the layout around (owner request). */}
+          <Popup
+            open={focusPart !== null && dismissedDetailId !== focusPart.id}
+            title={focusPart !== null ? (nameById.get(focusPart.id) ?? focusPart.partType) : ''}
+            onClose={() => focusPart !== null && setDismissedDetailId(focusPart.id)}
+          >
+            {focusPart !== null && <PartDetail part={focusPart} />}
+          </Popup>
 
           {allProblems.length > 0 && (
             <div className="panel">
