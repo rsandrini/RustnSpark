@@ -45,7 +45,7 @@ describe('rescue (S8.6 / S10.9)', () => {
       'Towed back to port for 800 ¢. Fuel on board: 25.',
     );
     await waitFor(() => expect(screen.queryByTestId('rescue-banner')).toBeNull());
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,020 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,020 ¢'));
   });
 
   it('shows no rescue banner for a ship in port', async () => {

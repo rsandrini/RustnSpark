@@ -54,7 +54,7 @@ describe('port (S10.9)', () => {
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
     await renderPort();
 
-    expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
+    expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,820 ¢');
     expect(screen.getByText('Plated Hull')).toBeInTheDocument();
 
     fireEvent.click(rowButton('Plated Hull'));
@@ -65,7 +65,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Bought Plated Hull for 300 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,520 ¢'));
   });
 
   it('disables spending on a negative balance while scavenging stays open', async () => {
@@ -86,7 +86,7 @@ describe('port (S10.9)', () => {
     );
     await renderPort();
 
-    expect(await screen.findByTestId('wallet')).toHaveTextContent('-120 ¢');
+    expect(await screen.findByTestId('topbar-wallet')).toHaveTextContent('-120 ¢');
     expect(screen.getByText(/Negative balance/i)).toBeInTheDocument();
     expect(rowButton('Plated Hull')).toBeDisabled();
 
@@ -107,7 +107,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Sold Iron for 24 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,844 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,844 ¢'));
   });
 
   it('a destroyed part has no repair slider and is skipped by "set all to 100%"', async () => {
@@ -155,7 +155,7 @@ describe('port (S10.9)', () => {
     expect(economyState.wallet).toBe(4820);
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('3,632 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('3,632 ¢'));
   });
 
   it('never lets "Start repair" open on a stale (pre-refetch) quote for a bigger plan', async () => {
@@ -210,7 +210,7 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
     fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,775 ¢'));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
     // The tab explains itself: time, risk, what you find, and where it works.
@@ -391,13 +391,13 @@ describe('port (S10.9)', () => {
       }),
     );
     await renderPort();
-    await screen.findByTestId('wallet');
+    await screen.findByTestId('topbar-wallet');
     const before = sessionRefreshes;
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,520 ¢'));
     expect(sessionRefreshes).toBe(before);
   });
 

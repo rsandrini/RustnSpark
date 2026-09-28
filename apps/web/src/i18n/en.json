@@ -705,6 +705,7 @@
       "time": "Flight time",
       "fuel": "Fuel needed"
     },
+    "fuelGauge": "Fuel {{have}} / {{cap}} — this trip uses {{needed}}",
     "lowFuel": "Your ship does not carry enough fuel for this trip: refuel first.",
     "needsTitle": "You need:",
     "needs": {

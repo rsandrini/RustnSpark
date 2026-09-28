@@ -6,6 +6,7 @@ import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
+import { Gauge } from '../../ui/Gauge';
 import { serverNow } from '../../api/client';
 
 export interface MissionCardProps {
@@ -14,6 +15,8 @@ export interface MissionCardProps {
   destination: WorldLocation | undefined;
   /** Fuel aboard, to say whether the trip is affordable. */
   fuelHave?: number;
+  /** Tank size, to draw the fuel-aboard bar the trip's cost is carved out of. */
+  fuelCap?: number;
   mine: boolean;
   actions: ReactNode;
 }
@@ -25,6 +28,7 @@ export function MissionCard({
   origin,
   destination,
   fuelHave,
+  fuelCap,
   mine,
   actions,
 }: MissionCardProps) {
@@ -90,7 +94,29 @@ export function MissionCard({
         </div>
         <div className={notEnoughFuel ? 'bad' : undefined}>
           <dt>{t('board.facts.fuel')}</dt>
-          <dd>{info.estimate === null ? '—' : Math.round(info.estimate.fuelNeeded)}</dd>
+          <dd>
+            {info.estimate === null ? (
+              '—'
+            ) : fuelHave !== undefined && fuelCap !== undefined && fuelCap > 0 ? (
+              // The fuel aboard as a bar, not just a number: the amount this trip would burn is
+              // carved out of the current fill in a highlighted colour, so the pilot sees both
+              // what they have and how much of it this trip would take at a glance.
+              <Gauge
+                value={fuelHave}
+                max={fuelCap}
+                remainingAfter={fuelHave - info.estimate.fuelNeeded}
+                tone={notEnoughFuel ? 'bad' : 'fuel'}
+                ariaLabel={t('board.facts.fuel')}
+                label={t('board.fuelGauge', {
+                  have: Math.round(fuelHave),
+                  cap: Math.round(fuelCap),
+                  needed: Math.round(info.estimate.fuelNeeded),
+                })}
+              />
+            ) : (
+              Math.round(info.estimate.fuelNeeded)
+            )}
+          </dd>
         </div>
       </dl>
       {notEnoughFuel && <p className="error-text">{t('board.lowFuel')}</p>}

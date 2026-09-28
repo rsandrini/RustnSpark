@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { resetBoardState } from '../../test/msw/handlers';
+import { resetBoardState, resetActiveState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 
 const onboarded = () =>
@@ -32,6 +32,9 @@ async function renderBoard(extra = ''): Promise<void> {
 describe('board (S10.6)', () => {
   beforeEach(() => {
     resetBoardState();
+    // An earlier test (accept/dispatch) can leave an accepted mission behind; that active
+    // mission — not the board list — is what was actually leaking into later tests here.
+    resetActiveState();
     server.use(onboarded());
   });
 
@@ -95,6 +98,52 @@ describe('board (S10.6)', () => {
       await screen.findByRole('heading', { name: 'Portão Kessler', level: 2 }),
     ).toBeInTheDocument();
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
+  });
+
+  it('shows fuel aboard as a bar with the trip cost carved out, not just a number', async () => {
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    // Default fixture: ship has 25/40 fuel, every offer needs 8 — comfortably affordable.
+    const gauges = screen.getAllByRole('progressbar', { name: 'Fuel needed' });
+    expect(gauges.length).toBeGreaterThan(0);
+    const gauge = gauges[0]!;
+    expect(gauge).toHaveAttribute('aria-valuenow', '25');
+    expect(gauge).toHaveAttribute('aria-valuemax', '40');
+    expect(gauge).not.toHaveClass('bad');
+    expect(gauge.querySelector('.gauge-consume')).not.toBeNull();
+    expect(screen.getAllByText('Fuel 25 / 40 — this trip uses 8').length).toBeGreaterThan(0);
+  });
+
+  it('flags the fuel bar red when the ship does not carry enough for the trip', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'luna starter',
+              fuel: 5,
+              status: 'IN_PORT',
+              currentLocationId: 'ceres',
+              stance: 'NEUTRAL',
+              layout: [],
+              sheet: { fuelCap: 40 },
+              shipClass: 'MULTIROLE',
+              yard: { halfSize: 10 },
+              activity: { kind: 'idle', until: null, missionId: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
+    expect(gauge).toHaveClass('bad');
+    expect(gauge).toHaveAttribute('aria-valuenow', '5');
+    expect(screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.').length).toBeGreaterThan(0);
   });
 
   it("labels the player's private start-safe mission (D43) and no shared offer", async () => {

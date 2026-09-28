@@ -157,10 +157,13 @@ describe('transit (S10.7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dispatch' }));
 
     // The last run comes from the server's report list, so it survives a reload and shows
-    // the real outcome — not just "no active mission". (Embedded, the old "Back to the map"
-    // shortcut is gone — Map is always one click away in the persistent GameNav now.)
-    expect(await screen.findByTestId('last-mission')).toHaveTextContent('Last mission');
-    const reportLink = screen.getByRole('link', { name: 'Read the report' });
+    // the real outcome — not just "no active mission". It reaches the pilot as a "Last
+    // mission" link next to the Ship/Board/Port tabs, opening a popup with the report link
+    // (Embedded, the old "Back to the map" shortcut is gone — Map is always one click away
+    // in the persistent GameNav now.)
+    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
+    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
+    const reportLink = within(popup).getByRole('link', { name: 'Read the report' });
     expect(reportLink).toHaveAttribute('href', '/report/m-1');
   });
 
@@ -185,9 +188,10 @@ describe('transit (S10.7)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
-    const panel = await screen.findByTestId('last-mission');
-    expect(panel).toHaveTextContent('Mission failed');
-    expect(within(panel).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
+    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
+    expect(popup).toHaveTextContent('Mission failed');
+    expect(within(popup).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
       'href',
       '/report/m-7',
     );
@@ -249,8 +253,9 @@ describe('transit (S10.7)', () => {
 
     resolved = true;
     await queryClient.invalidateQueries({ queryKey: ['active'] });
-    const panel = await screen.findByTestId('last-mission');
-    expect(within(panel).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    fireEvent.click(await screen.findByRole('button', { name: 'Last mission' }));
+    const popup = await screen.findByRole('dialog', { name: 'Last mission' });
+    expect(within(popup).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
       'href',
       '/report/m-9',
     );

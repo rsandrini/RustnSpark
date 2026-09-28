@@ -88,7 +88,9 @@ describe('market panel: descriptions and filters', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: 'Store' }));
     expect(await screen.findByTestId('store-balance')).toHaveTextContent('4,820 ¢');
-    expect(screen.getByTestId('hangar-balance')).toHaveTextContent('4,820 ¢');
+    // The wallet moved off My Ship's own header into the top bar's account menu (owner
+    // request — fewer lines on the page), visible on every in-game screen now.
+    expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,820 ¢');
   });
 
   it('hovering a placed part shows a small stats card — clicking it never opens the full popup', async () => {

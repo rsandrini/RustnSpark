@@ -10,19 +10,20 @@ import type {
   Problem,
   ShipResponse,
 } from '../../api/generated';
+import { Link } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
-import { useAuthContext } from '../auth/auth.context';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
+import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartStatsCard, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
-import { TransitPage } from '../transit/transit.page';
+import { TransitPage, type LastMission } from '../transit/transit.page';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -83,9 +84,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const format = useNumberFormat();
-  const { user } = useAuthContext();
-  const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
+  // The last-finished mission used to be an inline card between the ship animation and the
+  // tabs; it is a link near the tabs now, opening the same summary as a small popup instead
+  // (owner request — fewer lines on the page).
+  const [lastMission, setLastMission] = useState<LastMission | undefined>(undefined);
+  const [showLastMission, setShowLastMission] = useState(false);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.
   useEffect(() => {
@@ -342,73 +346,90 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     return <main className="app">{t('error.NO_SHIP')}</main>;
   }
 
-  const shipSuffix = [
-    shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : null,
-    ship.currentLocationId,
-  ]
-    .filter((value): value is string => value !== null)
-    .map((value) => ` · ${value}`)
-    .join('');
-
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
       <header className="topbar">
         <h1>{t('hangar.title')}</h1>
-        <span className="sub">
-          <b>{ship.name}</b>
-          {shipSuffix}
-        </span>
-        <span className="sub" data-testid="hangar-balance">
-          <span className="muted">{t('port.wallet')}</span> <b data-testid="wallet">{credits}</b>
-        </span>
       </header>
       <ActiveShipStage size="compact" />
-      {/* The travel/job summary — "the resume of the travel on main page" (owner request):
-          renders nothing when the ship is idle, so it never crowds the yard. */}
-      <TransitPage embedded onGoToBoard={() => setPageTab('board')} />
 
-      <div className="tabs" role="tablist" aria-label={t('hangar.pageTabs.label')}>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={pageTab === 'ship'}
-          className={`tab${pageTab === 'ship' ? ' on' : ''}`}
-          onClick={() => setPageTab('ship')}
-        >
-          {t('hangar.pageTabs.ship')}
-        </button>
-        {(['board', 'port'] as const).map((id) => {
-          const dockedOnly = ship.status !== 'IN_PORT';
-          return dockedOnly ? (
-            <span
-              key={id}
-              className="nav-link disabled"
-              aria-disabled="true"
-              title={t('hangar.pageTabs.dockedOnly')}
-            >
-              {t(`hangar.pageTabs.${id}`)}
-            </span>
-          ) : (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={pageTab === id}
-              className={`tab${pageTab === id ? ' on' : ''}`}
-              onClick={() => setPageTab(id)}
-            >
-              {t(`hangar.pageTabs.${id}`)}
-            </button>
-          );
-        })}
+      <div className="page-tabs-row">
+        <div className="tabs" role="tablist" aria-label={t('hangar.pageTabs.label')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pageTab === 'ship'}
+            className={`tab${pageTab === 'ship' ? ' on' : ''}`}
+            onClick={() => setPageTab('ship')}
+          >
+            {t('hangar.pageTabs.ship')}
+          </button>
+          {(['board', 'port'] as const).map((id) => {
+            const dockedOnly = ship.status !== 'IN_PORT';
+            return dockedOnly ? (
+              <span
+                key={id}
+                className="nav-link disabled"
+                aria-disabled="true"
+                title={t('hangar.pageTabs.dockedOnly')}
+              >
+                {t(`hangar.pageTabs.${id}`)}
+              </span>
+            ) : (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={pageTab === id}
+                className={`tab${pageTab === id ? ' on' : ''}`}
+                onClick={() => setPageTab(id)}
+              >
+                {t(`hangar.pageTabs.${id}`)}
+              </button>
+            );
+          })}
+        </div>
+        {lastMission !== undefined && (
+          <button
+            type="button"
+            className="nav-link"
+            onClick={() => setShowLastMission(true)}
+          >
+            {t('transit.lastMission')}
+          </button>
+        )}
       </div>
+
+      {/* The travel/job summary — "the resume of the travel on main page" (owner request):
+          renders nothing when the ship is idle, so it never crowds the yard. The last-finished
+          mission no longer renders inline here; it reaches the pilot as the link above instead. */}
+      <TransitPage
+        embedded
+        onGoToBoard={() => setPageTab('board')}
+        onLastMission={setLastMission}
+      />
+      <Popup
+        open={showLastMission}
+        title={t('transit.lastMission')}
+        onClose={() => setShowLastMission(false)}
+      >
+        {lastMission !== undefined && (
+          <div className="stack" data-testid="last-mission">
+            <p className="sub">
+              {t(`report.outcome.${lastMission.outcome}`, { defaultValue: lastMission.outcome })}
+            </p>
+            <Link className="btn primary" to={`/report/${lastMission.missionId}`}>
+              {t('transit.lastReport')}
+            </Link>
+          </div>
+        )}
+      </Popup>
 
       {pageTab === 'board' && <BoardPage embedded onGoToShip={() => setPageTab('ship')} />}
       {pageTab === 'port' && <PortPage embedded onGoToShip={() => setPageTab('ship')} />}
 
       {pageTab === 'ship' && (
         <>
-          <p className="sub">{t('hangar.yardHint')}</p>
           {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
           {pendingPartId !== null && (
             <p className="sub" aria-live="polite">

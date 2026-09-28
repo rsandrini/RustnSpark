@@ -401,6 +401,14 @@ export function ShipYard({
                     height={0.1}
                     rx={0.05}
                   />
+                  {/* HP/condition percent, small, centered on the bar itself (owner request). */}
+                  <text
+                    className="cond-label"
+                    x={placement.gx + width / 2}
+                    y={placement.gy + height - 0.155}
+                  >
+                    {Math.round(look.condition)}%
+                  </text>
                 </g>
               )}
               <text

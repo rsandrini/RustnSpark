@@ -160,6 +160,37 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+/* My Ship's page tabs (Ship/Board/Port) plus the "Last mission" link, sharing one row so the
+   link doesn't add a line of its own. */
+.page-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-tabs-row .tabs {
+  flex: 1 1 auto;
+  margin-top: 14px;
+}
+
+.page-tabs-row > .nav-link {
+  margin-bottom: 8px;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--spark);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.page-tabs-row > .nav-link:hover {
+  color: var(--ink);
+}
+
 .tab {
   flex: 0 0 auto;
   background: transparent;
@@ -1269,6 +1300,12 @@ svg .block.floating {
   color: var(--ink);
 }
 
+.wallet-chip {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
 .lang-switch .input {
   width: auto;
   padding: 4px 8px;
@@ -1862,6 +1899,13 @@ svg .block.floating {
   inset: 0 auto 0 0;
 }
 
+.gauge-consume {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--spark);
+}
+
 .gauge-planned {
   background: repeating-linear-gradient(
     135deg,
@@ -2122,6 +2166,17 @@ svg .block.cond-bad {
 
 .cond-bar.cond-bad {
   fill: var(--bad);
+}
+
+.cond-label {
+  fill: #fff;
+  font-size: 0.09px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.65);
+  stroke-width: 0.018px;
+  pointer-events: none;
+  user-select: none;
 }
 
 .yard-color-toggle {

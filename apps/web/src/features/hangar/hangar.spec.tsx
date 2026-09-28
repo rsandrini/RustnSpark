@@ -84,6 +84,11 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
     expect(block(container, 'part-cargo-b')).toBeNull();
+    // HP/condition percent is printed small, right on the bar itself (owner request).
+    expect(
+      block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
+        ?.textContent,
+    ).toBe('1%');
   });
 
   it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {

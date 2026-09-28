@@ -186,6 +186,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                 (entry) => entry.id === offer.destinationId,
               )}
               fuelHave={ship?.fuel}
+              fuelCap={ship?.sheet.fuelCap}
               mine={mine}
               actions={
                 <>
