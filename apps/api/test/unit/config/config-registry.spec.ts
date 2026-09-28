@@ -10,7 +10,6 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import { validateGameRules } from '../../../src/config/game-rules.schema.js';
 
 const EXPECTED_KEYS: readonly string[] = [
-  'admin.debug_fast_ops',
   'admin.debug_fast_ops_seconds',
   'combat.armor_cap',
   'combat.attack_die',

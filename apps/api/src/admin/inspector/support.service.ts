@@ -264,6 +264,20 @@ export class SupportService {
     });
   }
 
+  // Owner-only debug switch (round-2 playtest follow-up): per account by design, never a global
+  // config value — a global one would speed up every player's jobs. See config/debug-timing.ts.
+  async setDebugFastOps(
+    playerId: string,
+    enabled: boolean,
+    context: SupportContext,
+  ): Promise<SupportActionResult> {
+    return this.run(playerId, context, 'SUPPORT_SET_DEBUG_FAST_OPS', async (tx, player) => {
+      const before = { debugFastOps: player.debugFastOps };
+      await tx.player.update({ where: { id: playerId }, data: { debugFastOps: enabled } });
+      return { before, after: { debugFastOps: enabled } };
+    });
+  }
+
   private async run(
     playerId: string,
     context: SupportContext,

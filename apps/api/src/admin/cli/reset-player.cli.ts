@@ -17,12 +17,18 @@ import { SupportService } from '../inspector/support.service.js';
 // --hard goes further, back to right after registration (faction unpicked, no ship, no history):
 // SupportService.reset deliberately never does this (a live support tool must never erase a real
 // player's faction or history), so this is a separate, owner-only path that only this CLI takes.
+//
+// --set-debug-fast-ops on|off flips this one account's debug switch (Player.debugFastOps — see
+// config/debug-timing.ts): deliberately per account, not a global config value, so it never
+// speeds up anyone else's jobs. On its own it does NOT also reset; pass --reset to do both.
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
       email: { type: 'string' },
       admin: { type: 'boolean', default: false },
       hard: { type: 'boolean', default: false },
+      reset: { type: 'boolean', default: false },
+      'set-debug-fast-ops': { type: 'string' },
       reason: { type: 'string', default: 'owner debug reset (CLI)' },
     },
     allowPositionals: false,
@@ -59,12 +65,34 @@ async function main(): Promise<void> {
       });
     }
 
-    const result = values.hard
-      ? await hardReset(prisma, account.id, account.player.id)
-      : await app
-          .get(SupportService)
-          .reset(account.player.id, { actor: account.id, reason: values.reason });
-    console.log(JSON.stringify({ accountId: account.id, playerId: account.player.id, ...result }));
+    const debugFastOps = values['set-debug-fast-ops'];
+    if (debugFastOps !== undefined && debugFastOps !== 'on' && debugFastOps !== 'off') {
+      throw new Error("--set-debug-fast-ops takes 'on' or 'off'");
+    }
+    // Historical default (before --set-debug-fast-ops existed): a bare call resets. It stays the
+    // default only when nothing more targeted was asked for, so flipping the debug switch alone
+    // never resets the ship/missions/wallet as a side effect — pass --reset to do both.
+    const doReset = values.hard || values.reset || debugFastOps === undefined;
+
+    const results: unknown[] = [];
+    if (doReset) {
+      results.push(
+        values.hard
+          ? await hardReset(prisma, account.id, account.player.id)
+          : await app
+              .get(SupportService)
+              .reset(account.player.id, { actor: account.id, reason: values.reason }),
+      );
+    }
+    if (debugFastOps !== undefined) {
+      results.push(
+        await app.get(SupportService).setDebugFastOps(account.player.id, debugFastOps === 'on', {
+          actor: account.id,
+          reason: values.reason,
+        }),
+      );
+    }
+    console.log(JSON.stringify({ accountId: account.id, playerId: account.player.id, results }));
   } finally {
     await app.close();
   }

@@ -4,7 +4,6 @@ import { GameConfigValidationError } from './game-config.types.js';
 import { getRegistryEntry } from './config-registry.js';
 
 const adminSchema = z.object({
-  debug_fast_ops: z.boolean(),
   debug_fast_ops_seconds: z.number().int().min(1).max(300),
 });
 

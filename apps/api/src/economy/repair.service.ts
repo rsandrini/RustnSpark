@@ -199,6 +199,14 @@ export class RepairService {
     const { stored, cost, durationSeconds } = await this.plan(shipId, playerId, targets);
     const completesAt = new Date(Date.now() + durationSeconds * MS_PER_SECOND);
     const rules = this.config.snapshot().rules;
+    // A plain per-account flag, not part of the ship state the lock below protects.
+    const debugFastOps =
+      (
+        await this.prisma.player.findUnique({
+          where: { id: playerId },
+          select: { debugFastOps: true },
+        })
+      )?.debugFastOps ?? false;
 
     let job: Awaited<ReturnType<typeof this.prisma.repairJob.create>>;
     try {
@@ -277,7 +285,7 @@ export class RepairService {
       await this.repairs.add(
         REPAIR_JOB_NAME,
         { repairJobId: job.id },
-        { jobId: job.id, delay: jobDelayMs(durationSeconds * MS_PER_SECOND, rules) },
+        { jobId: job.id, delay: jobDelayMs(durationSeconds * MS_PER_SECOND, rules, debugFastOps) },
       );
     } catch (error) {
       this.logger.warn(

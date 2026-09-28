@@ -3,18 +3,6 @@ import { GAME_CONFIG_DEFAULTS } from './game-config.defaults.js';
 
 export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
-    key: 'admin.debug_fast_ops',
-    group: 'admin',
-    type: 'boolean',
-    min: 0,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.debug_fast_ops),
-    description: {
-      en: 'Debug mode: every timed job (missions, travel, scavenging, repair) still shows and stores its real duration, but actually finishes after debug_fast_ops_seconds. Owner-only; never enable for players.',
-      'pt-BR': 'Modo de depuração: todo trabalho cronometrado (missões, viagem, saque, reparo) continua mostrando e guardando sua duração real, mas termina de verdade em debug_fast_ops_seconds. Somente para o dono; nunca ativar para jogadores.',
-    },
-  },
-  {
     key: 'admin.debug_fast_ops_seconds',
     group: 'admin',
     type: 'integer',
@@ -23,8 +11,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     unit: 's',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.debug_fast_ops_seconds),
     description: {
-      en: 'How long a timed job actually takes while admin.debug_fast_ops is on, regardless of its displayed duration.',
-      'pt-BR': 'Quanto um trabalho cronometrado realmente demora com admin.debug_fast_ops ativo, independente da duração exibida.',
+      en: 'How long a timed job (missions, travel, scavenging, repair) actually takes for a player whose account has the debug switch on (Player.debugFastOps — set per account by an admin, never here), regardless of the real, displayed duration.',
+      'pt-BR':
+        'Quanto um trabalho cronometrado (missões, viagem, saque, reparo) realmente demora para um jogador com o interruptor de depuração ligado na conta (Player.debugFastOps — definido por conta por um admin, nunca aqui), independente da duração real exibida.',
     },
   },
   {

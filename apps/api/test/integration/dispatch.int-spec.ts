@@ -231,12 +231,8 @@ describe('ship dispatch API (S7.2)', () => {
 
   // Owner debug switch (playtest round 2): the displayed duration and arrivalAt stay the real,
   // computed ones; only the queued job's actual delay is capped.
-  it('admin.debug_fast_ops shortens the queued delay without touching the displayed duration', async () => {
+  it("a player's own debugFastOps shortens the queued delay without touching the displayed duration, and leaves other players alone", async () => {
     await freshSeededApp();
-    await prisma.gameConfig.update({
-      where: { key: 'admin.debug_fast_ops' },
-      data: { value: true },
-    });
     await prisma.gameConfig.update({
       where: { key: 'admin.debug_fast_ops_seconds' },
       data: { value: 5 },
@@ -244,7 +240,13 @@ describe('ship dispatch API (S7.2)', () => {
     await configService.refresh();
     try {
       const player = await onboardPlayer();
+      const other = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { debugFastOps: true },
+      });
       const mission = await createMission(player, [750, 250]);
+      const otherMission = await createMission(other, [750, 250]);
       const serverTime = new Date();
       const response = await request(httpServer(testApp.app))
         .post(`/v1/ships/${player.shipId}/dispatch`)
@@ -260,11 +262,16 @@ describe('ship dispatch API (S7.2)', () => {
       const job = await queue.getJob(mission.id);
       expect(job).toBeDefined();
       expect(job?.opts.delay).toBeLessThanOrEqual(5000);
+
+      // The other player's own dispatch is untouched: no global switch was flipped.
+      const otherResponse = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${other.shipId}/dispatch`)
+        .set(auth(other.token))
+        .send({ missionId: otherMission.id });
+      expect(otherResponse.status).toBe(200);
+      const otherJob = await queue.getJob(otherMission.id);
+      expect(otherJob?.opts.delay).toBeGreaterThan(5000);
     } finally {
-      await prisma.gameConfig.update({
-        where: { key: 'admin.debug_fast_ops' },
-        data: { value: false },
-      });
       await configService.refresh();
     }
   });

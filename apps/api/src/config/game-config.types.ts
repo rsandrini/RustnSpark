@@ -23,7 +23,6 @@ export type ConfigGroup =
   | 'world';
 
 export type ConfigKey =
-  | 'admin.debug_fast_ops'
   | 'admin.debug_fast_ops_seconds'
   | 'combat.armor_cap'
   | 'combat.attack_die'
@@ -136,8 +135,10 @@ export type ConfigKey =
   | 'world.seed';
 
 export type GameRulesAdmin = Readonly<{
-  /** Owner-only debug switch: shortens every job's actual delay, never its displayed duration. */
-  debug_fast_ops: boolean;
+  /**
+   * How long a job actually takes for a player whose Player.debugFastOps is set (the switch
+   * itself is per-account, not global — see the Player model, not this config).
+   */
   debug_fast_ops_seconds: number;
 }>;
 

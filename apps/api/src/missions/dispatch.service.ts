@@ -163,6 +163,15 @@ export class DispatchService {
 
     const { rules } = this.config.snapshot();
     const serverTime = new Date();
+    // Read once, outside the transaction: a plain per-account flag, not part of the ship/mission
+    // state the lock below protects.
+    const debugFastOps =
+      (
+        await this.prisma.player.findUnique({
+          where: { id: playerId },
+          select: { debugFastOps: true },
+        })
+      )?.debugFastOps ?? false;
 
     const outcome = await this.prisma.$transaction(async (tx) => {
       const mission = await tx.missionInstance.findUnique({ where: { id: missionId } });
@@ -312,7 +321,7 @@ export class DispatchService {
       };
       await this.producer.enqueueResolve(
         data,
-        jobDelayMs(arrivalAt.getTime() - serverTime.getTime(), rules),
+        jobDelayMs(arrivalAt.getTime() - serverTime.getTime(), rules, debugFastOps),
       );
     } catch (error) {
       // Enqueue runs after commit by design: the mission is already reconcilable state,

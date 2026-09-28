@@ -43,6 +43,11 @@ model Player {
   locale          String            @default("en")
   // Faction chosen during onboarding; null until a player completes onboarding.
   factionId       String?
+  // Owner debug switch, per account (never global — a global flag would speed up every
+  // player's jobs): while true, this player's timed jobs (missions, travel, scavenging,
+  // repair) still show and store their real duration, but actually finish after
+  // admin.debug_fast_ops_seconds. Off for everyone by default; set only by an admin.
+  debugFastOps    Boolean           @default(false)
   createdAt       DateTime          @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]

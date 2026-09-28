@@ -352,12 +352,8 @@ describe('repair job API (S8.4)', () => {
     expect(stored.condition).toBe(40);
   });
 
-  it('admin.debug_fast_ops shortens the queued repair delay without touching the displayed duration', async () => {
+  it("a player's own debugFastOps shortens the queued repair delay without touching the displayed duration", async () => {
     await freshSeededApp();
-    await prisma.gameConfig.update({
-      where: { key: 'admin.debug_fast_ops' },
-      data: { value: true },
-    });
     await prisma.gameConfig.update({
       where: { key: 'admin.debug_fast_ops_seconds' },
       data: { value: 5 },
@@ -365,6 +361,10 @@ describe('repair job API (S8.4)', () => {
     await configService.refresh();
     try {
       const player = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { debugFastOps: true },
+      });
       const part = await damagedInstalledPart(player, 5);
 
       const started = await startRepair(player.token, player.shipId, randomUUID(), [
@@ -379,10 +379,6 @@ describe('repair job API (S8.4)', () => {
       expect(job).toBeDefined();
       expect(job?.opts.delay).toBeLessThanOrEqual(5000);
     } finally {
-      await prisma.gameConfig.update({
-        where: { key: 'admin.debug_fast_ops' },
-        data: { value: false },
-      });
       await configService.refresh();
     }
   });
