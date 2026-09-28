@@ -50,7 +50,7 @@
     }
   },
   "hangar": {
-    "title": "Hangar",
+    "title": "Minha Nave",
     "tray": "Peças",
     "trayEmpty": "Nenhuma peça solta no estoque.",
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
@@ -409,12 +409,14 @@
   },
   "nav": {
     "label": "Navegação do jogo",
-    "hangar": "Hangar",
+    "hangar": "Minha Nave",
     "map": "Mapa",
     "board": "Quadro",
     "transit": "Trânsito",
     "port": "Porto",
     "profile": "Perfil",
+    "admin": "Admin",
+    "logout": "Sair",
     "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro."
   },
   "port": {

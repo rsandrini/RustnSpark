@@ -2,7 +2,10 @@ import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useActiveMissions } from '../features/transit/use-active-mission';
 
-const GAME_LINKS = ['hangar', 'map', 'board', 'transit', 'port', 'profile'] as const;
+// Profile/Admin/Logout live in the top-right AccountMenu instead (round-3 nav consolidation).
+const GAME_LINKS = ['hangar', 'map', 'board', 'transit', 'port'] as const;
+// Board/Port/Transit still route independently for now (round-3's tab-count reduction — folding
+// them into My Ship with ship-status gating — is a separate follow-up); this only moves Profile.
 
 // Persistent game loop nav (S10.10): every in-game screen reaches every other one,
 // so the Hangar → Map → Board → Transit → Report → Port loop has no dead ends.

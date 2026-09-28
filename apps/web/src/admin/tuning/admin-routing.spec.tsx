@@ -71,7 +71,8 @@ describe('admin tuning routing', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: /tuning/i })).not.toBeInTheDocument(),
     );
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    // Home is gone; this mocked user has no faction, so the guard chain lands it on onboarding.
+    expect(await screen.findByRole('heading', { name: 'Choose your faction' })).toBeInTheDocument();
   });
 
   it('navigates between tuning sections from the admin shell', async () => {

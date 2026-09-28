@@ -76,7 +76,7 @@ describe('hangar (S10.4)', () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     expect(screen.getAllByText('Multirole').length).toBeGreaterThan(0);
     // crg 10 from the server sheet
     expect(screen.getByText('10')).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('hangar (S10.4)', () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    await screen.findByRole('heading', { name: 'Hangar' });
+    await screen.findByRole('heading', { name: 'My Ship' });
     // Tray button and the placed block's label both use the server-provided name.
     expect(await screen.findByRole('button', { name: /^Cargo Rack/ })).toBeInTheDocument();
     expect(container.textContent).toContain('Small Chemical Engine');
@@ -240,7 +240,7 @@ describe('hangar (S10.4)', () => {
     );
 
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    await screen.findByRole('heading', { name: 'Hangar' });
+    await screen.findByRole('heading', { name: 'My Ship' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Auto layout' }));
     await waitFor(() => expect(autoCalls).toBe(1));
@@ -253,7 +253,7 @@ describe('hangar (S10.4)', () => {
   it('rotate: a 1×1 part explains itself, a blocked rotation says why', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    await screen.findByRole('heading', { name: 'Hangar' });
+    await screen.findByRole('heading', { name: 'My Ship' });
     const block = await waitFor(() => {
       const found = document.querySelector('rect.block');
       if (found === null) throw new Error('no block yet');

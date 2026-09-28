@@ -35,18 +35,54 @@ describe('navigation flow (S10.10)', () => {
   it('shows the persistent game nav with the whole loop on in-game screens', async () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     const nav = gameNav();
     const hrefs = within(nav)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(['/hangar', '/map', '/board', '/transit', '/port', '/profile']);
+    expect(hrefs).toEqual(['/hangar', '/map', '/board', '/transit', '/port']);
+  });
+
+  it('the top-right account menu has Profile and Logout, and Admin only for an admin account', async () => {
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('shows Admin in the account menu for an admin account', async () => {
+    server.use(
+      http.get('/v1/players/me', () =>
+        HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: 4820,
+            role: 'ADMIN',
+            locale: 'en',
+            factionId: 'luna',
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
+  });
+
+  it('/ redirects an onboarded pilot straight to My Ship (Home was retired)', async () => {
+    renderWithRouter(routes, { initialEntries: ['/'] });
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
   });
 
   it('jumps from the hangar to the map through the nav', async () => {
     const { router } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    expect(await screen.findByRole('heading', { name: 'Hangar' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     fireEvent.click(within(gameNav()).getByRole('link', { name: 'Map' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/map'));

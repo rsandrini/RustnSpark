@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,9 +17,9 @@ import { ReportPage } from '../features/report/report.page';
 import { PortPage } from '../features/port/port.page';
 import { ProfilePage } from '../features/profile/profile.page';
 import { GameNav } from '../ui/GameNav';
+import { AccountMenu } from '../ui/AccountMenu';
 import { useWalletSync } from '../features/transit/use-active-mission';
 import { NoticeBanner } from '../ui/NoticeBanner';
-import { HomePage } from '../pages/home.page';
 import { NotFoundPage } from '../pages/not-found.page';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
@@ -33,6 +33,7 @@ function InGameChrome() {
   useWalletSync();
   return (
     <>
+      <AccountMenu />
       <NoticeBanner />
       <GameNav />
     </>
@@ -63,7 +64,20 @@ export const routes = [
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
+      {
+        // Home was retired (round-3 nav consolidation): My Ship (the Hangar) is the landing
+        // page. The guard chain still does the right thing for every visitor: no session →
+        // /login (ProtectedRoute); no faction yet → /onboarding (RequireFaction); otherwise →
+        // /hangar.
+        path: '/',
+        element: (
+          <ProtectedRoute>
+            <RequireFaction>
+              <Navigate to="/hangar" replace />
+            </RequireFaction>
+          </ProtectedRoute>
+        ),
+      },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       {

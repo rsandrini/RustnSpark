@@ -50,7 +50,7 @@
     }
   },
   "hangar": {
-    "title": "Hangar",
+    "title": "My Ship",
     "tray": "Parts",
     "trayEmpty": "No loose parts in storage.",
     "yardHint": "Select a part, then click a cell to place it. Select a block to move, rotate or remove it.",
@@ -409,12 +409,14 @@
   },
   "nav": {
     "label": "Game navigation",
-    "hangar": "Hangar",
+    "hangar": "My Ship",
     "map": "Map",
     "board": "Board",
     "transit": "Transit",
     "port": "Port",
     "profile": "Profile",
+    "admin": "Admin",
+    "logout": "Sign out",
     "transitDisabled": "Nothing to watch: accept a mission or start a trip first."
   },
   "port": {

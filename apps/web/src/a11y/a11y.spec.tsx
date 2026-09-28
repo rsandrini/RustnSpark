@@ -30,7 +30,7 @@ const onboarded = () =>
 const SCREENS: ReadonlyArray<{ path: string; ready: RegExp | string; name: string }> = [
   { path: '/map', ready: 'Sector map', name: 'map' },
   { path: '/board', ready: 'Mission board', name: 'board' },
-  { path: '/hangar', ready: 'Hangar', name: 'hangar' },
+  { path: '/hangar', ready: 'My Ship', name: 'hangar' },
   { path: '/transit', ready: 'In transit', name: 'transit' },
   { path: '/port', ready: 'Port', name: 'port' },
   { path: '/profile', ready: /profile|pilot/i, name: 'profile' },

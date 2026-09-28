@@ -6,7 +6,7 @@ import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
 
 describe('admin route guard', () => {
-  it('redirects a non-admin user to the home page', async () => {
+  it('redirects a non-admin user away (Home is gone, so this user with no faction lands on onboarding)', async () => {
     server.use(
       http.get('/v1/players/me', () =>
         HttpResponse.json(
@@ -21,7 +21,7 @@ describe('admin route guard', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: /admin/i })).not.toBeInTheDocument(),
     );
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Choose your faction' })).toBeInTheDocument();
   });
 
   it('renders the admin shell for an admin user', async () => {
