@@ -150,6 +150,49 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('3,632 ¢'));
   });
 
+  it('never lets "Start repair" open on a stale (pre-refetch) quote for a bigger plan', async () => {
+    // A slow quote for the "set all to 100%" plan: while it is loading, `keepPreviousData` would
+    // otherwise show the smaller, single-part quote already on screen. The trigger must not
+    // offer that stale, cheaper number as if it priced the current (bigger) plan.
+    const gate: { release: (() => void) | null } = { release: null };
+    server.use(
+      http.post('/v1/ships/:id/repair/quote', async ({ request }) => {
+        const body = (await request.json()) as { targets: Array<{ toCondition: number }> };
+        if (body.targets.length > 1) {
+          await new Promise<void>((resolve) => {
+            gate.release = resolve;
+          });
+          return HttpResponse.json(
+            { shipId: 'ship-1', cost: 1188, durationSeconds: 30, items: [], fee: 0 },
+            { status: 200 },
+          );
+        }
+        return HttpResponse.json(
+          { shipId: 'ship-1', cost: 20, durationSeconds: 5, items: [], fee: 0 },
+          { status: 200 },
+        );
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/port'] });
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    const summary = screen.getByTestId('repair-summary');
+    // First, a small quote for one part settles and the trigger is enabled on it.
+    const [slider] = screen.getAllByRole('slider');
+    fireEvent.change(slider!, { target: { value: '100' } });
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('20 ¢'));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
+
+    // Now the bigger plan's quote is loading: the trigger must not offer the old, smaller price.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeDisabled();
+
+    await waitFor(() => expect(gate.release).not.toBeNull());
+    gate.release?.();
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
+  });
+
   it('fills the tank and scavenges the field', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
 

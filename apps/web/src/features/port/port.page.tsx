@@ -645,6 +645,12 @@ export function PortPage({ guided = false }: PortPageProps) {
                   disabled={
                     changedTargets.length === 0 ||
                     repairQuoteQuery.data === undefined ||
+                    // `keepPreviousData` shows the OLD plan's number while a new one is in
+                    // flight (isPlaceholderData): confirming on it could look "affordable" from
+                    // a stale, smaller cost and then fail once the server prices the real
+                    // (current) targets. A background revalidation of an already-current quote
+                    // is fine — only a genuinely stale (different-target) number blocks this.
+                    repairQuoteQuery.isPlaceholderData ||
                     repairOver ||
                     repair.isPending
                   }
