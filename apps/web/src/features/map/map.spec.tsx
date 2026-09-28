@@ -70,6 +70,15 @@ describe('map (S10.5)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('says why a blocked mission is blocked, same as the Board (owner: "I cannot see why")', async () => {
+    const { svg } = await renderMap();
+
+    fireEvent.click(node(svg, 'Porto Ceres — You are here'));
+    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    expect(await within(dialog).findByText('Needs a mining system')).toBeInTheDocument();
+    expect(within(dialog).getByText('Mobility too low')).toBeInTheDocument();
+  });
+
   it('offers a trip to another place: route, time, fuel, and a button that starts it', async () => {
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });

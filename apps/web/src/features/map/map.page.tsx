@@ -363,6 +363,20 @@ function PlaceDetails({ canTravel, place, description, isHere, byId }: PlaceDeta
             <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
               {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
             </span>
+            {!offer.eligibility.eligible && (
+              // Same requirement reasons the Board shows (owner: "I see some that I cannot
+              // get for requirements but I cannot see why ... in the quest panel I can see
+              // but not here").
+              <ul className="reasons">
+                {offer.eligibility.reasons.map((reason, index) => (
+                  <li key={`${reason.code}-${index}`}>
+                    {t(`board.reasons.${reason.code}`, {
+                      defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
