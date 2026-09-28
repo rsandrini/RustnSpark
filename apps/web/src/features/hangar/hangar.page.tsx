@@ -20,6 +20,14 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartStatsCard, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
+import { BoardPage } from '../board/board.page';
+import { PortPage } from '../port/port.page';
+import { TransitPage } from '../transit/transit.page';
+
+// Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
+// currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
+// port service (round-3 nav consolidation — same rule the old Transit-disabled nav entry used).
+type PageTab = 'ship' | 'board' | 'port';
 
 // Which kind of part fixes each viability problem: the hint names it and offers the store filter.
 const FIX_CLASS: Record<string, string> = {
@@ -69,6 +77,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Hovering a placed block shows its stats card (round-3 follow-up); the full popup only
   // opens from a part row's own (i) button now, never from selecting/placing a part.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Board and Port fold into My Ship as gated tabs (round-3 nav consolidation): enabled only
+  // while the ship is docked, same as the old Port/Board nav entries used to be.
+  const [pageTab, setPageTab] = useState<PageTab>('ship');
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const format = useNumberFormat();
@@ -82,6 +93,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setLayout(ship.layout);
     }
   }, [layout, ship]);
+
+  // Dispatching (or a job starting) while on the Board/Port tab must not strand the pilot on a
+  // now-disabled tab.
+  useEffect(() => {
+    if (ship !== undefined && ship.status !== 'IN_PORT' && pageTab !== 'ship') {
+      setPageTab('ship');
+    }
+  }, [ship, pageTab]);
 
   const catalogById = useMemo(() => {
     const map = new Map<string, InventoryItem['catalog']>();
@@ -340,251 +359,302 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           {shipSuffix}
         </span>
         <span className="sub" data-testid="hangar-balance">
-          <span className="muted">{t('port.wallet')}</span> <b>{credits}</b>
+          <span className="muted">{t('port.wallet')}</span> <b data-testid="wallet">{credits}</b>
         </span>
       </header>
       <ActiveShipStage size="compact" />
-      <p className="sub">{t('hangar.yardHint')}</p>
-      {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
-      {pendingPartId !== null && (
-        <p className="sub" aria-live="polite">
-          {t('hangar.state.selected', {
-            name: nameById.get(pendingPartId) ?? pendingPartId,
-          })}
-        </p>
-      )}
+      {/* The travel/job summary — "the resume of the travel on main page" (owner request):
+          renders nothing when the ship is idle, so it never crowds the yard. */}
+      <TransitPage embedded onGoToBoard={() => setPageTab('board')} />
 
-      <div className="hangar-layout">
-        <section aria-label={t('hangar.tray')} className="hangar-side">
-          <div className="tabs" role="tablist">
-            {(['parts', 'store'] as const).map((id) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={sideTab === id}
-                className={`tab${sideTab === id ? ' on' : ''}`}
-                onClick={() => setSideTab(id)}
-              >
-                {t(`hangar.side.${id}`)}
-              </button>
-            ))}
-          </div>
+      <div className="tabs" role="tablist" aria-label={t('hangar.pageTabs.label')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={pageTab === 'ship'}
+          className={`tab${pageTab === 'ship' ? ' on' : ''}`}
+          onClick={() => setPageTab('ship')}
+        >
+          {t('hangar.pageTabs.ship')}
+        </button>
+        {(['board', 'port'] as const).map((id) => {
+          const dockedOnly = ship.status !== 'IN_PORT';
+          return dockedOnly ? (
+            <span
+              key={id}
+              className="nav-link disabled"
+              aria-disabled="true"
+              title={t('hangar.pageTabs.dockedOnly')}
+            >
+              {t(`hangar.pageTabs.${id}`)}
+            </span>
+          ) : (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={pageTab === id}
+              className={`tab${pageTab === id ? ' on' : ''}`}
+              onClick={() => setPageTab(id)}
+            >
+              {t(`hangar.pageTabs.${id}`)}
+            </button>
+          );
+        })}
+      </div>
 
-          {sideTab === 'parts' && (
-            <>
-              {isKit && (
-                <div className="panel kit-note" role="note">
-                  <b>{t('hangar.kit.title')}</b>
-                  <p className="muted">{t('hangar.kit.body')}</p>
+      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => setPageTab('ship')} />}
+      {pageTab === 'port' && <PortPage embedded onGoToShip={() => setPageTab('ship')} />}
+
+      {pageTab === 'ship' && (
+        <>
+          <p className="sub">{t('hangar.yardHint')}</p>
+          {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
+          {pendingPartId !== null && (
+            <p className="sub" aria-live="polite">
+              {t('hangar.state.selected', {
+                name: nameById.get(pendingPartId) ?? pendingPartId,
+              })}
+            </p>
+          )}
+
+          <div className="hangar-layout">
+            <section aria-label={t('hangar.tray')} className="hangar-side">
+              <div className="tabs" role="tablist">
+                {(['parts', 'store'] as const).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={sideTab === id}
+                    className={`tab${sideTab === id ? ' on' : ''}`}
+                    onClick={() => setSideTab(id)}
+                  >
+                    {t(`hangar.side.${id}`)}
+                  </button>
+                ))}
+              </div>
+
+              {sideTab === 'parts' && (
+                <>
+                  {isKit && (
+                    <div className="panel kit-note" role="note">
+                      <b>{t('hangar.kit.title')}</b>
+                      <p className="muted">{t('hangar.kit.body')}</p>
+                    </div>
+                  )}
+                  {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
+                  {trayParts.map((part) => (
+                    <div key={part.id} className="part-row">
+                      <button
+                        type="button"
+                        className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${pendingPartId === part.id ? ' on' : ''}`}
+                        disabled={modifyBlocked}
+                        onClick={() => {
+                          setPendingPartId(part.id);
+                          setSelectedId(null);
+                        }}
+                      >
+                        <span className="part-line">
+                          <PartThumb
+                            name={nameById.get(part.id) ?? part.partType}
+                            rarity={part.rarity}
+                          />
+                          {nameById.get(part.id) ?? part.partType}
+                        </span>
+                        <span className="meta">
+                          {[
+                            t(`hangar.partClasses.${part.catalog.partClass}`),
+                            `${part.catalog.w}×${part.catalog.h}`,
+                          ].join(' · ')}
+                        </span>
+                        <span className="meta">{partSummary(part.catalog, t, format)}</span>
+                        <Gauge
+                          value={Math.round(part.condition)}
+                          max={100}
+                          tone={conditionTone(part.condition)}
+                          ariaLabel={t('port.conditionNow', { value: Math.round(part.condition) })}
+                          label={t('port.conditionNow', { value: Math.round(part.condition) })}
+                        />
+                      </button>
+                      <PartInfoButton part={part} />
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {sideTab === 'store' &&
+                (ship.status === 'IN_PORT' ? (
+                  <MarketPanel
+                    locationId={ship.currentLocationId}
+                    presetClass={storeClass}
+                    showBalance
+                  />
+                ) : (
+                  <p className="muted">{t('hangar.side.storeUnavailable')}</p>
+                ))}
+            </section>
+
+            <section style={{ position: 'relative' }}>
+              <ShipYard
+                lookById={lookById}
+                halfSize={ship.yard.halfSize}
+                layout={effectiveLayout}
+                catalogById={catalogById}
+                nameById={nameById}
+                selectedId={selectedId}
+                draggingId={draggingId}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  setPendingPartId(null);
+                }}
+                onCellClick={handleCellClick}
+                onCellHover={handleCellHover}
+                onDragStart={setDraggingId}
+                onDragEnd={() => setDraggingId(null)}
+                onHoverPart={setHoveredId}
+              />
+              {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —
+              the full popup now opens only from the (i) button on a tray/store row). */}
+              {hoveredPart !== null && (
+                <div className="part-hover-card" aria-hidden="true" data-testid="part-hover-card">
+                  <PartStatsCard part={hoveredPart} />
                 </div>
               )}
-              {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
-              {trayParts.map((part) => (
-                <div key={part.id} className="part-row">
-                  <button
-                    type="button"
-                    className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${pendingPartId === part.id ? ' on' : ''}`}
-                    disabled={modifyBlocked}
-                    onClick={() => {
-                      setPendingPartId(part.id);
-                      setSelectedId(null);
-                    }}
-                  >
-                    <span className="part-line">
-                      <PartThumb
-                        name={nameById.get(part.id) ?? part.partType}
-                        rarity={part.rarity}
-                      />
-                      {nameById.get(part.id) ?? part.partType}
-                    </span>
-                    <span className="meta">
-                      {[
-                        t(`hangar.partClasses.${part.catalog.partClass}`),
-                        `${part.catalog.w}×${part.catalog.h}`,
-                      ].join(' · ')}
-                    </span>
-                    <span className="meta">{partSummary(part.catalog, t, format)}</span>
-                    <Gauge
-                      value={Math.round(part.condition)}
-                      max={100}
-                      tone={conditionTone(part.condition)}
-                      ariaLabel={t('port.conditionNow', { value: Math.round(part.condition) })}
-                      label={t('port.conditionNow', { value: Math.round(part.condition) })}
-                    />
-                  </button>
-                  <PartInfoButton part={part} />
-                </div>
-              ))}
-            </>
-          )}
-
-          {sideTab === 'store' &&
-            (ship.status === 'IN_PORT' ? (
-              <MarketPanel
-                locationId={ship.currentLocationId}
-                presetClass={storeClass}
-                showBalance
-              />
-            ) : (
-              <p className="muted">{t('hangar.side.storeUnavailable')}</p>
-            ))}
-        </section>
-
-        <section style={{ position: 'relative' }}>
-          <ShipYard
-            lookById={lookById}
-            halfSize={ship.yard.halfSize}
-            layout={effectiveLayout}
-            catalogById={catalogById}
-            nameById={nameById}
-            selectedId={selectedId}
-            draggingId={draggingId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setPendingPartId(null);
-            }}
-            onCellClick={handleCellClick}
-            onCellHover={handleCellHover}
-            onDragStart={setDraggingId}
-            onDragEnd={() => setDraggingId(null)}
-            onHoverPart={setHoveredId}
-          />
-          {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —
-              the full popup now opens only from the (i) button on a tray/store row). */}
-          {hoveredPart !== null && (
-            <div className="part-hover-card" aria-hidden="true" data-testid="part-hover-card">
-              <PartStatsCard part={hoveredPart} />
-            </div>
-          )}
-          <div className="stack" style={{ marginTop: 10 }}>
-            <button
-              type="button"
-              className="btn"
-              disabled={selectedId === null || modifyBlocked}
-              onClick={rotateSelected}
-            >
-              {t('hangar.actions.rotate')}
-            </button>
-            <button
-              type="button"
-              className="btn danger"
-              disabled={selectedId === null || modifyBlocked}
-              onClick={removeSelected}
-            >
-              {t('hangar.actions.remove')}
-            </button>
-          </div>
-          {rotateHint !== null && (
-            <p className="sub" role="status" data-testid="rotate-hint">
-              {rotateHint}
-            </p>
-          )}
-        </section>
-
-        <section aria-label={t('hangar.sheet')}>
-          <div className="panel">
-            <h2>{t('hangar.sheet')}</h2>
-            <div className="statrow">
-              <span>{t('hangar.class')}</span>
-              <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
-            </div>
-            {statRows.map((row) => (
-              <div className="statrow" key={row.key}>
-                <span>{t(`hangar.stats.${row.key}`)}</span>
-                <b>{row.value}</b>
+              <div className="stack" style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={selectedId === null || modifyBlocked}
+                  onClick={rotateSelected}
+                >
+                  {t('hangar.actions.rotate')}
+                </button>
+                <button
+                  type="button"
+                  className="btn danger"
+                  disabled={selectedId === null || modifyBlocked}
+                  onClick={removeSelected}
+                >
+                  {t('hangar.actions.remove')}
+                </button>
               </div>
-            ))}
-            {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
-            {!previewing && layout !== null && layout.length === 0 && (
-              <p className="muted">{t('hangar.state.noPreview')}</p>
-            )}
-          </div>
+              {rotateHint !== null && (
+                <p className="sub" role="status" data-testid="rotate-hint">
+                  {rotateHint}
+                </p>
+              )}
+            </section>
 
-          {allProblems.length > 0 && (
-            <div className="panel">
-              <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
-              <ul>
-                {allProblems.map((problem) => {
-                  const fixClass = FIX_CLASS[problem.code];
-                  return (
-                    <li key={problem.code} className="error-text">
-                      {t(`hangar.problems.${problem.code}`, {
-                        defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-                      })}
-                      {fixClass !== undefined && (
-                        <span className="fix-hint">
-                          {t('hangar.fix.needs', {
-                            part: t(`hangar.partClasses.${fixClass}`),
+            <section aria-label={t('hangar.sheet')}>
+              <div className="panel">
+                <h2>{t('hangar.sheet')}</h2>
+                <div className="statrow">
+                  <span>{t('hangar.class')}</span>
+                  <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
+                </div>
+                {statRows.map((row) => (
+                  <div className="statrow" key={row.key}>
+                    <span>{t(`hangar.stats.${row.key}`)}</span>
+                    <b>{row.value}</b>
+                  </div>
+                ))}
+                {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
+                {!previewing && layout !== null && layout.length === 0 && (
+                  <p className="muted">{t('hangar.state.noPreview')}</p>
+                )}
+              </div>
+
+              {allProblems.length > 0 && (
+                <div className="panel">
+                  <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
+                  <ul>
+                    {allProblems.map((problem) => {
+                      const fixClass = FIX_CLASS[problem.code];
+                      return (
+                        <li key={problem.code} className="error-text">
+                          {t(`hangar.problems.${problem.code}`, {
+                            defaultValue: t(`error.${problem.code}`, {
+                              defaultValue: problem.message,
+                            }),
                           })}
-                          {ship.status === 'IN_PORT' && (
-                            <button
-                              type="button"
-                              className="btn"
-                              onClick={() => {
-                                setStoreClass(fixClass);
-                                setSideTab('store');
-                              }}
-                            >
-                              {t('hangar.fix.findInStore')}
-                            </button>
+                          {fixClass !== undefined && (
+                            <span className="fix-hint">
+                              {t('hangar.fix.needs', {
+                                part: t(`hangar.partClasses.${fixClass}`),
+                              })}
+                              {ship.status === 'IN_PORT' && (
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => {
+                                    setStoreClass(fixClass);
+                                    setSideTab('store');
+                                  }}
+                                >
+                                  {t('hangar.fix.findInStore')}
+                                </button>
+                              )}
+                            </span>
                           )}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
 
-          {saveError !== null && (
-            <p className="error-text">
-              {saveError.problems.length > 0
-                ? saveError.problems
-                    .map((problem) =>
-                      t(`hangar.problems.${problem.code}`, {
-                        defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-                      }),
-                    )
-                    .join(' · ')
-                : t(`hangar.errors.${saveError.code ?? 'generic'}`, {
-                    defaultValue: t(`error.${saveError.code ?? 'unexpected'}`, {
-                      defaultValue: t('hangar.errors.generic'),
-                    }),
-                  })}
-            </p>
-          )}
-          {saved && <p className="muted">{t('hangar.state.saved')}</p>}
+              {saveError !== null && (
+                <p className="error-text">
+                  {saveError.problems.length > 0
+                    ? saveError.problems
+                        .map((problem) =>
+                          t(`hangar.problems.${problem.code}`, {
+                            defaultValue: t(`error.${problem.code}`, {
+                              defaultValue: problem.message,
+                            }),
+                          }),
+                        )
+                        .join(' · ')
+                    : t(`hangar.errors.${saveError.code ?? 'generic'}`, {
+                        defaultValue: t(`error.${saveError.code ?? 'unexpected'}`, {
+                          defaultValue: t('hangar.errors.generic'),
+                        }),
+                      })}
+                </p>
+              )}
+              {saved && <p className="muted">{t('hangar.state.saved')}</p>}
 
-          <div className="stack" style={{ marginTop: 10 }}>
-            <button
-              type="button"
-              className="btn primary block"
-              disabled={!dirty || save.isPending || modifyBlocked}
-              onClick={() => {
-                setSaved(false);
-                setSaveError(null);
-                save.mutate();
-              }}
-            >
-              {save.isPending ? t('hangar.state.saving') : t('hangar.actions.save')}
-            </button>
-            <button
-              type="button"
-              className="btn block"
-              disabled={auto.isPending || modifyBlocked}
-              onClick={() => {
-                setSaved(false);
-                setSaveError(null);
-                auto.mutate();
-              }}
-            >
-              {t('hangar.actions.auto')}
-            </button>
+              <div className="stack" style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="btn primary block"
+                  disabled={!dirty || save.isPending || modifyBlocked}
+                  onClick={() => {
+                    setSaved(false);
+                    setSaveError(null);
+                    save.mutate();
+                  }}
+                >
+                  {save.isPending ? t('hangar.state.saving') : t('hangar.actions.save')}
+                </button>
+                <button
+                  type="button"
+                  className="btn block"
+                  disabled={auto.isPending || modifyBlocked}
+                  onClick={() => {
+                    setSaved(false);
+                    setSaveError(null);
+                    auto.mutate();
+                  }}
+                >
+                  {t('hangar.actions.auto')}
+                </button>
+              </div>
+            </section>
           </div>
-        </section>
-      </div>
+        </>
+      )}
     </main>
   );
 }

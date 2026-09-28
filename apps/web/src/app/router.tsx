@@ -11,10 +11,7 @@ import { AdminRoute } from '../features/auth/admin-route';
 import { OnboardingRoute } from '../features/onboarding/onboarding.page';
 import { HangarPage } from '../features/hangar/hangar.page';
 import { MapPage } from '../features/map/map.page';
-import { BoardPage } from '../features/board/board.page';
-import { TransitPage } from '../features/transit/transit.page';
 import { ReportPage } from '../features/report/report.page';
-import { PortPage } from '../features/port/port.page';
 import { ProfilePage } from '../features/profile/profile.page';
 import { GameNav } from '../ui/GameNav';
 import { AccountMenu } from '../ui/AccountMenu';
@@ -108,42 +105,17 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
-      {
-        path: '/board',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <BoardPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/transit',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <TransitPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
+      // Board, Transit and Port folded into My Ship as gated tabs/sections (round-3 nav
+      // consolidation); these three routes stay only as redirects for any stray bookmark/link.
+      { path: '/board', element: <Navigate to="/hangar" replace /> },
+      { path: '/transit', element: <Navigate to="/hangar" replace /> },
+      { path: '/port', element: <Navigate to="/hangar" replace /> },
       {
         path: '/report/:missionId',
         element: (
           <ProtectedRoute>
             <RequireFaction>
               <ReportPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/port',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <PortPage />
             </RequireFaction>
           </ProtectedRoute>
         ),

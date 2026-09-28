@@ -40,7 +40,7 @@ describe('navigation flow (S10.10)', () => {
     const hrefs = within(nav)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(['/hangar', '/map', '/board', '/transit', '/port']);
+    expect(hrefs).toEqual(['/hangar', '/map']);
   });
 
   it('the top-right account menu has Profile and Logout, and Admin only for an admin account', async () => {
@@ -89,24 +89,18 @@ describe('navigation flow (S10.10)', () => {
     expect(await screen.findByRole('heading', { name: 'Sector map' })).toBeInTheDocument();
   });
 
-  it('walks report → port → map through the footer and nav', async () => {
+  it('walks report → My Ship (Port folded in) → map through the footer and nav', async () => {
     const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
 
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
-    fireEvent.click(within(gameNav()).getByRole('link', { name: 'Port' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/port'));
+    // Port is folded into My Ship now (round-3): the report's own "Port" link still exists
+    // and lands there (it just no longer opens a route of its own).
+    fireEvent.click(screen.getByRole('link', { name: 'Port' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
 
-    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('link', { name: 'Back to the map' }));
+    fireEvent.click(within(gameNav()).getByRole('link', { name: 'Map' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
-  });
-
-  it('disables the Transit entry while there is no mission to watch', async () => {
-    server.use(http.get('/v1/missions/active', () => HttpResponse.json([], { status: 200 })));
-    renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    const nav = await screen.findByRole('navigation', { name: 'Game navigation' });
-    await waitFor(() => expect(within(nav).queryByRole('link', { name: 'Transit' })).toBeNull());
-    expect(within(nav).getByText('Transit')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('hides the game nav before the faction is chosen', async () => {

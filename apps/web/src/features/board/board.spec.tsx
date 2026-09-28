@@ -21,6 +21,14 @@ const onboarded = () =>
     ),
   );
 
+async function renderBoard(extra = ''): Promise<void> {
+  renderWithRouter(routes, { initialEntries: [`/hangar${extra}`] });
+  await screen.findByRole('heading', { name: 'My Ship' });
+  fireEvent.click(await screen.findByRole('tab', { name: 'Board' }));
+  // Board's own type-filter tabs only render once its offers have loaded.
+  await screen.findByRole('tab', { name: 'All missions' });
+}
+
 describe('board (S10.6)', () => {
   beforeEach(() => {
     resetBoardState();
@@ -28,9 +36,8 @@ describe('board (S10.6)', () => {
   });
 
   it('renders offers with eligibility, blocked reasons and type filters', async () => {
-    renderWithRouter(routes, { initialEntries: ['/board'] });
+    await renderBoard();
 
-    expect(await screen.findByRole('heading', { name: 'Mission board' })).toBeInTheDocument();
     // Each offer says what the job is (title), where it goes, and what it needs.
     expect((await screen.findAllByText('Corporate Delivery')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Deliver sealed cargo to the destination.').length).toBeGreaterThan(
@@ -53,17 +60,21 @@ describe('board (S10.6)', () => {
   });
 
   it('accepts an eligible offer and moves on to the transit screen', async () => {
-    const { router } = renderWithRouter(routes, { initialEntries: ['/board'] });
+    await renderBoard();
 
     const acceptButtons = await screen.findAllByRole('button', { name: 'Accept' });
     expect(acceptButtons).toHaveLength(4);
     fireEvent.click(acceptButtons[0] as Element);
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/transit'));
+    // Embedded: accepting switches the host back to its own Ship tab (no route change) —
+    // the just-accepted mission's travel summary appears there.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'true'),
+    );
   });
 
   it('holds an offer and releases it again', async () => {
-    renderWithRouter(routes, { initialEntries: ['/board'] });
+    await renderBoard();
 
     const holdButtons = await screen.findAllByRole('button', { name: 'Hold' });
     expect(holdButtons).toHaveLength(3);
@@ -78,10 +89,11 @@ describe('board (S10.6)', () => {
   });
 
   it('reads the board location from the query string', async () => {
-    renderWithRouter(routes, { initialEntries: ['/board?location=gate'] });
+    await renderBoard('?location=gate');
 
-    const heading = await screen.findByRole('heading', { name: 'Mission board' });
-    expect(heading.nextElementSibling?.textContent).toBe('Portão Kessler');
+    expect(
+      await screen.findByRole('heading', { name: 'Portão Kessler', level: 2 }),
+    ).toBeInTheDocument();
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
@@ -128,7 +140,7 @@ describe('board (S10.6)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/board'] });
+    await renderBoard();
     expect(await screen.findByTestId('starter-badge')).toHaveTextContent('Starter mission');
     expect(screen.getAllByTestId('starter-badge')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled();

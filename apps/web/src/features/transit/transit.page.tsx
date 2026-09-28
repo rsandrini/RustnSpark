@@ -23,9 +23,16 @@ import { ShipStage } from '../../ui/ShipStage';
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
+  /** Mounted as a My Ship section (round-3 nav consolidation): no own <main>/<h1>/ShipStage —
+      the host's own ActiveShipStage already shows the parked/flying/scavenging scene; renders
+      nothing at all when there is no active mission (the host's idle scene already covers it). */
+  embedded?: boolean;
+  /** Embedded only: switches the host to its own "Board" tab (a route Link there would just
+      reload the current page, since /board now redirects back to /hangar). */
+  onGoToBoard?: () => void;
 }
 
-export function TransitPage({ guided = false }: TransitPageProps) {
+export function TransitPage({ guided = false, embedded = false, onGoToBoard }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [dispatchServerTime, setDispatchServerTime] = useState<string | undefined>(undefined);
@@ -132,7 +139,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
     // A previous (stale) answer must not flash the empty state while the fresh one loads.
     (activeIsEmpty && latestReportQuery.isFetching)
   ) {
-    return (
+    return embedded ? null : (
       <main className="app" data-guided={guided ? '' : undefined}>
         {t('loading')}
       </main>
@@ -147,6 +154,27 @@ export function TransitPage({ guided = false }: TransitPageProps) {
 
   if (mission === null) {
     const latest = latestReportQuery.data?.items[0];
+    if (embedded) {
+      // Nothing active: the host's own idle scene already says "docked" — only the rescue
+      // banner (a ship can go ADRIFT with no mission running) and a shortcut to the last
+      // report (only when there is one) are worth adding here.
+      return (
+        <>
+          <RescueBanner />
+          {latest !== undefined && (
+            <section className="stack" data-testid="last-mission">
+              <h2>{t('transit.lastMission')}</h2>
+              <p className="sub">
+                {t(`report.outcome.${latest.outcome}`, { defaultValue: latest.outcome })}
+              </p>
+              <Link className="btn primary" to={`/report/${latest.missionId}`}>
+                {t('transit.lastReport')}
+              </Link>
+            </section>
+          )}
+        </>
+      );
+    }
     return (
       <main className="app" data-guided={guided ? '' : undefined}>
         <header className="topbar">
@@ -213,12 +241,14 @@ export function TransitPage({ guided = false }: TransitPageProps) {
     return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
   };
 
-  return (
-    <main className="app" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('transit.title')}</h1>
-        <span className="sub">{routeLabel}</span>
-      </header>
+  const body = (
+    <>
+      {!embedded && (
+        <header className="topbar">
+          <h1>{t('transit.title')}</h1>
+          <span className="sub">{routeLabel}</span>
+        </header>
+      )}
       <div className="briefing" data-testid="briefing">
         {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
           <div className="fact">
@@ -260,9 +290,15 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <section data-testid="held">
           <p>{t('transit.held')}</p>
           <div className="actions">
-            <Link className="btn primary" to="/board">
-              {t('board.title')}
-            </Link>
+            {embedded && onGoToBoard !== undefined ? (
+              <button type="button" className="btn primary" onClick={onGoToBoard}>
+                {t('board.title')}
+              </button>
+            ) : (
+              <Link className="btn primary" to="/board">
+                {t('board.title')}
+              </Link>
+            )}
             <button
               type="button"
               className="btn"
@@ -277,7 +313,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         <p data-testid="resolving">{t('transit.resolving')}</p>
       ) : mission.status === 'ACCEPTED' ? (
         <section>
-          <ShipStage mode="idle" placeId={mission.originId} />
+          {!embedded && <ShipStage mode="idle" placeId={mission.originId} />}
           <p>{t('transit.accepted')}</p>
           {mission.deadlineAt !== null && (
             <p className="sub">
@@ -304,7 +340,7 @@ export function TransitPage({ guided = false }: TransitPageProps) {
         </section>
       ) : (
         <section data-testid="in-transit">
-          <ShipStage mode={mission.type === 'SCAVENGE' ? 'scavenging' : 'flying'} />
+          {!embedded && <ShipStage mode={mission.type === 'SCAVENGE' ? 'scavenging' : 'flying'} />}
           {currentIndex !== -1 && windows[currentIndex] !== undefined && (
             <p className="now-flying">
               {t('transit.nowFlying', {
@@ -350,6 +386,13 @@ export function TransitPage({ guided = false }: TransitPageProps) {
           )}
         </section>
       )}
+    </>
+  );
+
+  if (embedded) return body;
+  return (
+    <main className="app" data-guided={guided ? '' : undefined}>
+      {body}
     </main>
   );
 }

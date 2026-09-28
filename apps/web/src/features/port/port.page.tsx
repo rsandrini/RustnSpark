@@ -62,9 +62,15 @@ interface ConfirmTrade {
 export interface PortPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
+  /** Mounted as a My Ship tab (round-3 nav consolidation): no own <main>/<h1>/ship-stage — the
+      host (My Ship) already has its own of each. */
+  embedded?: boolean;
+  /** Embedded only: switches the host to its own "Ship" tab (a route Link would just reload
+      the current page, since /hangar already is the current page). */
+  onGoToShip?: () => void;
 }
 
-export function PortPage({ guided = false }: PortPageProps) {
+export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
@@ -296,7 +302,13 @@ export function PortPage({ guided = false }: PortPageProps) {
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
-      void navigate('/transit');
+      // Embedded, /hangar already IS the current route (a navigate() there would be a no-op),
+      // so switch the host's own tab instead — same reason the "Install" link above does.
+      if (embedded && onGoToShip !== undefined) {
+        onGoToShip();
+      } else {
+        void navigate('/hangar');
+      }
     },
     onError: (error) => {
       setActionError(errorText(t, error, t('port.failed')));
@@ -311,7 +323,9 @@ export function PortPage({ guided = false }: PortPageProps) {
     shipsQuery.isLoading ||
     worldQuery.isLoading
   ) {
-    return (
+    return embedded ? (
+      <p>{t('loading')}</p>
+    ) : (
       <main className="app" data-guided={guided ? '' : undefined}>
         {t('loading')}
       </main>
@@ -319,7 +333,9 @@ export function PortPage({ guided = false }: PortPageProps) {
   }
 
   if (ship === undefined) {
-    return (
+    return embedded ? (
+      <p className="sub">{t('port.noShip')}</p>
+    ) : (
       <main className="app" data-guided={guided ? '' : undefined}>
         <p className="sub">{t('port.noShip')}</p>
       </main>
@@ -380,31 +396,38 @@ export function PortPage({ guided = false }: PortPageProps) {
   const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
-  return (
-    <main className="app" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <div>
-          <h1>{t('port.title')}</h1>
-          <span className="sub">
-            {ship === undefined
-              ? ''
-              : t('port.at', { location: locationName(ship.currentLocationId) })}
-          </span>
-        </div>
-        <div className="wallet">
-          <div className="lbl">{t('port.wallet')}</div>
-          <div className="amt" data-testid="wallet">
-            {money(wallet)}
+  const body = (
+    <>
+      {!embedded && (
+        <header className="topbar">
+          <div>
+            <h1>{t('port.title')}</h1>
+            <span className="sub">
+              {ship === undefined
+                ? ''
+                : t('port.at', { location: locationName(ship.currentLocationId) })}
+            </span>
           </div>
-          {broke && <div className="error-text">{t('port.negative')}</div>}
-        </div>
-      </header>
+          <div className="wallet">
+            <div className="lbl">{t('port.wallet')}</div>
+            <div className="amt" data-testid="wallet">
+              {money(wallet)}
+            </div>
+            {broke && <div className="error-text">{t('port.negative')}</div>}
+          </div>
+        </header>
+      )}
+      {/* The header (and its wallet number) is My Ship's own when embedded, but the negative-
+          balance warning is Port-specific and must not silently disappear with it. */}
+      {embedded && broke && <p className="error-text">{t('port.negative')}</p>}
 
-      <PlaceBanner placeId={ship.currentLocationId} className="port-banner">
-        <h2>{locationName(ship.currentLocationId)}</h2>
-      </PlaceBanner>
+      {!embedded && (
+        <PlaceBanner placeId={ship.currentLocationId} className="port-banner">
+          <h2>{locationName(ship.currentLocationId)}</h2>
+        </PlaceBanner>
+      )}
 
-      <ActiveShipStage size="compact" />
+      {!embedded && <ActiveShipStage size="compact" />}
 
       <RescueBanner />
 
@@ -460,9 +483,15 @@ export function PortPage({ guided = false }: PortPageProps) {
                   note={tooDamaged ? t('port.tooDamaged') : undefined}
                   actions={
                     <>
-                      <Link className="btn" to="/hangar">
-                        {t('inventory.install')}
-                      </Link>
+                      {embedded && onGoToShip !== undefined ? (
+                        <button type="button" className="btn" onClick={onGoToShip}>
+                          {t('inventory.install')}
+                        </button>
+                      ) : (
+                        <Link className="btn" to="/hangar">
+                          {t('inventory.install')}
+                        </Link>
+                      )}
                       <button
                         type="button"
                         className="btn primary"
@@ -789,17 +818,19 @@ export function PortPage({ guided = false }: PortPageProps) {
         </section>
       )}
 
-      <div className="actions" style={{ marginTop: 16 }}>
-        <Link className="btn" to="/map">
-          {t('report.backMap')}
-        </Link>
-        <Link className="btn" to="/profile">
-          {t('profile.title')}
-        </Link>
-        <Link className="btn" to="/hangar">
-          {t('nav.hangar')}
-        </Link>
-      </div>
+      {!embedded && (
+        <div className="actions" style={{ marginTop: 16 }}>
+          <Link className="btn" to="/map">
+            {t('report.backMap')}
+          </Link>
+          <Link className="btn" to="/profile">
+            {t('profile.title')}
+          </Link>
+          <Link className="btn" to="/hangar">
+            {t('nav.hangar')}
+          </Link>
+        </div>
+      )}
 
       <Popup
         open={repairPlan !== null}
@@ -873,6 +904,13 @@ export function PortPage({ guided = false }: PortPageProps) {
           </div>
         )}
       </Popup>
+    </>
+  );
+
+  if (embedded) return body;
+  return (
+    <main className="app" data-guided={guided ? '' : undefined}>
+      {body}
     </main>
   );
 }

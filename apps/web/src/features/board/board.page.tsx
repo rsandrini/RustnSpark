@@ -25,9 +25,14 @@ const MISSION_TYPES: readonly MissionType[] = [
 export interface BoardPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
+  /** Mounted as a My Ship tab (round-3 nav consolidation): no own <main>/<h1>, the host has one. */
+  embedded?: boolean;
+  /** Embedded only: switches the host to its own "Ship" tab after accepting (a navigate() to
+      /hangar would be a no-op there, since /hangar already is the current route). */
+  onGoToShip?: () => void;
 }
 
-export function BoardPage({ guided = false }: BoardPageProps) {
+export function BoardPage({ guided = false, embedded = false, onGoToShip }: BoardPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { user } = useAuthContext();
@@ -69,8 +74,12 @@ export function BoardPage({ guided = false }: BoardPageProps) {
     onSuccess: () => {
       setActionError(null);
       invalidateBoard();
-      // Loop step S10.10: accepted → the transit screen, where dispatch happens.
-      void navigate('/transit');
+      // Loop step S10.10: accepted → the travel summary, where dispatch happens.
+      if (embedded && onGoToShip !== undefined) {
+        onGoToShip();
+      } else {
+        void navigate('/hangar');
+      }
     },
     onError,
   });
@@ -92,7 +101,9 @@ export function BoardPage({ guided = false }: BoardPageProps) {
   });
 
   if (shipsQuery.isLoading || worldQuery.isLoading) {
-    return (
+    return embedded ? (
+      <p>{t('loading')}</p>
+    ) : (
       <main className="app" data-guided={guided ? '' : undefined}>
         {t('loading')}
       </main>
@@ -109,12 +120,14 @@ export function BoardPage({ guided = false }: BoardPageProps) {
     (offer) => typeFilter === 'all' || offer.type === typeFilter,
   );
 
-  return (
-    <main className="app" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('board.title')}</h1>
-        <span className="sub">{originId === null ? '' : locationName(originId)}</span>
-      </header>
+  const body = (
+    <>
+      {!embedded && (
+        <header className="topbar">
+          <h1>{t('board.title')}</h1>
+          <span className="sub">{originId === null ? '' : locationName(originId)}</span>
+        </header>
+      )}
       {originId !== null && (
         <PlaceBanner placeId={originId}>
           <h2>{locationName(originId)}</h2>
@@ -222,6 +235,13 @@ export function BoardPage({ guided = false }: BoardPageProps) {
           );
         })}
       </div>
+    </>
+  );
+
+  if (embedded) return body;
+  return (
+    <main className="app" data-guided={guided ? '' : undefined}>
+      {body}
     </main>
   );
 }

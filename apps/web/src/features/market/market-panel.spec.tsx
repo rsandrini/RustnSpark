@@ -23,6 +23,13 @@ const onboarded = () =>
 
 const panel = () => document.querySelector('.market-panel') as HTMLElement;
 
+async function renderPortMarket(): Promise<void> {
+  renderWithRouter(routes, { initialEntries: ['/hangar'] });
+  await screen.findByRole('heading', { name: 'My Ship' });
+  fireEvent.click(await screen.findByRole('tab', { name: 'Port' }));
+  await screen.findByRole('tab', { name: 'Market' });
+}
+
 describe('market panel: descriptions and filters', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -30,7 +37,7 @@ describe('market panel: descriptions and filters', () => {
   });
 
   it('shows every offer with its description, never just a name and a price', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPortMarket();
     await screen.findByText('Plated Hull');
     const cards = document.querySelectorAll('.market-panel .pcard');
     expect(cards.length).toBeGreaterThan(0);
@@ -40,7 +47,7 @@ describe('market panel: descriptions and filters', () => {
   });
 
   it('opens the full explanation from the info button', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPortMarket();
     await screen.findByText('Plated Hull');
     fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
@@ -49,7 +56,7 @@ describe('market panel: descriptions and filters', () => {
   });
 
   it('filters by part type, by new/used and by search text', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPortMarket();
     await screen.findByText('Plated Hull');
     const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     const total = list().length;

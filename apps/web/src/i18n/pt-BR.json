@@ -53,6 +53,13 @@
     "title": "Minha Nave",
     "tray": "Peças",
     "trayEmpty": "Nenhuma peça solta no estoque.",
+    "pageTabs": {
+      "label": "Seções da Minha Nave",
+      "ship": "Nave",
+      "board": "Quadro",
+      "port": "Porto",
+      "dockedOnly": "Só disponível enquanto atracada no porto."
+    },
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
     "sheet": "Folha da nave",
     "class": "Classe",

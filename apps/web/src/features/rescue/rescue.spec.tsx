@@ -50,7 +50,7 @@ describe('rescue (S8.6 / S10.9)', () => {
 
   it('shows no rescue banner for a ship in port', async () => {
     renderWithRouter(routes, { initialEntries: ['/port'] });
-    await screen.findByRole('heading', { name: 'Port' });
+    await screen.findByRole('heading', { name: 'My Ship' });
     expect(screen.queryByTestId('rescue-banner')).toBeNull();
   });
 

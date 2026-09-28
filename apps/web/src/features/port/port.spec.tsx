@@ -36,6 +36,15 @@ function rowButton(label: string | RegExp): Element {
   return button;
 }
 
+async function renderPort(): Promise<void> {
+  renderWithRouter(routes, { initialEntries: ['/hangar'] });
+  await screen.findByRole('heading', { name: 'My Ship' });
+  fireEvent.click(await screen.findByRole('tab', { name: 'Port' }));
+  // Port's own tab bar (Market/Goods/Repair/…) only renders once its data has loaded — a
+  // sharper ready signal than the wallet testid, which My Ship's own header already shows.
+  await screen.findByRole('tab', { name: 'Market' });
+}
+
 describe('port (S10.9)', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -43,9 +52,8 @@ describe('port (S10.9)', () => {
   });
 
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
-    expect(await screen.findByRole('heading', { name: /^Port$/ })).toBeInTheDocument();
     expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
     expect(screen.getByText('Plated Hull')).toBeInTheDocument();
 
@@ -76,7 +84,7 @@ describe('port (S10.9)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     expect(await screen.findByTestId('wallet')).toHaveTextContent('-120 ¢');
     expect(screen.getByText(/Negative balance/i)).toBeInTheDocument();
@@ -90,7 +98,7 @@ describe('port (S10.9)', () => {
   });
 
   it('sells all mined materials after the quote popup', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
     fireEvent.click(rowButton(/Iron/));
@@ -104,7 +112,7 @@ describe('port (S10.9)', () => {
 
   it('a destroyed part has no repair slider and is skipped by "set all to 100%"', async () => {
     destroyEngine();
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
     expect(
@@ -116,7 +124,7 @@ describe('port (S10.9)', () => {
   });
 
   it('repair starts at the current state, prices each part and the total, then charges once', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
     const sliders = screen.getAllByRole('slider');
@@ -173,7 +181,7 @@ describe('port (S10.9)', () => {
         );
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
     const summary = screen.getByTestId('repair-summary');
@@ -194,7 +202,7 @@ describe('port (S10.9)', () => {
   });
 
   it('fills the tank and scavenges the field', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     expect(screen.getByText('Fuel 25 / 40')).toBeInTheDocument();
@@ -212,9 +220,12 @@ describe('port (S10.9)', () => {
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
 
-    // Starting the job sends the ship out and the pilot to the Transit screen.
+    // Starting the job sends the ship out and back to the Ship tab, where the travel
+    // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
     fireEvent.click(screen.getByRole('button', { name: 'Send the ship scavenging' }));
-    expect(await screen.findByRole('heading', { name: 'In transit' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'true'),
+    );
   });
 
   it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
@@ -234,6 +245,7 @@ describe('port (S10.9)', () => {
               layout: [],
               sheet: { fuelCap: 40 },
               shipClass: 'MULTIROLE',
+              yard: { halfSize: 10 },
               activity: { kind: 'idle', until: null, missionId: null },
             },
           ],
@@ -248,8 +260,7 @@ describe('port (S10.9)', () => {
         );
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
-    expect(await screen.findByRole('heading', { name: /^Port$/ })).toBeInTheDocument();
+    await renderPort();
     expect(requested).toContain('hedus');
     expect(requested).not.toContain('ceres');
   });
@@ -273,7 +284,7 @@ describe('port (S10.9)', () => {
         );
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
@@ -290,7 +301,7 @@ describe('port (S10.9)', () => {
   });
 
   it('refuel, sell and repair are refused by the (strict) mock without a key — and the UI sends one', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
     fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
@@ -308,7 +319,7 @@ describe('port (S10.9)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog');
@@ -319,7 +330,7 @@ describe('port (S10.9)', () => {
   });
 
   it('sells an inventory part at the port quote on the first click', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     let popup = await screen.findByRole('dialog');
@@ -344,7 +355,7 @@ describe('port (S10.9)', () => {
         return HttpResponse.json({ accessToken: 'token-x' }, { status: 200 });
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     await screen.findByTestId('wallet');
     const before = sessionRefreshes;
     await screen.findByText('Plated Hull');
@@ -357,7 +368,7 @@ describe('port (S10.9)', () => {
 
   it('refuel opens on what the pilot can afford, never on a price they cannot pay', async () => {
     setWallet(30);
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     // 3 ¢ a unit and 30 ¢ in the wallet: ten units, not the whole tank.
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('30 ¢'));
@@ -365,7 +376,7 @@ describe('port (S10.9)', () => {
   });
 
   it('refuel: the slider picks how much to buy and the price follows the amount', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     const slider = await screen.findByLabelText('How much fuel to buy');
     fireEvent.change(slider, { target: { value: '5' } });
@@ -376,7 +387,7 @@ describe('port (S10.9)', () => {
 
   it('a too-damaged loose part cannot be sold; discard asks first, then destroys it', async () => {
     addWreck();
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
     const note = await screen.findByTestId('discard-note');
     expect(note).toHaveTextContent('under 15% condition');

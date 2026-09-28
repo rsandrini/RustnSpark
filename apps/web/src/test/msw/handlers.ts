@@ -242,7 +242,16 @@ const ship = (): ShipResponse => ({
   sheet: sheet(),
   shipClass: 'MULTIROLE',
   yard: { halfSize: 10 },
-  activity: { kind: 'idle', until: null, missionId: null },
+  // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
+  // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
+  activity:
+    shipStatus === 'ON_MISSION'
+      ? {
+          kind: 'flying',
+          until: activeState?.arrivalAt ?? null,
+          missionId: activeState?.id ?? null,
+        }
+      : { kind: 'idle', until: null, missionId: null },
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -519,6 +528,7 @@ export const handlers = [
     activeState.status = 'IN_TRANSIT';
     activeState.shipId = String(params.id);
     activeState.arrivalAt = arrivalAt;
+    shipStatus = 'ON_MISSION';
     activeState.legWindows = [
       {
         legIndex: 0,
