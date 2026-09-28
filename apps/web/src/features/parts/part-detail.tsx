@@ -117,3 +117,49 @@ export function PartDetail({ part }: { part: PartInfoData }) {
     </div>
   );
 }
+
+/**
+ * The ship yard's hover card (owner request, round-3 follow-up): numbers only, no description
+ * or "why you need it" prose — just enough to place the part without opening the full popup.
+ * The popup itself now opens only from the (i) button.
+ */
+export function PartStatsCard({ part }: { part: PartInfoData }) {
+  const { t, i18n } = useTranslation();
+  const format = useNumberFormat();
+  const { catalog } = part;
+  const name = pickLocalized(part.displayName, i18n.language);
+  const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
+    key,
+    value: format(catalog[key]),
+  }));
+  const baseRows = [
+    { key: 'mass', value: format(catalog.mass) },
+    { key: 'structureCost', value: format(catalog.structureCost) },
+    { key: 'partHp', value: format(catalog.partHp) },
+  ];
+
+  return (
+    <div className="part-stats-card">
+      <b>{name}</b>
+      <p className="sub">
+        {[
+          t(`hangar.partClasses.${catalog.partClass}`),
+          `${catalog.w}×${catalog.h}`,
+          part.condition !== undefined ? `${format(part.condition)}%` : null,
+        ]
+          .filter((piece) => piece !== null)
+          .join(' · ')}
+      </p>
+      <dl className="part-stats">
+        {[...effectRows, ...baseRows].map((row) => (
+          <div key={row.key} className="statrow">
+            <dt>{t(`parts.stat.${row.key}.label`)}</dt>
+            <dd>
+              <b>{row.value}</b>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}

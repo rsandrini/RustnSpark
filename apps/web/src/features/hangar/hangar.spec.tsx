@@ -86,13 +86,46 @@ describe('hangar (S10.4)', () => {
     expect(block(container, 'part-cargo-b')).toBeNull();
   });
 
-  it('clicking a part opens its stats as a popup, not an inline side panel (owner request)', async () => {
+  it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {
+    server.use(
+      onboarded(),
+      http.get('/v1/ships', () =>
+        HttpResponse.json([
+          {
+            id: 'ship-1',
+            ownerPlayerId: 'player-1',
+            name: 'luna starter',
+            fuel: 40,
+            status: 'IN_PORT',
+            currentLocationId: 'ceres',
+            stance: 'NEUTRAL',
+            layout: [],
+            sheet: { ...testSheet, mob: 0.958 },
+            shipClass: 'MULTIROLE',
+            yard: { halfSize: 10 },
+            activity: { kind: 'idle', until: null, missionId: null },
+          },
+        ]),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    // One decimal would round 0.958 up to a displayed "1", which then contradicts a
+    // MOB_TOO_LOW ("Mobility is below 1.") problem shown right next to it.
+    expect(await screen.findByText('0.96')).toBeInTheDocument();
+  });
+
+  it('opens a part popup only from its (i) button — clicking the row itself never opens one', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
     const trayButton = await screen.findByRole('button', { name: /^cargo/i });
     fireEvent.click(trayButton);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Details: Cargo Rack/i }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { level: 2 })).toBeInTheDocument();
 

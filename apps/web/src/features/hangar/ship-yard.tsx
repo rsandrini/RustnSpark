@@ -75,6 +75,8 @@ export interface ShipYardProps {
   onCellHover: (gx: number, gy: number) => void;
   onDragStart: (partInstanceId: string) => void;
   onDragEnd: () => void;
+  /** Hovering a placed block (owner request): a small stats-only card, not the full popup. */
+  onHoverPart?: (partInstanceId: string | null) => void;
 }
 
 // The assembly yard. Cells are transparent rects (data-gx/gy) so placement and drag feedback
@@ -94,6 +96,7 @@ export function ShipYard({
   onCellHover,
   onDragStart,
   onDragEnd,
+  onHoverPart,
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -372,6 +375,8 @@ export function ShipYard({
                   draggingId === placement.partInstanceId ? { pointerEvents: 'none' } : undefined
                 }
                 onPointerDown={(event) => handleBlockDown(event, placement)}
+                onPointerEnter={() => onHoverPart?.(placement.partInstanceId)}
+                onPointerLeave={() => onHoverPart?.(null)}
               />
               <title>
                 {look === undefined

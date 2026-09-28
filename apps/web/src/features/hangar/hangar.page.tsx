@@ -18,8 +18,7 @@ import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
-import { PartDetail, partSummary, useNumberFormat } from '../parts/part-detail';
-import { Popup } from '../../ui/Popup';
+import { PartStatsCard, partSummary, useNumberFormat } from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
 
 // Which kind of part fixes each viability problem: the hint names it and offers the store filter.
@@ -67,8 +66,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [rotateHint, setRotateHint] = useState<string | null>(null);
-  // The part-detail panel stays closed for a part the player dismissed, until they pick another.
-  const [dismissedDetailId, setDismissedDetailId] = useState<string | null>(null);
+  // Hovering a placed block shows its stats card (round-3 follow-up); the full popup only
+  // opens from a part row's own (i) button now, never from selecting/placing a part.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const format = useNumberFormat();
@@ -115,7 +115,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
   // Nothing installed yet: the loose parts are the starter kit the player still has to assemble.
   const isKit = effectiveLayout.length === 0 && trayParts.length > 0;
-  const focusPart = parts.find((part) => part.id === (pendingPartId ?? selectedId)) ?? null;
+  const hoveredPart = parts.find((part) => part.id === hoveredId) ?? null;
   const dirty =
     ship !== undefined && layout !== null && JSON.stringify(layout) !== JSON.stringify(ship.layout);
 
@@ -282,11 +282,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // player's locale.
   const number = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
+  // Mobility has a hard threshold (MOB_TOO_LOW fires below 1): one decimal can round e.g. 0.96
+  // up to a displayed "1", which then looks wrong next to "Mobility is below 1." Two decimals
+  // keep the number honest about which side of the threshold it is actually on.
+  const mobilityNumber = (value: number) =>
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(value);
   const statRows: Array<{ key: string; value: string }> =
     sheet === undefined
       ? []
       : [
-          { key: 'mob', value: number(sheet.mob) },
+          { key: 'mob', value: mobilityNumber(sheet.mob) },
           { key: 'crg', value: number(sheet.crg) },
           { key: 'min', value: number(sheet.min) },
           { key: 'hp', value: number(sheet.hp) },
@@ -426,7 +431,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             ))}
         </section>
 
-        <section>
+        <section style={{ position: 'relative' }}>
           <ShipYard
             lookById={lookById}
             halfSize={ship.yard.halfSize}
@@ -443,7 +448,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             onCellHover={handleCellHover}
             onDragStart={setDraggingId}
             onDragEnd={() => setDraggingId(null)}
+            onHoverPart={setHoveredId}
           />
+          {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —
+              the full popup now opens only from the (i) button on a tray/store row). */}
+          {hoveredPart !== null && (
+            <div className="part-hover-card" aria-hidden="true" data-testid="part-hover-card">
+              <PartStatsCard part={hoveredPart} />
+            </div>
+          )}
           <div className="stack" style={{ marginTop: 10 }}>
             <button
               type="button"
@@ -487,16 +500,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               <p className="muted">{t('hangar.state.noPreview')}</p>
             )}
           </div>
-
-          {/* Click a part (tray or placed) to see its full stats — a popup, not a side panel,
-              so it never crowds the ship sheet or pushes the layout around (owner request). */}
-          <Popup
-            open={focusPart !== null && dismissedDetailId !== focusPart.id}
-            title={focusPart !== null ? (nameById.get(focusPart.id) ?? focusPart.partType) : ''}
-            onClose={() => focusPart !== null && setDismissedDetailId(focusPart.id)}
-          >
-            {focusPart !== null && <PartDetail part={focusPart} />}
-          </Popup>
 
           {allProblems.length > 0 && (
             <div className="panel">

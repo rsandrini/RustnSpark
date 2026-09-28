@@ -1318,6 +1318,36 @@ svg .block.floating {
   font-weight: 400;
 }
 
+/* ship yard: hover-only stats card (round-3 follow-up) — numbers only, no popup. */
+.part-hover-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 220px;
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.part-stats-card .part-stats {
+  margin-top: 6px;
+}
+
+.part-stats-card .statrow {
+  gap: 8px;
+  font-size: 12px;
+}
+
+.part-stats-card dt {
+  min-width: 0;
+}
+
 .market-filters {
   display: grid;
   gap: 8px;
