@@ -228,6 +228,41 @@ describe('port (S10.9)', () => {
     );
   });
 
+  it('refuel tab explains there is no tank instead of claiming a 0/0 tank is already full', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'sun starter',
+              fuel: 0,
+              status: 'IN_PORT',
+              currentLocationId: 'hedus',
+              stance: 'NEUTRAL',
+              layout: [],
+              // An all-ion (or mid-refit) ship: no tank installed, so fuelCap is 0 — this must
+              // not read as "0 / 0 = full" the way a genuinely topped-up tank would.
+              sheet: { fuelCap: 0 },
+              shipClass: 'MULTIROLE',
+              yard: { halfSize: 10 },
+              activity: { kind: 'idle', until: null, missionId: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    expect(
+      await screen.findByText(/no fuel tank installed/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/tank is already full/i)).toBeNull();
+    expect(screen.queryByTestId('refuel-cost')).toBeNull();
+  });
+
   it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
     const requested: string[] = [];
     server.use(

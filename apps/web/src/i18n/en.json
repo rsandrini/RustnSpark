@@ -466,6 +466,7 @@
     "refuelAfford": "Max I can afford",
     "refuelUnitPrice": "{{price}} ¢ per unit",
     "refuelFill": "Fill tank",
+    "refuelNoTank": "This ship has no fuel tank installed, so there is nowhere to put fuel — install a tank in My Ship first.",
     "refuelFull": "The tank is already full.",
     "refueled": "Filled {{units}} units for {{cost}} ¢.",
     "scavenge": "Send the ship scavenging",

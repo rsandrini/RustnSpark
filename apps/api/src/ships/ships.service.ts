@@ -105,9 +105,11 @@ export class ShipsService implements OnModuleInit {
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     this.assertLayoutValid(layout, playerParts, shipId);
 
-    const installed = this.buildInstalledParts(layout, playerParts);
-    const sheet = deriveSheet(installed, rules);
-    this.assertViable(sheet, installed, rules);
+    // Saving a layout never requires it to be flight-viable: a player mid-refit — say,
+    // pulling a part to sell it in Port — needs to save the smaller layout to free the part
+    // up, even though the ship can't fly yet. Viability is enforced separately, at the point
+    // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
+    // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
     await this.persistLayout(shipId, layout, playerParts);
 
@@ -121,18 +123,16 @@ export class ShipsService implements OnModuleInit {
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-    const { layout, placed, omitted } = arrange(candidateParts.map(toInstalledPart));
+    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart));
     if (omitted.length > 0) {
       throw new BadRequestException({
         error: 'AUTO_LAYOUT_OMITTED_PARTS',
         omittedPartInstanceIds: omitted.map((part) => part.instance.id),
       });
     }
-    const installed = placed;
 
     this.assertLayoutValid(layout, playerParts, shipId);
-    const sheet = deriveSheet(installed, rules);
-    this.assertViable(sheet, installed, rules);
+    // Same as assemble() above: saving never requires flight-viability.
 
     await this.persistLayout(shipId, layout, playerParts);
 
@@ -263,13 +263,6 @@ export class ShipsService implements OnModuleInit {
       throw new ForbiddenException('request references a part not owned by player');
     }
     return playerParts.filter((part) => allowed.has(part.id));
-  }
-
-  private assertViable(sheet: ShipSheet, installed: InstalledPart[], rules: GameRules): void {
-    const { viable, problems } = checkViability(sheet, installed, rules);
-    if (!viable) {
-      throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems });
-    }
   }
 
   private async persistLayout(

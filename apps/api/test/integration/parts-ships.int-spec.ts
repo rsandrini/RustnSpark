@@ -516,6 +516,74 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(response.status).toBe(400);
     });
+
+    it('saves a below-minimum layout instead of blocking it with SHIP_NOT_VIABLE (playtest: cannot remove a part to sell it)', async () => {
+      // A player stripping a ship down to sell a part — or one mid-refit — needs to save a
+      // layout that can't fly yet. Flight-viability is only enforced where it actually matters:
+      // dispatch, travel eligibility and scavenge start.
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      const bridge = parts.find((p) => p.partType === 'bridge');
+      if (bridge === undefined) throw new Error('missing part bridge');
+      // A bare bridge with nothing else installed: no engine, no tank — not flight-viable.
+      const layout = [{ partInstanceId: bridge.id, gx: 0, gy: 0, rot: 0 }];
+
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(preview.status).toBe(200);
+      expect((preview.body as { viability: { viable: boolean } }).viability.viable).toBe(false);
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+
+      expect(response.status).toBe(200);
+      const ship = asShip(response);
+      expect(ship.layout).toEqual(layout);
+
+      // The now-uninstalled parts are back in inventory, free to be sold.
+      const inInventory = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id, location: 'INVENTORY' },
+      });
+      expect(inInventory.length).toBe(parts.length - 1);
+    });
+
+    it('saves an entirely empty layout (every part pulled out)', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: [] });
+
+      expect(response.status).toBe(200);
+      const ship = asShip(response);
+      expect(ship.layout).toEqual([]);
+    });
   });
 
   describe('auto-assemble', () => {

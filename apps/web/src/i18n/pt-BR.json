@@ -466,6 +466,7 @@
     "refuelAfford": "O que dá pra pagar",
     "refuelUnitPrice": "{{price}} ¢ por unidade",
     "refuelFill": "Encher o tanque",
+    "refuelNoTank": "Esta nave não tem tanque de combustível instalado, então não há onde colocar combustível — instale um tanque em Minha Nave primeiro.",
     "refuelFull": "O tanque já está cheio.",
     "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
     "scavenge": "Mandar a nave vasculhar",

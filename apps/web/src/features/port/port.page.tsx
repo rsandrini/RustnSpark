@@ -349,7 +349,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const materials = materialsQuery.data?.materials ?? [];
   const fuel = ship.fuel;
   const fuelCap = ship.sheet.fuelCap;
-  const tankFull = fuel >= fuelCap;
+  // A ship with no tank at all (fuelCap 0 — an all-ion ship, or one mid-refit) reads as
+  // "0 / 0 = full" by the same math as a genuinely topped-up tank; the owner's report: with
+  // fuelCap 0 "the UI is broken and I cannot buy more" — the real story is there is nowhere
+  // to put fuel, not that the tank is already full.
+  const noTank = fuelCap <= 0;
+  const tankFull = !noTank && fuel >= fuelCap;
 
   const sellOfferOf = (partInstanceId: string): number | null =>
     marketQuery.data?.sellOffers.find((offer) => offer.partInstanceId === partInstanceId)?.price ??
@@ -711,7 +716,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             label={t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })}
           />
           <p className="sub">{t('port.refuelHint')}</p>
-          {tankFull ? (
+          {noTank ? (
+            <p className="sub">{t('port.refuelNoTank')}</p>
+          ) : tankFull ? (
             <p className="sub">{t('port.refuelFull')}</p>
           ) : (
             <div className="panel refuel-panel" data-testid="refuel-panel">
