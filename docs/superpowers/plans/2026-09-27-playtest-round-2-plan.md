@@ -189,3 +189,8 @@ Owner's ask, verbatim themes: too many tabs; Home is weak — make Hangar the la
 ### 8.4 Risks
 - This is the biggest surface-area change of the playtest so far: 3 routes disappear (`/`, `/transit`, and `/port` folds in), `GameNav` shrinks from 6 links to 2, and one page (My Ship) absorbs three others' worth of tabs. Expect rework across `app/router.tsx`, `GameNav`, `hangar.page.tsx`, `port.page.tsx`, `transit.page.tsx`, `home.page.tsx` (deleted), the browser smoke (`e2e/smoke.spec.ts`, `e2e/economy.spec.ts` — both navigate through `/port` and `/transit` today) and several unit specs.
 - Doing it in the R3-1→R3-6 order keeps each step small enough to test and roll out on its own, rather than one giant change.
+
+### 8.5 Round-3 follow-up (owner, 2026-09-28) — R3-4 correction + a display bug
+
+1. **R3-4 was too eager.** Clicking a part (tray row or placed block) now opens the full popup; the owner wants that ONLY from the (i) button. Clicking/hovering a part **in the ship yard** should instead show a small stats-only card (no description text) on hover, not the full popup.
+2. **Mobility display bug.** A ship with mobility shown as "1" still gets a viability message saying mobility is below the 1 required — almost certainly the client rounds a sub-1 raw value UP to "1" for display while the real (lower) unrounded value fails the check, so the number on screen and the number the check used disagree. Needs the raw vs. displayed value traced and fixed at whichever end is wrong (display should show the true value, not mask a real shortfall — or the display rounding itself is inconsistent with what the check reads).
