@@ -2,10 +2,18 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
-import { PartDetail, type PartInfoData } from './part-detail';
+import { PartDetail, type PartCompareContext, type PartInfoData } from './part-detail';
+
+export interface PartInfoButtonProps {
+  part: PartInfoData;
+  /** Hangar tray only: shows what installing this part would do to the ship, next to its own
+      stats. Omitted everywhere else (Market, Port) — nothing is "applied to the ship" yet
+      there, it's still just a purchase decision. */
+  compare?: PartCompareContext;
+}
 
 // The "i" next to a part: opens the full explanation (description, why you need it, stats).
-export function PartInfoButton({ part }: { part: PartInfoData }) {
+export function PartInfoButton({ part, compare }: PartInfoButtonProps) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const name = pickLocalized(part.displayName, i18n.language);
@@ -26,7 +34,7 @@ export function PartInfoButton({ part }: { part: PartInfoData }) {
         {t('parts.infoGlyph')}
       </button>
       <Popup open={open} title={name} onClose={() => setOpen(false)}>
-        <PartDetail part={part} />
+        <PartDetail part={part} compare={compare} />
       </Popup>
     </>
   );

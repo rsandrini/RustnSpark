@@ -46,13 +46,17 @@ describe('market panel: descriptions and filters', () => {
     }
   });
 
-  it('opens the full explanation from the info button', async () => {
+  it('opens the full explanation from the info button, with the stats table and a hover tag for why you need it', async () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');
     fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    expect(within(dialog).getByText('Why you need it')).toBeInTheDocument();
-    expect(within(dialog).getByText(/what it does, why you need it/)).toBeInTheDocument();
+    // The description/"why you need it" prose is a hover tag next to the name now, not
+    // always-on text (owner request); it's still there, just behind a title attribute.
+    const whyTag = within(dialog).getByRole('button', { name: /Why you need it: Plated Hull/ });
+    expect(whyTag).toHaveAttribute('title', expect.stringContaining('what it does, why you need it'));
+    // The stats are a real table.
+    expect(within(dialog).getByRole('table')).toBeInTheDocument();
   });
 
   it('filters by part type, by new/used and by search text', async () => {

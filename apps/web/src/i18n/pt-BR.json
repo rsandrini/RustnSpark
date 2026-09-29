@@ -974,7 +974,15 @@
     "summaryNone": "Peça estrutural",
     "infoGlyph": "i",
     "broken": "QUEBRADA",
-    "brokenNote": "Quebrada: não conta para nada até ser consertada."
+    "brokenNote": "Quebrada: não conta para nada até ser consertada.",
+    "compare": {
+      "title": "Se você instalar agora",
+      "loading": "Verificando o que isso faria à nave…",
+      "stat": "Estatística",
+      "value": "Esta peça",
+      "ifInstalled": "Nave, se instalada",
+      "unchanged": "Sem mudança"
+    }
   },
   "market": {
     "all": "Todas",

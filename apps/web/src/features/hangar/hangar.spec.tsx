@@ -138,6 +138,38 @@ describe('hangar (S10.4)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it("shows what installing a loose part would do to the ship, next to its own stats", async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { partInstanceIds?: string[] };
+        // The comparison call adds the candidate part (part-cargo-b, crg 5) to whatever's
+        // already installed; answer with the ship's cargo bumped by exactly that, so the
+        // popup's delta column has a real, checkable number instead of a coincidental zero.
+        const withCandidate = (body.partInstanceIds ?? []).includes('part-cargo-b');
+        return HttpResponse.json({
+          sheet: { ...testSheet, crg: withCandidate ? testSheet.crg + 5 : testSheet.crg },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Details: Cargo Rack/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    // "If installed" is Hangar-only: Cargo goes up by the part's own crg (5), everything else
+    // that wasn't touched reads as unchanged.
+    const cargoRow = within(dialog).getByRole('row', { name: /^Cargo/ });
+    await waitFor(() => expect(within(cargoRow).getByText('+5')).toBeInTheDocument());
+    const mobRow = within(dialog).getByRole('row', { name: /^Mobility/ });
+    expect(within(mobRow).getByText('No change')).toBeInTheDocument();
+  });
+
   it('labels parts with their localized names, never the raw part code', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });

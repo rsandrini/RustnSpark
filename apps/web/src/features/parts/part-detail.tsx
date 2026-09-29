@@ -1,10 +1,15 @@
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import type { LocalizedText, PartCatalogStats } from '../../api/generated';
+import { client } from '../../api/client';
+import type { LocalizedText, PartCatalogStats, PreviewResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 
 // What every screen that shows a part (market, hangar tray, ship grid) needs to explain it.
 // Inventory items and market listings both satisfy this shape.
 export interface PartInfoData {
+  /** The owned instance id (inventory items have one; a market listing hasn't been bought yet
+      and doesn't). Only needed for the "if installed" comparison below. */
+  id?: string;
   displayName: LocalizedText;
   description: LocalizedText;
   rarity: string;
@@ -15,8 +20,19 @@ export interface PartInfoData {
   price?: number;
 }
 
+/** Hangar only: what installing this (already-owned) part would do to the ship, compared to how
+    it stands today. Needs the part's own instance id (`PartInfoData.id`) to ask the server. */
+export interface PartCompareContext {
+  shipId: string;
+  /** Every part instance already on the ship. */
+  installedPartIds: readonly string[];
+  /** The ship's own current sheet — the "before" side of the comparison. */
+  currentSheet: ShipSheet;
+}
+
 // Effect stats worth listing when non-zero, in reading order. Size, mass, structure and hit
-// points are always shown.
+// points are always shown. Each one's key doubles as the ShipSheet field it sums into (they
+// share the same name server-side), except the three in `BASE_STATS` below.
 const EFFECT_STATS = [
   'pot',
   'pdf',
@@ -35,6 +51,20 @@ const EFFECT_STATS = [
 ] as const;
 
 type EffectStat = (typeof EFFECT_STATS)[number];
+
+// A part's own catalog field, the ship-sheet field it feeds, and how to read its value off the
+// catalog — the three base stats every part has, named differently on the sheet than on the
+// catalog (mass keeps its name; structureCost becomes structureUsed; partHp becomes hp).
+const BASE_STATS: ReadonlyArray<{ key: string; sheetKey: keyof ShipSheet; read: (c: PartCatalogStats) => number }> = [
+  { key: 'mass', sheetKey: 'mass', read: (c) => c.mass },
+  { key: 'structureCost', sheetKey: 'structureUsed', read: (c) => c.structureCost },
+  { key: 'partHp', sheetKey: 'hp', read: (c) => c.partHp },
+];
+
+// Ship-level stats no single part "has" on its own (mobility is thrust ÷ mass; autonomy is
+// tank ÷ burn rate) but that installing a part can still move — worth showing in the comparison
+// even though they're not part of the part's own stat list.
+const DERIVED_COMPARE_STATS: readonly (keyof ShipSheet)[] = ['mob', 'autonomy'];
 
 const SUMMARY_STATS: readonly EffectStat[] = [
   'pot',
@@ -67,21 +97,55 @@ export function partSummary(
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
-export function PartDetail({ part }: { part: PartInfoData }) {
+export interface PartDetailProps {
+  part: PartInfoData;
+  compare?: PartCompareContext;
+}
+
+export function PartDetail({ part, compare }: PartDetailProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const { catalog } = part;
-
-  const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
-    key,
-    value: format(catalog[key]),
-  }));
-  const baseRows = [
-    { key: 'mass', value: format(catalog.mass) },
-    { key: 'structureCost', value: format(catalog.structureCost) },
-    { key: 'partHp', value: format(catalog.partHp) },
-  ];
+  const name = pickLocalized(part.displayName, i18n.language);
   const description = pickLocalized(part.description, i18n.language);
+
+  // The description and "why you need it" prose used to always show; now they're a hover-only
+  // tag next to the name, like the (i) button that opens this popup in the first place (owner
+  // request: less always-on text, the stats table is the point of this screen).
+  const infoText = [
+    description,
+    t(`parts.role.${catalog.partClass}`),
+    catalog.pressurized ? t('parts.flag.pressurized') : null,
+    catalog.lifeSupport ? t('parts.flag.lifeSupport') : null,
+  ]
+    .filter((piece): piece is string => piece !== null && piece !== '')
+    .join(' ');
+
+  const comparePreview = useQuery({
+    queryKey: ['partCompare', compare?.shipId, compare?.installedPartIds, part.id],
+    enabled: compare !== undefined && part.id !== undefined,
+    queryFn: () =>
+      client.post<PreviewResponse>(`/v1/ships/${compare?.shipId ?? ''}/preview`, {
+        partInstanceIds: [...(compare?.installedPartIds ?? []), part.id ?? ''],
+      }),
+  });
+  const afterSheet = comparePreview.data?.sheet;
+
+  const deltaFor = (sheetKey: keyof ShipSheet): string | null => {
+    if (compare === undefined || afterSheet === undefined) return null;
+    const delta = afterSheet[sheetKey] - compare.currentSheet[sheetKey];
+    if (Math.abs(delta) < 0.05) return t('parts.compare.unchanged');
+    return `${delta > 0 ? '+' : ''}${format(delta)}`;
+  };
+
+  const rows = [
+    ...EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
+      key,
+      sheetKey: key as keyof ShipSheet,
+      value: format(catalog[key]),
+    })),
+    ...BASE_STATS.map((stat) => ({ key: stat.key, sheetKey: stat.sheetKey, value: format(stat.read(catalog)) })),
+  ];
 
   return (
     <div className="part-detail">
@@ -96,24 +160,53 @@ export function PartDetail({ part }: { part: PartInfoData }) {
         ]
           .filter((piece) => piece !== null)
           .join(' · ')}
+        {infoText !== '' && (
+          <button
+            type="button"
+            className="btn info-btn part-why-tag"
+            aria-label={`${t('parts.whyTitle')}: ${name}`}
+            title={infoText}
+          >
+            {t('parts.infoGlyph')}
+          </button>
+        )}
       </p>
       {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
-      {description !== '' && <p className="part-desc">{description}</p>}
-      <h3>{t('parts.whyTitle')}</h3>
-      <p>{t(`parts.role.${catalog.partClass}`)}</p>
-      {catalog.pressurized && <p className="muted">{t('parts.flag.pressurized')}</p>}
-      {catalog.lifeSupport && <p className="muted">{t('parts.flag.lifeSupport')}</p>}
-      <dl className="part-stats">
-        {[...effectRows, ...baseRows].map((row) => (
-          <div key={row.key} className="statrow" title={t(`parts.stat.${row.key}.hint`)}>
-            <dt>{t(`parts.stat.${row.key}.label`)}</dt>
-            <dd>
-              <b>{row.value}</b>
-              <span className="muted stat-hint">{t(`parts.stat.${row.key}.hint`)}</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {compare !== undefined && (
+        <p className="muted part-compare-note">
+          {comparePreview.isLoading ? t('parts.compare.loading') : t('parts.compare.title')}
+        </p>
+      )}
+      <table className="part-stats-table">
+        <thead>
+          <tr>
+            <th>{t('parts.compare.stat')}</th>
+            <th>{t('parts.compare.value')}</th>
+            {compare !== undefined && <th>{t('parts.compare.ifInstalled')}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
+              <td>{t(`parts.stat.${row.key}.label`)}</td>
+              <td>
+                <b>{row.value}</b>
+              </td>
+              {compare !== undefined && <td className="delta">{deltaFor(row.sheetKey) ?? '—'}</td>}
+            </tr>
+          ))}
+          {compare !== undefined &&
+            DERIVED_COMPARE_STATS.map((sheetKey) => (
+              <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
+                <td>{t(`hangar.stats.${sheetKey}`)}</td>
+                <td>
+                  <b>{format(compare.currentSheet[sheetKey])}</b>
+                </td>
+                <td className="delta">{deltaFor(sheetKey) ?? '—'}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -132,11 +225,7 @@ export function PartStatsCard({ part }: { part: PartInfoData }) {
     key,
     value: format(catalog[key]),
   }));
-  const baseRows = [
-    { key: 'mass', value: format(catalog.mass) },
-    { key: 'structureCost', value: format(catalog.structureCost) },
-    { key: 'partHp', value: format(catalog.partHp) },
-  ];
+  const baseRows = BASE_STATS.map((stat) => ({ key: stat.key, value: format(stat.read(catalog)) }));
 
   return (
     <div className="part-stats-card">

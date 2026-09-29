@@ -499,7 +499,20 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                           label={t('port.conditionNow', { value: Math.round(part.condition) })}
                         />
                       </button>
-                      <PartInfoButton part={part} />
+                      <PartInfoButton
+                        part={part}
+                        compare={
+                          sheet === undefined
+                            ? undefined
+                            : {
+                                shipId: ship.id,
+                                installedPartIds: effectiveLayout.map(
+                                  (placement) => placement.partInstanceId,
+                                ),
+                                currentSheet: sheet,
+                              }
+                        }
+                      />
                     </div>
                   ))}
                 </>

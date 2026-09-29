@@ -974,7 +974,15 @@
     "summaryNone": "Structural part",
     "infoGlyph": "i",
     "broken": "BROKEN",
-    "brokenNote": "Broken: it counts for nothing until it is repaired."
+    "brokenNote": "Broken: it counts for nothing until it is repaired.",
+    "compare": {
+      "title": "If you install this now",
+      "loading": "Checking what this would do to the ship…",
+      "stat": "Stat",
+      "value": "This part",
+      "ifInstalled": "Ship, if installed",
+      "unchanged": "No change"
+    }
   },
   "market": {
     "all": "All",
