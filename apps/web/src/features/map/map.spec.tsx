@@ -57,7 +57,9 @@ describe('map (S10.5)', () => {
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
     const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
     expect(withinText(dialog, /Porto Ceres — a node/i)).toBeInTheDocument();
-    expect(screen.getByText('Luna Authority')).toBeInTheDocument();
+    // The top bar's own faction badge (ShipIdentity) also says "Luna Authority" now; this one
+    // is the popup's own.
+    expect(within(dialog).getByText('Luna Authority')).toBeInTheDocument();
     expect(dialog.textContent).toContain('Zone 0');
     expect(await within(dialog).findByText('Missions here')).toBeInTheDocument();
 

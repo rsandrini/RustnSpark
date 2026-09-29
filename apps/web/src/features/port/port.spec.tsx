@@ -123,30 +123,29 @@ describe('port (S10.9)', () => {
     expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
   });
 
-  it('repair starts at the current state, prices each part and the total, then charges once', async () => {
+  it('repair defaults to a full repair, prices each part and the total, then charges once', async () => {
     await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
     const sliders = screen.getAllByRole('slider');
     expect(sliders).toHaveLength(6);
-    // Nothing is selected by default: every slider sits at the part's current condition.
+    // A full repair is the default the first time there's damage to quote (owner: the workshop
+    // fee should be a real number as soon as the tab opens, not 0 until a slider moves): every
+    // slider already sits at 100.
     for (const slider of sliders) {
-      expect((slider as HTMLInputElement).value).toBe((slider as HTMLInputElement).min);
+      expect((slider as HTMLInputElement).value).toBe('100');
     }
     const summary = screen.getByTestId('repair-summary');
-    expect(summary).toHaveTextContent('Nothing selected yet');
-    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeDisabled();
-
-    // One click sets everything to 100 %: each row shows its own price and time, then a total.
-    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
     expect(
       screen.getAllByTestId('repair-line').every((line) => /¢/.test(line.textContent ?? '')),
     ).toBe(true);
 
-    // ...and "Back to current" undoes it without repairing anything.
+    // "Back to current" undoes it without repairing anything...
     fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
     expect(screen.getByTestId('repair-summary')).toHaveTextContent('Nothing selected yet');
+    // ...and one click on "Set all to 100%" puts it right back.
     fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
 
@@ -185,7 +184,10 @@ describe('port (S10.9)', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
     const summary = screen.getByTestId('repair-summary');
-    // First, a small quote for one part settles and the trigger is enabled on it.
+    // The default is already a full repair (every part), which this test's mock would gate as
+    // the "bigger plan": back out to nothing selected first, then pick a single part, to get the
+    // small quote this test actually wants as its starting point.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
     const [slider] = screen.getAllByRole('slider');
     fireEvent.change(slider!, { target: { value: '100' } });
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('20 ¢'));

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState } from '../../test/msw/handlers';
@@ -30,9 +30,12 @@ describe('profile (S10.9)', () => {
   it('shows the wallet, faction and mission history', async () => {
     renderWithRouter(routes, { initialEntries: ['/profile'] });
 
-    expect(await screen.findByRole('heading', { name: 'Profile' })).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'Profile' });
+    const main = heading.closest('main')!;
     expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
-    expect(screen.getByText('Luna Authority')).toBeInTheDocument();
+    // The top bar's own faction badge (ShipIdentity) also says "Luna Authority" now; this one
+    // is the profile page's own.
+    expect(within(main).getByText('Luna Authority')).toBeInTheDocument();
     expect(await screen.findByText('Mission accomplished')).toBeInTheDocument();
     expect(await screen.findByText(/2 legs/)).toBeInTheDocument();
 

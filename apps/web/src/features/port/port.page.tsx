@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -131,6 +131,17 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }),
     [damagedInstalled, repairTargets],
   );
+  // Default to a full repair the first time there's damage to quote, so the workshop fee is a
+  // real number as soon as the tab opens instead of 0 until the pilot touches a slider (owner:
+  // "show the Workshop fee as default"). A ref (not "targets is empty") guards it, so the
+  // deliberate Reset button still means "nothing selected" and isn't fought back to 100%.
+  const repairDefaulted = useRef(false);
+  useEffect(() => {
+    if (!repairDefaulted.current && damagedInstalled.length > 0) {
+      repairDefaulted.current = true;
+      setRepairTargets(Object.fromEntries(damagedInstalled.map((entry) => [entry.id, 100])));
+    }
+  }, [damagedInstalled]);
   const repairQuoteQuery = useQuery({
     queryKey: ['repairQuote', ship?.id, changedTargets],
     enabled: tab === 'repair' && ship !== undefined && changedTargets.length > 0,
@@ -436,15 +447,22 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       <RescueBanner />
 
-      <PortTabs
-        tabs={PORT_TABS.map((id) => ({
-          id,
-          label: t(`port.tabs.${id}`),
-          badge: id === 'repair' ? repairBadge : undefined,
-        }))}
-        activeId={tab}
-        onChange={(next) => setTab(next as PortTabId)}
-      />
+      {/* Credits repeated here, next to the tabs (owner: "hard to see my credits" deep in a
+          tab like Repair — the top bar's wallet is easy to lose track of that far down). */}
+      <div className="page-tabs-row">
+        <PortTabs
+          tabs={PORT_TABS.map((id) => ({
+            id,
+            label: t(`port.tabs.${id}`),
+            badge: id === 'repair' ? repairBadge : undefined,
+          }))}
+          activeId={tab}
+          onChange={(next) => setTab(next as PortTabId)}
+        />
+        <span className="wallet-chip" data-testid="port-tabs-wallet">
+          {money(wallet)}
+        </span>
+      </div>
 
       {notice !== null && (
         <p className="notice" role="status">
