@@ -1,13 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm } from './SchemaForm';
 import { Popup } from '../../ui/Popup';
+import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
 
 const RETIREABLE_ENTITIES = ['parts', 'materials', 'mission-templates', 'routes'];
+
+// Every enum field on any entity screen gets a filter chip row for free (driven by the schema's
+// own `type: 'enum'`/`enumValues`, same shape for every entity) — this covers Parts (class,
+// rarity), Materials (rarity) and Mission templates (type) in one pass, owner request (round 5).
+// Value labels reuse the i18n each already has elsewhere in the app; an enum field not listed
+// here still gets a working filter, just with its raw values as labels.
+const ENUM_FILTER_I18N_NAMESPACE: Record<string, string> = {
+  partClass: 'hangar.partClasses',
+  rarity: 'parts.rarities',
+  type: 'board.type',
+};
 
 interface FactionRow {
   id: string;
@@ -60,15 +72,21 @@ function RelationsMatrix({
 }
 
 export function EntityScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { entity } = useParams<{ entity: string }>();
   const queryClient = useQueryClient();
   const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmRetire, setConfirmRetire] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [filters, setFilters] = useState<Record<string, string | null>>({});
 
   const entityName = entity ?? '';
+
+  // A filter picked on Parts must not silently narrow Materials once the admin navigates there.
+  useEffect(() => {
+    setFilters({});
+  }, [entityName]);
 
   const { data: schemaResponse, isLoading: isSchemaLoading } = useQuery<dto.EntitySchemaResponse>({
     queryKey: ['tuning', 'schema', entityName],
@@ -132,6 +150,15 @@ export function EntityScreen() {
 
   const visibleFields = schemaResponse.fields.filter((field) => field.name !== 'active');
   const idField = entityName === 'parts' ? 'partType' : 'id';
+  const enumFilterFields = visibleFields.filter(
+    (field) => field.type === 'enum' && field.enumValues !== undefined,
+  );
+  const filteredRows = (rows ?? []).filter((row) =>
+    enumFilterFields.every((field) => {
+      const active = filters[field.name];
+      return active === undefined || active === null || String(row[field.name]) === active;
+    }),
+  );
 
   return (
     <div>
@@ -139,6 +166,40 @@ export function EntityScreen() {
       <button type="button" onClick={() => setCreating(true)}>
         {t('tuning.create')}
       </button>
+      {enumFilterFields.length > 0 && (
+        <div className="tuning-filters">
+          {enumFilterFields.map((field) => {
+            const groupLabel =
+              field.description !== undefined ? pickLocalized(field.description, i18n.language) : field.name;
+            const namespace = ENUM_FILTER_I18N_NAMESPACE[field.name];
+            const valueLabel = (value: string) =>
+              namespace !== undefined ? t(`${namespace}.${value}`, { defaultValue: value }) : value;
+            return (
+              <div className="chips" role="group" aria-label={groupLabel} key={field.name}>
+                <button
+                  type="button"
+                  className={`chip${filters[field.name] == null ? ' on' : ''}`}
+                  aria-pressed={filters[field.name] == null}
+                  onClick={() => setFilters((current) => ({ ...current, [field.name]: null }))}
+                >
+                  {t('market.all')}
+                </button>
+                {(field.enumValues ?? []).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`chip${filters[field.name] === value ? ' on' : ''}`}
+                    aria-pressed={filters[field.name] === value}
+                    onClick={() => setFilters((current) => ({ ...current, [field.name]: value }))}
+                  >
+                    {valueLabel(value)}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <table>
         <thead>
           <tr>
@@ -149,7 +210,7 @@ export function EntityScreen() {
           </tr>
         </thead>
         <tbody>
-          {(rows ?? []).map((row) => (
+          {filteredRows.map((row) => (
             <tr key={String(row[idField])}>
               {visibleFields.slice(0, 5).map((field) => (
                 <td key={field.name}>{formatCellValue(row[field.name], field.type)}</td>

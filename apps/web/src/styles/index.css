@@ -3199,6 +3199,25 @@ svg .block.broken {
   cursor: not-allowed;
 }
 
+.tuning-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+/* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
+   otherwise flatten these back into square admin buttons — round-5 owner request (filters),
+   scoped fix only; the wider "admin CSS is a mess" cleanup is its own backlog item. */
+.admin-shell .chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  margin: 0;
+  font-size: 12px;
+  background: var(--panel);
+  color: var(--mut);
+}
+
 .admin-shell input,
 .admin-shell select,
 .admin-shell textarea {

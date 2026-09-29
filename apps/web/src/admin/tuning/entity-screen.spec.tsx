@@ -72,6 +72,18 @@ const materialsRows = [
   },
 ];
 
+const mixedRarityRows = [
+  ...materialsRows,
+  {
+    id: 'diamond',
+    displayName: { en: 'Diamond', 'pt-BR': 'Diamante' },
+    rarity: 'RARE',
+    basePrice: 500,
+    fakeField: 'fake-value',
+    active: true,
+  },
+];
+
 describe('EntityScreen', () => {
   it('renders the entity list from schema and data', async () => {
     server.use(
@@ -95,6 +107,38 @@ describe('EntityScreen', () => {
     expect(await screen.findByText('iron')).toBeInTheDocument();
     expect(screen.getByText('COMMON')).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
+  it('filters the list by an enum field, driven by the schema alone (round 5)', async () => {
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(materialsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(mixedRarityRows, { status: 200 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+
+    expect(await screen.findByText('iron')).toBeInTheDocument();
+    expect(screen.getByText('diamond')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Rare' }));
+    expect(screen.getByText('diamond')).toBeInTheDocument();
+    expect(screen.queryByText('iron')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'All' }));
+    expect(screen.getByText('iron')).toBeInTheDocument();
+    expect(screen.getByText('diamond')).toBeInTheDocument();
   });
 
   it('opens a create form generated from the schema', async () => {
