@@ -72,6 +72,18 @@ describe('map (S10.5)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
+  it('"Open mission board" actually opens the Board tab, not the Ship tab', async () => {
+    const { svg } = await renderMap();
+    fireEvent.click(node(svg, 'Porto Ceres — You are here'));
+    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    fireEvent.click(within(dialog).getByRole('link', { name: 'Open mission board' }));
+
+    await screen.findByRole('heading', { name: 'My Ship' });
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true'),
+    );
+  });
+
   it('says why a blocked mission is blocked, same as the Board (owner: "I cannot see why")', async () => {
     const { svg } = await renderMap();
 

@@ -650,6 +650,7 @@
   "board": {
     "title": "Mission board",
     "filterAll": "All missions",
+    "onlyEligible": "Only eligible",
     "accept": "Accept",
     "hold": "Hold",
     "release": "Release",

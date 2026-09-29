@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,17 @@ const AdminRoutes = lazy(() => import('../admin/admin-routes'));
 function AdminFallback() {
   const { t } = useTranslation();
   return <p>{t('tuning.loading')}</p>;
+}
+
+/** Board/Transit/Port redirect to My Ship's own tabs now (round-3 nav consolidation); this
+    keeps whichever tab a stray /board, /transit or /port link meant to open actually opening
+    it, instead of always landing on the Ship tab — and keeps any other query string the link
+    carried (e.g. /board?location=X for the mission board's own origin filter). */
+function RedirectToHangarTab({ tab }: { tab: 'ship' | 'board' | 'port' }) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  params.set('tab', tab);
+  return <Navigate to={`/hangar?${params.toString()}`} replace />;
 }
 
 function InGameChrome() {
@@ -104,9 +115,9 @@ export const routes = [
       },
       // Board, Transit and Port folded into My Ship as gated tabs/sections (round-3 nav
       // consolidation); these three routes stay only as redirects for any stray bookmark/link.
-      { path: '/board', element: <Navigate to="/hangar" replace /> },
-      { path: '/transit', element: <Navigate to="/hangar" replace /> },
-      { path: '/port', element: <Navigate to="/hangar" replace /> },
+      { path: '/board', element: <RedirectToHangarTab tab="board" /> },
+      { path: '/transit', element: <RedirectToHangarTab tab="ship" /> },
+      { path: '/port', element: <RedirectToHangarTab tab="port" /> },
       {
         path: '/report/:missionId',
         element: (

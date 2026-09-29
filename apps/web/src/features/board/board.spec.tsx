@@ -25,8 +25,8 @@ async function renderBoard(extra = ''): Promise<void> {
   renderWithRouter(routes, { initialEntries: [`/hangar${extra}`] });
   await screen.findByRole('heading', { name: 'My Ship' });
   fireEvent.click(await screen.findByRole('tab', { name: 'Board' }));
-  // Board's own type-filter tabs only render once its offers have loaded.
-  await screen.findByRole('tab', { name: 'All missions' });
+  // Board's own type-filter chips only render once its offers have loaded.
+  await screen.findByRole('button', { name: 'All missions' });
 }
 
 describe('board (S10.6)', () => {
@@ -40,6 +40,9 @@ describe('board (S10.6)', () => {
 
   it('renders offers with eligibility, blocked reasons and type filters', async () => {
     await renderBoard();
+    // "Only eligible" defaults on and would hide the blocked offer this test checks; turn it
+    // off first.
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
     // Each offer says what the job is (title), where it goes, and what it needs.
     expect((await screen.findAllByText('Corporate Delivery')).length).toBeGreaterThan(0);
@@ -56,14 +59,32 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
 
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
-    fireEvent.click(screen.getByRole('tab', { name: 'Mining' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mining' }));
     expect(document.querySelectorAll('.mcard')).toHaveLength(1);
-    fireEvent.click(screen.getByRole('tab', { name: 'All missions' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All missions' }));
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
+  });
+
+  it('only shows eligible offers by default, and the toggle brings the rest back', async () => {
+    await renderBoard();
+    // Default fixture: 3 eligible offers (b-1, b-2, b-4-held-but-mine-eligible) + 1 blocked
+    // (b-3, mining). "Only eligible" starts on, so the board opens on the eligible-only view.
+    await screen.findAllByText('Corporate Delivery');
+    expect(screen.queryByText('Blocked')).toBeNull();
+    expect(document.querySelectorAll('.mcard')).toHaveLength(3);
+
+    const toggle = screen.getByRole('button', { name: 'Only eligible' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(document.querySelectorAll('.mcard')).toHaveLength(4);
+    expect(screen.getByText('Blocked')).toBeInTheDocument();
   });
 
   it('accepts an eligible offer and moves on to the transit screen', async () => {
     await renderBoard();
+    // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
     const acceptButtons = await screen.findAllByRole('button', { name: 'Accept' });
     expect(acceptButtons).toHaveLength(4);
@@ -78,6 +99,8 @@ describe('board (S10.6)', () => {
 
   it('holds an offer and releases it again', async () => {
     await renderBoard();
+    // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
     const holdButtons = await screen.findAllByRole('button', { name: 'Hold' });
     expect(holdButtons).toHaveLength(3);

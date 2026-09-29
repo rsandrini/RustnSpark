@@ -39,6 +39,9 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [typeFilter, setTypeFilter] = useState<MissionType | 'all'>('all');
+  // Defaults on (owner request): most offers on a busy board are ones the ship can't take yet,
+  // and the pilot generally wants to see what they CAN take first.
+  const [onlyEligible, setOnlyEligible] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const shipsQuery = useQuery({
@@ -117,7 +120,9 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   };
 
   const offers = (boardQuery.data ?? []).filter(
-    (offer) => typeFilter === 'all' || offer.type === typeFilter,
+    (offer) =>
+      (typeFilter === 'all' || offer.type === typeFilter) &&
+      (!onlyEligible || offer.eligibility.eligible),
   );
 
   const body = (
@@ -139,28 +144,39 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
 
       <RescueBanner />
 
-      <div className="tabs" role="tablist" aria-label={t('board.title')}>
+      {/* Filter chips, same layout as the Parts/Store side panel's filters (owner request) —
+          small pill buttons instead of a tab strip, which these never really were (picking one
+          doesn't navigate anywhere, it just narrows the list below). */}
+      <div className="board-filters">
+        <div className="chips" role="group" aria-label={t('board.title')}>
+          <button
+            type="button"
+            className={`chip${typeFilter === 'all' ? ' on' : ''}`}
+            aria-pressed={typeFilter === 'all'}
+            onClick={() => setTypeFilter('all')}
+          >
+            {t('board.filterAll')}
+          </button>
+          {MISSION_TYPES.map((type) => (
+            <button
+              key={type}
+              type="button"
+              className={`chip${typeFilter === type ? ' on' : ''}`}
+              aria-pressed={typeFilter === type}
+              onClick={() => setTypeFilter(type)}
+            >
+              {t(`board.type.${type}`)}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
-          role="tab"
-          aria-selected={typeFilter === 'all'}
-          className={`tab${typeFilter === 'all' ? ' on' : ''}`}
-          onClick={() => setTypeFilter('all')}
+          className={`chip${onlyEligible ? ' on' : ''}`}
+          aria-pressed={onlyEligible}
+          onClick={() => setOnlyEligible((current) => !current)}
         >
-          {t('board.filterAll')}
+          {t('board.onlyEligible')}
         </button>
-        {MISSION_TYPES.map((type) => (
-          <button
-            key={type}
-            type="button"
-            role="tab"
-            aria-selected={typeFilter === type}
-            className={`tab${typeFilter === type ? ' on' : ''}`}
-            onClick={() => setTypeFilter(type)}
-          >
-            {t(`board.type.${type}`)}
-          </button>
-        ))}
       </div>
 
       {ship === undefined && originId === null && <p className="sub">{t('board.noShip')}</p>}

@@ -10,7 +10,7 @@ import type {
   Problem,
   ShipResponse,
 } from '../../api/generated';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
@@ -28,6 +28,11 @@ import { TransitPage, type LastMission } from '../transit/transit.page';
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
 // port service (round-3 nav consolidation — same rule the old Transit-disabled nav entry used).
 type PageTab = 'ship' | 'board' | 'port';
+
+/** A `?tab=` value from a redirect (Map, Report, Transit's own links), if it names a real tab. */
+function pageTabFrom(value: string | null): PageTab | null {
+  return value === 'ship' || value === 'board' || value === 'port' ? value : null;
+}
 
 // Which kind of part fixes each viability problem: the hint names it and offers the store filter.
 const FIX_CLASS: Record<string, string> = {
@@ -79,7 +84,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   // Board and Port fold into My Ship as gated tabs (round-3 nav consolidation): enabled only
   // while the ship is docked, same as the old Port/Board nav entries used to be.
-  const [pageTab, setPageTab] = useState<PageTab>('ship');
+  const [searchParams] = useSearchParams();
+  const [pageTab, setPageTab] = useState<PageTab>(() => pageTabFrom(searchParams.get('tab')) ?? 'ship');
+  // A link elsewhere (Map, Report, Transit's own "Mission board" button) redirects here with
+  // ?tab=board — same tab, same route, so no remount happens: without this the page would just
+  // sit on whatever tab it was already showing (owner: "open mission board from the map is
+  // going to ship, not to the mission board menu").
+  useEffect(() => {
+    const next = pageTabFrom(searchParams.get('tab'));
+    if (next !== null) setPageTab(next);
+  }, [searchParams]);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const format = useNumberFormat();

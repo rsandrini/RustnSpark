@@ -103,6 +103,21 @@ describe('navigation flow (S10.10)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
   });
 
+  it('a /board link lands on My Ship with the Board tab open, not the Ship tab', async () => {
+    // Owner: "open mission board from the map is going to ship (not to the mission board
+    // menu)" — /board (and /port, /transit) redirect to My Ship now; whichever tab the link
+    // meant to open must actually be the one selected.
+    const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Back to the board' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true'),
+    );
+    expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('hides the game nav before the faction is chosen', async () => {
     server.use(
       http.get('/v1/players/me', () =>

@@ -650,6 +650,7 @@
   "board": {
     "title": "Quadro de missões",
     "filterAll": "Todas as missões",
+    "onlyEligible": "Só elegíveis",
     "accept": "Aceitar",
     "hold": "Reservar",
     "release": "Soltar",
