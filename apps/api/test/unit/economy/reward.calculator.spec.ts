@@ -28,21 +28,21 @@ describe('S5.6 — reward base (D13)', () => {
   });
 
   it('scales with tier, danger, distance and type bonus', () => {
-    // (200 + 3×120) × (1 + 6/15) × (1 + (1400−800)/3000) × 1
-    // = 560 × 1.4 × 1.2 = 940.8
+    // (200 + 3×120) × (1 + 6/8) × (1 + (1400−800)/1500) × 1
+    // = 560 × 1.75 × 1.4 = 1372
     const base = rewardBase(
       { tier: 3, danger: 6, distance: 1400, missionType: 'transport' },
       rules,
     );
-    expect(base).toBeCloseTo(940.8, 10);
+    expect(base).toBeCloseTo(1372, 10);
   });
 
   it('reads the tape-life config values (rec_base 200, rec_por_tier 120)', () => {
     expect(rules.economy.reward_base).toBe(200);
     expect(rules.economy.reward_per_tier).toBe(120);
-    expect(rules.economy.reward_danger_divisor).toBe(15);
+    expect(rules.economy.reward_danger_divisor).toBe(8);
     expect(rules.economy.reward_distance_ref).toBe(800);
-    expect(rules.economy.reward_distance_divisor).toBe(3000);
+    expect(rules.economy.reward_distance_divisor).toBe(1500);
     expect(rules.economy.reward_type_bonus).toEqual({
       delivery: 1,
       transport: 1,

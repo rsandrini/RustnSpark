@@ -74,24 +74,24 @@
   "layer4": {
     "band": {
       "combat_winrate": [45, 60],
-      "engasgo_pct": [2, 12],
+      "engasgo_pct": [0.5, 12],
       "falencia_pct": [0, 15],
-      "median_margin": [740, 850],
+      "median_margin": [740, 950],
       "missions_tier2_median": [4, 10],
       "missions_tier5_median": [60, 160],
       "tier5_pct": [90, 100]
     },
     "baseline": {
-      "combat_winrate": 55.1,
-      "engasgo_pct": 2.33,
+      "combat_winrate": 54.2,
+      "engasgo_pct": 0.8,
       "falencia_pct": 0,
-      "median_margin": 766.4,
-      "missions_tier2_median": 10,
-      "missions_tier5_median": 135,
-      "tier5_pct": 97.2
+      "median_margin": 881.6,
+      "missions_tier2_median": 8,
+      "missions_tier5_median": 113,
+      "tier5_pct": 99.2
     },
     "n_lives_per_config": 120,
-    "note": "Production-mode baseline recorded by test/validation/production-mode.spec.ts (first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, median margin ~780 > 400) the band anchors to oracle-measured reality (layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13)."
+    "note": "Production-mode baseline recorded by test/validation/production-mode.spec.ts (first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, median margin ~780 > 400) the band anchors to oracle-measured reality (layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13). Re-baselined 2026-09-29 (owner request, playtest round 3): reward_danger_divisor 15→8 and reward_distance_divisor 3000→1500 roughly double the reward spread between an easy/short mission and a hard/long one. Expected, accepted consequences of paying more: median_margin rose (766→882, still capped below runaway) and engasgo_pct fell (2.33%→0.8%, better-funded pilots repair more and choke less) — the floor was lowered rather than removed so the wear mechanic still has to bite sometimes."
   },
   "version": 1
 }

@@ -52,9 +52,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     maintenance_per_tier: 100,
     reward_base: 200,
     reward_per_tier: 120,
-    reward_danger_divisor: 15,
+    // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
+    // too subtly to notice — halving both divisors roughly doubles the spread between an
+    // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
+    reward_danger_divisor: 8,
     reward_distance_ref: 800,
-    reward_distance_divisor: 3000,
+    reward_distance_divisor: 1500,
     reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
     combat_win_base: 100,
     combat_win_per_tier: 50,
