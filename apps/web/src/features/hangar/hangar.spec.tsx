@@ -78,8 +78,8 @@ describe('hangar (S10.4)', () => {
 
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     expect(screen.getAllByText('Multirole').length).toBeGreaterThan(0);
-    // crg 10 from the server sheet
-    expect(screen.getByText('10')).toBeInTheDocument();
+    // crg 10 from the server sheet (scoped: batOutput is also 10 in this fixture)
+    expect(screen.getByText('Cargo').closest('.statrow')).toHaveTextContent('10');
     // Only part-cargo-b is in storage; everything else is placed on the yard.
     expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
