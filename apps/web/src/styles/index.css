@@ -3115,23 +3115,57 @@ svg .block.broken {
   padding-top: 14px;
 }
 
-.admin-nav-group {
-  margin: 0 0 4px;
-}
-
-.admin-nav-label {
-  display: block;
-  margin: 10px 0 2px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--mut);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 .admin-nav {
   margin: 0 0 8px;
   border-radius: 10px;
+}
+
+/* Round-5 owner follow-up: each of Stats/Editable is one click-to-open menu now, not a
+   permanently expanded row. */
+.admin-nav-dropdown {
+  position: relative;
+}
+
+.admin-nav-trigger {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-nav-trigger::after {
+  content: '▾';
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.admin-nav-trigger[aria-expanded='true']::after {
+  content: '▴';
+}
+
+.admin-nav-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.admin-nav-panel .nav-link {
+  padding: 7px 10px;
+  border-radius: 6px;
+}
+
+.admin-nav-panel .nav-link:hover {
+  background: var(--panel);
 }
 
 .admin-shell h2 {

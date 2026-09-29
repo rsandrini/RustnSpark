@@ -107,9 +107,12 @@ describe('admin tuning routing', () => {
 
     expect(await screen.findByRole('heading', { name: /tuning/i })).toBeInTheDocument();
 
+    // Round 5: Stats/Editable are click-to-open menus now, not permanently expanded rows.
+    await user.click(screen.getByRole('button', { name: 'Editable' }));
     await user.click(screen.getByRole('link', { name: 'Materials' }));
     expect(await screen.findByRole('heading', { name: /materials/i })).toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: 'Editable' }));
     for (const name of [
       'Parts',
       'Factions',
@@ -124,5 +127,30 @@ describe('admin tuning routing', () => {
 
     await user.click(screen.getByRole('link', { name: /revision history/i }));
     expect(await screen.findByRole('heading', { name: /revision history/i })).toBeInTheDocument();
+  });
+
+  it('collapses each nav group into a click-to-open menu (round 5)', async () => {
+    mockAdminUser();
+    server.use(
+      http.get('/v1/admin/tuning/config', () => HttpResponse.json([], { status: 200 })),
+      http.get('/v1/admin/tuning/revisions', () => HttpResponse.json([], { status: 200 })),
+    );
+
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/admin/tuning/config'] });
+    await screen.findByRole('heading', { name: /tuning/i });
+
+    const statsTrigger = screen.getByRole('button', { name: 'Stats' });
+    expect(statsTrigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+
+    await user.click(statsTrigger);
+    expect(statsTrigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
+
+    // Clicking outside closes it again without navigating.
+    await user.click(document.body);
+    expect(statsTrigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
   });
 });
