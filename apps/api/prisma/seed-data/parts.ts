@@ -47,7 +47,9 @@ export const PARTS: SeedPart[] = [
     w: 1,
     h: 1,
     mass: 4,
-    structureCost: -100,
+    // Owner: "the bridge could be smaller in structure (like 60 instead of 100)" — the
+    // structure budget every ship gets to spend on everything else.
+    structureCost: -60,
     basePrice: 0,
     scrapValue: 0,
     partHp: 30,

@@ -214,7 +214,7 @@ describe('config tuning (S3.7)', () => {
     const expectedRevision = await getCurrentRevision(prisma);
     const before = gameConfigService.snapshot();
 
-    // At 60 the worst-case kit sells for 1472¢ ≥ rescue_cost 800¢.
+    // At 60 the worst-case kit sells for 1161¢ ≥ rescue_cost 800¢.
     const condition = await request(server)
       .patch('/v1/admin/tuning/config/parts.restart_condition_max')
       .set('Authorization', `Bearer ${token}`)
@@ -227,27 +227,27 @@ describe('config tuning (S3.7)', () => {
       ],
     });
 
-    // Lowering rescue_cost below the kit's worst-case 737¢ is the same violation.
+    // Lowering rescue_cost below the kit's worst-case 582¢ is the same violation.
     const rescue = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 700, expectedRevision, reason: 'cheaper rescue' });
+      .send({ value: 580, expectedRevision, reason: 'cheaper rescue' });
     expect(rescue.status).toBe(400);
     expect(rescue.body).toMatchObject({
       error: 'VALIDATION_ERROR',
       issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
     });
 
-    // 737 < 750 still holds, so the same key accepts a safe value.
+    // 582 < 600 still holds, so the same key accepts a safe value.
     const allowed = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 750, expectedRevision, reason: 'slightly cheaper rescue' });
+      .send({ value: 600, expectedRevision, reason: 'slightly cheaper rescue' });
     expect(allowed.status).toBe(200);
 
     const after = gameConfigService.snapshot();
     expect(after.rules.parts.restart_condition_max).toBe(before.rules.parts.restart_condition_max);
-    expect(after.rules.economy.rescue_cost).toBe(750);
+    expect(after.rules.economy.rescue_cost).toBe(600);
     const conditionRevisions = await prisma.tuningRevision.findMany({
       where: { entityId: 'parts.restart_condition_max' },
     });
