@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -119,9 +119,10 @@ export function EntityScreen() {
   const updateMutation = useMutation({
     mutationFn: (params: { id: string; body: dto.UpdateEntityRequest }) =>
       tuningApi.updateEntity(entityName, params.id, params.body),
+    // Shared by the explicit Save button and auto-save alike; closing the popup is NOT here —
+    // auto-save must never close it out from under someone still editing (see handleSubmit).
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
-      setEditingRow(null);
       setFormErrors([]);
     },
     onError: (error: Error) => setFormErrors([error.message]),
@@ -139,10 +140,31 @@ export function EntityScreen() {
   const handleSubmit = (data: Record<string, unknown>, reason: string) => {
     if (editingRow) {
       const id = String(editingRow.id ?? editingRow.partType);
-      updateMutation.mutate({ id, body: { data, reason } });
+      updateMutation.mutate({ id, body: { data, reason } }, { onSuccess: () => setEditingRow(null) });
     } else {
       createMutation.mutate({ data, reason });
     }
+  };
+
+  // Owner request (round 5): auto-save while editing an existing row (never while creating —
+  // see SchemaForm's own comment on that). The popup stays open; a small status word next to
+  // Save says what happened instead of a silent background write.
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleAutoSave = (data: Record<string, unknown>, reason: string) => {
+    if (editingRow === null) return;
+    const id = String(editingRow.id ?? editingRow.partType);
+    setAutoSaveStatus('saving');
+    updateMutation.mutate(
+      { id, body: { data, reason } },
+      {
+        onSuccess: () => {
+          setAutoSaveStatus('saved');
+          if (autoSaveStatusTimer.current !== null) clearTimeout(autoSaveStatusTimer.current);
+          autoSaveStatusTimer.current = setTimeout(() => setAutoSaveStatus('idle'), 2000);
+        },
+      },
+    );
   };
 
   if (isSchemaLoading || isRowsLoading) return <p>{t('loading')}</p>;
@@ -248,6 +270,7 @@ export function EntityScreen() {
           setCreating(false);
           setEditingRow(null);
           setFormErrors([]);
+          setAutoSaveStatus('idle');
         }}
       >
         {entityName === 'factions' && editingRow && factions && (
@@ -259,6 +282,7 @@ export function EntityScreen() {
           />
         )}
         <SchemaForm
+          key={String(editingRow?.id ?? editingRow?.partType ?? 'create')}
           fields={visibleFields}
           initialData={editingRow ?? undefined}
           onSubmit={handleSubmit}
@@ -266,8 +290,12 @@ export function EntityScreen() {
             setCreating(false);
             setEditingRow(null);
             setFormErrors([]);
+            setAutoSaveStatus('idle');
           }}
           errors={formErrors}
+          autoSave={editingRow !== null}
+          onAutoSave={handleAutoSave}
+          autoSaveStatus={autoSaveStatus}
         />
       </Popup>
 

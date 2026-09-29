@@ -383,6 +383,8 @@
     "no": "No",
     "reasonLabel": "Reason",
     "defaultReason": "Tuning change",
+    "autoSaving": "Saving…",
+    "autoSaved": "Saved",
     "configChangeReason": "Tuning config change",
     "configResetReason": "Reset to factory default",
     "retireReason": "Retire entity",

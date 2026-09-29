@@ -383,6 +383,8 @@
     "no": "Não",
     "reasonLabel": "Motivo",
     "defaultReason": "Mudança de ajuste",
+    "autoSaving": "Salvando…",
+    "autoSaved": "Salvo",
     "configChangeReason": "Mudança de configuração",
     "configResetReason": "Redefinir para o padrão de fábrica",
     "retireReason": "Desativar entidade",

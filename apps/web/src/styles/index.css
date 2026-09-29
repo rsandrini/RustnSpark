@@ -3232,6 +3232,14 @@ svg .block.broken {
   color: var(--mut);
 }
 
+/* Owner request (round 5, auto-save): a small status word next to Save instead of a silent
+   background write. */
+.auto-save-status {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--mut);
+}
+
 .admin-shell input,
 .admin-shell select,
 .admin-shell textarea {

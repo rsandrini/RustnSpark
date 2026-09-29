@@ -246,6 +246,94 @@ describe('EntityScreen', () => {
     expect(typeof body.reason).toBe('string');
   });
 
+  it('auto-saves an edited field on blur, without clicking Save, and keeps the popup open', async () => {
+    const savedBodies: unknown[] = [];
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(materialsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(materialsRows, { status: 200 }),
+      ),
+      http.patch('/v1/admin/tuning/materials/iron', async ({ request }) => {
+        const body = await request.json();
+        savedBodies.push(body);
+        return HttpResponse.json(
+          {
+            row: { ...materialsRows[0], basePrice: 20 },
+            revision: {
+              id: '1',
+              actor: 'admin',
+              entityType: 'materials',
+              entityId: 'iron',
+              before: materialsRows[0],
+              after: { ...materialsRows[0], basePrice: 20 },
+              reason: 'Tuning change',
+              at: new Date().toISOString(),
+            },
+          },
+          { status: 200 },
+        );
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+
+    await screen.findByText('iron');
+    await user.click(screen.getByRole('button', { name: /edit iron/i }));
+
+    const price = await screen.findByRole('spinbutton', { name: /base price/i });
+    await user.clear(price);
+    await user.type(price, '20');
+    // Blur (tab to the next control) instead of clicking Save.
+    await user.tab();
+
+    await waitFor(() => expect(savedBodies.length).toBeGreaterThan(0));
+    expect(savedBodies[0]).toMatchObject({ data: { basePrice: 20 } });
+    // Auto-save never closes the popup — only Save or Cancel/Close do.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
+  });
+
+  it('never auto-saves while creating a brand-new row', async () => {
+    let patchCalled = false;
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(materialsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
+      http.patch('/v1/admin/tuning/materials/:id', () => {
+        patchCalled = true;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+
+    await user.click(await screen.findByRole('button', { name: /create/i }));
+    await user.type(screen.getByRole('textbox', { name: /id/i }), 'copper');
+    await user.tab();
+    await user.tab();
+
+    expect(patchCalled).toBe(false);
+  });
+
   it('retires an entity row with confirmation', async () => {
     let retired = false;
     server.use(
