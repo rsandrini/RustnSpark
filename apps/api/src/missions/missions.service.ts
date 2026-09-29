@@ -108,6 +108,16 @@ interface ViewerContext {
   readonly installed: InstalledPart[];
 }
 
+// The highest per-leg zone a mission's route touches (GDD §2: zone 0-1 is the safe core, same
+// boundary `riskOfZone` uses for a location's own risk band) — used to keep a brand-new
+// player's board to the safe core (§9.1 round-4 fix), not a new danger scale of its own.
+function peakZoneOf(rawLegs: unknown): number {
+  const legs = (Array.isArray(rawLegs) ? rawLegs : []) as ReadonlyArray<{
+    readonly zone?: number;
+  }>;
+  return legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
+}
+
 function unavailableError(mission: MissionInstance, playerId: string): string {
   if (mission.status === 'EXPIRED') return 'MISSION_EXPIRED';
   if (
@@ -148,17 +158,54 @@ export class MissionsService implements OnModuleInit {
 
   async getBoard(locationId: string, playerId: string): Promise<BoardOffer[]> {
     const viewer = await this.viewerContext(playerId, locationId);
+    const { rules } = this.config.snapshot();
+    const completed = await this.prisma.missionInstance.count({
+      where: { playerId, status: { in: ['DONE', 'FAILED'] } },
+    });
+    const isNewPlayer =
+      rules.missions.starter_guarantee_max_completed > 0 &&
+      completed < rules.missions.starter_guarantee_max_completed;
+
     const rows = await this.board.getBoard(locationId, viewer.tier, playerId);
-    const offers = await this.withEligibility(rows, viewer, playerId, locationId);
+    const offers = await this.withEligibility(
+      this.capForNewPlayer(rows, playerId, isNewPlayer, rules),
+      viewer,
+      playerId,
+      locationId,
+    );
     if (offers.some((offer) => offer.eligibility.eligible)) return offers;
 
     // D43: nothing on the board is takeable for this player. A new player must always have a
     // first mission, so a private start-safe one is created (or already exists) and the board
     // is read again to include it.
-    const created = await this.ensureStarterOffer(playerId, locationId, viewer);
+    const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
     if (!created) return offers;
     const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId);
-    return this.withEligibility(withStarter, viewer, playerId, locationId);
+    return this.withEligibility(
+      this.capForNewPlayer(withStarter, playerId, isNewPlayer, rules),
+      viewer,
+      playerId,
+      locationId,
+    );
+  }
+
+  // §9.1 round-4 fix: "the very first quest a new player can take should be easy/low-risk, not
+  // medium" — while the player is still new by D43's own threshold, the shared board (other
+  // players' offers are unaffected) is capped to the same safe-core zone D43's own private
+  // offer already generates within. The player's own private offer (if any) is exempt: it is
+  // always inside that cap by construction, and must never be filtered out by this or any
+  // future drift between the two config values.
+  private capForNewPlayer(
+    rows: readonly BoardMission[],
+    playerId: string,
+    isNewPlayer: boolean,
+    rules: GameRules,
+  ): readonly BoardMission[] {
+    if (!isNewPlayer) return rows;
+    const maxZone = rules.missions.starter_max_zone;
+    return rows.filter(
+      (row) => row.privatePlayerId === playerId || peakZoneOf(row.legs) <= maxZone,
+    );
   }
 
   /**
@@ -171,20 +218,16 @@ export class MissionsService implements OnModuleInit {
     playerId: string,
     locationId: string,
     viewer: ViewerContext,
+    completed: number,
   ): Promise<boolean> {
     const { rules } = this.config.snapshot();
     const { ship } = viewer;
     if (rules.missions.starter_guarantee_max_completed <= 0 || ship === undefined) return false;
     if (ship.currentLocationId !== locationId || ship.status !== 'IN_PORT') return false;
 
-    const [completed, active] = await Promise.all([
-      this.prisma.missionInstance.count({
-        where: { playerId, status: { in: ['DONE', 'FAILED'] } },
-      }),
-      this.prisma.missionInstance.count({
-        where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
-      }),
-    ]);
+    const active = await this.prisma.missionInstance.count({
+      where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+    });
     if (completed >= rules.missions.starter_guarantee_max_completed || active > 0) return false;
 
     const sheet = deriveSheet(viewer.installed, rules);

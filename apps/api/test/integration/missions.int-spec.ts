@@ -78,6 +78,7 @@ describe('missions accept/hold API (S6.4)', () => {
       originId?: string;
       expiresAt?: Date;
       reward?: number;
+      legs?: unknown;
     } = {},
   ): Promise<MissionInstance> {
     const type = overrides.type ?? 'DELIVERY';
@@ -92,7 +93,9 @@ describe('missions accept/hold API (S6.4)', () => {
         factionId: template.factionId,
         originId: overrides.originId ?? 'ceres',
         destinationId: 'hedus',
-        legs: [{ distance: 40, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } }],
+        legs: overrides.legs ?? [
+          { distance: 40, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } },
+        ],
         cargo: {},
         // Deliberately wrong provisional: accept must finalize it from the ship's tier (D29).
         reward: overrides.reward ?? 1,
@@ -146,6 +149,45 @@ describe('missions accept/hold API (S6.4)', () => {
       expect(row.status).toBe('AVAILABLE');
       expect(typeof row.rewardEstimate).toBe('number');
     }
+  });
+
+  // §9.1 round-4 fix: a brand-new player's very first board must not include a mission that
+  // leaves the safe core (GDD §2 zone 0-1), even though it's otherwise perfectly eligible; a
+  // player past the D43 "new" threshold sees the same offer once it's no longer filtered.
+  it('caps a new player\'s board to the safe core; a veteran sees the same dangerous offer', async () => {
+    await freshSeededApp();
+    const { token, seeded } = await onboardPlayer();
+    const server = httpServer(testApp.app);
+
+    const safe = await createMission({
+      reward: 111,
+      legs: [{ distance: 40, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } }],
+    });
+    const dangerous = await createMission({
+      reward: 222,
+      legs: [{ distance: 40, danger: 8, zone: 3, env: { id: 'frontier', level: 3, fuelMult: 1 } }],
+    });
+
+    const asNew = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(asNew.status).toBe(200);
+    const newIds = (asNew.body as Array<{ id: string }>).map((row) => row.id);
+    expect(newIds).toContain(safe.id);
+    expect(newIds).not.toContain(dangerous.id);
+
+    // Past D43's own "new player" threshold (starter_guarantee_max_completed): the cap lifts.
+    const { starter_guarantee_max_completed: threshold } = configService.snapshot().rules.missions;
+    for (let i = 0; i < threshold; i += 1) {
+      const done = await createMission({ reward: 1 });
+      await prisma.missionInstance.update({
+        where: { id: done.id },
+        data: { status: 'DONE', playerId: seeded.player.id },
+      });
+    }
+
+    const asVeteran = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(asVeteran.status).toBe(200);
+    const veteranIds = (asVeteran.body as Array<{ id: string }>).map((row) => row.id);
+    expect(veteranIds).toContain(dangerous.id);
   });
 
   // S10.6: the board disables Accept without the client re-deriving any rule, so the
