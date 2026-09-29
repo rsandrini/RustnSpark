@@ -259,29 +259,38 @@ export function SchemaForm({
           ))}
         </ul>
       )}
-      {fields.map((field) => (
-        <div key={field.name}>
-          <label htmlFor={field.name}>
-            {getFieldLabel(field, locale)}
-            {field.required && (
-              <span aria-label={t('tuning.required')}>{t('tuning.required')}</span>
-            )}
-          </label>
-          {renderInput(field)}
-          {field.min !== undefined || field.max !== undefined ? (
-            <small>{t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}</small>
-          ) : null}
+      <div className="schema-form-grid">
+        {fields.map((field) => {
+          const wide = field.type === 'locale-map' || field.type === 'json';
+          return (
+            <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
+              <label htmlFor={field.name}>
+                {getFieldLabel(field, locale)}
+                {field.required && (
+                  <span className="field-required" aria-label={t('tuning.required')}>
+                    {t('tuning.required')}
+                  </span>
+                )}
+              </label>
+              {renderInput(field)}
+              {field.min !== undefined || field.max !== undefined ? (
+                <small className="field-hint">
+                  {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
+                </small>
+              ) : null}
+            </div>
+          );
+        })}
+        <div className="field">
+          <label htmlFor="reason">{t('tuning.reasonLabel')}</label>
+          <input
+            id="reason"
+            type="text"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            required
+          />
         </div>
-      ))}
-      <div>
-        <label htmlFor="reason">{t('tuning.reasonLabel')}</label>
-        <input
-          id="reason"
-          type="text"
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          required
-        />
       </div>
       <div>
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>

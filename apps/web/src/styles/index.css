@@ -3277,6 +3277,7 @@ svg .block.broken {
 .admin-shell input,
 .admin-shell select,
 .admin-shell textarea {
+  width: 100%;
   padding: 7px 10px;
   border-radius: 8px;
   border: 1px solid var(--line-strong);
@@ -3298,6 +3299,53 @@ svg .block.broken {
   font-size: 12px;
   color: var(--mut);
   margin: 10px 0 4px;
+}
+
+/* Round-5 cleanup ("the admin tables/forms CSS is a mess"): a long single-column list of fields
+   (Parts has ~20) made every edit a lot of scrolling. Short fields (numbers, selects) pair up
+   two-to-a-row on a wide-enough modal; locale-map pairs and JSON stay full width. */
+.schema-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 16px;
+}
+
+.schema-form-grid .field {
+  margin: 0;
+}
+
+.schema-form-grid .field-wide {
+  grid-column: 1 / -1;
+}
+
+.schema-form-grid .field-wide input {
+  display: inline-block;
+  width: calc(50% - 6px);
+}
+
+.schema-form-grid .field-wide input:first-of-type {
+  margin-right: 12px;
+}
+
+.field-required {
+  margin-left: 6px;
+  color: var(--spark);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 3px;
+  color: var(--mut);
+  font-size: 11px;
+}
+
+/* Entity edit/create forms (Parts alone has ~20 fields) need more room than the default
+   confirm-dialog width once they're a two-column grid. */
+.admin-shell .modal {
+  width: min(640px, 94vw);
 }
 
 .admin-shell ul {

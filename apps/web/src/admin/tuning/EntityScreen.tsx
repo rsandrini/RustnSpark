@@ -184,7 +184,7 @@ export function EntityScreen() {
 
   return (
     <div>
-      <h2>{entityName}</h2>
+      <h2>{t(`tuning.entityNames.${entityName}`, { defaultValue: entityName })}</h2>
       <button type="button" onClick={() => setCreating(true)}>
         {t('tuning.create')}
       </button>
