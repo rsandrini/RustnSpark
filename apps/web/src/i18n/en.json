@@ -127,8 +127,8 @@
       "DISCONNECTED": "Parts must touch the bridge.",
       "INVALID_LAYOUT": "The layout is not valid.",
       "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Combat systems need more power than the batteries can deliver.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Combat systems need more energy than the batteries can store."
+      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — install a battery, or a bigger one.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -475,7 +475,6 @@
     "sold": "Sold {{name}} for {{price}} ¢.",
     "failed": "The port rejected that action.",
     "marketEmpty": "Nothing for sale at this port.",
-    "forSale": "For sale",
     "yourGoods": "Your goods",
     "materials": "Mined materials",
     "quantity": "{{quantity}} ×",
@@ -820,11 +819,11 @@
     "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
     "ACCOUNT_BANNED": "This account has been suspended.",
     "BALANCE_NEGATIVE": "Your balance is negative — earn credits before spending.",
-    "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build.",
-    "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build.",
+    "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build — install a battery, or a bigger one.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build — install a battery, or a bigger one.",
     "CREDIT_OVERFLOW": "That sale is too large to credit.",
     "DISCONNECTED": "Some parts are not connected to the bridge.",
-    "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — add power.",
+    "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — install a reactor, a bigger one, or fewer continuous-draw parts.",
     "FUEL_EMPTY": "The tank is empty.",
     "HOLD_NOT_OWNED": "You are not holding this mission.",
     "INSUFFICIENT_FUNDS": "Not enough credits.",

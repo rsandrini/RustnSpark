@@ -127,8 +127,8 @@
       "DISCONNECTED": "Peças precisam tocar a ponte.",
       "INVALID_LAYOUT": "O layout não é válido.",
       "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Os sistemas de combate exigem mais potência do que as baterias entregam.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Os sistemas de combate exigem mais energia do que as baterias guardam."
+      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -475,7 +475,6 @@
     "sold": "Vendeu {{name}} por {{price}} ¢.",
     "failed": "O porto rejeitou essa ação.",
     "marketEmpty": "Nada à venda neste porto.",
-    "forSale": "À venda",
     "yourGoods": "Suas mercadorias",
     "materials": "Materiais minerais",
     "quantity": "{{quantity}} ×",
@@ -820,8 +819,8 @@
     "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
     "ACCOUNT_BANNED": "Esta conta foi suspensa.",
     "BALANCE_NEGATIVE": "Seu saldo está negativo — ganhe créditos antes de gastar.",
-    "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem.",
-    "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem.",
+    "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
     "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",

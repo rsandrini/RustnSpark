@@ -1541,6 +1541,9 @@ svg .block.floating {
 .market-filters {
   display: grid;
   gap: 8px;
+  /* Same top space as Board's own filter row (owner request — the removed "For sale" heading
+     no longer sets it, and the two lists should feel like siblings). */
+  margin: 12px 0;
 }
 
 .chips {
