@@ -30,7 +30,13 @@ import type {
   MissionEvent,
   MissionLoot,
 } from '../events/mission-event.js';
-import { applyWear, partAmbientWear, partDefeatWear, defeatWear } from '../wear/wear.calculator.js';
+import {
+  applyWear,
+  countDefenseParts,
+  partAmbientWear,
+  partDefeatWear,
+  defeatWear,
+} from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
 
@@ -462,9 +468,13 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       combatResult = 'loss';
       combatCredits = -rules.economy.combat_loss_penalty;
       const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
+      const defenseCount = countDefenseParts(parts);
       parts = parts.map((part) => ({
         ...part,
-        condition: applyWear(part.condition, partDefeatWear(part.partClass, defeatLoss, rules)),
+        condition: applyWear(
+          part.condition,
+          partDefeatWear(part.partClass, defeatLoss, defenseCount, rules),
+        ),
       }));
       events.push(
         missionEvent({
@@ -637,8 +647,9 @@ function applyPartsWear(
   rng: Rng,
 ): ReadonlyMap<string, number> {
   const next = new Map<string, number>();
+  const defenseCount = countDefenseParts(parts);
   for (const part of parts) {
-    const loss = partAmbientWear(part.partClass, danger, envNivel, rules, rng);
+    const loss = partAmbientWear(part.partClass, danger, envNivel, defenseCount, rules, rng);
     next.set(part.id, applyWear(part.condition, loss));
   }
   return next;

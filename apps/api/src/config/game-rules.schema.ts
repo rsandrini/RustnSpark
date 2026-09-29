@@ -48,6 +48,12 @@ const wearSchema = z.object({
   system_base_min: z.number().min(0).max(10),
   system_base_max: z.number().min(0).max(10),
   system_defeat_share: z.number().min(0).max(1),
+  // Round-4 wear rework: DEFENSE-class parts (Hull Frame, shields) absorb a fixed total "extra"
+  // share of ambient and defeat wear, split evenly across however many are installed (so
+  // stacking DEFENSE parts doesn't multiply the total benefit) — every other exposed class
+  // absorbs correspondingly less while at least one is installed.
+  defense_wear_bonus: z.number().min(0).max(5),
+  other_exposed_wear_factor: z.number().min(0).max(1),
 });
 
 const economySchema = z.object({

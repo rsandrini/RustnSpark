@@ -60,6 +60,29 @@ export function isPassiveWearClass(partClass: string): boolean {
   return PASSIVE_WEAR_CLASSES.has(partClass);
 }
 
+const DEFENSE_WEAR_CLASS = 'DEFENSE';
+
+/** How many DEFENSE-class parts (Hull Frame, shields) are installed — round-4 wear rework. */
+export function countDefenseParts(parts: readonly { readonly partClass: string }[]): number {
+  return parts.filter((part) => part.partClass === DEFENSE_WEAR_CLASS).length;
+}
+
+/**
+ * Round-4 wear rework (owner: "hull frame absorbs more, other parts less"): a fixed total
+ * "extra" bonus split evenly across however many DEFENSE parts are installed, so stacking
+ * them never multiplies the total benefit — one Hull Frame gets the full bonus, two share it.
+ * Every other exposed class absorbs correspondingly less while at least one DEFENSE part is
+ * installed, to keep the ship's average wear roughly where it was before this rework. Passive
+ * classes are untouched either way (their own tiny flat wear was never part of this).
+ */
+function wearMultiplierFor(partClass: string, defenseCount: number, rules: GameRules): number {
+  if (isPassiveWearClass(partClass)) return 1;
+  if (partClass === DEFENSE_WEAR_CLASS) {
+    return defenseCount > 0 ? 1 + rules.wear.defense_wear_bonus / defenseCount : 1;
+  }
+  return defenseCount > 0 ? rules.wear.other_exposed_wear_factor : 1;
+}
+
 /**
  * How much a leg's own danger scales exposed-part wear: `clamp(danger / danger_ref,
  * danger_floor, danger_cap)`. A safe, simple leg (low danger) costs a small fraction of the base
@@ -85,6 +108,7 @@ export function partAmbientWear(
   partClass: string,
   danger: number,
   envNivel: number,
+  defenseCount: number,
   rules: GameRules,
   rng: Rng,
 ): number {
@@ -92,16 +116,23 @@ export function partAmbientWear(
     return systemWear(rules, rng);
   }
   const { total } = missionWear(envNivel, rules, rng);
-  return total * dangerFactor(danger, rules);
+  return total * dangerFactor(danger, rules) * wearMultiplierFor(partClass, defenseCount, rules);
 }
 
 /**
  * A combat defeat still hits every part (losing a fight is "a reason"), but a passive-class part
  * only takes `system_defeat_share` of the roll — a lost fight dents the hull and the engine far
- * more than it dents the cargo hold's fixtures.
+ * more than it dents the cargo hold's fixtures. DEFENSE parts take more of it (and other exposed
+ * classes correspondingly less) per `wearMultiplierFor` — round-4 wear rework.
  */
-export function partDefeatWear(partClass: string, defeatLoss: number, rules: GameRules): number {
-  return isPassiveWearClass(partClass) ? defeatLoss * rules.wear.system_defeat_share : defeatLoss;
+export function partDefeatWear(
+  partClass: string,
+  defeatLoss: number,
+  defenseCount: number,
+  rules: GameRules,
+): number {
+  if (isPassiveWearClass(partClass)) return defeatLoss * rules.wear.system_defeat_share;
+  return defeatLoss * wearMultiplierFor(partClass, defenseCount, rules);
 }
 
 /**

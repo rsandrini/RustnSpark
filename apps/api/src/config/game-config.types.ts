@@ -129,7 +129,9 @@ export type ConfigKey =
   | 'wear.dead_at_or_below'
   | 'wear.defeat_loss_max'
   | 'wear.defeat_loss_min'
+  | 'wear.defense_wear_bonus'
   | 'wear.env_multiplier'
+  | 'wear.other_exposed_wear_factor'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
@@ -204,6 +206,11 @@ export type GameRules = Readonly<{
     system_base_max: number;
     /** Share of a combat-defeat's rolled loss a passive-class part takes (see partDefeatWear). */
     system_defeat_share: number;
+    // Round-4 wear rework: DEFENSE-class parts (Hull Frame, shields) absorb a fixed total extra
+    // share of ambient and defeat wear, split evenly across however many are installed; every
+    // other exposed class absorbs correspondingly less while at least one is installed.
+    defense_wear_bonus: number;
+    other_exposed_wear_factor: number;
   }>;
   economy: Readonly<{
     fuel_price: number;

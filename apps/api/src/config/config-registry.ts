@@ -431,6 +431,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.defense_wear_bonus',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.defense_wear_bonus),
+    description: {
+      en: 'Total extra multiplier DEFENSE-class parts (Hull Frame, shields) absorb on both ambient and defeat wear, split evenly across however many are installed — 0.8 means ×1.8 for one, ×1.4 for two, and so on, so stacking DEFENSE parts never multiplies the total benefit.',
+      'pt-BR':
+        'Multiplicador extra total que peças de classe DEFESA (Estrutura de Casco, escudos) absorvem no desgaste ambiente e no de derrota, dividido igualmente entre quantas estiverem instaladas — 0,8 significa ×1,8 para uma, ×1,4 para duas, e assim por diante, então empilhar peças de DEFESA nunca multiplica o benefício total.',
+    },
+  },
+  {
+    key: 'wear.other_exposed_wear_factor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.other_exposed_wear_factor),
+    description: {
+      en: "Compensating factor on every non-DEFENSE exposed class's ambient and defeat wear, applied only while at least one DEFENSE part is installed — keeps the ship's average wear roughly where it was before this part absorbed a bigger share.",
+      'pt-BR':
+        'Fator de compensação no desgaste ambiente e de derrota de toda classe exposta que não seja DEFESA, aplicado só enquanto pelo menos uma peça de DEFESA estiver instalada — mantém o desgaste médio da nave próximo de onde estava antes dessa peça absorver uma fração maior.',
+    },
+  },
+  {
     key: 'economy.fuel_price',
     group: 'economy',
     type: 'number',

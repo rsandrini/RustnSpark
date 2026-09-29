@@ -43,6 +43,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     system_base_min: 0.05,
     system_base_max: 0.15,
     system_defeat_share: 0.25,
+    // Round-4 wear rework: starting values, tuned against the Layer-4 sim like the reward-scaling
+    // change (D13). 0.8 total bonus split across N installed DEFENSE parts (×1.8 for one, ×1.4
+    // for two, ×1.27 for three...); 0.85 compensating factor on every other exposed class while
+    // at least one DEFENSE part is installed.
+    defense_wear_bonus: 0.8,
+    other_exposed_wear_factor: 0.85,
   },
   economy: {
     fuel_price: 1.5,
