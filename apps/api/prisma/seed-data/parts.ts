@@ -56,6 +56,63 @@ export const PARTS: SeedPart[] = [
     energyCont: -1,
   },
   {
+    partType: 'bridge_uncommon',
+    displayName: { en: 'Command Bridge II', 'pt-BR': 'Ponte de Comando II' },
+    description: {
+      en: 'An improved command core with a larger structure budget and tougher casing. Still compact, but draws a little more power.',
+      'pt-BR':
+        'Um núcleo de comando aprimorado com maior orçamento de estrutura e casco mais resistente. Ainda compacto, mas consome um pouco mais de energia.',
+    },
+    partClass: 'BRIDGE',
+    rarity: 'UNCOMMON',
+    w: 1,
+    h: 1,
+    mass: 6,
+    structureCost: -84,
+    basePrice: 600,
+    scrapValue: 150,
+    partHp: 42,
+    energyCont: -2,
+  },
+  {
+    partType: 'bridge_rare',
+    displayName: { en: 'Command Bridge III', 'pt-BR': 'Ponte de Comando III' },
+    description: {
+      en: 'A heavy-duty command core for ambitious ships. Offers a much larger structure budget at the cost of mass and power draw.',
+      'pt-BR':
+        'Um núcleo de comando robusto para naves ambiciosas. Oferece orçamento de estrutura bem maior, mas pesa e consome mais energia.',
+    },
+    partClass: 'BRIDGE',
+    rarity: 'RARE',
+    w: 1,
+    h: 1,
+    mass: 8,
+    structureCost: -118,
+    basePrice: 1800,
+    scrapValue: 450,
+    partHp: 59,
+    energyCont: -3,
+  },
+  {
+    partType: 'bridge_epic',
+    displayName: { en: 'Command Bridge IV', 'pt-BR': 'Ponte de Comando IV' },
+    description: {
+      en: 'A capital-grade command core. The structure budget is large and the hull is thick, but it is heavier and hungrier than smaller bridges.',
+      'pt-BR':
+        'Um núcleo de comando de classe capital. O orçamento de estrutura é grande e o casco é espesso, mas é mais pesado e faminto que pontes menores.',
+    },
+    partClass: 'BRIDGE',
+    rarity: 'EPIC',
+    w: 1,
+    h: 1,
+    mass: 10,
+    structureCost: -165,
+    basePrice: 5400,
+    scrapValue: 1350,
+    partHp: 83,
+    energyCont: -4,
+  },
+  {
     partType: 'engine_chem_small',
     displayName: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
     description: {
