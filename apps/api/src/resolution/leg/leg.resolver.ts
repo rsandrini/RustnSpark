@@ -25,6 +25,7 @@ import { resolveMining, toMiningLootEvents } from '../mining/mining.resolver.js'
 import { missionEvent } from '../events/mission-event.js';
 import type {
   MissionActors,
+  MissionCombatRound,
   MissionDamageCascade,
   MissionEvent,
   MissionLoot,
@@ -371,6 +372,20 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     // (shields → armor → hull). One fight-level triple, attached to every
     // combat event of this fight; the escort share is a separate effect.
     const cascade = fightCascade(result.rounds, playerIsA ? 'A' : 'B', hpLost);
+    // Round-4 playtest request: the raw attack-by-attack log, same attachment pattern as
+    // cascade (cascade is just this array's own totals) — translated to player/enemy so the
+    // report never has to know which side held slot A.
+    const combatRounds: MissionCombatRound[] = result.rounds.map((attack) => ({
+      round: attack.round,
+      attacker: (attack.attacker === 'A') === playerIsA ? 'player' : 'enemy',
+      roll: attack.roll,
+      dc: attack.dc,
+      hit: attack.hit,
+      damage: attack.damage,
+      armorAbsorbed: attack.armorAbsorbed,
+      shieldAbsorbed: attack.shieldAbsorbed,
+      hullDamage: attack.damage - attack.shieldAbsorbed,
+    }));
     let hp: number;
     let esc: number;
 
@@ -390,6 +405,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           magnitude: clientTakes,
           hp: -toPlayer,
           cascade,
+          rounds: combatRounds,
         }),
       );
       if (client.hp <= 0) {
@@ -435,6 +451,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           hp: hp - hpBefore,
           credits: combatCredits,
           cascade,
+          rounds: combatRounds,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
@@ -460,6 +477,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           credits: combatCredits,
           condByPart: Object.fromEntries(parts.map((part) => [part.id, part.condition])),
           cascade,
+          rounds: combatRounds,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
@@ -513,6 +531,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
             magnitude: 0,
             hp: hp - hpBefore,
             cascade,
+            rounds: combatRounds,
           }),
         );
       }

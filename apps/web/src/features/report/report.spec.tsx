@@ -77,6 +77,18 @@ describe('report (S10.8)', () => {
     expect(popup.textContent).toContain('Armor absorbed');
     expect(popup.textContent).toContain('Hull damage');
 
+    // Round-by-round combat log (round-4 owner request): every attack, in order, not just
+    // the fight's totals.
+    const table = within(popup).getByRole('table');
+    const rows = within(table).getAllByRole('row');
+    expect(rows).toHaveLength(4); // header + 3 attacks
+    expect(rows[1]).toHaveTextContent('1');
+    expect(rows[1]).toHaveTextContent('Enemy');
+    expect(rows[1]).toHaveTextContent('14 / 10');
+    expect(rows[1]).toHaveTextContent('Hit');
+    expect(rows[2]).toHaveTextContent('You');
+    expect(rows[2]).toHaveTextContent('Miss');
+
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Event details' })).not.toBeInTheDocument(),

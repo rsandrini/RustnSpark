@@ -601,6 +601,19 @@
       "armor": "Armor absorbed",
       "hp": "Hull damage"
     },
+    "combatLog": {
+      "title": "Round by round",
+      "round": "Round",
+      "attacker": "Attacker",
+      "rollDc": "Roll / DC",
+      "result": "Result",
+      "hit": "Hit",
+      "miss": "Miss",
+      "side": {
+        "player": "You",
+        "enemy": "Enemy"
+      }
+    },
     "refKind": {
       "loot": "Item",
       "part": "Part"

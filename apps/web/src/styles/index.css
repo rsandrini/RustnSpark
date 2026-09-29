@@ -1482,6 +1482,18 @@ svg .block.floating {
   color: var(--spark);
 }
 
+/* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
+   (shield/armor/hull), not just the last one, is right-aligned; a miss row is dimmed. */
+.combat-log-table {
+  display: block;
+  overflow-x: auto;
+}
+
+.combat-log-table th:nth-child(n + 5),
+.combat-log-table td:nth-child(n + 5) {
+  text-align: right;
+}
+
 .part-stats {
   margin: 12px 0 0;
 }

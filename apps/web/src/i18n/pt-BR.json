@@ -601,6 +601,19 @@
       "armor": "Absorvido pela blindagem",
       "hp": "Dano ao casco"
     },
+    "combatLog": {
+      "title": "Rodada a rodada",
+      "round": "Rodada",
+      "attacker": "Atacante",
+      "rollDc": "Rolagem / CD",
+      "result": "Resultado",
+      "hit": "Acerto",
+      "miss": "Erro",
+      "side": {
+        "player": "Você",
+        "enemy": "Inimigo"
+      }
+    },
     "refKind": {
       "loot": "Item",
       "part": "Peça"

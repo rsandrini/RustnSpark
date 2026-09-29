@@ -69,6 +69,31 @@ export interface MissionDamageCascade {
   readonly hp: number;
 }
 
+/**
+ * One attack inside a fight's round-by-round log (playtest round-4 request: "combat is a
+ * black box"). Same array on every combat event of the fight, same pattern as `cascade` —
+ * `cascade` is this array's own totals. `attacker`/`hit`/`damage` etc. read from the PLAYER's
+ * perspective (not the resolver's internal A/B slot), so the report never has to know which
+ * side held slot A.
+ */
+export interface MissionCombatRound {
+  /** 1-based round index. */
+  readonly round: number;
+  readonly attacker: 'player' | 'enemy';
+  /** Natural d20 result (before first-strike bonus). */
+  readonly roll: number;
+  readonly dc: number;
+  readonly hit: boolean;
+  /** Total damage before shield absorption (0 on a miss). */
+  readonly damage: number;
+  /** What armor (BLI) deflected (0 on a miss). */
+  readonly armorAbsorbed: number;
+  /** What the shield (ESC) absorbed (0 on a miss, or an empty shield). */
+  readonly shieldAbsorbed: number;
+  /** What actually reached the defender's hull: damage minus shieldAbsorbed (0 on a miss). */
+  readonly hullDamage: number;
+}
+
 /** Who an event touched. `enemy` is the generated pirate (D23 — no NPC table);
  *  `opponentShipId` is the other player's ship on a PvP overlap (S7.5). */
 export interface MissionActors {
@@ -104,6 +129,10 @@ export interface MissionEvent {
    *  `escort_absorbed` (S9.0). Same fight-level triple on every combat event
    *  of that fight; absent on v1 rows and on non-combat types. */
   readonly cascade?: MissionDamageCascade;
+  /** v2 addition (round-4): every attack of the fight, in order, on the same event types as
+   *  `cascade`. Optional even on v2 rows — absent on v1 rows and on any v2 row written before
+   *  this field existed (D36: only ADD optional fields, never require one retroactively). */
+  readonly rounds?: readonly MissionCombatRound[];
   /** v2: what the choke did (`FailureConsequence`) on the six part-failure
    *  types (S9.0). Absent on v1 rows and on non-part-failure types. */
   readonly consequence?: FailureConsequence;
@@ -156,6 +185,7 @@ export function missionEvent(input: {
   credits?: number;
   loot?: readonly MissionLoot[];
   cascade?: MissionDamageCascade;
+  rounds?: readonly MissionCombatRound[];
   consequence?: FailureConsequence;
   fuelLost?: number;
   motive?: 'cargo' | 'parts' | 'territory';
@@ -184,6 +214,21 @@ export function missionEvent(input: {
             armor: roundInt(input.cascade.armor),
             hp: roundInt(input.cascade.hp),
           },
+        }
+      : {}),
+    ...(input.rounds !== undefined
+      ? {
+          rounds: input.rounds.map((round) => ({
+            round: roundInt(round.round),
+            attacker: round.attacker,
+            roll: roundInt(round.roll),
+            dc: roundInt(round.dc),
+            hit: round.hit,
+            damage: roundInt(round.damage),
+            armorAbsorbed: roundInt(round.armorAbsorbed),
+            shieldAbsorbed: roundInt(round.shieldAbsorbed),
+            hullDamage: roundInt(round.hullDamage),
+          })),
         }
       : {}),
     ...(input.consequence !== undefined ? { consequence: input.consequence } : {}),

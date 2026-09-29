@@ -408,8 +408,27 @@ export const MissionDamageCascadeSchema = z.object({
 });
 export type MissionDamageCascade = z.infer<typeof MissionDamageCascadeSchema>;
 
+/** One attack inside a fight's round-by-round log (player's own perspective). */
+export const MissionCombatRoundSchema = z.object({
+  round: z.number(),
+  attacker: z.enum(['player', 'enemy']),
+  roll: z.number(),
+  dc: z.number(),
+  hit: z.boolean(),
+  damage: z.number(),
+  armorAbsorbed: z.number(),
+  shieldAbsorbed: z.number(),
+  hullDamage: z.number(),
+});
+export type MissionCombatRound = z.infer<typeof MissionCombatRoundSchema>;
+
 export const NarrativeLineSchema = ReportLineSchema.extend({
-  detail: z.object({ cascade: MissionDamageCascadeSchema }).optional(),
+  detail: z
+    .object({
+      cascade: MissionDamageCascadeSchema,
+      rounds: z.array(MissionCombatRoundSchema).optional(),
+    })
+    .optional(),
 });
 export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
 

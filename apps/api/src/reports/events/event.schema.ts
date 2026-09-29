@@ -124,6 +124,23 @@ function eventMembers(
             armor: num,
             hp: num,
           });
+          // Optional even on v2 (unlike cascade): rows written before this field existed have
+          // no rounds at all, and must keep reading back fine (D36 — only ADD optional fields).
+          extras['rounds'] = z
+            .array(
+              object({
+                round: num,
+                attacker: z.enum(['player', 'enemy']),
+                roll: num,
+                dc: num,
+                hit: z.boolean(),
+                damage: num,
+                armorAbsorbed: num,
+                shieldAbsorbed: num,
+                hullDamage: num,
+              }),
+            )
+            .optional();
         }
         if (type === 'scavenge_find') {
           extras['found'] = object({

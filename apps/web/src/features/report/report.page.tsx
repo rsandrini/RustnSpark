@@ -220,6 +220,7 @@ function CascadeDetail({
   const line = chapter?.lines[Number(indexRaw ?? '-1')];
   const cascade = line?.detail?.cascade;
   if (cascade === undefined) return null;
+  const rounds = line?.detail?.rounds;
   return (
     <div className="stack">
       {Object.entries(cascade).map(([field, value]) => (
@@ -228,6 +229,41 @@ function CascadeDetail({
           <b>{value}</b>
         </div>
       ))}
+      {rounds !== undefined && rounds.length > 0 && (
+        <>
+          <p className="muted part-compare-note">{t('report.combatLog.title')}</p>
+          <table className="part-stats-table combat-log-table">
+            <thead>
+              <tr>
+                <th>{t('report.combatLog.round')}</th>
+                <th>{t('report.combatLog.attacker')}</th>
+                <th>{t('report.combatLog.rollDc')}</th>
+                <th>{t('report.combatLog.result')}</th>
+                <th>{t('report.cascade.shield')}</th>
+                <th>{t('report.cascade.armor')}</th>
+                <th>{t('report.cascade.hp')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rounds.map((round, index) => (
+                <tr key={index} className={round.hit ? undefined : 'muted'}>
+                  <td>{round.round}</td>
+                  <td>{t(`report.combatLog.side.${round.attacker}`)}</td>
+                  <td>
+                    {round.roll} / {round.dc}
+                  </td>
+                  <td>
+                    {round.hit ? t('report.combatLog.hit') : t('report.combatLog.miss')}
+                  </td>
+                  <td>{round.hit ? round.shieldAbsorbed : '—'}</td>
+                  <td>{round.hit ? round.armorAbsorbed : '—'}</td>
+                  <td>{round.hit ? round.hullDamage : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
     </div>
   );
 }
