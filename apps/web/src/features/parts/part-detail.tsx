@@ -66,6 +66,20 @@ const BASE_STATS: ReadonlyArray<{ key: string; sheetKey: keyof ShipSheet; read: 
 // even though they're not part of the part's own stat list.
 const DERIVED_COMPARE_STATS: readonly (keyof ShipSheet)[] = ['mob', 'autonomy'];
 
+// Owner request (round 5): color the comparison, not just print it — gray when nothing moved,
+// green/red by whether the move helps or hurts. Everything is "more is better" except these
+// three, which are costs: more mass or fuel burn drags mobility/range down, and more structure
+// used eats into the budget the bridge sets, leaving less room for other parts.
+const LOWER_IS_BETTER: ReadonlySet<keyof ShipSheet> = new Set(['mass', 'fuelUse', 'structureUsed']);
+
+type DeltaTone = 'same' | 'good' | 'bad';
+
+function deltaTone(sheetKey: keyof ShipSheet, delta: number): DeltaTone {
+  if (Math.abs(delta) < 0.05) return 'same';
+  const higherIsBetter = !LOWER_IS_BETTER.has(sheetKey);
+  return (delta > 0) === higherIsBetter ? 'good' : 'bad';
+}
+
 const SUMMARY_STATS: readonly EffectStat[] = [
   'pot',
   'pdf',
@@ -131,11 +145,13 @@ export function PartDetail({ part, compare }: PartDetailProps) {
   });
   const afterSheet = comparePreview.data?.sheet;
 
-  const deltaFor = (sheetKey: keyof ShipSheet): string | null => {
+  const deltaFor = (sheetKey: keyof ShipSheet): { text: string; tone: DeltaTone } | null => {
     if (compare === undefined || afterSheet === undefined) return null;
     const delta = afterSheet[sheetKey] - compare.currentSheet[sheetKey];
-    if (Math.abs(delta) < 0.05) return t('parts.compare.unchanged');
-    return `${delta > 0 ? '+' : ''}${format(delta)}`;
+    const tone = deltaTone(sheetKey, delta);
+    const text =
+      tone === 'same' ? t('parts.compare.unchanged') : `${delta > 0 ? '+' : ''}${format(delta)}`;
+    return { text, tone };
   };
 
   const rows = [
@@ -186,25 +202,33 @@ export function PartDetail({ part, compare }: PartDetailProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
-              <td>{t(`parts.stat.${row.key}.label`)}</td>
-              <td>
-                <b>{row.value}</b>
-              </td>
-              {compare !== undefined && <td className="delta">{deltaFor(row.sheetKey) ?? '—'}</td>}
-            </tr>
-          ))}
-          {compare !== undefined &&
-            DERIVED_COMPARE_STATS.map((sheetKey) => (
-              <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
-                <td>{t(`hangar.stats.${sheetKey}`)}</td>
+          {rows.map((row) => {
+            const delta = compare !== undefined ? deltaFor(row.sheetKey) : null;
+            return (
+              <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
+                <td>{t(`parts.stat.${row.key}.label`)}</td>
                 <td>
-                  <b>{format(compare.currentSheet[sheetKey])}</b>
+                  <b>{row.value}</b>
                 </td>
-                <td className="delta">{deltaFor(sheetKey) ?? '—'}</td>
+                {compare !== undefined && (
+                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</td>
+                )}
               </tr>
-            ))}
+            );
+          })}
+          {compare !== undefined &&
+            DERIVED_COMPARE_STATS.map((sheetKey) => {
+              const delta = deltaFor(sheetKey);
+              return (
+                <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
+                  <td>{t(`hangar.stats.${sheetKey}`)}</td>
+                  <td>
+                    <b>{format(compare.currentSheet[sheetKey])}</b>
+                  </td>
+                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</td>
+                </tr>
+              );
+            })}
         </tbody>
       </table>
     </div>

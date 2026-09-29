@@ -166,8 +166,39 @@ describe('hangar (S10.4)', () => {
     // that wasn't touched reads as unchanged.
     const cargoRow = within(dialog).getByRole('row', { name: /^Cargo/ });
     await waitFor(() => expect(within(cargoRow).getByText('+5')).toBeInTheDocument());
+    // More cargo is a good thing (owner request, round 5): the delta reads green, not a flat color.
+    expect(within(cargoRow).getByText('+5')).toHaveClass('delta-good');
     const mobRow = within(dialog).getByRole('row', { name: /^Mobility/ });
     expect(within(mobRow).getByText('No change')).toBeInTheDocument();
+    expect(within(mobRow).getByText('No change')).toHaveClass('delta-same');
+  });
+
+  it('colors a worse change (more mass) red, not the same green as a better one', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { partInstanceIds?: string[] };
+        const withCandidate = (body.partInstanceIds ?? []).includes('part-cargo-b');
+        // part-cargo-b's own mass isn't in the test fixture catalog, so fake a real bump here —
+        // more mass drags mobility down, so it must read as a bad (red) change, not good.
+        return HttpResponse.json({
+          sheet: { ...testSheet, mass: withCandidate ? testSheet.mass + 4 : testSheet.mass },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(await screen.findByRole('button', { name: /Details: Cargo Rack/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    const massRow = within(dialog).getByRole('row', { name: /^Mass/ });
+    await waitFor(() => expect(within(massRow).getByText('+4')).toBeInTheDocument());
+    expect(within(massRow).getByText('+4')).toHaveClass('delta-bad');
   });
 
   it('labels parts with their localized names, never the raw part code', async () => {

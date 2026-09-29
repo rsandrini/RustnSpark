@@ -1479,7 +1479,21 @@ svg .block.floating {
 
 .part-stats-table .delta {
   font-weight: 700;
-  color: var(--spark);
+}
+
+/* Owner request (round 5): color the comparison by whether it helps or hurts, not one flat
+   color for every change — same green/red language RiskBadge already uses for low/high risk. */
+.part-stats-table .delta-same {
+  color: var(--mut);
+  font-weight: 600;
+}
+
+.part-stats-table .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-table .delta-bad {
+  color: var(--risk-hi);
 }
 
 /* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
