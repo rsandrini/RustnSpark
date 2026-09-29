@@ -666,6 +666,21 @@ a {
   stroke-width: 2.5;
 }
 
+.ncore.risk-lo {
+  fill: var(--risk-lo);
+  fill-opacity: 0.55;
+}
+
+.ncore.risk-md {
+  fill: var(--risk-md);
+  fill-opacity: 0.55;
+}
+
+.ncore.risk-hi {
+  fill: var(--risk-hi);
+  fill-opacity: 0.55;
+}
+
 .nring {
   fill: none;
   stroke-width: 2.5;

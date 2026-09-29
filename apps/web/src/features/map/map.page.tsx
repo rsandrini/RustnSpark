@@ -163,6 +163,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                 role="button"
                 tabIndex={0}
                 aria-label={label}
+                data-risk={location.risk}
                 onClick={() => selectNode(location.id)}
                 onKeyDown={(event) => handleNodeKeyDown(event, location.id)}
               >
@@ -173,12 +174,14 @@ export function MapPage({ guided = false }: MapPageProps) {
                   r={NODE_RADIUS + 16}
                   fill="transparent"
                 />
+                {/* The ring already carries the faction color; the core's own fill is the risk
+                    band (owner: the risk legend had nothing left on the node to point at once
+                    the ring stopped meaning risk) — two independent channels on one glyph. */}
                 <circle
-                  className="ncore"
+                  className={`ncore risk-${location.risk}`}
                   cx={location.x}
                   cy={location.y}
                   r={NODE_RADIUS}
-                  fill="var(--bg)"
                 />
                 <circle
                   className="nring"

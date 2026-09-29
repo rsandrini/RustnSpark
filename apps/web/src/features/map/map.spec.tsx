@@ -51,6 +51,21 @@ describe('map (S10.5)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('shows each node\'s risk band on its own core fill, independent of the faction-colored ring', async () => {
+    const { svg } = await renderMap();
+
+    // Porto Ceres is low risk, Campo Drift-9 is high risk (test fixture) — the ring still
+    // carries faction color, so risk needs its own channel on the same glyph (owner: the risk
+    // legend had nothing left on the node to point at once rings became faction-colored).
+    const lowRiskNode = node(svg, 'Porto Ceres — You are here');
+    expect(lowRiskNode.getAttribute('data-risk')).toBe('lo');
+    expect(lowRiskNode.querySelector('.ncore')).toHaveClass('risk-lo');
+
+    const highRiskNode = node(svg, 'Campo Drift-9');
+    expect(highRiskNode.getAttribute('data-risk')).toBe('hi');
+    expect(highRiskNode.querySelector('.ncore')).toHaveClass('risk-hi');
+  });
+
   it('opens the side panel on a node click with board link, then closes', async () => {
     const { svg } = await renderMap();
 
