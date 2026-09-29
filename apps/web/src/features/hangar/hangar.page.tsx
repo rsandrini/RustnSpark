@@ -382,7 +382,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           >
             {t('hangar.pageTabs.ship')}
           </button>
-          {(['board', 'port'] as const).map((id) => {
+          {(['port', 'board'] as const).map((id) => {
             const dockedOnly = ship.status !== 'IN_PORT';
             return dockedOnly ? (
               <span
