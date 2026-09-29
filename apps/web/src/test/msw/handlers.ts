@@ -1008,6 +1008,13 @@ const acceptedMission = (): ActiveMission => ({
   seed: 'seed-1',
   version: 1,
   legWindows: [],
+  brief: {
+    title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+    description: {
+      en: 'Deliver cargo from Ceres to Hedus.',
+      'pt-BR': 'Entregar carga de Ceres para Hedus.',
+    },
+  },
 });
 
 let activeState: ActiveMission | null = acceptedMission();

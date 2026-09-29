@@ -93,7 +93,14 @@ export interface LegWindow {
   readonly to: Date;
 }
 
-export type ActiveMission = MissionInstance & { readonly legWindows: LegWindow[] };
+export type ActiveMission = MissionInstance & {
+  readonly legWindows: LegWindow[];
+  /** The template's own title/description (S9 owner request: a brief on the active-mission view). */
+  readonly brief: {
+    readonly title: { readonly en: string; readonly 'pt-BR': string };
+    readonly description: { readonly en: string; readonly 'pt-BR': string };
+  };
+};
 
 interface ViewerContext {
   readonly tier: number;
@@ -221,8 +228,25 @@ export class MissionsService implements OnModuleInit {
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
     if (rows.length === 0) return [];
-    const windows = await this.legWindows(rows.map((row) => row.id));
-    return rows.map((row) => ({ ...row, legWindows: windows.get(row.id) ?? [] }));
+    const [windows, templates] = await Promise.all([
+      this.legWindows(rows.map((row) => row.id)),
+      this.prisma.missionTemplate.findMany({
+        where: { id: { in: [...new Set(rows.map((row) => row.templateId))] } },
+        select: { id: true, displayName: true, description: true },
+      }),
+    ]);
+    const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+    return rows.map((row) => {
+      const template = wordsById.get(row.templateId);
+      return {
+        ...row,
+        legWindows: windows.get(row.id) ?? [],
+        brief: {
+          title: bilingual(template?.displayName),
+          description: bilingual(template?.description),
+        },
+      };
+    });
   }
 
   // RoutePresence rows exist only while the mission is in transit (created at dispatch,

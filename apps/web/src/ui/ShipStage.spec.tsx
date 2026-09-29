@@ -22,11 +22,14 @@ describe('ship stage', () => {
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('In flight');
   });
 
-  it('scavenging: wreckage drifts past', () => {
-    renderStage({ mode: 'scavenging' });
-    expect(screen.getByTestId('transit-scene').querySelectorAll('.debris').length).toBeGreaterThan(
-      0,
-    );
+  it('scavenging: wreckage drifts past, but the ship stays parked at the current place (it never travels anywhere)', () => {
+    renderStage({ mode: 'scavenging', placeId: 'ceres', placeName: 'Porto Ceres' });
+    const scene = screen.getByTestId('transit-scene');
+    expect(scene.querySelectorAll('.debris').length).toBeGreaterThan(0);
+    expect(scene).toHaveClass('parked');
+    expect(scene).not.toHaveClass('moving');
+    expect(scene.getAttribute('style')).toContain('/places/ceres.wide.svg');
+    expect(screen.getByText('Porto Ceres')).toBeInTheDocument();
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('Scavenging the wreckage');
   });
 

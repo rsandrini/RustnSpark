@@ -57,7 +57,10 @@ export function ShipStage({
   onElapsed,
 }: ShipStageProps) {
   const { t } = useTranslation();
-  const moving = mode === 'flying' || mode === 'scavenging';
+  // Scavenging works the field right where the ship already is (GDD/W8) — it never travels
+  // anywhere, so the scene should stay parked at the current place (backdrop, place-name
+  // overlay, no star-streaming), same as idle/repairing. Only flying actually goes anywhere.
+  const moving = mode === 'flying';
   const parked = !moving;
   const style =
     parked && placeId !== undefined

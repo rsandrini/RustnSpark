@@ -645,6 +645,7 @@
     "resolving": "Resolvendo a missão…",
     "lastMission": "Última missão",
     "lastReport": "Ler o relatório",
+    "briefLabel": "Resumo da missão",
     "scene": {
       "alt": "Sua nave em voo"
     },

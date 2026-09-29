@@ -352,9 +352,17 @@ export const LegWindowSchema = z.object({
 });
 export type LegWindow = z.infer<typeof LegWindowSchema>;
 
+/** Just enough of the template's own words to caption an active mission (title + full brief). */
+export const MissionBriefSchema = z.object({
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+});
+export type MissionBrief = z.infer<typeof MissionBriefSchema>;
+
 /** GET /v1/missions/active — the raw instance plus the in-transit leg windows (empty before dispatch). */
 export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   legWindows: z.array(LegWindowSchema),
+  brief: MissionBriefSchema,
 });
 export type ActiveMission = z.infer<typeof ActiveMissionSchema>;
 

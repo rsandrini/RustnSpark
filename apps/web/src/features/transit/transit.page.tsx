@@ -249,6 +249,9 @@ export function TransitPage({
     return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
   };
 
+  const briefTitle = pickLocalized(mission.brief.title, i18n.language);
+  const briefText = pickLocalized(mission.brief.description, i18n.language);
+
   const body = (
     <>
       {!embedded && (
@@ -256,6 +259,21 @@ export function TransitPage({
           <h1>{t('transit.title')}</h1>
           <span className="sub">{routeLabel}</span>
         </header>
+      )}
+      {briefTitle !== '' && (
+        <p className="mission-brief-line">
+          <b>{briefTitle}</b>
+          {briefText !== '' && (
+            <button
+              type="button"
+              className="btn info-btn mission-why-tag"
+              aria-label={`${t('transit.briefLabel')}: ${briefTitle}`}
+              title={briefText}
+            >
+              {t('parts.infoGlyph')}
+            </button>
+          )}
+        </p>
       )}
       <div className="briefing" data-testid="briefing">
         {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
