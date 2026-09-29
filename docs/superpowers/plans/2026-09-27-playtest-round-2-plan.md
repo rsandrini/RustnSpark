@@ -271,3 +271,36 @@ All three verified visually against the live dev stack; typechecked clean; 171/1
 4. **Life support doesn't seem to satisfy a mission's "pressurized life support" requirement.** "check if the life support has the pressuring necessy for the quests, because even using one of this the quests does not unblock for me." Checked `missions/requirements.checker.ts`: `hasCabin = parts.some(pressurized) && parts.some(lifeSupport)` — it's an AND of *two different parts*. `life_support`'s catalog `specialProp` is `{ lifeSupport: true }` only; `pressurized: true` lives on a *separate* part, `passenger_cabin` (whose own description says "It only works together with a Life Support module"). So this reads as working as designed, not a bug — the owner likely only installed `life_support` without also installing `passenger_cabin`. Worth a UX fix even so: the blocked-reason message ("Mission requires a pressurized cabin with life support") and/or the part market listing could make the pairing clearer, since this is the second time in this project someone's read "life support" as sufficient on its own.
 5. **Admin: separate "Stats" pages from "editable" pages in the top nav, plus wallet/password actions.** "in admin, join the 'Stats' pages into one top menu, and the editable things in another. Add options to: a) change passwords, add money, remove money." The admin top nav (`admin/admin-routes.tsx`, rendered by `AdminShell`) is currently one flat row: Dashboard / Economy / World (read-only analytics) then Players / System / Tuning / Parts / Materials / Factions / Locations / Routes / Environments / Mission templates / Drop tables / Revision history (a mix of editable-entity screens and tools) with no grouping. Wants two separate top-level groups (stats vs. editable), plus new inspector actions: change a player's password, and credit/debit their wallet (the wallet adjustment may already partly exist via `admin.inspector` — the support/inspector screen already has *some* wallet action per `SupportService`; needs checking exactly what's there today vs. what's asked for. Password change would need a new inspector-only endpoint, since `set-password.cli.ts` is a local CLI, not an admin API action.)
 6. **Bug: the "Edit" button on mission-templates does nothing.** Reproduced directly: clicking "Edit" on any mission-template row in `admin/tuning/entities/mission-templates` *does* open the edit form (`EntityScreen.tsx`'s `SchemaForm`) — but the form is appended inline at the very bottom of the page, below the *entire* ~29-row template table, with no scroll-into-view and no modal/backdrop separating it from the list. For any row that isn't near the bottom, the click has no visible on-screen effect near where the pilot clicked, which reads exactly as "does nothing." Same `(creating || editingRow) && (...)` block is used for every entity type, so this likely affects every long entity list, not just mission-templates — mission-templates just happens to be the longest one. Fix: scroll the form into view on open, or (better, consistent with the rest of the app) render it as an actual modal via the existing `Popup` component instead of an inline block.
+
+## 12. Execution plan (owner: "plan all this, organize by gameplay impact order... group tasks to avoid waste tokens", 2026-09-28)
+
+Fourteen items from §9–§11, ordered by gameplay impact and grouped by area so each batch is one implement→typecheck→test→docker-rebuild→verify→commit pass instead of fourteen. First-quest difficulty (§9.1) stays out: it needs a design decision (what gates an "easy" mission), not a mechanical fix, so it's last and may come back as a question rather than straight code. README (§10.4) has zero gameplay impact, so it's dead last and separate (no app rebuild needed for it at all).
+
+**Batch A — quick, high-impact, independent** (§11.4 clarity fix, §11.2, §11.3, §11.6):
+1. Life support/pressurized requirement: make the blocked-reason message name *both* required parts, since "reviewed, works as designed" still leaves a real confusion (§11.4). API i18n-adjacent text, no logic change.
+2. Starter kit → one cargo hold instead of two (§11.2). Same three places as the battery removal: `game-config.defaults.ts`, live dev DB `GameConfig` row, and the pinned tests (`restart-kit.value.spec.ts` recompute, `parts-ships.int-spec.ts` counts/layout).
+3. "Buy" button label → "Not enough funds" when disabled for insufficient credits (§11.3). `market-panel.tsx` only.
+4. Admin mission-templates "Edit does nothing" (§11.6, confirmed root cause: form renders off-screen, no scroll/modal). Fix generically in `EntityScreen.tsx` so every long entity list benefits, not just mission-templates.
+
+**Batch B — Hangar/Parts UX** (§11.1, §10.5, §9.2):
+5. (i) info button inline in My Ship's tray rows instead of its own column (§11.1).
+6. Hover info for every Ship Sheet stat (§10.5).
+7. Part-detail popup: hover-only "why you need it" as a small info tag, stats as a table, before/after comparison against the ship's current sheet (§9.2) — the biggest single item; calls `/v1/ships/:id/preview` with a candidate layout to diff against the current one.
+
+**Batch C — Mission/Board feel** (§10.1, §10.2, §10.3):
+8. Scavenging ship-stage: stay parked at the current place instead of showing a "flying" scene (§10.1).
+9. Mission brief (i) icon next to the mission title (§10.2).
+10. Reward scaling for longer/more dangerous missions (§10.3) — a balance formula change; needs the current reward-generation code read first to know what it already does before changing the curve.
+
+**Batch D — Map** (§10.6):
+11. Risk-zone visual redesign now that node rings are faction-coloured.
+
+**Batch E — Admin** (§11.5):
+12. Split the admin top nav into Stats vs. Editable groups.
+13. Admin wallet credit/debit and password-change actions (checking first what `SupportService`/the inspector screen already partially covers).
+
+**Last, separately — no app rebuild needed:**
+14. First-quest difficulty (§9.1) — likely a short question back to the owner on the exact gate, not a silent implementation choice, since it changes new-player mission generation.
+15. README pass (§10.4) — docs only.
+
+Each batch gets its own typecheck + test run + docker rebuild + visual check + commit, same workflow as every prior round in this doc. Batches are ordered by impact but each is independently shippable, so this plan can stop after any batch without leaving things half-done.
