@@ -231,6 +231,46 @@ describe('support actions (S11.5, S11.4 acceptance)', () => {
     await waitFor(() => expect(grantBody).toEqual({ amount: 250, reason: 'event prize' }));
     expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
   });
+
+  it('requires a 10-128 char password and a reason before it can be sent', async () => {
+    mockReads();
+    let passwordBody: unknown = null;
+    server.use(
+      http.post(`/v1/admin/players/${playerId}/password`, async ({ request }) => {
+        passwordBody = await request.json();
+        return HttpResponse.json({
+          action: 'SUPPORT_SET_PASSWORD',
+          target: playerId,
+          before: { passwordChanged: false },
+          after: { passwordChanged: true },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderDetail();
+
+    await user.click(await screen.findByRole('button', { name: 'Change password' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change password' });
+    const confirm = within(dialog).getByRole('button', { name: 'Confirm' });
+    const passwordField = within(dialog).getByLabelText('New password');
+    expect(confirm).toBeDisabled();
+
+    await user.type(passwordField, 'too-short');
+    await user.type(within(dialog).getByLabelText('Reason'), 'pilot locked out');
+    expect(confirm).toBeDisabled();
+
+    await user.type(passwordField, '-still-more');
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await waitFor(() =>
+      expect(passwordBody).toEqual({
+        password: 'too-short-still-more',
+        reason: 'pilot locked out',
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
 });
 
 describe('report replay (S11.5 / D19)', () => {

@@ -201,13 +201,16 @@
     "title": "Admin",
     "logout": "Sair",
     "placeholder": "Painel de administração provisório",
-    "navigation": "Navegação de admin",
     "loadError": "Falha ao carregar os dados do admin",
     "dashboard": "Painel",
     "economy": "Economia",
     "world": "Mundo",
     "players": "Jogadores",
     "system": "Sistema",
+    "navGroups": {
+      "stats": "Estatísticas",
+      "editable": "Editáveis"
+    },
     "window": {
       "label": "Período",
       "24h": "Últimas 24 horas",
@@ -279,6 +282,7 @@
       "grant": "Conceder créditos",
       "remove": "Remover créditos",
       "clear": "Zerar saldo negativo",
+      "password": "Alterar senha",
       "unstick": "Destravar nave",
       "ban": "Banir",
       "reset": "Resetar"
@@ -287,11 +291,14 @@
       "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
       "remove": "Remove créditos da carteira (não pode ficar abaixo de zero).",
       "clear": "Leva um saldo negativo de volta a zero.",
+      "password": "Define uma nova senha para esta conta e encerra a sessão em todos os lugares. A senha em si nunca é registrada no log de auditoria.",
       "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",
       "ban": "Suspende a conta imediatamente e encerra todas as sessões. Contas de admin não podem ser banidas.",
       "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito."
     },
     "amount": "Quantidade",
+    "newPassword": "Nova senha",
+    "newPasswordHint": "10–128 caracteres",
     "ship": "Nave",
     "reasonLabel": "Motivo",
     "confirmAction": "Confirmar",

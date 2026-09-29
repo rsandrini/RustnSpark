@@ -201,13 +201,16 @@
     "title": "Admin",
     "logout": "Sign out",
     "placeholder": "Admin dashboard placeholder",
-    "navigation": "Admin navigation",
     "loadError": "Failed to load admin data",
     "dashboard": "Dashboard",
     "economy": "Economy",
     "world": "World",
     "players": "Players",
     "system": "System",
+    "navGroups": {
+      "stats": "Stats",
+      "editable": "Editable"
+    },
     "window": {
       "label": "Period",
       "24h": "Last 24 hours",
@@ -279,6 +282,7 @@
       "grant": "Grant credits",
       "remove": "Remove credits",
       "clear": "Clear negative balance",
+      "password": "Change password",
       "unstick": "Unstick ship",
       "ban": "Ban",
       "reset": "Reset"
@@ -287,11 +291,14 @@
       "grant": "Adds credits to the player's wallet. Recorded in the audit log.",
       "remove": "Removes credits from the wallet (cannot go below zero).",
       "clear": "Sets a negative balance back to zero.",
+      "password": "Sets a new password for this account and signs it out everywhere. The password itself is never recorded in the audit log.",
       "unstick": "Expires the ship's active mission and parks the ship in port. Its future route presence is deleted.",
       "ban": "Suspends the account at once and ends all sessions. Admin accounts cannot be banned.",
       "reset": "Wipes parts, materials, repairs, missions and sessions, returns the ship to the home port and re-applies the starter kit and credits. History is kept. This cannot be undone."
     },
     "amount": "Amount",
+    "newPassword": "New password",
+    "newPasswordHint": "10–128 characters",
     "ship": "Ship",
     "reasonLabel": "Reason",
     "confirmAction": "Confirm",

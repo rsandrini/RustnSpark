@@ -18,7 +18,7 @@ import { Idempotent } from '../../common/idempotency/idempotent.decorator.js';
 import { ReportsService } from '../../reports/reports.service.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 import { AdminGuard } from '../guards/admin.guard.js';
-import { CreditsActionDto, ReasonDto, SetDebugFastOpsDto } from './dto/index.js';
+import { CreditsActionDto, ReasonDto, SetDebugFastOpsDto, SetPasswordDto } from './dto/index.js';
 import { InspectorService } from './inspector.service.js';
 import { SupportService, type SupportContext } from './support.service.js';
 
@@ -124,6 +124,22 @@ export class InspectorController {
     @Req() request: Request,
   ): ReturnType<SupportService['clearNegativeBalance']> {
     return this.support.clearNegativeBalance(playerId, this.context(user, request, dto.reason));
+  }
+
+  @Post(':playerId/password')
+  @HttpCode(200)
+  @Idempotent()
+  setPassword(
+    @Param('playerId') playerId: string,
+    @Body() dto: SetPasswordDto,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() request: Request,
+  ): ReturnType<SupportService['setPassword']> {
+    return this.support.setPassword(
+      playerId,
+      dto.password,
+      this.context(user, request, dto.reason),
+    );
   }
 
   @Post(':playerId/ban')

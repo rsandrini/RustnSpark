@@ -615,6 +615,74 @@ describe('admin player inspector (S11.4)', () => {
     expect((audit.after as { reason: string }).reason).toBe('third ban appeal denied');
   });
 
+  it('sets a new password: old one stops working, new one logs in, sessions die, audit never carries the password', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+    const accountId = (await prisma.player.findUniqueOrThrow({ where: { id: player.playerId } }))
+      .accountId;
+    const account = await prisma.account.findUniqueOrThrow({ where: { id: accountId } });
+
+    await prisma.refreshToken.create({
+      data: {
+        accountId,
+        familyId: randomUUID(),
+        tokenHash: randomUUID(),
+        expiresAt: new Date(Date.now() + 86_400_000),
+      },
+    });
+
+    const result = await request(server)
+      .post(`/v1/admin/players/${player.playerId}/password`)
+      .set(auth(admin.token))
+      .send({ password: 'a-brand-new-strong-password', reason: 'pilot locked out, verified over email' });
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({
+      action: 'SUPPORT_SET_PASSWORD',
+      target: player.playerId,
+      before: { passwordChanged: false },
+      after: { passwordChanged: true },
+    });
+
+    expect(await prisma.refreshToken.count({ where: { accountId } })).toBe(0);
+
+    const oldLogin = await request(server)
+      .post('/v1/auth/login')
+      .send({ email: account.email, password: 'fixture-password-1' });
+    expect(oldLogin.status).toBe(401);
+
+    const newLogin = await request(server)
+      .post('/v1/auth/login')
+      .send({ email: account.email, password: 'a-brand-new-strong-password' });
+    expect(newLogin.status).toBe(200);
+
+    const audit = await prisma.adminAuditLog.findFirstOrThrow({
+      where: { actor: admin.accountId, action: 'SUPPORT_SET_PASSWORD' },
+    });
+    expect(audit.target).toBe(player.playerId);
+    expect(audit.after).toEqual({
+      passwordChanged: true,
+      reason: 'pilot locked out, verified over email',
+    });
+    expect(JSON.stringify(audit.after)).not.toContain('a-brand-new-strong-password');
+  });
+
+  it('rejects a password change with too short a password or no reason', async () => {
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const player = await makePlayer();
+
+    const tooShort = await request(server)
+      .post(`/v1/admin/players/${player.playerId}/password`)
+      .set(auth(admin.token))
+      .send({ password: 'short', reason: 'testing' });
+    expect(tooShort.status).toBe(400);
+
+    const noReason = await request(server)
+      .post(`/v1/admin/players/${player.playerId}/password`)
+      .set(auth(admin.token))
+      .send({ password: 'a-brand-new-strong-password' });
+    expect(noReason.status).toBe(400);
+  });
+
   it('unsticks a hull: active mission expires, ship parks in port, ship id is the audit target', async () => {
     const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
     const player = await makePlayer();

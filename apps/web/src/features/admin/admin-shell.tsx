@@ -36,34 +36,45 @@ export function AdminShell() {
           </button>
         </div>
       </header>
-      <nav className="game-nav admin-nav" aria-label={t('admin.navigation')}>
-        <NavLink to="/admin" end className={navLinkClass}>
-          {t('admin.dashboard')}
-        </NavLink>
-        <NavLink to="/admin/analytics/economy" className={navLinkClass}>
-          {t('admin.economy')}
-        </NavLink>
-        <NavLink to="/admin/analytics/world" className={navLinkClass}>
-          {t('admin.world')}
-        </NavLink>
-        <NavLink to="/admin/players" className={navLinkClass}>
-          {t('admin.players')}
-        </NavLink>
-        <NavLink to="/admin/system" className={navLinkClass}>
-          {t('admin.system')}
-        </NavLink>
-        <NavLink to="/admin/tuning/config" className={navLinkClass}>
-          {t('tuning.configTitle')}
-        </NavLink>
-        {TUNABLE_ENTITIES.map((entity) => (
-          <NavLink key={entity} to={`/admin/tuning/entities/${entity}`} className={navLinkClass}>
-            {t(`tuning.entityNames.${entity}`)}
+      {/* Split into two groups (owner request, round 3): read-only analytics vs. everything that
+          changes game state. One flat row of ~15 links made it hard to tell "look at this" apart
+          from "edit this" at a glance. */}
+      <div className="admin-nav-group">
+        <span className="admin-nav-label">{t('admin.navGroups.stats')}</span>
+        <nav className="game-nav admin-nav" aria-label={t('admin.navGroups.stats')}>
+          <NavLink to="/admin" end className={navLinkClass}>
+            {t('admin.dashboard')}
           </NavLink>
-        ))}
-        <NavLink to="/admin/tuning/revisions" className={navLinkClass}>
-          {t('tuning.revisionHistoryTitle')}
-        </NavLink>
-      </nav>
+          <NavLink to="/admin/analytics/economy" className={navLinkClass}>
+            {t('admin.economy')}
+          </NavLink>
+          <NavLink to="/admin/analytics/world" className={navLinkClass}>
+            {t('admin.world')}
+          </NavLink>
+        </nav>
+      </div>
+      <div className="admin-nav-group">
+        <span className="admin-nav-label">{t('admin.navGroups.editable')}</span>
+        <nav className="game-nav admin-nav" aria-label={t('admin.navGroups.editable')}>
+          <NavLink to="/admin/players" className={navLinkClass}>
+            {t('admin.players')}
+          </NavLink>
+          <NavLink to="/admin/system" className={navLinkClass}>
+            {t('admin.system')}
+          </NavLink>
+          <NavLink to="/admin/tuning/config" className={navLinkClass}>
+            {t('tuning.configTitle')}
+          </NavLink>
+          {TUNABLE_ENTITIES.map((entity) => (
+            <NavLink key={entity} to={`/admin/tuning/entities/${entity}`} className={navLinkClass}>
+              {t(`tuning.entityNames.${entity}`)}
+            </NavLink>
+          ))}
+          <NavLink to="/admin/tuning/revisions" className={navLinkClass}>
+            {t('tuning.revisionHistoryTitle')}
+          </NavLink>
+        </nav>
+      </div>
       <main>
         <Outlet />
       </main>

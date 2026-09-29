@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsString, Length, Max, MaxLength, Min } from 'class-validator';
 
 export const REASON_MAX_LENGTH = 500;
 // Far above any legitimate grant, far below Int4 overflow of the wallet column.
@@ -16,6 +16,19 @@ export class ReasonDto {
 export class SetDebugFastOpsDto {
   @IsBoolean()
   enabled!: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(REASON_MAX_LENGTH)
+  reason!: string;
+}
+
+// Same bounds as self-service registration (RegisterDto): support can set an account's
+// password, but never a weaker one than a pilot could have chosen themselves.
+export class SetPasswordDto {
+  @IsString()
+  @Length(10, 128)
+  password!: string;
 
   @IsString()
   @IsNotEmpty()
