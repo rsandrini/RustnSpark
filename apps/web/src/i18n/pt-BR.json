@@ -169,6 +169,23 @@
       "square": "Esta peça é 1×1: ela fica igual girada. A rotação só muda peças que não são quadradas.",
       "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
       "nudged": "Girada (movida uma ou duas casas para abrir espaço)."
+    },
+    "statHelp": {
+      "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
+      "mob": "Quão rápida a nave viaja: potência total dos motores dividida pela massa, vezes um fator fixo. Mais potência ou menos massa aumenta.",
+      "crg": "Quanta carga a nave pode transportar, de cada compartimento de carga instalado.",
+      "min": "Quanto minério a nave pode minerar por viagem, de cada plataforma de mineração instalada.",
+      "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
+      "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
+      "pdf": "Dano de combate de cada arma instalada.",
+      "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
+      "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
+      "fuelUse": "Quanto combustível é consumido por unidade de viagem.",
+      "energyCont": "Energia que sobra depois de tudo que sempre consome (suporte de vida, sensores). Disponível para sistemas de combate.",
+      "energyCombat": "Energia extra que armas e escudos precisam só em combate, tirada da bateria.",
+      "autonomy": "Quantos tanques cheios de combustível o consumo da nave aguenta, em porcentagem.",
+      "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
+      "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
     }
   },
   "home": {
@@ -439,6 +456,7 @@
       "goods": "Seus bens"
     },
     "buy": "Comprar",
+    "notEnoughFunds": "Fundos insuficientes",
     "sell": "Vender",
     "buyConfirm": "Comprar {{name}} por {{price}} ¢?",
     "sellConfirm": "Vender {{name}}?",
@@ -685,7 +703,7 @@
       "ACTIVE_MISSION_EXISTS": "Já existe uma missão ativa",
       "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local",
       "CARGO_TYPE": "Porão não comporta essa carga",
-      "PRESSURIZED_LIFE_SUPPORT": "Requer suporte de vida pressurizado",
+      "PRESSURIZED_LIFE_SUPPORT": "Requer Cabine de Passageiros e Suporte de Vida (os dois instalados)",
       "WEAPONS": "Requer armamentos",
       "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão",
       "MINER": "Requer sistema de mineração",

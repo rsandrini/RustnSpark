@@ -163,7 +163,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // No battery: the starter kit has nothing that draws combat energy (no weapon/shield),
     // so a battery here was pure cost with no function — "overkill... as [much as] two cargo
     // hold[s]" (owner, round-3 playtest; battery_small's basePrice 150 vs. cargo's 80 each).
-    starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'cargo', 'hull'],
+    // One cargo hold, not two (owner, round-3 playtest follow-up).
+    starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'hull'],
     home_locations: { luna: 'ceres', sun: 'hedus', explorers: 'cair' },
   },
   world: {

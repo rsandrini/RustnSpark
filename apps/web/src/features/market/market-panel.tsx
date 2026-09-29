@@ -237,7 +237,7 @@ export function MarketPanel({
                     setConfirm({ name, price: listing.price, listingId: listing.listingId });
                   }}
                 >
-                  {t('port.buy')}
+                  {affordable ? t('port.buy') : t('port.notEnoughFunds')}
                 </button>
               }
             />
@@ -265,7 +265,7 @@ export function MarketPanel({
                 buy.mutate({ listingId: confirm.listingId, expectedPrice: confirm.price })
               }
             >
-              {t('port.buy')}
+              {insufficient ? t('port.notEnoughFunds') : t('port.buy')}
             </button>
           </div>
         )}

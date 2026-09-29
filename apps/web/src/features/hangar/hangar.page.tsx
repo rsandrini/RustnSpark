@@ -462,7 +462,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   )}
                   {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
                   {trayParts.map((part) => (
-                    <div key={part.id} className="part-row">
+                    // The info button sits inside the card now, not trailing it in a column of
+                    // its own — but it stays a sibling of the card's own <button>, never a
+                    // descendant: nesting one interactive control inside another (axe's
+                    // "nested-interactive") is a real accessibility violation, not just a style
+                    // choice, so it's positioned there with CSS instead (.part-btn-wrap).
+                    <div key={part.id} className="part-btn-wrap">
                       <button
                         type="button"
                         className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${pendingPartId === part.id ? ' on' : ''}`}
@@ -566,12 +571,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             <section aria-label={t('hangar.sheet')}>
               <div className="panel">
                 <h2>{t('hangar.sheet')}</h2>
-                <div className="statrow">
+                <div className="statrow" title={t('hangar.statHelp.class')}>
                   <span>{t('hangar.class')}</span>
                   <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
                 </div>
                 {statRows.map((row) => (
-                  <div className="statrow" key={row.key}>
+                  <div
+                    className="statrow"
+                    key={row.key}
+                    title={t(`hangar.statHelp.${row.key}`, { defaultValue: '' })}
+                  >
                     <span>{t(`hangar.stats.${row.key}`)}</span>
                     <b>{row.value}</b>
                   </div>

@@ -169,6 +169,23 @@
       "square": "This part is 1×1: it looks the same rotated. Rotation only changes parts that are not square.",
       "blocked": "There is no room to rotate this part here: move a neighbour away first.",
       "nudged": "Rotated (moved a cell or two to make room)."
+    },
+    "statHelp": {
+      "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",
+      "mob": "How fast the ship travels: total engine power divided by mass, times a fixed factor. More power or less mass raises it.",
+      "crg": "How much cargo the ship can carry, from every installed cargo hold.",
+      "min": "How much ore the ship can mine per trip, from every installed mining rig.",
+      "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
+      "pot": "Total thrust from every installed engine. Feeds mobility.",
+      "pdf": "Combat damage output from every installed weapon.",
+      "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
+      "fuelCap": "How much fuel the ship can hold, from every installed tank.",
+      "fuelUse": "How much fuel is burned per unit of travel.",
+      "energyCont": "Power left over after everything that always draws it (life support, sensors). Available to combat systems.",
+      "energyCombat": "Extra power weapons and shields need only during combat, drawn from the battery.",
+      "autonomy": "How many full tanks of fuel the ship's burn rate can sustain, as a percentage.",
+      "condition": "Average wear across every installed part, from 100% (new) down.",
+      "structure": "How much of the structure budget the bridge sets is used by everything else installed."
     }
   },
   "home": {
@@ -439,6 +456,7 @@
       "goods": "Your goods"
     },
     "buy": "Buy",
+    "notEnoughFunds": "Not enough funds",
     "sell": "Sell",
     "buyConfirm": "Buy {{name}} for {{price}} ¢?",
     "sellConfirm": "Sell {{name}}?",
@@ -685,7 +703,7 @@
       "ACTIVE_MISSION_EXISTS": "A mission is already active",
       "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location",
       "CARGO_TYPE": "Cargo hold does not fit this cargo",
-      "PRESSURIZED_LIFE_SUPPORT": "Needs pressurized life support",
+      "PRESSURIZED_LIFE_SUPPORT": "Needs a Passenger Cabin and Life Support (both installed)",
       "WEAPONS": "Needs weapons",
       "MIN_MOBILITY": "Mobility below the mission minimum",
       "MINER": "Needs a mining system",

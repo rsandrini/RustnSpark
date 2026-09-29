@@ -134,9 +134,9 @@ describe('parts and ships API (S4.3)', () => {
         expect(player.factionId).toBe(faction);
 
         const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: player.id } });
-        // No battery: nothing else in the kit draws combat energy, so it was pure cost with no
-        // function (round-3 playtest review of the starter kit).
-        expect(parts.length).toBe(6);
+        // No battery (nothing else in the kit draws combat energy) and one cargo hold, not two
+        // (round-3 playtest review of the starter kit).
+        expect(parts.length).toBe(5);
         for (const part of parts) {
           expect(part.condition).toBe(80);
           expect(part.location).toBe('INVENTORY');
@@ -151,7 +151,7 @@ describe('parts and ships API (S4.3)', () => {
             .get(`/v1/ships/${ship.id}`)
             .set('Authorization', `Bearer ${token}`),
         );
-        expect(assembled.layout).toHaveLength(6);
+        expect(assembled.layout).toHaveLength(5);
         expect(assembled.sheet.pot).toBeGreaterThan(0);
         expect(assembled.sheet.hp).toBeGreaterThan(0);
         expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
@@ -269,13 +269,11 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(response.status).toBe(200);
       const items = response.body as Array<Record<string, unknown>>;
-      // No battery: nothing else in the kit draws combat energy, so it was pure cost with no
-      // function (round-3 playtest review of the starter kit).
-      expect(items.length).toBe(6);
+      // No battery (nothing else in the kit draws combat energy) and one cargo hold, not two
+      // (round-3 playtest review of the starter kit).
+      expect(items.length).toBe(5);
       const types = items.map((item) => item.partType as string).sort();
-      expect(types).toEqual(
-        ['bridge', 'cargo', 'cargo', 'engine_chem_small', 'hull', 'tank_small'].sort(),
-      );
+      expect(types).toEqual(['bridge', 'cargo', 'engine_chem_small', 'hull', 'tank_small'].sort());
       for (const item of items) {
         expect(item.condition).toBe(80);
         expect(item.catalog).toBeDefined();
@@ -350,8 +348,7 @@ describe('parts and ships API (S4.3)', () => {
         { partInstanceId: take('engine_chem_small').id, gx: 1, gy: 0, rot: 0 },
         { partInstanceId: take('tank_small').id, gx: 2, gy: 0, rot: 0 },
         { partInstanceId: take('cargo').id, gx: 3, gy: 0, rot: 0 },
-        { partInstanceId: take('cargo').id, gx: 4, gy: 0, rot: 0 },
-        { partInstanceId: take('hull').id, gx: 5, gy: 0, rot: 0 },
+        { partInstanceId: take('hull').id, gx: 4, gy: 0, rot: 0 },
       ];
 
       const response = await request(httpServer(testApp.app))
@@ -367,7 +364,7 @@ describe('parts and ships API (S4.3)', () => {
       const installed = await prisma.partInstance.findMany({
         where: { ownerPlayerId: seeded.player.id, location: 'INSTALLED' },
       });
-      expect(installed.length).toBe(6);
+      expect(installed.length).toBe(5);
       for (const part of installed) {
         expect(part.shipId).toBe(shipId);
       }

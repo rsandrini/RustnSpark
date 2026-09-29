@@ -276,15 +276,20 @@ All three verified visually against the live dev stack; typechecked clean; 171/1
 
 Fourteen items from §9–§11, ordered by gameplay impact and grouped by area so each batch is one implement→typecheck→test→docker-rebuild→verify→commit pass instead of fourteen. First-quest difficulty (§9.1) stays out: it needs a design decision (what gates an "easy" mission), not a mechanical fix, so it's last and may come back as a question rather than straight code. README (§10.4) has zero gameplay impact, so it's dead last and separate (no app rebuild needed for it at all).
 
-**Batch A — quick, high-impact, independent** (§11.4 clarity fix, §11.2, §11.3, §11.6):
-1. Life support/pressurized requirement: make the blocked-reason message name *both* required parts, since "reviewed, works as designed" still leaves a real confusion (§11.4). API i18n-adjacent text, no logic change.
-2. Starter kit → one cargo hold instead of two (§11.2). Same three places as the battery removal: `game-config.defaults.ts`, live dev DB `GameConfig` row, and the pinned tests (`restart-kit.value.spec.ts` recompute, `parts-ships.int-spec.ts` counts/layout).
-3. "Buy" button label → "Not enough funds" when disabled for insufficient credits (§11.3). `market-panel.tsx` only.
-4. Admin mission-templates "Edit does nothing" (§11.6, confirmed root cause: form renders off-screen, no scroll/modal). Fix generically in `EntityScreen.tsx` so every long entity list benefits, not just mission-templates.
+**Batch A — quick, high-impact, independent** (§11.4 clarity fix, §11.2, §11.3, §11.6) — **Done**:
+1. ~~Life support/pressurized requirement: make the blocked-reason message name *both* required parts~~ — **Done**. `board.reasons.PRESSURIZED_LIFE_SUPPORT` (both locales) and the API's own fallback message (`requirements.checker.ts`) now say "Needs a Passenger Cabin and Life Support (both installed)" instead of the ambiguous "Needs pressurized life support".
+2. ~~Starter kit → one cargo hold instead of two~~ — **Done**. Same three places as the battery removal: `game-config.defaults.ts`, live dev DB `GameConfig` row, and every pinned test (`restart-kit.value.spec.ts` recomputed to 499/830, `config-tuning.int-spec.ts` rethresholded at 490/510, `parts-ships.int-spec.ts` counts/layout down to 5 parts).
+3. ~~"Buy" button label → "Not enough funds" when disabled for insufficient credits~~ — **Done**, both the card's own Buy button (`!affordable`) and the confirmation popup's (`insufficient`) in `market-panel.tsx`.
+4. ~~Admin mission-templates "Edit does nothing"~~ — **Done**, fixed generically: `EntityScreen.tsx`'s edit/create form and retire-confirmation now render through the shared `Popup` component (fixed position, backdrop, focus trap) instead of an inline block appended after the table, so every long entity list benefits, not just mission-templates.
+
+Typechecked clean; 751 unit + 385 integration (2 pre-existing skips) API tests pass; 174/174 web tests pass; verified visually against the live dev stack.
 
 **Batch B — Hangar/Parts UX** (§11.1, §10.5, §9.2):
-5. (i) info button inline in My Ship's tray rows instead of its own column (§11.1).
-6. Hover info for every Ship Sheet stat (§10.5).
+5. ~~(i) info button inline in My Ship's tray rows instead of its own column~~ — **Done**. Kept the tray row's own `<button>` (native, fully keyboard/AT-accessible) and moved `PartInfoButton` to a CSS-positioned sibling inside the same card (`.part-btn-wrap`, top-right corner) instead of a trailing flex column — nesting it *inside* the button would have been an axe "nested-interactive" violation (caught by the a11y test), not just a style choice. `PartInfoButton` also gained an `event.stopPropagation()` so it doesn't double-fire the card's own click when they're this close together.
+6. ~~Hover info for every Ship Sheet stat~~ — **Done**. New `hangar.statHelp.*` i18n keys (one per `hangar.stats.*`/`hangar.class` key, both locales) as a `title` attribute on each `.statrow` — same lightweight native-tooltip pattern already used elsewhere in the app (`PartInfoButton`'s own `title`, the disabled Board/Port tab's `title`).
+
+Typechecked clean; 174/174 web tests pass (the a11y regression from the (i)-button move was caught and fixed before this was called done); verified visually against the live dev stack, including restoring the live account's ship layout after using it to check the tray card's new look.
+
 7. Part-detail popup: hover-only "why you need it" as a small info tag, stats as a table, before/after comparison against the ship's current sheet (§9.2) — the biggest single item; calls `/v1/ships/:id/preview` with a candidate layout to diff against the current one.
 
 **Batch C — Mission/Board feel** (§10.1, §10.2, §10.3):

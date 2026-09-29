@@ -16,7 +16,12 @@ export function PartInfoButton({ part }: { part: PartInfoData }) {
         className="btn info-btn"
         aria-label={`${t('parts.info')}: ${name}`}
         title={t('parts.info')}
-        onClick={() => setOpen(true)}
+        onClick={(event) => {
+          // Stops the click from also reaching a clickable card/row this button sits inside
+          // (My Ship's tray rows nest it right next to the part name now).
+          event.stopPropagation();
+          setOpen(true);
+        }}
       >
         {t('parts.infoGlyph')}
       </button>

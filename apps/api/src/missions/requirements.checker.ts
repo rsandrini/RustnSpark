@@ -17,7 +17,10 @@ const CARGO_TYPE: RequirementReason = {
 };
 const PRESSURIZED_LIFE_SUPPORT: RequirementReason = {
   code: 'PRESSURIZED_LIFE_SUPPORT',
-  message: 'Mission requires a pressurized cabin with life support.',
+  // Two separate parts, not one: a Passenger Cabin (pressurized) AND a Life Support module —
+  // named explicitly since a player installing only one of them (usually Life Support alone)
+  // is the actual confusion this message needs to head off.
+  message: 'Mission requires a Passenger Cabin and a Life Support module, both installed.',
 };
 const WEAPONS: RequirementReason = {
   code: 'WEAPONS',

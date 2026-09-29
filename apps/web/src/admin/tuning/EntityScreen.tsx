@@ -4,6 +4,7 @@ import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm } from './SchemaForm';
+import { Popup } from '../../ui/Popup';
 import type * as dto from '../../api/generated';
 
 const RETIREABLE_ENTITIES = ['parts', 'materials', 'mission-templates', 'routes'];
@@ -176,42 +177,59 @@ export function EntityScreen() {
         </tbody>
       </table>
 
-      {(creating || editingRow) && (
-        <div role="dialog" aria-modal="true">
-          <h3>{creating ? t('tuning.createEntity') : t('tuning.editEntity')}</h3>
-          {entityName === 'factions' && editingRow && factions && (
-            <RelationsMatrix
-              factions={factions}
-              currentId={String(editingRow.id)}
-              relations={(editingRow.relations as Record<string, string>) ?? {}}
-              onChange={(relations) => setEditingRow({ ...editingRow, relations })}
-            />
-          )}
-          <SchemaForm
-            fields={visibleFields}
-            initialData={editingRow ?? undefined}
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setCreating(false);
-              setEditingRow(null);
-              setFormErrors([]);
-            }}
-            errors={formErrors}
+      {/* A modal instead of an inline block appended after the table (owner-reported bug: on a
+          long entity list — mission-templates has ~29 rows — that inline block rendered far
+          below the fold with no scroll-into-view, so clicking Edit looked like it did nothing). */}
+      <Popup
+        open={creating || editingRow !== null}
+        title={creating ? t('tuning.createEntity') : t('tuning.editEntity')}
+        onClose={() => {
+          setCreating(false);
+          setEditingRow(null);
+          setFormErrors([]);
+        }}
+      >
+        {entityName === 'factions' && editingRow && factions && (
+          <RelationsMatrix
+            factions={factions}
+            currentId={String(editingRow.id)}
+            relations={(editingRow.relations as Record<string, string>) ?? {}}
+            onChange={(relations) => setEditingRow({ ...editingRow, relations })}
           />
-        </div>
-      )}
+        )}
+        <SchemaForm
+          fields={visibleFields}
+          initialData={editingRow ?? undefined}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setCreating(false);
+            setEditingRow(null);
+            setFormErrors([]);
+          }}
+          errors={formErrors}
+        />
+      </Popup>
 
-      {confirmRetire && (
-        <div role="dialog" aria-modal="true">
-          <p>{t('tuning.retireConfirm', { id: confirmRetire })}</p>
-          <button type="button" onClick={() => retireMutation.mutate(confirmRetire)}>
-            {t('tuning.confirm')}
-          </button>
-          <button type="button" onClick={() => setConfirmRetire(null)}>
-            {t('tuning.cancel')}
-          </button>
-        </div>
-      )}
+      <Popup
+        open={confirmRetire !== null}
+        title={t('tuning.retire')}
+        onClose={() => setConfirmRetire(null)}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => confirmRetire !== null && retireMutation.mutate(confirmRetire)}
+            >
+              {t('tuning.confirm')}
+            </button>
+            <button type="button" onClick={() => setConfirmRetire(null)}>
+              {t('tuning.cancel')}
+            </button>
+          </>
+        }
+      >
+        {confirmRetire !== null && <p>{t('tuning.retireConfirm', { id: confirmRetire })}</p>}
+      </Popup>
     </div>
   );
 }

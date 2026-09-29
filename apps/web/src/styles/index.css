@@ -1266,6 +1266,11 @@ svg .block.floating {
   background: #28323a;
 }
 
+.part-btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .part-btn .meta {
   display: block;
   font-size: 10px;
@@ -1369,6 +1374,22 @@ svg .block.floating {
   border-radius: 50%;
   font-style: italic;
   font-family: Georgia, serif;
+}
+
+/* My Ship's tray: the info button sits inside its part's card, near the top corner, instead of
+   trailing it as a separate column — a sibling of the card's <button> in the DOM (two nested
+   interactive controls is an accessibility violation, not just a style choice), positioned to
+   look like it belongs to the card with plain CSS. */
+.part-btn-wrap {
+  position: relative;
+}
+
+.part-btn-wrap .info-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  font-size: 12px;
 }
 
 .part-summary,
@@ -1557,15 +1578,6 @@ svg .block.floating {
   grid-template-columns: 1fr;
 }
 
-.part-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.part-row .part-btn {
-  flex: 1;
-}
 
 .kit-note {
   margin-bottom: 10px;
