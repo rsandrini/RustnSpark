@@ -199,6 +199,9 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     const dialog = await screen.findByRole('dialog');
     const badge = within(dialog).getByLabelText('Rarity: Uncommon');
     expect(badge).toHaveClass('rarity-uncommon');
+    // Owner request (round 7): spelled out ("Uncommon"), not a star count — one pattern shared
+    // by every place rarity shows up (the popup here, and the tray row list).
+    expect(badge).toHaveTextContent('Uncommon');
   });
 
   it('warns when a swap would push structure over budget, with a used/budget ratio (owner request)', async () => {

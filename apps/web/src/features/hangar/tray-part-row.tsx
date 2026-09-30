@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import type { InventoryItem } from '../../api/generated';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
-import { PartStatsCard, partSummary, useNumberFormat, type PartCompareContext } from '../parts/part-detail';
+import {
+  PartStatsCard,
+  RarityBadge,
+  partSummary,
+  useNumberFormat,
+  type PartCompareContext,
+} from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
 
 const HOVER_MARGIN = 8;
@@ -112,6 +118,7 @@ export function TrayPartRow({ part, name, disabled, selected, onSelect, compare 
         <span className="part-line">
           <PartThumb name={name} rarity={part.rarity} />
           {name}
+          <RarityBadge rarity={part.rarity} />
         </span>
         <span className="meta">
           {[t(`hangar.partClasses.${part.catalog.partClass}`), `${part.catalog.w}×${part.catalog.h}`].join(

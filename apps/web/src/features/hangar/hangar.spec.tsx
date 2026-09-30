@@ -91,6 +91,17 @@ describe('hangar (S10.4)', () => {
     ).toBe('1%');
   });
 
+  it('shows the rarity right after the part name in the tray list (owner request, round 7)', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const trayButton = await screen.findByRole('button', { name: /^Cargo Rack/ });
+    const badge = within(trayButton).getByText('Common');
+    expect(badge).toHaveClass('rarity-badge');
+    expect(badge).toHaveClass('rarity-common');
+  });
+
   it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {
     server.use(
       onboarded(),

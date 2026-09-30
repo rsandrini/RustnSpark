@@ -118,27 +118,21 @@ export function partSummary(
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
-// Escalating star count, one glyph per tier (owner request, round 6: "an icon showing the
-// rarity, not only the color" — color alone isn't accessible/distinct enough at a glance).
-const RARITY_STARS: Readonly<Record<string, number>> = {
-  COMMON: 1,
-  UNCOMMON: 2,
-  RARE: 3,
-  EPIC: 4,
-  LEGENDARY: 5,
-};
-
-/** A part's rarity as stars, not just the card's border colour — placed next to a name. */
+/**
+ * A part's rarity, not just the card's border colour — one shared pattern everywhere rarity
+ * shows up (the tray/parts list, and every part popup). Owner request (round 7): spelled out
+ * ("Uncommon"), not a star count — round 6's star glyph was a first cut, replaced here because
+ * the owner wants one consistent, described label rather than two different rarity languages.
+ */
 export function RarityBadge({ rarity }: { rarity: string }) {
   const { t } = useTranslation();
-  const stars = RARITY_STARS[rarity] ?? 1;
+  const label = t(`parts.rarities.${rarity}`, { defaultValue: rarity });
   return (
     <span
       className={`rarity-badge rarity-${rarity.toLowerCase()}`}
-      aria-label={t('parts.rarityBadge', { rarity: t(`parts.rarities.${rarity}`, { defaultValue: rarity }) })}
-      title={t(`parts.rarities.${rarity}`, { defaultValue: rarity })}
+      aria-label={t('parts.rarityBadge', { rarity: label })}
     >
-      {'★'.repeat(stars)}
+      {label}
     </span>
   );
 }
