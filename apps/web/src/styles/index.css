@@ -1399,14 +1399,18 @@ svg .block.floating {
   position: relative;
 }
 
-/* Tray-row hover card (round 5, owner request): flies out to the right of the hovered row,
-   same visual language as the yard's own .part-hover-card. */
+/* Tray-row hover card (round 5/6, owner request): drops below the hovered row, same width as
+   the tray column. A flyout to the *side* (the first cut of this) was invisible in practice —
+   the tray sidebar (.hangar-side) scrolls vertically, which per the CSS spec also makes its
+   overflow-x compute to "auto" (not "visible"), clipping anything positioned past the column's
+   own right edge; below-and-full-width never leaves that horizontal bound at all. */
 .tray-hover-card {
   position: absolute;
-  top: 0;
-  left: calc(100% + 8px);
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
   z-index: 6;
-  width: 220px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
