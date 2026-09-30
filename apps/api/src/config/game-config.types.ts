@@ -49,6 +49,7 @@ export type ConfigKey =
   | 'economy.mood_min'
   | 'economy.payout_floor_integrity'
   | 'economy.rarity_base_price'
+  | 'economy.market_rarity_chance'
   | 'economy.repair_factor'
   | 'economy.repair_price'
   | 'economy.repair_price_ref'
@@ -244,6 +245,8 @@ export type GameRules = Readonly<{
     mood_min: number;
     mood_max: number;
     rarity_base_price: Readonly<Record<string, number>>;
+    /** Daily chance (0-1) a catalog listing of this rarity is actually in a port's new-parts shelf. */
+    market_rarity_chance: Readonly<Record<string, number>>;
     payout_floor_integrity: number;
     repair_seconds_per_point: Readonly<Record<string, number>>;
   }>;

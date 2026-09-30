@@ -88,6 +88,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     rarity_base_price: { common: 100, uncommon: 300, rare: 800, epic: 2000, legendary: 5000 },
     payout_floor_integrity: 0.5,
     repair_seconds_per_point: { hub: 3, outpost: 8 },
+    // Round-5 backlog: "almost nothing rare, epic really 1%, legendary no way" — the daily
+    // chance a given new-parts catalog listing is actually on a port's shelf, by rarity. High
+    // tiers are meant to come from drops or the upgrade mechanic, not a direct buy.
+    market_rarity_chance: { COMMON: 1, UNCOMMON: 1, RARE: 0.08, EPIC: 0.01, LEGENDARY: 0 },
   },
   encounter: {
     chance_divisor: 20,

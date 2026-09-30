@@ -84,6 +84,7 @@ const economySchema = z.object({
   mood_min: z.number().min(0).max(2),
   mood_max: z.number().min(0).max(2),
   rarity_base_price: z.record(z.string(), z.number().min(0).max(50000)),
+  market_rarity_chance: z.record(z.string(), z.number().min(0).max(1)),
   payout_floor_integrity: z.number().min(0).max(1),
   repair_seconds_per_point: z.record(z.string(), z.number().min(0).max(60)),
 });

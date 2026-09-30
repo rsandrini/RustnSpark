@@ -32,6 +32,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.fuel_price',
   'economy.isolation_mult',
   'economy.maintenance_per_tier',
+  'economy.market_rarity_chance',
   'economy.mood_max',
   'economy.mood_min',
   'economy.part_upgrade_price_multiplier',

@@ -791,6 +791,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.market_rarity_chance',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.market_rarity_chance),
+    description: {
+      en: 'Daily chance (0-1) a rarity actually shows up in a port’s new-parts shelf. 0 means never; 1 means always.',
+      'pt-BR':
+        'Chance diária (0-1) de uma raridade aparecer na prateleira de peças novas de um porto. 0 significa nunca; 1 significa sempre.',
+    },
+  },
+  {
     key: 'economy.payout_floor_integrity',
     group: 'economy',
     type: 'number',

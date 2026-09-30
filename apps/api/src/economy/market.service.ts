@@ -13,6 +13,7 @@ import { InsufficientFundsError, WalletService } from '../players/wallet.service
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Clock } from '../common/clock/clock.js';
+import { inStockToday } from './market-stock.js';
 import { PricingService } from './pricing.service.js';
 import {
   catalogListingId,
@@ -118,22 +119,29 @@ export class MarketService {
       orderBy: { partType: 'asc' },
     });
     const day = dayKey(this.clock.now());
+    const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
 
-    const listings: MarketListing[] = catalogs.map((row) => ({
-      listingId: catalogListingId(locationId, row.partType),
-      kind: 'catalog' as const,
-      partType: row.partType,
-      partClass: row.partClass,
-      displayName: {
-        en: localize(row.displayName, 'en'),
-        'pt-BR': localize(row.displayName, 'pt-BR'),
-      },
-      description: bilingual(row.description),
-      rarity: row.rarity,
-      catalog: pickCatalogStats(row),
-      condition: 100,
-      price: this.pricing.buy(context, row, 100),
-    }));
+    // Round-5 backlog: rare+ parts are meant to be scarce or absent from the market (drops/the
+    // upgrade mechanic instead) — each catalog row rolls, once per port per day, whether it's
+    // actually on the shelf, deterministically (buy() re-derives the same roll, never trusts the
+    // client's listingId alone).
+    const listings: MarketListing[] = catalogs
+      .filter((row) => inStockToday(locationId, day, row.partType, row.rarity, rarityChance))
+      .map((row) => ({
+        listingId: catalogListingId(locationId, row.partType),
+        kind: 'catalog' as const,
+        partType: row.partType,
+        partClass: row.partClass,
+        displayName: {
+          en: localize(row.displayName, 'en'),
+          'pt-BR': localize(row.displayName, 'pt-BR'),
+        },
+        description: bilingual(row.description),
+        rarity: row.rarity,
+        catalog: pickCatalogStats(row),
+        condition: 100,
+        price: this.pricing.buy(context, row, 100),
+      }));
 
     for (let index = 0; index < USED_OFFER_COUNT; index += 1) {
       const { condition, part: partRow } = usedOffer(locationId, day, index, catalogs);
@@ -212,6 +220,16 @@ export class MarketService {
       where: { partType: parsed.partType },
     });
     if (!catalog || !catalog.active) throw new NotFoundException('listing not found');
+    // Same re-derivation as the used-shelf day check above: a "catalog" listing id carries no
+    // day itself (it's stable so it can be bookmarked/priced client-side), so buy() re-rolls
+    // today's stock the same way market() did when it built the list — a client can't buy a
+    // rarity that was never actually on the shelf just by knowing its listingId shape.
+    if (parsed.kind === 'catalog') {
+      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      if (!inStockToday(parsed.locationId, dayKey(this.clock.now()), catalog.partType, catalog.rarity, rarityChance)) {
+        throw new BadRequestException({ error: 'INVALID_LISTING' });
+      }
+    }
 
     let condition = 100;
     if (parsed.kind === 'used') {

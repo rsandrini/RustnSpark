@@ -691,4 +691,67 @@ describe('market API (S8.2)', () => {
       at.mockRestore();
     }
   });
+
+  describe('rarity-gated new-parts shelf (round-5 backlog: scarce rare/epic, no legendary)', () => {
+    it('never lists a LEGENDARY catalog part (chance 0 by default)', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+
+      const legendaryRows = await prisma.partCatalog.findMany({
+        where: { active: true, rarity: 'LEGENDARY' },
+        select: { partType: true },
+      });
+      expect(legendaryRows.length).toBeGreaterThan(0);
+
+      const board = await getMarket(player.token, 'ceres');
+      const catalogListings = (board.body as MarketListingBody).listings.filter(
+        (entry) => entry.kind === 'catalog',
+      );
+      const listedLegendary = catalogListings.filter((entry) =>
+        legendaryRows.some((row) => row.partType === entry.partType),
+      );
+      expect(listedLegendary).toHaveLength(0);
+    });
+
+    it('always lists every COMMON catalog part (chance 1 by default)', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+
+      const commonRows = await prisma.partCatalog.findMany({
+        where: { active: true, rarity: 'COMMON' },
+        select: { partType: true },
+      });
+      expect(commonRows.length).toBeGreaterThan(0);
+
+      const board = await getMarket(player.token, 'ceres');
+      const listedTypes = new Set(
+        (board.body as MarketListingBody).listings
+          .filter((entry) => entry.kind === 'catalog')
+          .map((entry) => entry.partType),
+      );
+      for (const row of commonRows) {
+        expect(listedTypes.has(row.partType)).toBe(true);
+      }
+    });
+
+    it('rejects buying a LEGENDARY part even with a hand-built catalog listing id', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { credits: 1_000_000 },
+      });
+
+      const legendary = await prisma.partCatalog.findFirstOrThrow({
+        where: { active: true, rarity: 'LEGENDARY' },
+      });
+
+      const response = await buy(player.token, randomUUID(), {
+        listingId: `catalog:ceres:${legendary.partType}`,
+        expectedPrice: legendary.basePrice,
+      });
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ message: { error: 'INVALID_LISTING' } });
+    });
+  });
 });
