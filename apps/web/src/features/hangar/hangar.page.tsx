@@ -14,17 +14,10 @@ import { Link, useSearchParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
-import { Gauge, conditionTone } from '../../ui/Gauge';
-import { PartThumb } from '../../ui/PartThumb';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
-import {
-  PartStatsCard,
-  partSummary,
-  useNumberFormat,
-  type PartCompareContext,
-} from '../parts/part-detail';
-import { PartInfoButton } from '../parts/part-info-button';
+import { PartStatsCard, type PartCompareContext } from '../parts/part-detail';
+import { TrayPartRow } from './tray-part-row';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { TransitPage, type LastMission } from '../transit/transit.page';
@@ -85,12 +78,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [saved, setSaved] = useState(false);
   const [rotateHint, setRotateHint] = useState<string | null>(null);
   // Hovering a placed block shows its stats card (round-3 follow-up); the full popup only
-  // opens from a part row's own (i) button now, never from selecting/placing a part.
+  // opens from a part row's own (i) button now, never from selecting/placing a part. The tray's
+  // own hover card (round 5/6) manages its own position state locally (TrayPartRow) since each
+  // row needs an independent measured/clamped placement, not one shared id.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Tray-row hover card position (round 6, owner request: "add it at side of the mouse, in the
-  // right side") — anchored to the cursor at the moment it enters the row, in fixed/viewport
-  // coordinates so it can never be clipped by the tray's own scroll container.
-  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   // Board and Port fold into My Ship as gated tabs (round-3 nav consolidation): enabled only
   // while the ship is docked, same as the old Port/Board nav entries used to be.
   const [searchParams] = useSearchParams();
@@ -105,7 +96,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   }, [searchParams]);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
-  const format = useNumberFormat();
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
   // The last-finished mission used to be an inline card between the ship animation and the
   // tabs; it is a link near the tabs now, going straight to its report (owner request —
@@ -159,10 +149,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
   // Nothing installed yet: the loose parts are the starter kit the player still has to assemble.
   const isKit = effectiveLayout.length === 0 && trayParts.length > 0;
-  // Yard-only: a tray row uses the same hoveredId state for its own hover card (below), and a
-  // part's id is never both placed and in the tray at once, but scoping this to placedIds keeps
-  // the two hover cards (yard vs. tray) from ever trying to render for the same id at once.
-  const hoveredPart = placedIds.has(hoveredId ?? '') ? (parts.find((part) => part.id === hoveredId) ?? null) : null;
+  const hoveredPart = parts.find((part) => part.id === hoveredId) ?? null;
   const dirty =
     ship !== undefined && layout !== null && JSON.stringify(layout) !== JSON.stringify(ship.layout);
 
@@ -491,67 +478,18 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   )}
                   {trayParts.length === 0 && <p className="muted">{t('hangar.trayEmpty')}</p>}
                   {trayParts.map((part) => (
-                    // The info button sits inside the card now, not trailing it in a column of
-                    // its own — but it stays a sibling of the card's own <button>, never a
-                    // descendant: nesting one interactive control inside another (axe's
-                    // "nested-interactive") is a real accessibility violation, not just a style
-                    // choice, so it's positioned there with CSS instead (.part-btn-wrap).
-                    <div key={part.id} className="part-btn-wrap">
-                      <button
-                        type="button"
-                        className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${pendingPartId === part.id ? ' on' : ''}`}
-                        disabled={modifyBlocked}
-                        onClick={() => {
-                          setPendingPartId(part.id);
-                          setSelectedId(null);
-                        }}
-                        onPointerEnter={(event) => {
-                          setHoveredId(part.id);
-                          setHoverPos({ x: event.clientX, y: event.clientY });
-                        }}
-                        onPointerLeave={() => {
-                          setHoveredId(null);
-                          setHoverPos(null);
-                        }}
-                      >
-                        <span className="part-line">
-                          <PartThumb
-                            name={nameById.get(part.id) ?? part.partType}
-                            rarity={part.rarity}
-                          />
-                          {nameById.get(part.id) ?? part.partType}
-                        </span>
-                        <span className="meta">
-                          {[
-                            t(`hangar.partClasses.${part.catalog.partClass}`),
-                            `${part.catalog.w}×${part.catalog.h}`,
-                          ].join(' · ')}
-                        </span>
-                        <span className="meta">{partSummary(part.catalog, t, format)}</span>
-                        <Gauge
-                          value={Math.round(part.condition)}
-                          max={100}
-                          tone={conditionTone(part.condition)}
-                          ariaLabel={t('port.conditionNow', { value: Math.round(part.condition) })}
-                          label={t('port.conditionNow', { value: Math.round(part.condition) })}
-                        />
-                      </button>
-                      <PartInfoButton part={part} compare={trayCompareContext()} />
-                      {/* Hover, not just click (owner request, round 5): the same comparison
-                          the (i) popup shows, without opening it. Anchored to the cursor in
-                          fixed/viewport coordinates (owner request, round 6) so it's never
-                          clipped by the tray's own scroll container and always reads next to
-                          wherever the pointer actually is. */}
-                      {hoveredId === part.id && hoverPos !== null && (
-                        <div
-                          className="tray-hover-card"
-                          aria-hidden="true"
-                          style={{ left: hoverPos.x + 16, top: hoverPos.y }}
-                        >
-                          <PartStatsCard part={part} compare={trayCompareContext()} />
-                        </div>
-                      )}
-                    </div>
+                    <TrayPartRow
+                      key={part.id}
+                      part={part}
+                      name={nameById.get(part.id) ?? part.partType}
+                      disabled={modifyBlocked}
+                      selected={pendingPartId === part.id}
+                      onSelect={() => {
+                        setPendingPartId(part.id);
+                        setSelectedId(null);
+                      }}
+                      compare={trayCompareContext()}
+                    />
                   ))}
                 </>
               )}
