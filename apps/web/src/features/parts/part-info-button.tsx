@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
-import { PartDetail, type PartCompareContext, type PartInfoData } from './part-detail';
+import { PartDetail, RarityBadge, type PartCompareContext, type PartInfoData } from './part-detail';
 
 export interface PartInfoButtonProps {
   part: PartInfoData;
-  /** Hangar tray only: shows what installing this part would do to the ship, next to its own
-      stats. Omitted everywhere else (Market, Port) — nothing is "applied to the ship" yet
-      there, it's still just a purchase decision. */
+  /** What installing/swapping this part would do to the ship, next to its own stats — the
+      Hangar tray (an owned part) and Market/Store (a virtual swap or addition) both set this;
+      omitted only where there's no ship context to compare against at all. */
   compare?: PartCompareContext;
 }
 
@@ -33,7 +33,12 @@ export function PartInfoButton({ part, compare }: PartInfoButtonProps) {
       >
         {t('parts.infoGlyph')}
       </button>
-      <Popup open={open} title={name} onClose={() => setOpen(false)}>
+      <Popup
+        open={open}
+        title={name}
+        titleBadge={<RarityBadge rarity={part.rarity} />}
+        onClose={() => setOpen(false)}
+      >
         <PartDetail part={part} compare={compare} />
       </Popup>
     </>

@@ -87,6 +87,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // Hovering a placed block shows its stats card (round-3 follow-up); the full popup only
   // opens from a part row's own (i) button now, never from selecting/placing a part.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Tray-row hover card position (round 6, owner request: "add it at side of the mouse, in the
+  // right side") — anchored to the cursor at the moment it enters the row, in fixed/viewport
+  // coordinates so it can never be clipped by the tray's own scroll container.
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   // Board and Port fold into My Ship as gated tabs (round-3 nav consolidation): enabled only
   // while the ship is docked, same as the old Port/Board nav entries used to be.
   const [searchParams] = useSearchParams();
@@ -501,8 +505,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                           setPendingPartId(part.id);
                           setSelectedId(null);
                         }}
-                        onPointerEnter={() => setHoveredId(part.id)}
-                        onPointerLeave={() => setHoveredId(null)}
+                        onPointerEnter={(event) => {
+                          setHoveredId(part.id);
+                          setHoverPos({ x: event.clientX, y: event.clientY });
+                        }}
+                        onPointerLeave={() => {
+                          setHoveredId(null);
+                          setHoverPos(null);
+                        }}
                       >
                         <span className="part-line">
                           <PartThumb
@@ -528,9 +538,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       </button>
                       <PartInfoButton part={part} compare={trayCompareContext()} />
                       {/* Hover, not just click (owner request, round 5): the same comparison
-                          the (i) popup shows, without opening it. */}
-                      {hoveredId === part.id && (
-                        <div className="tray-hover-card" aria-hidden="true">
+                          the (i) popup shows, without opening it. Anchored to the cursor in
+                          fixed/viewport coordinates (owner request, round 6) so it's never
+                          clipped by the tray's own scroll container and always reads next to
+                          wherever the pointer actually is. */}
+                      {hoveredId === part.id && hoverPos !== null && (
+                        <div
+                          className="tray-hover-card"
+                          aria-hidden="true"
+                          style={{ left: hoverPos.x + 16, top: hoverPos.y }}
+                        >
                           <PartStatsCard part={part} compare={trayCompareContext()} />
                         </div>
                       )}

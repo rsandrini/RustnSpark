@@ -118,6 +118,31 @@ export function partSummary(
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
+// Escalating star count, one glyph per tier (owner request, round 6: "an icon showing the
+// rarity, not only the color" — color alone isn't accessible/distinct enough at a glance).
+const RARITY_STARS: Readonly<Record<string, number>> = {
+  COMMON: 1,
+  UNCOMMON: 2,
+  RARE: 3,
+  EPIC: 4,
+  LEGENDARY: 5,
+};
+
+/** A part's rarity as stars, not just the card's border colour — placed next to a name. */
+export function RarityBadge({ rarity }: { rarity: string }) {
+  const { t } = useTranslation();
+  const stars = RARITY_STARS[rarity] ?? 1;
+  return (
+    <span
+      className={`rarity-badge rarity-${rarity.toLowerCase()}`}
+      aria-label={t('parts.rarityBadge', { rarity: t(`parts.rarities.${rarity}`, { defaultValue: rarity }) })}
+      title={t(`parts.rarities.${rarity}`, { defaultValue: rarity })}
+    >
+      {'★'.repeat(stars)}
+    </span>
+  );
+}
+
 /**
  * Shared by the full popup (`PartDetail`) and the lighter hover card (`PartStatsCard`): asks the
  * server what installing/swapping `part` would do to the ship, and turns the answer into a
@@ -166,7 +191,25 @@ function useCompareQuery(part: PartInfoData, compare: PartCompareContext | undef
     return { text, tone };
   };
 
-  return { comparePreview, deltaFor };
+  // Owner request (round 6): a plain delta doesn't say whether the part actually *fits* —
+  // structure has a hard cap (the bridge's budget), so this shows used/budget together
+  // ("62/40!") and forces red whenever installing would push it over, regardless of whether
+  // structureUsed's own higher-is-worse delta direction would otherwise read as merely "bad".
+  const structureDeltaFor = (): { text: string; tone: DeltaTone } | null => {
+    if (compare === undefined || afterSheet === undefined) return null;
+    const after = afterSheet.structureUsed;
+    const budget = afterSheet.structureBudget;
+    const before = compare.currentSheet.structureUsed;
+    const delta = after - before;
+    const over = after > budget;
+    const tone = over ? 'bad' : deltaTone('structureUsed', delta);
+    const ratio = `${format(after)}/${format(budget)}`;
+    const text =
+      tone === 'same' ? ratio : `${ratio}${over ? '!' : ''} (${delta > 0 ? '+' : ''}${format(delta)})`;
+    return { text, tone };
+  };
+
+  return { comparePreview, deltaFor, structureDeltaFor };
 }
 
 export interface PartDetailProps {
@@ -193,7 +236,10 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     .filter((piece): piece is string => piece !== null && piece !== '')
     .join(' ');
 
-  const { comparePreview, deltaFor } = useCompareQuery(part, compare);
+  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(part, compare);
+  const viabilityProblems = comparePreview.data?.viability.viable === false
+    ? comparePreview.data.viability.problems
+    : [];
 
   const rows = [
     ...EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
@@ -242,6 +288,17 @@ export function PartDetail({ part, compare }: PartDetailProps) {
                 : t('parts.compare.title')}
         </p>
       )}
+      {viabilityProblems.length > 0 && (
+        <ul className="compare-viability-warning">
+          {viabilityProblems.map((problem) => (
+            <li key={problem.code} className="error-text">
+              {t(`hangar.problems.${problem.code}`, {
+                defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
+              })}
+            </li>
+          ))}
+        </ul>
+      )}
       <table className="part-stats-table">
         <thead>
           <tr>
@@ -252,7 +309,12 @@ export function PartDetail({ part, compare }: PartDetailProps) {
         </thead>
         <tbody>
           {rows.map((row) => {
-            const delta = compare !== undefined ? deltaFor(row.sheetKey) : null;
+            const delta =
+              compare === undefined
+                ? null
+                : row.sheetKey === 'structureUsed'
+                  ? structureDeltaFor()
+                  : deltaFor(row.sheetKey);
             return (
               <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
                 <td>{t(`parts.stat.${row.key}.label`)}</td>
@@ -297,7 +359,10 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
-  const { deltaFor } = useCompareQuery(part, compare);
+  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(part, compare);
+  const viabilityProblems = comparePreview.data?.viability.viable === false
+    ? comparePreview.data.viability.problems
+    : [];
   const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
     key,
     sheetKey: key as keyof ShipSheet,
@@ -321,9 +386,25 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
           .filter((piece) => piece !== null)
           .join(' · ')}
       </p>
+      {viabilityProblems.length > 0 && (
+        <ul className="compare-viability-warning">
+          {viabilityProblems.map((problem) => (
+            <li key={problem.code} className="error-text">
+              {t(`hangar.problems.${problem.code}`, {
+                defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
+              })}
+            </li>
+          ))}
+        </ul>
+      )}
       <dl className="part-stats">
         {[...effectRows, ...baseRows].map((row) => {
-          const delta = compare !== undefined ? deltaFor(row.sheetKey) : null;
+          const delta =
+            compare === undefined
+              ? null
+              : row.sheetKey === 'structureUsed'
+                ? structureDeltaFor()
+                : deltaFor(row.sheetKey);
           return (
             <div key={row.key} className="statrow">
               <dt>{t(`parts.stat.${row.key}.label`)}</dt>

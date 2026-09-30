@@ -191,4 +191,55 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     );
     expect(within(dialog).queryByText(/swap this in for/i)).not.toBeInTheDocument();
   });
+
+  it('shows a rarity badge in the header, not only the card’s border color (owner request)', async () => {
+    renderWithProviders(<PartInfoButton part={listingPart} />, { withRouter: false });
+
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    const badge = within(dialog).getByLabelText('Rarity: Uncommon');
+    expect(badge).toHaveClass('rarity-uncommon');
+  });
+
+  it('warns when a swap would push structure over budget, with a used/budget ratio (owner request)', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({
+          sheet: { ...baseSheet, structureUsed: 62 },
+          shipClass: 'MULTIROLE',
+          viability: {
+            viable: false,
+            problems: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded.' }],
+          },
+          layout: [],
+          omittedPartInstanceIds: [],
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <PartInfoButton
+        part={listingPart}
+        compare={{
+          shipId: 'ship-1',
+          installedPartIds: ['part-cargo-a'],
+          currentSheet: baseSheet,
+          replace: {
+            partInstanceId: 'part-cargo-a',
+            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+          },
+        }}
+      />,
+      { withRouter: false },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(() =>
+      expect(within(dialog).getByText('Structure budget exceeded.')).toBeInTheDocument(),
+    );
+    const structureRow = within(dialog).getByRole('row', { name: /^Structure/ });
+    await waitFor(() => expect(within(structureRow).getByText('62/40! (+44)')).toBeInTheDocument());
+    expect(within(structureRow).getByText('62/40! (+44)')).toHaveClass('delta-bad');
+  });
 });

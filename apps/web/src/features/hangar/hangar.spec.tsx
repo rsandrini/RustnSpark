@@ -333,7 +333,7 @@ describe('hangar (S10.4)', () => {
     const trayButton = await screen.findByRole('button', { name: /^Cargo Rack/ });
     expect(screen.queryByRole('dialog')).toBeNull();
 
-    fireEvent.pointerEnter(trayButton);
+    fireEvent.pointerEnter(trayButton, { clientX: 100, clientY: 200 });
     // Cargo goes to 15 (10 + this part's own 5) — the comparison shows up on hover alone,
     // never opening the full popup.
     await waitFor(() => expect(screen.getByText('15 (+5)')).toBeInTheDocument());

@@ -8,6 +8,8 @@ export interface PopupProps {
   onClose: () => void;
   children?: ReactNode;
   actions?: ReactNode;
+  /** Rendered next to the title, before the Close button (e.g. a part's rarity badge). */
+  titleBadge?: ReactNode;
 }
 
 const FOCUSABLE =
@@ -17,7 +19,7 @@ const FOCUSABLE =
 // damage cascades on the report — S10.8/S10.9). Escape and backdrop dismiss it. Keyboard
 // contract of a modal: focus moves into the dialog on open, Tab/Shift+Tab stay inside it,
 // and focus returns to whatever opened it when it closes.
-export function Popup({ open, title, onClose, children, actions }: PopupProps) {
+export function Popup({ open, title, onClose, children, actions, titleBadge }: PopupProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
   // Latest onClose without re-running the focus effect: callers pass a fresh closure every render,
@@ -76,7 +78,10 @@ export function Popup({ open, title, onClose, children, actions }: PopupProps) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="row-between">
-          <h2>{title}</h2>
+          <span className="modal-title-row">
+            <h2>{title}</h2>
+            {titleBadge}
+          </span>
           <button type="button" className="btn" onClick={onClose}>
             {t('ui.close')}
           </button>

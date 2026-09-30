@@ -925,6 +925,7 @@
       "EPIC": "Epic",
       "LEGENDARY": "Legendary"
     },
+    "rarityBadge": "Rarity: {{rarity}}",
     "whyTitle": "Why you need it",
     "role": {
       "BRIDGE": "Required. Every ship needs exactly one: it is the command core, keeps the pilot alive if the ship is destroyed, and sets how much structure the ship can carry.",

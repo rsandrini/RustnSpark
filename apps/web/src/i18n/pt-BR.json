@@ -925,6 +925,7 @@
       "EPIC": "Épica",
       "LEGENDARY": "Lendária"
     },
+    "rarityBadge": "Raridade: {{rarity}}",
     "whyTitle": "Por que você precisa",
     "role": {
       "BRIDGE": "Obrigatória. Toda nave precisa de exatamente uma: é o núcleo de comando, mantém o piloto vivo se a nave for destruída e define quanta estrutura a nave aguenta.",

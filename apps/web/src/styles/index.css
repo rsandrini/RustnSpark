@@ -1143,6 +1143,43 @@ a {
   flex-wrap: wrap;
 }
 
+/* Part popup title row (owner request, round 6): a rarity icon next to the name, not just the
+   card's border colour — same rarity colour tokens the rest of the part UI already uses. */
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title-row h2 {
+  margin: 0;
+}
+
+.rarity-badge {
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.rarity-badge.rarity-common {
+  color: var(--rar-common);
+}
+
+.rarity-badge.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+
+.rarity-badge.rarity-rare {
+  color: var(--rar-rare);
+}
+
+.rarity-badge.rarity-epic {
+  color: var(--rar-epic);
+}
+
+.rarity-badge.rarity-legendary {
+  color: var(--rar-legendary);
+}
+
 /* onboarding (S10.2) ---------------------------------------------------- */
 .sr-only {
   position: absolute;
@@ -1399,18 +1436,16 @@ svg .block.floating {
   position: relative;
 }
 
-/* Tray-row hover card (round 5/6, owner request): drops below the hovered row, same width as
-   the tray column. A flyout to the *side* (the first cut of this) was invisible in practice —
-   the tray sidebar (.hangar-side) scrolls vertically, which per the CSS spec also makes its
-   overflow-x compute to "auto" (not "visible"), clipping anything positioned past the column's
-   own right edge; below-and-full-width never leaves that horizontal bound at all. */
+/* Tray-row hover card (round 5/6, owner request: "add it at the side of the mouse, right
+   side"). Anchored to the cursor in fixed/viewport coordinates (left/top set inline, per hover)
+   rather than positioned relative to the row: the tray sidebar (.hangar-side) scrolls
+   vertically, which per the CSS spec also makes its overflow-x compute to "auto" (not
+   "visible"), clipping anything positioned past the column's own edge — position: fixed escapes
+   that entirely, since it's relative to the viewport, not any scrolling ancestor. */
 .tray-hover-card {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 4px;
-  z-index: 6;
+  position: fixed;
+  z-index: 30;
+  width: 240px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--line-strong);
@@ -1467,6 +1502,14 @@ svg .block.floating {
 
 .part-compare-note {
   margin: 10px 0 2px;
+  font-size: 12px;
+}
+
+/* Owner request (round 6): "check if the part fits the ship" — a viability problem the swap
+   would cause (e.g. over the structure budget), not just the raw stat deltas. */
+.compare-viability-warning {
+  margin: 6px 0 0;
+  padding-left: 18px;
   font-size: 12px;
 }
 
