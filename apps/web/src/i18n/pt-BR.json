@@ -1020,6 +1020,7 @@
       "title": "Se você instalar agora",
       "titleSwap": "Se você trocar por {{name}}",
       "loading": "Verificando o que isso faria à nave…",
+      "error": "Não foi possível verificar o efeito disso na nave.",
       "stat": "Estatística",
       "value": "Esta peça",
       "ifInstalled": "Nave, se instalada",

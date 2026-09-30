@@ -115,4 +115,80 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     await waitFor(() => expect(within(cargoRow).getByText('+8')).toBeInTheDocument());
     expect(within(cargoRow).getByText('+8')).toHaveClass('delta-good');
   });
+
+  it('shows a used listing’s effect on the ship’s average condition (review finding)', async () => {
+    const usedListing: PartInfoData = { ...listingPart, condition: 50 };
+    server.use(
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { virtualPart?: { condition: number } };
+        expect(body.virtualPart?.condition).toBe(50);
+        // A used candidate pulls the ship's own average condition down, even though it never
+        // scales any of the candidate's own effect stats (deriveSheet is condition-agnostic).
+        return HttpResponse.json({
+          sheet: { ...baseSheet, condition: baseSheet.condition - 10 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+
+    renderWithProviders(
+      <PartInfoButton
+        part={usedListing}
+        compare={{
+          shipId: 'ship-1',
+          installedPartIds: ['part-cargo-a'],
+          currentSheet: baseSheet,
+          replace: {
+            partInstanceId: 'part-cargo-a',
+            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+          },
+        }}
+      />,
+      { withRouter: false },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    const conditionRow = await waitFor(() => within(dialog).getByRole('row', { name: /^Condition/ }));
+    await waitFor(() => expect(within(conditionRow).getByText('-10')).toBeInTheDocument());
+    expect(within(conditionRow).getByText('-10')).toHaveClass('delta-bad');
+  });
+
+  it('shows a clear error instead of a false "swap this in" title when the check fails (review finding)', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({ statusCode: 404, message: 'part type not found' }, { status: 404 }),
+      ),
+    );
+
+    renderWithProviders(
+      <PartInfoButton
+        part={listingPart}
+        compare={{
+          shipId: 'ship-1',
+          installedPartIds: ['part-cargo-a'],
+          currentSheet: baseSheet,
+          replace: {
+            partInstanceId: 'part-cargo-a',
+            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+          },
+        }}
+      />,
+      { withRouter: false },
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Details/i }));
+    const dialog = await screen.findByRole('dialog');
+    await waitFor(
+      () =>
+        expect(
+          within(dialog).getByText("Couldn't check what this would do to the ship."),
+        ).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+    expect(within(dialog).queryByText(/swap this in for/i)).not.toBeInTheDocument();
+  });
 });

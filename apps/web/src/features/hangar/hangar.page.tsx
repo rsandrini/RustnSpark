@@ -532,7 +532,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     showBalance
                     shipId={ship.id}
                     installedParts={parts.filter((part) => part.location === 'INSTALLED')}
-                    currentSheet={sheet}
+                    // The server's own market-compare "before" is always the saved ship (it
+                    // never sees unsaved layout edits) — `sheet` here can be `preview?.sheet`,
+                    // an unsaved-edit preview, which would make the "after" delta compare
+                    // against the wrong baseline (found in review). `ship.sheet` is always the
+                    // real, saved one, matching what the server itself computes against.
+                    currentSheet={ship.sheet}
                   />
                 ) : (
                   <p className="muted">{t('hangar.side.storeUnavailable')}</p>

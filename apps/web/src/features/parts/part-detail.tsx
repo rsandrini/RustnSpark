@@ -66,9 +66,12 @@ const BASE_STATS: ReadonlyArray<{ key: string; sheetKey: keyof ShipSheet; read: 
 ];
 
 // Ship-level stats no single part "has" on its own (mobility is thrust ÷ mass; autonomy is
-// tank ÷ burn rate) but that installing a part can still move — worth showing in the comparison
-// even though they're not part of the part's own stat list.
-const DERIVED_COMPARE_STATS: readonly (keyof ShipSheet)[] = ['mob', 'autonomy'];
+// tank ÷ burn rate; condition is the fleet-wide average) but that installing a part can still
+// move — worth showing in the comparison even though they're not part of the part's own stat
+// list. `condition` matters here specifically for a used listing: deriveSheet() never scales a
+// part's own effect stats by its condition, so this average is the ONLY place a used listing's
+// wear actually shows up in the comparison at all (review finding, round-2 plan §5b.4).
+const DERIVED_COMPARE_STATS: readonly (keyof ShipSheet)[] = ['mob', 'autonomy', 'condition'];
 
 // Owner request (round 5): color the comparison, not just print it — gray when nothing moved,
 // green/red by whether the move helps or hurts. Everything is "more is better" except these
@@ -211,11 +214,13 @@ export function PartDetail({ part, compare }: PartDetailProps) {
         <p className="muted part-compare-note">
           {comparePreview.isLoading
             ? t('parts.compare.loading')
-            : compare.replace !== undefined
-              ? t('parts.compare.titleSwap', {
-                  name: pickLocalized(compare.replace.displayName, i18n.language),
-                })
-              : t('parts.compare.title')}
+            : comparePreview.isError
+              ? t('parts.compare.error')
+              : compare.replace !== undefined
+                ? t('parts.compare.titleSwap', {
+                    name: pickLocalized(compare.replace.displayName, i18n.language),
+                  })
+                : t('parts.compare.title')}
         </p>
       )}
       <table className="part-stats-table">

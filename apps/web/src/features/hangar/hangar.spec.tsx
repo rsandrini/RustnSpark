@@ -260,6 +260,53 @@ describe('hangar (S10.4)', () => {
     );
   });
 
+  it('Store compare uses the saved ship sheet, not an unsaved layout-edit preview (review finding)', async () => {
+    server.use(onboarded());
+    server.use(
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as {
+          layout?: Placement[];
+          virtualPart?: { partType: string };
+        };
+        if (body.layout !== undefined) {
+          // The debounced unsaved-layout preview: a wildly different sheet, so the bug (using
+          // this instead of the saved ship.sheet for the Store compare) would be unmissable.
+          return HttpResponse.json({
+            sheet: { ...testSheet, hp: 999 },
+            shipClass: 'MULTIROLE',
+            viability: { viable: true, problems: [] },
+            layout: body.layout,
+            omittedPartInstanceIds: [],
+          });
+        }
+        // The market-compare virtual-part call: +6 on top of the real, saved ship sheet
+        // (testSheet.hp is 40) — never the 999 from the unsaved layout edit above.
+        return HttpResponse.json({
+          sheet: { ...testSheet, hp: testSheet.hp + 6 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 4, 0));
+    // Wait for the debounced layout preview to actually land, so preview.sheet really differs
+    // from ship.sheet by the time the Store tab is opened.
+    await waitFor(() => expect(screen.getByText('999')).toBeInTheDocument(), { timeout: 3000 });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Store' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Details: Plated Hull' }));
+    const dialog = await screen.findByRole('dialog');
+
+    const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
+    await waitFor(() => expect(within(hpRow).getByText('+6')).toBeInTheDocument());
+  });
+
   it('rotates and removes a selected block', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
