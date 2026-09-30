@@ -470,6 +470,7 @@
       "market": "Mercado",
       "repair": "Reparo",
       "refuel": "Abastecer",
+      "upgrade": "Melhorar",
       "scavenging": "Scavenging",
       "goods": "Seus bens"
     },
@@ -550,7 +551,16 @@
     "discarded": "{{count}} peça(s) danificada(s) descartada(s).",
     "discardConfirmTitle": "Destruir {{count}} peça(s) danificada(s)?",
     "discardConfirmBody": "Toda peça solta com menos de {{min}}% de condição é destruída de vez. Peças instaladas na nave nunca são tocadas. Não dá para desfazer.",
-    "discardConfirm": "Destruir"
+    "discardConfirm": "Destruir",
+    "upgradeHelp": "Melhore uma peça no lugar para o próximo tier de raridade: mesmo slot, mesma condição, atributos melhores.",
+    "upgradeNone": "Nenhuma das suas peças tem um próximo tier para melhorar agora.",
+    "upgradeCost": "Custo da melhoria",
+    "upgradesTo": "Melhora para {{name}}",
+    "upgrade": "Melhorar",
+    "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
+    "upgradeQuote": "Melhorar {{name}} para {{nextName}} por {{cost}} ¢?",
+    "upgradeConfirm": "Melhorar",
+    "upgraded": "Melhorado para {{name}}."
   },
   "inventory": {
     "title": "Inventário",

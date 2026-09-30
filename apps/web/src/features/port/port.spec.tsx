@@ -436,4 +436,31 @@ describe('port (S10.9)', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Discarded 1 damaged part(s).');
     await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
   });
+
+  it('upgrade tab lists only parts the catalog has a next tier for (round 5, item 4)', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+
+    // hull and both cargo racks have a next-tier fixture entry; bridge/engine/tank/battery don't.
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    expect(screen.getAllByText('Cargo Rack')).toHaveLength(2);
+    expect(screen.queryByText('Bridge')).toBeNull();
+    expect(screen.queryByText('Small Chemical Engine')).toBeNull();
+  });
+
+  it('upgrades a part behind a confirm popup and updates the wallet', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
+    expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,705 ¢'));
+    // The upgraded part is now UNCOMMON, so it drops off this tab (no further chain in the fixture).
+    await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
+  });
 });

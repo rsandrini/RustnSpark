@@ -69,6 +69,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     combat_win_per_tier: 50,
     combat_loss_penalty: 120,
     upgrade_costs: { 2: 1200, 3: 2000, 4: 2800, 5: 3800 },
+    // Round-5 upgrade mechanic: upgrading a part in place costs the price gap to its next
+    // rarity tier, marked up a bit over just selling it and buying the next one (the premium
+    // for staying installed and not having to re-slot it).
+    part_upgrade_price_multiplier: 1.15,
     start_credits: 200,
     rescue_cost: 800,
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player

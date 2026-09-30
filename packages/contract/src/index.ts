@@ -657,6 +657,31 @@ export const RepairStartResponseSchema = z.object({
 });
 export type RepairStartResponse = z.infer<typeof RepairStartResponseSchema>;
 
+// Upgrade a part to its next rarity tier in place (round 5 backlog item 4): mechanism only, no
+// curated chains decided here — eligibility is derived from the catalog's own naming convention
+// (`hull` -> `hull_uncommon` -> `hull_rare` -> ...), so any tier the catalog happens to define is
+// automatically upgradeable and one not yet defined simply reports ineligible.
+export const PartUpgradeQuoteResponseSchema = z.object({
+  partInstanceId: z.string(),
+  eligible: z.boolean(),
+  reason: z.enum(['MAX_TIER', 'NO_NEXT_TIER']).optional(),
+  nextPartType: z.string().optional(),
+  nextDisplayName: LocalizedTextSchema.optional(),
+  cost: z.number().optional(),
+});
+export type PartUpgradeQuoteResponse = z.infer<typeof PartUpgradeQuoteResponseSchema>;
+
+export const PartUpgradeResponseSchema = z.object({
+  partInstanceId: z.string(),
+  partType: z.string(),
+  displayName: LocalizedTextSchema,
+  rarity: z.string(),
+  condition: z.number(),
+  cost: z.number(),
+  credits: z.number(),
+});
+export type PartUpgradeResponse = z.infer<typeof PartUpgradeResponseSchema>;
+
 export const ScavengeInfoSchema = z.object({
   locationId: z.string(),
   fieldType: z.enum(['common', 'mission', 'pirate']),

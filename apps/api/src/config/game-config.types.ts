@@ -66,6 +66,7 @@ export type ConfigKey =
   | 'economy.sell_ratio'
   | 'economy.start_credits'
   | 'economy.upgrade_costs'
+  | 'economy.part_upgrade_price_multiplier'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
   | 'encounter.pirate_min_hp'
@@ -228,6 +229,8 @@ export type GameRules = Readonly<{
     combat_win_per_tier: number;
     combat_loss_penalty: number;
     upgrade_costs: Readonly<Record<string, number>>;
+    /** Multiplier on the base-price gap between a part and its next rarity tier (round 5 upgrade mechanic). */
+    part_upgrade_price_multiplier: number;
     start_credits: number;
     rescue_cost: number;
     rescue_fuel_fraction: number;

@@ -10,6 +10,8 @@ import type {
   MarketResponse,
   MaterialsResponse,
   DiscardResponse,
+  PartUpgradeQuoteResponse,
+  PartUpgradeResponse,
   RefuelQuoteResponse,
   RefuelResponse,
   RepairQuoteResponse,
@@ -35,8 +37,15 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 
-const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'scavenging'] as const;
+const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging'] as const;
 type PortTabId = (typeof PORT_TABS)[number];
+
+interface UpgradeConfirm {
+  partInstanceId: string;
+  name: string;
+  nextName: string;
+  cost: number;
+}
 
 interface RepairTarget {
   partInstanceId: string;
@@ -84,6 +93,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const materialKey = useIntentKey();
   const refuelKey = useIntentKey();
   const repairKey = useIntentKey();
+  const upgradeKey = useIntentKey();
+  const [upgradeConfirm, setUpgradeConfirm] = useState<UpgradeConfirm | null>(null);
 
   const shipsQuery = useQuery({
     queryKey: ['ships'],
@@ -154,6 +165,24 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const worldQuery = useQuery({
     queryKey: ['world'],
     queryFn: () => client.get<WorldResponse>('/v1/locations'),
+  });
+
+  // Upgrade mechanism only (round 5): eligibility comes from the catalog's own tier-naming
+  // convention server-side, not anything decided here — this tab just quotes every owned part
+  // (installed or loose) and shows the ones that came back eligible. A part whose family has no
+  // next-tier catalog row yet simply never appears.
+  const upgradeCandidates = inventoryQuery.data ?? [];
+  const upgradeQuotesQuery = useQuery({
+    queryKey: ['upgradeQuotes', upgradeCandidates.map((item) => item.id)],
+    enabled: tab === 'upgrade' && upgradeCandidates.length > 0,
+    queryFn: async () => {
+      const quotes = await Promise.all(
+        upgradeCandidates.map((item) =>
+          client.post<PartUpgradeQuoteResponse>(`/v1/parts/${item.id}/upgrade/quote`),
+        ),
+      );
+      return new Map(quotes.map((quote) => [quote.partInstanceId, quote]));
+    },
   });
 
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
@@ -284,6 +313,27 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     },
     onError: (error) => {
       setRepairPlan(null);
+      setActionError(errorText(t, error, t('port.failed')));
+    },
+  });
+
+  const upgradePart = useMutation({
+    mutationFn: (partInstanceId: string) =>
+      client.post<PartUpgradeResponse>(
+        `/v1/parts/${partInstanceId}/upgrade`,
+        {},
+        { idempotencyKey: upgradeKey.keyFor(partInstanceId) },
+      ),
+    onSuccess: (response) => {
+      upgradeKey.clear();
+      setUpgradeConfirm(null);
+      setActionError(null);
+      setNotice(t('port.upgraded', { name: pickLocalized(response.displayName, i18n.language) }));
+      void queryClient.invalidateQueries({ queryKey: ['upgradeQuotes'] });
+      afterTrade();
+    },
+    onError: (error) => {
+      setUpgradeConfirm(null);
       setActionError(errorText(t, error, t('port.failed')));
     },
   });
@@ -794,6 +844,65 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
         </section>
       )}
 
+      {tab === 'upgrade' && (
+        <section className="stack" data-testid="upgrade">
+          <p className="sub">{t('port.upgradeHelp')}</p>
+          {(() => {
+            const quotes = upgradeQuotesQuery.data;
+            const eligible = upgradeCandidates.filter(
+              (item) => quotes?.get(item.id)?.eligible === true,
+            );
+            if (quotes === undefined && upgradeCandidates.length > 0) {
+              return <p className="sub">{t('loading')}</p>;
+            }
+            if (eligible.length === 0) {
+              return <p className="sub">{t('port.upgradeNone')}</p>;
+            }
+            return (
+              <div className="pcard-grid">
+                {eligible.map((item) => {
+                  const quote = quotes?.get(item.id);
+                  if (quote === undefined || !quote.eligible) return null;
+                  const name = partName(item);
+                  const nextName =
+                    quote.nextDisplayName !== undefined
+                      ? pickLocalized(quote.nextDisplayName, i18n.language)
+                      : '';
+                  return (
+                    <PartCard
+                      key={item.id}
+                      part={item}
+                      price={quote.cost}
+                      priceCaption={t('port.upgradeCost')}
+                      actions={
+                        <>
+                          <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
+                          <button
+                            type="button"
+                            className="btn primary"
+                            disabled={upgradePart.isPending || (quote.cost ?? 0) > wallet}
+                            onClick={() =>
+                              setUpgradeConfirm({
+                                partInstanceId: item.id,
+                                name,
+                                nextName,
+                                cost: quote.cost ?? 0,
+                              })
+                            }
+                          >
+                            {t('port.upgrade')}
+                          </button>
+                        </>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </section>
+      )}
+
       {tab === 'scavenging' && (
         <section className="stack scav" data-testid="scavenging">
           <h2>{t('port.scav.title')}</h2>
@@ -878,6 +987,37 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               onClick={() => repair.mutate(repairPlan.targets)}
             >
               {t('port.repairConfirm')}
+            </button>
+          </div>
+        )}
+      </Popup>
+
+      <Popup
+        open={upgradeConfirm !== null}
+        title={
+          upgradeConfirm === null
+            ? ''
+            : t('port.upgradeConfirmTitle', { cost: upgradeConfirm.cost })
+        }
+        onClose={() => setUpgradeConfirm(null)}
+      >
+        {upgradeConfirm !== null && (
+          <div className="stack">
+            <p>
+              {t('port.upgradeQuote', {
+                name: upgradeConfirm.name,
+                nextName: upgradeConfirm.nextName,
+                cost: upgradeConfirm.cost,
+              })}
+            </p>
+            {wallet < upgradeConfirm.cost && <p className="error-text">{t('port.insufficient')}</p>}
+            <button
+              type="button"
+              className="btn primary"
+              disabled={upgradePart.isPending || wallet < upgradeConfirm.cost}
+              onClick={() => upgradePart.mutate(upgradeConfirm.partInstanceId)}
+            >
+              {t('port.upgradeConfirm')}
             </button>
           </div>
         )}

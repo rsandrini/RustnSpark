@@ -13,6 +13,8 @@ import type {
   MaterialsResponse,
   MissionOffer,
   Placement,
+  PartUpgradeQuoteResponse,
+  PartUpgradeResponse,
   PlayerProfileResponse,
   PreviewResponse,
   RefreshResponse,
@@ -411,6 +413,13 @@ const repairTargets = (raw: RepairTargetBody[]) =>
 const repairCostOf = (targets: { fromCondition: number; toCondition: number }[]) =>
   targets.reduce((sum, target) => sum + (target.toCondition - target.fromCondition) * 2, 0);
 
+// Fixture stand-in for the real mechanism's tier-naming convention: only these two families are
+// "chained" here, same as the real catalog leaves some families unchained (round 5, item 4).
+const UPGRADE_TIERS: Record<string, { nextPartType: string; nextName: LocalizedText; cost: number }> = {
+  hull: { nextPartType: 'hull_uncommon', nextName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' }, cost: 115 },
+  cargo: { nextPartType: 'cargo_uncommon', nextName: { en: 'Reinforced Cargo Rack', 'pt-BR': 'Suporte de Carga Reforçado' }, cost: 35 },
+};
+
 /**
  * A 200 response whose body is checked against the shared contract (`packages/contract`): a
  * mock that drifts from the real response shape fails to compile instead of passing against
@@ -732,6 +741,56 @@ export const handlers = [
       (entry) => !(entry.location === 'INVENTORY' && entry.condition < 15),
     );
     return ok<DiscardResponse>({ discarded: before - inventoryState.length });
+  }),
+
+  http.post('/v1/parts/:id/upgrade/quote', ({ params }) => {
+    const part = inventoryState.find((entry) => entry.id === params.id);
+    const tier = part === undefined ? undefined : UPGRADE_TIERS[part.partType];
+    if (tier === undefined) {
+      return ok<PartUpgradeQuoteResponse>({
+        partInstanceId: String(params.id),
+        eligible: false,
+        reason: 'NO_NEXT_TIER',
+      });
+    }
+    return ok<PartUpgradeQuoteResponse>({
+      partInstanceId: String(params.id),
+      eligible: true,
+      nextPartType: tier.nextPartType,
+      nextDisplayName: tier.nextName,
+      cost: tier.cost,
+    });
+  }),
+  http.post('/v1/parts/:id/upgrade', ({ params, request }) => {
+    const rejected = missingKey(request);
+    if (rejected !== null) return rejected;
+    const part = inventoryState.find((entry) => entry.id === params.id);
+    const tier = part === undefined ? undefined : UPGRADE_TIERS[part.partType];
+    if (part === undefined || tier === undefined) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'NO_NEXT_TIER' } },
+        { status: 409 },
+      );
+    }
+    if (wallet < tier.cost) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'INSUFFICIENT_FUNDS' } },
+        { status: 409 },
+      );
+    }
+    wallet -= tier.cost;
+    part.partType = tier.nextPartType;
+    part.displayName = tier.nextName;
+    part.rarity = 'UNCOMMON';
+    return ok<PartUpgradeResponse>({
+      partInstanceId: part.id,
+      partType: part.partType,
+      displayName: part.displayName,
+      rarity: part.rarity,
+      condition: part.condition,
+      cost: tier.cost,
+      credits: wallet,
+    });
   }),
   http.post('/v1/ships/:id/refuel', async ({ params, request }) => {
     const rejected = missingKey(request);

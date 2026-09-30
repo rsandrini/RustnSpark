@@ -34,6 +34,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.maintenance_per_tier',
   'economy.mood_max',
   'economy.mood_min',
+  'economy.part_upgrade_price_multiplier',
   'economy.payout_floor_integrity',
   'economy.rarity_base_price',
   'economy.repair_factor',

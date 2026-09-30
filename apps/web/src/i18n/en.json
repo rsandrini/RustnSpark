@@ -470,6 +470,7 @@
       "market": "Market",
       "repair": "Repair",
       "refuel": "Refuel",
+      "upgrade": "Upgrade",
       "scavenging": "Scavenging",
       "goods": "Your goods"
     },
@@ -550,7 +551,16 @@
     "discarded": "Discarded {{count}} damaged part(s).",
     "discardConfirmTitle": "Destroy {{count}} damaged part(s)?",
     "discardConfirmBody": "Every loose part under {{min}}% condition is destroyed for good. Parts installed on the ship are never touched. This cannot be undone.",
-    "discardConfirm": "Destroy them"
+    "discardConfirm": "Destroy them",
+    "upgradeHelp": "Upgrade a part in place to its next rarity tier: same slot, same condition, better stats.",
+    "upgradeNone": "None of your parts have a next tier to upgrade to right now.",
+    "upgradeCost": "Upgrade cost",
+    "upgradesTo": "Upgrades to {{name}}",
+    "upgrade": "Upgrade",
+    "upgradeConfirmTitle": "Upgrade for {{cost}} ¢?",
+    "upgradeQuote": "Upgrade {{name}} to {{nextName}} for {{cost}} ¢?",
+    "upgradeConfirm": "Upgrade",
+    "upgraded": "Upgraded to {{name}}."
   },
   "inventory": {
     "title": "Inventory",
