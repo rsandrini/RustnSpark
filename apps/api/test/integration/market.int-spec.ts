@@ -35,6 +35,7 @@ interface MarketListingBody {
     partType: string;
     price: number;
     condition: number;
+    rarity: string;
   }>;
   sellOffers: Array<{ partInstanceId: string; price: number }>;
 }
@@ -752,6 +753,26 @@ describe('market API (S8.2)', () => {
       });
       expect(response.status).toBe(400);
       expect(response.body).toMatchObject({ message: { error: 'INVALID_LISTING' } });
+    });
+
+    it('the used shelf never draws a LEGENDARY part either, across many days', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const clock = testApp.app.get(Clock);
+      const at = jest.spyOn(clock, 'now');
+      try {
+        const seenRarities = new Set<string>();
+        for (let day = 1; day <= 25; day += 1) {
+          at.mockReturnValue(new Date(`2026-04-${String(day).padStart(2, '0')}T12:00:00Z`));
+          const board = await getMarket(player.token, 'ceres');
+          for (const listing of (board.body as MarketListingBody).listings) {
+            if (listing.kind === 'used') seenRarities.add(listing.rarity);
+          }
+        }
+        expect(seenRarities.has('LEGENDARY')).toBe(false);
+      } finally {
+        at.mockRestore();
+      }
     });
   });
 });

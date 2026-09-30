@@ -121,30 +121,34 @@ export class MarketService {
     const day = dayKey(this.clock.now());
     const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
 
-    // Round-5 backlog: rare+ parts are meant to be scarce or absent from the market (drops/the
+    // Round-5/6 backlog: rare+ parts are meant to be scarce or absent from the market (drops/the
     // upgrade mechanic instead) — each catalog row rolls, once per port per day, whether it's
     // actually on the shelf, deterministically (buy() re-derives the same roll, never trusts the
-    // client's listingId alone).
-    const listings: MarketListing[] = catalogs
-      .filter((row) => inStockToday(locationId, day, row.partType, row.rarity, rarityChance))
-      .map((row) => ({
-        listingId: catalogListingId(locationId, row.partType),
-        kind: 'catalog' as const,
-        partType: row.partType,
-        partClass: row.partClass,
-        displayName: {
-          en: localize(row.displayName, 'en'),
-          'pt-BR': localize(row.displayName, 'pt-BR'),
-        },
-        description: bilingual(row.description),
-        rarity: row.rarity,
-        catalog: pickCatalogStats(row),
-        condition: 100,
-        price: this.pricing.buy(context, row, 100),
-      }));
+    // client's listingId alone). Applies to BOTH shelves: the used shelf's own random slots must
+    // draw from this same in-stock pool, not the full catalog, or a rarity excluded from "new"
+    // listings could still turn up used (owner report, round 6 — this is exactly what happened
+    // before this fix).
+    const inStockCatalogs = catalogs.filter((row) =>
+      inStockToday(locationId, day, row.partType, row.rarity, rarityChance),
+    );
+    const listings: MarketListing[] = inStockCatalogs.map((row) => ({
+      listingId: catalogListingId(locationId, row.partType),
+      kind: 'catalog' as const,
+      partType: row.partType,
+      partClass: row.partClass,
+      displayName: {
+        en: localize(row.displayName, 'en'),
+        'pt-BR': localize(row.displayName, 'pt-BR'),
+      },
+      description: bilingual(row.description),
+      rarity: row.rarity,
+      catalog: pickCatalogStats(row),
+      condition: 100,
+      price: this.pricing.buy(context, row, 100),
+    }));
 
     for (let index = 0; index < USED_OFFER_COUNT; index += 1) {
-      const { condition, part: partRow } = usedOffer(locationId, day, index, catalogs);
+      const { condition, part: partRow } = usedOffer(locationId, day, index, inStockCatalogs);
       if (!partRow) continue;
       listings.push({
         listingId: usedListingId(locationId, day, index, partRow.partType),
@@ -237,7 +241,14 @@ export class MarketService {
         where: { active: true },
         orderBy: { partType: 'asc' },
       });
-      const offer = usedOffer(parsed.locationId, parsed.day!, parsed.index!, catalogs);
+      // Must match market()'s own pool exactly (same filter, same order) — usedOffer() picks by
+      // index into this array, so a different pool size here would resolve a different part
+      // than what the board actually showed for the same index.
+      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      const inStockCatalogs = catalogs.filter((row) =>
+        inStockToday(parsed.locationId, parsed.day!, row.partType, row.rarity, rarityChance),
+      );
+      const offer = usedOffer(parsed.locationId, parsed.day!, parsed.index!, inStockCatalogs);
       if (!offer.part || offer.part.partType !== parsed.partType) {
         throw new NotFoundException('listing not found');
       }
