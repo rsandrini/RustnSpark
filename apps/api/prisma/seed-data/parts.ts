@@ -57,7 +57,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'bridge_uncommon',
-    displayName: { en: 'Command Bridge II', 'pt-BR': 'Ponte de Comando II' },
+    displayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },
     description: {
       en: 'An improved command core with a larger structure budget and tougher casing. Better avionics fit in the same compact frame.',
       'pt-BR':
@@ -76,7 +76,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'bridge_rare',
-    displayName: { en: 'Command Bridge III', 'pt-BR': 'Ponte de Comando III' },
+    displayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },
     description: {
       en: 'A hardened command core for ambitious ships. Offers a much larger structure budget without growing heavier or hungrier.',
       'pt-BR':
@@ -95,7 +95,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'bridge_epic',
-    displayName: { en: 'Command Bridge IV', 'pt-BR': 'Ponte de Comando IV' },
+    displayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },
     description: {
       en: 'A capital-grade command core. The structure budget is doubled compared to a basic bridge, yet the frame stays compact.',
       'pt-BR':
@@ -114,7 +114,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'bridge_legendary',
-    displayName: { en: 'Apex Command Core', 'pt-BR': 'Núcleo de Comando Apex' },
+    displayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },
     description: {
       en: 'A near-mythical command core. Its compact shell houses enough structure budget for a small fleet, and the pilot capsule can survive almost anything.',
       'pt-BR':
@@ -154,7 +154,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_chem_small_uncommon',
-    displayName: { en: 'Improved Chemical Engine', 'pt-BR': 'Motor Químico Aprimorado' },
+    displayName: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
     description: {
       en: 'A tuned chemical engine with more thrust and better fuel efficiency. Fits in the same 1×1 slot as the basic small engine.',
       'pt-BR': 'Um motor químico sintonizado com mais empuxo e melhor eficiência de combustível. Cabe no mesmo slot 1×1 do motor pequeno básico.',
@@ -174,7 +174,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_chem_small_rare',
-    displayName: { en: 'High-Performance Chemical Engine', 'pt-BR': 'Motor Químico de Alto Desempenho' },
+    displayName: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
     description: {
       en: 'A compact high-thrust chemical engine. Lighter and more powerful than lower-tier small engines, with manageable fuel use.',
       'pt-BR': 'Um motor químico compacto de alto empuxo. Mais leve e poderoso que motores pequenos de tiers inferiores, com consumo de combustível controlado.',
@@ -194,7 +194,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_chem_small_epic',
-    displayName: { en: 'Turbocharged Chemical Engine', 'pt-BR': 'Motor Químico Turbinado' },
+    displayName: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
     description: {
       en: 'A miniaturized engine with double the thrust of a basic small engine. Surprisingly light for its power output.',
       'pt-BR': 'Um motor miniaturizado com o dobro do empuxo de um motor pequeno básico. Surpreendentemente leve para sua potência.',
@@ -214,7 +214,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_chem_small_legendary',
-    displayName: { en: 'Fusion Torch Engine', 'pt-BR': 'Motor Tocha de Fusão' },
+    displayName: { en: 'Small Chemical Engine', 'pt-BR': 'Motor Químico Pequeno' },
     description: {
       en: 'A legendary chemical drive. Its tiny frame outputs thrust that rivals full-size engines, with reasonable fuel consumption.',
       'pt-BR': 'Uma propulsão química lendária. Seu minúsculo quadro entrega empuxo rivalizando motores de tamanho completo, com consumo de combustível razoável.',
@@ -297,7 +297,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_ion_micro_uncommon',
-    displayName: { en: 'Small Ion Engine', 'pt-BR': 'Motor Iônico Pequeno' },
+    displayName: { en: 'Micro Ion Engine', 'pt-BR': 'Motor Iônico Micro' },
     description: {
       en: 'A refined ion drive with more thrust than the micro model. Still needs no fuel and no tank.',
       'pt-BR': 'Uma propulsão iônica refinada com mais empuxo que o modelo micro. Ainda não precisa de combustível nem tanque.',
@@ -317,7 +317,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_ion_micro_rare',
-    displayName: { en: 'Efficient Ion Engine', 'pt-BR': 'Motor Iônico Eficiente' },
+    displayName: { en: 'Micro Ion Engine', 'pt-BR': 'Motor Iônico Micro' },
     description: {
       en: 'A lightweight ion engine with noticeably more thrust. Perfect for long-range scouts that never want to refuel.',
       'pt-BR': 'Um motor iônico leve com empuxo visivelmente maior. Perfeito para scouts de longo alcance que nunca querem reabastecer.',
@@ -337,7 +337,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_ion_micro_epic',
-    displayName: { en: 'High-Thrust Ion Drive', 'pt-BR': 'Propulsão Iônica de Alto Empuxo' },
+    displayName: { en: 'Micro Ion Engine', 'pt-BR': 'Motor Iônico Micro' },
     description: {
       en: 'A compact ion drive that doubles the thrust of a micro ion engine. No fuel, no tank, just steady electric thrust.',
       'pt-BR': 'Uma propulsão iônica compacta que dobra o empuxo de um motor iônico micro. Sem combustível, sem tanque, só empuxo elétrico constante.',
@@ -357,7 +357,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'engine_ion_micro_legendary',
-    displayName: { en: 'Aurora Drive', 'pt-BR': 'Propulsão Aurora' },
+    displayName: { en: 'Micro Ion Engine', 'pt-BR': 'Motor Iônico Micro' },
     description: {
       en: 'A legendary ion drive. Its acceleration rivals chemical engines while needing no fuel at all.',
       'pt-BR': 'Uma propulsão iônica lendária. Sua aceleração rivaliza motores químicos sem precisar de combustível.',
@@ -396,7 +396,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'tank_small_uncommon',
-    displayName: { en: 'Medium Fuel Tank', 'pt-BR': 'Tanque de Combustível Médio' },
+    displayName: { en: 'Small Fuel Tank', 'pt-BR': 'Tanque de Combustível Pequeno' },
     description: {
       en: 'A reinforced fuel tank with more capacity than the small model. Lighter materials and better sealing extend range without costing more structure.',
       'pt-BR':
@@ -415,7 +415,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'tank_small_rare',
-    displayName: { en: 'Large Fuel Tank', 'pt-BR': 'Tanque de Combustível Grande' },
+    displayName: { en: 'Small Fuel Tank', 'pt-BR': 'Tanque de Combustível Pequeno' },
     description: {
       en: 'A high-capacity fuel tank for long hauls. Advanced alloys make it lighter than lower-tier tanks while holding considerably more fuel.',
       'pt-BR':
@@ -434,7 +434,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'tank_small_epic',
-    displayName: { en: 'Extended Fuel Tank', 'pt-BR': 'Tanque de Combustível Estendido' },
+    displayName: { en: 'Small Fuel Tank', 'pt-BR': 'Tanque de Combustível Pequeno' },
     description: {
       en: 'A massive fuel reserve for expedition ships. Holds twice as much as a basic tank while weighing half as much.',
       'pt-BR':
@@ -453,7 +453,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'tank_small_legendary',
-    displayName: { en: 'Capacitance Fuel Cell', 'pt-BR': 'Célula de Combustível de Capacitância' },
+    displayName: { en: 'Small Fuel Tank', 'pt-BR': 'Tanque de Combustível Pequeno' },
     description: {
       en: 'A near-mythical fuel storage unit. Compressed-core technology packs an enormous fuel reserve into a tiny, hardened frame.',
       'pt-BR':
@@ -492,7 +492,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_small_uncommon',
-    displayName: { en: 'Medium Battery', 'pt-BR': 'Bateria Média' },
+    displayName: { en: 'Small Battery', 'pt-BR': 'Bateria Pequena' },
     description: {
       en: 'A more efficient combat energy store. Fits in the same 1×1 slot as a small battery but holds more charge and output while costing less structure.',
       'pt-BR':
@@ -512,7 +512,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_small_rare',
-    displayName: { en: 'High-Density Battery', 'pt-BR': 'Bateria de Alta Densidade' },
+    displayName: { en: 'Small Battery', 'pt-BR': 'Bateria Pequena' },
     description: {
       en: 'Advanced cell packing doubles the charge density of a basic small battery. Lighter and cheaper on structure than lower-tier models.',
       'pt-BR':
@@ -532,7 +532,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_small_epic',
-    displayName: { en: 'Compact Capacitor Bank', 'pt-BR': 'Banco de Capacitores Compacto' },
+    displayName: { en: 'Small Battery', 'pt-BR': 'Bateria Pequena' },
     description: {
       en: 'A tiny capacitor bank that holds twice the charge of a basic small battery. Fits in a featherweight frame and costs little structure.',
       'pt-BR':
@@ -552,7 +552,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_small_legendary',
-    displayName: { en: 'Fusion Cell', 'pt-BR': 'Célula de Fusão' },
+    displayName: { en: 'Small Battery', 'pt-BR': 'Bateria Pequena' },
     description: {
       en: 'A near-mythical power cell. Its 1×1 shell outperforms most large batteries and costs almost nothing in structure or mass.',
       'pt-BR':
@@ -593,7 +593,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_large_rare',
-    displayName: { en: 'Heavy Battery Bank', 'pt-BR': 'Banco de Baterias Pesado' },
+    displayName: { en: 'Large Battery', 'pt-BR': 'Bateria Grande' },
     description: {
       en: 'A reinforced large battery with denser cells. Holds more charge and recharges faster while shaving off mass and structure cost.',
       'pt-BR':
@@ -614,7 +614,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_large_epic',
-    displayName: { en: 'Industrial Capacitor Bank', 'pt-BR': 'Banco de Capacitores Industrial' },
+    displayName: { en: 'Large Battery', 'pt-BR': 'Bateria Grande' },
     description: {
       en: 'A high-end large battery for capital-grade energy weapons and shields. Doubles the charge of a basic large battery with a lighter frame.',
       'pt-BR':
@@ -635,7 +635,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'battery_large_legendary',
-    displayName: { en: 'Abyssal Core Battery', 'pt-BR': 'Bateria de Núcleo Abissal' },
+    displayName: { en: 'Large Battery', 'pt-BR': 'Bateria Grande' },
     description: {
       en: 'A legendary energy reservoir. Its 1×2 frame holds enough charge to power a warship, yet it weighs and costs structure like a mid-tier part.',
       'pt-BR':
@@ -675,7 +675,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'weapon_ballistic_uncommon',
-    displayName: { en: 'Heavy Cannon', 'pt-BR': 'Canhão Pesado' },
+    displayName: { en: 'Cannon', 'pt-BR': 'Canhão' },
     description: {
       en: 'A reinforced cannon with heavier shells. Deals more damage than a basic cannon without needing energy.',
       'pt-BR': 'Um canhão reforçado com projéteis mais pesados. Causa mais dano que um canhão básico sem precisar de energia.',
@@ -693,7 +693,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'weapon_ballistic_rare',
-    displayName: { en: 'Auto-Cannon', 'pt-BR': 'Canhão Automático' },
+    displayName: { en: 'Cannon', 'pt-BR': 'Canhão' },
     description: {
       en: 'A rapid-fire ballistic weapon. Lighter and more compact than lower-tier cannons while packing a bigger punch.',
       'pt-BR': 'Uma arma balística de disparo rápido. Mais leve e compacta que canhões de tiers inferiores com um impacto maior.',
@@ -711,7 +711,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'weapon_ballistic_epic',
-    displayName: { en: 'Rail-Assisted Cannon', 'pt-BR': 'Canhão de Trilho' },
+    displayName: { en: 'Cannon', 'pt-BR': 'Canhão' },
     description: {
       en: 'A high-velocity cannon with magnetic acceleration. Doubles the firepower of a basic cannon in the same 1×1 slot.',
       'pt-BR': 'Um canhão de alta velocidade com aceleração magnética. Dobra o poder de fogo de um canhão básico no mesmo slot 1×1.',
@@ -729,7 +729,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'weapon_ballistic_legendary',
-    displayName: { en: 'Doomsday Cannon', 'pt-BR': 'Canhão do Juízo Final' },
+    displayName: { en: 'Cannon', 'pt-BR': 'Canhão' },
     description: {
       en: 'A legendary ballistic weapon. Its shells tear through hulls with terrifying force, yet the mount is surprisingly light.',
       'pt-BR': 'Uma arma balística lendária. Seus projéteis rasgam cascos com força aterrorizante, mas a montagem é surpreendentemente leve.',
@@ -805,7 +805,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'armor_plate_rare',
-    displayName: { en: 'Composite Armor Plate', 'pt-BR': 'Placa de Armadura Composta' },
+    displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
       en: 'Advanced layered armor that soaks up more punishment than standard plating while weighing a little less.',
       'pt-BR': 'Blindagem em camadas avançadas que absorve mais punição que o revestimento padrão pesando um pouco menos.',
@@ -823,7 +823,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'armor_plate_epic',
-    displayName: { en: 'Ablative Armor Plate', 'pt-BR': 'Placa de Armadura Ablativa' },
+    displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
       en: 'A heavy armor plate with regenerative layering. Doubles the protection of a basic plate and shaves off mass and structure cost.',
       'pt-BR': 'Uma placa de armadura pesada com camadas regenerativas. Dobra a proteção de uma placa básica e reduz massa e custo de estrutura.',
@@ -841,7 +841,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'armor_plate_legendary',
-    displayName: { en: 'Titan Plate', 'pt-BR': 'Placa de Titã' },
+    displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
       en: 'A legendary armor slab forged from ultra-dense alloy. It shrugs off blows that would vaporize lesser plating.',
       'pt-BR': 'Uma laje de armadura lendária forjada de liga ultradensa. Ignora golpes que vaporizariam revestimentos inferiores.',
@@ -878,7 +878,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'hull_uncommon',
-    displayName: { en: 'Reinforced Hull Frame', 'pt-BR': 'Estrutura de Casco Reforçada' },
+    displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
       en: 'A stronger structural frame with better plating. Adds more hit points and armor than a basic hull without growing heavier.',
       'pt-BR':
@@ -897,7 +897,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'hull_rare',
-    displayName: { en: 'Composite Hull Frame', 'pt-BR': 'Estrutura de Casco Composta' },
+    displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
       en: 'An advanced composite frame that is lighter and tougher than standard hull plating. Offers solid protection for mid-tier ships.',
       'pt-BR':
@@ -916,7 +916,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'hull_epic',
-    displayName: { en: 'Titanium Hull Frame', 'pt-BR': 'Estrutura de Casco de Titânio' },
+    displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
       en: 'A heavy-duty hull frame with military-grade plating. Doubles the protection of a basic hull while costing less structure.',
       'pt-BR':
@@ -935,7 +935,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'hull_legendary',
-    displayName: { en: 'Aegis Hull Frame', 'pt-BR': 'Estrutura de Casco Aegis' },
+    displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
       en: 'A legendary hull frame. Its woven alloy shell shrugs off hits that would shred a normal ship, yet it is remarkably light.',
       'pt-BR':
@@ -974,7 +974,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'shield_basic_rare',
-    displayName: { en: 'Reinforced Shield', 'pt-BR': 'Escudo Reforçado' },
+    displayName: { en: 'Basic Shield', 'pt-BR': 'Escudo Básico' },
     description: {
       en: 'A stronger energy shield with faster recharge. Absorbs more damage than a basic shield while drawing slightly less energy.',
       'pt-BR': 'Um escudo de energia mais forte com recarga mais rápida. Absorve mais dano que um escudo básico consumindo um pouco menos de energia.',
@@ -993,7 +993,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'shield_basic_epic',
-    displayName: { en: 'Heavy Shield Generator', 'pt-BR': 'Gerador de Escudo Pesado' },
+    displayName: { en: 'Basic Shield', 'pt-BR': 'Escudo Básico' },
     description: {
       en: 'A compact shield generator with double the absorption of a basic model. Fits in the same 1×1 slot and costs less structure.',
       'pt-BR': 'Um gerador de escudo compacto com o dobro de absorção do modelo básico. Cabe no mesmo slot 1×1 e custa menos estrutura.',
@@ -1012,7 +1012,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'shield_basic_legendary',
-    displayName: { en: 'Aegis Shield', 'pt-BR': 'Escudo Aegis' },
+    displayName: { en: 'Basic Shield', 'pt-BR': 'Escudo Básico' },
     description: {
       en: 'A legendary shield that turns aside almost anything. Its regenerative field absorbs massive punishment for minimal energy.',
       'pt-BR': 'Um escudo lendário que desvia quase tudo. Seu campo regenerativo absorve punição massiva com energia mínima.',
@@ -1051,7 +1051,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'sensor_radar_uncommon',
-    displayName: { en: 'Enhanced Radar', 'pt-BR': 'Radar Aprimorado' },
+    displayName: { en: 'Radar', 'pt-BR': 'Radar' },
     description: {
       en: 'A tuned sensor array with better range and clearer signatures. Spots ambushes more reliably than a basic radar.',
       'pt-BR':
@@ -1071,7 +1071,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'sensor_radar_rare',
-    displayName: { en: 'Long-Range Scanner', 'pt-BR': 'Scanner de Longo Alcance' },
+    displayName: { en: 'Radar', 'pt-BR': 'Radar' },
     description: {
       en: 'A lightweight scanner with extended detection range. Uses less power and structure than lower-tier sensors.',
       'pt-BR':
@@ -1091,7 +1091,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'sensor_radar_epic',
-    displayName: { en: 'Wide-Band Sensor Array', 'pt-BR': 'Matriz de Sensores de Banda Larga' },
+    displayName: { en: 'Radar', 'pt-BR': 'Radar' },
     description: {
       en: 'A multi-spectrum array that triples the detection power of a basic radar. Almost no pirate ambush escapes its notice.',
       'pt-BR':
@@ -1111,7 +1111,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'sensor_radar_legendary',
-    displayName: { en: 'Omniscience Suite', 'pt-BR': 'Suíte de Onisciência' },
+    displayName: { en: 'Radar', 'pt-BR': 'Radar' },
     description: {
       en: 'A legendary sensor suite. Its predictive algorithms spot threats before they even form, making ambushes nearly impossible.',
       'pt-BR':
@@ -1150,7 +1150,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'cargo_uncommon',
-    displayName: { en: 'Reinforced Cargo Hold', 'pt-BR': 'Compartimento de Carga Reforçado' },
+    displayName: { en: 'Cargo Hold', 'pt-BR': 'Compartimento de Carga' },
     description: {
       en: 'A sturdier cargo hold with slightly more capacity. Uses the same 1×1 space as a basic hold but costs less structure.',
       'pt-BR':
@@ -1169,7 +1169,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'cargo_rare',
-    displayName: { en: 'Expanded Cargo Hold', 'pt-BR': 'Compartimento de Carga Expandido' },
+    displayName: { en: 'Cargo Hold', 'pt-BR': 'Compartimento de Carga' },
     description: {
       en: 'A lightweight cargo hold with more capacity than the basic model. Advanced materials cut both mass and structure cost.',
       'pt-BR':
@@ -1188,7 +1188,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'cargo_epic',
-    displayName: { en: 'High-Capacity Hold', 'pt-BR': 'Compartimento de Alta Capacidade' },
+    displayName: { en: 'Cargo Hold', 'pt-BR': 'Compartimento de Carga' },
     description: {
       en: 'A compact freight bay that holds twice as much cargo as a basic hold. Fits in a featherweight 1×1 frame.',
       'pt-BR':
@@ -1207,7 +1207,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'cargo_legendary',
-    displayName: { en: 'Void-Fold Cargo Bay', 'pt-BR': 'Baía de Carga de Dobra do Vazio' },
+    displayName: { en: 'Cargo Hold', 'pt-BR': 'Compartimento de Carga' },
     description: {
       en: 'A legendary freight module. Its compressed storage lattice fits a small freighter’s worth of cargo into a single 1×1 slot.',
       'pt-BR':
@@ -1246,7 +1246,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'passenger_cabin_uncommon',
-    displayName: { en: 'Comfortable Cabin', 'pt-BR': 'Cabine Confortável' },
+    displayName: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
     description: {
       en: 'A better pressurized cabin with improved life-support coupling. Lighter and cheaper on structure than a basic cabin.',
       'pt-BR': 'Uma cabine pressurizada melhor com acoplamento de suporte de vida aprimorado. Mais leve e mais barata em estrutura que uma cabine básica.',
@@ -1265,7 +1265,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'passenger_cabin_rare',
-    displayName: { en: 'Reinforced Passenger Cabin', 'pt-BR': 'Cabine de Passageiros Reforçada' },
+    displayName: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
     description: {
       en: 'A sturdy cabin for valuable passengers. Stronger hull and lower power draw than lower-tier cabins.',
       'pt-BR': 'Uma cabine resistente para passageiros valiosos. Casco mais forte e consumo de energia menor que cabines de tiers inferiores.',
@@ -1284,7 +1284,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'passenger_cabin_epic',
-    displayName: { en: 'Luxury Transport Module', 'pt-BR': 'Módulo de Transporte de Luxo' },
+    displayName: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
     description: {
       en: 'A compact luxury cabin for high-paying passengers. Much lighter and cheaper on structure than a basic cabin.',
       'pt-BR': 'Uma cabine de luxo compacta para passageiros que pagam bem. Muito mais leve e mais barata em estrutura que uma cabine básica.',
@@ -1303,7 +1303,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'passenger_cabin_legendary',
-    displayName: { en: 'Cryo-Sleep Bay', 'pt-BR': 'Baía de Sono Criogênico' },
+    displayName: { en: 'Passenger Cabin', 'pt-BR': 'Cabine de Passageiros' },
     description: {
       en: 'A legendary passenger module. Passengers sleep through the journey in safety, using almost no life-support power.',
       'pt-BR': 'Um módulo de passageiros lendário. Passageiros dormem durante a viagem em segurança, usando quase nenhuma energia de suporte de vida.',
@@ -1342,7 +1342,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'life_support_uncommon',
-    displayName: { en: 'Efficient Life Support', 'pt-BR': 'Suporte de Vida Eficiente' },
+    displayName: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
     description: {
       en: 'A more efficient life-support loop. Keeps the same crew alive while drawing less power and costing less structure.',
       'pt-BR':
@@ -1362,7 +1362,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'life_support_rare',
-    displayName: { en: 'Recycling Life Support', 'pt-BR': 'Suporte de Vida Reciclável' },
+    displayName: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
     description: {
       en: 'A closed-loop system that recycles air and water. Lighter and cheaper on structure than basic life support.',
       'pt-BR':
@@ -1382,7 +1382,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'life_support_epic',
-    displayName: { en: 'Regenerative Life Support', 'pt-BR': 'Suporte de Vida Regenerativo' },
+    displayName: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
     description: {
       en: 'An advanced life-support unit. It uses a fraction of the power of a basic system while keeping the crew safe in a compact frame.',
       'pt-BR':
@@ -1402,7 +1402,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'life_support_legendary',
-    displayName: { en: 'Bio-Dome Core', 'pt-BR': 'Núcleo de Biodomo' },
+    displayName: { en: 'Life Support', 'pt-BR': 'Suporte de Vida' },
     description: {
       en: 'A legendary self-sustaining life-support core. It barely draws power and can keep a whole crew alive indefinitely.',
       'pt-BR':
@@ -1442,7 +1442,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'mining_rig_rare',
-    displayName: { en: 'Heavy Mining Rig', 'pt-BR': 'Plataforma de Mineração Pesada' },
+    displayName: { en: 'Mining Rig', 'pt-BR': 'Plataforma de Mineração' },
     description: {
       en: 'A larger extractor with faster ore processing. Mines quicker than a basic rig while drawing less power relative to output.',
       'pt-BR': 'Um extrator maior com processamento de minério mais rápido. Minera mais rápido que uma plataforma básica consumindo menos energia relativa à produção.',
@@ -1461,7 +1461,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'mining_rig_epic',
-    displayName: { en: 'Industrial Mining Rig', 'pt-BR': 'Plataforma de Mineração Industrial' },
+    displayName: { en: 'Mining Rig', 'pt-BR': 'Plataforma de Mineração' },
     description: {
       en: 'A compact industrial extractor that doubles mining output. Lighter and cheaper on structure than lower-tier rigs.',
       'pt-BR': 'Um extrator industrial compacto que dobra a produção de mineração. Mais leve e mais barato em estrutura que plataformas de tiers inferiores.',
@@ -1480,7 +1480,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'mining_rig_legendary',
-    displayName: { en: 'Planet-Cracker Rig', 'pt-BR': 'Plataforma Quebra-Planetas' },
+    displayName: { en: 'Mining Rig', 'pt-BR': 'Plataforma de Mineração' },
     description: {
       en: 'A legendary mining rig. Its swarm drills strip asteroids bare in record time while barely taxing the ship.',
       'pt-BR': 'Uma plataforma de mineração lendária. Suas brocas em enxame depenam asteroides em tempo recorde quase sem taxar a nave.',
@@ -1518,7 +1518,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'reactor_solar_uncommon',
-    displayName: { en: 'Advanced Solar Panel', 'pt-BR': 'Painel Solar Avançado' },
+    displayName: { en: 'Solar Panel', 'pt-BR': 'Painel Solar' },
     description: {
       en: 'A more efficient solar array that generates more power from the same 1×1 footprint.',
       'pt-BR': 'Uma matriz solar mais eficiente que gera mais energia do mesmo espaço 1×1.',
@@ -1536,7 +1536,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'reactor_solar_rare',
-    displayName: { en: 'High-Gain Solar Array', 'pt-BR': 'Matriz Solar de Alto Ganho' },
+    displayName: { en: 'Solar Panel', 'pt-BR': 'Painel Solar' },
     description: {
       en: 'A focused solar collector with much higher output. Lighter on structure than lower-tier panels.',
       'pt-BR': 'Um coletor solar focado com saída muito maior. Mais leve em estrutura que painéis de tiers inferiores.',
@@ -1554,7 +1554,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'reactor_solar_epic',
-    displayName: { en: 'Concentrator Solar Array', 'pt-BR': 'Matriz Solar Concentradora' },
+    displayName: { en: 'Solar Panel', 'pt-BR': 'Painel Solar' },
     description: {
       en: 'A compact concentrator that doubles the output of a basic solar panel. Surprising power from a tiny frame.',
       'pt-BR': 'Um concentrador compacto que dobra a saída de um painel solar básico. Energia surpreendente de um minúsculo quadro.',
@@ -1572,7 +1572,7 @@ export const PARTS: SeedPart[] = [
   },
   {
     partType: 'reactor_solar_legendary',
-    displayName: { en: 'Star Heart Array', 'pt-BR': 'Matriz Coração Estelar' },
+    displayName: { en: 'Solar Panel', 'pt-BR': 'Painel Solar' },
     description: {
       en: 'A legendary solar core. It squeezes almost as much power as a small reactor from a single solar panel.',
       'pt-BR': 'Um núcleo solar lendário. Espreme quase tanto poder quanto um pequeno reator de um único painel solar.',
