@@ -162,15 +162,20 @@ describe('hangar (S10.4)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Details: Cargo Rack/i }));
     const dialog = await screen.findByRole('dialog');
 
-    // "If installed" is Hangar-only: Cargo goes up by the part's own crg (5), everything else
-    // that wasn't touched reads as unchanged.
+    // "If installed" is Hangar-only, and (owner request, round 5 follow-up) shows the ship's
+    // actual resulting stat, not a bare delta that collides with "This part"'s own column —
+    // Cargo becomes 15 (10 + the part's own 5), the change shown alongside it in parens.
+    // Everything untouched reads as just its own unchanged final value, no redundant label.
     const cargoRow = within(dialog).getByRole('row', { name: /^Cargo/ });
-    await waitFor(() => expect(within(cargoRow).getByText('+5')).toBeInTheDocument());
+    await waitFor(() => expect(within(cargoRow).getByText('15 (+5)')).toBeInTheDocument());
     // More cargo is a good thing (owner request, round 5): the delta reads green, not a flat color.
-    expect(within(cargoRow).getByText('+5')).toHaveClass('delta-good');
+    expect(within(cargoRow).getByText('15 (+5)')).toHaveClass('delta-good');
+    // Mobility is unchanged (2 -> 2): both columns coincidentally show "2", so this checks the
+    // delta cell specifically by its own class, not by (ambiguous) text.
     const mobRow = within(dialog).getByRole('row', { name: /^Mobility/ });
-    expect(within(mobRow).getByText('No change')).toBeInTheDocument();
-    expect(within(mobRow).getByText('No change')).toHaveClass('delta-same');
+    const mobDelta = mobRow.querySelector('.delta');
+    expect(mobDelta).toHaveTextContent('2');
+    expect(mobDelta).toHaveClass('delta-same');
   });
 
   it('colors a worse change (more mass) red, not the same green as a better one', async () => {
@@ -197,8 +202,8 @@ describe('hangar (S10.4)', () => {
     const dialog = await screen.findByRole('dialog');
 
     const massRow = within(dialog).getByRole('row', { name: /^Mass/ });
-    await waitFor(() => expect(within(massRow).getByText('+4')).toBeInTheDocument());
-    expect(within(massRow).getByText('+4')).toHaveClass('delta-bad');
+    await waitFor(() => expect(within(massRow).getByText('28 (+4)')).toBeInTheDocument());
+    expect(within(massRow).getByText('28 (+4)')).toHaveClass('delta-bad');
   });
 
   it('labels parts with their localized names, never the raw part code', async () => {
@@ -304,7 +309,7 @@ describe('hangar (S10.4)', () => {
     const dialog = await screen.findByRole('dialog');
 
     const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('+6')).toBeInTheDocument());
+    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
   });
 
   it('rotates and removes a selected block', async () => {

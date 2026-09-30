@@ -1023,8 +1023,7 @@
       "error": "Couldn't check what this would do to the ship.",
       "stat": "Stat",
       "value": "This part",
-      "ifInstalled": "Ship, if installed",
-      "unchanged": "No change"
+      "ifInstalled": "Ship, if installed"
     }
   },
   "market": {

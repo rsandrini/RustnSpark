@@ -135,8 +135,8 @@ describe('market panel: descriptions and filters', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
     await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
     const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('+6')).toBeInTheDocument());
-    expect(within(hpRow).getByText('+6')).toHaveClass('delta-good');
+    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
+    expect(within(hpRow).getByText('46 (+6)')).toHaveClass('delta-good');
   });
 
   it('compares a listing with nothing installed of its class as a plain addition, not a swap', async () => {

@@ -1023,8 +1023,7 @@
       "error": "Não foi possível verificar o efeito disso na nave.",
       "stat": "Estatística",
       "value": "Esta peça",
-      "ifInstalled": "Nave, se instalada",
-      "unchanged": "Sem mudança"
+      "ifInstalled": "Nave, se instalada"
     }
   },
   "market": {

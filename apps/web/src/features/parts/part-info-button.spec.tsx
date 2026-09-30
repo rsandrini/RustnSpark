@@ -112,8 +112,8 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     );
 
     const cargoRow = within(dialog).getByRole('row', { name: /^Cargo/ });
-    await waitFor(() => expect(within(cargoRow).getByText('+8')).toBeInTheDocument());
-    expect(within(cargoRow).getByText('+8')).toHaveClass('delta-good');
+    await waitFor(() => expect(within(cargoRow).getByText('13 (+8)')).toBeInTheDocument());
+    expect(within(cargoRow).getByText('13 (+8)')).toHaveClass('delta-good');
   });
 
   it('shows a used listing’s effect on the ship’s average condition (review finding)', async () => {
@@ -153,8 +153,8 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
     fireEvent.click(screen.getByRole('button', { name: /Details/i }));
     const dialog = await screen.findByRole('dialog');
     const conditionRow = await waitFor(() => within(dialog).getByRole('row', { name: /^Condition/ }));
-    await waitFor(() => expect(within(conditionRow).getByText('-10')).toBeInTheDocument());
-    expect(within(conditionRow).getByText('-10')).toHaveClass('delta-bad');
+    await waitFor(() => expect(within(conditionRow).getByText('90 (-10)')).toBeInTheDocument());
+    expect(within(conditionRow).getByText('90 (-10)')).toHaveClass('delta-bad');
   });
 
   it('shows a clear error instead of a false "swap this in" title when the check fails (review finding)', async () => {

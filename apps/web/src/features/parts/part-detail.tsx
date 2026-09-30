@@ -167,12 +167,20 @@ export function PartDetail({ part, compare }: PartDetailProps) {
   });
   const afterSheet = comparePreview.data?.sheet;
 
+  // Owner feedback (round 5): a bare delta ("+3") sits right next to "This part"'s own stat
+  // value, and for a pure addition (Hangar tray) they're mathematically the SAME number for
+  // every effect stat — nothing else changed, so the delta IS the part's own contribution. Two
+  // columns showing the identical number, one plain and one colored, read as a coloring bug
+  // rather than useful information. Show the ship's actual resulting value instead (which the
+  // column header already promises — "Ship, if installed"), with the change alongside it only
+  // when something actually moved.
   const deltaFor = (sheetKey: keyof ShipSheet): { text: string; tone: DeltaTone } | null => {
     if (compare === undefined || afterSheet === undefined) return null;
-    const delta = afterSheet[sheetKey] - compare.currentSheet[sheetKey];
+    const after = afterSheet[sheetKey];
+    const delta = after - compare.currentSheet[sheetKey];
     const tone = deltaTone(sheetKey, delta);
     const text =
-      tone === 'same' ? t('parts.compare.unchanged') : `${delta > 0 ? '+' : ''}${format(delta)}`;
+      tone === 'same' ? format(after) : `${format(after)} (${delta > 0 ? '+' : ''}${format(delta)})`;
     return { text, tone };
   };
 
