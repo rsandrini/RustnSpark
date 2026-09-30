@@ -76,18 +76,32 @@ describe('report (S10.8)', () => {
     expect(popup.textContent).toContain('Shield absorbed');
     expect(popup.textContent).toContain('Armor absorbed');
     expect(popup.textContent).toContain('Hull damage');
+    // Owner request: this popup specifically needs more room than the default confirm-dialog
+    // width — a scoped override, not a change to every popup in the app.
+    expect(popup).toHaveClass('combat-log-modal');
 
     // Round-by-round combat log (round-4 owner request): every attack, in order, not just
     // the fight's totals.
     const table = within(popup).getByRole('table');
     const rows = within(table).getAllByRole('row');
     expect(rows).toHaveLength(4); // header + 3 attacks
-    expect(rows[1]).toHaveTextContent('1');
-    expect(rows[1]).toHaveTextContent('Enemy');
-    expect(rows[1]).toHaveTextContent('14 / 10');
-    expect(rows[1]).toHaveTextContent('Hit');
-    expect(rows[2]).toHaveTextContent('You');
-    expect(rows[2]).toHaveTextContent('Miss');
+    const hitRow = rows[1]!;
+    const missRow = rows[2]!;
+    expect(hitRow).toHaveTextContent('1');
+    expect(hitRow).toHaveTextContent('Enemy');
+    expect(hitRow).toHaveTextContent('14 / 10');
+    expect(hitRow).toHaveTextContent('Hit');
+    // Owner request: a colored pill for the result and a consistent color per damage type,
+    // not flat text for all seven columns.
+    expect(within(hitRow).getByText('Hit')).toHaveClass('pill', 'pill-hit');
+    expect(hitRow.querySelector('.dmg-shield')).toHaveTextContent('3');
+    expect(hitRow.querySelector('.dmg-armor')).toHaveTextContent('1');
+    expect(hitRow.querySelector('.dmg-hull')).toHaveTextContent('1');
+    expect(missRow).toHaveTextContent('You');
+    expect(missRow).toHaveTextContent('Miss');
+    expect(within(missRow).getByText('Miss')).toHaveClass('pill', 'pill-miss');
+    // A miss deals no damage: no colored damage cell to show.
+    expect(missRow.querySelector('.dmg-shield')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() =>

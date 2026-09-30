@@ -187,6 +187,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
         open={popupLine !== null}
         title={t('report.eventDetails')}
         onClose={() => setPopupLine(null)}
+        className="combat-log-modal"
       >
         {popupLine !== null && <CascadeDetail report={report} lineKey={popupLine} />}
       </Popup>
@@ -253,11 +254,19 @@ function CascadeDetail({
                     {round.roll} / {round.dc}
                   </td>
                   <td>
-                    {round.hit ? t('report.combatLog.hit') : t('report.combatLog.miss')}
+                    <span className={`pill ${round.hit ? 'pill-hit' : 'pill-miss'}`}>
+                      {round.hit ? t('report.combatLog.hit') : t('report.combatLog.miss')}
+                    </span>
                   </td>
-                  <td>{round.hit ? round.shieldAbsorbed : '—'}</td>
-                  <td>{round.hit ? round.armorAbsorbed : '—'}</td>
-                  <td>{round.hit ? round.hullDamage : '—'}</td>
+                  <td className={round.hit ? 'dmg-shield' : undefined}>
+                    {round.hit ? round.shieldAbsorbed : '—'}
+                  </td>
+                  <td className={round.hit ? 'dmg-armor' : undefined}>
+                    {round.hit ? round.armorAbsorbed : '—'}
+                  </td>
+                  <td className={round.hit ? 'dmg-hull' : undefined}>
+                    {round.hit ? round.hullDamage : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

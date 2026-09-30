@@ -1571,6 +1571,46 @@ svg .block.floating {
   text-align: right;
 }
 
+/* Owner request (round 8, from a demo comparison): this popup specifically needs more room
+   than the default confirm-dialog width — a scoped override, not a change to every `.modal`. */
+.modal.combat-log-modal {
+  width: min(640px, 94vw);
+}
+
+/* Result as a colored pill, not flat text — Hit is the meaningful outcome (something happened),
+   Miss stays muted, matching the row's own dimming. */
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pill-hit {
+  background: rgba(46, 160, 67, 0.18);
+  color: var(--ok);
+}
+
+.pill-miss {
+  background: rgba(139, 148, 158, 0.18);
+  color: var(--mut);
+}
+
+/* One consistent color per damage type, reused nowhere else so it never collides with rarity,
+   risk or faction colors. */
+.combat-log-table .dmg-shield {
+  color: var(--blue);
+}
+
+.combat-log-table .dmg-armor {
+  color: var(--amber);
+}
+
+.combat-log-table .dmg-hull {
+  color: var(--bad);
+}
+
 .part-stats {
   margin: 12px 0 0;
 }
