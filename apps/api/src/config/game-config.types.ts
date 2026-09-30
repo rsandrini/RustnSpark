@@ -230,8 +230,9 @@ export type GameRules = Readonly<{
     combat_win_per_tier: number;
     combat_loss_penalty: number;
     upgrade_costs: Readonly<Record<string, number>>;
-    /** Multiplier on the base-price gap between a part and its next rarity tier (round 5 upgrade mechanic). */
-    part_upgrade_price_multiplier: number;
+    /** Multiplier on the base-price gap to the next rarity tier, keyed by the part's current
+        rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
+    part_upgrade_price_multiplier: Readonly<Record<string, number>>;
     start_credits: number;
     rescue_cost: number;
     rescue_fuel_fraction: number;

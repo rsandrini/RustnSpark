@@ -767,15 +767,14 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
     key: 'economy.part_upgrade_price_multiplier',
     group: 'economy',
-    type: 'number',
-    min: 0.5,
+    type: 'json',
+    min: 1,
     max: 5,
-    unit: '×',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.part_upgrade_price_multiplier),
     description: {
-      en: 'Multiplier on the price gap to a part’s next rarity tier, charged to upgrade it in place.',
+      en: 'Multiplier on the price gap to a part’s next rarity tier, charged to upgrade it in place — by the part’s current rarity.',
       'pt-BR':
-        'Multiplicador sobre a diferença de preço para o próximo tier de raridade da peça, cobrado para melhorá-la no lugar.',
+        'Multiplicador sobre a diferença de preço para o próximo tier de raridade da peça, cobrado para melhorá-la no lugar — por raridade atual da peça.',
     },
   },
   {

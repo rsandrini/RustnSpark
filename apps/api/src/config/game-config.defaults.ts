@@ -71,8 +71,16 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     upgrade_costs: { 2: 1200, 3: 2000, 4: 2800, 5: 3800 },
     // Round-5 upgrade mechanic: upgrading a part in place costs the price gap to its next
     // rarity tier, marked up a bit over just selling it and buying the next one (the premium
-    // for staying installed and not having to re-slot it).
-    part_upgrade_price_multiplier: 1.15,
+    // for staying installed and not having to re-slot it). Round-7 owner request: the markup
+    // itself grows with the part's current rarity, keyed by the PartCatalog rarity enum — going
+    // from an already-rare part to the next tier is a bigger luxury than a common one.
+    part_upgrade_price_multiplier: {
+      COMMON: 1.1,
+      UNCOMMON: 1.2,
+      RARE: 1.35,
+      EPIC: 1.5,
+      LEGENDARY: 1.5,
+    },
     start_credits: 200,
     rescue_cost: 800,
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player

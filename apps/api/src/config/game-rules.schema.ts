@@ -72,7 +72,7 @@ const economySchema = z.object({
   combat_win_per_tier: z.number().int().min(0).max(500),
   combat_loss_penalty: z.number().int().min(0).max(1000),
   upgrade_costs: z.record(z.string(), z.number().min(0).max(100000)),
-  part_upgrade_price_multiplier: z.number().min(0.5).max(5),
+  part_upgrade_price_multiplier: z.record(z.string(), z.number().min(1).max(5)),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
   rescue_fuel_fraction: z.number().min(0).max(1),
