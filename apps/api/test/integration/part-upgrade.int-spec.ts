@@ -88,6 +88,14 @@ describe('part upgrade API (round 5)', () => {
     await prisma.player.update({ where: { id: playerId }, data: { credits } });
   }
 
+  async function currentCredits(playerId: string): Promise<number> {
+    const player = await prisma.player.findUniqueOrThrow({
+      where: { id: playerId },
+      select: { credits: true },
+    });
+    return player.credits;
+  }
+
   async function addLoosePart(
     playerId: string,
     partType: string,
@@ -114,22 +122,21 @@ describe('part upgrade API (round 5)', () => {
     return req.send();
   }
 
-  async function upgradeMultiplier(): Promise<number> {
-    return configService.snapshot().rules.economy.part_upgrade_price_multiplier;
+  function upgradeMultiplier(rarity: string): number {
+    return configService.snapshot().rules.economy.part_upgrade_price_multiplier[rarity] ?? 1;
   }
 
   it('quotes an eligible loose part: next tier, name and cost from the base-price gap', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    const [hull, hullUncommon, multiplier] = await Promise.all([
+    const [hull, hullUncommon] = await Promise.all([
       prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'hull' } }),
       prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'hull_uncommon' } }),
-      upgradeMultiplier(),
     ]);
     const expectedCost = Math.max(
       1,
-      Math.round((hullUncommon.basePrice - hull.basePrice) * multiplier),
+      Math.round((hullUncommon.basePrice - hull.basePrice) * upgradeMultiplier('COMMON')),
     );
 
     const response = await quoteUpgrade(player.token, partId);
@@ -142,6 +149,29 @@ describe('part upgrade API (round 5)', () => {
     });
   });
 
+  it('charges a higher markup for a rarer part (owner request, round 7: cost should grow with rarity)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const shieldPartId = await addLoosePart(player.seeded.player.id, 'shield_basic');
+    const [shieldBasic, shieldRare] = await Promise.all([
+      prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'shield_basic' } }),
+      prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'shield_basic_rare' } }),
+    ]);
+    expect(shieldBasic.rarity).toBe('UNCOMMON');
+    const commonMultiplier = upgradeMultiplier('COMMON');
+    const uncommonMultiplier = upgradeMultiplier('UNCOMMON');
+    // The config itself must actually escalate, or this test would pass for the wrong reason.
+    expect(uncommonMultiplier).toBeGreaterThan(commonMultiplier);
+
+    const response = await quoteUpgrade(player.token, shieldPartId);
+    expect(response.status).toBe(200);
+    const expectedCost = Math.max(
+      1,
+      Math.round((shieldRare.basePrice - shieldBasic.basePrice) * uncommonMultiplier),
+    );
+    expect((response.body as { cost: number }).cost).toBe(expectedCost);
+  });
+
   it('reports MAX_TIER for a part already at the top rarity', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -150,6 +180,20 @@ describe('part upgrade API (round 5)', () => {
     const response = await quoteUpgrade(player.token, partId);
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ partInstanceId: partId, eligible: false, reason: 'MAX_TIER' });
+  });
+
+  it('reports NOT_FULL_CONDITION for a worn part, even with a real next tier (owner request, round 7)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const partId = await addLoosePart(player.seeded.player.id, 'hull', 99);
+
+    const response = await quoteUpgrade(player.token, partId);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      partInstanceId: partId,
+      eligible: false,
+      reason: 'NOT_FULL_CONDITION',
+    });
   });
 
   it('reports NO_NEXT_TIER for a family the catalog has not chained', async () => {
@@ -167,11 +211,14 @@ describe('part upgrade API (round 5)', () => {
     });
   });
 
-  it('upgrades a loose part: charges the quoted cost, swaps the catalog reference, keeps condition', async () => {
+  it('upgrades a loose part: charges the quoted cost, swaps the catalog reference, keeps condition at 100', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100000);
-    const partId = await addLoosePart(player.seeded.player.id, 'hull', 63);
+    // Owner request (round 7): only a fully-repaired part can be upgraded, so this now has to
+    // start at 100 — 63 used to be a valid pre-upgrade condition here, proving the value carried
+    // over unchanged; that specific case is now covered instead by the NOT_FULL_CONDITION tests.
+    const partId = await addLoosePart(player.seeded.player.id, 'hull', 100);
     const quote = await quoteUpgrade(player.token, partId);
     const cost = (quote.body as { cost: number }).cost;
 
@@ -181,14 +228,14 @@ describe('part upgrade API (round 5)', () => {
       partInstanceId: partId,
       partType: 'hull_uncommon',
       rarity: 'UNCOMMON',
-      condition: 63,
+      condition: 100,
       cost,
       credits: 100000 - cost,
     });
 
     const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: partId } });
     expect(stored.partType).toBe('hull_uncommon');
-    expect(stored.condition).toBe(63);
+    expect(stored.condition).toBe(100);
 
     const events = await prisma.playerEvent.findMany({
       where: { playerId: player.seeded.player.id, type: 'part.upgraded' },
@@ -200,6 +247,24 @@ describe('part upgrade API (round 5)', () => {
       toPartType: 'hull_uncommon',
       cost,
     });
+  });
+
+  it('rejects upgrading a worn part, without charging or changing it (owner request, round 7)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setCredits(player.seeded.player.id, 100000);
+    const partId = await addLoosePart(player.seeded.player.id, 'hull', 99);
+
+    const response = await doUpgrade(player.token, partId, randomUUID());
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'NOT_FULL_CONDITION' },
+    });
+    const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: partId } });
+    expect(stored.partType).toBe('hull');
+    expect(stored.condition).toBe(99);
+    expect(await currentCredits(player.seeded.player.id)).toBe(100000);
   });
 
   it('rejects upgrading past the top tier', async () => {

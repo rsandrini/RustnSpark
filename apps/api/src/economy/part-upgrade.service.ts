@@ -7,11 +7,12 @@ import { InsufficientFundsError, WalletService } from '../players/wallet.service
 import { nextTierPartTypeOf, partUpgradeCost } from './part-upgrade.calculator.js';
 
 export const PART_UPGRADED_EVENT = 'part.upgraded';
+const FULL_CONDITION = 100;
 
 export interface PartUpgradeQuote {
   readonly partInstanceId: string;
   readonly eligible: boolean;
-  readonly reason?: 'MAX_TIER' | 'NO_NEXT_TIER';
+  readonly reason?: 'MAX_TIER' | 'NO_NEXT_TIER' | 'NOT_FULL_CONDITION';
   readonly nextPartType?: string;
   readonly nextDisplayName?: { en: string; 'pt-BR': string };
   readonly cost?: number;
@@ -78,7 +79,14 @@ export class PartUpgradeService {
     if (!nextCatalog || !nextCatalog.active) {
       return { part, eligible: false as const, reason: 'NO_NEXT_TIER' as const };
     }
-    const multiplier = this.config.snapshot().rules.economy.part_upgrade_price_multiplier;
+    // Owner request (round 7): only a fully-repaired part can be upgraded — an upgrade changes
+    // what the part IS, not its wear, so a damaged one has to be repaired first regardless of
+    // whether the player could otherwise afford both at once.
+    if (part.condition < FULL_CONDITION) {
+      return { part, eligible: false as const, reason: 'NOT_FULL_CONDITION' as const };
+    }
+    const multiplierByRarity = this.config.snapshot().rules.economy.part_upgrade_price_multiplier;
+    const multiplier = multiplierByRarity[part.partCatalog.rarity] ?? 1;
     const cost = partUpgradeCost(part.partCatalog.basePrice, nextCatalog.basePrice, multiplier);
     return { part, eligible: true as const, nextCatalog, cost };
   }
@@ -98,11 +106,15 @@ export class PartUpgradeService {
   }
 
   async upgrade(playerId: string, partInstanceId: string): Promise<PartUpgradeResult> {
+    // Ship/port state is checked first: it's the more fundamental gate ("you can't touch this
+    // part at all right now"), so it should never be masked by a part-level reason like
+    // NOT_FULL_CONDITION when both happen to be true at once.
+    const part = await this.loadOwnedPart(playerId, partInstanceId);
+    await this.assertPortReady(part);
     const outcome = await this.plan(playerId, partInstanceId);
     if (!outcome.eligible) {
       throw new ConflictException({ error: outcome.reason });
     }
-    await this.assertPortReady(outcome.part);
     const { nextCatalog, cost } = outcome;
 
     const updated = await this.prisma
