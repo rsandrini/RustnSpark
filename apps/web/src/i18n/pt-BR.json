@@ -1018,6 +1018,7 @@
     "brokenNote": "Quebrada: não conta para nada até ser consertada.",
     "compare": {
       "title": "Se você instalar agora",
+      "titleSwap": "Se você trocar por {{name}}",
       "loading": "Verificando o que isso faria à nave…",
       "stat": "Estatística",
       "value": "Esta peça",

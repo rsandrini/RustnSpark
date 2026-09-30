@@ -1018,6 +1018,7 @@
     "brokenNote": "Broken: it counts for nothing until it is repaired.",
     "compare": {
       "title": "If you install this now",
+      "titleSwap": "If you swap this in for {{name}}",
       "loading": "Checking what this would do to the ship…",
       "stat": "Stat",
       "value": "This part",

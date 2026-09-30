@@ -28,6 +28,10 @@ export interface PartCompareContext {
   installedPartIds: readonly string[];
   /** The ship's own current sheet — the "before" side of the comparison. */
   currentSheet: ShipSheet;
+  /** Market only: the installed part (of the candidate's class) it would replace, and its name
+      for the "swap" wording — omitted when nothing of that class is installed yet, in which
+      case the candidate is compared as a pure addition instead of a swap. */
+  replace?: { partInstanceId: string; displayName: LocalizedText };
 }
 
 // Effect stats worth listing when non-zero, in reading order. Size, mass, structure and hit
@@ -136,12 +140,27 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     .join(' ');
 
   const comparePreview = useQuery({
-    queryKey: ['partCompare', compare?.shipId, compare?.installedPartIds, part.id],
-    enabled: compare !== undefined && part.id !== undefined,
+    queryKey: [
+      'partCompare',
+      compare?.shipId,
+      compare?.installedPartIds,
+      compare?.replace?.partInstanceId,
+      part.id,
+      catalog.partType,
+      part.condition,
+    ],
+    enabled: compare !== undefined,
     queryFn: () =>
-      client.post<PreviewResponse>(`/v1/ships/${compare?.shipId ?? ''}/preview`, {
-        partInstanceIds: [...(compare?.installedPartIds ?? []), part.id ?? ''],
-      }),
+      part.id !== undefined
+        ? // Owned (Hangar tray): add this already-owned part to the current arrangement.
+          client.post<PreviewResponse>(`/v1/ships/${compare?.shipId ?? ''}/preview`, {
+            partInstanceIds: [...(compare?.installedPartIds ?? []), part.id],
+          })
+        : // Not owned yet (Market/Store): ask for a virtual-part swap or addition.
+          client.post<PreviewResponse>(`/v1/ships/${compare?.shipId ?? ''}/preview`, {
+            virtualPart: { partType: catalog.partType, condition: part.condition ?? 100 },
+            replacePartInstanceId: compare?.replace?.partInstanceId,
+          }),
   });
   const afterSheet = comparePreview.data?.sheet;
 
@@ -190,7 +209,13 @@ export function PartDetail({ part, compare }: PartDetailProps) {
       {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
       {compare !== undefined && (
         <p className="muted part-compare-note">
-          {comparePreview.isLoading ? t('parts.compare.loading') : t('parts.compare.title')}
+          {comparePreview.isLoading
+            ? t('parts.compare.loading')
+            : compare.replace !== undefined
+              ? t('parts.compare.titleSwap', {
+                  name: pickLocalized(compare.replace.displayName, i18n.language),
+                })
+              : t('parts.compare.title')}
         </p>
       )}
       <table className="part-stats-table">
