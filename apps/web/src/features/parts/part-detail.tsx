@@ -370,7 +370,10 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
 
   return (
     <div className="part-stats-card">
-      <b>{name}</b>
+      <div className="part-stats-card-title">
+        <b>{name}</b>
+        <RarityBadge rarity={part.rarity} />
+      </div>
       <p className="sub">
         {[
           t(`hangar.partClasses.${catalog.partClass}`),

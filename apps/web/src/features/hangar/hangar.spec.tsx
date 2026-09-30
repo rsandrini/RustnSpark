@@ -89,11 +89,23 @@ describe('hangar (S10.4)', () => {
       block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
         ?.textContent,
     ).toBe('1%');
-    // Rarity, spelled out right on the block (owner request, round 8: "in the blocks parts,
-    // ther is not rarity text yet") — not just the block's own border/fill colour.
-    const rarityLabel = block(container, 'part-bridge')?.closest('g')?.querySelector('text.rarity-label');
-    expect(rarityLabel).toHaveTextContent('Common');
-    expect(rarityLabel).toHaveClass('rar-common');
+  });
+
+  it('shows the rarity in the hover popup for a placed block, not printed on the block itself (owner request, round 8 follow-up)', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const bridgeBlock = block(container, 'part-bridge');
+    expect(bridgeBlock).not.toBeNull();
+    // Not printed on the block itself — only in the popup that appears on hover.
+    expect(bridgeBlock?.closest('g')?.querySelector('text.rarity-label')).toBeNull();
+
+    fireEvent.pointerEnter(bridgeBlock as Element, { clientX: 100, clientY: 200 });
+    const hoverCard = await screen.findByTestId('part-hover-card');
+    const badge = within(hoverCard).getByText('Common');
+    expect(badge).toHaveClass('rarity-badge');
+    expect(badge).toHaveClass('rarity-common');
   });
 
   it('shows the rarity right after the part name in the tray list (owner request, round 7)', async () => {

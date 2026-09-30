@@ -1614,6 +1614,13 @@ svg .block.floating {
   pointer-events: none;
 }
 
+.part-stats-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .part-stats-card .part-stats {
   margin-top: 6px;
 }
@@ -2384,39 +2391,6 @@ svg .block.rar-epic {
 svg .block.rar-legendary {
   stroke: var(--rar-legendary);
   fill: rgba(240, 165, 0, 0.2);
-}
-
-/* Rarity, spelled out on the block itself (owner request, round 8) — not just the block's own
-   border/fill colour above. Small text just under the top edge, outlined for legibility over
-   any of those fill colours. */
-.rarity-label {
-  font-size: 0.11px;
-  text-anchor: middle;
-  paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.65);
-  stroke-width: 0.02px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.rarity-label.rar-common {
-  fill: var(--rar-common);
-}
-
-.rarity-label.rar-uncommon {
-  fill: var(--rar-uncommon);
-}
-
-.rarity-label.rar-rare {
-  fill: var(--rar-rare);
-}
-
-.rarity-label.rar-epic {
-  fill: var(--rar-epic);
-}
-
-.rarity-label.rar-legendary {
-  fill: var(--rar-legendary);
 }
 
 svg .block.cond-ok {
