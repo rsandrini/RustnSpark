@@ -18,7 +18,12 @@ import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
-import { PartStatsCard, partSummary, useNumberFormat } from '../parts/part-detail';
+import {
+  PartStatsCard,
+  partSummary,
+  useNumberFormat,
+  type PartCompareContext,
+} from '../parts/part-detail';
 import { PartInfoButton } from '../parts/part-info-button';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
@@ -150,7 +155,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const trayParts = parts.filter((part) => !placedIds.has(part.id));
   // Nothing installed yet: the loose parts are the starter kit the player still has to assemble.
   const isKit = effectiveLayout.length === 0 && trayParts.length > 0;
-  const hoveredPart = parts.find((part) => part.id === hoveredId) ?? null;
+  // Yard-only: a tray row uses the same hoveredId state for its own hover card (below), and a
+  // part's id is never both placed and in the tray at once, but scoping this to placedIds keeps
+  // the two hover cards (yard vs. tray) from ever trying to render for the same id at once.
+  const hoveredPart = placedIds.has(hoveredId ?? '') ? (parts.find((part) => part.id === hoveredId) ?? null) : null;
   const dirty =
     ship !== undefined && layout !== null && JSON.stringify(layout) !== JSON.stringify(ship.layout);
 
@@ -364,6 +372,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     return <main className="app">{t('error.NO_SHIP')}</main>;
   }
 
+  // Shared by the tray's (i) popup and its hover card (round 5, owner request: comparison on
+  // hover, not just on click) — what installing a loose owned part would do to the ship.
+  const trayCompareContext = (): PartCompareContext | undefined =>
+    sheet === undefined
+      ? undefined
+      : {
+          shipId: ship.id,
+          installedPartIds: effectiveLayout.map((placement) => placement.partInstanceId),
+          currentSheet: sheet,
+        };
+
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
@@ -482,6 +501,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                           setPendingPartId(part.id);
                           setSelectedId(null);
                         }}
+                        onPointerEnter={() => setHoveredId(part.id)}
+                        onPointerLeave={() => setHoveredId(null)}
                       >
                         <span className="part-line">
                           <PartThumb
@@ -505,20 +526,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                           label={t('port.conditionNow', { value: Math.round(part.condition) })}
                         />
                       </button>
-                      <PartInfoButton
-                        part={part}
-                        compare={
-                          sheet === undefined
-                            ? undefined
-                            : {
-                                shipId: ship.id,
-                                installedPartIds: effectiveLayout.map(
-                                  (placement) => placement.partInstanceId,
-                                ),
-                                currentSheet: sheet,
-                              }
-                        }
-                      />
+                      <PartInfoButton part={part} compare={trayCompareContext()} />
+                      {/* Hover, not just click (owner request, round 5): the same comparison
+                          the (i) popup shows, without opening it. */}
+                      {hoveredId === part.id && (
+                        <div className="tray-hover-card" aria-hidden="true">
+                          <PartStatsCard part={part} compare={trayCompareContext()} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </>

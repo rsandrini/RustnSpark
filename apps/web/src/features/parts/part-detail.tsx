@@ -118,30 +118,19 @@ export function partSummary(
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
-export interface PartDetailProps {
-  part: PartInfoData;
-  compare?: PartCompareContext;
-}
-
-export function PartDetail({ part, compare }: PartDetailProps) {
-  const { t, i18n } = useTranslation();
+/**
+ * Shared by the full popup (`PartDetail`) and the lighter hover card (`PartStatsCard`): asks the
+ * server what installing/swapping `part` would do to the ship, and turns the answer into a
+ * per-stat delta. Owner feedback (round 5): a bare delta ("+3") sits right next to "This part"'s
+ * own stat value, and for a pure addition they're mathematically the SAME number for every
+ * effect stat — nothing else changed, so the delta IS the part's own contribution. Two columns
+ * showing the identical number, one plain and one colored, read as a coloring bug rather than
+ * useful information. `deltaFor` shows the ship's actual resulting value instead (what "Ship, if
+ * installed" already promises), with the change alongside it only when something actually moved.
+ */
+function useCompareQuery(part: PartInfoData, compare: PartCompareContext | undefined) {
   const format = useNumberFormat();
   const { catalog } = part;
-  const name = pickLocalized(part.displayName, i18n.language);
-  const description = pickLocalized(part.description, i18n.language);
-
-  // The description and "why you need it" prose used to always show; now they're a hover-only
-  // tag next to the name, like the (i) button that opens this popup in the first place (owner
-  // request: less always-on text, the stats table is the point of this screen).
-  const infoText = [
-    description,
-    t(`parts.role.${catalog.partClass}`),
-    catalog.pressurized ? t('parts.flag.pressurized') : null,
-    catalog.lifeSupport ? t('parts.flag.lifeSupport') : null,
-  ]
-    .filter((piece): piece is string => piece !== null && piece !== '')
-    .join(' ');
-
   const comparePreview = useQuery({
     queryKey: [
       'partCompare',
@@ -167,13 +156,6 @@ export function PartDetail({ part, compare }: PartDetailProps) {
   });
   const afterSheet = comparePreview.data?.sheet;
 
-  // Owner feedback (round 5): a bare delta ("+3") sits right next to "This part"'s own stat
-  // value, and for a pure addition (Hangar tray) they're mathematically the SAME number for
-  // every effect stat — nothing else changed, so the delta IS the part's own contribution. Two
-  // columns showing the identical number, one plain and one colored, read as a coloring bug
-  // rather than useful information. Show the ship's actual resulting value instead (which the
-  // column header already promises — "Ship, if installed"), with the change alongside it only
-  // when something actually moved.
   const deltaFor = (sheetKey: keyof ShipSheet): { text: string; tone: DeltaTone } | null => {
     if (compare === undefined || afterSheet === undefined) return null;
     const after = afterSheet[sheetKey];
@@ -183,6 +165,35 @@ export function PartDetail({ part, compare }: PartDetailProps) {
       tone === 'same' ? format(after) : `${format(after)} (${delta > 0 ? '+' : ''}${format(delta)})`;
     return { text, tone };
   };
+
+  return { comparePreview, deltaFor };
+}
+
+export interface PartDetailProps {
+  part: PartInfoData;
+  compare?: PartCompareContext;
+}
+
+export function PartDetail({ part, compare }: PartDetailProps) {
+  const { t, i18n } = useTranslation();
+  const format = useNumberFormat();
+  const { catalog } = part;
+  const name = pickLocalized(part.displayName, i18n.language);
+  const description = pickLocalized(part.description, i18n.language);
+
+  // The description and "why you need it" prose used to always show; now they're a hover-only
+  // tag next to the name, like the (i) button that opens this popup in the first place (owner
+  // request: less always-on text, the stats table is the point of this screen).
+  const infoText = [
+    description,
+    t(`parts.role.${catalog.partClass}`),
+    catalog.pressurized ? t('parts.flag.pressurized') : null,
+    catalog.lifeSupport ? t('parts.flag.lifeSupport') : null,
+  ]
+    .filter((piece): piece is string => piece !== null && piece !== '')
+    .join(' ');
+
+  const { comparePreview, deltaFor } = useCompareQuery(part, compare);
 
   const rows = [
     ...EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
@@ -276,18 +287,27 @@ export function PartDetail({ part, compare }: PartDetailProps) {
 /**
  * The ship yard's hover card (owner request, round-3 follow-up): numbers only, no description
  * or "why you need it" prose — just enough to place the part without opening the full popup.
- * The popup itself now opens only from the (i) button.
+ * The popup itself still opens from the (i) button. Owner request (round 5): the tray's own
+ * hover, specifically, also shows the comparison against what's installed — `compare` is only
+ * ever passed from the tray, never from a yard-placed block (nothing to compare a block already
+ * on the ship against).
  */
-export function PartStatsCard({ part }: { part: PartInfoData }) {
+export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?: PartCompareContext }) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
+  const { deltaFor } = useCompareQuery(part, compare);
   const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
     key,
+    sheetKey: key as keyof ShipSheet,
     value: format(catalog[key]),
   }));
-  const baseRows = BASE_STATS.map((stat) => ({ key: stat.key, value: format(stat.read(catalog)) }));
+  const baseRows = BASE_STATS.map((stat) => ({
+    key: stat.key,
+    sheetKey: stat.sheetKey,
+    value: format(stat.read(catalog)),
+  }));
 
   return (
     <div className="part-stats-card">
@@ -302,14 +322,35 @@ export function PartStatsCard({ part }: { part: PartInfoData }) {
           .join(' · ')}
       </p>
       <dl className="part-stats">
-        {[...effectRows, ...baseRows].map((row) => (
-          <div key={row.key} className="statrow">
-            <dt>{t(`parts.stat.${row.key}.label`)}</dt>
-            <dd>
-              <b>{row.value}</b>
-            </dd>
-          </div>
-        ))}
+        {[...effectRows, ...baseRows].map((row) => {
+          const delta = compare !== undefined ? deltaFor(row.sheetKey) : null;
+          return (
+            <div key={row.key} className="statrow">
+              <dt>{t(`parts.stat.${row.key}.label`)}</dt>
+              <dd>
+                <b>{row.value}</b>
+                {compare !== undefined && (
+                  <span className={`delta delta-${delta?.tone ?? 'same'}`}>
+                    {delta?.text ?? '—'}
+                  </span>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+        {compare !== undefined &&
+          DERIVED_COMPARE_STATS.map((sheetKey) => {
+            const delta = deltaFor(sheetKey);
+            return (
+              <div key={sheetKey} className="statrow">
+                <dt>{t(`hangar.stats.${sheetKey}`)}</dt>
+                <dd>
+                  <b>{format(compare.currentSheet[sheetKey])}</b>
+                  <span className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</span>
+                </dd>
+              </div>
+            );
+          })}
       </dl>
     </div>
   );

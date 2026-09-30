@@ -1399,6 +1399,22 @@ svg .block.floating {
   position: relative;
 }
 
+/* Tray-row hover card (round 5, owner request): flies out to the right of the hovered row,
+   same visual language as the yard's own .part-hover-card. */
+.tray-hover-card {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  z-index: 6;
+  width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
 .part-btn-wrap .info-btn {
   position: absolute;
   top: 6px;
@@ -1562,6 +1578,26 @@ svg .block.floating {
 
 .part-stats-card dt {
   min-width: 0;
+}
+
+/* Tray hover card's own compare column (round 5): same delta language as the popup's
+   .part-stats-table, scoped separately since this card uses a <dl>, not a <table>. */
+.part-stats-card .delta {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.part-stats-card .delta-same {
+  color: var(--mut);
+  font-weight: 600;
+}
+
+.part-stats-card .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-card .delta-bad {
+  color: var(--risk-hi);
 }
 
 .market-filters {

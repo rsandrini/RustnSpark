@@ -312,6 +312,37 @@ describe('hangar (S10.4)', () => {
     await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
   });
 
+  it('hovering a tray part shows the comparison inline, without clicking (owner request)', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { partInstanceIds?: string[] };
+        const withCandidate = (body.partInstanceIds ?? []).includes('part-cargo-b');
+        return HttpResponse.json({
+          sheet: { ...testSheet, crg: withCandidate ? testSheet.crg + 5 : testSheet.crg },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const trayButton = await screen.findByRole('button', { name: /^Cargo Rack/ });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.pointerEnter(trayButton);
+    // Cargo goes to 15 (10 + this part's own 5) — the comparison shows up on hover alone,
+    // never opening the full popup.
+    await waitFor(() => expect(screen.getByText('15 (+5)')).toBeInTheDocument());
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.pointerLeave(trayButton);
+    await waitFor(() => expect(screen.queryByText('15 (+5)')).not.toBeInTheDocument());
+  });
+
   it('rotates and removes a selected block', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
