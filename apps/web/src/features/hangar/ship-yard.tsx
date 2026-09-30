@@ -383,6 +383,19 @@ export function ShipYard({
                   ? name
                   : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`}
               </title>
+              {/* Rarity, spelled out — same described-text pattern as the tray list and the part
+                  popup (owner request: "in the blocks parts, ther is not rarity text yet"), not
+                  just the block's own border/fill colour. */}
+              {look !== undefined && (
+                <text
+                  className={`rarity-label rar-${look.rarity.toLowerCase()}`}
+                  x={placement.gx + width / 2}
+                  y={placement.gy + 0.17}
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {t(`parts.rarities.${look.rarity}`, { defaultValue: look.rarity })}
+                </text>
+              )}
               {look !== undefined && (
                 <g style={{ pointerEvents: 'none' }}>
                   <rect

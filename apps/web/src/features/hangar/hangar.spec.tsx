@@ -89,6 +89,11 @@ describe('hangar (S10.4)', () => {
       block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
         ?.textContent,
     ).toBe('1%');
+    // Rarity, spelled out right on the block (owner request, round 8: "in the blocks parts,
+    // ther is not rarity text yet") — not just the block's own border/fill colour.
+    const rarityLabel = block(container, 'part-bridge')?.closest('g')?.querySelector('text.rarity-label');
+    expect(rarityLabel).toHaveTextContent('Common');
+    expect(rarityLabel).toHaveClass('rar-common');
   });
 
   it('shows the rarity right after the part name in the tray list (owner request, round 7)', async () => {
