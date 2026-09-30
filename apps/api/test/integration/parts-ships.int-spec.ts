@@ -27,8 +27,10 @@ interface AuthPair {
 interface SheetShape {
   fuelCap: number;
   pot: number;
+  pdf: number;
   hp: number;
   mob: number;
+  condition: number;
 }
 
 interface ShipResponse {
@@ -711,6 +713,106 @@ describe('parts and ships API (S4.3)', () => {
       expect(
         after.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort(),
       ).toEqual(before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort());
+    });
+
+    describe('with a virtual (not-yet-owned) part', () => {
+      it('swaps a virtual candidate in for the installed part of the same class', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const inventory = await request(httpServer(testApp.app))
+          .get('/v1/inventory')
+          .set('Authorization', `Bearer ${token}`);
+        const hull = (
+          inventory.body as Array<{ id: string; partType: string; location: string }>
+        ).find((item) => item.partType === 'hull' && item.location === 'INSTALLED');
+        expect(hull).toBeDefined();
+
+        const before = await request(httpServer(testApp.app))
+          .get(`/v1/ships/${shipId}`)
+          .set('Authorization', `Bearer ${token}`);
+
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            virtualPart: { partType: 'hull_uncommon', condition: 100 },
+            replacePartInstanceId: hull!.id,
+          });
+
+        expect(response.status).toBe(200);
+        const preview = asPreview(response);
+        // hull partHp 20 -> hull_uncommon partHp 26: the sheet's hp goes up by exactly the gap,
+        // nothing else about the ship (still using the real installed set otherwise) changes it.
+        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 6);
+        // The endpoint never mutates anything: this is a read.
+        const after = await prisma.partInstance.findUnique({ where: { id: hull!.id } });
+        expect(after?.partType).toBe('hull');
+      });
+
+      it('adds a virtual candidate with nothing to replace when no part of its class is installed', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const before = await request(httpServer(testApp.app))
+          .get(`/v1/ships/${shipId}`)
+          .set('Authorization', `Bearer ${token}`);
+        // The starter kit has no weapon: a weapon_ballistic candidate is a pure addition.
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 100 } });
+
+        expect(response.status).toBe(200);
+        const preview = asPreview(response);
+        expect(preview.sheet.pdf).toBeGreaterThan(asShip(before).sheet.pdf ?? 0);
+      });
+
+      it("uses the candidate's own condition in the resulting ship-average condition", async () => {
+        // Ruling (plan Task 1, Review Focus #3): deriveSheet() sums every effect stat straight
+        // from the catalog, condition-agnostic — a part's condition never scales its own pdf/pot/
+        // etc. contribution (that only happens for `hp` in the separate `effectiveSheet()`, which
+        // preview() never calls). What condition DOES feed, confirmed by reading sheet.deriver.ts,
+        // is the ship-wide average `condition` field — so that is what a "used listing" case
+        // actually has to prove reaches the comparison, not a stat-sum difference.
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const full = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 100 } });
+        const half = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 50 } });
+
+        expect(asPreview(half).sheet.pdf).toBe(asPreview(full).sheet.pdf);
+        expect(asPreview(half).sheet.condition).toBeLessThan(asPreview(full).sheet.condition);
+      });
+
+      it('rejects a virtual part type that does not exist', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'not_a_real_part', condition: 100 } });
+
+        expect(response.status).toBe(404);
+      });
     });
   });
 

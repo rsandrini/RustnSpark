@@ -57,7 +57,13 @@ export class ShipsController {
   @UseGuards(OwnershipGuard)
   @OwnedResource({ type: 'ship', param: 'id' })
   preview(@Param('id') shipId: string, @Body() dto: PreviewDto) {
-    return this.shipsService.preview(shipId, dto.layout, dto.partInstanceIds);
+    return this.shipsService.preview(
+      shipId,
+      dto.layout,
+      dto.partInstanceIds,
+      dto.virtualPart,
+      dto.replacePartInstanceId,
+    );
   }
 
   @Post(':id/stance')

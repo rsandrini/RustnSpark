@@ -144,9 +144,15 @@ export class ShipsService implements OnModuleInit {
     shipId: string,
     layout?: Placement[],
     partInstanceIds?: string[],
+    virtualPart?: { partType: string; condition: number },
+    replacePartInstanceId?: string,
   ): Promise<PreviewResponse> {
     const { ship, rules } = await this.loadShipWithRules(shipId);
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+
+    if (virtualPart !== undefined) {
+      return this.previewWithVirtualPart(ship, rules, playerParts, virtualPart, replacePartInstanceId);
+    }
 
     let installed: InstalledPart[];
     let effectiveLayout: Placement[];
@@ -173,6 +179,50 @@ export class ShipsService implements OnModuleInit {
       viability,
       layout: effectiveLayout,
       omittedPartInstanceIds,
+    };
+  }
+
+  // Market-compare only: builds the sheet as if `virtualPart` (a catalog type the player does not
+  // yet own) were installed in place of `replacePartInstanceId` (or simply added, when omitted).
+  // Skips arrange()/assertLayoutValid() entirely — a stat preview needs no real grid slot, only
+  // deriveSheet()'s per-part stat sums, so the virtual part's own condition is all it contributes.
+  private async previewWithVirtualPart(
+    ship: Ship,
+    rules: GameRules,
+    playerParts: PartInstanceWithCatalog[],
+    virtualPart: { partType: string; condition: number },
+    replacePartInstanceId?: string,
+  ): Promise<PreviewResponse> {
+    const catalogRow = await this.prisma.partCatalog.findUnique({
+      where: { partType: virtualPart.partType },
+    });
+    if (!catalogRow || !catalogRow.active) {
+      throw new NotFoundException('part type not found');
+    }
+
+    const installedReal = playerParts.filter(
+      (part) =>
+        part.location === 'INSTALLED' &&
+        part.shipId === ship.id &&
+        part.id !== replacePartInstanceId,
+    );
+    const synthetic: InstalledPart = {
+      instance: {
+        id: 'virtual',
+        partType: virtualPart.partType,
+        condition: virtualPart.condition,
+      },
+      catalog: pickCatalogStats(catalogRow),
+    };
+    const installed = [...installedReal.map(toInstalledPart), synthetic];
+    const sheet = deriveSheet(installed, rules);
+    const viability = checkViability(sheet, installed, rules);
+    return {
+      sheet,
+      shipClass: deriveShipClass(installed, rules),
+      viability,
+      layout: (ship.layout as unknown as Placement[]) ?? [],
+      omittedPartInstanceIds: [],
     };
   }
 
