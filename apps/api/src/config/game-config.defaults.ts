@@ -168,9 +168,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     starter_max_zone: 1,
   },
   scavenging: {
-    chance: { common: 0.25, mission: 0.55, pirate: 0.75 },
-    quality_min: 30,
-    quality_max: 70,
+    // Round-8 rebalance (owner: "the drop of items on scavenging is too high... investigate if
+    // the quantity + price of items dropped is higher than doing quests"): roughly halved both
+    // the extra-find chance and the found-condition range — see scavenging.spec.ts for the numbers.
+    chance: { common: 0.12, mission: 0.27, pirate: 0.37 },
+    quality_min: 15,
+    quality_max: 40,
     cooldown_seconds: 300,
     duration_seconds: 300,
     scrap_share: 0.5,
