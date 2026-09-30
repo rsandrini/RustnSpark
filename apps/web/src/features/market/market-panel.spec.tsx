@@ -5,6 +5,17 @@ import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
+import type { ShipSheet } from '../../api/generated';
+
+// Mirrors the default fixture's own ship sheet (handlers.ts's private `sheet()`) exactly, same
+// convention hangar.spec.tsx already uses for its own compare tests — the "before" side of the
+// comparison in these tests always comes from that real default, never a value we invent here.
+const defaultSheet: ShipSheet = {
+  pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 40, mass: 24,
+  energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
+  fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40,
+  autonomy: 40, mob: 2, condition: 1,
+};
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -95,6 +106,61 @@ describe('market panel: descriptions and filters', () => {
     // The wallet moved off My Ship's own header into the top bar's account menu (owner
     // request — fewer lines on the page), visible on every in-game screen now.
     expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,820 ¢');
+  });
+
+  it('compares a listing against the installed part of the same class, colored by whether it helps', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as {
+          virtualPart?: { partType: string; condition: number };
+          replacePartInstanceId?: string;
+        };
+        // The default fixture's only installed DEFENSE-class part is part-hull (Plated Hull).
+        expect(body.virtualPart?.partType).toBe('hull');
+        expect(body.replacePartInstanceId).toBe('part-hull');
+        return HttpResponse.json({
+          sheet: { ...defaultSheet, hp: defaultSheet.hp + 6 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
+    const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
+    await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
+    const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
+    await waitFor(() => expect(within(hpRow).getByText('+6')).toBeInTheDocument());
+    expect(within(hpRow).getByText('+6')).toHaveClass('delta-good');
+  });
+
+  it('compares a listing with nothing installed of its class as a plain addition, not a swap', async () => {
+    server.use(
+      onboarded(),
+      http.get('/v1/inventory', () => HttpResponse.json([], { status: 200 })),
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({
+          sheet: { ...defaultSheet, hp: defaultSheet.hp + 4 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
+    const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
+    await waitFor(() =>
+      expect(within(dialog).getByText('If you install this now')).toBeInTheDocument(),
+    );
   });
 
   it('hovering a placed part shows a small stats card — clicking it never opens the full popup', async () => {

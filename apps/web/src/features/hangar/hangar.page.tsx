@@ -530,6 +530,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     locationId={ship.currentLocationId}
                     presetClass={storeClass}
                     showBalance
+                    shipId={ship.id}
+                    installedParts={parts.filter((part) => part.location === 'INSTALLED')}
+                    currentSheet={sheet}
                   />
                 ) : (
                   <p className="muted">{t('hangar.side.storeUnavailable')}</p>

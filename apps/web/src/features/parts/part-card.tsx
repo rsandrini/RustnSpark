@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
-import { partSummary, useNumberFormat, type PartInfoData } from './part-detail';
+import { partSummary, useNumberFormat, type PartCompareContext, type PartInfoData } from './part-detail';
 import { PartInfoButton } from './part-info-button';
 
 export interface PartCardProps {
@@ -18,6 +18,8 @@ export interface PartCardProps {
   used?: boolean;
   /** Buttons on the card's footer; the details button is always added. */
   actions?: ReactNode;
+  /** Market/Store only: what buying this would do to the ship, shown in its detail popup. */
+  compare?: PartCompareContext;
 }
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
@@ -29,6 +31,7 @@ export function PartCard({
   note,
   used = false,
   actions,
+  compare,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
@@ -76,7 +79,7 @@ export function PartCard({
       <div className="pcard-summary">{partSummary(part.catalog, t, format)}</div>
       <p className="pcard-desc part-desc-short">{pickLocalized(part.description, i18n.language)}</p>
       <footer className="pcard-actions">
-        <PartInfoButton part={part} />
+        <PartInfoButton part={part} compare={compare} />
         {actions}
       </footer>
     </article>

@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorCodeOf, errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
-import type { BuyResponse, MarketListing, MarketResponse } from '../../api/generated';
+import type { BuyResponse, MarketListing, MarketResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
+import { findReplaceCandidate, type InstalledPartForCompare } from '../parts/part-compare-match';
+import type { PartCompareContext } from '../parts/part-detail';
 
 interface ConfirmBuy {
   name: string;
@@ -28,6 +30,12 @@ export interface MarketPanelProps {
   onNotice?: (message: string | null) => void;
   /** Show the pilot's credits above the offers (the Hangar has no wallet header of its own). */
   showBalance?: boolean;
+  /** Compare column (round-2 plan §5b item 4): the ship to compare against, its currently
+      installed parts, and its current sheet. Omitted entirely (no host-side ship context) just
+      means listings show no compare column — buying still works exactly the same either way. */
+  shipId?: string;
+  installedParts?: readonly InstalledPartForCompare[];
+  currentSheet?: ShipSheet;
 }
 
 // The buy side of a port: a filterable list of offers with the full explanation of each part
@@ -38,6 +46,9 @@ export function MarketPanel({
   presetClass = null,
   onNotice,
   showBalance = false,
+  shipId,
+  installedParts,
+  currentSheet,
 }: MarketPanelProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
@@ -134,6 +145,21 @@ export function MarketPanel({
 
   const insufficient = confirm !== null && wallet < confirm.price;
 
+  const compareContextFor = (listing: MarketListing): PartCompareContext | undefined => {
+    if (shipId === undefined || currentSheet === undefined) return undefined;
+    const replaceTarget =
+      installedParts !== undefined ? findReplaceCandidate(installedParts, listing) : undefined;
+    return {
+      shipId,
+      installedPartIds: (installedParts ?? []).map((part) => part.id),
+      currentSheet,
+      replace:
+        replaceTarget === undefined
+          ? undefined
+          : { partInstanceId: replaceTarget.id, displayName: replaceTarget.displayName },
+    };
+  };
+
   return (
     <section className="stack market-panel">
       {showBalance && (
@@ -226,6 +252,7 @@ export function MarketPanel({
               price={listing.price}
               priceCaption={t('market.youPay')}
               used={listing.kind === 'used'}
+              compare={compareContextFor(listing)}
               actions={
                 <button
                   type="button"

@@ -527,7 +527,13 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'market' && (
         <section className="stack">
-          <MarketPanel locationId={ship.currentLocationId} onNotice={setNotice} />
+          <MarketPanel
+            locationId={ship.currentLocationId}
+            onNotice={setNotice}
+            shipId={ship.id}
+            installedParts={installed}
+            currentSheet={ship.sheet}
+          />
         </section>
       )}
 
