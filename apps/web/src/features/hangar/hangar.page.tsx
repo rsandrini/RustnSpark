@@ -118,6 +118,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       return next;
     });
   };
+  // A state setter (not a plain ref) so the first real render — once the slot div actually
+  // exists in the DOM — triggers the re-render Port's portal needs to find it.
+  const [subNavNode, setSubNavNode] = useState<HTMLDivElement | null>(null);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
@@ -369,6 +372,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
           heading-based ready signal every screen uses, just not shown on screen. */}
       <h1 className="sr-only">{t('hangar.title')}</h1>
+      {/* Owner request: Port's own sub-menu (Market/Your goods/Repair/…) moves here, above the
+          animation and left-aligned, right under the top nav — it's the only sub-navigation
+          left once a tab is open, so it reads better before the scene than buried below it.
+          Port portals its tab row into this node (see PortPage's `subNavContainer` prop); empty
+          otherwise (Ship, Board). */}
+      <div className="hangar-subnav-slot" ref={setSubNavNode} />
       <ActiveShipStage size="compact" collapsed={stageCollapsed} />
       <div className="stage-toggle-row">
         <button type="button" className="btn tiny" onClick={toggleStage}>
@@ -395,7 +404,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       <TransitPage embedded onGoToBoard={() => goToTab('board')} onLastMission={setLastMission} />
 
       {pageTab === 'board' && <BoardPage embedded onGoToShip={() => goToTab('ship')} />}
-      {pageTab === 'port' && <PortPage embedded onGoToShip={() => goToTab('ship')} />}
+      {pageTab === 'port' && (
+        <PortPage embedded onGoToShip={() => goToTab('ship')} subNavContainer={subNavNode} />
+      )}
 
       {pageTab === 'ship' && (
         <>

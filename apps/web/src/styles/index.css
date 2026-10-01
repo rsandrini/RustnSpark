@@ -183,6 +183,22 @@ a {
   color: var(--ink);
 }
 
+/* Port's own tab row (Market/Your goods/Repair/…) plus its wallet chip. Owner request: on My
+   Ship this row portals above the ship animation, left-aligned, right under the top nav — the
+   class and layout stay the same either way, only *where in the DOM* it lands changes. */
+.page-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.page-tabs-row .tabs {
+  flex: 0 1 auto;
+}
+
 .tab {
   flex: 0 0 auto;
   background: transparent;

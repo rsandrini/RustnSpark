@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -77,9 +78,19 @@ export interface PortPageProps {
   /** Embedded only: switches the host to its own "Ship" tab (a route Link would just reload
       the current page, since /hangar already is the current page). */
   onGoToShip?: () => void;
+  /** Embedded only (owner request): a DOM node the host wants Port's own tab row (Market/Your
+      goods/Repair/…) portaled into instead of rendered inline — My Ship uses this to put it
+      above the ship animation, left-aligned, right under the top nav, since it's the only
+      sub-navigation left once a tab is open. Port keeps owning the tab state either way. */
+  subNavContainer?: HTMLDivElement | null;
 }
 
-export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
+export function PortPage({
+  guided = false,
+  embedded = false,
+  onGoToShip,
+  subNavContainer,
+}: PortPageProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
@@ -462,8 +473,28 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
+  // Credits repeated here, next to the tabs (owner: "hard to see my credits" deep in a tab like
+  // Repair — the top bar's wallet is easy to lose track of that far down).
+  const portTabsRow = (
+    <div className="page-tabs-row">
+      <PortTabs
+        tabs={PORT_TABS.map((id) => ({
+          id,
+          label: t(`port.tabs.${id}`),
+          badge: id === 'repair' ? repairBadge : undefined,
+        }))}
+        activeId={tab}
+        onChange={(next) => setTab(next as PortTabId)}
+      />
+      <span className="wallet-chip" data-testid="port-tabs-wallet">
+        {money(wallet)}
+      </span>
+    </div>
+  );
+
   const body = (
     <>
+      {subNavContainer != null && createPortal(portTabsRow, subNavContainer)}
       {!embedded && (
         <header className="topbar">
           <div>
@@ -497,22 +528,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       <RescueBanner />
 
-      {/* Credits repeated here, next to the tabs (owner: "hard to see my credits" deep in a
-          tab like Repair — the top bar's wallet is easy to lose track of that far down). */}
-      <div className="page-tabs-row">
-        <PortTabs
-          tabs={PORT_TABS.map((id) => ({
-            id,
-            label: t(`port.tabs.${id}`),
-            badge: id === 'repair' ? repairBadge : undefined,
-          }))}
-          activeId={tab}
-          onChange={(next) => setTab(next as PortTabId)}
-        />
-        <span className="wallet-chip" data-testid="port-tabs-wallet">
-          {money(wallet)}
-        </span>
-      </div>
+      {subNavContainer == null && portTabsRow}
 
       {notice !== null && (
         <p className="notice" role="status">

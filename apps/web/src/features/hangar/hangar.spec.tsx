@@ -103,6 +103,23 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
   });
 
+  it('portals Port\'s own tab row above the ship animation, not below it (owner request)', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+    await screen.findByRole('tab', { name: 'Refuel' });
+
+    const slot = container.querySelector('.hangar-subnav-slot');
+    expect(slot).not.toBeNull();
+    expect(within(slot as HTMLElement).getByRole('tab', { name: 'Market' })).toBeInTheDocument();
+
+    // DOM order: the slot (with Port's tabs now inside it) comes before the animated scene.
+    const scene = container.querySelector('[data-testid="transit-scene"]');
+    expect(scene).not.toBeNull();
+    expect(
+      slot!.compareDocumentPosition(scene as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('the legacy /board and /port links still work, now landing on the nested route', async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/board'] });
