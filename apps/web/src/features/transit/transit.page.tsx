@@ -20,12 +20,6 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { summarizeLegs } from '../missions/mission-facts';
 import { ShipStage } from '../../ui/ShipStage';
 
-/** The newest finished mission, for a host to show as a link/popup instead of inline. */
-export interface LastMission {
-  readonly missionId: string;
-  readonly outcome: string;
-}
-
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
@@ -36,17 +30,12 @@ export interface TransitPageProps {
   /** Embedded only: switches the host to its own "Board" tab (a route Link there would just
       reload the current page, since /board now redirects back to /hangar). */
   onGoToBoard?: () => void;
-  /** Embedded only: the newest finished mission, whenever it changes (including back to
-      undefined, e.g. a fresh account with no report yet). The host shows this as a link that
-      opens a popup instead of an inline card (owner request — fewer lines on My Ship). */
-  onLastMission?: (report: LastMission | undefined) => void;
 }
 
 export function TransitPage({
   guided = false,
   embedded = false,
   onGoToBoard,
-  onLastMission,
 }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
@@ -98,13 +87,6 @@ export function TransitPage({
     }
   }, [mission]);
   const newestReport = latestReportQuery.data?.items[0];
-  useEffect(() => {
-    onLastMission?.(
-      newestReport === undefined
-        ? undefined
-        : { missionId: newestReport.missionId, outcome: newestReport.outcome },
-    );
-  }, [newestReport, onLastMission]);
   useEffect(() => {
     if (
       activeIsEmpty &&
@@ -178,9 +160,8 @@ export function TransitPage({
     const latest = latestReportQuery.data?.items[0];
     if (embedded) {
       // Nothing active: the host's own idle scene already says "docked", and the last report
-      // (if there is one) reaches the pilot through the host's own link/popup via
-      // onLastMission now — only the rescue banner (a ship can go ADRIFT with no mission
-      // running) is worth adding here.
+      // (if there is one) reaches the pilot through the persistent top bar now — only the rescue
+      // banner (a ship can go ADRIFT with no mission running) is worth adding here.
       return <RescueBanner />;
     }
     return (

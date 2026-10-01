@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { client } from '../api/client';
 import type { ShipResponse } from '../api/generated';
 import { useAuth } from '../features/auth/auth.hooks';
+import { useWorld } from '../features/ship/use-world';
+import { pickLocalized } from '../i18n/localized';
 import { FactionBadge } from './FactionBadge';
 
 // A ship always has a name (the server assigns a starter one), but a placeholder still guards
@@ -16,11 +19,14 @@ function hexPlaceholder(seed: string): string {
 }
 
 /**
- * Faction and ship name, in the middle of the top bar (owner request): who the pilot is
- * flying for, and which ship, visible from every in-game screen.
+ * Faction, ship name and current status/location, in the middle of the top bar (owner request):
+ * who the pilot is flying for, which ship, and what it is doing now — visible from every
+ * in-game screen so the body can stay clean.
  */
 export function ShipIdentity() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
+  const world = useWorld();
   const shipsQuery = useQuery({
     queryKey: ['ships'],
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
@@ -31,10 +37,25 @@ export function ShipIdentity() {
   const shipName =
     ship === undefined ? undefined : ship.name.trim() !== '' ? ship.name : hexPlaceholder(ship.id);
 
+  let statusText: string | undefined;
+  if (ship !== undefined) {
+    const place = world.data?.locations.find((entry) => entry.id === ship.currentLocationId);
+    const placeName =
+      place === undefined ? ship.currentLocationId : pickLocalized(place.displayName, i18n.language);
+    const { kind } = ship.activity;
+    statusText =
+      kind === 'idle'
+        ? t('stage.docked', { place: placeName })
+        : kind === 'repairing'
+          ? t('stage.repairingAt', { place: placeName })
+          : t(`stage.mode.${kind}`);
+  }
+
   return (
     <div className="ship-identity">
       <FactionBadge factionId={user.factionId} />
       {shipName !== undefined && <span className="ship-identity-name">{shipName}</span>}
+      {statusText !== undefined && <span className="ship-identity-status">{statusText}</span>}
     </div>
   );
 }

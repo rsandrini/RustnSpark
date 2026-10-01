@@ -10,7 +10,7 @@ import type {
   Problem,
   ShipResponse,
 } from '../../api/generated';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
@@ -21,7 +21,7 @@ import { TrayPartRow } from './tray-part-row';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
-import { TransitPage, type LastMission } from '../transit/transit.page';
+import { TransitPage } from '../transit/transit.page';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -124,10 +124,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
-  // The last-finished mission used to be an inline card between the ship animation and the
-  // tabs; it is a link near the tabs now, going straight to its report (owner request —
-  // fewer lines on the page, and one click instead of a popup in between).
-  const [lastMission, setLastMission] = useState<LastMission | undefined>(undefined);
 
   // Seed the editing layout once per ship; later syncs come from save/auto responses.
   useEffect(() => {
@@ -389,19 +385,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           same three places now) and read as confusing, two menus doing the same job. Removed —
           Port's and Board's own content below still render from the same URL-derived `pageTab`,
           just with no second tab row announcing it. */}
-      {lastMission !== undefined && (
-        <div className="hangar-links-row">
-          <Link className="nav-link" to={`/report/${lastMission.missionId}`}>
-            {t('transit.lastMission')}
-          </Link>
-        </div>
-      )}
 
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
-          mission no longer renders inline here; it reaches the pilot as the link above instead,
-          straight to its report — not a popup, so it doesn't take two clicks. */}
-      <TransitPage embedded onGoToBoard={() => goToTab('board')} onLastMission={setLastMission} />
+          mission now lives in the persistent top bar instead of taking a line here. */}
+      <TransitPage embedded onGoToBoard={() => goToTab('board')} />
 
       {pageTab === 'board' && <BoardPage embedded onGoToShip={() => goToTab('ship')} />}
       {pageTab === 'port' && (
