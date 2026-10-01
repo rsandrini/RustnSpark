@@ -1597,6 +1597,144 @@ svg .block.floating {
   color: var(--mut);
 }
 
+/* Ship sheet's own ok/bad pills (energy surplus/deficit, battery coverage) — same shape as the
+   combat log's, but a plain ok/bad semantic rather than hit/miss specifically. Qualified with
+   `.statrow` for the same specificity reason as `.tone-*` above. */
+.pill-ok,
+.statrow .pill-ok {
+  background: rgba(46, 160, 67, 0.18);
+  color: var(--ok);
+}
+
+.pill-bad,
+.statrow .pill-bad {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--bad);
+}
+
+/* Generic text-color tones for a value that has a pass/fail threshold (energy, autonomy,
+   condition, structure) — distinct from `.gauge.ok/.warn/.bad`, which style a bar's fill, not
+   plain text. Qualified with the parent class so they outrank `.statrow b`/`.statrow span`
+   above, which would otherwise win on specificity and repaint everything muted grey. */
+.tone-ok,
+.statrow .tone-ok {
+  color: var(--ok);
+}
+
+.tone-warn,
+.statrow .tone-warn {
+  color: var(--risk-md);
+}
+
+.tone-bad,
+.statrow .tone-bad {
+  color: var(--bad);
+}
+
+/* Ship sheet (owner request, round 8: "too long and hard to understand") — a short status, an
+   8-number headline always visible, and the full 20-row breakdown grouped and collapsed behind
+   a disclosure, instead of one flat list. */
+.sheet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.sheet-status.ready {
+  background: rgba(46, 160, 67, 0.14);
+  color: var(--ok);
+}
+
+.sheet-status.problem {
+  background: rgba(248, 81, 73, 0.14);
+  color: var(--bad);
+}
+
+.sheet-headline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-headline-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet-headline-tile span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mut);
+}
+
+.sheet-headline-tile b {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sheet-details summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--blue);
+  list-style: none;
+  margin-bottom: 6px;
+}
+
+.sheet-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.sheet-details summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 5px;
+  transition: transform 0.15s ease;
+}
+
+.sheet-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.sheet-group {
+  margin-bottom: 10px;
+}
+
+.sheet-group:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-group-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mut);
+  font-weight: 700;
+  padding-top: 6px;
+}
+
+.sheet-group:first-child .sheet-group-title {
+  padding-top: 0;
+}
+
+/* Cruising/Combat power's generate/consume (or draw/coverage) line under the pill. */
+.statrow .substat {
+  display: block;
+  font-size: 11px;
+  color: var(--mut);
+  margin-top: 1px;
+}
+
 /* One consistent color per damage type, reused nowhere else so it never collides with rarity,
    risk or faction colors. */
 .combat-log-table .dmg-shield {

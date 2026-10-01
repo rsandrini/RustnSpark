@@ -78,8 +78,6 @@ describe('hangar (S10.4)', () => {
 
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     expect(screen.getAllByText('Multirole').length).toBeGreaterThan(0);
-    // crg 10 from the server sheet (scoped: batOutput is also 10 in this fixture)
-    expect(screen.getByText('Cargo').closest('.statrow')).toHaveTextContent('10');
     // Only part-cargo-b is in storage; everything else is placed on the yard.
     expect(await screen.findByRole('button', { name: /^cargo/i })).toBeInTheDocument();
     expect(block(container, 'part-bridge')).not.toBeNull();
@@ -89,6 +87,63 @@ describe('hangar (S10.4)', () => {
       block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
         ?.textContent,
     ).toBe('1%');
+  });
+
+  it('shows a headline summary (8 key numbers) above the full stat breakdown, collapsed by default (owner request, round 8: ship sheet too long)', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const headline = await screen.findByTestId('sheet-headline');
+    // crg 10 from the server sheet, shown as a headline tile (not a flat 20-row list).
+    expect(within(headline).getByText('Cargo').closest('.sheet-headline-tile')).toHaveTextContent(
+      '10',
+    );
+    for (const label of [
+      'Firepower',
+      'Defense',
+      'Mobility',
+      'Autonomy',
+      'Condition',
+      'Energy',
+      'Structure',
+    ]) {
+      expect(within(headline).getByText(label)).toBeInTheDocument();
+    }
+
+    // The full 20-row breakdown is behind a closed-by-default disclosure, grouped into sections.
+    const details = container.querySelector('details.sheet-details');
+    expect(details).not.toHaveAttribute('open');
+    fireEvent.click(screen.getByText('Show all stats'));
+    expect(details).toHaveAttribute('open');
+
+    for (const group of ['Combat', 'Power', 'Propulsion & Range', 'Cargo', 'Hull']) {
+      expect(within(details as HTMLElement).getByText(group)).toBeInTheDocument();
+    }
+
+    // Owner request: better, fuller descriptions ("Fuel tank" -> "Fuel tank capacity"), and the
+    // existing per-row hover tooltip is preserved, not dropped by the restructure.
+    const fuelRow = within(details as HTMLElement)
+      .getByText('Fuel tank capacity')
+      .closest('.statrow');
+    expect(fuelRow).toHaveAttribute('title', expect.stringContaining('every installed tank'));
+
+    // Cruising power (owner example: "generate"/"consume" instead of a bare signed number).
+    // The only part with a nonzero energyCont in the fixture is the battery (+8).
+    const cruiseRow = within(details as HTMLElement)
+      .getByText('Cruising power')
+      .closest('.statrow');
+    expect(cruiseRow).toHaveTextContent('Surplus +8');
+    expect(cruiseRow).toHaveTextContent('Generates 8');
+    expect(cruiseRow).toHaveTextContent('Consumes 0');
+    expect(cruiseRow?.querySelector('.pill')).toHaveClass('pill-ok');
+
+    // Combat power: a draw checked against the battery's own output, not a surplus/deficit.
+    const combatPowerRow = within(details as HTMLElement)
+      .getByText('Combat power')
+      .closest('.statrow');
+    expect(combatPowerRow).toHaveTextContent('Draws 0/round');
+    expect(combatPowerRow).toHaveTextContent('Battery covers it (10/round)');
   });
 
   it('shows the rarity in the hover popup for a placed block, not printed on the block itself (owner request, round 8 follow-up)', async () => {
@@ -145,8 +200,11 @@ describe('hangar (S10.4)', () => {
     await screen.findByRole('heading', { name: 'My Ship' });
 
     // One decimal would round 0.958 up to a displayed "1", which then contradicts a
-    // MOB_TOO_LOW ("Mobility is below 1.") problem shown right next to it.
-    expect(await screen.findByText('0.96')).toBeInTheDocument();
+    // MOB_TOO_LOW ("Mobility is below 1.") problem shown right next to it. Mobility is a
+    // headline tile (always visible), so scope to it — the same number also appears in the
+    // collapsed "Show all stats" detail below.
+    const headline = await screen.findByTestId('sheet-headline');
+    expect(within(headline).getByText('0.96')).toBeInTheDocument();
   });
 
   it('opens a part popup only from its (i) button — clicking the row itself never opens one', async () => {
@@ -291,6 +349,40 @@ describe('hangar (S10.4)', () => {
         ).toBe(true),
       { timeout: 3000 },
     );
+  });
+
+  it('shows a short "N problems" status above the headline once a layout edit comes back unviable (owner request, round 8: status on top, not buried after 20 rows)', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        return HttpResponse.json(
+          {
+            sheet: testSheet,
+            shipClass: 'MULTIROLE',
+            viability: {
+              viable: false,
+              problems: [{ code: 'MOB_TOO_LOW', message: 'Mobility is below 1.' }],
+            },
+            layout: body.layout,
+            omittedPartInstanceIds: [],
+          },
+          { status: 200 },
+        );
+      }),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByText('Ready to fly');
+
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 4, 0));
+
+    expect(await screen.findByText('1 problem(s)')).toBeInTheDocument();
+    // The full, actionable detail (with its "find in store" fix) still renders separately,
+    // below the sheet — the strip is a short pointer to it, not a replacement for it.
+    expect(screen.getByText('Mobility is below 1.')).toBeInTheDocument();
   });
 
   it('Store compare uses the saved ship sheet, not an unsaved layout-edit preview (review finding)', async () => {

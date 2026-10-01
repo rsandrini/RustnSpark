@@ -18,6 +18,7 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartStatsCard, type PartCompareContext } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
+import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { TransitPage, type LastMission } from '../transit/transit.page';
@@ -312,48 +313,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
 
-  // Server values are floats (autonomy is 142857.14…): show at most one decimal, in the
-  // player's locale.
-  const number = (value: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
-  // Mobility has a hard threshold (MOB_TOO_LOW fires below 1): one decimal can round e.g. 0.96
-  // up to a displayed "1", which then looks wrong next to "Mobility is below 1." Two decimals
-  // keep the number honest about which side of the threshold it is actually on.
-  const mobilityNumber = (value: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(value);
-  const statRows: Array<{ key: string; value: string }> =
-    sheet === undefined
-      ? []
-      : [
-          { key: 'mob', value: mobilityNumber(sheet.mob) },
-          { key: 'crg', value: number(sheet.crg) },
-          { key: 'min', value: number(sheet.min) },
-          { key: 'hp', value: number(sheet.hp) },
-          { key: 'pot', value: number(sheet.pot) },
-          { key: 'pdf', value: number(sheet.pdf) },
-          { key: 'bli', value: number(sheet.bli) },
-          { key: 'esc', value: number(sheet.esc) },
-          { key: 'sen', value: number(sheet.sen) },
-          { key: 'mass', value: number(sheet.mass) },
-          { key: 'fuelCap', value: number(sheet.fuelCap) },
-          { key: 'fuelUse', value: number(sheet.fuelUse) },
-          { key: 'energyCont', value: number(sheet.energyCont) },
-          { key: 'energyCombat', value: number(sheet.energyCombat) },
-          { key: 'batCharge', value: number(sheet.batCharge) },
-          { key: 'batOutput', value: number(sheet.batOutput) },
-          { key: 'batInput', value: number(sheet.batInput) },
-          { key: 'autonomy', value: number(sheet.autonomy) },
-          { key: 'condition', value: number(sheet.condition) },
-          {
-            key: 'structure',
-            value: t('hangar.stats.structureValue', {
-              used: number(sheet.structureUsed),
-              budget: number(sheet.structureBudget),
-            }),
-          },
-        ];
-
   const allProblems = [...viabilityProblems, ...previewProblems];
+
+  // Cruising power's generate/consume split (owner example: "generate"/"consume", not a bare
+  // signed number) needs each installed part's own catalog value — the sheet only carries the
+  // net total.
+  const installedCatalogs = effectiveLayout
+    .map((placement) => catalogById.get(placement.partInstanceId))
+    .filter((catalog): catalog is NonNullable<typeof catalog> => catalog !== undefined);
 
   if (shipsQuery.isLoading || inventoryQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
@@ -568,20 +535,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             <section aria-label={t('hangar.sheet')}>
               <div className="panel">
                 <h2>{t('hangar.sheet')}</h2>
-                <div className="statrow" title={t('hangar.statHelp.class')}>
-                  <span>{t('hangar.class')}</span>
-                  <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
-                </div>
-                {statRows.map((row) => (
-                  <div
-                    className="statrow"
-                    key={row.key}
-                    title={t(`hangar.statHelp.${row.key}`, { defaultValue: '' })}
-                  >
-                    <span>{t(`hangar.stats.${row.key}`)}</span>
-                    <b>{row.value}</b>
-                  </div>
-                ))}
+                <ShipSheetPanel
+                  shipClass={shipClass}
+                  sheet={sheet}
+                  problemCount={allProblems.length}
+                  installedCatalogs={installedCatalogs}
+                />
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
                 {!previewing && layout !== null && layout.length === 0 && (
                   <p className="muted">{t('hangar.state.noPreview')}</p>

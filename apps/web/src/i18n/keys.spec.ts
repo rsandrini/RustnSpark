@@ -59,9 +59,10 @@ describe('i18n keys used by the code', () => {
   // Keys built at runtime from a known set: check the whole family against its source of truth.
   describe('dynamic key families', () => {
     const hangarStats = [
-      ...readFileSync(join(__dirname, '../features/hangar/hangar.page.tsx'), 'utf8').matchAll(
-        /\{\s*key: '([A-Za-z]+)'/g,
-      ),
+      ...readFileSync(
+        join(__dirname, '../features/hangar/ship-sheet-panel.tsx'),
+        'utf8',
+      ).matchAll(/\{\s*key: '([A-Za-z]+)'/g),
     ].map((match) => `hangar.stats.${match[1]}`);
     const families: Array<[string, string[]]> = [
       ['hangar stat rows', hangarStats],
