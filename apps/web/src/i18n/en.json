@@ -565,6 +565,7 @@
     "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
     "repairNoChange": "No change",
     "repairNothingSelected": "Nothing selected yet: move a slider, or set everything to 100%.",
+    "repairWallet": "Current balance",
     "repairFee": "Workshop fee",
     "repairTotal": "Total",
     "repairAllTo100": "Set all to 100%",

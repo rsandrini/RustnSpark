@@ -139,6 +139,8 @@ describe('port (S10.9)', () => {
     }
     const summary = screen.getByTestId('repair-summary');
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(within(summary).getByText('Current balance')).toBeInTheDocument();
+    expect(within(summary).getByText('4,820 ¢')).toBeInTheDocument();
     expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
     expect(
       screen.getAllByTestId('repair-line').every((line) => /¢/.test(line.textContent ?? '')),

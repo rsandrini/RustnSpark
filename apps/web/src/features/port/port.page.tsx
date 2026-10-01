@@ -728,6 +728,10 @@ export function PortPage({
           {damaged.length > 0 && (
             <div className="panel repair-summary" data-testid="repair-summary">
               <div className="statrow">
+                <span>{t('port.repairWallet')}</span>
+                <b>{money(wallet)}</b>
+              </div>
+              <div className="statrow">
                 <span>{t('port.repairFee')}</span>
                 <b>{money(changedTargets.length === 0 ? 0 : (repairQuoteQuery.data?.fee ?? 0))}</b>
               </div>

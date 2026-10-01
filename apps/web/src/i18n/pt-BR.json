@@ -565,6 +565,7 @@
     "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
     "repairNoChange": "Sem mudança",
     "repairNothingSelected": "Nada selecionado ainda: mova um controle ou ponha tudo em 100%.",
+    "repairWallet": "Saldo atual",
     "repairFee": "Taxa da oficina",
     "repairTotal": "Total",
     "repairAllTo100": "Tudo em 100%",
