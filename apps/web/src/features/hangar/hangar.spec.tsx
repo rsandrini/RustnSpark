@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
@@ -72,6 +72,10 @@ function shipEcho(layout: Placement[]) {
 }
 
 describe('hangar (S10.4)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('renders the ship sheet, class and the loose-parts tray', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
@@ -87,6 +91,61 @@ describe('hangar (S10.4)', () => {
       block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
         ?.textContent,
     ).toBe('1%');
+  });
+
+  it('opens straight to the Port or Board tab from a nested URL (owner request: reachable from the top nav, not just the local tab row)', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    // Embedded Port has no page <h1> of its own (round-3 nav consolidation kept that
+    // suppressed); its own Market/Repair/Refuel/Scavenging tabs are always there.
+    expect(await screen.findByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Port' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('the legacy /board and /port links still work, now landing on the nested route', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/board'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    // Embedded Board has no page <h1> of its own (round-3 nav consolidation kept that
+    // suppressed); its filter chip group is always there and carries the same label.
+    expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
+  });
+
+  it('clicking the local Ship/Port/Board tabs navigates to the matching nested URL', async () => {
+    server.use(onboarded());
+    const { router } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Port' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/port'));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Board' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/board'));
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Ship' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
+  });
+
+  it('hides the ship animation behind a toggle, persisted across a reload (owner request: extra screen space)', async () => {
+    server.use(onboarded());
+    const { container, unmount } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    expect(container.querySelector('[data-testid="transit-scene"]')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hide animation' }));
+    expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    // The placeholder still says what the ship is doing — not just an empty gap.
+    expect(screen.getByTestId('stage-caption')).toHaveTextContent('Docked');
+    expect(window.localStorage.getItem('rs.hangar.stageCollapsed')).toBe('1');
+
+    unmount();
+    const second = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    expect(second.container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Show animation' })).toBeInTheDocument();
   });
 
   it('shows a headline summary (8 key numbers) above the full stat breakdown, collapsed by default (owner request, round 8: ship sheet too long)', async () => {

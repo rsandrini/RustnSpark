@@ -13,7 +13,15 @@ const ACTIVITY_REFRESH_MS = 15_000;
  * scavenging, repairing, or docked). Re-reads the ship now and then, and the moment an activity's
  * timer runs out, so the scene changes when the job ends without a reload.
  */
-export function ActiveShipStage({ size = 'hero' }: { size?: 'hero' | 'compact' }) {
+export function ActiveShipStage({
+  size = 'hero',
+  collapsed = false,
+}: {
+  size?: 'hero' | 'compact';
+  /** Owner request (hangar, extra screen space): replace the animated scene with a small text
+      placeholder — the data keeps loading/refreshing underneath either way. */
+  collapsed?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const shipsQuery = useQuery({
@@ -44,6 +52,7 @@ export function ActiveShipStage({ size = 'hero' }: { size?: 'hero' | 'compact' }
       size={size}
       detail={detail}
       placeName={placeName}
+      collapsed={collapsed}
       onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
     />
   );

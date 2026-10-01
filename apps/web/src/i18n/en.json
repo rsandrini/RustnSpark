@@ -60,6 +60,10 @@
       "port": "Port",
       "dockedOnly": "Only available while docked in port."
     },
+    "stage": {
+      "hide": "Hide animation",
+      "show": "Show animation"
+    },
     "yardHint": "Select a part, then click a cell to place it. Select a block to move, rotate or remove it.",
     "sheet": "Ship sheet",
     "class": "Class",

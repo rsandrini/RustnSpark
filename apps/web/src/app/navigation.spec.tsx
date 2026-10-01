@@ -40,7 +40,9 @@ describe('navigation flow (S10.10)', () => {
     const hrefs = within(nav)
       .getAllByRole('link')
       .map((link) => link.getAttribute('href'));
-    expect(hrefs).toEqual(['/hangar', '/map']);
+    // Owner request: Port and Board are reachable straight from the top nav again (reversing
+    // the round-3 fold), between My Ship and Map.
+    expect(hrefs).toEqual(['/hangar', '/hangar/port', '/hangar/board', '/map']);
   });
 
   it('the top-right account menu has Profile and Logout, and Admin only for an admin account', async () => {
@@ -89,14 +91,18 @@ describe('navigation flow (S10.10)', () => {
     expect(await screen.findByRole('heading', { name: 'Sector map' })).toBeInTheDocument();
   });
 
-  it('walks report → My Ship (Port folded in) → map through the footer and nav', async () => {
+  it('walks report → My Ship Port tab → map through the footer and nav', async () => {
     const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
 
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
-    // Port is folded into My Ship now (round-3): the report's own "Port" link still exists
-    // and lands there (it just no longer opens a route of its own).
-    fireEvent.click(screen.getByRole('link', { name: 'Port' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
+    // Port now has two "Port" links on this screen at once: the report's own (to="/port") and
+    // the top nav's (to="/hangar/port", now always present). Find the report's own by its href.
+    const reportPortLink = screen
+      .getAllByRole('link', { name: 'Port' })
+      .find((link) => link.getAttribute('href') === '/port');
+    expect(reportPortLink).toBeDefined();
+    fireEvent.click(reportPortLink!);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/port'));
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
 
     fireEvent.click(within(gameNav()).getByRole('link', { name: 'Map' }));
@@ -105,13 +111,13 @@ describe('navigation flow (S10.10)', () => {
 
   it('a /board link lands on My Ship with the Board tab open, not the Ship tab', async () => {
     // Owner: "open mission board from the map is going to ship (not to the mission board
-    // menu)" — /board (and /port, /transit) redirect to My Ship now; whichever tab the link
-    // meant to open must actually be the one selected.
+    // menu)" — /board (and /port, /transit) land on the matching nested hangar route; whichever
+    // tab the link meant to open must actually be the one selected.
     const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Back to the board' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/board'));
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true'),
     );

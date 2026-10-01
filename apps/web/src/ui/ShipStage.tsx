@@ -19,6 +19,10 @@ export interface ShipStageProps {
   placeName?: string;
   /** Called when the countdown reaches zero (the caller refetches what changed). */
   onElapsed?: () => void;
+  /** Owner request (hangar, extra screen space): a small text-only placeholder bar instead of
+      the animated scene — the caption that already exists for every other mode, just also shown
+      (not sr-only) for idle, since there's no on-screen scene left to say it visually. */
+  collapsed?: boolean;
 }
 
 const DRONES = [
@@ -55,8 +59,27 @@ export function ShipStage({
   detail,
   placeName,
   onElapsed,
+  collapsed = false,
 }: ShipStageProps) {
   const { t } = useTranslation();
+
+  if (collapsed) {
+    return (
+      <div className="ship-stage-wrap ship-stage-collapsed">
+        <p className="stage-caption" data-testid="stage-caption">
+          <b>{t(`stage.mode.${mode}`)}</b>
+          {until !== undefined && until !== null && (
+            <>
+              {' '}
+              <Countdown until={until} onElapsed={onElapsed} />
+            </>
+          )}
+          {detail !== undefined && <span className="sub"> {detail}</span>}
+        </p>
+      </div>
+    );
+  }
+
   // Scavenging works the field right where the ship already is (GDD/W8) — it never travels
   // anywhere, so the scene should stay parked at the current place (backdrop, place-name
   // overlay, no star-streaming), same as idle/repairing. Only flying actually goes anywhere.

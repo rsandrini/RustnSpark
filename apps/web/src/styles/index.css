@@ -3274,6 +3274,26 @@ svg .block.broken {
   font-size: 14px;
 }
 
+/* Collapsed animation (owner request: extra screen space) — a slim bar instead of the full
+   scene, same caption text every mode already has, just visible instead of sr-only for idle. */
+.ship-stage-collapsed {
+  margin: 12px 0;
+}
+
+.ship-stage-collapsed .stage-caption {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.stage-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 6px 0 0;
+}
+
 .debris {
   position: absolute;
   right: -40px;

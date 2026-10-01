@@ -25,15 +25,15 @@ function AdminFallback() {
   return <p>{t('tuning.loading')}</p>;
 }
 
-/** Board/Transit/Port redirect to My Ship's own tabs now (round-3 nav consolidation); this
-    keeps whichever tab a stray /board, /transit or /port link meant to open actually opening
-    it, instead of always landing on the Ship tab — and keeps any other query string the link
+/** Board/Transit/Port are real nested routes under /hangar again (reversing the query-param
+    form of the round-3 nav consolidation — Port and Board are reachable from the top nav now,
+    not just a tab inside My Ship); these three bare paths stay only as redirects for any stray
+    old bookmark/link, keeping whichever tab it meant to open and any other query string it
     carried (e.g. /board?location=X for the mission board's own origin filter). */
-function RedirectToHangarTab({ tab }: { tab: 'ship' | 'board' | 'port' }) {
+function RedirectToHangarTab({ tab }: { tab?: 'board' | 'port' }) {
   const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  params.set('tab', tab);
-  return <Navigate to={`/hangar?${params.toString()}`} replace />;
+  const path = tab === undefined ? '/hangar' : `/hangar/${tab}`;
+  return <Navigate to={`${path}${location.search}`} replace />;
 }
 
 function InGameChrome() {
@@ -94,7 +94,7 @@ export const routes = [
         ),
       },
       {
-        path: '/hangar',
+        path: '/hangar/:tab?',
         element: (
           <ProtectedRoute>
             <RequireFaction>
@@ -113,10 +113,9 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
-      // Board, Transit and Port folded into My Ship as gated tabs/sections (round-3 nav
-      // consolidation); these three routes stay only as redirects for any stray bookmark/link.
+      // Bare bookmarks from before Port/Board got their own nested routes back.
       { path: '/board', element: <RedirectToHangarTab tab="board" /> },
-      { path: '/transit', element: <RedirectToHangarTab tab="ship" /> },
+      { path: '/transit', element: <RedirectToHangarTab /> },
       { path: '/port', element: <RedirectToHangarTab tab="port" /> },
       {
         path: '/report/:missionId',

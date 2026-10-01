@@ -10,7 +10,7 @@ import type {
   Problem,
   ShipResponse,
 } from '../../api/generated';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
@@ -46,6 +46,7 @@ const FIX_CLASS: Record<string, string> = {
 };
 
 const PREVIEW_DEBOUNCE_MS = 400;
+const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
 
 export interface HangarPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -83,18 +84,40 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // own hover card (round 5/6) manages its own position state locally (TrayPartRow) since each
   // row needs an independent measured/clamped placement, not one shared id.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Board and Port fold into My Ship as gated tabs (round-3 nav consolidation): enabled only
-  // while the ship is docked, same as the old Port/Board nav entries used to be.
-  const [searchParams] = useSearchParams();
-  const [pageTab, setPageTab] = useState<PageTab>(() => pageTabFrom(searchParams.get('tab')) ?? 'ship');
-  // A link elsewhere (Map, Report, Transit's own "Mission board" button) redirects here with
-  // ?tab=board — same tab, same route, so no remount happens: without this the page would just
-  // sit on whatever tab it was already showing (owner: "open mission board from the map is
-  // going to ship, not to the mission board menu").
-  useEffect(() => {
-    const next = pageTabFrom(searchParams.get('tab'));
-    if (next !== null) setPageTab(next);
-  }, [searchParams]);
+  // Ship/Port/Board is a nested route (/hangar, /hangar/port, /hangar/board) now, not local
+  // state: the URL is the only source of truth, so a link elsewhere (Map, Report, Transit's own
+  // "Mission board" button, or the top nav) always lands on the right tab, including when it's
+  // the same route the page is already showing.
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { tab: tabParam } = useParams<{ tab?: string }>();
+  const pageTab: PageTab = pageTabFrom(tabParam ?? null) ?? 'ship';
+  // Keep whatever query string is already there (e.g. Board's own ?location=X origin filter) —
+  // switching tabs changes the path, never drops it.
+  const goToTab = (tab: PageTab) =>
+    navigate(`${tab === 'ship' ? '/hangar' : `/hangar/${tab}`}${location.search}`);
+  // Port and Board are enabled only while the ship is docked (same rule the old Transit-disabled
+  // nav entry used) — collapsed animation state persists across visits (owner request: extra
+  // screen space), client-side only, per the latest round's own stated constraint (no backend
+  // change for this).
+  const [stageCollapsed, setStageCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(STAGE_COLLAPSE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleStage = () => {
+    setStageCollapsed((was) => {
+      const next = !was;
+      try {
+        window.localStorage.setItem(STAGE_COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        // the choice still applies for this session
+      }
+      return next;
+    });
+  };
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
@@ -114,9 +137,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // now-disabled tab.
   useEffect(() => {
     if (ship !== undefined && ship.status !== 'IN_PORT' && pageTab !== 'ship') {
-      setPageTab('ship');
+      navigate('/hangar', { replace: true });
     }
-  }, [ship, pageTab]);
+  }, [ship, pageTab, navigate]);
 
   const catalogById = useMemo(() => {
     const map = new Map<string, InventoryItem['catalog']>();
@@ -346,7 +369,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
           heading-based ready signal every screen uses, just not shown on screen. */}
       <h1 className="sr-only">{t('hangar.title')}</h1>
-      <ActiveShipStage size="compact" />
+      <ActiveShipStage size="compact" collapsed={stageCollapsed} />
+      <div className="stage-toggle-row">
+        <button type="button" className="btn tiny" onClick={toggleStage}>
+          {stageCollapsed ? t('hangar.stage.show') : t('hangar.stage.hide')}
+        </button>
+      </div>
 
       <div className="page-tabs-row">
         <div className="tabs" role="tablist" aria-label={t('hangar.pageTabs.label')}>
@@ -355,7 +383,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             role="tab"
             aria-selected={pageTab === 'ship'}
             className={`tab${pageTab === 'ship' ? ' on' : ''}`}
-            onClick={() => setPageTab('ship')}
+            onClick={() => goToTab('ship')}
           >
             {t('hangar.pageTabs.ship')}
           </button>
@@ -377,7 +405,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 role="tab"
                 aria-selected={pageTab === id}
                 className={`tab${pageTab === id ? ' on' : ''}`}
-                onClick={() => setPageTab(id)}
+                onClick={() => goToTab(id)}
               >
                 {t(`hangar.pageTabs.${id}`)}
               </button>
@@ -395,14 +423,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
           mission no longer renders inline here; it reaches the pilot as the link above instead,
           straight to its report — not a popup, so it doesn't take two clicks. */}
-      <TransitPage
-        embedded
-        onGoToBoard={() => setPageTab('board')}
-        onLastMission={setLastMission}
-      />
+      <TransitPage embedded onGoToBoard={() => goToTab('board')} onLastMission={setLastMission} />
 
-      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => setPageTab('ship')} />}
-      {pageTab === 'port' && <PortPage embedded onGoToShip={() => setPageTab('ship')} />}
+      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => goToTab('ship')} />}
+      {pageTab === 'port' && <PortPage embedded onGoToShip={() => goToTab('ship')} />}
 
       {pageTab === 'ship' && (
         <>

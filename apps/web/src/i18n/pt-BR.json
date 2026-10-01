@@ -60,6 +60,10 @@
       "port": "Porto",
       "dockedOnly": "Só disponível enquanto atracada no porto."
     },
+    "stage": {
+      "hide": "Ocultar animação",
+      "show": "Mostrar animação"
+    },
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
     "sheet": "Folha da nave",
     "class": "Classe",
