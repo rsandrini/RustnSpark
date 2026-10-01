@@ -80,8 +80,15 @@ export interface MissionCombatRound {
   /** 1-based round index. */
   readonly round: number;
   readonly attacker: 'player' | 'enemy';
-  /** Natural d20 result (before first-strike bonus). */
+  /** Natural d20 result (before firepower or first-strike bonus). */
   readonly roll: number;
+  /** Attacker's own firepower, added to `roll` for the hit check — optional even on v2 (rows
+      written before this field existed have `rounds` but no `pdf`/`bonus`, and must keep
+      reading back fine, D36 — only ADD optional fields). */
+  readonly pdf?: number;
+  /** First-strike bonus actually applied to this attack (0 on every attack but the one that
+      held it pending). Optional for the same reason as `pdf`. */
+  readonly bonus?: number;
   readonly dc: number;
   readonly hit: boolean;
   /** Total damage before shield absorption (0 on a miss). */

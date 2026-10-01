@@ -385,6 +385,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       round: attack.round,
       attacker: (attack.attacker === 'A') === playerIsA ? 'player' : 'enemy',
       roll: attack.roll,
+      pdf: attack.pdf,
+      bonus: attack.bonus,
       dc: attack.dc,
       hit: attack.hit,
       damage: attack.damage,

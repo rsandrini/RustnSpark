@@ -132,6 +132,11 @@ function eventMembers(
                 round: num,
                 attacker: z.enum(['player', 'enemy']),
                 roll: num,
+                // Optional even within a `rounds` row (not just the array itself): rows written
+                // before this breakdown existed have rounds but no pdf/bonus, and must keep
+                // reading back fine (D36 — only ADD optional fields).
+                pdf: num.optional(),
+                bonus: num.optional(),
                 dc: num,
                 hit: z.boolean(),
                 damage: num,

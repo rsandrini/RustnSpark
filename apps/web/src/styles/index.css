@@ -1757,6 +1757,25 @@ svg .block.floating {
   color: var(--bad);
 }
 
+/* Owner follow-up: color-code "who's attacking" (text + a faint row tint) so it reads without
+   checking the Attacker column on every row — reuses the app's own accent (you) and danger
+   (enemy) tokens, not new colors, and stays distinct from the shield/armor/hull palette above. */
+.combat-log-table .attacker-player {
+  color: var(--spark);
+}
+
+.combat-log-table .attacker-enemy {
+  color: var(--bad);
+}
+
+.combat-log-table tr.attacker-player {
+  background: rgba(240, 165, 0, 0.06);
+}
+
+.combat-log-table tr.attacker-enemy {
+  background: rgba(248, 81, 73, 0.06);
+}
+
 .part-stats {
   margin: 12px 0 0;
 }

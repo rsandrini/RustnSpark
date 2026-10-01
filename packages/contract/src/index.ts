@@ -413,6 +413,9 @@ export const MissionCombatRoundSchema = z.object({
   round: z.number(),
   attacker: z.enum(['player', 'enemy']),
   roll: z.number(),
+  // Optional: reports resolved before this breakdown existed have rounds but no pdf/bonus.
+  pdf: z.number().optional(),
+  bonus: z.number().optional(),
   dc: z.number(),
   hit: z.boolean(),
   damage: z.number(),

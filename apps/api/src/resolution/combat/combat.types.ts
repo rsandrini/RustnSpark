@@ -19,8 +19,15 @@ export interface CombatAttackEvent {
   /** 1-based round index. */
   readonly round: number;
   readonly attacker: CombatSide;
-  /** Natural d20 result (before first-strike bonus). */
+  /** Natural d20 result (before firepower or first-strike bonus). */
   readonly roll: number;
+  /** Attacker's own firepower (PDF), added to `roll` for the hit check — the report's
+      "roll + pdf (+ bonus) = total vs DC" breakdown needs this spelled out, not folded into
+      `roll` or left for the reader to infer from `hit`. */
+  readonly pdf: number;
+  /** First-strike bonus actually applied to this attack (0 on every attack except the one that
+      held it pending). */
+  readonly bonus: number;
   readonly dc: number;
   readonly hit: boolean;
   /** Total damage before shield absorption (0 on miss). */

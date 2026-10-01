@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type {
   CatalogDetail,
+  MissionCombatRound,
   ReportMission,
   ReportStats,
   WorldResponse,
@@ -207,6 +208,19 @@ export function ReportPage({ guided = false }: ReportPageProps) {
   );
 }
 
+// Owner request: show the roll's own breakdown (die + firepower + first-strike bonus) instead
+// of a bare "roll / DC" that can look inconsistent with the Hit/Miss result for any attacker
+// with nonzero firepower — the hit check is actually `roll + pdf + bonus >= dc`, not `roll >=
+// dc`. `pdf`/`bonus` are optional (reports resolved before this breakdown existed have rounds
+// but lack them): fall back to the old plain format rather than showing a broken sum.
+function rollBreakdownText(round: MissionCombatRound): string {
+  if (round.pdf === undefined) return `${round.roll} / ${round.dc}`;
+  const bonus = round.bonus ?? 0;
+  const terms = bonus === 0 ? [round.roll, round.pdf] : [round.roll, round.pdf, bonus];
+  const total = terms.reduce((sum, term) => sum + term, 0);
+  return `${terms.join(' + ')} = ${total} / ${round.dc}`;
+}
+
 function CascadeDetail({
   report,
   lineKey,
@@ -247,12 +261,19 @@ function CascadeDetail({
             </thead>
             <tbody>
               {rounds.map((round, index) => (
-                <tr key={index} className={round.hit ? undefined : 'muted'}>
+                <tr
+                  key={index}
+                  className={[round.hit ? '' : 'muted', `attacker-${round.attacker}`]
+                    .filter(Boolean)
+                    .join(' ')}
+                >
                   <td>{round.round}</td>
-                  <td>{t(`report.combatLog.side.${round.attacker}`)}</td>
                   <td>
-                    {round.roll} / {round.dc}
+                    <span className={`attacker-${round.attacker}`}>
+                      {t(`report.combatLog.side.${round.attacker}`)}
+                    </span>
                   </td>
+                  <td>{rollBreakdownText(round)}</td>
                   <td>
                     <span className={`pill ${round.hit ? 'pill-hit' : 'pill-miss'}`}>
                       {round.hit ? t('report.combatLog.hit') : t('report.combatLog.miss')}

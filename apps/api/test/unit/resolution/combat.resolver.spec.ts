@@ -195,7 +195,22 @@ describe('resolveCombat — acceptance (S5.3)', () => {
     expect(result.rounds.every((e) => e.attacker === 'A')).toBe(true);
     expect(result.rounds[0]?.hit).toBe(true);
     expect(result.rounds[1]?.hit).toBe(false);
+    // The report's "roll + bonus = total vs DC" breakdown needs the bonus actually applied on
+    // each attack, not just the final hit/miss — round 1 held the pending first-strike bonus,
+    // round 2 didn't (already consumed).
+    expect(result.rounds[0]?.bonus).toBe(2);
+    expect(result.rounds[1]?.bonus).toBe(0);
     rng.assertDrained();
+  });
+
+  it("includes each attacker's own firepower in the event, for the report's roll breakdown", () => {
+    const rules: GameRules['combat'] = { ...base, kite_factor: 0, max_rounds: 1 };
+    const strong: CombatSheet = { pdf: 7, bli: 0, esc: 0, sen: 5, hp: 100, mob: 1 };
+    const weak: CombatSheet = { pdf: 3, bli: 0, esc: 0, sen: 1, hp: 100, mob: 1 };
+    const result = resolveCombat(strong, weak, rules, createRng(1));
+    const byAttacker = (side: 'A' | 'B') => result.rounds.find((e) => e.attacker === side);
+    expect(byAttacker('A')?.pdf).toBe(7);
+    expect(byAttacker('B')?.pdf).toBe(3);
   });
 
   it('caps shield regen at the sheet maximum', () => {

@@ -122,6 +122,8 @@ export function resolveCombat(
         round,
         attacker: side,
         roll,
+        pdf: atk.pdf,
+        bonus,
         dc,
         hit,
         damage,

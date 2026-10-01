@@ -89,7 +89,10 @@ describe('report (S10.8)', () => {
     const missRow = rows[2]!;
     expect(hitRow).toHaveTextContent('1');
     expect(hitRow).toHaveTextContent('Enemy');
-    expect(hitRow).toHaveTextContent('14 / 10');
+    // Owner follow-up: the hit check is actually roll + pdf + bonus >= dc, not roll >= dc — show
+    // the real breakdown (14 + firepower 3 + first-strike bonus 2 = 19) instead of a bare
+    // "14 / 10" that can look inconsistent with a Hit result.
+    expect(hitRow).toHaveTextContent('14 + 3 + 2 = 19 / 10');
     expect(hitRow).toHaveTextContent('Hit');
     // Owner request: a colored pill for the result and a consistent color per damage type,
     // not flat text for all seven columns.
@@ -102,6 +105,17 @@ describe('report (S10.8)', () => {
     expect(within(missRow).getByText('Miss')).toHaveClass('pill', 'pill-miss');
     // A miss deals no damage: no colored damage cell to show.
     expect(missRow.querySelector('.dmg-shield')).toBeNull();
+    // Owner follow-up: color-coded text and a row tint so "who's attacking" reads without
+    // checking the Attacker column on every row.
+    expect(hitRow).toHaveClass('attacker-enemy');
+    expect(within(hitRow).getByText('Enemy')).toHaveClass('attacker-enemy');
+    expect(missRow).toHaveClass('attacker-player');
+    expect(within(missRow).getByText('You')).toHaveClass('attacker-player');
+    // No bonus this attack: the "+ 0" term is left out rather than shown as noise.
+    expect(rows[3]).toHaveTextContent('17 + 5 = 22 / 10');
+    // A report resolved before this breakdown existed has rounds but no pdf/bonus at all —
+    // must keep reading back as the old plain format, not a broken "NaN" sum.
+    expect(missRow).toHaveTextContent('6 / 12');
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() =>
