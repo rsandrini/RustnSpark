@@ -514,6 +514,9 @@ export const ReportListItemSchema = z.object({
   credits: z.number(),
   legs: z.number(),
   createdAt: IsoDate,
+  /** Any combat-category event in the run (win/loss/draw/escort-absorbed/escaped/PvP) — the
+      mission history list's own "Combat" flag, owner request. */
+  hadCombat: z.boolean(),
 });
 export type ReportListItem = z.infer<typeof ReportListItemSchema>;
 

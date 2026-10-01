@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -30,6 +30,7 @@ export interface ReportPageProps {
 
 export function ReportPage({ guided = false }: ReportPageProps) {
   const { missionId = '' } = useParams();
+  const location = useLocation();
   const { reloadProfile } = useAuthContext();
   // Opening a report is the moment a pilot looks at the money: make sure it is current.
   useEffect(() => {
@@ -57,6 +58,28 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     queryKey: ['world'],
     queryFn: () => client.get<WorldResponse>('/v1/locations'),
   });
+
+  // Owner request: "an easy way to check that combat inside the history page" — a #combat link
+  // from the mission history jumps straight to the first fight's round-by-round popup, instead
+  // of making the pilot hunt for the right line in what can be a multi-leg narrative. Guarded by
+  // a ref (not just the hash) so closing the popup afterward doesn't immediately reopen it. Must
+  // run before the isLoading early return below (rules of hooks), so it reads the query directly.
+  const combatAutoOpened = useRef(false);
+  useEffect(() => {
+    const data = reportQuery.data;
+    if (combatAutoOpened.current) return;
+    if (location.hash !== '#combat' || data === undefined || data.view !== 'narrative') return;
+    for (const chapter of data.chapters) {
+      const index = chapter.lines.findIndex(
+        (line) => line.detail?.rounds !== undefined && line.detail.rounds.length > 0,
+      );
+      if (index !== -1) {
+        combatAutoOpened.current = true;
+        setPopupLine(`${chapter.leg}-${index}`);
+        return;
+      }
+    }
+  }, [location.hash, reportQuery.data]);
 
   if (reportQuery.isLoading) {
     return (

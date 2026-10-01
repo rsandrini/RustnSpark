@@ -123,6 +123,22 @@ describe('report (S10.8)', () => {
     );
   });
 
+  it('a #combat link from the mission history opens the fight\'s own popup automatically', async () => {
+    renderWithRouter(routes, { initialEntries: ['/report/m-1#combat'] });
+
+    // No click needed: landing with #combat opens the round-by-round popup by itself.
+    const popup = await screen.findByRole('dialog', { name: 'Event details' });
+    expect(within(popup).getByRole('table')).toBeInTheDocument();
+
+    // Closing it must not immediately reopen it (the hash is still #combat afterward).
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Event details' })).not.toBeInTheDocument(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('dialog', { name: 'Event details' })).not.toBeInTheDocument();
+  });
+
   it('renders the raw log view', async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
 

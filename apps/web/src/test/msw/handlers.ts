@@ -569,6 +569,8 @@ export const handlers = [
           credits: 1400,
           legs: 2,
           createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+          // m-1's own narrative detail (below) has a real fight — keep this truthful to it.
+          hadCombat: true,
         },
       ],
     }),

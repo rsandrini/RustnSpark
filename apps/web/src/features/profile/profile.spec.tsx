@@ -41,6 +41,37 @@ describe('profile (S10.9)', () => {
 
     const link = screen.getByRole('link', { name: 'View report' });
     expect(link).toHaveAttribute('href', '/report/m-1');
+
+    // Owner: "almost impossible to know in the mission history log where I had a combat" — a
+    // token on the row the history item is for, and a direct way into that fight's own detail.
+    const combatTag = screen.getByRole('link', { name: 'Combat' });
+    expect(combatTag).toHaveAttribute('href', '/report/m-1#combat');
+  });
+
+  it('shows no Combat tag for a run with no fight', async () => {
+    server.use(
+      http.get('/v1/reports', () =>
+        HttpResponse.json(
+          {
+            items: [
+              {
+                missionId: 'm-2',
+                outcome: 'success',
+                credits: 200,
+                legs: 1,
+                createdAt: new Date().toISOString(),
+                hadCombat: false,
+              },
+            ],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/profile'] });
+
+    await screen.findByRole('link', { name: 'View report' });
+    expect(screen.queryByRole('link', { name: 'Combat' })).not.toBeInTheDocument();
   });
 
   it('shows an empty history placeholder', async () => {

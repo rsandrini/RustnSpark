@@ -30,6 +30,10 @@ export interface ReportListItem {
   readonly credits: number;
   readonly legs: number;
   readonly createdAt: string;
+  /** Owner: "almost impossible to know in the mission history log where I had a combat" — any
+      combat-category event (win/loss/draw/escort-absorbed/escaped/PvP), so the history list can
+      flag it without the client fetching every full report. */
+  readonly hadCombat: boolean;
 }
 
 export interface ReportListResponse {
@@ -187,17 +191,19 @@ export class ReportsService {
     const items = page.map((row) => {
       const stored = (row.legs ?? {}) as StoredLogJson;
       const resolved = resolvedByMission.get(row.missionId);
-      // Stored events are parsed only when the mission.resolved event is missing:
-      // the wallet movement is the source of truth for credits, the events a fallback.
-      const credits =
-        resolved?.creditsDelta ??
-        sumStoredCredits(this.parseStoredEvents(row.missionId, row.schemaVersion, stored.events));
+      // "Fails loudly" (S9.1) is the single-report path's rule, not the list's: one row whose
+      // schemaVersion this build can't read must never break the whole history, so this parse
+      // is lenient here on purpose (credits still has the wallet event as its real source either
+      // way; hadCombat has no such fallback, so an unreadable row just reads as no combat).
+      const events = this.parseStoredEventsLeniently(row.missionId, row.schemaVersion, stored.events);
+      const credits = resolved?.creditsDelta ?? sumStoredCredits(events);
       return {
         missionId: row.missionId,
         outcome: row.outcome,
         credits,
         legs: Array.isArray(stored.legs) ? stored.legs.length : 0,
         createdAt: row.createdAt.toISOString(),
+        hadCombat: events.some((event) => event.category === 'combat'),
       };
     });
     const last = page[page.length - 1];
@@ -297,6 +303,25 @@ export class ReportsService {
       credits: resolved?.creditsDelta ?? sumStoredCredits(events),
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
     };
+  }
+
+  // The list: one row whose schemaVersion this build can't read must never break the whole
+  // history (an existing, tested guarantee) — empty events for that one row, not a 500. Logs
+  // the same way parseStoredEvents does, just doesn't re-throw.
+  private parseStoredEventsLeniently(
+    missionId: string,
+    schemaVersion: number,
+    raw: unknown,
+  ): ParsedMissionEvent[] {
+    try {
+      return parseMissionLogEvents(schemaVersion, raw);
+    } catch (error) {
+      if (error instanceof UnsupportedMissionLogSchemaError) {
+        this.logger.error(`mission ${missionId}: ${error.message}`);
+        return [];
+      }
+      throw error;
+    }
   }
 
   // An unreadable log must fail loudly (S9.1): rendering "no events" for an unknown

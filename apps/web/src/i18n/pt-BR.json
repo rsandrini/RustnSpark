@@ -609,7 +609,9 @@
     "history": "Histórico de missões",
     "noHistory": "Nenhuma missão concluída ainda.",
     "legCount": "{{count}} trechos",
-    "credits": "+{{amount}} ¢"
+    "credits": "+{{amount}} ¢",
+    "combatTag": "Combate",
+    "combatTagHint": "Esta missão teve uma luta — vá direto para o registro rodada a rodada."
   },
   "report": {
     "title": "Relatório da missão",

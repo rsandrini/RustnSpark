@@ -609,7 +609,9 @@
     "history": "Mission history",
     "noHistory": "No completed missions yet.",
     "legCount": "{{count}} legs",
-    "credits": "+{{amount}} ¢"
+    "credits": "+{{amount}} ¢",
+    "combatTag": "Combat",
+    "combatTagHint": "This run had a fight — jump straight to the round-by-round log."
   },
   "report": {
     "title": "Mission report",

@@ -1649,6 +1649,20 @@ svg .block.floating {
   color: var(--bad);
 }
 
+/* Mission history's own "Combat" tag (owner: "almost impossible to know... where I had a
+   combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
+   round-by-round detail (links straight to the report with #combat). */
+.pill-combat {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--bad);
+  text-decoration: none;
+  margin-right: 6px;
+}
+
+.pill-combat:hover {
+  background: rgba(248, 81, 73, 0.3);
+}
+
 /* Generic text-color tones for a value that has a pass/fail threshold (energy, autonomy,
    condition, structure) — distinct from `.gauge.ok/.warn/.bad`, which style a bar's fill, not
    plain text. Qualified with the parent class so they outrank `.statrow b`/`.statrow span`

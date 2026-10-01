@@ -61,10 +61,23 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
           <ItemCard
             key={item.missionId}
             name={t(`report.outcome.${item.outcome}`, { defaultValue: item.outcome })}
-            description={[
-              t('profile.legCount', { count: item.legs }),
-              dateFormat.format(new Date(item.createdAt)),
-            ].join(' · ')}
+            description={
+              <>
+                {item.hadCombat && (
+                  <Link
+                    className="pill pill-combat"
+                    to={`/report/${item.missionId}#combat`}
+                    title={t('profile.combatTagHint')}
+                  >
+                    {t('profile.combatTag')}
+                  </Link>
+                )}{' '}
+                {[
+                  t('profile.legCount', { count: item.legs }),
+                  dateFormat.format(new Date(item.createdAt)),
+                ].join(' · ')}
+              </>
+            }
             action={
               <Link className="btn" to={`/report/${item.missionId}`}>
                 {t('transit.viewReport')}
