@@ -201,6 +201,35 @@ describe('market panel: descriptions and filters', () => {
     );
   });
 
+  it('hovering a Market/Store card shows the same compare stats card the Hangar tray has, without opening the full popup (owner request)', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({
+          sheet: { ...defaultSheet, hp: defaultSheet.hp + 6 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const card = screen.getAllByText('Plated Hull')[0]!.closest('.pcard');
+    if (card === null) throw new Error('card not found');
+
+    expect(screen.queryByTestId('part-card-hover-card')).toBeNull();
+    fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
+
+    const hoverCard = await screen.findByTestId('part-card-hover-card');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(within(hoverCard).getByText('46 (+6)')).toBeInTheDocument());
+
+    fireEvent.pointerLeave(card);
+    await waitFor(() => expect(screen.queryByTestId('part-card-hover-card')).toBeNull());
+  });
+
   it('hovering a placed part shows a small stats card — clicking it never opens the full popup', async () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     const block = await waitFor(() => {

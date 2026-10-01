@@ -1434,7 +1434,7 @@ svg .block.floating {
    vertically, which per the CSS spec also makes its overflow-x compute to "auto" (not
    "visible"), clipping anything positioned past the column's own edge — position: fixed escapes
    that entirely, since it's relative to the viewport, not any scrolling ancestor. */
-.tray-hover-card {
+.compare-hover-card {
   position: fixed;
   z-index: 30;
   width: 240px;

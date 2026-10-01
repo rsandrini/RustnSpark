@@ -1,10 +1,17 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
-import { partSummary, useNumberFormat, type PartCompareContext, type PartInfoData } from './part-detail';
+import {
+  PartStatsCard,
+  partSummary,
+  useNumberFormat,
+  type PartCompareContext,
+  type PartInfoData,
+} from './part-detail';
 import { PartInfoButton } from './part-info-button';
+import { useClampedPosition } from './use-hover-card-position';
 
 export interface PartCardProps {
   part: PartInfoData;
@@ -44,9 +51,16 @@ export function PartCard({
     `${part.catalog.w}×${part.catalog.h}`,
   ].join(' · ');
 
+  // Owner request: Market/Store gets the same hover-only compare card the Hangar tray already
+  // has, not just the (i) button's full popup — cursor-anchored, viewport-clamped the same way.
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
+
   return (
     <article
       className={`pcard rarity-${part.rarity.toLowerCase()}${part.broken === true ? ' broken' : ''}`}
+      onPointerEnter={(event) => setAnchor({ x: event.clientX, y: event.clientY })}
+      onPointerLeave={() => setAnchor(null)}
     >
       <header className="pcard-head">
         <div className="pcard-title-row">
@@ -82,6 +96,17 @@ export function PartCard({
         <PartInfoButton part={part} compare={compare} />
         {actions}
       </footer>
+      {anchor !== null && (
+        <div
+          ref={cardRef}
+          className="compare-hover-card"
+          aria-hidden="true"
+          data-testid="part-card-hover-card"
+          style={cardStyle}
+        >
+          <PartStatsCard part={part} compare={compare} />
+        </div>
+      )}
     </article>
   );
 }
