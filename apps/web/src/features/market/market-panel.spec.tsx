@@ -35,9 +35,11 @@ const onboarded = () =>
 const panel = () => document.querySelector('.market-panel') as HTMLElement;
 
 async function renderPortMarket(): Promise<void> {
-  renderWithRouter(routes, { initialEntries: ['/hangar'] });
+  // Port is a nested route now (owner request: the old Ship/Port/Board switcher duplicated the
+  // top nav and got removed) — land on it directly instead of clicking a tab that no longer
+  // exists.
+  renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
   await screen.findByRole('heading', { name: 'My Ship' });
-  fireEvent.click(await screen.findByRole('tab', { name: 'Port' }));
   await screen.findByRole('tab', { name: 'Market' });
 }
 
@@ -137,6 +139,42 @@ describe('market panel: descriptions and filters', () => {
     const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
     await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
     expect(within(hpRow).getByText('46 (+6)')).toHaveClass('delta-good');
+  });
+
+  it('lets the pilot switch between "replace X" and "add it" for the same listing (owner request)', async () => {
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { replacePartInstanceId?: string };
+        return HttpResponse.json({
+          sheet:
+            body.replacePartInstanceId === undefined
+              ? { ...defaultSheet, hp: defaultSheet.hp + 10 }
+              : { ...defaultSheet, hp: defaultSheet.hp + 6 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
+    const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
+    // Defaults to the same auto-picked swap as before.
+    await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
+    const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
+    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
+
+    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Compare as' }), {
+      target: { value: '' },
+    });
+    await waitFor(() =>
+      expect(within(dialog).getByText('If you install this now')).toBeInTheDocument(),
+    );
+    await waitFor(() => expect(within(hpRow).getByText('50 (+10)')).toBeInTheDocument());
   });
 
   it('compares a listing with nothing installed of its class as a plain addition, not a swap', async () => {

@@ -94,9 +94,9 @@ describe('map (S10.5)', () => {
     fireEvent.click(within(dialog).getByRole('link', { name: 'Open mission board' }));
 
     await screen.findByRole('heading', { name: 'My Ship' });
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true'),
-    );
+    // Embedded Board has no page <h1> of its own; its filter chip group is always there and
+    // carries the same label — a reliable sign Board's own content actually rendered.
+    expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
   });
 
   it('says why a blocked mission is blocked, same as the Board (owner: "I cannot see why")', async () => {

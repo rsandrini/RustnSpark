@@ -118,10 +118,9 @@ describe('navigation flow (S10.10)', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Back to the board' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/board'));
-    await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Board' })).toHaveAttribute('aria-selected', 'true'),
-    );
-    expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'false');
+    // No local tab row left to read "selected" off (owner request: it duplicated the top nav
+    // and was removed) — Board's own content actually rendering is the real signal.
+    expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
   });
 
   it('hides the game nav before the faction is chosen', async () => {

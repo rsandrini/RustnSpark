@@ -22,9 +22,11 @@ const onboarded = () =>
   );
 
 async function renderBoard(extra = ''): Promise<void> {
-  renderWithRouter(routes, { initialEntries: [`/hangar${extra}`] });
+  // Board is a nested route now (owner request: the old Ship/Port/Board switcher duplicated the
+  // top nav and got removed) — land on it directly instead of clicking a tab that no longer
+  // exists.
+  renderWithRouter(routes, { initialEntries: [`/hangar/board${extra}`] });
   await screen.findByRole('heading', { name: 'My Ship' });
-  fireEvent.click(await screen.findByRole('tab', { name: 'Board' }));
   // Board's own type-filter chips only render once its offers have loaded.
   await screen.findByRole('button', { name: 'All missions' });
 }
@@ -90,10 +92,10 @@ describe('board (S10.6)', () => {
     expect(acceptButtons).toHaveLength(4);
     fireEvent.click(acceptButtons[0] as Element);
 
-    // Embedded: accepting switches the host back to its own Ship tab (no route change) —
+    // Embedded: accepting switches the host back to its own Ship view —
     // the just-accepted mission's travel summary appears there.
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'true'),
+      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
     );
   });
 

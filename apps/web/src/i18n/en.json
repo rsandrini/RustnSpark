@@ -53,13 +53,6 @@
     "title": "My Ship",
     "tray": "Parts",
     "trayEmpty": "No loose parts in storage.",
-    "pageTabs": {
-      "label": "My Ship sections",
-      "ship": "Ship",
-      "board": "Board",
-      "port": "Port",
-      "dockedOnly": "Only available while docked in port."
-    },
     "stage": {
       "hide": "Hide animation",
       "show": "Show animation"
@@ -1059,7 +1052,10 @@
       "error": "Couldn't check what this would do to the ship.",
       "stat": "Stat",
       "value": "This part",
-      "ifInstalled": "Ship, if installed"
+      "ifInstalled": "Ship, if installed",
+      "scenarioLabel": "Compare as",
+      "addOption": "Add it",
+      "replaceOption": "Replace {{name}}"
     }
   },
   "market": {

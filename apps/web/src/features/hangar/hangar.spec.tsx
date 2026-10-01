@@ -101,7 +101,6 @@ describe('hangar (S10.4)', () => {
     // Embedded Port has no page <h1> of its own (round-3 nav consolidation kept that
     // suppressed); its own Market/Repair/Refuel/Scavenging tabs are always there.
     expect(await screen.findByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Port' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('the legacy /board and /port links still work, now landing on the nested route', async () => {
@@ -113,20 +112,6 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
   });
 
-  it('clicking the local Ship/Port/Board tabs navigates to the matching nested URL', async () => {
-    server.use(onboarded());
-    const { router } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    await screen.findByRole('heading', { name: 'My Ship' });
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Port' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/port'));
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Board' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/board'));
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Ship' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar'));
-  });
 
   it('hides the ship animation behind a toggle, persisted across a reload (owner request: extra screen space)', async () => {
     server.use(onboarded());

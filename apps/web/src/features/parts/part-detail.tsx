@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -28,10 +29,12 @@ export interface PartCompareContext {
   installedPartIds: readonly string[];
   /** The ship's own current sheet — the "before" side of the comparison. */
   currentSheet: ShipSheet;
-  /** Market only: the installed part (of the candidate's class) it would replace, and its name
-      for the "swap" wording — omitted when nothing of that class is installed yet, in which
-      case the candidate is compared as a pure addition instead of a swap. */
-  replace?: { partInstanceId: string; displayName: LocalizedText };
+  /** Market only: every installed part of the candidate's class, for the "add it, or replace
+      one of these" picker (owner request) — same-footprint matches first, so the first entry is
+      still today's old auto-picked default. Omitted or empty when nothing of that class is
+      installed, in which case the candidate is only ever a pure addition, nothing to pick
+      between. */
+  replaceCandidates?: readonly { partInstanceId: string; displayName: LocalizedText }[];
 }
 
 // Effect stats worth listing when non-zero, in reading order. Size, mass, structure and hit
@@ -147,7 +150,14 @@ export function RarityBadge({ rarity }: { rarity: string }) {
  * useful information. `deltaFor` shows the ship's actual resulting value instead (what "Ship, if
  * installed" already promises), with the change alongside it only when something actually moved.
  */
-function useCompareQuery(part: PartInfoData, compare: PartCompareContext | undefined) {
+function useCompareQuery(
+  part: PartInfoData,
+  compare: PartCompareContext | undefined,
+  /** Market only: which installed part (if any) to show as replaced — the caller owns this
+      choice (a picker in the full popup, just the first ranked candidate in the hover card),
+      since the same context can be compared either way. */
+  replaceInstanceId?: string,
+) {
   const format = useNumberFormat();
   const { catalog } = part;
   const comparePreview = useQuery({
@@ -155,7 +165,7 @@ function useCompareQuery(part: PartInfoData, compare: PartCompareContext | undef
       'partCompare',
       compare?.shipId,
       compare?.installedPartIds,
-      compare?.replace?.partInstanceId,
+      replaceInstanceId,
       part.id,
       catalog.partType,
       part.condition,
@@ -170,7 +180,7 @@ function useCompareQuery(part: PartInfoData, compare: PartCompareContext | undef
         : // Not owned yet (Market/Store): ask for a virtual-part swap or addition.
           client.post<PreviewResponse>(`/v1/ships/${compare?.shipId ?? ''}/preview`, {
             virtualPart: { partType: catalog.partType, condition: part.condition ?? 100 },
-            replacePartInstanceId: compare?.replace?.partInstanceId,
+            replacePartInstanceId: replaceInstanceId,
           }),
   });
   const afterSheet = comparePreview.data?.sheet;
@@ -230,7 +240,21 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     .filter((piece): piece is string => piece !== null && piece !== '')
     .join(' ');
 
-  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(part, compare);
+  // Owner request: today's compare auto-picks one installed part of the same class to show as a
+  // "replace" scenario, with no way to see "add it instead" or pick a different one when two of
+  // the same class are installed. Default to that same auto-pick (least surprising), but let the
+  // picker below change it — one popup, not a redesign of what it already shows.
+  const replaceCandidates = compare?.replaceCandidates ?? [];
+  const [replaceInstanceId, setReplaceInstanceId] = useState<string | undefined>(
+    replaceCandidates[0]?.partInstanceId,
+  );
+  const selectedReplace = replaceCandidates.find((c) => c.partInstanceId === replaceInstanceId);
+
+  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(
+    part,
+    compare,
+    replaceInstanceId,
+  );
   const viabilityProblems = comparePreview.data?.viability.viable === false
     ? comparePreview.data.viability.problems
     : [];
@@ -270,17 +294,39 @@ export function PartDetail({ part, compare }: PartDetailProps) {
       </p>
       {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
       {compare !== undefined && (
-        <p className="muted part-compare-note">
-          {comparePreview.isLoading
-            ? t('parts.compare.loading')
-            : comparePreview.isError
-              ? t('parts.compare.error')
-              : compare.replace !== undefined
-                ? t('parts.compare.titleSwap', {
-                    name: pickLocalized(compare.replace.displayName, i18n.language),
-                  })
-                : t('parts.compare.title')}
-        </p>
+        <>
+          {replaceCandidates.length > 0 && (
+            <label className="compare-scenario-picker">
+              {t('parts.compare.scenarioLabel')}
+              <select
+                value={replaceInstanceId ?? ''}
+                onChange={(event) =>
+                  setReplaceInstanceId(event.target.value === '' ? undefined : event.target.value)
+                }
+              >
+                <option value="">{t('parts.compare.addOption')}</option>
+                {replaceCandidates.map((candidate) => (
+                  <option key={candidate.partInstanceId} value={candidate.partInstanceId}>
+                    {t('parts.compare.replaceOption', {
+                      name: pickLocalized(candidate.displayName, i18n.language),
+                    })}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <p className="muted part-compare-note">
+            {comparePreview.isLoading
+              ? t('parts.compare.loading')
+              : comparePreview.isError
+                ? t('parts.compare.error')
+                : selectedReplace !== undefined
+                  ? t('parts.compare.titleSwap', {
+                      name: pickLocalized(selectedReplace.displayName, i18n.language),
+                    })
+                  : t('parts.compare.title')}
+          </p>
+        </>
       )}
       {viabilityProblems.length > 0 && (
         <ul className="compare-viability-warning">
@@ -353,7 +399,13 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
-  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(part, compare);
+  // Lightweight hover card, no picker of its own (owner request put the Add/Replace choice in
+  // the full popup only) — just today's old default, the best-ranked candidate if there is one.
+  const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(
+    part,
+    compare,
+    compare?.replaceCandidates?.[0]?.partInstanceId,
+  );
   const viabilityProblems = comparePreview.data?.viability.viable === false
     ? comparePreview.data.viability.problems
     : [];

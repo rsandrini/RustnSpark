@@ -96,10 +96,12 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
           shipId: 'ship-1',
           installedPartIds: ['part-cargo-a'],
           currentSheet: baseSheet,
-          replace: {
-            partInstanceId: 'part-cargo-a',
-            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-          },
+          replaceCandidates: [
+            {
+              partInstanceId: 'part-cargo-a',
+              displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+            },
+          ],
         }}
       />,
       { withRouter: false },
@@ -141,10 +143,12 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
           shipId: 'ship-1',
           installedPartIds: ['part-cargo-a'],
           currentSheet: baseSheet,
-          replace: {
-            partInstanceId: 'part-cargo-a',
-            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-          },
+          replaceCandidates: [
+            {
+              partInstanceId: 'part-cargo-a',
+              displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+            },
+          ],
         }}
       />,
       { withRouter: false },
@@ -171,10 +175,12 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
           shipId: 'ship-1',
           installedPartIds: ['part-cargo-a'],
           currentSheet: baseSheet,
-          replace: {
-            partInstanceId: 'part-cargo-a',
-            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-          },
+          replaceCandidates: [
+            {
+              partInstanceId: 'part-cargo-a',
+              displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+            },
+          ],
         }}
       />,
       { withRouter: false },
@@ -227,10 +233,12 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
           shipId: 'ship-1',
           installedPartIds: ['part-cargo-a'],
           currentSheet: baseSheet,
-          replace: {
-            partInstanceId: 'part-cargo-a',
-            displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-          },
+          replaceCandidates: [
+            {
+              partInstanceId: 'part-cargo-a',
+              displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+            },
+          ],
         }}
       />,
       { withRouter: false },

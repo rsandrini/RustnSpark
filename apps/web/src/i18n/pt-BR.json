@@ -53,13 +53,6 @@
     "title": "Minha Nave",
     "tray": "Peças",
     "trayEmpty": "Nenhuma peça solta no estoque.",
-    "pageTabs": {
-      "label": "Seções da Minha Nave",
-      "ship": "Nave",
-      "board": "Quadro",
-      "port": "Porto",
-      "dockedOnly": "Só disponível enquanto atracada no porto."
-    },
     "stage": {
       "hide": "Ocultar animação",
       "show": "Mostrar animação"
@@ -1059,7 +1052,10 @@
       "error": "Não foi possível verificar o efeito disso na nave.",
       "stat": "Estatística",
       "value": "Esta peça",
-      "ifInstalled": "Nave, se instalada"
+      "ifInstalled": "Nave, se instalada",
+      "scenarioLabel": "Comparar como",
+      "addOption": "Adicionar",
+      "replaceOption": "Trocar por {{name}}"
     }
   },
   "market": {

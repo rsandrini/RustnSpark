@@ -37,9 +37,11 @@ function rowButton(label: string | RegExp): Element {
 }
 
 async function renderPort(): Promise<void> {
-  renderWithRouter(routes, { initialEntries: ['/hangar'] });
+  // Port is a nested route now (owner request: the old Ship/Port/Board switcher duplicated the
+  // top nav and got removed) — land on it directly instead of clicking a tab that no longer
+  // exists.
+  renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
   await screen.findByRole('heading', { name: 'My Ship' });
-  fireEvent.click(await screen.findByRole('tab', { name: 'Port' }));
   // Port's own tab bar (Market/Goods/Repair/…) only renders once its data has loaded — a
   // sharper ready signal than the wallet testid, which My Ship's own header already shows.
   await screen.findByRole('tab', { name: 'Market' });
@@ -222,11 +224,11 @@ describe('port (S10.9)', () => {
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
 
-    // Starting the job sends the ship out and back to the Ship tab, where the travel
+    // Starting the job sends the ship out and back to the Ship view, where the travel
     // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
     fireEvent.click(screen.getByRole('button', { name: 'Send the ship scavenging' }));
     await waitFor(() =>
-      expect(screen.getByRole('tab', { name: 'Ship' })).toHaveAttribute('aria-selected', 'true'),
+      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
     );
   });
 

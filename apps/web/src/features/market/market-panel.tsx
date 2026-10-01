@@ -9,7 +9,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
-import { findReplaceCandidate, type InstalledPartForCompare } from '../parts/part-compare-match';
+import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
 
 interface ConfirmBuy {
@@ -147,16 +147,16 @@ export function MarketPanel({
 
   const compareContextFor = (listing: MarketListing): PartCompareContext | undefined => {
     if (shipId === undefined || currentSheet === undefined) return undefined;
-    const replaceTarget =
-      installedParts !== undefined ? findReplaceCandidate(installedParts, listing) : undefined;
+    const candidates =
+      installedParts !== undefined ? rankReplaceCandidates(installedParts, listing) : [];
     return {
       shipId,
       installedPartIds: (installedParts ?? []).map((part) => part.id),
       currentSheet,
-      replace:
-        replaceTarget === undefined
-          ? undefined
-          : { partInstanceId: replaceTarget.id, displayName: replaceTarget.displayName },
+      replaceCandidates: candidates.map((part) => ({
+        partInstanceId: part.id,
+        displayName: part.displayName,
+      })),
     };
   };
 

@@ -376,48 +376,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         </button>
       </div>
 
-      <div className="page-tabs-row">
-        <div className="tabs" role="tablist" aria-label={t('hangar.pageTabs.label')}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={pageTab === 'ship'}
-            className={`tab${pageTab === 'ship' ? ' on' : ''}`}
-            onClick={() => goToTab('ship')}
-          >
-            {t('hangar.pageTabs.ship')}
-          </button>
-          {(['port', 'board'] as const).map((id) => {
-            const dockedOnly = ship.status !== 'IN_PORT';
-            return dockedOnly ? (
-              <span
-                key={id}
-                className="nav-link disabled"
-                aria-disabled="true"
-                title={t('hangar.pageTabs.dockedOnly')}
-              >
-                {t(`hangar.pageTabs.${id}`)}
-              </span>
-            ) : (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={pageTab === id}
-                className={`tab${pageTab === id ? ' on' : ''}`}
-                onClick={() => goToTab(id)}
-              >
-                {t(`hangar.pageTabs.${id}`)}
-              </button>
-            );
-          })}
-        </div>
-        {lastMission !== undefined && (
+      {/* Owner request: the Ship/Port/Board switcher duplicated the top nav (which reaches the
+          same three places now) and read as confusing, two menus doing the same job. Removed —
+          Port's and Board's own content below still render from the same URL-derived `pageTab`,
+          just with no second tab row announcing it. */}
+      {lastMission !== undefined && (
+        <div className="hangar-links-row">
           <Link className="nav-link" to={`/report/${lastMission.missionId}`}>
             {t('transit.lastMission')}
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished

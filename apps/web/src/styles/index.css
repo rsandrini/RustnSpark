@@ -160,23 +160,15 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
-/* My Ship's page tabs (Ship/Board/Port) plus the "Last mission" link, sharing one row so the
-   link doesn't add a line of its own. */
-.page-tabs-row {
+/* My Ship's "Last mission" link (owner request: the Ship/Board/Port switcher that used to share
+   this row was removed — it duplicated the top nav, which reaches the same three places). */
+.hangar-links-row {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.page-tabs-row .tabs {
-  flex: 1 1 auto;
+  justify-content: flex-end;
   margin-top: 14px;
 }
 
-.page-tabs-row > .nav-link {
-  margin-bottom: 8px;
+.hangar-links-row .nav-link {
   white-space: nowrap;
   background: none;
   border: none;
@@ -187,7 +179,7 @@ a {
   text-decoration: underline;
 }
 
-.page-tabs-row > .nav-link:hover {
+.hangar-links-row .nav-link:hover {
   color: var(--ink);
 }
 
