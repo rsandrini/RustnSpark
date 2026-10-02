@@ -8,6 +8,7 @@ import type {
   Placement,
   PreviewResponse,
   Problem,
+  ShipFormat,
   ShipResponse,
 } from '../../api/generated';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -228,6 +229,26 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
+  });
+
+  const formatsQuery = useQuery({
+    queryKey: ['shipFormats'],
+    queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
+  });
+  const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const setFormat = useMutation({
+    mutationFn: (formatId: string) =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/format`, { formatId }),
+    onSuccess: (updated) => {
+      setLayout(updated.layout);
+      setSaved(true);
+      setSaveError(null);
+      setSelectedId(null);
+      setPendingPartId(null);
+      setFormatPickerOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
   });
 
   const auto = useMutation({
@@ -541,6 +562,27 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {rotateHint}
                 </p>
               )}
+              <div className="format-picker">
+                <button type="button" className="btn" onClick={() => setFormatPickerOpen((v) => !v)}>
+                  {t('hangar.format.button')}
+                </button>
+                {formatPickerOpen && (
+                  <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
+                    {(formatsQuery.data ?? []).map((format) => (
+                      <li key={format.id}>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={setFormat.isPending}
+                          onClick={() => setFormat.mutate(format.id)}
+                        >
+                          {pickLocalized(format.displayName, i18n.language)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </section>
 
             <section aria-label={t('hangar.sheet')}>

@@ -28,6 +28,7 @@ import type {
   ReportListResponse,
   ReportResponse,
   ScavengeInfo,
+  ShipFormat,
   TravelQuote,
   SellMaterialResponse,
   SellResponse,
@@ -523,6 +524,19 @@ export const handlers = [
   http.post('/v1/ships/:id/assemble', () => ok<ShipResponse>(ship())),
 
   http.post('/v1/ships/:id/auto-assemble', () => ok<ShipResponse>(ship())),
+
+  http.get('/v1/ship-formats', () =>
+    ok<ShipFormat[]>([
+      {
+        id: 'classic_square',
+        displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+        description: { en: 'The original grid.', 'pt-BR': 'A grade original.' },
+        cells: classicSquareCells(),
+        minRarity: 'COMMON',
+      },
+    ]),
+  ),
+  http.post('/v1/ships/:id/format', () => ok<ShipResponse>(ship())),
 
   http.get('/v1/locations', () => ok<WorldResponse>(world())),
 
