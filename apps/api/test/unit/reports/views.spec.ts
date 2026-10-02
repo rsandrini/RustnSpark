@@ -249,6 +249,35 @@ describe('S9.3 — narrative view', () => {
     expect(chapters[0]!.lines[0]!.text).toBe(desc(0, 'pt-BR'));
   });
 
+  // Round-10 owner request: "improve text in The Story section" — legStatuses was missing
+  // motor_abort and defeat_failed entirely, so the chapter header fell back to the raw
+  // internal status string (`chrome.legStatuses[status] ?? status`), leaking an untranslated
+  // enum straight into the narrative a player reads.
+  it('localizes motor_abort and defeat_failed headers too, not the raw status string', () => {
+    const abortLog: ReportLog = {
+      ...LOG,
+      events: parseMissionLogEvents(2, [RAW_EVENTS[0]!, RAW_EVENTS[2]!]),
+      legs: [
+        { index: 0, status: 'motor_abort' },
+        { index: 1, status: 'defeat_failed' },
+      ],
+    };
+    const chapters = renderNarrative(abortLog, 'en', NAMES);
+    for (const chapter of chapters) {
+      expect(chapter.header.text).not.toMatch(/motor_abort|defeat_failed/);
+    }
+    expect(chapters.map((chapter) => chapter.header.text)).toEqual([
+      'Leg 1 — engine failure',
+      'Leg 2 — defeated',
+    ]);
+
+    const ptChapters = renderNarrative(abortLog, 'pt-BR', NAMES);
+    expect(ptChapters.map((chapter) => chapter.header.text)).toEqual([
+      'Perna 1 — falha do motor',
+      'Perna 2 — derrotada',
+    ]);
+  });
+
   it('renders a v1 log without detail (the enrichment lives only in v2)', () => {
     const v1Events = parseMissionLogEvents(1, [RAW_EVENTS[0]!, RAW_EVENTS[1]!]);
     const v1Log: ReportLog = {

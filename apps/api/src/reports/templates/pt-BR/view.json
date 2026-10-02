@@ -16,7 +16,9 @@
   "legStatuses": {
     "completed": "concluída",
     "adrift": "à deriva",
-    "escort_destroyed": "escolta perdida"
+    "escort_destroyed": "escolta perdida",
+    "motor_abort": "falha do motor",
+    "defeat_failed": "derrotada"
   },
   "summary": {
     "result": "{outcome}",
