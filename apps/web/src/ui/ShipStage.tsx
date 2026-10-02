@@ -64,6 +64,11 @@ export function ShipStage({
   const { t } = useTranslation();
 
   if (collapsed) {
+    // Idle has nothing this placeholder bar would add: no countdown, and the top bar's own
+    // ShipIdentity already shows "Docked at {{place}}" (stage.docked) on every screen —
+    // owner: the collapsed caption duplicated it exactly. Flying/scavenging/repairing keep
+    // their caption: a live countdown and/or detail text the top bar doesn't carry.
+    if (mode === 'idle') return null;
     return (
       <div className="ship-stage-wrap ship-stage-collapsed">
         <p className="stage-caption" data-testid="stage-caption">

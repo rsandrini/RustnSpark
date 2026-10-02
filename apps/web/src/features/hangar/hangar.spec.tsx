@@ -139,8 +139,9 @@ describe('hangar (S10.4)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Hide animation' }));
     expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();
-    // The placeholder still says what the ship is doing — not just an empty gap.
-    expect(screen.getByTestId('stage-caption')).toHaveTextContent('Docked');
+    // Docked and ready has nothing left to say that the top bar's own ship status doesn't
+    // already say on every screen (owner request, round 10) — no placeholder caption at all.
+    expect(screen.queryByTestId('stage-caption')).toBeNull();
     expect(window.localStorage.getItem('rs.hangar.stageCollapsed')).toBe('1');
 
     unmount();

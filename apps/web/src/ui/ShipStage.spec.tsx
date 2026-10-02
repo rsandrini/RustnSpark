@@ -57,4 +57,30 @@ describe('ship stage', () => {
     renderStage({ mode: 'idle' });
     expect(screen.getByTestId('transit-scene')).toHaveAttribute('aria-hidden', 'true');
   });
+
+  // Round-10 owner request: the collapsed placeholder's idle caption ("Docked and ready —
+  // Docked at X") duplicates the top bar's own ship status/location exactly — ShipIdentity.tsx
+  // shows the identical "Docked at {{place}}" text on every screen already.
+  describe('collapsed placeholder bar', () => {
+    it('shows nothing extra for idle — the top bar already says it', () => {
+      renderStage({ mode: 'idle', placeId: 'hedus', detail: 'Docked at Hedus', collapsed: true });
+      expect(screen.queryByTestId('stage-caption')).toBeNull();
+    });
+
+    it('still shows the caption for flying — the top bar has no countdown or detail', () => {
+      renderStage({ mode: 'flying', until: '2026-01-01T00:00:00.000Z', collapsed: true });
+      expect(screen.getByTestId('stage-caption')).toHaveTextContent('In flight');
+    });
+
+    it('still shows the caption for repairing — same reason, a live countdown', () => {
+      renderStage({
+        mode: 'repairing',
+        placeId: 'ceres',
+        detail: 'in the workshop at Porto Ceres',
+        until: '2026-01-01T00:00:00.000Z',
+        collapsed: true,
+      });
+      expect(screen.getByTestId('stage-caption')).toHaveTextContent('Repairs under way');
+    });
+  });
 });
