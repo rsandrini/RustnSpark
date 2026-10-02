@@ -67,6 +67,30 @@ describe('board (S10.6)', () => {
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
+  // Round-10 owner request: "show the requirements for the mission, in a clear way, not
+  // only the text" — a full met/unmet checklist (fixture b-3, MINING) instead of the old
+  // one-line "needs" sentence, and no duplicate text with the blocked-reasons list below.
+  it('shows the full requirement checklist, met and unmet, without duplicating blocked reasons', async () => {
+    await renderBoard();
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
+
+    const miningCard = (await screen.findByText('Needs a mining system')).closest('article');
+    expect(miningCard).not.toBeNull();
+    const card = within(miningCard!);
+
+    // Checklist entry, unmet: a cross/warn marker next to the requirement text.
+    expect(card.getByText('Needs a mining system').closest('li')).toHaveClass('req-unmet');
+    // Checklist entry, met: the same requirement set also lists what the ship DOES satisfy,
+    // not only what blocks it.
+    expect(card.getByText('Cargo hold does not fit this cargo').closest('li')).toHaveClass(
+      'req-met',
+    );
+    // MOB_TOO_LOW is a general viability reason, not a mission requirement — it still shows,
+    // and exactly once (not duplicated by the checklist).
+    expect(card.getByText('Mobility too low')).toBeInTheDocument();
+    expect(screen.getAllByText('Needs a mining system')).toHaveLength(1);
+  });
+
   it('only shows eligible offers by default, and the toggle brings the rest back', async () => {
     await renderBoard();
     // Default fixture: 3 eligible offers (b-1, b-2, b-4-held-but-mine-eligible) + 1 blocked
@@ -216,6 +240,7 @@ describe('board (S10.6)', () => {
                 peakZone: 0,
                 estimate: { durationSeconds: 100, fuelNeeded: 8 },
                 material: null,
+                requirements: [],
               },
             },
           ],
@@ -274,6 +299,7 @@ describe('board (S10.6)', () => {
                 peakZone: 0,
                 estimate: { durationSeconds: 120, fuelNeeded: 4 },
                 material: null,
+                requirements: [],
               },
             },
           ],

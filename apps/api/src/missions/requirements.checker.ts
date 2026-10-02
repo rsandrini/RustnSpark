@@ -65,10 +65,19 @@ function parseHints(requirements: unknown): RequirementHints {
   return { cargo: threshold(record.cargo), speed: threshold(record.speed) };
 }
 
-export function checkMissionRequirements(
+export interface RequirementCheck extends RequirementReason {
+  met: boolean;
+}
+
+/**
+ * The full set of requirement checks for a mission type, each always returned with a `met`
+ * flag — unlike `reasons` below, this never omits a requirement just because the ship
+ * already satisfies it, so a UI can show "what this mission needs" before the ship fails it.
+ */
+export function missionRequirementChecklist(
   input: MissionRequirementInput,
   rules: GameRules,
-): { eligible: boolean; reasons: RequirementReason[] } {
+): RequirementCheck[] {
   const { missionType, sheet, parts } = input;
   const hints = parseHints(input.requirements);
   const cargoNeeded = hints.cargo ?? 1;
@@ -76,48 +85,41 @@ export function checkMissionRequirements(
     parts.some((part) => part.catalog.pressurized) &&
     parts.some((part) => part.catalog.lifeSupport);
   const hasWeapon = parts.some((part) => part.catalog.partClass === 'WEAPON');
-  const reasons: RequirementReason[] = [];
 
   switch (missionType) {
     case 'DELIVERY':
-      if (sheet.crg < cargoNeeded) {
-        reasons.push(CARGO_TYPE);
-      }
-      break;
+      return [{ ...CARGO_TYPE, met: sheet.crg >= cargoNeeded }];
     case 'TRANSPORT':
-      if (!hasCabin) {
-        reasons.push(PRESSURIZED_LIFE_SUPPORT);
-      }
-      break;
+      return [{ ...PRESSURIZED_LIFE_SUPPORT, met: hasCabin }];
     case 'ESCORT':
-      if (!hasWeapon) {
-        reasons.push(WEAPONS);
-      }
-      if (sheet.mob < ESCORT_MOBILITY_MIN) {
-        reasons.push(MIN_MOBILITY);
-      }
-      break;
+      return [
+        { ...WEAPONS, met: hasWeapon },
+        { ...MIN_MOBILITY, met: sheet.mob >= ESCORT_MOBILITY_MIN },
+      ];
     case 'MINING':
-      if (sheet.min < 1) {
-        reasons.push(MINER);
-      }
-      if (sheet.crg < cargoNeeded) {
-        reasons.push(CARGO_TYPE);
-      }
-      break;
+      return [
+        { ...MINER, met: sheet.min >= 1 },
+        { ...CARGO_TYPE, met: sheet.crg >= cargoNeeded },
+      ];
     case 'TRAVEL':
     case 'SCAVENGE':
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
-      break;
+      return [];
     case 'RESCUE':
-      if (sheet.crg < cargoNeeded && !hasCabin) {
-        reasons.push(CARGO_TYPE);
-      }
-      if (sheet.mob < (hints.speed ?? rules.rescue.reference_mob)) {
-        reasons.push(SPEED);
-      }
-      break;
+      return [
+        { ...CARGO_TYPE, met: sheet.crg >= cargoNeeded || hasCabin },
+        { ...SPEED, met: sheet.mob >= (hints.speed ?? rules.rescue.reference_mob) },
+      ];
   }
+}
 
-  return { eligible: reasons.length === 0, reasons };
+export function checkMissionRequirements(
+  input: MissionRequirementInput,
+  rules: GameRules,
+): { eligible: boolean; reasons: RequirementReason[]; checklist: RequirementCheck[] } {
+  const checklist = missionRequirementChecklist(input, rules);
+  const reasons = checklist
+    .filter((entry) => !entry.met)
+    .map(({ code, message }) => ({ code, message }));
+  return { eligible: reasons.length === 0, reasons, checklist };
 }

@@ -39,6 +39,14 @@ export function MissionCard({
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
   const expired = Date.parse(offer.expiresAt) <= serverNow();
+  // info.requirements is the full checklist (met + unmet); eligibility.reasons also carries
+  // general blocking reasons (viability, no ship, already on a mission). Anything the
+  // checklist already names is dropped from the old reasons list below, so neither duplicates
+  // the other on screen.
+  const requirementCodes = new Set(offer.info.requirements.map((req) => req.code));
+  const otherReasons = offer.eligibility.reasons.filter(
+    (reason) => !requirementCodes.has(reason.code),
+  );
   const notEnoughFuel =
     info.estimate !== null && fuelHave !== undefined && info.estimate.fuelNeeded > fuelHave;
 
@@ -99,9 +107,23 @@ export function MissionCard({
         </div>
       </dl>
 
-      <p className="mcard-needs">
-        <b>{t('board.needsTitle')}</b> {t(`board.needs.${offer.type}`)}
-      </p>
+      <div className="mcard-needs">
+        <b>{t('board.needsTitle')}</b>
+        {offer.info.requirements.length === 0 ? (
+          <span> {t(`board.needs.${offer.type}`)}</span>
+        ) : (
+          <ul className="mcard-requirements">
+            {offer.info.requirements.map((req) => (
+              <li key={req.code} className={req.met ? 'req-met' : 'req-unmet'}>
+                <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
+                  {req.met ? '✓' : '✗'}
+                </span>
+                {t(`board.reasons.${req.code}`, { defaultValue: req.message })}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
           text has no room in a narrow 1/4-width grid cell) and placed after what the mission
@@ -162,9 +184,9 @@ export function MissionCard({
         )}
       </div>
 
-      {!offer.eligibility.eligible && (
+      {otherReasons.length > 0 && (
         <ul className="reasons">
-          {offer.eligibility.reasons.map((reason, index) => (
+          {otherReasons.map((reason, index) => (
             <li key={`${reason.code}-${index}`}>
               {t(`board.reasons.${reason.code}`, {
                 defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),

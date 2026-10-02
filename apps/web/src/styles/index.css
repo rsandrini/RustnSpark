@@ -2862,6 +2862,25 @@ svg .block.cond-bad {
   background: var(--panel2);
 }
 
+.mcard-requirements {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mcard-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mcard-requirements .req-unmet {
+  color: var(--bad);
+}
+
 .mcard-facts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

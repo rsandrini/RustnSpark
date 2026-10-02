@@ -27,7 +27,11 @@ import { bilingual } from '../parts/parts.service.js';
 import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
-import { checkMissionRequirements } from './requirements.checker.js';
+import {
+  checkMissionRequirements,
+  missionRequirementChecklist,
+  type RequirementCheck,
+} from './requirements.checker.js';
 import { MissionResolveService } from './resolve.service.js';
 
 // Two-int advisory-lock namespace for hold bookkeeping (class | hashtext(playerId)),
@@ -77,6 +81,10 @@ export interface OfferInfo {
     readonly contracted: boolean;
     readonly quantity: number | null;
   } | null;
+  /** Round-10 owner request: the full requirement checklist (met + unmet), not just the
+      failure reasons — so the board can show what a mission demands even when the viewer's
+      ship already clears it. Empty when there is no ship to check against. */
+  readonly requirements: readonly RequirementCheck[];
 }
 
 export type BoardOffer = BoardMission & {
@@ -665,7 +673,16 @@ export class MissionsService implements OnModuleInit {
       return {
         ...row,
         eligibility: { eligible: reasons.length === 0, reasons },
-        info: offerInfo(row, wordsById.get(row.templateId), materialsById, sheet, viability, rules),
+        info: offerInfo(
+          row,
+          wordsById.get(row.templateId),
+          materialsById,
+          sheet,
+          viewer.ship === undefined ? null : viewer.installed,
+          requirementsById.get(row.templateId),
+          viability,
+          rules,
+        ),
       };
     });
   }
@@ -690,6 +707,8 @@ function offerInfo(
   template: { displayName: unknown; description: unknown } | undefined,
   materialsById: ReadonlyMap<string, unknown>,
   sheet: ReturnType<typeof deriveSheet> | null,
+  parts: readonly InstalledPart[] | null,
+  requirementsJson: unknown,
   viability: { readonly viable: boolean } | null,
   rules: GameRules,
 ): OfferInfo {
@@ -728,6 +747,13 @@ function offerInfo(
   };
   const materialName =
     typeof cargo.materialId === 'string' ? materialsById.get(cargo.materialId) : undefined;
+  const requirements =
+    sheet === null || parts === null
+      ? []
+      : missionRequirementChecklist(
+          { missionType: row.type, requirements: requirementsJson, sheet, parts },
+          rules,
+        );
   return {
     title: bilingual(template?.displayName),
     description: bilingual(template?.description),
@@ -744,5 +770,6 @@ function offerInfo(
             contracted: cargo.contracted === true,
             quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
           },
+    requirements,
   };
 }

@@ -249,6 +249,46 @@ describe('missions accept/hold API (S6.4)', () => {
     );
   });
 
+  // Round-10 owner request: "show the requirements for the mission, in a clear way, not
+  // only the text" — `eligibility.reasons` only ever lists FAILING checks, so an eligible
+  // offer (e.g. the delivery above) never told the pilot what it required at all.
+  // `info.requirements` is the same checks, always present with a `met` flag.
+  it("exposes info.requirements as the full checklist, not just the failing half (S10.6 follow-up)", async () => {
+    await freshSeededApp();
+    const { token } = await onboardPlayer();
+    const server = httpServer(testApp.app);
+
+    interface RequirementCheckBody {
+      code: string;
+      message: string;
+      met: boolean;
+    }
+    type OfferRow = { id: string; type: string; info: { requirements: RequirementCheckBody[] } };
+
+    const delivery = await createMission({ type: 'DELIVERY' }); // starter crg 10 ≥ 1
+    const mining = await createMission({ type: 'MINING' }); // starter has no mining rig
+
+    const board = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(board.status).toBe(200);
+    const byId = new Map(
+      (board.body as OfferRow[])
+        .filter((row) => [delivery.id, mining.id].includes(row.id))
+        .map((row) => [row.id, row]),
+    );
+
+    // Eligible delivery: the checklist still lists CARGO_TYPE, now as met: true — it is
+    // never dropped just because the ship already clears it.
+    const deliveryRequirements = byId.get(delivery.id)?.info.requirements ?? [];
+    expect(deliveryRequirements).toEqual([
+      { code: 'CARGO_TYPE', message: expect.any(String), met: true },
+    ]);
+
+    // Ineligible mining: MINER is met: false, matching eligibility.reasons' MINER entry.
+    const miningRequirements = byId.get(mining.id)?.info.requirements ?? [];
+    const miner = miningRequirements.find((entry) => entry.code === 'MINER');
+    expect(miner?.met).toBe(false);
+  });
+
   it('holds, re-holds idempotently, and releases a mission (max 1 hold, timer untouched)', async () => {
     await freshSeededApp();
     const { token } = await onboardPlayer();

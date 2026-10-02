@@ -1125,7 +1125,10 @@ export function resetActiveState(): void {
   activeState = acceptedMission();
 }
 
-const boardOffer = (over: Partial<MissionOffer> & { id: string }): MissionOffer => ({
+const boardOffer = (
+  over: Partial<MissionOffer> & { id: string },
+  infoOverride: Partial<MissionOffer['info']> = {},
+): MissionOffer => ({
   templateId: `tpl-${over.id}`,
   type: 'DELIVERY',
   factionId: 'luna',
@@ -1158,6 +1161,8 @@ const boardOffer = (over: Partial<MissionOffer> & { id: string }): MissionOffer 
     peakZone: 1,
     estimate: { durationSeconds: 300, fuelNeeded: 8 },
     material: null,
+    requirements: [],
+    ...infoOverride,
   },
   ...over,
 });
@@ -1171,20 +1176,28 @@ const boardState: MissionOffer[] = [
     reward: 800,
     rewardEstimate: 900,
   }),
-  boardOffer({
-    id: 'b-3',
-    type: 'MINING',
-    destinationId: 'spur',
-    reward: 2400,
-    rewardEstimate: 2600,
-    eligibility: {
-      eligible: false,
-      reasons: [
-        { code: 'MINER', message: 'Needs a mining system' },
-        { code: 'MOB_TOO_LOW', message: 'Mobility too low' },
+  boardOffer(
+    {
+      id: 'b-3',
+      type: 'MINING',
+      destinationId: 'spur',
+      reward: 2400,
+      rewardEstimate: 2600,
+      eligibility: {
+        eligible: false,
+        reasons: [
+          { code: 'MINER', message: 'Needs a mining system' },
+          { code: 'MOB_TOO_LOW', message: 'Mobility too low' },
+        ],
+      },
+    },
+    {
+      requirements: [
+        { code: 'MINER', message: 'Needs a mining system', met: false },
+        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true },
       ],
     },
-  }),
+  ),
   boardOffer({
     id: 'b-4',
     type: 'RESCUE',

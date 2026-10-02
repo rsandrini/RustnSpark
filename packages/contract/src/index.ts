@@ -296,6 +296,15 @@ export const BoardEligibilitySchema = z.object({
 });
 export type BoardEligibility = z.infer<typeof BoardEligibilitySchema>;
 
+/** One requirement check, always present regardless of pass/fail (round 10: "show the
+    requirements for the mission, in a clear way, not only the text"). */
+export const RequirementCheckSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  met: z.boolean(),
+});
+export type RequirementCheck = z.infer<typeof RequirementCheckSchema>;
+
 export const MissionInstanceDataSchema = z.object({
   id: z.string(),
   templateId: z.string(),
@@ -334,6 +343,8 @@ export const OfferInfoSchema = z.object({
   material: z
     .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })
     .nullable(),
+  /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
+  requirements: z.array(RequirementCheckSchema),
 });
 export type OfferInfo = z.infer<typeof OfferInfoSchema>;
 
