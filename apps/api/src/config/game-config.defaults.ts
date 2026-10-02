@@ -184,8 +184,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   parts: {
     starter_condition: 80,
     // 30, not 50: worst-case kit sell value (isolation × hostile × mood_max at
-    // restart_condition_max) is 737¢ against rescue_cost 800¢ — at 50 it was 1227¢ and
-    // rescue → kit → sell printed credits on a hostile port (S8.6 review).
+    // restart_condition_max) is 706¢ against rescue_cost 800¢ — at 50 it was 1175¢ and
+    // rescue → kit → sell printed credits on a hostile port (S8.6 review). Both numbers
+    // move with the parts catalog's basePrice — see worstCaseRestartKitValue.
     restart_condition_max: 30,
   },
   onboarding: {
