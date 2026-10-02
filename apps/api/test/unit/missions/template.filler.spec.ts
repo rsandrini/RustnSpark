@@ -3,6 +3,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   fillMission,
+  isMiningEligible,
   MissionGenerationError,
   type FillMissionInput,
   type FillerEnvironment,
@@ -328,5 +329,27 @@ describe('S6.2 — template filler (pure generation)', () => {
       const plain = fill('alpha|3|v1', LOC_ALPHA);
       expect(plain).toEqual(fill('alpha|3|v1', LOC_ALPHA));
     });
+  });
+});
+
+// Round-10 owner request: "add independent mining missions at minable locations" — a
+// location only counts as minable when an active MINING template would actually be offered
+// there, the exact same eligibility a board offer already uses (never a second, drifting
+// definition of "minable").
+describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => {
+  it('is eligible where a MINING template already matches the origin', () => {
+    expect(isMiningEligible(LOC_GAMMA, [MINING_EXPLORERS])).toBe(true);
+  });
+
+  it('is not eligible where no MINING template matches (wrong faction)', () => {
+    expect(isMiningEligible(LOC_ALPHA, [MINING_EXPLORERS])).toBe(false);
+  });
+
+  it('is not eligible when the only matching template is inactive', () => {
+    expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, active: false }])).toBe(false);
+  });
+
+  it('ignores templates of other types even if they match the origin', () => {
+    expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, type: 'DELIVERY' }])).toBe(false);
   });
 });

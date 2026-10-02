@@ -132,6 +132,7 @@ const miningSchema = z.object({
   rarity: z.record(z.string(), z.number().min(0).max(1)),
   material_price: z.record(z.string(), z.number().min(0).max(10000)),
   attempts_per_stop: z.number().int().min(1).max(100),
+  job_duration_seconds: z.number().int().min(1).max(86400),
 });
 
 const rescueSchema = z.object({

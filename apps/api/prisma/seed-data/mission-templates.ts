@@ -339,6 +339,20 @@ const TEMPLATES: {
     active: false,
   },
   {
+    // Independent mining jobs (POST /v1/locations/:id/mine, round 10): inactive, created by
+    // MiningJobService — the board generator must never offer it.
+    id: 'mining_job_generic',
+    displayName: { en: 'Independent mining', 'pt-BR': 'Mineração independente' },
+    description: {
+      en: 'A dig at a minable location: no pay, only what the hold brings back.',
+      'pt-BR': 'Uma escavação num local minerável: sem pagamento, só o que o porão trouxer.',
+    },
+    type: 'MINING',
+    factionId: 'luna',
+    requirements: {},
+    active: false,
+  },
+  {
     // Pilot-requested trips (POST /v1/travel). Inactive on purpose: the board generator must
     // never offer it; the travel service creates instances from it directly.
     id: 'travel_generic',

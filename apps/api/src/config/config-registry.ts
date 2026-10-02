@@ -1118,6 +1118,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'mining.job_duration_seconds',
+    group: 'mining',
+    type: 'integer',
+    min: 1,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.job_duration_seconds),
+    description: {
+      en: 'How long an independent mining job takes, in mission time (scaled by missions.time_scale).',
+      'pt-BR':
+        'Quanto dura um trabalho de mineração independente, em tempo de missão (escalado por missions.time_scale).',
+    },
+  },
+  {
     key: 'rescue.reference_mob',
     group: 'rescue',
     type: 'integer',

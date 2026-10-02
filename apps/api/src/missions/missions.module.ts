@@ -20,6 +20,8 @@ import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
+import { MiningJobController } from './mining-job.controller.js';
+import { MiningJobService } from './mining-job.service.js';
 import { ScavengeJobController } from './scavenge-job.controller.js';
 import { ScavengeJobService } from './scavenge-job.service.js';
 import { TravelController } from './travel.controller.js';
@@ -52,7 +54,7 @@ import { TravelService } from './travel.service.js';
       },
     }),
   ],
-  controllers: [MissionsController, TravelController, ScavengeJobController],
+  controllers: [MissionsController, TravelController, ScavengeJobController, MiningJobController],
   providers: [
     BoardService,
     MissionsService,
@@ -61,6 +63,7 @@ import { TravelService } from './travel.service.js';
     MissionResolveService,
     TravelService,
     ScavengeJobService,
+    MiningJobService,
     Clock,
     EncounterService,
     RoutePresenceService,

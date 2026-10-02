@@ -87,6 +87,7 @@ export type ConfigKey =
   | 'integrity.combat_factor'
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
+  | 'mining.job_duration_seconds'
   | 'mining.material_price'
   | 'mining.rarity'
   | 'mining.richness'
@@ -290,6 +291,9 @@ export type GameRules = Readonly<{
     rarity: Readonly<Record<string, number>>;
     material_price: Readonly<Record<string, number>>;
     attempts_per_stop: number;
+    /** An independent mining job at a minable location (round 10): like a scavenging job,
+        fixed duration scaled by `missions.time_scale`, same place in and out. */
+    job_duration_seconds: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;

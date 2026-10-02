@@ -74,6 +74,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'integrity.combat_factor',
   'integrity.env_factor',
   'mining.attempts_per_stop',
+  'mining.job_duration_seconds',
   'mining.material_price',
   'mining.rarity',
   'mining.richness',

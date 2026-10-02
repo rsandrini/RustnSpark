@@ -130,6 +130,30 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
   };
 }
 
+function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
+  const requirements = requirementsOf(template);
+  const factionMatch =
+    requirements.originFactions === undefined ||
+    requirements.originFactions.includes(origin.factionId);
+  const typeMatch =
+    requirements.originTypes === undefined || requirements.originTypes.includes(origin.type);
+  return factionMatch && typeMatch;
+}
+
+/**
+ * Whether `origin` is a "minable location" (round 10: independent mining jobs) — the same
+ * eligibility a MINING board template already uses, so "minable" never drifts from whatever
+ * the admin-tunable MissionTemplate rows already say about where mining is offered.
+ */
+export function isMiningEligible(
+  origin: FillerLocation,
+  templates: readonly FillerTemplate[],
+): boolean {
+  return templates.some(
+    (template) => template.active && template.type === 'MINING' && matchesOrigin(origin, template),
+  );
+}
+
 function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTemplate[] {
   return (
     world.templates
@@ -138,15 +162,7 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
       .filter((template) => template.type !== 'TRAVEL' && template.type !== 'SCAVENGE')
       // A mining board offer is meaningless without a material to name.
       .filter((template) => template.type !== 'MINING' || world.materials.length > 0)
-      .filter((template) => {
-        const requirements = requirementsOf(template);
-        const factionMatch =
-          requirements.originFactions === undefined ||
-          requirements.originFactions.includes(origin.factionId);
-        const typeMatch =
-          requirements.originTypes === undefined || requirements.originTypes.includes(origin.type);
-        return factionMatch && typeMatch;
-      })
+      .filter((template) => matchesOrigin(origin, template))
       .sort(byId)
   );
 }

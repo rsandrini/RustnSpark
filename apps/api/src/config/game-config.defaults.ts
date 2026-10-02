@@ -138,6 +138,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     rarity: { common: 0.3, uncommon: 0.6, rare: 0.85 },
     material_price: { common: 20, uncommon: 60, rare: 200 },
     attempts_per_stop: 10,
+    job_duration_seconds: 300,
   },
   rescue: {
     reference_mob: 3,
