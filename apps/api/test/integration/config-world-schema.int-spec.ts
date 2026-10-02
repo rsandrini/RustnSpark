@@ -61,6 +61,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'batInput',
     'specialProp',
     'active',
+    'connectorLayouts',
   ],
   MissionTemplate: [
     'id',
