@@ -1,12 +1,21 @@
 import type { PartCatalog, Placement, LayoutError } from '../parts/part.types.js';
 
-/** Yard cells run [-GRID_HALF_SIZE, GRID_HALF_SIZE) on both axes; sent to the client (`yard`). */
+/** Yard cells run [-GRID_HALF_SIZE, GRID_HALF_SIZE) on both axes — retained only as the admin
+    format-drawing tool's canvas ceiling (apps/web's grid editor), not a gameplay constant
+    anymore: which cells actually exist now comes from the ship's own ShipFormat. */
 export const GRID_HALF_SIZE = 10;
 const RIGHT_ANGLE = 90;
+
+/** The same "x,y" key format `validateLayout`'s internal occupancy map already used — exported
+    so callers can turn a format's raw `[[x,y],...]` cell list into the Set this function needs. */
+export function cellKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
 
 export function validateLayout(
   placements: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
+  formatCells: ReadonlySet<string>,
 ): LayoutError[] {
   const errors: LayoutError[] = [];
   const occupied = new Map<string, string>();
@@ -30,21 +39,16 @@ export function validateLayout(
       for (let dy = 0; dy < height; dy += 1) {
         const x = placement.gx + dx;
         const y = placement.gy + dy;
-        if (
-          x < -GRID_HALF_SIZE ||
-          x >= GRID_HALF_SIZE ||
-          y < -GRID_HALF_SIZE ||
-          y >= GRID_HALF_SIZE
-        ) {
+        const key = cellKey(x, y);
+        if (!formatCells.has(key)) {
           if (!hasError(errors, 'OUT_OF_BOUNDS')) {
             errors.push({
               code: 'OUT_OF_BOUNDS',
               partInstanceId: placement.partInstanceId,
-              message: `Part ${placement.partInstanceId} is outside the grid.`,
+              message: `Part ${placement.partInstanceId} is outside the ship's format.`,
             });
           }
         }
-        const key = `${x},${y}`;
         const existing = occupied.get(key);
         if (existing !== undefined && existing !== placement.partInstanceId) {
           if (!hasError(errors, 'OVERLAP')) {
@@ -92,7 +96,7 @@ function hasError(errors: LayoutError[], code: LayoutError['code']): boolean {
 }
 
 function reachablePartIds(occupied: ReadonlyMap<string, string>, start: Placement): Set<string> {
-  const startKey = `${start.gx},${start.gy}`;
+  const startKey = cellKey(start.gx, start.gy);
   if (!occupied.has(startKey)) {
     return new Set();
   }
@@ -124,5 +128,5 @@ function edgeNeighbors(cell: string): string[] {
   const [xRaw, yRaw] = cell.split(',');
   const x = Number(xRaw);
   const y = Number(yRaw);
-  return [`${x + 1},${y}`, `${x - 1},${y}`, `${x},${y + 1}`, `${x},${y - 1}`];
+  return [cellKey(x + 1, y), cellKey(x - 1, y), cellKey(x, y + 1), cellKey(x, y - 1)];
 }
