@@ -28,6 +28,7 @@ const ENTITY_MODEL_DELEGATE: Record<string, string> = {
   environments: 'environment',
   'mission-templates': 'missionTemplate',
   'drop-tables': 'dropTable',
+  'ship-formats': 'shipFormat',
 };
 
 const ID_FIELD: Record<string, string> = {
