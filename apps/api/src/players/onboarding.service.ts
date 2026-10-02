@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
+import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
 import { ShipsService } from '../ships/ships.service.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { autoLayout } from '../ships/auto-layout.js';
 import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -108,13 +110,14 @@ export class OnboardingService {
     const condition = rules.parts.starter_condition;
 
     const instances = await Promise.all(
-      starterParts.map((partType) =>
+      starterParts.map(async (partType) =>
         tx.partInstance.create({
           data: {
             partType,
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
+            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType)),
           },
         }),
       ),

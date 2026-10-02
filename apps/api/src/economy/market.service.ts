@@ -6,6 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { rollConnectors } from '../parts/connectors.js';
 import { localize } from '../common/i18n/localize.js';
 import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
@@ -284,6 +285,7 @@ export class MarketService {
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
+            connectors: toJsonInput(rollConnectors(catalog.connectorLayouts)),
           },
         });
         await this.events.record(

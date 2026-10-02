@@ -14,6 +14,7 @@ import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
 // schema its version selects before it is written.
 import { toJsonInput } from '../common/prisma-json.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 
@@ -197,6 +198,7 @@ export class MissionResolveService {
               ownerPlayerId: mission.playerId!,
               condition: found.condition,
               location: 'INVENTORY',
+              connectors: toJsonInput(await rollConnectorsForPartType(tx, found.partType)),
             },
           });
         } else {

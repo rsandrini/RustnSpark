@@ -1,10 +1,12 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
@@ -64,7 +66,13 @@ export class InventoryService {
     for (const partType of starterParts) {
       kit.push(
         await tx.partInstance.create({
-          data: { partType, ownerPlayerId: playerId, condition, location: 'INVENTORY' },
+          data: {
+            partType,
+            ownerPlayerId: playerId,
+            condition,
+            location: 'INVENTORY',
+            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType)),
+          },
           include: { partCatalog: true },
         }),
       );
