@@ -226,6 +226,20 @@ describe('S6.2 — template filler (pure generation)', () => {
     expect(contracts.some((c) => !c)).toBe(true);
   });
 
+  it('never contracts for more ore than a single stop can possibly yield', () => {
+    // One mining stop rolls rules.mining.attempts_per_stop independent attempts, at most
+    // one unit each — a contract above that cap is mechanically unfulfillable no matter
+    // how good the ship's mining rig is (owner playtest: mining contracts "almost always
+    // fail").
+    for (let epoch = 0; epoch < 50; epoch += 1) {
+      const draft = fill(`gamma|${epoch}|v1`, LOC_GAMMA, [MINING_EXPLORERS]);
+      const cargo = draft.cargo as MiningCargo;
+      if (cargo.contracted === true) {
+        expect(cargo.quantity!).toBeLessThanOrEqual(rules.mining.attempts_per_stop);
+      }
+    }
+  });
+
   it('sets board expiry inside the prototype window (6–40 minutes)', () => {
     const sixMinutesMs = 6 * 60 * 1000;
     const fortyMinutesMs = 40 * 60 * 1000;

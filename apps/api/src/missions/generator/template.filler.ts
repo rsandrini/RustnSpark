@@ -257,14 +257,22 @@ export function legForRoute(
   };
 }
 
-function miningCargo(rng: Rng, materials: readonly FillerMaterial[]): Record<string, unknown> {
+function miningCargo(
+  rng: Rng,
+  materials: readonly FillerMaterial[],
+  rules: GameRules,
+): Record<string, unknown> {
   const material = rng.child('mining').pick(materials);
   const contracted = rng.child('contracted').float() < CONTRACTED_CHANCE;
   if (contracted) {
+    // A single mining stop can yield at most attempts_per_stop units (mining.resolver.ts
+    // rolls that many independent attempts, one unit each) — a contract above that cap is
+    // unfulfillable no matter the ship's rig, so it is clamped to never exceed it.
+    const maxQuantity = Math.min(MAX_CONTRACT_QUANTITY, rules.mining.attempts_per_stop);
     return {
       materialId: material.id,
       contracted: true,
-      quantity: rng.child('quantity').int(MIN_CONTRACT_QUANTITY, MAX_CONTRACT_QUANTITY),
+      quantity: rng.child('quantity').int(MIN_CONTRACT_QUANTITY, maxQuantity),
     };
   }
   return { materialId: material.id, contracted: false };
@@ -324,7 +332,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const legs: LegRoute[] =
     template.type === 'RESCUE' ? [...outbound, ...[...outbound].reverse()] : outbound;
 
-  const cargo = template.type === 'MINING' ? miningCargo(rng, world.materials) : {};
+  const cargo = template.type === 'MINING' ? miningCargo(rng, world.materials, rules) : {};
 
   let deadlineAt: Date | null = null;
   if (template.type === 'RESCUE') {
