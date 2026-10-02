@@ -360,9 +360,10 @@ model PartCatalog {
   batCharge     Float?
   batOutput     Float?
   batInput      Float?
-  specialProp   Json?
-  active        Boolean        @default(true)
-  instances     PartInstance[]
+  specialProp      Json?
+  connectorLayouts Json?
+  active           Boolean        @default(true)
+  instances        PartInstance[]
 }
 
 model MissionTemplate {
@@ -531,6 +532,7 @@ model PartInstance {
   location      PartLocation @default(INVENTORY)
   shipId        String?
   propRoll      Json?
+  connectors    Json?
   partCatalog   PartCatalog  @relation(fields: [partType], references: [partType])
   owner         Player       @relation(fields: [ownerPlayerId], references: [id])
   ship          Ship?        @relation(fields: [shipId], references: [id])
