@@ -66,8 +66,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
   });
   const ship = shipsQuery.data?.[0];
-  // Yard size is the server's; before the ship loads nothing is placeable anyway.
-  const yardHalfSize = ship?.yard.halfSize ?? 0;
+  // Which cells exist is the server's (the ship's own format); before the ship loads nothing
+  // is placeable anyway.
+  const yardCellSet = useMemo(
+    () => new Set((ship?.yard.cells ?? []).map(([x, y]) => `${x},${y}`)),
+    [ship],
+  );
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -257,7 +261,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       (placement) => placement.partInstanceId === partInstanceId,
     );
     const rot = existing?.rot ?? 0;
-    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardHalfSize)) return;
+    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet)) return;
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
@@ -306,7 +310,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         existing.gx + dx!,
         existing.gy + dy!,
         nextRot,
-        yardHalfSize,
+        yardCellSet,
       ),
     );
     if (spot === undefined) {
@@ -491,7 +495,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             <section style={{ position: 'relative' }}>
               <ShipYard
                 lookById={lookById}
-                halfSize={ship.yard.halfSize}
+                cells={ship.yard.cells}
                 layout={effectiveLayout}
                 catalogById={catalogById}
                 nameById={nameById}

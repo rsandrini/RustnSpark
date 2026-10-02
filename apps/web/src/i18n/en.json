@@ -908,6 +908,7 @@
     "CREDIT_OVERFLOW": "That sale is too large to credit.",
     "DISCONNECTED": "Some parts are not connected to the bridge.",
     "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — install a reactor, a bigger one, or fewer continuous-draw parts.",
+    "FORMAT_NOT_UNLOCKED": "That ship format isn't unlocked for your current bridge.",
     "FUEL_EMPTY": "The tank is empty.",
     "HOLD_NOT_OWNED": "You are not holding this mission.",
     "INSUFFICIENT_FUNDS": "Not enough credits.",

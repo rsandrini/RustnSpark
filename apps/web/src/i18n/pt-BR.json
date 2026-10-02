@@ -908,6 +908,7 @@
     "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
+    "FORMAT_NOT_UNLOCKED": "Esse formato de nave não está desbloqueado para a ponte atual.",
     "FUEL_EMPTY": "O tanque está vazio.",
     "HOLD_NOT_OWNED": "Você não está com esta missão reservada.",
     "INSUFFICIENT_FUNDS": "Créditos insuficientes.",
