@@ -3662,6 +3662,33 @@ svg .block.broken {
   margin: 10px 0;
 }
 
+.grid-cells-editor {
+  display: inline-block;
+  border: 1px solid var(--line);
+}
+
+.grid-cells-row {
+  display: flex;
+}
+
+.grid-cells-cell {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+}
+
+.grid-cells-cell.painted {
+  background: var(--spark);
+}
+
+.grid-cells-cell.anchor {
+  background: var(--bad);
+  cursor: default;
+}
+
 /* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
    otherwise flatten these back into square admin buttons — round-5 owner request (filters),
    scoped fix only; the wider "admin CSS is a mess" cleanup is its own backlog item. */
