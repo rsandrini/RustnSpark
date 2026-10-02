@@ -57,6 +57,10 @@
       "hide": "Ocultar animação",
       "show": "Mostrar animação"
     },
+    "format": {
+      "button": "Formato",
+      "label": "Escolher um formato de nave"
+    },
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
     "sheet": "Folha da nave",
     "shipRarityHint": "Raridade da nave — a menor raridade entre as peças instaladas",
@@ -908,6 +912,7 @@
     "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
+    "FORMAT_NOT_UNLOCKED": "Esse formato de nave não está desbloqueado para a ponte atual.",
     "FUEL_EMPTY": "O tanque está vazio.",
     "HOLD_NOT_OWNED": "Você não está com esta missão reservada.",
     "INSUFFICIENT_FUNDS": "Créditos insuficientes.",

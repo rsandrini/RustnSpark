@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
+import { classicSquareCells } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { Placement, ShipSheet } from '../../api/generated';
 
@@ -160,6 +161,21 @@ describe('hangar (S10.4)', () => {
     expect(screen.getByRole('button', { name: 'Show animation' })).toBeInTheDocument();
   });
 
+  it('shows a format picker and switches the yard shape on selection', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Format' }));
+    const option = await screen.findByRole('button', { name: 'Classic Square' });
+    fireEvent.click(option);
+
+    await waitFor(() => {
+      // The yard re-renders with the (mocked) format's cells once the switch resolves.
+      expect(document.querySelector('[data-gx="-10"][data-gy="-10"]')).not.toBeNull();
+    });
+  });
+
   it('shows a headline summary (8 key numbers) above the full stat breakdown, collapsed by default (owner request, round 8: ship sheet too long)', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
@@ -273,7 +289,7 @@ describe('hangar (S10.4)', () => {
             layout: [],
             sheet: { ...testSheet, mob: 0.958 },
             shipClass: 'MULTIROLE',
-            yard: { halfSize: 10 },
+            yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null },
           },
         ]),

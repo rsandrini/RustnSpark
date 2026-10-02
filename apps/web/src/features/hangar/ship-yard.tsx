@@ -63,8 +63,8 @@ export interface ShipYardProps {
   layout: readonly Placement[];
   /** Rarity and condition by instance id: blocks are coloured by one of them. */
   lookById?: ReadonlyMap<string, PartLook>;
-  /** Yard extent from the server: cells run [-halfSize, halfSize). */
-  halfSize: number;
+  /** Which cells exist, from the ship's own format — relative to the bridge at [0,0]. */
+  cells: readonly [number, number][];
   catalogById: ReadonlyMap<string, PartCatalogStats>;
   /** Localized part names by instance id. */
   nameById: ReadonlyMap<string, string>;
@@ -86,7 +86,7 @@ export interface ShipYardProps {
 export function ShipYard({
   layout,
   lookById,
-  halfSize,
+  cells,
   catalogById,
   nameById,
   selectedId,
@@ -100,23 +100,42 @@ export function ShipYard({
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
-  const cellCount = halfSize * 2;
+
+  const bounds = (() => {
+    let minX = 0;
+    let maxX = 0;
+    let minY = 0;
+    let maxY = 0;
+    for (const [x, y] of cells) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x + 1);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y + 1);
+    }
+    return { minX, maxX, minY, maxY };
+  })();
+  const cellCount = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
 
   const clampView = useCallback(
     (view: View): View => {
       const span = Math.min(cellCount, Math.max(MIN_SPAN, view.span));
-      const limit = halfSize - span / 2;
+      const limitX = (bounds.maxX - bounds.minX) / 2 - span / 2;
+      const limitY = (bounds.maxY - bounds.minY) / 2 - span / 2;
       return {
         span,
-        cx: Math.min(limit, Math.max(-limit, view.cx)),
-        cy: Math.min(limit, Math.max(-limit, view.cy)),
+        cx: Math.min(centerX + limitX, Math.max(centerX - limitX, view.cx)),
+        cy: Math.min(centerY + limitY, Math.max(centerY - limitY, view.cy)),
       };
     },
-    [cellCount, halfSize],
+    [cellCount, bounds, centerX, centerY],
   );
 
   const fitView = useCallback((): View => {
-    if (layout.length === 0) return clampView({ cx: 0, cy: 0, span: Math.min(cellCount, 20) });
+    if (layout.length === 0) {
+      return clampView({ cx: centerX, cy: centerY, span: Math.min(cellCount, 20) });
+    }
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
@@ -130,16 +149,18 @@ export function ShipYard({
       maxX = Math.max(maxX, placement.gx + width);
       maxY = Math.max(maxY, placement.gy + height);
     }
-    if (!Number.isFinite(minX)) return clampView({ cx: 0, cy: 0, span: Math.min(cellCount, 20) });
+    if (!Number.isFinite(minX)) {
+      return clampView({ cx: centerX, cy: centerY, span: Math.min(cellCount, 20) });
+    }
     return clampView({
       cx: (minX + maxX) / 2,
       cy: (minY + maxY) / 2,
       span: Math.max(maxX - minX, maxY - minY) + FIT_MARGIN * 2,
     });
-  }, [layout, catalogById, cellCount, clampView]);
+  }, [layout, catalogById, cellCount, clampView, centerX, centerY]);
 
   const [colorBy, setColorBy] = useState<'rarity' | 'condition'>('rarity');
-  const [view, setView] = useState<View>(() => clampView({ cx: 0, cy: 0, span: 20 }));
+  const [view, setView] = useState<View>(() => clampView({ cx: centerX, cy: centerY, span: 20 }));
   const viewRef = useRef(view);
   viewRef.current = view;
 
@@ -243,19 +264,7 @@ export function ShipYard({
     onDragEnd();
   };
 
-  const cells: Array<{ gx: number; gy: number }> = [];
-  for (let gy = -halfSize; gy < halfSize; gy += 1) {
-    for (let gx = -halfSize; gx < halfSize; gx += 1) {
-      cells.push({ gx, gy });
-    }
-  }
-
-  const gridLines: string[] = [];
-  for (let i = 0; i <= cellCount; i += 1) {
-    const coordinate = -halfSize + i;
-    gridLines.push(`M${coordinate},${-halfSize} V${halfSize}`);
-    gridLines.push(`M${-halfSize},${coordinate} H${halfSize}`);
-  }
+  const cellList = cells.map(([gx, gy]) => ({ gx, gy }));
 
   const handleBlockDown = (event: ReactPointerEvent<SVGRectElement>, placement: Placement) => {
     onSelect(placement.partInstanceId);
@@ -318,8 +327,7 @@ export function ShipYard({
         onPointerUp={handlePointerEnd}
         onPointerLeave={handlePointerEnd}
       >
-        <path className="yard-grid" d={gridLines.join(' ')} />
-        {cells.map((cell) => (
+        {cellList.map((cell) => (
           <rect
             key={`${cell.gx},${cell.gy}`}
             className="yard-cell"

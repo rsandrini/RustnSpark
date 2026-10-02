@@ -1,8 +1,9 @@
 import type { PartCatalogStats, Placement } from '../../api/generated';
 
-// Pure client-side geometry for drag/snap feedback: cells [-halfSize, halfSize), footprints
-// swap on right-angle rotation. The yard size comes from the server (`ship.yard.halfSize`), which
-// also re-validates every preview and the save (D20) — the client owns no copy of the number.
+// Pure client-side geometry for drag/snap feedback: footprints swap on right-angle rotation.
+// Which cells exist comes from the ship's own format (`ship.yard.cells`), which also
+// re-validates every preview and the save (D20) — the client owns no copy of the shape beyond
+// what it was just given to render.
 
 export function footprint(
   catalog: PartCatalogStats,
@@ -20,13 +21,15 @@ export function canPlace(
   gx: number,
   gy: number,
   rot: 0 | 90,
-  halfSize: number,
+  cells: ReadonlySet<string>,
 ): boolean {
   const catalog = catalogById.get(partInstanceId);
   if (catalog === undefined) return false;
   const { width, height } = footprint(catalog, rot);
-  if (gx < -halfSize || gy < -halfSize || gx + width > halfSize || gy + height > halfSize) {
-    return false;
+  for (let dx = 0; dx < width; dx += 1) {
+    for (let dy = 0; dy < height; dy += 1) {
+      if (!cells.has(`${gx + dx},${gy + dy}`)) return false;
+    }
   }
   for (const placement of layout) {
     if (placement.partInstanceId === partInstanceId) continue;

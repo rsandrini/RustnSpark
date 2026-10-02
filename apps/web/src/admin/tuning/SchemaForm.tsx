@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type * as dto from '../../api/generated';
+import { GridCellsEditor } from './GridCellsEditor';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
 // while typing, flushed immediately on blur (moving to another field, or closing).
@@ -230,6 +231,15 @@ export function SchemaForm({
       );
     }
 
+    if (field.type === 'grid-cells') {
+      return (
+        <GridCellsEditor
+          value={value as [number, number][] | undefined}
+          onChange={(cells) => handleChange(field.name, cells)}
+        />
+      );
+    }
+
     const inputType = field.type === 'integer' || field.type === 'float' ? 'number' : 'text';
     return (
       <input
@@ -261,7 +271,8 @@ export function SchemaForm({
       )}
       <div className="schema-form-grid">
         {fields.map((field) => {
-          const wide = field.type === 'locale-map' || field.type === 'json';
+          const wide =
+            field.type === 'locale-map' || field.type === 'json' || field.type === 'grid-cells';
           return (
             <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
               <label htmlFor={field.name}>

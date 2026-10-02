@@ -28,6 +28,7 @@ import type {
   ReportListResponse,
   ReportResponse,
   ScavengeInfo,
+  ShipFormat,
   TravelQuote,
   SellMaterialResponse,
   SellResponse,
@@ -223,6 +224,16 @@ const starterInventory = (): InventoryItem[] => [
   },
 ];
 
+export function classicSquareCells(): [number, number][] {
+  const cells: [number, number][] = [];
+  for (let y = -10; y < 10; y += 1) {
+    for (let x = -10; x < 10; x += 1) {
+      cells.push([x, y]);
+    }
+  }
+  return cells;
+}
+
 const starterLayout = (): Placement[] => [
   { partInstanceId: 'part-bridge', gx: 0, gy: 0, rot: 0 },
   { partInstanceId: 'part-engine', gx: 2, gy: 0, rot: 0 },
@@ -244,7 +255,7 @@ const ship = (): ShipResponse => ({
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
-  yard: { halfSize: 10 },
+  yard: { cells: classicSquareCells() },
   // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
   // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
   activity:
@@ -490,7 +501,7 @@ export const handlers = [
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
-      yard: { halfSize: 10 },
+      yard: { cells: classicSquareCells() },
       activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
@@ -520,6 +531,19 @@ export const handlers = [
     const body = (await request.json()) as { energyMode: ShipResponse['energyMode'] };
     return ok<ShipResponse>({ ...ship(), energyMode: body.energyMode });
   }),
+
+  http.get('/v1/ship-formats', () =>
+    ok<ShipFormat[]>([
+      {
+        id: 'classic_square',
+        displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+        description: { en: 'The original grid.', 'pt-BR': 'A grade original.' },
+        cells: classicSquareCells(),
+        minRarity: 'COMMON',
+      },
+    ]),
+  ),
+  http.post('/v1/ships/:id/format', () => ok<ShipResponse>(ship())),
 
   http.get('/v1/locations', () => ok<WorldResponse>(world())),
 

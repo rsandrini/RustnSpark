@@ -5,6 +5,7 @@ import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import {
   addWreck,
+  classicSquareCells,
   destroyEngine,
   economyState,
   setWallet,
@@ -281,7 +282,7 @@ describe('port (S10.9)', () => {
               // not read as "0 / 0 = full" the way a genuinely topped-up tank would.
               sheet: { fuelCap: 0 },
               shipClass: 'MULTIROLE',
-              yard: { halfSize: 10 },
+              yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null },
             },
           ],
@@ -315,7 +316,7 @@ describe('port (S10.9)', () => {
               layout: [],
               sheet: { fuelCap: 40 },
               shipClass: 'MULTIROLE',
-              yard: { halfSize: 10 },
+              yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null },
             },
           ],

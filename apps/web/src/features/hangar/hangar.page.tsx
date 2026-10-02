@@ -8,6 +8,7 @@ import type {
   Placement,
   PreviewResponse,
   Problem,
+  ShipFormat,
   ShipResponse,
 } from '../../api/generated';
 import { useLocation, useNavigate, useParams } from 'react-router';
@@ -66,8 +67,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
   });
   const ship = shipsQuery.data?.[0];
-  // Yard size is the server's; before the ship loads nothing is placeable anyway.
-  const yardHalfSize = ship?.yard.halfSize ?? 0;
+  // Which cells exist is the server's (the ship's own format); before the ship loads nothing
+  // is placeable anyway.
+  const yardCellSet = useMemo(
+    () => new Set((ship?.yard.cells ?? []).map(([x, y]) => `${x},${y}`)),
+    [ship],
+  );
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -226,6 +231,26 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
 
+  const formatsQuery = useQuery({
+    queryKey: ['shipFormats'],
+    queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
+  });
+  const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const setFormat = useMutation({
+    mutationFn: (formatId: string) =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/format`, { formatId }),
+    onSuccess: (updated) => {
+      setLayout(updated.layout);
+      setSaved(true);
+      setSaveError(null);
+      setSelectedId(null);
+      setPendingPartId(null);
+      setFormatPickerOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+  });
+
   const auto = useMutation({
     // Auto layout re-arranges the parts that are IN the ship. Only an empty ship (a new pilot, or
     // after a rescue) has nothing to arrange, and then it assembles the loose kit; spares in
@@ -257,7 +282,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       (placement) => placement.partInstanceId === partInstanceId,
     );
     const rot = existing?.rot ?? 0;
-    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardHalfSize)) return;
+    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet)) return;
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
@@ -306,7 +331,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         existing.gx + dx!,
         existing.gy + dy!,
         nextRot,
-        yardHalfSize,
+        yardCellSet,
       ),
     );
     if (spot === undefined) {
@@ -491,7 +516,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             <section style={{ position: 'relative' }}>
               <ShipYard
                 lookById={lookById}
-                halfSize={ship.yard.halfSize}
+                cells={ship.yard.cells}
                 layout={effectiveLayout}
                 catalogById={catalogById}
                 nameById={nameById}
@@ -537,6 +562,27 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {rotateHint}
                 </p>
               )}
+              <div className="format-picker">
+                <button type="button" className="btn" onClick={() => setFormatPickerOpen((v) => !v)}>
+                  {t('hangar.format.button')}
+                </button>
+                {formatPickerOpen && (
+                  <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
+                    {(formatsQuery.data ?? []).map((format) => (
+                      <li key={format.id}>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={setFormat.isPending}
+                          onClick={() => setFormat.mutate(format.id)}
+                        >
+                          {pickLocalized(format.displayName, i18n.language)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </section>
 
             <section aria-label={t('hangar.sheet')}>
