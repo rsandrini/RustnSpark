@@ -548,6 +548,7 @@ model Ship {
   status            ShipStatus        @default(IN_PORT)
   currentLocationId String
   stance            ShipStance        @default(NEUTRAL)
+  energyMode        String            @default("FULL")
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]
   location          Location          @relation(fields: [currentLocationId], references: [id])

@@ -285,6 +285,7 @@ describe('reconciliation tick (S7.4)', () => {
             fuel: 0,
             currentLocationId: 'ceres',
             stance: 'NEUTRAL',
+            energyMode: 'FULL',
             parts: [],
             legs: [],
           },

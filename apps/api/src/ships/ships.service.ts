@@ -39,6 +39,7 @@ export interface ShipResponse {
   status: string;
   currentLocationId: string;
   stance: string;
+  energyMode: string;
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
@@ -237,6 +238,17 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
+  async setEnergyMode(shipId: string, energyMode: string): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+
+    const updated = await this.prisma.ship.update({
+      where: { id: shipId },
+      data: { energyMode },
+    });
+    return this.toResponse(updated, rules);
+  }
+
   private async loadShip(shipId: string): Promise<Ship> {
     const ship = await this.prisma.ship.findUnique({ where: { id: shipId } });
     if (!ship) throw new NotFoundException('ship not found');
@@ -361,6 +373,7 @@ export class ShipsService implements OnModuleInit {
       status: ship.status,
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
+      energyMode: ship.energyMode,
       layout: (ship.layout as unknown as Placement[]) ?? [],
       sheet,
       shipClass: deriveShipClass(installed, rules),

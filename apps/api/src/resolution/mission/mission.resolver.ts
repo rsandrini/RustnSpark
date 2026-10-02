@@ -33,6 +33,9 @@ export interface MissionSnapshot {
   readonly fuel: number;
   readonly hp: number;
   readonly esc: number;
+  readonly energyMode?: LegShipState['energyMode'];
+  readonly weaponEnergyDraw: LegShipState['weaponEnergyDraw'];
+  readonly shieldEnergyDraw: LegShipState['shieldEnergyDraw'];
   /** Loose parts at dispatch (a frozen copy, D19): the only parts a pirate can take. */
   readonly storage?: readonly StoredPart[];
 }
@@ -107,6 +110,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     fuel: input.snapshot.fuel,
     hp: input.snapshot.hp,
     esc: input.snapshot.esc,
+    energyMode: input.snapshot.energyMode,
+    weaponEnergyDraw: input.snapshot.weaponEnergyDraw,
+    shieldEnergyDraw: input.snapshot.shieldEnergyDraw,
   };
   let integrity = 100;
   let client = input.mission.client;

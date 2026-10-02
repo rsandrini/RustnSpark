@@ -82,3 +82,8 @@ export class StanceDto {
   @IsIn(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE'])
   stance!: 'DEFENSIVE' | 'NEUTRAL' | 'AGGRESSIVE';
 }
+
+export class EnergyModeDto {
+  @IsIn(['BATTERY', 'FULL', 'OVERRIDE'])
+  energyMode!: 'BATTERY' | 'FULL' | 'OVERRIDE';
+}

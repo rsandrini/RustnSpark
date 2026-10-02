@@ -33,6 +33,7 @@ export interface DispatchSnapshot {
   readonly fuel: number;
   readonly currentLocationId: string;
   readonly stance: string;
+  readonly energyMode: string;
   readonly parts: ReadonlyArray<{
     readonly id: string;
     readonly partType: string;
@@ -113,6 +114,7 @@ export async function rebuildDispatchData(
       fuel: ship.fuel,
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
+      energyMode: ship.energyMode,
       parts: installedRows.map((part) => ({
         id: part.id,
         partType: part.partType,
@@ -248,6 +250,7 @@ export class DispatchService {
         fuel: ship.fuel,
         currentLocationId: ship.currentLocationId,
         stance: ship.stance,
+        energyMode: ship.energyMode,
         parts: installed.map((part) => ({
           id: part.instance.id,
           partType: part.instance.partType,

@@ -97,6 +97,9 @@ export interface LegShipState {
   readonly fuel: number;
   readonly hp: number;
   readonly esc: number;
+  readonly energyMode?: 'BATTERY' | 'FULL' | 'OVERRIDE';
+  readonly weaponEnergyDraw: number;
+  readonly shieldEnergyDraw: number;
 }
 
 export interface LegInput {
@@ -173,6 +176,11 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
     sen: ship.sheet.sen,
     hp: ship.hp,
     mob: ship.sheet.mob,
+    energyMode: ship.energyMode,
+    batOutput: ship.sheet.batOutput,
+    energyCont: ship.sheet.energyCont,
+    weaponEnergyDraw: ship.weaponEnergyDraw,
+    shieldEnergyDraw: ship.shieldEnergyDraw,
   };
 }
 

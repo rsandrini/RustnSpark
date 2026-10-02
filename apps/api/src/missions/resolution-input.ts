@@ -6,6 +6,8 @@ import type { ScavengeContext } from '../resolution/scavenge/scavenge.resolver.j
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
+import { combatEnergyDraw } from '../ships/combat-energy.js';
+import { isEnergyMode } from '../ships/energy-mode.types.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { shipTier } from '../ships/ship-tier.js';
 import type { DispatchSnapshot } from './dispatch.service.js';
@@ -127,12 +129,14 @@ export function buildResolveInput(args: {
     catalog: part.catalog,
   }));
   const sheet = deriveSheet(installed, rules);
+  const { weaponEnergyDraw, shieldEnergyDraw } = combatEnergyDraw(installed);
   const partSnaps: PartSnapshot[] = snapshot.parts.map((part) => ({
     id: part.id,
     partClass: part.catalog.partClass,
     providesEsc: part.catalog.esc > 0,
     condition: part.condition,
   }));
+  const energyMode = isEnergyMode(snapshot.energyMode) ? snapshot.energyMode : undefined;
   const missionSnapshot: MissionSnapshot = {
     shipId: snapshot.shipId,
     parts: partSnaps,
@@ -140,6 +144,9 @@ export function buildResolveInput(args: {
     fuel: snapshot.fuel,
     hp: sheet.hp,
     esc: sheet.esc,
+    energyMode,
+    weaponEnergyDraw,
+    shieldEnergyDraw,
     storage: snapshot.storage ?? [],
   };
 

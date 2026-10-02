@@ -368,3 +368,132 @@ describe('resolveCombat — acceptance (S5.3)', () => {
     rng.assertDrained();
   });
 });
+
+describe('resolveCombat — energy modes', () => {
+  const rules = { ...GAME_CONFIG_DEFAULTS.combat, max_rounds: 5 };
+
+  it('skips attacks when weapon draw exceeds battery output in BATTERY mode', () => {
+    // A is the only attacker; B is unarmed and energy-disabled.
+    const a: CombatSheet = {
+      pdf: 10,
+      bli: 0,
+      esc: 0,
+      sen: 10,
+      hp: 100,
+      mob: 1,
+      energyMode: 'BATTERY',
+      batOutput: 4,
+      energyCont: 10,
+      weaponEnergyDraw: 5,
+      shieldEnergyDraw: 0,
+    };
+    const b: CombatSheet = {
+      pdf: 0,
+      bli: 0,
+      esc: 0,
+      sen: 0,
+      hp: 100,
+      mob: 1,
+    };
+    const result = resolveCombat(a, b, rules, createRng(1));
+    expect(result.rounds.every((round) => round.attacker === 'B')).toBe(true);
+    expect(result.final.hpB).toBe(100);
+  });
+
+  it('allows attacks in FULL mode using reactor surplus', () => {
+    const a: CombatSheet = {
+      pdf: 10,
+      bli: 0,
+      esc: 0,
+      sen: 10,
+      hp: 100,
+      mob: 1,
+      energyMode: 'FULL',
+      batOutput: 4,
+      energyCont: 10,
+      weaponEnergyDraw: 5,
+      shieldEnergyDraw: 0,
+    };
+    const b: CombatSheet = {
+      pdf: 0,
+      bli: 0,
+      esc: 0,
+      sen: 0,
+      hp: 100,
+      mob: 1,
+    };
+    const result = resolveCombat(a, b, rules, createRng(1));
+    expect(result.rounds.some((round) => round.attacker === 'A')).toBe(true);
+  });
+
+  it('does not absorb shield damage when shield draw cannot be paid', () => {
+    // A attacks every round; B has a shield but no budget to power it.
+    const a: CombatSheet = {
+      pdf: 10,
+      bli: 0,
+      esc: 0,
+      sen: 10,
+      hp: 100,
+      mob: 1,
+      energyMode: 'BATTERY',
+      batOutput: 10,
+      energyCont: 0,
+      weaponEnergyDraw: 5,
+      shieldEnergyDraw: 0,
+    };
+    const b: CombatSheet = {
+      pdf: 0,
+      bli: 0,
+      esc: 10,
+      sen: 0,
+      hp: 100,
+      mob: 1,
+      energyMode: 'BATTERY',
+      batOutput: 0,
+      energyCont: 0,
+      weaponEnergyDraw: 0,
+      shieldEnergyDraw: 1,
+    };
+    const result = resolveCombat(a, b, rules, createRng(1));
+    const aHits = result.rounds.filter(
+      (round) => round.attacker === 'A' && round.hit && round.damage > 0,
+    );
+    expect(aHits.length).toBeGreaterThan(0);
+    expect(aHits.every((round) => round.shieldAbsorbed === 0)).toBe(true);
+  });
+
+  it('absorbs shield damage once the per-round shield cost is paid', () => {
+    const a: CombatSheet = {
+      pdf: 10,
+      bli: 0,
+      esc: 0,
+      sen: 10,
+      hp: 100,
+      mob: 1,
+      energyMode: 'BATTERY',
+      batOutput: 20,
+      energyCont: 0,
+      weaponEnergyDraw: 10,
+      shieldEnergyDraw: 0,
+    };
+    const b: CombatSheet = {
+      pdf: 0,
+      bli: 0,
+      esc: 10,
+      sen: 0,
+      hp: 100,
+      mob: 1,
+      energyMode: 'BATTERY',
+      batOutput: 5,
+      energyCont: 0,
+      weaponEnergyDraw: 0,
+      shieldEnergyDraw: 5,
+    };
+    const result = resolveCombat(a, b, rules, createRng(1));
+    const aHits = result.rounds.filter(
+      (round) => round.attacker === 'A' && round.hit && round.damage > 0,
+    );
+    expect(aHits.length).toBeGreaterThan(0);
+    expect(aHits.some((round) => round.shieldAbsorbed > 0)).toBe(true);
+  });
+});

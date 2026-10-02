@@ -12,6 +12,19 @@ export interface CombatSheet {
   readonly sen: number;
   readonly hp: number;
   readonly mob: number;
+  /**
+   * Energy distribution mode. When omitted, the combat resolver ignores energy
+   * entirely (legacy parity behavior for tests/oracles and NPCs without a mode).
+   */
+  readonly energyMode?: 'BATTERY' | 'FULL' | 'OVERRIDE';
+  /** Energy available from batteries per combat round. */
+  readonly batOutput?: number;
+  /** Net continuous energy generation (positive = surplus, negative = deficit). */
+  readonly energyCont?: number;
+  /** Combat energy drawn by weapons each round they fire. */
+  readonly weaponEnergyDraw?: number;
+  /** Combat energy drawn by shields each round they absorb damage. */
+  readonly shieldEnergyDraw?: number;
 }
 
 /** A single attack attempt (hit or miss) inside a round. */

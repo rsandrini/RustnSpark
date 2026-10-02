@@ -21,6 +21,38 @@ export interface CombatOptions {
   readonly firstStrikeSide?: CombatSide;
 }
 
+type EnergyMode = NonNullable<CombatSheet['energyMode']>;
+
+interface EnergyState {
+  budget: number;
+  shieldPaid: boolean;
+}
+
+function energyEnabled(sheet: CombatSheet): boolean {
+  return sheet.energyMode !== undefined;
+}
+
+function roundEnergyBudget(sheet: CombatSheet): number {
+  const mode = sheet.energyMode ?? 'OVERRIDE';
+  const battery = sheet.batOutput ?? 0;
+  const surplus = Math.max(0, sheet.energyCont ?? 0);
+  switch (mode) {
+    case 'BATTERY':
+      return battery;
+    case 'FULL':
+    case 'OVERRIDE':
+    default:
+      // OVERRIDE currently behaves like FULL because the component-shutdown
+      // mechanic it implies does not exist yet. Once it does, this branch can
+      // draw from continuous systems too.
+      return battery + surplus;
+  }
+}
+
+function freshEnergyState(sheet: CombatSheet): EnergyState {
+  return { budget: roundEnergyBudget(sheet), shieldPaid: false };
+}
+
 /**
  * Port of `simulation/torneio-balanceamento.py` `combate()` with production
  * knobs (first strike, retreat ratio, config-driven dials). Layer 1 (S5.1
@@ -33,8 +65,8 @@ export interface CombatOptions {
  *    `int(1, attack_die)` then on hit `int(1, damage_die)`
  *
  * First-strike bonus applies to the first eligible attacker that actually
- * rolls; skips (retreat/kite) do not consume it. Per-round event recording
- * never draws RNG.
+ * rolls; skips (retreat/kite/out-of-power) do not consume it. Per-round event
+ * recording never draws RNG.
  */
 export function resolveCombat(
   a: CombatSheet,
@@ -56,6 +88,9 @@ export function resolveCombat(
   const events: CombatAttackEvent[] = [];
   let firstStrikePending = rules.first_strike_bonus > 0;
 
+  const energyA = energyEnabled(a) ? freshEnergyState(a) : null;
+  const energyB = energyEnabled(b) ? freshEnergyState(b) : null;
+
   let round = 1;
   for (; round <= rules.max_rounds; round += 1) {
     if (hpA <= minA || hpB <= minB) {
@@ -64,6 +99,16 @@ export function resolveCombat(
 
     escA = Math.min(maxEscA, escA + rules.shield_regen);
     escB = Math.min(maxEscB, escB + rules.shield_regen);
+
+    // Recompute per-round energy budgets for sides that use the mechanic.
+    if (energyA !== null) {
+      energyA.budget = roundEnergyBudget(a);
+      energyA.shieldPaid = false;
+    }
+    if (energyB !== null) {
+      energyB.budget = roundEnergyBudget(b);
+      energyB.shieldPaid = false;
+    }
 
     // Both draws always run (kite p may be 0; tapes still consume them).
     const aKite = Math.max(0, dmob) * rules.kite_factor > rng.float();
@@ -84,6 +129,19 @@ export function resolveCombat(
 
       const atk = isA ? a : b;
       const dfd = isA ? b : a;
+      const atkEnergy = isA ? energyA : energyB;
+
+      // Energy-gated weapons: no budget means the attack simply does not happen.
+      if (atkEnergy !== null) {
+        const draw = atk.weaponEnergyDraw ?? 0;
+        if (draw > 0 && atkEnergy.budget < draw) {
+          continue;
+        }
+        if (draw > 0) {
+          atkEnergy.budget -= draw;
+        }
+      }
+
       const dc = rules.dc_base + roundHalfEven(dfd.mob * rules.dodge_factor);
       const roll = rng.int(1, rules.attack_die);
       const holdsBonus =
@@ -107,13 +165,27 @@ export function resolveCombat(
         // What armor soaked: the pre-armor hit minus what landed (S9.0 layer split;
         // recording draws no RNG — the tapes only replay outcomes).
         armorAbsorbed = base - damage;
+
+        const dfdEnergy = isA ? energyB : energyA;
         if (isA) {
-          shieldAbsorbed = Math.min(escB, damage);
-          escB -= shieldAbsorbed;
+          const canAbsorb =
+            escB > 0 &&
+            (dfdEnergy === null ||
+              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+          if (canAbsorb) {
+            shieldAbsorbed = Math.min(escB, damage);
+            escB -= shieldAbsorbed;
+          }
           hpB -= damage - shieldAbsorbed;
         } else {
-          shieldAbsorbed = Math.min(escA, damage);
-          escA -= shieldAbsorbed;
+          const canAbsorb =
+            escA > 0 &&
+            (dfdEnergy === null ||
+              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+          if (canAbsorb) {
+            shieldAbsorbed = Math.min(escA, damage);
+            escA -= shieldAbsorbed;
+          }
           hpA -= damage - shieldAbsorbed;
         }
       }
@@ -148,4 +220,33 @@ export function resolveCombat(
     rounds: events,
     final: { hpA, hpB, escA, escB },
   };
+}
+
+/**
+ * Pays the shield's once-per-round energy cost if it has not already been paid
+ * this round and the defender actually has shield HP left to absorb with.
+ * Returns true when the shield is allowed to absorb (either paid or already
+ * paid), false when energy is insufficient.
+ */
+function payShieldEnergy(
+  energy: EnergyState,
+  draw: number,
+  incomingDamage: number,
+): boolean {
+  if (incomingDamage <= 0) {
+    return true;
+  }
+  if (energy.shieldPaid) {
+    return true;
+  }
+  if (draw <= 0) {
+    energy.shieldPaid = true;
+    return true;
+  }
+  if (energy.budget < draw) {
+    return false;
+  }
+  energy.budget -= draw;
+  energy.shieldPaid = true;
+  return true;
 }

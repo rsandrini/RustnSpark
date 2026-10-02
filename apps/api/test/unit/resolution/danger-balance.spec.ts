@@ -50,6 +50,9 @@ function snapshot(overrides: Partial<MissionSnapshot> = {}): MissionSnapshot {
     fuel: 1000,
     hp: 145,
     esc: 14,
+    energyMode: 'FULL',
+    weaponEnergyDraw: 0,
+    shieldEnergyDraw: 0,
     ...overrides,
   };
 }
