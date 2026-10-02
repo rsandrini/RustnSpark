@@ -626,6 +626,7 @@ describe('parts and ships API (S4.3)', () => {
           displayName: hull.displayName ?? {},
           description: hull.description ?? {},
           specialProp: hull.specialProp ?? undefined,
+          connectorLayouts: hull.connectorLayouts ?? undefined,
         },
       });
       const oversized = await prisma.partInstance.create({
