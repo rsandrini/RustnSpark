@@ -2,6 +2,7 @@ import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { fuelUnits } from '../../economy/fuel-cost.calculator.js';
 import type { ShipSheet } from '../../ships/sheet.types.js';
+import { isDead } from '../../parts/condition.js';
 import { resolveEncounter } from '../encounter/encounter.resolver.js';
 import type { EncounterOutcome } from '../encounter/encounter.resolver.js';
 import type { EscapePreset } from '../encounter/escape.resolver.js';
@@ -247,7 +248,6 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   let parts = input.ship.parts.map((part) => ({ ...part }));
   let fuel = input.ship.fuel - fuelBurned;
-  const motorAbort = chokeEvents.some((event) => event.type === 'motor');
 
   for (const event of chokeEvents) {
     const idx = parts.findIndex((part) => part.id === event.partId);
@@ -274,6 +274,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }),
     );
   }
+
+  // A chokeEvent of type 'motor' means ONE engine failed this leg, not that the ship is
+  // dead in the water — a ship with a second, still-working engine keeps going. Abort only
+  // when every installed ENGINE part is either already dead or just choked this leg
+  // (owner playtest: lost a redundant engine and the mission failed anyway even though
+  // another engine could still push the ship).
+  const chokedMotorPartIds = new Set(
+    chokeEvents.filter((event) => event.type === 'motor').map((event) => event.partId),
+  );
+  const engineParts = input.ship.parts.filter((part) => part.partClass === 'ENGINE');
+  const motorAbort =
+    engineParts.length > 0 &&
+    engineParts.every(
+      (part) => isDead(part.condition, rules) || chokedMotorPartIds.has(part.id),
+    );
 
   events.push(
     missionEvent({

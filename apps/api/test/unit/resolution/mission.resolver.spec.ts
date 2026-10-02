@@ -206,6 +206,32 @@ describe('S5.9 — motor choke aborts the leg and fails the mission', () => {
     expect(aborted).toBe(true);
     void rngEntries;
   });
+
+  it('a second, healthy engine keeps the leg going when the first chokes', () => {
+    // engine-1 is near-dead and will choke; engine-2 is healthy (condition 80 is
+    // above choke_threshold 30, so it never rolls a choke at all) and should be
+    // enough on its own to keep the ship moving.
+    const twoEngines = [
+      ...PARTS.map((part) => (part.id === 'engine-1' ? { ...part, condition: 10 } : part)),
+      { id: 'engine-2', partClass: 'ENGINE', providesEsc: false, condition: 80 },
+    ];
+    let sawMotorChoke = false;
+    for (let seed = 0; seed < 200; seed += 1) {
+      const out = resolve(
+        seed,
+        snapshot({ parts: twoEngines, fuel: 100 }),
+        mission({
+          legs: [{ distance: 100, danger: 0, zone: 1, env: { id: 'open', level: 1, fuelMult: 1 } }],
+        }),
+      );
+      if (out.events.some((event) => event.type === 'motor')) {
+        sawMotorChoke = true;
+        expect(out.status).not.toBe('failed');
+        expect(out.legs[0]?.status).not.toBe('motor_abort');
+      }
+    }
+    expect(sawMotorChoke).toBe(true);
+  });
 });
 
 describe('S5.9 — event shape', () => {
