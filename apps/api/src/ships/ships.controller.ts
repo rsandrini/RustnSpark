@@ -22,6 +22,7 @@ import {
   AutoAssembleDto,
   EnergyModeDto,
   PreviewDto,
+  SetFormatDto,
   StanceDto,
 } from './dto/ship-operations.dto.js';
 
@@ -86,5 +87,13 @@ export class ShipsController {
   @OwnedResource({ type: 'ship', param: 'id' })
   energyMode(@Param('id') shipId: string, @Body() dto: EnergyModeDto) {
     return this.shipsService.setEnergyMode(shipId, dto.energyMode);
+  }
+
+  @Post(':id/format')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  setFormat(@Param('id') shipId: string, @Body() dto: SetFormatDto) {
+    return this.shipsService.setFormat(shipId, dto.formatId);
   }
 }

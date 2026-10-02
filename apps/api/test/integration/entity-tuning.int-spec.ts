@@ -102,6 +102,16 @@ function validPartPayload(partType: string): Record<string, unknown> {
   };
 }
 
+function validShipFormatPayload(id: string): Record<string, unknown> {
+  return {
+    id,
+    displayName: { en: 'Test Format', 'pt-BR': 'Formato de Teste' },
+    description: { en: 'A test format.', 'pt-BR': 'Um formato de teste.' },
+    cells: [[0, 0], [1, 0]],
+    minRarity: 'COMMON',
+  };
+}
+
 function validRoutePayload(id: string, nodeAId: string, nodeBId: string): Record<string, unknown> {
   return {
     id,
@@ -500,5 +510,50 @@ describe('entity tuning (S3.8)', () => {
     const fake = body.fields.find((f) => f.name === 'fake_test_field');
     expect(fake).toBeDefined();
     expect(fake?.configKey).toBe('test.fake_key');
+  });
+
+  describe('ship-formats entity (Ship Format, round 11)', () => {
+    it('creates a format with a valid cell list', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const response = await request(server)
+        .post('/v1/admin/tuning/ship-formats')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: validShipFormatPayload('cross_test'), reason: 'test' });
+      expect(response.status).toBe(201);
+    });
+
+    it('rejects a cell list missing [0,0]', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const payload = validShipFormatPayload('no_origin');
+      payload.cells = [[1, 0], [2, 0]];
+      const response = await request(server)
+        .post('/v1/admin/tuning/ship-formats')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: payload, reason: 'test' });
+      expect(response.status).toBe(400);
+    });
+
+    it('rejects a cell beyond the +/-15 drawing ceiling', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const payload = validShipFormatPayload('too_big');
+      payload.cells = [[0, 0], [20, 0]];
+      const response = await request(server)
+        .post('/v1/admin/tuning/ship-formats')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: payload, reason: 'test' });
+      expect(response.status).toBe(400);
+    });
   });
 });

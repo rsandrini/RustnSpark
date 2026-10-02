@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export type EntityFieldType =
-  'string' | 'integer' | 'float' | 'boolean' | 'json' | 'enum' | 'locale-map';
+  'string' | 'integer' | 'float' | 'boolean' | 'json' | 'enum' | 'locale-map' | 'grid-cells';
 
 export interface EntitySchemaField {
   name: string;
@@ -25,6 +25,21 @@ const localeMapSchema = z.object({
   'pt-BR': z.string().min(1),
 });
 
+// Ship Format's admin drawing-canvas ceiling (2026-10-02-ship-format-design.md) — enforced
+// server-side here, not only by the web widget.
+const GRID_CELLS_CEILING = 15;
+
+const gridCellsSchema = z
+  .array(z.tuple([z.number().int(), z.number().int()]))
+  .refine((cells) => cells.some(([x, y]) => x === 0 && y === 0), {
+    message: 'cells must include the bridge anchor [0, 0]',
+  })
+  .refine(
+    (cells) =>
+      cells.every(([x, y]) => Math.abs(x) <= GRID_CELLS_CEILING && Math.abs(y) <= GRID_CELLS_CEILING),
+    { message: 'cells must stay within the +/-15 drawing ceiling' },
+  );
+
 function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
   switch (field.type) {
     case 'string':
@@ -41,6 +56,8 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
       return z.enum(field.enumValues as [string, ...string[]]);
     case 'locale-map':
       return localeMapSchema;
+    case 'grid-cells':
+      return gridCellsSchema;
     default:
       return z.never();
   }
@@ -650,6 +667,46 @@ const DROP_TABLE_FIELDS: EntitySchemaField[] = [
   },
 ];
 
+const SHIP_FORMAT_FIELDS: EntitySchemaField[] = [
+  {
+    name: 'id',
+    type: 'string',
+    required: true,
+    description: localeMap('Unique format code', 'Código único do formato'),
+  },
+  {
+    name: 'displayName',
+    type: 'locale-map',
+    required: true,
+    description: localeMap('Display name by locale', 'Nome de exibição por idioma'),
+  },
+  {
+    name: 'description',
+    type: 'locale-map',
+    required: true,
+    description: localeMap('Description by locale', 'Descrição por idioma'),
+  },
+  {
+    name: 'cells',
+    type: 'grid-cells',
+    required: true,
+    description: localeMap(
+      'Buildable cells, relative to the bridge at [0,0]',
+      'Células construíveis, relativas à ponte em [0,0]',
+    ),
+  },
+  {
+    name: 'minRarity',
+    type: 'enum',
+    required: true,
+    enumValues: RARITY_VALUES,
+    description: localeMap(
+      'Minimum bridge rarity that unlocks this format',
+      'Raridade mínima de ponte que desbloqueia este formato',
+    ),
+  },
+];
+
 const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   parts: { entity: 'parts', model: 'partCatalog', fields: PART_FIELDS },
   materials: { entity: 'materials', model: 'material', fields: MATERIAL_FIELDS },
@@ -663,6 +720,7 @@ const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
     fields: MISSION_TEMPLATE_FIELDS,
   },
   'drop-tables': { entity: 'drop-tables', model: 'dropTable', fields: DROP_TABLE_FIELDS },
+  'ship-formats': { entity: 'ship-formats', model: 'shipFormat', fields: SHIP_FORMAT_FIELDS },
 };
 
 export function getEntityNames(): string[] {

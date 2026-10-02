@@ -195,8 +195,9 @@ export const ShipResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
-  /** The assembly yard: cells run [-halfSize, halfSize) on both axes. */
-  yard: z.object({ halfSize: z.number() }),
+  /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
+      the ship's own ShipFormat selection, not a fixed bound. */
+  yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
@@ -205,6 +206,15 @@ export const ShipResponseSchema = z.object({
   }),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
+
+export const ShipFormatSchema = z.object({
+  id: z.string(),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  cells: z.array(z.tuple([z.number(), z.number()])),
+  minRarity: z.string(),
+});
+export type ShipFormat = z.infer<typeof ShipFormatSchema>;
 
 export const ProblemSchema = z.object({ code: z.string(), message: z.string() });
 export type Problem = z.infer<typeof ProblemSchema>;
@@ -836,6 +846,7 @@ export const EntityFieldTypeSchema = z.enum([
   'json',
   'enum',
   'locale-map',
+  'grid-cells',
 ]);
 export type EntityFieldType = z.infer<typeof EntityFieldTypeSchema>;
 

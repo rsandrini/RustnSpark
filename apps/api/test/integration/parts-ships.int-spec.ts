@@ -43,6 +43,7 @@ interface ShipResponse {
   stance: string;
   layout: Array<Record<string, unknown>>;
   sheet: SheetShape;
+  yard: { cells: [number, number][] };
 }
 
 interface PreviewResponse {
@@ -171,6 +172,111 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(second.status).toBe(200);
       expect(asShip(second).id).toBe(asShip(first).id);
+    });
+
+    it('yard reports the ship\'s format cells, not a fixed square (round-11, Ship Format)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+
+      const response = await request(httpServer(testApp.app))
+        .get(`/v1/ships/${ship.id}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(200);
+      const body = asShip(response);
+      expect(body.yard.cells).toHaveLength(400);
+      expect(body.yard.cells).toContainEqual([0, 0]);
+      expect(body.yard.cells).toContainEqual([-10, -10]);
+      expect(body.yard.cells).not.toContainEqual([10, 10]); // half-open upper bound
+    });
+
+    it('lists unlocked formats, always including classic_square, and switches format dropping out-of-shape parts', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+
+      await prisma.shipFormat.create({
+        data: {
+          id: 'tiny_test_format',
+          displayName: { en: 'Tiny', 'pt-BR': 'Minúsculo' },
+          description: { en: 'test', 'pt-BR': 'teste' },
+          cells: [[0, 0]],
+          minRarity: 'COMMON',
+          active: true,
+        },
+      });
+
+      const list = await request(httpServer(testApp.app))
+        .get('/v1/ship-formats')
+        .set('Authorization', `Bearer ${token}`);
+      expect(list.status).toBe(200);
+      const ids = (list.body as Array<{ id: string }>).map((f) => f.id);
+      expect(ids).toContain('classic_square');
+      expect(ids).toContain('tiny_test_format');
+
+      const before = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      const placedCount = before.layout.length;
+      expect(placedCount).toBeGreaterThan(1);
+
+      const switched = asShip(
+        await request(httpServer(testApp.app))
+          .post(`/v1/ships/${ship.id}/format`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ formatId: 'tiny_test_format' }),
+      );
+      expect(switched.yard.cells).toEqual([[0, 0]]);
+      expect(switched.layout.length).toBeLessThan(placedCount);
+
+      const inventory = await request(httpServer(testApp.app))
+        .get('/v1/inventory')
+        .set('Authorization', `Bearer ${token}`);
+      const installedStill = (inventory.body as Array<{ location: string }>).filter(
+        (p) => p.location === 'INSTALLED',
+      );
+      expect(installedStill.length).toBe(switched.layout.length);
+    });
+
+    it('rejects a format switch above the bridge\'s rarity', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await prisma.shipFormat.create({
+        data: {
+          id: 'legendary_only',
+          displayName: { en: 'Legendary', 'pt-BR': 'Lendário' },
+          description: { en: 'test', 'pt-BR': 'teste' },
+          cells: [[0, 0]],
+          minRarity: 'LEGENDARY',
+          active: true,
+        },
+      });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${ship.id}/format`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ formatId: 'legendary_only' });
+      expect(response.status).toBe(409);
+      expect((response.body as { message: { error: string } }).message.error).toBe(
+        'FORMAT_NOT_UNLOCKED',
+      );
+    });
+
+    it('lists only classic_square when the ship has no bridge installed yet', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      await onboard(token, 'luna');
+
+      const list = await request(httpServer(testApp.app))
+        .get('/v1/ship-formats')
+        .set('Authorization', `Bearer ${token}`);
+      expect(list.status).toBe(200);
+      const ids = (list.body as Array<{ id: string }>).map((f) => f.id);
+      expect(ids).toEqual(['classic_square']);
     });
 
     it('creates exactly one ship and one starter credit under concurrent onboarding', async () => {

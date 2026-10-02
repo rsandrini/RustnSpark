@@ -87,3 +87,8 @@ export class EnergyModeDto {
   @IsIn(['BATTERY', 'FULL', 'OVERRIDE'])
   energyMode!: 'BATTERY' | 'FULL' | 'OVERRIDE';
 }
+
+export class SetFormatDto {
+  @IsString()
+  formatId!: string;
+}
