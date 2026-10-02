@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { cellKey, validateLayout } from '../../../src/ships/geometry.js';
+import { cellKey, connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
 
 describe('validateLayout', () => {
@@ -79,13 +80,14 @@ describe('validateLayout', () => {
     return cells;
   }
   const cells = wideSquareCells();
+  const noConnectors = new Map<string, ConnectorLayout | null>();
 
   it('accepts a valid connected layout', () => {
     const placements: Placement[] = [
       { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 1, gy: 0, rot: 0 },
     ];
-    expect(validateLayout(placements, catalog, cells)).toEqual([]);
+    expect(validateLayout(placements, catalog, cells, noConnectors)).toEqual([]);
   });
 
   it('rejects overlapping parts', () => {
@@ -93,17 +95,17 @@ describe('validateLayout', () => {
       { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 0, gy: 0, rot: 0 },
     ];
-    const errors = validateLayout(placements, catalog, cells);
+    const errors = validateLayout(placements, catalog, cells, noConnectors);
     expect(errors.map((e) => e.code)).toContain('OVERLAP');
   });
 
-  it('rejects disconnected parts', () => {
+  it('accepts distant parts (no more DISCONNECTED)', () => {
     const placements: Placement[] = [
       { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 5, gy: 5, rot: 0 },
     ];
-    const errors = validateLayout(placements, catalog, cells);
-    expect(errors.map((e) => e.code)).toContain('DISCONNECTED');
+    const errors = validateLayout(placements, catalog, cells, noConnectors);
+    expect(errors).toEqual([]);
   });
 
   it('rejects parts placed out of bounds', () => {
@@ -111,7 +113,7 @@ describe('validateLayout', () => {
       { partInstanceId: 'bridge', gx: 15, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 16, gy: 0, rot: 0 },
     ];
-    const errors = validateLayout(placements, catalog, cells);
+    const errors = validateLayout(placements, catalog, cells, noConnectors);
     expect(errors.map((e) => e.code)).toContain('OUT_OF_BOUNDS');
   });
 
@@ -120,7 +122,7 @@ describe('validateLayout', () => {
       { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 0, gy: -2, rot: 90 },
     ];
-    expect(validateLayout(placements, catalog, cells)).toEqual([]);
+    expect(validateLayout(placements, catalog, cells, noConnectors)).toEqual([]);
   });
 
   it('detects overlap caused by rotation', () => {
@@ -128,7 +130,7 @@ describe('validateLayout', () => {
       { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'hull', gx: 0, gy: 0, rot: 90 },
     ];
-    const errors = validateLayout(placements, catalog, cells);
+    const errors = validateLayout(placements, catalog, cells, noConnectors);
     expect(errors.map((e) => e.code)).toContain('OVERLAP');
   });
 });
@@ -167,16 +169,17 @@ describe('validateLayout — format cell bounds', () => {
   ]);
   // A small cross: (0,0) is the bridge's own cell, plus the four neighbors.
   const CROSS_CELLS = new Set(['0,0', '1,0', '-1,0', '0,1', '0,-1']);
+  const noConnectors = new Map<string, ConnectorLayout | null>();
 
   it('accepts a part inside the format shape', () => {
     const placements: Placement[] = [{ partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 }];
-    expect(validateLayout(placements, bridgeOnly, CROSS_CELLS)).toEqual([]);
+    expect(validateLayout(placements, bridgeOnly, CROSS_CELLS, noConnectors)).toEqual([]);
   });
 
   it('rejects a cell outside the format shape, even though it would fit a plain square', () => {
     // (1,1) is inside a 20x20 square but NOT one of the cross's cells.
     const placements: Placement[] = [{ partInstanceId: 'p-bridge', gx: 1, gy: 1, rot: 0 }];
-    const errors = validateLayout(placements, bridgeOnly, CROSS_CELLS);
+    const errors = validateLayout(placements, bridgeOnly, CROSS_CELLS, noConnectors);
     expect(errors).toEqual([
       { code: 'OUT_OF_BOUNDS', partInstanceId: 'p-bridge', message: expect.any(String) },
     ]);
@@ -185,8 +188,169 @@ describe('validateLayout — format cell bounds', () => {
   it('accepts every arm of the cross', () => {
     for (const [gx, gy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
       const placements: Placement[] = [{ partInstanceId: 'p-bridge', gx, gy, rot: 0 }];
-      expect(validateLayout(placements, bridgeOnly, CROSS_CELLS)).toEqual([]);
+      expect(validateLayout(placements, bridgeOnly, CROSS_CELLS, noConnectors)).toEqual([]);
     }
+  });
+});
+
+describe('connectedPartIds', () => {
+  // 1x1 bridge at (0,0), 1x1 "pod" at (1,0) — adjacent cells sharing the edge between
+  // bridge's E side and pod's W side.
+  const POD: PartCatalog = {
+    partType: 'pod',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 0,
+    structureCost: 0,
+    partHp: 0,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
+  };
+  const BRIDGE: PartCatalog = { ...POD, partType: 'bridge', partClass: 'BRIDGE' };
+  const twoPartCatalog = new Map([
+    ['p-bridge', BRIDGE],
+    ['p-pod', POD],
+  ]);
+  const placements: Placement[] = [
+    { partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 },
+    { partInstanceId: 'p-pod', gx: 1, gy: 0, rot: 0 },
+  ];
+
+  it('connects two parts whose facing sides both have a compatible connector', () => {
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'central' }] }],
+      ['p-pod', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] }],
+    ]);
+    const result = connectedPartIds(placements, twoPartCatalog, connectors);
+    expect(result).toEqual(new Set(['p-bridge', 'p-pod']));
+  });
+
+  it('does not connect when one side has no connector at all', () => {
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'central' }] }],
+      ['p-pod', { cells: [] }], // pod's W side explicitly has nothing
+    ]);
+    const result = connectedPartIds(placements, twoPartCatalog, connectors);
+    expect(result).toEqual(new Set(['p-bridge'])); // the bridge is always connected to itself
+  });
+
+  it('does not connect central to split', () => {
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'central' }] }],
+      ['p-pod', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'split' }] }],
+    ]);
+    const result = connectedPartIds(placements, twoPartCatalog, connectors);
+    expect(result).toEqual(new Set(['p-bridge']));
+  });
+
+  it('connects when a part has no entry in the map at all (treated as the universal fallback)', () => {
+    const connectors = new Map<string, ConnectorLayout | null>(); // neither part has an entry
+    const result = connectedPartIds(placements, twoPartCatalog, connectors);
+    expect(result).toEqual(new Set(['p-bridge', 'p-pod']));
+  });
+
+  it('respects rotation: a connector on W becomes N after a 90-degree rotation', () => {
+    // Pod placed to the SOUTH of the bridge instead of east, rotated 90 so its originally-W
+    // connector now faces north (back toward the bridge).
+    const rotatedPlacements: Placement[] = [
+      { partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'p-pod', gx: 0, gy: 1, rot: 90 },
+    ];
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] }],
+      ['p-pod', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] }], // rotates to N
+    ]);
+    const result = connectedPartIds(rotatedPlacements, twoPartCatalog, connectors);
+    expect(result).toEqual(new Set(['p-bridge', 'p-pod']));
+  });
+});
+
+describe('validateLayout — no more DISCONNECTED', () => {
+  it('saves a layout with a disconnected part instead of rejecting it', () => {
+    const catalog = new Map([
+      [
+        'p-bridge',
+        {
+          partType: 'bridge',
+          partClass: 'BRIDGE',
+          w: 1,
+          h: 1,
+          mass: 0,
+          structureCost: 0,
+          partHp: 0,
+          basePrice: 0,
+          pot: 0,
+          pdf: 0,
+          bli: 0,
+          esc: 0,
+          sen: 0,
+          crg: 0,
+          min: 0,
+          energyCont: 0,
+          energyCombat: 0,
+          fuelCap: 0,
+          fuelUse: 0,
+          batCharge: 0,
+          batOutput: 0,
+          batInput: 0,
+          pressurized: false,
+          lifeSupport: false,
+        },
+      ],
+      [
+        'p-far',
+        {
+          partType: 'hull',
+          partClass: 'DEFENSE',
+          w: 1,
+          h: 1,
+          mass: 0,
+          structureCost: 0,
+          partHp: 0,
+          basePrice: 0,
+          pot: 0,
+          pdf: 0,
+          bli: 0,
+          esc: 0,
+          sen: 0,
+          crg: 0,
+          min: 0,
+          energyCont: 0,
+          energyCombat: 0,
+          fuelCap: 0,
+          fuelUse: 0,
+          batCharge: 0,
+          batOutput: 0,
+          batInput: 0,
+          pressurized: false,
+          lifeSupport: false,
+        },
+      ],
+    ]);
+    const wideCells = new Set<string>();
+    for (let y = -20; y < 20; y += 1) for (let x = -20; x < 20; x += 1) wideCells.add(`${x},${y}`);
+    const placements: Placement[] = [
+      { partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'p-far', gx: 5, gy: 5, rot: 0 }, // not adjacent to anything
+    ];
+    const errors = validateLayout(placements, catalog, wideCells, new Map());
+    expect(errors).toEqual([]); // no DISCONNECTED, no error at all — it just won't be "connected"
   });
 });
 

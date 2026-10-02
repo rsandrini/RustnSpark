@@ -44,7 +44,7 @@ export interface Placement {
   rot: number;
 }
 
-export type LayoutErrorCode = 'OUT_OF_BOUNDS' | 'OVERLAP' | 'DISCONNECTED';
+export type LayoutErrorCode = 'OUT_OF_BOUNDS' | 'OVERLAP';
 
 export interface LayoutError {
   code: LayoutErrorCode;

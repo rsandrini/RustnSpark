@@ -17,11 +17,13 @@ export interface ConnectorLayout {
 
 const ROTATE_CW: Record<ConnectorSide, ConnectorSide> = { N: 'E', E: 'S', S: 'W', W: 'N' };
 
+export const RIGHT_ANGLE = 90;
+
 /** A placement's `rot` (0 or 90) rotates connector sides the same way it already rotates
     width/height in canPlace/validateLayout — the catalog/instance data is always stored
     unrotated; this applies the transform where placements are evaluated. */
-export function rotateSide(side: ConnectorSide, rot: 0 | 90): ConnectorSide {
-  return rot === 90 ? ROTATE_CW[side] : side;
+export function rotateSide(side: ConnectorSide, rot: number): ConnectorSide {
+  return rot === RIGHT_ANGLE ? ROTATE_CW[side] : side;
 }
 
 /** central<->central, split<->split, universal<->anything-but-none. central and split never

@@ -41,9 +41,7 @@ function findPlacement(
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
       const errors = validateLayout([...existing, placement], catalog, formatCells);
-      const relevant = errors.filter(
-        (error) => error.partInstanceId === part.instance.id || error.code === 'DISCONNECTED',
-      );
+      const relevant = errors.filter((error) => error.partInstanceId === part.instance.id);
       if (relevant.length === 0) {
         return placement;
       }
