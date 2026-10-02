@@ -539,6 +539,16 @@ model PartInstance {
   @@index([shipId])
 }
 
+model ShipFormat {
+  id          String   @id
+  displayName Json
+  description Json
+  cells       Json
+  minRarity   Rarity
+  active      Boolean  @default(true)
+  ships       Ship[]
+}
+
 model Ship {
   id                String            @id @default(dbgenerated("gen_random_uuid()"))
   ownerPlayerId     String
@@ -548,12 +558,14 @@ model Ship {
   status            ShipStatus        @default(IN_PORT)
   currentLocationId String
   stance            ShipStance        @default(NEUTRAL)
+  formatId          String            @default("classic_square")
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]
   location          Location          @relation(fields: [currentLocationId], references: [id])
   missions          MissionInstance[]
   presences         RoutePresence[]
   repairJobs        RepairJob[]
+  format            ShipFormat        @relation(fields: [formatId], references: [id])
 
   @@index([currentLocationId])
   @@index([ownerPlayerId])

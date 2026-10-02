@@ -124,6 +124,11 @@ describe('database seed (S3.4)', () => {
     expect(counts.materials).toBe(3 + PARTS.filter((part) => part.partClass !== 'BRIDGE').length);
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
+
+    const classicSquare = await prisma.shipFormat.findUnique({ where: { id: 'classic_square' } });
+    expect(classicSquare).not.toBeNull();
+    expect((classicSquare!.cells as [number, number][]).length).toBe(400);
+    expect(classicSquare!.minRarity).toBe('COMMON');
   });
 
   it('is idempotent: a second seed run makes no changes', async () => {
