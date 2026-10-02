@@ -650,6 +650,7 @@
       "attacker": "Attacker",
       "rollDc": "Roll / DC",
       "result": "Result",
+      "target": "Target",
       "hit": "Hit",
       "miss": "Miss",
       "side": {

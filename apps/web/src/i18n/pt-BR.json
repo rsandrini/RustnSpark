@@ -650,6 +650,7 @@
       "attacker": "Atacante",
       "rollDc": "Rolagem / CD",
       "result": "Resultado",
+      "target": "Alvo",
       "hit": "Acerto",
       "miss": "Erro",
       "side": {

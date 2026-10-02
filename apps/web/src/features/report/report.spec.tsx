@@ -111,6 +111,14 @@ describe('report (S10.8)', () => {
     expect(within(hitRow).getByText('Enemy')).toHaveClass('attacker-enemy');
     expect(missRow).toHaveClass('attacker-player');
     expect(within(missRow).getByText('You')).toHaveClass('attacker-player');
+    // Owner follow-up: "we should also show how much damage we take, like we show about
+    // the enemy" — the Shield/Armor/Hull numbers are always the TARGET's damage, so a
+    // Target column (colored by side, like Attacker) removes the need to invert the
+    // Attacker column mentally on every row.
+    expect(within(hitRow).getAllByText('You')).toHaveLength(1);
+    expect(within(hitRow).getByText('You')).toHaveClass('attacker-player');
+    expect(within(missRow).getAllByText('Enemy')).toHaveLength(1);
+    expect(within(missRow).getByText('Enemy')).toHaveClass('attacker-enemy');
     // No bonus this attack: the "+ 0" term is left out rather than shown as noise.
     expect(rows[3]).toHaveTextContent('17 + 5 = 22 / 10');
     // A report resolved before this breakdown existed has rounds but no pdf/bonus at all —

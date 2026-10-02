@@ -277,6 +277,7 @@ function CascadeDetail({
                 <th>{t('report.combatLog.attacker')}</th>
                 <th>{t('report.combatLog.rollDc')}</th>
                 <th>{t('report.combatLog.result')}</th>
+                <th>{t('report.combatLog.target')}</th>
                 <th>{t('report.cascade.shield')}</th>
                 <th>{t('report.cascade.armor')}</th>
                 <th>{t('report.cascade.hp')}</th>
@@ -300,6 +301,16 @@ function CascadeDetail({
                   <td>
                     <span className={`pill ${round.hit ? 'pill-hit' : 'pill-miss'}`}>
                       {round.hit ? t('report.combatLog.hit') : t('report.combatLog.miss')}
+                    </span>
+                  </td>
+                  <td>
+                    {/* The Shield/Armor/Hull columns are always the TARGET's damage, not
+                        the attacker's — spelling the target out (colored by side, same as
+                        Attacker) removes the need to invert the Attacker column mentally on
+                        every row (owner: "show how much damage we take, like we show about
+                        the enemy"). */}
+                    <span className={`attacker-${round.attacker === 'player' ? 'enemy' : 'player'}`}>
+                      {t(`report.combatLog.side.${round.attacker === 'player' ? 'enemy' : 'player'}`)}
                     </span>
                   </td>
                   <td className={round.hit ? 'dmg-shield' : undefined}>
