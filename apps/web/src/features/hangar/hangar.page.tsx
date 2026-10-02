@@ -16,7 +16,7 @@ import { ShipYard, type PartLook } from './ship-yard';
 import { canPlace } from './hangar.geometry';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
-import { PartStatsCard, type PartCompareContext } from '../parts/part-detail';
+import { PartStatsCard, RarityBadge, lowestRarity, type PartCompareContext } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
@@ -343,6 +343,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const installedCatalogs = effectiveLayout
     .map((placement) => catalogById.get(placement.partInstanceId))
     .filter((catalog): catalog is NonNullable<typeof catalog> => catalog !== undefined);
+  // Owner request (round 10): the ship's own rarity, shown top-right of the Ship Sheet — a
+  // ship is only as good as its weakest part, so this is the LOWEST rarity among everything
+  // actually installed (not the average, not the best part).
+  const shipRarity = lowestRarity(
+    effectiveLayout
+      .map((placement) => lookById.get(placement.partInstanceId)?.rarity)
+      .filter((rarity): rarity is string => rarity !== undefined),
+  );
 
   if (shipsQuery.isLoading || inventoryQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
@@ -526,7 +534,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
             <section aria-label={t('hangar.sheet')}>
               <div className="panel">
-                <h2>{t('hangar.sheet')}</h2>
+                <div className="row-between">
+                  <h2>{t('hangar.sheet')}</h2>
+                  {shipRarity !== undefined && (
+                    <span title={t('hangar.shipRarityHint')}>
+                      <RarityBadge rarity={shipRarity} />
+                    </span>
+                  )}
+                </div>
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}

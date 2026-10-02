@@ -235,6 +235,18 @@ describe('hangar (S10.4)', () => {
     expect(badge).toHaveClass('rarity-common');
   });
 
+  // Round-10 owner request: "add the rarity of the ship, top right of the ship sheet — the
+  // lowest rarity part that is installed."
+  it('shows the ship\'s own rarity (lowest among installed parts) next to the Ship Sheet heading', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const sheetHeading = await screen.findByRole('heading', { name: 'Ship sheet' });
+    const badge = within(sheetHeading.closest('.row-between')!).getByText('Common');
+    expect(badge).toHaveClass('rarity-badge', 'rarity-common');
+  });
+
   it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {
     server.use(
       onboarded(),

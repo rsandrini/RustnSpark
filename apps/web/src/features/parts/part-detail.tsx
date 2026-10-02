@@ -121,6 +121,24 @@ export function partSummary(
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
+// Canonical tier order (mirrors the API's part-upgrade.calculator.ts chain), lowest first.
+const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] as const;
+
+/**
+ * The lowest-rarity entry in a set of installed parts' rarities (owner request, round 10:
+ * the ship's own rarity is defined as its lowest-rarity installed part — a ship is only as
+ * good as its weakest part). A rarity string outside RARITY_ORDER sorts last, so a typo or a
+ * future tier this list doesn't know about yet never silently wins as "lowest".
+ */
+export function lowestRarity(rarities: readonly string[]): string | undefined {
+  if (rarities.length === 0) return undefined;
+  const rank = (rarity: string) => {
+    const index = RARITY_ORDER.indexOf(rarity as (typeof RARITY_ORDER)[number]);
+    return index === -1 ? RARITY_ORDER.length : index;
+  };
+  return rarities.reduce((lowest, rarity) => (rank(rarity) < rank(lowest) ? rarity : lowest));
+}
+
 /**
  * A part's rarity, not just the card's border colour — one shared pattern everywhere rarity
  * shows up (the tray/parts list, and every part popup). Owner request (round 7): spelled out

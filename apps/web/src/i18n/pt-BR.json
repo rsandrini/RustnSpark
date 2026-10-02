@@ -59,6 +59,7 @@
     },
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
     "sheet": "Folha da nave",
+    "shipRarityHint": "Raridade da nave — a menor raridade entre as peças instaladas",
     "class": "Classe",
     "stats": {
       "pot": "Potência dos motores",
