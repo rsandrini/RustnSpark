@@ -17,7 +17,7 @@ import { journeyNodeIds } from './journey';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { RiskBadge } from '../../ui/RiskBadge';
-import { summarizeLegs } from '../missions/mission-facts';
+import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
 import { ShipStage } from '../../ui/ShipStage';
 
 export interface TransitPageProps {
@@ -230,6 +230,27 @@ export function TransitPage({
     return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
   };
 
+  // The leg WINDOWS above only exist once dispatched (written pro-rata at dispatch time);
+  // the stored plan's own routeId per leg is there from generation onward, so the
+  // pre-dispatch screen can show the same kind of leg-by-leg breakdown (owner: "in My Ship,
+  // before dispatch... I cannot see the origin -> destination, I cannot see the details").
+  const plannedRouteIds = legRouteIds(mission.legs);
+  const plannedNodeIds = journeyNodeIds(
+    mission.originId,
+    plannedRouteIds.map((routeId) => ({ routeId })),
+    worldQuery.data?.routes ?? [],
+  );
+  const plannedLegLabel = (routeId: string, index: number) => {
+    const from = plannedNodeIds[index];
+    const to = plannedNodeIds[index + 1];
+    if (from !== undefined && to !== undefined) {
+      return `${locationName(from)} → ${locationName(to)}`;
+    }
+    const route = worldQuery.data?.routes.find((entry) => entry.id === routeId);
+    if (route === undefined) return routeId;
+    return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
+  };
+
   const briefTitle = pickLocalized(mission.brief.title, i18n.language);
   const briefText = pickLocalized(mission.brief.description, i18n.language);
 
@@ -257,6 +278,10 @@ export function TransitPage({
         </p>
       )}
       <div className="briefing" data-testid="briefing">
+        <div className="fact fact-route">
+          <div className="k">{t('transit.facts.route')}</div>
+          <div className="v">{routeLabel}</div>
+        </div>
         {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
           <div className="fact">
             <div className="k">{t('transit.facts.reward')}</div>
@@ -322,6 +347,16 @@ export function TransitPage({
         <section>
           {!embedded && <ShipStage mode="idle" placeId={mission.originId} />}
           <p>{t('transit.accepted')}</p>
+          {plannedRouteIds.length > 1 && (
+            <>
+              <p className="sub">{t('transit.legPlanTitle')}</p>
+              <ol className="mission-leg-plan" data-testid="leg-plan">
+                {plannedRouteIds.map((routeId, index) => (
+                  <li key={`${routeId}-${index}`}>{plannedLegLabel(routeId, index)}</li>
+                ))}
+              </ol>
+            </>
+          )}
           {mission.deadlineAt !== null && (
             <p className="sub">
               {t('transit.startDeadline')} <Countdown until={mission.deadlineAt} />

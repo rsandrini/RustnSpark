@@ -730,11 +730,13 @@
     "readyTitle": "Pronta para partir",
     "facts": {
       "reward": "Recompensa",
+      "route": "Rota",
       "distance": "Distância",
       "legs": "Trechos",
       "danger": "Perigo",
       "zone": "Zona"
     },
+    "legPlanTitle": "Rota planejada",
     "cancelMission": "Cancelar missão",
     "scavengeTitle": "Saque de destroços"
   },
@@ -787,6 +789,14 @@
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
+    },
+    "requirements": {
+      "CARGO_TYPE": "Capacidade de carga para esta carga",
+      "PRESSURIZED_LIFE_SUPPORT": "Cabine de passageiros e suporte de vida, ambos instalados",
+      "WEAPONS": "Pelo menos uma arma instalada",
+      "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
+      "MINER": "Uma plataforma de mineração instalada",
+      "SPEED": "Mobilidade acima da velocidade de referência de resgate"
     },
     "expiredLabel": "Expirada",
     "starterBadge": "Missão inicial",

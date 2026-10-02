@@ -2381,6 +2381,33 @@ svg .block.floating {
   font-weight: 700;
 }
 
+/* Route names (owner request: "I cannot see the origin -> destination" on the pre-dispatch
+   screen) run longer than a single number — give that one fact the full row. */
+.briefing .fact-route {
+  grid-column: 1 / -1;
+}
+
+.briefing .fact-route .v {
+  font-size: 15px;
+}
+
+.mission-leg-plan {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mission-leg-plan li {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
 .now-flying {
   font-weight: 700;
   margin: 4px 0;

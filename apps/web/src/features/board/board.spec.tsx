@@ -55,7 +55,10 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('You need:').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Eligible')).toHaveLength(3);
     expect(screen.getByText('Blocked')).toBeInTheDocument();
-    expect(screen.getByText('Needs a mining system')).toBeInTheDocument();
+    // MINER is now shown via the requirement checklist ("A mining rig installed", unmet),
+    // not the old failure-only sentence; MOB_TOO_LOW is a general viability reason and still
+    // uses the old reasons list.
+    expect(screen.getByText('A mining rig installed')).toBeInTheDocument();
     expect(screen.getByText('Mobility too low')).toBeInTheDocument();
     expect(screen.getByText('On hold')).toBeInTheDocument();
     expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
@@ -74,21 +77,23 @@ describe('board (S10.6)', () => {
     await renderBoard();
     fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
-    const miningCard = (await screen.findByText('Needs a mining system')).closest('article');
+    // MOB_TOO_LOW is a general viability reason (not a mission requirement), unique to the
+    // mining card's fixture — use it to find the card itself.
+    const miningCard = (await screen.findByText('Mobility too low')).closest('article');
     expect(miningCard).not.toBeNull();
     const card = within(miningCard!);
 
-    // Checklist entry, unmet: a cross/warn marker next to the requirement text.
-    expect(card.getByText('Needs a mining system').closest('li')).toHaveClass('req-unmet');
+    // Checklist entry, unmet: a cross/warn marker, with wording that still reads sensibly
+    // next to either a check or a cross (not the failure-phrased "Needs a mining system",
+    // which would read self-contradictory next to a ✓ on the met case below).
+    expect(card.getByText('A mining rig installed').closest('li')).toHaveClass('req-unmet');
     // Checklist entry, met: the same requirement set also lists what the ship DOES satisfy,
     // not only what blocks it.
-    expect(card.getByText('Cargo hold does not fit this cargo').closest('li')).toHaveClass(
-      'req-met',
-    );
-    // MOB_TOO_LOW is a general viability reason, not a mission requirement — it still shows,
-    // and exactly once (not duplicated by the checklist).
-    expect(card.getByText('Mobility too low')).toBeInTheDocument();
-    expect(screen.getAllByText('Needs a mining system')).toHaveLength(1);
+    expect(card.getByText('Cargo capacity for this load').closest('li')).toHaveClass('req-met');
+    // The old failure-only message for MINER must not also appear — it is now fully replaced
+    // by the checklist entry for that same code, not duplicated alongside it.
+    expect(screen.queryByText('Needs a mining system')).toBeNull();
+    expect(screen.getAllByText('A mining rig installed')).toHaveLength(1);
   });
 
   it('only shows eligible offers by default, and the toggle brings the rest back', async () => {

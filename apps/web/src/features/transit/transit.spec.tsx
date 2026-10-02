@@ -79,6 +79,22 @@ describe('transit (S10.7)', () => {
     expect(screen.queryByTestId('in-transit')).toBeNull();
   });
 
+  // Round-10 owner request: "in My Ship, before dispatch the mission, we need a better UI
+  // ... I cannot see the origin -> destination, I cannot see the details". Embedded (My
+  // Ship) skipped the standalone header that carried routeLabel, so the pre-dispatch
+  // briefing had no route at all — add it as a fact, plus the per-leg breakdown.
+  it('embedded on My Ship, the pre-dispatch briefing shows the route and the leg plan', async () => {
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    expect(await screen.findByText('Mission accepted — ready for departure.')).toBeInTheDocument();
+    const briefing = screen.getByTestId('briefing');
+    expect(within(briefing).getByText('Porto Ceres → Base Hedus')).toBeInTheDocument();
+
+    expect(screen.getByTestId('leg-plan')).toBeInTheDocument();
+    expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
+    expect(screen.getByText('Portão Kessler → Base Hedus')).toBeInTheDocument();
+  });
+
   it('dispatches the accepted mission and flips to the in-transit view', async () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
 

@@ -730,11 +730,13 @@
     "readyTitle": "Ready to depart",
     "facts": {
       "reward": "Reward",
+      "route": "Route",
       "distance": "Distance",
       "legs": "Legs",
       "danger": "Danger",
       "zone": "Zone"
     },
+    "legPlanTitle": "Planned route",
     "cancelMission": "Cancel mission",
     "scavengeTitle": "Scavenging"
   },
@@ -787,6 +789,14 @@
       "NO_FUEL_CAPACITY": "No fuel capacity",
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded"
+    },
+    "requirements": {
+      "CARGO_TYPE": "Cargo capacity for this load",
+      "PRESSURIZED_LIFE_SUPPORT": "Passenger Cabin and Life Support, both installed",
+      "WEAPONS": "At least one installed weapon",
+      "MIN_MOBILITY": "Mobility above the escort minimum",
+      "MINER": "A mining rig installed",
+      "SPEED": "Mobility above the rescue reference speed"
     },
     "expiredLabel": "Expired",
     "starterBadge": "Starter mission",

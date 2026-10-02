@@ -1095,7 +1095,13 @@ const acceptedMission = (): ActiveMission => ({
   factionId: 'luna',
   originId: 'ceres',
   destinationId: 'hedus',
-  legs: [],
+  // Real missions carry this from generation onward — legWindows (timing) is the only thing
+  // written at dispatch, not the plan itself (missions.service.ts getActive spreads the DB
+  // row's own `legs` unmodified at every status).
+  legs: [
+    { routeId: 'ceres-gate', distance: 400, danger: 5, zone: 1 },
+    { routeId: 'gate-hedus', distance: 430, danger: 5, zone: 1 },
+  ],
   cargo: {},
   reward: 1200,
   expiresAt: iso(2 * 60 * 60 * 1000),

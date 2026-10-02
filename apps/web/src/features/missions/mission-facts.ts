@@ -8,6 +8,17 @@ export interface LegsSummary {
   readonly peakZone: number;
 }
 
+/** The routeId of each leg in the stored plan, in order — available before dispatch, unlike
+    leg WINDOWS (written pro-rata only once the mission is actually dispatched). Lets the
+    pre-dispatch screen show the planned route (origin → ... → destination) same as the
+    in-transit one does. */
+export function legRouteIds(legs: unknown): string[] {
+  const list = Array.isArray(legs) ? (legs as Array<Record<string, unknown>>) : [];
+  return list
+    .map((leg) => leg['routeId'])
+    .filter((routeId): routeId is string => typeof routeId === 'string');
+}
+
 export function summarizeLegs(legs: unknown): LegsSummary {
   const list = Array.isArray(legs) ? (legs as Array<Record<string, unknown>>) : [];
   const number = (value: unknown) =>

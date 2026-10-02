@@ -118,7 +118,7 @@ export function MissionCard({
                 <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
                   {req.met ? '✓' : '✗'}
                 </span>
-                {t(`board.reasons.${req.code}`, { defaultValue: req.message })}
+                {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
               </li>
             ))}
           </ul>
