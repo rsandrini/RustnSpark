@@ -43,6 +43,7 @@ interface ShipResponse {
   stance: string;
   layout: Array<Record<string, unknown>>;
   sheet: SheetShape;
+  yard: { cells: [number, number][] };
 }
 
 interface PreviewResponse {
@@ -171,6 +172,22 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(second.status).toBe(200);
       expect(asShip(second).id).toBe(asShip(first).id);
+    });
+
+    it('yard reports the ship\'s format cells, not a fixed square (round-11, Ship Format)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+
+      const response = await request(httpServer(testApp.app))
+        .get(`/v1/ships/${ship.id}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(200);
+      const body = asShip(response);
+      expect(body.yard.cells).toHaveLength(400);
+      expect(body.yard.cells).toContainEqual([0, 0]);
+      expect(body.yard.cells).toContainEqual([-10, -10]);
+      expect(body.yard.cells).not.toContainEqual([10, 10]); // half-open upper bound
     });
 
     it('creates exactly one ship and one starter credit under concurrent onboarding', async () => {

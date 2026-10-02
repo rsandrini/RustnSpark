@@ -3,6 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
+import { classicSquareCells } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { Placement, ShipSheet } from '../../api/generated';
 
@@ -273,7 +274,7 @@ describe('hangar (S10.4)', () => {
             layout: [],
             sheet: { ...testSheet, mob: 0.958 },
             shipClass: 'MULTIROLE',
-            yard: { halfSize: 10 },
+            yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null },
           },
         ]),

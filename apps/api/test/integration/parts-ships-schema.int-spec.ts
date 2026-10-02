@@ -3,7 +3,17 @@ import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../su
 
 const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   PartInstance: ['id', 'partType', 'ownerPlayerId', 'condition', 'location', 'shipId', 'propRoll'],
-  Ship: ['id', 'ownerPlayerId', 'name', 'layout', 'fuel', 'status', 'currentLocationId', 'stance'],
+  Ship: [
+    'id',
+    'ownerPlayerId',
+    'name',
+    'layout',
+    'fuel',
+    'status',
+    'currentLocationId',
+    'stance',
+    'formatId',
+  ],
   PlayerMaterial: ['playerId', 'materialId', 'quantity'],
 };
 
@@ -72,6 +82,17 @@ describe('parts and ships data model (S4.1)', () => {
         isolation: 1,
         mood: 1,
         services: {},
+      },
+    });
+    // Ship Format (2026-10-02): Ship.formatId's FK target — every Ship created below relies
+    // on the column's own DB default ('classic_square'), which needs this row to exist.
+    await prisma.shipFormat.create({
+      data: {
+        id: 'classic_square',
+        displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+        description: { en: 'desc', 'pt-BR': 'desc' },
+        cells: [[0, 0]],
+        minRarity: 'COMMON',
       },
     });
     const partCatalog = await prisma.partCatalog.create({

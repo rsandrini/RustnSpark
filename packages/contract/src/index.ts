@@ -191,8 +191,9 @@ export const ShipResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
-  /** The assembly yard: cells run [-halfSize, halfSize) on both axes. */
-  yard: z.object({ halfSize: z.number() }),
+  /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
+      the ship's own ShipFormat selection, not a fixed bound. */
+  yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),

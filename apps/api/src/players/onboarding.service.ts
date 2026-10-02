@@ -12,6 +12,7 @@ import { WalletService } from './wallet.service.js';
 import { ShipsService } from '../ships/ships.service.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { cellKey } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 
@@ -131,7 +132,15 @@ export class OnboardingService {
     }));
 
     const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
-    const layout = autoLayout(installedParts, catalogMap);
+    const format = await tx.ship.findUniqueOrThrow({
+      where: { id: shipId },
+      select: { formatId: true },
+    });
+    const formatRow = await tx.shipFormat.findUniqueOrThrow({ where: { id: format.formatId } });
+    const formatCells = new Set(
+      (formatRow.cells as [number, number][]).map(([x, y]) => cellKey(x, y)),
+    );
+    const layout = autoLayout(installedParts, catalogMap, formatCells);
     if (layout.length !== installedParts.length) {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }

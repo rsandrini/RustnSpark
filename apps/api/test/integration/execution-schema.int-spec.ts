@@ -131,6 +131,17 @@ describe('execution data model (S7.1)', () => {
         danger: 1,
       },
     });
+    // Ship Format (2026-10-02): Ship.formatId's FK target — the Ship created below relies on
+    // the column's own DB default ('classic_square'), which needs this row to exist.
+    await prisma.shipFormat.create({
+      data: {
+        id: 'classic_square',
+        displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+        description: { en: 'desc', 'pt-BR': 'desc' },
+        cells: [[0, 0]],
+        minRarity: 'COMMON',
+      },
+    });
     const ship = await prisma.ship.create({
       data: {
         ownerPlayerId: player.id,

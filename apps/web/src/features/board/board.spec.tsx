@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { resetBoardState, resetActiveState } from '../../test/msw/handlers';
+import { classicSquareCells, resetBoardState, resetActiveState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 
 const onboarded = () =>
@@ -201,7 +201,7 @@ describe('board (S10.6)', () => {
               layout: [],
               sheet: { fuelCap: 40 },
               shipClass: 'MULTIROLE',
-              yard: { halfSize: 10 },
+              yard: { cells: classicSquareCells() },
               activity: { kind: 'idle', until: null, missionId: null },
             },
           ],

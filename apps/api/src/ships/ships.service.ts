@@ -1,4 +1,3 @@
-import { GRID_HALF_SIZE } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -17,7 +16,7 @@ import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
-import { validateLayout } from './geometry.js';
+import { cellKey, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
@@ -43,7 +42,7 @@ export interface ShipResponse {
   sheet: ShipSheet;
   shipClass: ShipClassType;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
-  yard: { halfSize: number };
+  yard: { cells: [number, number][] };
   /** What the ship is doing now: drives the animated ship stage. */
   activity: ShipActivity;
 }
@@ -103,7 +102,8 @@ export class ShipsService implements OnModuleInit {
     this.assertCanModify(ship);
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
-    this.assertLayoutValid(layout, playerParts, shipId);
+    const formatCells = await this.loadFormatCells(ship.formatId);
+    this.assertLayoutValid(layout, playerParts, shipId, formatCells);
 
     // Saving a layout never requires it to be flight-viable: a player mid-refit — say,
     // pulling a part to sell it in Port — needs to save the smaller layout to free the part
@@ -122,8 +122,9 @@ export class ShipsService implements OnModuleInit {
     this.assertCanModify(ship);
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+    const formatCells = await this.loadFormatCells(ship.formatId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart));
+    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart), formatCells);
     if (omitted.length > 0) {
       throw new BadRequestException({
         error: 'AUTO_LAYOUT_OMITTED_PARTS',
@@ -131,7 +132,7 @@ export class ShipsService implements OnModuleInit {
       });
     }
 
-    this.assertLayoutValid(layout, playerParts, shipId);
+    this.assertLayoutValid(layout, playerParts, shipId, formatCells);
     // Same as assemble() above: saving never requires flight-viability.
 
     await this.persistLayout(shipId, layout, playerParts);
@@ -154,21 +155,22 @@ export class ShipsService implements OnModuleInit {
       return this.previewWithVirtualPart(ship, rules, playerParts, virtualPart, replacePartInstanceId);
     }
 
+    const formatCells = await this.loadFormatCells(ship.formatId);
     let installed: InstalledPart[];
     let effectiveLayout: Placement[];
     let omittedPartInstanceIds: string[] = [];
 
     if (layout !== undefined && layout.length > 0) {
-      this.assertLayoutValid(layout, playerParts, shipId);
+      this.assertLayoutValid(layout, playerParts, shipId, formatCells);
       effectiveLayout = layout;
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      const arranged = arrange(candidateParts.map(toInstalledPart));
+      const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
       installed = arranged.placed;
       effectiveLayout = arranged.layout;
       omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
-      this.assertLayoutValid(effectiveLayout, playerParts, shipId);
+      this.assertLayoutValid(effectiveLayout, playerParts, shipId, formatCells);
     }
 
     const sheet = deriveSheet(installed, rules);
@@ -255,10 +257,17 @@ export class ShipsService implements OnModuleInit {
     }
   }
 
+  private async loadFormatCells(formatId: string): Promise<Set<string>> {
+    const format = await this.prisma.shipFormat.findUniqueOrThrow({ where: { id: formatId } });
+    const cells = format.cells as [number, number][];
+    return new Set(cells.map(([x, y]) => cellKey(x, y)));
+  }
+
   private assertLayoutValid(
     layout: Placement[],
     playerParts: PartInstanceWithCatalog[],
     shipId: string,
+    formatCells: ReadonlySet<string>,
   ): void {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     if (layoutIds.size !== layout.length) {
@@ -279,7 +288,7 @@ export class ShipsService implements OnModuleInit {
     }
 
     const catalogMap = buildCatalogMapFromPrisma(playerParts);
-    const geometryErrors = validateLayout(layout, catalogMap);
+    const geometryErrors = validateLayout(layout, catalogMap, formatCells);
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
         error: 'INVALID_LAYOUT',
@@ -353,6 +362,7 @@ export class ShipsService implements OnModuleInit {
       .map(toInstalledPart);
     const sheet = deriveSheet(installed, rules);
     const activity = await this.activityOf(ship);
+    const format = await this.prisma.shipFormat.findUniqueOrThrow({ where: { id: ship.formatId } });
     return {
       id: ship.id,
       ownerPlayerId: ship.ownerPlayerId,
@@ -364,7 +374,7 @@ export class ShipsService implements OnModuleInit {
       layout: (ship.layout as unknown as Placement[]) ?? [],
       sheet,
       shipClass: deriveShipClass(installed, rules),
-      yard: { halfSize: GRID_HALF_SIZE },
+      yard: { cells: format.cells as [number, number][] },
       activity,
     };
   }
@@ -407,12 +417,15 @@ function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
 
 // autoLayout may leave parts out when they do not fit; callers must derive and check the sheet
 // from `placed` (what is actually saved), never from the requested list.
-function arrange(requested: InstalledPart[]): {
+function arrange(
+  requested: InstalledPart[],
+  formatCells: ReadonlySet<string>,
+): {
   layout: Placement[];
   placed: InstalledPart[];
   omitted: InstalledPart[];
 } {
-  const layout = autoLayout(requested, buildCatalogMap(requested));
+  const layout = autoLayout(requested, buildCatalogMap(requested), formatCells);
   const placedIds = new Set(layout.map((placement) => placement.partInstanceId));
   return {
     layout,
