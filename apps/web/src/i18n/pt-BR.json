@@ -1103,8 +1103,14 @@
   "ship": {
     "empty": {
       "title": "Sua nave não está montada",
-      "body": "Nada está instalado ainda, então a nave não pode aceitar missões. Monte seu kit inicial no Hangar primeiro.",
-      "action": "Ir ao Hangar"
+      "body": "Nada está instalado ainda, então ela não pode aceitar uma missão. Monte seu kit inicial no Hangar primeiro.",
+      "action": "Ir para o Hangar"
+    },
+    "energyMode": {
+      "label": "Energia",
+      "BATTERY": "Somente bateria",
+      "FULL": "Energia total",
+      "OVERRIDE": "Override"
     }
   },
   "duration": {

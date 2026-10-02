@@ -240,6 +240,7 @@ const ship = (): ShipResponse => ({
   status: shipStatus,
   currentLocationId: 'ceres',
   stance: 'NEUTRAL',
+  energyMode: 'FULL',
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
@@ -485,6 +486,7 @@ export const handlers = [
       status: 'IN_PORT',
       currentLocationId: 'ceres',
       stance: 'NEUTRAL',
+      energyMode: 'FULL',
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
@@ -513,6 +515,11 @@ export const handlers = [
   http.post('/v1/ships/:id/assemble', () => ok<ShipResponse>(ship())),
 
   http.post('/v1/ships/:id/auto-assemble', () => ok<ShipResponse>(ship())),
+
+  http.post('/v1/ships/:id/energy-mode', async ({ request }) => {
+    const body = (await request.json()) as { energyMode: ShipResponse['energyMode'] };
+    return ok<ShipResponse>({ ...ship(), energyMode: body.energyMode });
+  }),
 
   http.get('/v1/locations', () => ok<WorldResponse>(world())),
 

@@ -180,6 +180,9 @@ export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 
 export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 
+export const EnergyModeSchema = z.enum(['BATTERY', 'FULL', 'OVERRIDE']);
+export type EnergyMode = z.infer<typeof EnergyModeSchema>;
+
 export const ShipResponseSchema = z.object({
   id: z.string(),
   ownerPlayerId: z.string(),
@@ -188,6 +191,7 @@ export const ShipResponseSchema = z.object({
   status: ShipStatusSchema,
   currentLocationId: z.string(),
   stance: ShipStanceSchema,
+  energyMode: EnergyModeSchema,
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,

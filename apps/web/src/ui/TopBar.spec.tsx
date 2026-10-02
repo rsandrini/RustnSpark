@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../test/utils';
 import { server } from '../test/msw/server';
@@ -60,5 +61,24 @@ describe('TopBar', () => {
     expect(link).toHaveAttribute('href', '/report/m-last');
     expect(link.closest('.top-bar')).not.toBeNull();
     expect(document.querySelector('.hangar-links-row')).toBeNull();
+  });
+
+  it('lets the pilot change the ship energy mode from the top bar', async () => {
+    let postedMode: string | null = null;
+    server.use(
+      me(),
+      http.post('/v1/ships/:id/energy-mode', async ({ request }) => {
+        const body = (await request.json()) as { energyMode: string };
+        postedMode = body.energyMode;
+        return HttpResponse.json({ ...body }, { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
+    const identity = screen.getByText('luna starter').closest('.ship-identity') as HTMLElement;
+    const select = within(identity).getByRole('combobox', { name: 'Energy' });
+    expect(select).toHaveValue('FULL');
+    await userEvent.selectOptions(select, 'BATTERY');
+    await waitFor(() => expect(postedMode).toBe('BATTERY'));
   });
 });

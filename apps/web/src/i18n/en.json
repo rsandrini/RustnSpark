@@ -1105,6 +1105,12 @@
       "title": "Your ship is not assembled",
       "body": "Nothing is installed yet, so the ship cannot take a mission. Assemble your starter kit in the Hangar first.",
       "action": "Go to the Hangar"
+    },
+    "energyMode": {
+      "label": "Energy",
+      "BATTERY": "Battery only",
+      "FULL": "Full energy",
+      "OVERRIDE": "Override"
     }
   },
   "duration": {

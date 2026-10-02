@@ -1103,6 +1103,21 @@ a {
   color: var(--line);
 }
 
+.ship-identity-energy select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ship-identity-energy select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .top-bar {
     grid-template-columns: 1fr;
