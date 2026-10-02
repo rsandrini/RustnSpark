@@ -383,25 +383,34 @@ export function TransitPage({
       ) : (
         <section data-testid="in-transit">
           {!embedded && <ShipStage mode={mission.type === 'SCAVENGE' ? 'scavenging' : 'flying'} />}
-          {currentIndex !== -1 && windows[currentIndex] !== undefined && (
-            <p className="now-flying">
-              {t('transit.nowFlying', {
-                route: legLabel(windows[currentIndex].routeId, currentIndex),
-              })}
+          {/* Round-10 owner follow-up ("too big... don't show enough information"): a
+              single-leg trip has nothing an itinerary box would add over one compact line
+              (route + overall arrival together); a multi-leg trip gets the fuller itinerary
+              instead, each leg with its own arrival, so the overview line above it would
+              only restate the current leg's own row. */}
+          {windows.length > 1 ? (
+            <p className="sub">
+              {t('transit.arrivesIn')}{' '}
+              {(mission.arrivalAt ?? '') !== '' && (
+                <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+              )}
+            </p>
+          ) : (
+            <p className="sub">
+              {currentIndex !== -1 && windows[0] !== undefined
+                ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
+                : t('transit.waitingLeg')}
+              {' · '}
+              {t('transit.arrivesIn')}{' '}
+              {(mission.arrivalAt ?? '') !== '' && (
+                <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+              )}
             </p>
           )}
-          <p className="sub">
-            {t('transit.arrivesIn')}{' '}
-            {(mission.arrivalAt ?? '') !== '' && (
-              <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
-            )}
-          </p>
           <div className="legbar" role="progressbar" aria-valuenow={Math.round(progress)}>
             <div className="legbar-fill" style={{ width: `${progress}%` }} />
           </div>
-          {windows.length === 0 ? (
-            <p className="sub">{t('transit.waitingLeg')}</p>
-          ) : (
+          {windows.length > 1 && (
             <ol className="stack legs">
               {windows.map((window, index) => {
                 const state =
@@ -415,11 +424,15 @@ export function TransitPage({
                     <b>{t('transit.leg', { index: index + 1, total: windows.length })}</b>
                     <span>{legLabel(window.routeId, index)}</span>
                     <span className="sub">
-                      {state === 'done'
-                        ? t('transit.legDone')
-                        : state === 'waiting'
-                          ? t('transit.waitingLeg')
-                          : t('transit.arrivesIn')}
+                      {state === 'done' ? (
+                        t('transit.legDone')
+                      ) : state === 'waiting' ? (
+                        t('transit.waitingLeg')
+                      ) : (
+                        <>
+                          {t('transit.arrivesIn')} <Countdown until={window.to} serverTime={dispatchServerTime} />
+                        </>
+                      )}
                     </span>
                   </li>
                 );

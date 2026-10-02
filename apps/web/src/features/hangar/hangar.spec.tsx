@@ -137,10 +137,14 @@ describe('hangar (S10.4)', () => {
 
     const scene = container.querySelector('[data-testid="transit-scene"]');
     expect(scene).not.toBeNull();
-    // Owner request, round 10: the toggle sits above the animation, not after it, so hiding
-    // it actually reclaims the space instead of leaving the button where the scene was.
+    // Owner request, round 10 follow-up: the toggle sits ON the animation box itself (an
+    // overlay), not in a row before or after it — both live inside the same positioned host.
+    const host = container.querySelector('.ship-stage-overlay-host');
+    expect(host).not.toBeNull();
     const toggle = screen.getByRole('button', { name: 'Hide animation' });
-    expect(toggle.compareDocumentPosition(scene as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(host!.contains(scene)).toBe(true);
+    expect(host!.contains(toggle)).toBe(true);
+    expect(toggle).toHaveClass('stage-toggle-overlay');
 
     fireEvent.click(toggle);
     expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();

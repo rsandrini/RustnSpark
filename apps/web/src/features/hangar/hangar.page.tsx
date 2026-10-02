@@ -382,15 +382,19 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           Port portals its tab row into this node (see PortPage's `subNavContainer` prop); empty
           otherwise (Ship, Board). */}
       <div className="hangar-subnav-slot" ref={setSubNavNode} />
-      {/* Owner request, round 10: above the animation, not after it — reclaims the space the
-          toggle is there to free in the first place, instead of leaving the button sitting
-          where the scene used to be. */}
-      <div className="stage-toggle-row">
-        <button type="button" className="btn tiny" onClick={toggleStage}>
+      {/* Owner request, round 10 follow-up: ON the animation box itself (an overlay, top-right
+          corner), not in its own row before or after it — neither spends vertical space the
+          scene (or, collapsed, the placeholder bar) isn't already using. */}
+      <div className="ship-stage-overlay-host">
+        <ActiveShipStage size="compact" collapsed={stageCollapsed} />
+        <button
+          type="button"
+          className="btn tiny stage-toggle-overlay"
+          onClick={toggleStage}
+        >
           {stageCollapsed ? t('hangar.stage.show') : t('hangar.stage.hide')}
         </button>
       </div>
-      <ActiveShipStage size="compact" collapsed={stageCollapsed} />
 
       {/* Owner request: the Ship/Port/Board switcher duplicated the top nav (which reaches the
           same three places now) and read as confusing, two menus doing the same job. Removed —

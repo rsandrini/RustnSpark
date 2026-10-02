@@ -2355,40 +2355,43 @@ svg .block.floating {
   }
 }
 
+/* Owner follow-up (round 10): the old bordered-tile grid gave four simple facts a whole
+   row of boxes each — same information, as a dense wrapped strip of "label value" pairs
+   instead, so it reads in one glance rather than taking up a quarter of the screen. */
 .briefing {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
-  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin: 8px 0;
 }
 
 .briefing .fact {
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
 }
 
 .briefing .fact .k {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--mut);
 }
 
 .briefing .fact .v {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 /* Route names (owner request: "I cannot see the origin -> destination" on the pre-dispatch
-   screen) run longer than a single number — give that one fact the full row. */
+   screen) run longer than the other facts — give it the full width, above the rest. */
 .briefing .fact-route {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
 }
 
 .briefing .fact-route .v {
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .mission-leg-plan {
@@ -2406,11 +2409,6 @@ svg .block.floating {
   border-radius: 8px;
   background: var(--panel);
   font-size: 13px;
-}
-
-.now-flying {
-  font-weight: 700;
-  margin: 4px 0;
 }
 
 /* gauges: condition and fuel bars -------------------------------------------- */
@@ -3404,10 +3402,21 @@ svg .block.broken {
   border-radius: 10px;
 }
 
-.stage-toggle-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: 0 0 6px;
+.ship-stage-overlay-host {
+  position: relative;
+}
+
+.stage-toggle-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(5, 7, 11, 0.55);
+}
+
+/* Reserve room so the overlay toggle never sits under the collapsed caption's own text. */
+.ship-stage-collapsed .stage-caption {
+  padding-right: 130px;
 }
 
 .debris {

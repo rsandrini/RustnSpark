@@ -111,7 +111,12 @@ describe('transit (S10.7)', () => {
     expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
     expect(screen.getByText('Portão Kessler → Base Hedus')).toBeInTheDocument();
     expect(screen.getAllByText('Awaiting the next window')).toHaveLength(1);
-    expect(screen.getAllByText('Arrives in').length).toBeGreaterThanOrEqual(1);
+    // Round-10 owner follow-up ("too big, show the quest details"): the current leg's own
+    // status now carries a real countdown to when THAT leg ends, not just a bare "Arrives
+    // in" label with no value — one of the two timers on screen belongs to it.
+    const currentLeg = screen.getByText('Leg 1 of 2').closest('li')!;
+    expect(within(currentLeg).getByText(/Arrives in/)).toBeInTheDocument();
+    expect(within(currentLeg).getByRole('timer')).toBeInTheDocument();
   });
 
   it('renders a mission that is already in transit with leg progress', async () => {
@@ -151,6 +156,39 @@ describe('transit (S10.7)', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
     expect(within(inTransit).getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  // Round-10 owner follow-up: "the quest panels... is too big, they too much space and
+  // don't show enough information" — a single-leg trip has nothing an itinerary box would
+  // add over one compact status line, so the per-leg list (and its redundant single entry)
+  // is dropped entirely for that case.
+  it('a single-leg trip shows one compact status line instead of a redundant one-item itinerary', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              status: 'IN_TRANSIT',
+              shipId: 'ship-1',
+              arrivalAt: iso(30 * 60 * 1000),
+              legWindows: [
+                { legIndex: 0, routeId: 'ceres-gate', from: iso(-1 * 60 * 1000), to: iso(30 * 60 * 1000) },
+              ],
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+    const inTransit = await screen.findByTestId('in-transit');
+    expect(within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/)).toBeInTheDocument();
+    expect(within(inTransit).getByText(/Arrives in/)).toBeInTheDocument();
+    expect(within(inTransit).getByRole('timer')).toBeInTheDocument();
+    // No itinerary list at all: one leg has nothing left to itemize.
+    expect(within(inTransit).queryByText('Leg 1 of 1')).toBeNull();
+    expect(within(inTransit).queryByRole('list')).toBeNull();
   });
 
   it('shows the delivered panel once the server reports no active mission', async () => {
