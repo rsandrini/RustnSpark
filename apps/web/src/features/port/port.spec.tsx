@@ -234,12 +234,13 @@ describe('port (S10.9)', () => {
     );
   });
 
-  // Round-10 owner request: "add independent mining missions at minable locations" — a
-  // timed job alongside Scavenging, same tab, server decides eligibility (NOT_MINABLE /
-  // NO_MINING_RIG surface as an ordinary action error, same as any other gated action here).
-  it('starts an independent mining job from the Scavenging tab', async () => {
+  // Round-10 owner request: "add independent mining missions at minable locations" — its
+  // own tab, as visible/findable as Scavenging (not nested inside it), server decides
+  // eligibility (NOT_MINABLE / NO_MINING_RIG surface as an ordinary action error, same as
+  // any other gated action here).
+  it('starts an independent mining job from its own Mining tab', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
 
     const mining = await screen.findByTestId('mining-job');
     expect(within(mining).getByText(/minable/)).toBeInTheDocument();
@@ -257,7 +258,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
     fireEvent.click(screen.getByRole('button', { name: 'Send the ship mining' }));
     expect(await screen.findByText('There is nothing to mine here.')).toBeInTheDocument();
   });

@@ -135,9 +135,14 @@ describe('hangar (S10.4)', () => {
     const { container, unmount } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    expect(container.querySelector('[data-testid="transit-scene"]')).not.toBeNull();
+    const scene = container.querySelector('[data-testid="transit-scene"]');
+    expect(scene).not.toBeNull();
+    // Owner request, round 10: the toggle sits above the animation, not after it, so hiding
+    // it actually reclaims the space instead of leaving the button where the scene was.
+    const toggle = screen.getByRole('button', { name: 'Hide animation' });
+    expect(toggle.compareDocumentPosition(scene as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hide animation' }));
+    fireEvent.click(toggle);
     expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();
     // Docked and ready has nothing left to say that the top bar's own ship status doesn't
     // already say on every screen (owner request, round 10) — no placeholder caption at all.

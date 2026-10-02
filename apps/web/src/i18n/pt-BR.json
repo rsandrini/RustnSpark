@@ -500,7 +500,8 @@
       "repair": "Reparo",
       "refuel": "Abastecer",
       "upgrade": "Melhorar",
-      "scavenging": "Scavenging",
+      "scavenging": "Saque",
+      "mining": "Mineração",
       "goods": "Seus bens"
     },
     "buy": "Comprar",

@@ -40,7 +40,7 @@ import { PartCard } from '../parts/part-card';
 import { PartInfoButton } from '../parts/part-info-button';
 import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
 
-const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging'] as const;
+const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging', 'mining'] as const;
 type PortTabId = (typeof PORT_TABS)[number];
 
 interface UpgradeConfirm {
@@ -1033,7 +1033,7 @@ export function PortPage({
         </section>
       )}
 
-      {tab === 'scavenging' && (
+      {tab === 'mining' && (
         <section className="stack scav" data-testid="mining-job">
           <h2>{t('port.mine.title')}</h2>
           <p className="sub">{t('port.mine.what')}</p>

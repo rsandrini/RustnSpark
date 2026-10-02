@@ -3407,7 +3407,7 @@ svg .block.broken {
 .stage-toggle-row {
   display: flex;
   justify-content: flex-end;
-  margin: 6px 0 0;
+  margin: 0 0 6px;
 }
 
 .debris {
