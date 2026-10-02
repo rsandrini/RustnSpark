@@ -452,6 +452,52 @@ describe('port (S10.9)', () => {
     expect(screen.queryByText('Small Chemical Engine')).toBeNull();
   });
 
+  // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
+  // part" — the same before/after popup Market already has, built from a virtual part at the
+  // next tier (which doesn't exist as an owned instance yet).
+  it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as {
+          virtualPart?: { partType: string; condition: number };
+          replacePartInstanceId?: string;
+        };
+        // The exact wiring under test: the diff is a REPLACE of this instance with the next
+        // tier's catalog code, not a plain addition.
+        expect(body.virtualPart?.partType).toBe('hull_uncommon');
+        expect(body.replacePartInstanceId).toBe('part-hull');
+        return HttpResponse.json({
+          sheet: {
+            pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 60, mass: 24,
+            energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
+            fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40, autonomy: 40,
+            mob: 2, condition: 1,
+          },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+
+    const hullRow = (await screen.findByText('Plated Hull')).closest('article');
+    expect(hullRow).not.toBeNull();
+    // The upgrade-target info button opens the diff popup for "Reinforced Hull" (the next
+    // tier), not another popup for "Plated Hull" itself (that one already exists separately).
+    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Reinforced Hull' }));
+
+    const popup = await screen.findByRole('dialog', { name: 'Reinforced Hull' });
+    // Replacing Plated Hull, not adding a second hull — the comparison's own wording says so.
+    await within(popup).findByText('If you swap this in for Plated Hull');
+    // The next tier's own higher hp (60 vs the ship's current 40) shows as a positive delta.
+    const hpRow = within(popup).getByRole('row', { name: /^Hit points/ });
+    await waitFor(() => expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument());
+  });
+
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));

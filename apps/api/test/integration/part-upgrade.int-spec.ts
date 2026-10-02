@@ -149,6 +149,34 @@ describe('part upgrade API (round 5)', () => {
     });
   });
 
+  // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
+  // part" — the diff popup needs the next tier's own stats (and rarity) to build a virtual
+  // part to compare against, not just its name and the price.
+  it('quotes the next tier\'s full catalog stats and rarity, for the upgrade diff popup', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    const hullUncommon = await prisma.partCatalog.findUniqueOrThrow({
+      where: { partType: 'hull_uncommon' },
+    });
+
+    const response = await quoteUpgrade(player.token, partId);
+    expect(response.status).toBe(200);
+    const body = response.body as {
+      nextRarity?: string;
+      nextDescription?: { en: string; 'pt-BR': string };
+      nextCatalog?: { partType: string; mass: number; structureCost: number; partHp: number };
+    };
+    expect(body.nextRarity).toBe(hullUncommon.rarity);
+    expect(body.nextDescription?.en).toBeTruthy();
+    expect(body.nextCatalog).toMatchObject({
+      partType: 'hull_uncommon',
+      mass: hullUncommon.mass,
+      structureCost: hullUncommon.structureCost,
+      partHp: hullUncommon.partHp,
+    });
+  });
+
   it('charges a higher markup for a rarer part (owner request, round 7: cost should grow with rarity)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

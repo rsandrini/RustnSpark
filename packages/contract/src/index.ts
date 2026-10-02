@@ -681,10 +681,15 @@ export type RepairStartResponse = z.infer<typeof RepairStartResponseSchema>;
 export const PartUpgradeQuoteResponseSchema = z.object({
   partInstanceId: z.string(),
   eligible: z.boolean(),
-  reason: z.enum(['MAX_TIER', 'NO_NEXT_TIER']).optional(),
+  reason: z.enum(['MAX_TIER', 'NO_NEXT_TIER', 'NOT_FULL_CONDITION']).optional(),
   nextPartType: z.string().optional(),
   nextDisplayName: LocalizedTextSchema.optional(),
   cost: z.number().optional(),
+  /** The next tier's own rarity and full catalog stats, so the client can build a virtual
+      part and reuse the same before/after diff popup Market already has. */
+  nextRarity: z.string().optional(),
+  nextDescription: LocalizedTextSchema.optional(),
+  nextCatalog: PartCatalogStatsSchema.optional(),
 });
 export type PartUpgradeQuoteResponse = z.infer<typeof PartUpgradeQuoteResponseSchema>;
 

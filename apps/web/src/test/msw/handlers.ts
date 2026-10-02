@@ -415,9 +415,33 @@ const repairCostOf = (targets: { fromCondition: number; toCondition: number }[])
 
 // Fixture stand-in for the real mechanism's tier-naming convention: only these two families are
 // "chained" here, same as the real catalog leaves some families unchained (round 5, item 4).
-const UPGRADE_TIERS: Record<string, { nextPartType: string; nextName: LocalizedText; cost: number }> = {
-  hull: { nextPartType: 'hull_uncommon', nextName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' }, cost: 115 },
-  cargo: { nextPartType: 'cargo_uncommon', nextName: { en: 'Reinforced Cargo Rack', 'pt-BR': 'Suporte de Carga Reforçado' }, cost: 35 },
+const UPGRADE_TIERS: Record<
+  string,
+  {
+    nextPartType: string;
+    nextName: LocalizedText;
+    nextDescription: LocalizedText;
+    nextRarity: string;
+    nextCatalog: InventoryItem['catalog'];
+    cost: number;
+  }
+> = {
+  hull: {
+    nextPartType: 'hull_uncommon',
+    nextName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
+    nextDescription: { en: 'A tougher hull plate.', 'pt-BR': 'Uma placa de casco mais resistente.' },
+    nextRarity: 'UNCOMMON',
+    nextCatalog: catalog('hull_uncommon', 'DEFENSE', { partHp: 60, mass: 4, w: 2, h: 2 }),
+    cost: 115,
+  },
+  cargo: {
+    nextPartType: 'cargo_uncommon',
+    nextName: { en: 'Reinforced Cargo Rack', 'pt-BR': 'Suporte de Carga Reforçado' },
+    nextDescription: { en: 'A bigger cargo rack.', 'pt-BR': 'Um suporte de carga maior.' },
+    nextRarity: 'UNCOMMON',
+    nextCatalog: catalog('cargo_uncommon', 'CARGO', { crg: 8, mass: 2, w: 2, h: 1 }),
+    cost: 35,
+  },
 };
 
 /**
@@ -761,6 +785,9 @@ export const handlers = [
       nextPartType: tier.nextPartType,
       nextDisplayName: tier.nextName,
       cost: tier.cost,
+      nextRarity: tier.nextRarity,
+      nextDescription: tier.nextDescription,
+      nextCatalog: tier.nextCatalog,
     });
   }),
   http.post('/v1/parts/:id/upgrade', ({ params, request }) => {

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { GameConfigService } from '../config/game-config.service.js';
-import { bilingual } from '../parts/parts.service.js';
+import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
+import type { PartCatalog as PartCatalogStats } from '../parts/part.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
@@ -16,6 +17,12 @@ export interface PartUpgradeQuote {
   readonly nextPartType?: string;
   readonly nextDisplayName?: { en: string; 'pt-BR': string };
   readonly cost?: number;
+  /** Round-10 owner request: the next tier's own rarity, description and full catalog
+      stats, so the client can build a virtual part and reuse the same before/after diff
+      popup Market already has — the upgrade target doesn't exist as an owned instance yet. */
+  readonly nextRarity?: string;
+  readonly nextDescription?: { en: string; 'pt-BR': string };
+  readonly nextCatalog?: PartCatalogStats;
 }
 
 export interface PartUpgradeResult {
@@ -102,6 +109,9 @@ export class PartUpgradeService {
       nextPartType: outcome.nextCatalog.partType,
       nextDisplayName: bilingual(outcome.nextCatalog.displayName),
       cost: outcome.cost,
+      nextRarity: outcome.nextCatalog.rarity,
+      nextDescription: bilingual(outcome.nextCatalog.description),
+      nextCatalog: pickCatalogStats(outcome.nextCatalog),
     };
   }
 

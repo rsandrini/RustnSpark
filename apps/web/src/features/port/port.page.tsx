@@ -37,6 +37,8 @@ import { PortTabs } from '../../ui/PortTabs';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
+import { PartInfoButton } from '../parts/part-info-button';
+import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
 
 const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging'] as const;
 type PortTabId = (typeof PORT_TABS)[number];
@@ -894,6 +896,33 @@ export function PortPage({
                     quote.nextDisplayName !== undefined
                       ? pickLocalized(quote.nextDisplayName, i18n.language)
                       : '';
+                  // Round-10 owner request: "Upgrade UI should show diff between current
+                  // part and upgraded part" — the next tier doesn't exist as an owned
+                  // instance yet, so it's a virtual PartInfoData (same trick Market uses
+                  // for a catalog listing), replacing this exact instance.
+                  const nextPartInfo: PartInfoData | undefined =
+                    quote.nextCatalog !== undefined &&
+                    quote.nextRarity !== undefined &&
+                    quote.nextDisplayName !== undefined
+                      ? {
+                          displayName: quote.nextDisplayName,
+                          description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
+                          rarity: quote.nextRarity,
+                          catalog: quote.nextCatalog,
+                          condition: 100,
+                        }
+                      : undefined;
+                  const nextCompare: PartCompareContext | undefined =
+                    nextPartInfo === undefined
+                      ? undefined
+                      : {
+                          shipId: ship.id,
+                          installedPartIds: installed.map((part) => part.id),
+                          currentSheet: ship.sheet,
+                          replaceCandidates: [
+                            { partInstanceId: item.id, displayName: item.displayName },
+                          ],
+                        };
                   return (
                     <PartCard
                       key={item.id}
@@ -902,7 +931,12 @@ export function PortPage({
                       priceCaption={t('port.upgradeCost')}
                       actions={
                         <>
-                          <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
+                          <span className="sub">
+                            {t('port.upgradesTo', { name: nextName })}
+                            {nextPartInfo !== undefined && (
+                              <PartInfoButton part={nextPartInfo} compare={nextCompare} />
+                            )}
+                          </span>
                           <button
                             type="button"
                             className="btn primary"
