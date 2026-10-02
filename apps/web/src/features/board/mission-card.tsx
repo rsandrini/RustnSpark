@@ -38,6 +38,14 @@ export function MissionCard({
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
+  // Owner request: "show destination area controller in quests, hover on place name" — the
+  // controlling faction as a native title tooltip, so it reads without opening anything.
+  const controllerHint = (location: WorldLocation | undefined): string | undefined =>
+    location === undefined
+      ? undefined
+      : t('board.controlledBy', {
+          faction: t(`factions.${location.factionId}`, { defaultValue: t('factions.independent') }),
+        });
   const expired = Date.parse(offer.expiresAt) <= serverNow();
   // info.requirements is the full checklist (met + unmet); eligibility.reasons also carries
   // general blocking reasons (viability, no ship, already on a mission). Anything the
@@ -69,11 +77,11 @@ export function MissionCard({
       </header>
 
       <div className="mcard-route">
-        <span>{place(origin, offer.originId)}</span>
+        <span title={controllerHint(origin)}>{place(origin, offer.originId)}</span>
         <span className="arrow" aria-hidden="true">
           {t('board.arrow')}
         </span>
-        <span>{place(destination, offer.destinationId)}</span>
+        <span title={controllerHint(destination)}>{place(destination, offer.destinationId)}</span>
         {destination !== undefined && <RiskBadge band={destination.risk} />}
       </div>
 

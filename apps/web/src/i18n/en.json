@@ -798,6 +798,7 @@
       "MINER": "A mining rig installed",
       "SPEED": "Mobility above the rescue reference speed"
     },
+    "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",
     "starterBadge": "Starter mission",
     "arrow": "→",

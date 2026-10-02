@@ -798,6 +798,7 @@
       "MINER": "Uma plataforma de mineração instalada",
       "SPEED": "Mobilidade acima da velocidade de referência de resgate"
     },
+    "controlledBy": "Controlado por {{faction}}",
     "expiredLabel": "Expirada",
     "starterBadge": "Missão inicial",
     "arrow": "→",

@@ -70,6 +70,15 @@ describe('board (S10.6)', () => {
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
   });
 
+  // Round-10 owner request ("show destination area controller in quests, hover on place
+  // name"): the destination's controlling faction, as a native title tooltip on its name.
+  it('hovers the destination place name to show its controlling faction', async () => {
+    await renderBoard();
+    // b-1 (Corporate Delivery) goes to 'gate', which the fixture world controls under 'sun'.
+    const destinationName = await screen.findByText('Portão Kessler');
+    expect(destinationName).toHaveAttribute('title', 'Controlled by Sun Traders');
+  });
+
   // Round-10 owner request: "show the requirements for the mission, in a clear way, not
   // only the text" — a full met/unmet checklist (fixture b-3, MINING) instead of the old
   // one-line "needs" sentence, and no duplicate text with the blocked-reasons list below.
