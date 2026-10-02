@@ -40,6 +40,6 @@ describe('missionEvent', () => {
     expect(event.rounds).toHaveLength(2);
     expect(event.rounds?.[0]).toMatchObject({ roll: 10, pdf: 4, bonus: 2, dc: 13 });
     expect(event.rounds?.[1]).toMatchObject({ roll: 8, pdf: 3, dc: 12 });
-    expect(event.rounds?.[1].bonus).toBeUndefined();
+    expect(event.rounds?.[1]?.bonus).toBeUndefined();
   });
 });
