@@ -3,7 +3,7 @@ import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../su
 
 const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   PartInstance: ['id', 'partType', 'ownerPlayerId', 'condition', 'location', 'shipId', 'propRoll'],
-  Ship: ['id', 'ownerPlayerId', 'name', 'layout', 'fuel', 'status', 'currentLocationId', 'stance'],
+  Ship: ['id', 'ownerPlayerId', 'name', 'layout', 'fuel', 'status', 'currentLocationId', 'stance', 'energyMode', 'formatId'],
   PlayerMaterial: ['playerId', 'materialId', 'quantity'],
 };
 

@@ -1,11 +1,12 @@
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
-import { validateLayout } from './geometry.js';
+import { CLASSIC_SQUARE_CELLS, validateLayout } from './geometry.js';
 
 const RIGHT_ANGLE = 90;
 
 export function autoLayout(
   parts: InstalledPart[],
   catalog: ReadonlyMap<string, PartCatalog>,
+  formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
 ): Placement[] {
   const ordered = [...parts].sort((a, b) => {
     return Number(b.catalog.partClass === 'BRIDGE') - Number(a.catalog.partClass === 'BRIDGE');
@@ -14,7 +15,7 @@ export function autoLayout(
   const placements: Placement[] = [];
 
   for (const part of ordered) {
-    const placement = findPlacement(part, placements, catalog);
+    const placement = findPlacement(part, placements, catalog, formatCells);
     if (placement !== null) {
       placements.push(placement);
     }
@@ -27,6 +28,7 @@ function findPlacement(
   part: InstalledPart,
   existing: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
+  formatCells: ReadonlySet<string>,
 ): Placement | null {
   if (part.catalog.partClass === 'BRIDGE') {
     return { partInstanceId: part.instance.id, gx: 0, gy: 0, rot: 0 };
@@ -38,7 +40,7 @@ function findPlacement(
   for (const { gx, gy } of candidates) {
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
-      const errors = validateLayout([...existing, placement], catalog);
+      const errors = validateLayout([...existing, placement], catalog, formatCells);
       const relevant = errors.filter(
         (error) => error.partInstanceId === part.instance.id || error.code === 'DISCONNECTED',
       );

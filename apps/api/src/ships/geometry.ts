@@ -7,15 +7,47 @@ export const GRID_HALF_SIZE = 10;
 const RIGHT_ANGLE = 90;
 
 /** The same "x,y" key format `validateLayout`'s internal occupancy map already used — exported
-    so callers can turn a format's raw `[[x,y],...]` cell list into the Set this function needs. */
+    so callers can turn a format's raw [[x,y],...] cell list into the Set this function needs. */
 export function cellKey(x: number, y: number): string {
   return `${x},${y}`;
+}
+
+function classicSquareCells(): [number, number][] {
+  const cells: [number, number][] = [];
+  for (let y = -GRID_HALF_SIZE; y < GRID_HALF_SIZE; y += 1) {
+    for (let x = -GRID_HALF_SIZE; x < GRID_HALF_SIZE; x += 1) {
+      cells.push([x, y]);
+    }
+  }
+  return cells;
+}
+
+export const CLASSIC_SQUARE_CELLS: ReadonlySet<string> = new Set(
+  classicSquareCells().map(([x, y]) => cellKey(x, y)),
+);
+
+const CELL_DIMENSIONS = 2;
+
+export function formatCellsFromJson(cells: unknown): ReadonlySet<string> {
+  if (!Array.isArray(cells)) return new Set();
+  const set = new Set<string>();
+  for (const cell of cells) {
+    if (
+      Array.isArray(cell) &&
+      cell.length === CELL_DIMENSIONS &&
+      typeof cell[0] === 'number' &&
+      typeof cell[1] === 'number'
+    ) {
+      set.add(cellKey(cell[0], cell[1]));
+    }
+  }
+  return set;
 }
 
 export function validateLayout(
   placements: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
-  formatCells: ReadonlySet<string>,
+  formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
 ): LayoutError[] {
   const errors: LayoutError[] = [];
   const occupied = new Map<string, string>();

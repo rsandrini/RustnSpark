@@ -1,27 +1,41 @@
 import { describe, expect, it } from '@jest/globals';
 import { combatEnergyDraw } from '../../../src/ships/combat-energy.js';
-import type { InstalledPart } from '../../../src/parts/part.types.js';
+import type { InstalledPart, PartCatalog } from '../../../src/parts/part.types.js';
 
-function part(overrides: Partial<InstalledPart> & { catalog: Partial<InstalledPart['catalog']> }): InstalledPart {
+function baseCatalog(): PartCatalog {
+  return {
+    partType: 'type',
+    partClass: 'WEAPON',
+    w: 1,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 1,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
+  };
+}
+
+function part(overrides: { catalog?: Partial<PartCatalog> } = {}): InstalledPart {
   return {
     instance: { id: 'id', partType: 'type', condition: 100 },
-    catalog: {
-      partType: 'type',
-      displayName: { en: 'x' },
-      partClass: 'WEAPON',
-      rarity: 'COMMON',
-      w: 1,
-      h: 1,
-      mass: 1,
-      structureCost: 1,
-      basePrice: 1,
-      scrapValue: 1,
-      partHp: 1,
-      energyCont: 0,
-      ...overrides.catalog,
-    },
-    ...overrides,
-  } as InstalledPart;
+    catalog: { ...baseCatalog(), ...overrides.catalog },
+  };
 }
 
 describe('combatEnergyDraw', () => {

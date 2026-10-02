@@ -12,6 +12,7 @@ import { WalletService } from './wallet.service.js';
 import { ShipsService } from '../ships/ships.service.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 
@@ -131,7 +132,7 @@ export class OnboardingService {
     }));
 
     const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
-    const layout = autoLayout(installedParts, catalogMap);
+    const layout = autoLayout(installedParts, catalogMap, CLASSIC_SQUARE_CELLS);
     if (layout.length !== installedParts.length) {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }

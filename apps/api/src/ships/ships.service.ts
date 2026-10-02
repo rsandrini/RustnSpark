@@ -1,4 +1,4 @@
-import { GRID_HALF_SIZE } from './geometry.js';
+import { formatCellsFromJson, GRID_HALF_SIZE } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -8,7 +8,7 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import type { PartCatalog as PrismaPartCatalog, PartInstance, Ship } from '@prisma/client';
+import type { PartCatalog as PrismaPartCatalog, PartInstance, Prisma, Ship } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 
@@ -104,7 +104,7 @@ export class ShipsService implements OnModuleInit {
     this.assertCanModify(ship);
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
-    this.assertLayoutValid(layout, playerParts, shipId);
+    this.assertLayoutValid(layout, playerParts, ship);
 
     // Saving a layout never requires it to be flight-viable: a player mid-refit — say,
     // pulling a part to sell it in Port — needs to save the smaller layout to free the part
@@ -124,7 +124,8 @@ export class ShipsService implements OnModuleInit {
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart));
+    const formatCells = formatCellsFromJson(ship.format.cells);
+    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart), formatCells);
     if (omitted.length > 0) {
       throw new BadRequestException({
         error: 'AUTO_LAYOUT_OMITTED_PARTS',
@@ -132,7 +133,7 @@ export class ShipsService implements OnModuleInit {
       });
     }
 
-    this.assertLayoutValid(layout, playerParts, shipId);
+    this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
     await this.persistLayout(shipId, layout, playerParts);
@@ -159,17 +160,18 @@ export class ShipsService implements OnModuleInit {
     let effectiveLayout: Placement[];
     let omittedPartInstanceIds: string[] = [];
 
+    const formatCells = formatCellsFromJson(ship.format.cells);
     if (layout !== undefined && layout.length > 0) {
-      this.assertLayoutValid(layout, playerParts, shipId);
+      this.assertLayoutValid(layout, playerParts, ship);
       effectiveLayout = layout;
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      const arranged = arrange(candidateParts.map(toInstalledPart));
+      const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
       installed = arranged.placed;
       effectiveLayout = arranged.layout;
       omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
-      this.assertLayoutValid(effectiveLayout, playerParts, shipId);
+      this.assertLayoutValid(effectiveLayout, playerParts, ship);
     }
 
     const sheet = deriveSheet(installed, rules);
@@ -249,13 +251,16 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
-  private async loadShip(shipId: string): Promise<Ship> {
-    const ship = await this.prisma.ship.findUnique({ where: { id: shipId } });
+  private async loadShip(shipId: string): Promise<ShipWithFormat> {
+    const ship = await this.prisma.ship.findUnique({
+      where: { id: shipId },
+      include: { format: { select: { cells: true } } },
+    });
     if (!ship) throw new NotFoundException('ship not found');
-    return ship;
+    return ship as ShipWithFormat;
   }
 
-  private async loadShipWithRules(shipId: string): Promise<{ ship: Ship; rules: GameRules }> {
+  private async loadShipWithRules(shipId: string): Promise<{ ship: ShipWithFormat; rules: GameRules }> {
     const ship = await this.loadShip(shipId);
     const rules = this.configService.snapshot().rules;
     return { ship, rules };
@@ -270,7 +275,7 @@ export class ShipsService implements OnModuleInit {
   private assertLayoutValid(
     layout: Placement[],
     playerParts: PartInstanceWithCatalog[],
-    shipId: string,
+    ship: ShipWithFormat,
   ): void {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     if (layoutIds.size !== layout.length) {
@@ -285,13 +290,13 @@ export class ShipsService implements OnModuleInit {
       if (!part) {
         throw new ForbiddenException('layout references a part not owned by player');
       }
-      if (part.location === 'INSTALLED' && part.shipId !== shipId) {
+      if (part.location === 'INSTALLED' && part.shipId !== ship.id) {
         throw new ConflictException('part is installed in another ship');
       }
     }
 
     const catalogMap = buildCatalogMapFromPrisma(playerParts);
-    const geometryErrors = validateLayout(layout, catalogMap);
+    const geometryErrors = validateLayout(layout, catalogMap, formatCellsFromJson(ship.format.cells));
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
         error: 'INVALID_LAYOUT',
@@ -414,18 +419,25 @@ export class ShipsService implements OnModuleInit {
 
 type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog };
 
+type ShipWithFormat = Prisma.ShipGetPayload<{
+  include: { format: { select: { cells: true } } };
+}>;
+
 function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
   return { instance: part, catalog: pickCatalogStats(part.partCatalog) };
 }
 
 // autoLayout may leave parts out when they do not fit; callers must derive and check the sheet
 // from `placed` (what is actually saved), never from the requested list.
-function arrange(requested: InstalledPart[]): {
+function arrange(
+  requested: InstalledPart[],
+  formatCells: ReadonlySet<string>,
+): {
   layout: Placement[];
   placed: InstalledPart[];
   omitted: InstalledPart[];
 } {
-  const layout = autoLayout(requested, buildCatalogMap(requested));
+  const layout = autoLayout(requested, buildCatalogMap(requested), formatCells);
   const placedIds = new Set(layout.map((placement) => placement.partInstanceId));
   return {
     layout,

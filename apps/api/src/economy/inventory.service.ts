@@ -5,6 +5,7 @@ import type { GameRules } from '../config/game-config.types.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import type { InstalledPart } from '../parts/part.types.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
 
@@ -74,7 +75,7 @@ export class InventoryService {
     }));
 
     const catalogMap = new Map(kitParts.map((part) => [part.instance.id, part.catalog]));
-    const layout = autoLayout(kitParts, catalogMap);
+    const layout = autoLayout(kitParts, catalogMap, CLASSIC_SQUARE_CELLS);
     if (layout.length !== kitParts.length) {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
