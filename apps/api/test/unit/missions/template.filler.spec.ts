@@ -241,6 +241,21 @@ describe('S6.2 — template filler (pure generation)', () => {
     }
   });
 
+  it('caps contracted quantity at an achievable 1-3 units', () => {
+    // A starter rig (MIN 1) in open space has a ~14% find chance per attempt, so the
+    // expected yield per mission is ~1.4 units. Asking for 5-10 made contracts fail
+    // most of the time; the calibrated cap keeps common-rarity contracts winnable
+    // while rarer materials still reward upgrading the rig.
+    for (let epoch = 0; epoch < 50; epoch += 1) {
+      const draft = fill(`gamma|${epoch}|v2`, LOC_GAMMA, [MINING_EXPLORERS]);
+      const cargo = draft.cargo as MiningCargo;
+      if (cargo.contracted === true) {
+        expect(cargo.quantity!).toBeGreaterThanOrEqual(1);
+        expect(cargo.quantity!).toBeLessThanOrEqual(3);
+      }
+    }
+  });
+
   it('sets board expiry inside the prototype window (6–40 minutes)', () => {
     const sixMinutesMs = 6 * 60 * 1000;
     const fortyMinutesMs = 40 * 60 * 1000;
