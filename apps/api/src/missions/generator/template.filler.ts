@@ -13,9 +13,16 @@ const MS_PER_SECOND = 1000;
 
 // Mining contracts (design missoes §4 "dois modos"): v0.1 placeholder split and quantity
 // range, both explicitly listed as calibratable later (design missoes §8).
+//
+// Quantity is capped low because a single mining stop rolls attempts_per_stop independent
+// find rolls and each success yields one unit. A starter rig (MIN 1) in open space has a
+// ~14% find chance per attempt → expected yield of ~1.4 units per mission. Asking for 5-10
+// units made contracted mining "almost always fail" even though the recent cap prevented
+// values above attempts_per_stop. Keeping the max at 3 keeps common-rarity contracts
+// achievable for starter rigs while rarer materials still reward upgrading the rig.
 const CONTRACTED_CHANCE = 0.5;
-const MIN_CONTRACT_QUANTITY = 5;
-const MAX_CONTRACT_QUANTITY = 15;
+const MIN_CONTRACT_QUANTITY = 1;
+const MAX_CONTRACT_QUANTITY = 3;
 
 // D29 finalizes reward from the accepting ship's tier; the stored figure is the
 // provisional board value at generation time (starter-ship tier).
