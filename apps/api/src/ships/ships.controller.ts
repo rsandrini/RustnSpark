@@ -17,7 +17,13 @@ import {
 import { OwnedResource } from '../common/decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from '../common/guards/ownership.guard.js';
 import { ShipsService } from './ships.service.js';
-import { AssembleDto, AutoAssembleDto, PreviewDto, StanceDto } from './dto/ship-operations.dto.js';
+import {
+  AssembleDto,
+  AutoAssembleDto,
+  PreviewDto,
+  SetFormatDto,
+  StanceDto,
+} from './dto/ship-operations.dto.js';
 
 @Controller('ships')
 export class ShipsController {
@@ -72,5 +78,13 @@ export class ShipsController {
   @OwnedResource({ type: 'ship', param: 'id' })
   stance(@Param('id') shipId: string, @Body() dto: StanceDto) {
     return this.shipsService.setStance(shipId, dto.stance);
+  }
+
+  @Post(':id/format')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  setFormat(@Param('id') shipId: string, @Body() dto: SetFormatDto) {
+    return this.shipsService.setFormat(shipId, dto.formatId);
   }
 }

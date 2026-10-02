@@ -22,6 +22,12 @@ import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { checkViability, type ViabilityProblem } from './viability.js';
 
+// Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
+// apps/web's part-detail.tsx lowestRarity — a local copy, not a shared import, since
+// ships.service.ts doesn't otherwise depend on economy/part-upgrade.calculator.ts.
+const RARITY_ORDER: readonly string[] = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+const RIGHT_ANGLE = 90;
+
 /** What the ship is doing now (drives the ship stage on the client). */
 export interface ShipActivity {
   readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
@@ -237,6 +243,86 @@ export class ShipsService implements OnModuleInit {
       data: { stance },
     });
     return this.toResponse(updated, rules);
+  }
+
+  async listFormats(playerId: string): Promise<Array<{
+    id: string;
+    displayName: unknown;
+    description: unknown;
+    cells: [number, number][];
+    minRarity: string;
+  }>> {
+    const ship = await this.prisma.ship.findFirst({ where: { ownerPlayerId: playerId } });
+    const bridgeRarity = await this.currentBridgeRarity(ship);
+    const rarityRank = RARITY_ORDER.indexOf(bridgeRarity);
+    const formats = await this.prisma.shipFormat.findMany({ where: { active: true } });
+    return formats
+      .filter((format) => RARITY_ORDER.indexOf(format.minRarity) <= rarityRank)
+      .map((format) => ({
+        id: format.id,
+        displayName: format.displayName,
+        description: format.description,
+        cells: format.cells as [number, number][],
+        minRarity: format.minRarity,
+      }));
+  }
+
+  async setFormat(shipId: string, formatId: string): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+
+    const target = await this.prisma.shipFormat.findUnique({ where: { id: formatId } });
+    if (!target || !target.active) {
+      throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+    }
+    const bridgeRarity = await this.currentBridgeRarity(ship);
+    if (RARITY_ORDER.indexOf(target.minRarity) > RARITY_ORDER.indexOf(bridgeRarity)) {
+      throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+    }
+
+    const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+    const catalogMap = buildCatalogMapFromPrisma(playerParts);
+    const newCells = new Set((target.cells as [number, number][]).map(([x, y]) => cellKey(x, y)));
+    const currentLayout = (ship.layout as unknown as Placement[]) ?? [];
+
+    const fits = (placement: Placement): boolean => {
+      const part = catalogMap.get(placement.partInstanceId);
+      if (part === undefined) return false;
+      const width = placement.rot === RIGHT_ANGLE ? part.h : part.w;
+      const height = placement.rot === RIGHT_ANGLE ? part.w : part.h;
+      for (let dx = 0; dx < width; dx += 1) {
+        for (let dy = 0; dy < height; dy += 1) {
+          if (!newCells.has(cellKey(placement.gx + dx, placement.gy + dy))) return false;
+        }
+      }
+      return true;
+    };
+    const keptLayout = currentLayout.filter(fits);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ship.update({ where: { id: shipId }, data: { formatId, layout: toJsonInput(keptLayout) } });
+      const droppedIds = currentLayout
+        .filter((p) => !fits(p))
+        .map((p) => p.partInstanceId);
+      if (droppedIds.length > 0) {
+        await tx.partInstance.updateMany({
+          where: { id: { in: droppedIds } },
+          data: { location: 'INVENTORY', shipId: null },
+        });
+      }
+    });
+
+    const updated = await this.loadShip(shipId);
+    return this.toResponse(updated, rules);
+  }
+
+  private async currentBridgeRarity(ship: Ship | null): Promise<string> {
+    if (ship === null) return 'COMMON';
+    const bridgeInstalled = await this.prisma.partInstance.findFirst({
+      where: { shipId: ship.id, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
+      include: { partCatalog: true },
+    });
+    return bridgeInstalled?.partCatalog.rarity ?? 'COMMON';
   }
 
   private async loadShip(shipId: string): Promise<Ship> {

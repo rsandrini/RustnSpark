@@ -203,6 +203,15 @@ export const ShipResponseSchema = z.object({
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
 
+export const ShipFormatSchema = z.object({
+  id: z.string(),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  cells: z.array(z.tuple([z.number(), z.number()])),
+  minRarity: z.string(),
+});
+export type ShipFormat = z.infer<typeof ShipFormatSchema>;
+
 export const ProblemSchema = z.object({ code: z.string(), message: z.string() });
 export type Problem = z.infer<typeof ProblemSchema>;
 
