@@ -229,6 +229,8 @@ export function missionEvent(input: {
             round: roundInt(round.round),
             attacker: round.attacker,
             roll: roundInt(round.roll),
+            ...(round.pdf !== undefined ? { pdf: roundInt(round.pdf) } : {}),
+            ...(round.bonus !== undefined ? { bonus: roundInt(round.bonus) } : {}),
             dc: roundInt(round.dc),
             hit: round.hit,
             damage: roundInt(round.damage),
