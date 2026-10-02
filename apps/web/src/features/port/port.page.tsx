@@ -390,6 +390,27 @@ export function PortPage({
     },
   });
 
+  // Independent mining job (round 10 owner request): same shape as scavenging above — a timed
+  // job at the ship's own location, no board offer, dispatched the same way. The server is the
+  // only authority on whether this location is minable and the ship carries a mining rig;
+  // NOT_MINABLE/NO_MINING_RIG surface through the same error text as any other action here.
+  const mine = useMutation({
+    mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`),
+    onSuccess: () => {
+      setActionError(null);
+      void queryClient.invalidateQueries({ queryKey: ['active'] });
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      if (embedded && onGoToShip !== undefined) {
+        onGoToShip();
+      } else {
+        void navigate('/hangar');
+      }
+    },
+    onError: (error) => {
+      setActionError(errorText(t, error, t('port.failed')));
+    },
+  });
+
   if (
     marketQuery.isLoading ||
     inventoryQuery.isLoading ||
@@ -1008,6 +1029,21 @@ export function PortPage({
             onClick={() => scavenge.mutate()}
           >
             {t('port.scavenge')}
+          </button>
+        </section>
+      )}
+
+      {tab === 'scavenging' && (
+        <section className="stack scav" data-testid="mining-job">
+          <h2>{t('port.mine.title')}</h2>
+          <p className="sub">{t('port.mine.what')}</p>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={mine.isPending}
+            onClick={() => mine.mutate()}
+          >
+            {t('port.mine.action')}
           </button>
         </section>
       )}

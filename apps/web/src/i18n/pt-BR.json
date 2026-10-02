@@ -563,6 +563,11 @@
       "nextAttempt": "Próximo trabalho em",
       "title": "Vasculhar os destroços"
     },
+    "mine": {
+      "title": "Minerar o campo",
+      "what": "Se este lugar for minerável e sua nave tiver uma plataforma de mineração, envie-a para escavar: um trabalho cronometrado como o saque, sem pagamento adiantado, sem relatório do que traz até o trabalho terminar.",
+      "action": "Enviar a nave para minerar"
+    },
     "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
     "repairNoChange": "Sem mudança",
     "repairNothingSelected": "Nada selecionado ainda: mova um controle ou ponha tudo em 100%.",
@@ -943,7 +948,9 @@
     "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
     "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
     "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
-    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto."
+    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
+    "NOT_MINABLE": "Não há nada para minerar aqui.",
+    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro."
   },
   "language": {
     "label": "Idioma"

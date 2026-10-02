@@ -234,6 +234,34 @@ describe('port (S10.9)', () => {
     );
   });
 
+  // Round-10 owner request: "add independent mining missions at minable locations" — a
+  // timed job alongside Scavenging, same tab, server decides eligibility (NOT_MINABLE /
+  // NO_MINING_RIG surface as an ordinary action error, same as any other gated action here).
+  it('starts an independent mining job from the Scavenging tab', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+
+    const mining = await screen.findByTestId('mining-job');
+    expect(within(mining).getByText(/minable/)).toBeInTheDocument();
+
+    fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
+    await waitFor(() =>
+      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
+    );
+  });
+
+  it('surfaces NOT_MINABLE from the server as a plain action error', async () => {
+    server.use(
+      http.post('/v1/locations/:id/mine', () =>
+        HttpResponse.json({ statusCode: 409, message: { error: 'NOT_MINABLE' } }, { status: 409 }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send the ship mining' }));
+    expect(await screen.findByText('There is nothing to mine here.')).toBeInTheDocument();
+  });
+
   it('refuel tab explains there is no tank instead of claiming a 0/0 tank is already full', async () => {
     server.use(
       http.get('/v1/ships', () =>

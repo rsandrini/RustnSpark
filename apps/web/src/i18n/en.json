@@ -563,6 +563,11 @@
       "nextAttempt": "Next job in",
       "title": "Scavenge the wreckage"
     },
+    "mine": {
+      "title": "Mine the field",
+      "what": "If this place is minable and your ship carries a mining rig, send it out to dig: a timed job like scavenging, no pay up front, no report of what it turns up until the job ends.",
+      "action": "Send the ship mining"
+    },
     "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
     "repairNoChange": "No change",
     "repairNothingSelected": "Nothing selected yet: move a slider, or set everything to 100%.",
@@ -943,7 +948,9 @@
     "LISTING_SOLD": "That used part was just sold.",
     "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
     "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
-    "NO_ROUTE": "There is no route out of this place, so there is nothing to search around."
+    "NO_ROUTE": "There is no route out of this place, so there is nothing to search around.",
+    "NOT_MINABLE": "There is nothing to mine here.",
+    "NO_MINING_RIG": "A mining rig needs to be installed first."
   },
   "language": {
     "label": "Language"

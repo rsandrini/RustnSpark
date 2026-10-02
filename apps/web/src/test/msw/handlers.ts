@@ -989,6 +989,15 @@ export const handlers = [
       durationSeconds: 300,
     });
   }),
+  http.post('/v1/locations/:id/mine', () => {
+    const now = Date.now();
+    return ok<DispatchResponse>({
+      missionId: 'mining-job-1',
+      arrivalAt: new Date(now + 300_000).toISOString(),
+      serverTime: new Date(now).toISOString(),
+      durationSeconds: 300,
+    });
+  }),
 ];
 
 const reportLine = (text: string) => ({
