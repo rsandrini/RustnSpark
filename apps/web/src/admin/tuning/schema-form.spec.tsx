@@ -112,4 +112,36 @@ describe('SchemaForm', () => {
     expect(screen.getByText(/0 – 100/i)).toBeInTheDocument();
     expect(screen.getAllByText(/\(required\)/i).length).toBeGreaterThan(0);
   });
+
+  // Bug: a part with no stored connectorLayouts/cells (null in the DB, e.g. the bridge) crashed
+  // the whole admin app — buildInitialValues defaulted every non-boolean/locale-map field to ''
+  // for a missing value, and ConnectorLayoutEditor/GridCellsEditor's `value ?? fallback` doesn't
+  // catch a non-nullish empty string, so `''.map` threw past React Router's error boundary.
+  it('renders connector-layout and grid-cells fields when the stored value is null', () => {
+    const fieldsWithNullableWidgets: EntitySchemaField[] = [
+      ...fakeFields,
+      {
+        name: 'connectorLayouts',
+        type: 'connector-layout',
+        required: false,
+        description: { en: 'Connector layouts', 'pt-BR': 'Layouts de conector' },
+      },
+      {
+        name: 'cells',
+        type: 'grid-cells',
+        required: false,
+        description: { en: 'Cells', 'pt-BR': 'Células' },
+      },
+    ];
+
+    expect(() =>
+      renderWithProviders(
+        <SchemaForm
+          fields={fieldsWithNullableWidgets}
+          initialData={{ connectorLayouts: null, cells: null }}
+          onSubmit={vi.fn()}
+        />,
+      ),
+    ).not.toThrow();
+  });
 });

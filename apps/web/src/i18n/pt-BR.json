@@ -456,6 +456,7 @@
     "revertConfirm": "Reverter revisão {{id}}?",
     "entityNames": {
       "parts": "Peças",
+      "ship-formats": "Formatos de nave",
       "materials": "Materiais",
       "factions": "Facções",
       "locations": "Locais",

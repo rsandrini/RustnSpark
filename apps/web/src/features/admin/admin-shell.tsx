@@ -5,6 +5,7 @@ import { useAuth, useLogout } from '../auth/auth.hooks';
 
 const TUNABLE_ENTITIES = [
   'parts',
+  'ship-formats',
   'materials',
   'factions',
   'locations',

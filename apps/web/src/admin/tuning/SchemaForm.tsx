@@ -89,6 +89,8 @@ export function SchemaForm({
         initial[field.name] = { en: existing.en ?? '', 'pt-BR': existing['pt-BR'] ?? '' };
       } else if (field.type === 'boolean') {
         initial[field.name] = initialData[field.name] ?? false;
+      } else if (field.type === 'connector-layout' || field.type === 'grid-cells') {
+        initial[field.name] = initialData[field.name] ?? undefined;
       } else {
         initial[field.name] = initialData[field.name] ?? '';
       }
