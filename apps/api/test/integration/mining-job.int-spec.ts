@@ -80,13 +80,30 @@ describe('independent mining job (round 10)', () => {
 
   // The starter kit's power budget has no margin at all — a rig alone tips continuous energy
   // negative (SHIP_NOT_VIABLE), so the test rig always comes with its own reactor.
-  async function installMiningRig(playerId: string, shipId: string): Promise<void> {
-    await prisma.partInstance.createMany({
-      data: [
-        { partType: 'mining_rig', ownerPlayerId: playerId, condition: 100, location: 'INSTALLED', shipId },
-        { partType: 'reactor_solar', ownerPlayerId: playerId, condition: 100, location: 'INSTALLED', shipId },
-      ],
+  //
+  // Both parts are created in INVENTORY and placed through the real auto-assemble endpoint
+  // (not a raw `location: 'INSTALLED'` write) — `location: 'INSTALLED'` alone isn't enough
+  // for Connectors v0.1's connectivity graph, which walks ship.layout's own placements, so a
+  // part with no placement there would be invisible to it (and count as disconnected, zeroing
+  // exactly the `min`/`energyCont` stats this test is about). Routing through the real
+  // placement algorithm, instead of hand-picking grid coordinates here, guarantees the new
+  // parts land adjacent to the existing cluster.
+  async function installMiningRig(token: string, playerId: string, shipId: string): Promise<void> {
+    const rig = await prisma.partInstance.create({
+      data: { partType: 'mining_rig', ownerPlayerId: playerId, condition: 100, location: 'INVENTORY' },
     });
+    const reactor = await prisma.partInstance.create({
+      data: { partType: 'reactor_solar', ownerPlayerId: playerId, condition: 100, location: 'INVENTORY' },
+    });
+    const installed = await prisma.partInstance.findMany({
+      where: { ownerPlayerId: playerId, location: 'INSTALLED', shipId },
+      select: { id: true },
+    });
+    const response = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${shipId}/auto-assemble`)
+      .set(auth(token))
+      .send({ partInstanceIds: [...installed.map((p) => p.id), rig.id, reactor.id] });
+    expect(response.status).toBe(200);
   }
 
   const start = (token: string, locationId: string) =>
@@ -111,7 +128,7 @@ describe('independent mining job (round 10)', () => {
   it('starts a job at a minable location with a mining rig: free MINING mission, ship locked, no reward', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    await installMiningRig(player.seeded.player.id, player.shipId);
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
 
     const response = await start(player.token, 'ceres');
     expect(response.status).toBe(200);

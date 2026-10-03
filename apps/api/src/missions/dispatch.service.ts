@@ -9,8 +9,12 @@ import {
 import type { MissionInstance } from '@prisma/client';
 import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
+import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { jobDelayMs } from '../config/debug-timing.js';
@@ -39,6 +43,11 @@ export interface DispatchSnapshot {
     readonly partType: string;
     readonly condition: number;
     readonly catalog: ReturnType<typeof pickCatalogStats>;
+    /** Connectors v0.1: whether this part had a compatible connector chain back to the bridge
+        at dispatch time. Carried through for Connectors v0.2 (mid-mission disconnection,
+        separate future spec) — not consumed by anything yet except being present in the
+        stored snapshot. */
+    readonly connected: boolean;
   }>;
   readonly legs: readonly DispatchLeg[];
   /** Loose parts when the ship left port: the only parts a pirate can take (frozen, D19). */
@@ -105,6 +114,20 @@ export async function rebuildDispatchData(
   const installedRows = rows.filter(
     (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
   );
+  const installed = installedRows.map((part) => ({
+    instance: part,
+    catalog: pickCatalogStats(part.partCatalog),
+  }));
+  const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+  const connectorsByInstance = new Map(
+    installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+  );
+  const connectedIds = connectedPartIds(
+    (ship.layout as unknown as Placement[]) ?? [],
+    catalogForConnectivity,
+    connectorsByInstance,
+  );
+  const installedConnected = applyConnectivity(installed, connectedIds);
   const legs = parseDispatchLegs(mission.legs);
   return {
     missionId: mission.id,
@@ -115,11 +138,12 @@ export async function rebuildDispatchData(
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
       energyMode: ship.energyMode,
-      parts: installedRows.map((part) => ({
-        id: part.id,
-        partType: part.partType,
-        condition: part.condition,
-        catalog: pickCatalogStats(part.partCatalog),
+      parts: installedConnected.map((part) => ({
+        id: part.instance.id,
+        partType: part.instance.partType,
+        condition: part.instance.condition,
+        catalog: part.catalog,
+        connected: connectedIds.has(part.instance.id),
       })),
       legs,
       storage: rows
@@ -224,8 +248,18 @@ export class DispatchService {
         instance: part,
         catalog: pickCatalogStats(part.partCatalog),
       }));
-      const sheet = deriveSheet(installed, rules);
-      const viability = checkViability(sheet, installed, rules);
+      const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+      const connectorsByInstance = new Map(
+        installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+      );
+      const connectedIds = connectedPartIds(
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+      );
+      const installedConnected = applyConnectivity(installed, connectedIds);
+      const sheet = deriveSheet(installedConnected, rules);
+      const viability = checkViability(sheet, installedConnected, rules);
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
@@ -251,11 +285,12 @@ export class DispatchService {
         currentLocationId: ship.currentLocationId,
         stance: ship.stance,
         energyMode: ship.energyMode,
-        parts: installed.map((part) => ({
+        parts: installedConnected.map((part) => ({
           id: part.instance.id,
           partType: part.instance.partType,
           condition: part.instance.condition,
           catalog: part.catalog,
+          connected: connectedIds.has(part.instance.id),
         })),
         legs,
         storage: rows

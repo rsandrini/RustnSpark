@@ -364,6 +364,41 @@ export class EntityTuningService {
     if (entity === 'mission-templates' && data.factionId !== undefined) {
       await this.validateFactionExists(data.factionId as string);
     }
+    if (entity === 'parts' && Array.isArray(data.connectorLayouts)) {
+      await this.validateConnectorLayouts(data, existingId);
+    }
+  }
+
+  // Connectors v0.1 (2026-10-02-connectors-v1-design.md, Review Focus #5): a candidate's cells
+  // must stay within the part's own w x h footprint — checked server-side, not just by the
+  // admin widget. w/h may not be in `data` on a partial update that only touches
+  // connectorLayouts, so this falls back to the existing row's own w/h in that case.
+  private async validateConnectorLayouts(
+    data: Record<string, unknown>,
+    existingId?: string,
+  ): Promise<void> {
+    let w = typeof data.w === 'number' ? data.w : undefined;
+    let h = typeof data.h === 'number' ? data.h : undefined;
+    if ((w === undefined || h === undefined) && existingId !== undefined) {
+      const existing = await this.prisma.partCatalog.findUnique({
+        where: { partType: existingId },
+        select: { w: true, h: true },
+      });
+      w ??= existing?.w;
+      h ??= existing?.h;
+    }
+    if (w === undefined || h === undefined) return; // create without w/h fails its own required-field check
+    const layouts = data.connectorLayouts as Array<{ cells: Array<{ dx: number; dy: number }> }>;
+    for (const layout of layouts) {
+      for (const cell of layout.cells) {
+        if (cell.dx < 0 || cell.dx >= w || cell.dy < 0 || cell.dy >= h) {
+          throw new GameConfigValidationError(
+            `connector cell (${cell.dx}, ${cell.dy}) is outside the part's ${w}x${h} footprint`,
+            [{ key: 'connectorLayouts', message: 'cell outside part footprint' }],
+          );
+        }
+      }
+    }
   }
 
   private async validateRoute(

@@ -556,4 +556,75 @@ describe('entity tuning (S3.8)', () => {
       expect(response.status).toBe(400);
     });
   });
+
+  describe('connectorLayouts field on the parts entity (Connectors v0.1)', () => {
+    it('creates a part with connectorLayouts candidates', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const payload = validPartPayload('connector_test_part');
+      payload.connectorLayouts = [
+        { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
+      ];
+      const response = await request(server)
+        .post('/v1/admin/tuning/parts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: payload, reason: 'test' });
+      expect(response.status).toBe(201);
+      const body = response.body as { row: { connectorLayouts: unknown } };
+      expect(body.row.connectorLayouts).toEqual([
+        { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
+      ]);
+    });
+
+    it("rejects a connector cell outside the part's own w x h footprint", async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const payload = validPartPayload('connector_oob_part');
+      payload.w = 1;
+      payload.h = 1;
+      payload.connectorLayouts = [{ cells: [{ dx: 5, dy: 0, side: 'S', kind: 'central' }] }];
+      const response = await request(server)
+        .post('/v1/admin/tuning/parts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: payload, reason: 'test' });
+      expect(response.status).toBe(400);
+    });
+
+    it('reverting a part revision with connectorLayouts: null (a part that never had any authored) does not 500', async () => {
+      // Regression: validateEntityRules first checked `data.connectorLayouts !== undefined`,
+      // but a revert replays the FULL stored "before" snapshot including nullable columns as
+      // literal `null` (not absent) — `null !== undefined` is true, so the footprint validator
+      // ran on `null` and threw. Every part created before this feature, or with no candidates
+      // authored, has exactly this shape.
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const createResponse = await request(server)
+        .post('/v1/admin/tuning/parts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: validPartPayload('connector_revert_part'), reason: 'create for revert' });
+      expect(createResponse.status).toBe(201);
+
+      const updateResponse = await request(server)
+        .patch('/v1/admin/tuning/parts/connector_revert_part')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: { basePrice: 9999 }, reason: 'update for revert' });
+      expect(updateResponse.status).toBe(200);
+      const revisionId = (updateResponse.body as EntityWriteResponse).revision.id;
+
+      const revertResponse = await request(server)
+        .post(`/v1/admin/tuning/revisions/${revisionId}/revert`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ reason: 'undo price change' });
+      expect(revertResponse.status).toBe(200);
+    });
+  });
 });

@@ -13,12 +13,13 @@ import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
-import { RIGHT_ANGLE } from '../parts/connectors.js';
+import { RIGHT_ANGLE, type ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
-import { validateLayout } from './geometry.js';
+import { applyConnectivity } from './connectivity.js';
+import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
@@ -51,6 +52,9 @@ export interface ShipResponse {
   shipClass: ShipClassType;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
   yard: { cells: [number, number][] };
+  /** Installed part instance ids with no compatible connector chain back to the bridge right
+      now — still counted as mass/structure/HP, not contributing anything else. */
+  disconnectedPartIds: string[];
   /** What the ship is doing now: drives the animated ship stage. */
   activity: ShipActivity;
 }
@@ -69,6 +73,7 @@ export interface PreviewResponse {
   viability: { viable: boolean; problems: ViabilityProblem[] };
   layout: Placement[];
   omittedPartInstanceIds: string[];
+  disconnectedPartIds: string[];
 }
 
 @Injectable()
@@ -181,14 +186,23 @@ export class ShipsService implements OnModuleInit {
       this.assertLayoutValid(effectiveLayout, playerParts, ship);
     }
 
-    const sheet = deriveSheet(installed, rules);
-    const viability = checkViability(sheet, installed, rules);
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      playerParts.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance);
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const viability = checkViability(sheet, installedConnected, rules);
     return {
       sheet,
-      shipClass: deriveShipClass(installed, rules),
+      shipClass: deriveShipClass(installedConnected, rules),
       viability,
       layout: effectiveLayout,
       omittedPartInstanceIds,
+      disconnectedPartIds: installed
+        .filter((p) => !connectedIds.has(p.instance.id))
+        .map((p) => p.instance.id),
     };
   }
 
@@ -233,6 +247,7 @@ export class ShipsService implements OnModuleInit {
       viability,
       layout: (ship.layout as unknown as Placement[]) ?? [],
       omittedPartInstanceIds: [],
+      disconnectedPartIds: [],
     };
   }
 
@@ -455,10 +470,18 @@ export class ShipsService implements OnModuleInit {
 
   private async toResponse(ship: ShipWithFormat, rules: GameRules): Promise<ShipResponse> {
     const parts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
-    const installed = parts
-      .filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id)
-      .map(toInstalledPart);
-    const sheet = deriveSheet(installed, rules);
+    const installedRows = parts.filter(
+      (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
+    );
+    const installed = installedRows.map(toInstalledPart);
+    const shipLayout = (ship.layout as unknown as Placement[]) ?? [];
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
     const activity = await this.activityOf(ship);
     return {
       id: ship.id,
@@ -469,9 +492,12 @@ export class ShipsService implements OnModuleInit {
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
       energyMode: ship.energyMode,
-      layout: (ship.layout as unknown as Placement[]) ?? [],
+      layout: shipLayout,
       sheet,
-      shipClass: deriveShipClass(installed, rules),
+      shipClass: deriveShipClass(installedConnected, rules),
+      disconnectedPartIds: installedRows
+        .filter((row) => !connectedIds.has(row.id))
+        .map((row) => row.id),
       yard: { cells: ship.format.cells as [number, number][] },
       activity,
     };

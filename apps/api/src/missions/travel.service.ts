@@ -7,8 +7,12 @@ import {
 import { Prisma } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
+import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { checkViability } from '../ships/viability.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
@@ -199,11 +203,25 @@ export class TravelService {
     });
 
     const rows = await this.parts.findPlayerParts(playerId);
-    const installed = rows
-      .filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id)
-      .map((part) => ({ instance: part, catalog: pickCatalogStats(part.partCatalog) }));
-    const sheet = deriveSheet(installed, rules);
-    const viability = checkViability(sheet, installed, rules);
+    const installedRows = rows.filter(
+      (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
+    );
+    const installed = installedRows.map((part) => ({
+      instance: part,
+      catalog: pickCatalogStats(part.partCatalog),
+    }));
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const viability = checkViability(sheet, installedConnected, rules);
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({

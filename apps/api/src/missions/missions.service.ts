@@ -13,9 +13,12 @@ import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
-import type { InstalledPart } from '../parts/part.types.js';
+import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
@@ -502,10 +505,20 @@ export class MissionsService implements OnModuleInit {
     const installedRows = rows.filter(
       (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
     );
-    const installed = installedRows.map((part) => ({
+    const installedRaw = installedRows.map((part) => ({
       instance: part,
       catalog: pickCatalogStats(part.partCatalog),
     }));
+    const catalogForConnectivity = new Map(installedRaw.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installed = applyConnectivity(installedRaw, connectedIds);
 
     const sheet = deriveSheet(installed, rules);
     const viability = checkViability(sheet, installed, rules);
@@ -590,10 +603,20 @@ export class MissionsService implements OnModuleInit {
       ship === undefined
         ? []
         : rows.filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id);
-    const installed = installedRows.map((part) => ({
+    const installedRaw = installedRows.map((part) => ({
       instance: part,
       catalog: pickCatalogStats(part.partCatalog),
     }));
+    const catalogForConnectivity = new Map(installedRaw.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship?.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installed = applyConnectivity(installedRaw, connectedIds);
     const tier =
       ship === undefined
         ? DEFAULT_VIEWER_TIER

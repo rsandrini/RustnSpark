@@ -3,11 +3,13 @@ import type { Prisma } from '@prisma/client';
 import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
-import type { InstalledPart } from '../parts/part.types.js';
+import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { autoLayout } from '../ships/auto-layout.js';
 import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
-import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
 
@@ -88,8 +90,13 @@ export class InventoryService {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
 
-    const kitSheet = deriveSheet(kitParts, rules);
-    const viability = checkViability(kitSheet, kitParts, rules);
+    const kitConnectorsByInstance = new Map(
+      kit.map((part) => [part.id, part.connectors as ConnectorLayout | null]),
+    );
+    const kitConnectedIds = connectedPartIds(layout, catalogMap, kitConnectorsByInstance);
+    const kitPartsConnected = applyConnectivity(kitParts, kitConnectedIds);
+    const kitSheet = deriveSheet(kitPartsConnected, rules);
+    const viability = checkViability(kitSheet, kitPartsConnected, rules);
     if (!viability.viable) {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
     }
@@ -118,12 +125,28 @@ export class InventoryService {
     tx: Prisma.TransactionClient,
     shipId: string,
   ): Promise<InstalledPart[]> {
-    const rows = await tx.partInstance.findMany({
-      where: { shipId, location: 'INSTALLED' },
-      include: { partCatalog: true },
-      orderBy: { id: 'asc' },
-    });
-    return rows.map((row) => ({ instance: row, catalog: pickCatalogStats(row.partCatalog) }));
+    const [rows, ship] = await Promise.all([
+      tx.partInstance.findMany({
+        where: { shipId, location: 'INSTALLED' },
+        include: { partCatalog: true },
+        orderBy: { id: 'asc' },
+      }),
+      tx.ship.findUniqueOrThrow({ where: { id: shipId }, select: { layout: true } }),
+    ]);
+    const installed = rows.map((row) => ({
+      instance: row,
+      catalog: pickCatalogStats(row.partCatalog),
+    }));
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    return applyConnectivity(installed, connectedIds);
   }
 
   private viabilityOf(parts: InstalledPart[], rules: GameRules): ViabilityReport {

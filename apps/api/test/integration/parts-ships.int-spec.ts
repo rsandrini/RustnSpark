@@ -31,6 +31,7 @@ interface SheetShape {
   hp: number;
   mob: number;
   condition: number;
+  mass: number;
 }
 
 interface ShipResponse {
@@ -44,6 +45,7 @@ interface ShipResponse {
   layout: Array<Record<string, unknown>>;
   sheet: SheetShape;
   yard: { cells: [number, number][] };
+  disconnectedPartIds: string[];
 }
 
 interface PreviewResponse {
@@ -279,6 +281,78 @@ describe('parts and ships API (S4.3)', () => {
       expect(ids).toEqual(['classic_square']);
     });
 
+    it('a disconnected part counts as mass/structure/hp but not its function (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+
+      const before = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      expect(before.disconnectedPartIds).toEqual([]);
+
+      const rows = await prisma.partInstance.findMany({
+        where: { id: { in: before.layout.map((p) => p.partInstanceId as string) } },
+        include: { partCatalog: true },
+      });
+      const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
+      const targetId = (before.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId) as string;
+
+      // Force this part's connectors to something that can never match its neighbors (every
+      // real catalog part defaults to the universal fallback, so this directly fabricates a
+      // mismatch): an explicit empty-cells layout — no side has anything.
+      await prisma.partInstance.update({
+        where: { id: targetId },
+        data: { connectors: { cells: [] } },
+      });
+
+      const beforeSheet = before.sheet;
+      const after = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      expect(after.disconnectedPartIds).toContain(targetId);
+      expect(after.sheet.mass).toBe(beforeSheet.mass); // structural: unchanged
+      expect(after.sheet.pot).toBeLessThanOrEqual(beforeSheet.pot); // functional: can only drop
+    });
+
+    it('saving a layout with a disconnected part succeeds (200), not a build error (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+      const assembled = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+
+      const rows = await prisma.partInstance.findMany({
+        where: { id: { in: assembled.layout.map((p) => p.partInstanceId as string) } },
+        include: { partCatalog: true },
+      });
+      const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
+      const targetId = (assembled.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId) as string;
+      await prisma.partInstance.update({
+        where: { id: targetId },
+        data: { connectors: { cells: [] } },
+      });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${ship.id}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: assembled.layout });
+      expect(response.status).toBe(200);
+      const saved = asShip(response);
+      expect(saved.disconnectedPartIds).toContain(targetId);
+    });
+
     it('creates exactly one ship and one starter credit under concurrent onboarding', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
@@ -391,6 +465,22 @@ describe('parts and ships API (S4.3)', () => {
         expect(name.en).not.toBe('');
         expect(name['pt-BR']).not.toBe('');
         expect(name.en).not.toBe(item.partType);
+      }
+    });
+
+    it('inventory items carry their own resolved connectors (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      await onboard(token, 'luna');
+
+      const response = await request(httpServer(testApp.app))
+        .get('/v1/inventory')
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(200);
+      const items = response.body as Array<{ connectors: unknown[] }>;
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item.connectors).toEqual([]); // universal fallback: nothing to draw
       }
     });
   });

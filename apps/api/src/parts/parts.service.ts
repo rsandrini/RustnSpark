@@ -5,6 +5,7 @@ import { localizeDisplayName } from '../common/locale/localize.js';
 import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { ConnectorCell } from './connectors.js';
 import type { PartCatalog } from './part.types.js';
 
 export interface CatalogItem {
@@ -37,6 +38,7 @@ export interface InventoryItem {
   location: string;
   shipId: string | null;
   catalog: PartCatalog;
+  connectors: ConnectorCell[];
 }
 
 export function bilingual(value: unknown): { en: string; 'pt-BR': string } {
@@ -166,6 +168,7 @@ export class PartsService {
       location: row.location,
       shipId: row.shipId,
       catalog: pickCatalogStats(row.partCatalog),
+      connectors: ((row.connectors as { cells: ConnectorCell[] } | null)?.cells) ?? [],
     }));
   }
 

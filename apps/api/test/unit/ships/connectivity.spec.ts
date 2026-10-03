@@ -68,6 +68,17 @@ describe('applyConnectivity', () => {
     }
   });
 
+  it('keeps w, h, and basePrice for a disconnected part — geometry and pricing are not functional stats', () => {
+    // Regression: an earlier implementation zeroed "every numeric field that isn't
+    // mass/structureCost/partHp", which also zeroed w/h/basePrice. basePrice feeds
+    // shipTier(), so a disconnected part could silently drop a ship's whole tier.
+    const p = part('a', { w: 2, h: 3, basePrice: 500 });
+    const [result] = applyConnectivity([p], new Set());
+    expect(result!.catalog.w).toBe(2);
+    expect(result!.catalog.h).toBe(3);
+    expect(result!.catalog.basePrice).toBe(500);
+  });
+
   it('does not mutate the input', () => {
     const p = part('a');
     applyConnectivity([p], new Set());

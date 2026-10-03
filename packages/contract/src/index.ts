@@ -123,6 +123,14 @@ export type PartCatalogStats = z.infer<typeof PartCatalogStatsSchema>;
 
 export const PartLocationSchema = z.enum(['INVENTORY', 'INSTALLED']);
 
+export const ConnectorCellSchema = z.object({
+  dx: z.number(),
+  dy: z.number(),
+  side: z.enum(['N', 'E', 'S', 'W']),
+  kind: z.enum(['none', 'central', 'split', 'universal']),
+});
+export type ConnectorCell = z.infer<typeof ConnectorCellSchema>;
+
 export const InventoryItemSchema = z.object({
   id: z.string(),
   partType: z.string(),
@@ -135,6 +143,7 @@ export const InventoryItemSchema = z.object({
   location: PartLocationSchema,
   shipId: z.string().nullable(),
   catalog: PartCatalogStatsSchema,
+  connectors: z.array(ConnectorCellSchema),
 });
 export type InventoryItem = z.infer<typeof InventoryItemSchema>;
 
@@ -198,6 +207,9 @@ export const ShipResponseSchema = z.object({
   /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
       the ship's own ShipFormat selection, not a fixed bound. */
   yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
+  /** Installed part instance ids with no compatible connector chain back to the bridge right
+      now — still counted as mass/structure/HP, not contributing anything else. */
+  disconnectedPartIds: z.array(z.string()),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
@@ -225,6 +237,7 @@ export const PreviewResponseSchema = z.object({
   viability: z.object({ viable: z.boolean(), problems: z.array(ProblemSchema) }),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
+  disconnectedPartIds: z.array(z.string()),
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
 
@@ -847,6 +860,7 @@ export const EntityFieldTypeSchema = z.enum([
   'enum',
   'locale-map',
   'grid-cells',
+  'connector-layout',
 ]);
 export type EntityFieldType = z.infer<typeof EntityFieldTypeSchema>;
 

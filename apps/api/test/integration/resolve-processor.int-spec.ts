@@ -505,24 +505,36 @@ describe('mission resolve processor (S7.3)', () => {
     // The starter ship has no mining rig (min = 0 → zero yield by construction), and the
     // rig draws −3 continuous energy that the starter build cannot cover — so the rig
     // lands together with a solar panel to keep the hull viable (plan S7.1 re-check).
-    await prisma.partInstance.createMany({
-      data: [
-        {
-          partType: 'mining_rig',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-        {
-          partType: 'reactor_solar',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-      ],
+    //
+    // Created in INVENTORY and placed through the real auto-assemble endpoint, not a raw
+    // `location: 'INSTALLED'` write: Connectors v0.1's connectivity graph walks ship.layout's
+    // own placements, so a part with no placement there is invisible to it (and counts as
+    // disconnected, zeroing exactly the `min` stat this test is about).
+    const rig = await prisma.partInstance.create({
+      data: {
+        partType: 'mining_rig',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
     });
+    const reactor = await prisma.partInstance.create({
+      data: {
+        partType: 'reactor_solar',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const installedBefore = await prisma.partInstance.findMany({
+      where: { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED', shipId: player.shipId },
+      select: { id: true },
+    });
+    const autoAssembleResponse = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/auto-assemble`)
+      .set('Authorization', `Bearer ${player.token}`)
+      .send({ partInstanceIds: [...installedBefore.map((p) => p.id), rig.id, reactor.id] });
+    expect(autoAssembleResponse.status).toBe(200);
     const mission = await createMiningMission(player, 's8.7-mining-seed');
     const creditsBefore = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },

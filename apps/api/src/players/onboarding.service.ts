@@ -11,10 +11,12 @@ import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
 import { ShipsService } from '../ships/ships.service.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { autoLayout } from '../ships/auto-layout.js';
-import { CLASSIC_SQUARE_CELLS } from '../ships/geometry.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 
@@ -140,8 +142,13 @@ export class OnboardingService {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
 
-    const sheet = deriveSheet(installedParts, rules);
-    const { viable, problems } = checkViability(sheet, installedParts, rules);
+    const connectorsByInstance = new Map(
+      partsWithCatalog.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(layout, catalogMap, connectorsByInstance);
+    const installedConnected = applyConnectivity(installedParts, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const { viable, problems } = checkViability(sheet, installedConnected, rules);
     if (!viable) {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems });
     }
