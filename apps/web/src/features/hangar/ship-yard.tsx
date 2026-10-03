@@ -65,6 +65,8 @@ export interface ShipYardProps {
   lookById?: ReadonlyMap<string, PartLook>;
   /** Which cells exist, from the ship's own format — relative to the bridge at [0,0]. */
   cells: readonly [number, number][];
+  /** Instance ids with no compatible connector chain back to the bridge right now. */
+  disconnectedPartIds?: ReadonlySet<string>;
   catalogById: ReadonlyMap<string, PartCatalogStats>;
   /** Localized part names by instance id. */
   nameById: ReadonlyMap<string, string>;
@@ -87,6 +89,7 @@ export function ShipYard({
   layout,
   lookById,
   cells,
+  disconnectedPartIds,
   catalogById,
   nameById,
   selectedId,
@@ -364,6 +367,7 @@ export function ShipYard({
                 className={[
                   'block',
                   look?.broken === true ? 'broken' : '',
+                  disconnectedPartIds?.has(placement.partInstanceId) === true ? 'disconnected' : '',
                   look === undefined
                     ? ''
                     : colorBy === 'rarity'

@@ -73,6 +73,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     () => new Set((ship?.yard.cells ?? []).map(([x, y]) => `${x},${y}`)),
     [ship],
   );
+  const disconnectedPartIds = useMemo(
+    () => new Set(ship?.disconnectedPartIds ?? []),
+    [ship],
+  );
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -517,6 +521,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               <ShipYard
                 lookById={lookById}
                 cells={ship.yard.cells}
+                disconnectedPartIds={disconnectedPartIds}
                 layout={effectiveLayout}
                 catalogById={catalogById}
                 nameById={nameById}
@@ -595,6 +600,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </span>
                   )}
                 </div>
+                {disconnectedPartIds.size > 0 && (
+                  <p className="sub disconnected-note">
+                    {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
+                  </p>
+                )}
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}

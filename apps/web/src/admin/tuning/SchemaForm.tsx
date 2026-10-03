@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type * as dto from '../../api/generated';
+import { ConnectorLayoutEditor, type ConnectorLayout } from './ConnectorLayoutEditor';
 import { GridCellsEditor } from './GridCellsEditor';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
@@ -240,6 +241,17 @@ export function SchemaForm({
       );
     }
 
+    if (field.type === 'connector-layout') {
+      return (
+        <ConnectorLayoutEditor
+          value={value as ConnectorLayout[] | undefined}
+          w={typeof values.w === 'number' ? values.w : 1}
+          h={typeof values.h === 'number' ? values.h : 1}
+          onChange={(layouts) => handleChange(field.name, layouts)}
+        />
+      );
+    }
+
     const inputType = field.type === 'integer' || field.type === 'float' ? 'number' : 'text';
     return (
       <input
@@ -272,7 +284,10 @@ export function SchemaForm({
       <div className="schema-form-grid">
         {fields.map((field) => {
           const wide =
-            field.type === 'locale-map' || field.type === 'json' || field.type === 'grid-cells';
+            field.type === 'locale-map' ||
+            field.type === 'json' ||
+            field.type === 'grid-cells' ||
+            field.type === 'connector-layout';
           return (
             <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
               <label htmlFor={field.name}>

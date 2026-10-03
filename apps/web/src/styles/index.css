@@ -1328,6 +1328,10 @@ svg .block.floating {
   stroke-dasharray: 0.2 0.12;
 }
 
+svg .block.disconnected {
+  opacity: 0.45;
+}
+
 .block-label {
   fill: var(--ink);
   /* User units of the yard viewBox (1 = one cell). A unitless value is invalid CSS and falls
@@ -3703,6 +3707,50 @@ svg .block.broken {
   background: var(--bad);
   cursor: default;
 }
+
+.connector-layout-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.connector-candidate {
+  display: inline-block;
+  border: 1px solid var(--line);
+  padding: 4px;
+}
+
+.connector-cell-row {
+  display: flex;
+}
+
+.connector-cell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+}
+
+.connector-side {
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-dim);
+}
+
+.connector-side-N { grid-column: 1 / 3; grid-row: 1; }
+.connector-side-S { grid-column: 1 / 3; grid-row: 2; }
+.connector-side-W { grid-column: 1; grid-row: 1 / 3; }
+.connector-side-E { grid-column: 2; grid-row: 1 / 3; }
+
+.connector-kind-central { color: var(--spark); font-weight: 700; }
+.connector-kind-split { color: var(--amber); font-weight: 700; }
+.connector-kind-universal { color: var(--ok); font-weight: 700; }
 
 /* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
    otherwise flatten these back into square admin buttons — round-5 owner request (filters),

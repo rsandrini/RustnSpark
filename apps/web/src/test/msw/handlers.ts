@@ -139,6 +139,7 @@ const starterInventory = (): InventoryItem[] => [
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('bridge', 'BRIDGE', { w: 2, h: 2, mass: 6, structureCost: 0 }),
+    connectors: [],
   },
   {
     id: 'part-engine',
@@ -156,6 +157,7 @@ const starterInventory = (): InventoryItem[] => [
       fuelCap: 0,
       mass: 3,
     }),
+    connectors: [],
   },
   {
     id: 'part-tank',
@@ -168,6 +170,7 @@ const starterInventory = (): InventoryItem[] => [
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('tank_small', 'TANK', { fuelCap: 40, mass: 5 }),
+    connectors: [],
   },
   {
     id: 'part-battery',
@@ -185,6 +188,7 @@ const starterInventory = (): InventoryItem[] => [
       energyCont: 8,
       mass: 2,
     }),
+    connectors: [],
   },
   {
     id: 'part-hull',
@@ -197,6 +201,7 @@ const starterInventory = (): InventoryItem[] => [
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('hull', 'DEFENSE', { partHp: 40, mass: 4, w: 2, h: 2 }),
+    connectors: [],
   },
   {
     id: 'part-cargo-a',
@@ -209,6 +214,7 @@ const starterInventory = (): InventoryItem[] => [
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
   },
   {
     id: 'part-cargo-b',
@@ -221,6 +227,7 @@ const starterInventory = (): InventoryItem[] => [
     location: 'INVENTORY',
     shipId: null,
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
   },
 ];
 
@@ -256,6 +263,7 @@ const ship = (): ShipResponse => ({
   sheet: sheet(),
   shipClass: 'MULTIROLE',
   yard: { cells: classicSquareCells() },
+  disconnectedPartIds: [],
   // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
   // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
   activity:
@@ -362,6 +370,7 @@ export function addWreck(): void {
     location: 'INVENTORY',
     shipId: null,
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
   });
 }
 
@@ -502,6 +511,7 @@ export const handlers = [
       sheet: sheet(),
       shipClass: 'MULTIROLE',
       yard: { cells: classicSquareCells() },
+      disconnectedPartIds: [],
       activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
@@ -520,6 +530,7 @@ export const handlers = [
       viability: { viable: true, problems: [] },
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
+      disconnectedPartIds: [],
     });
   }),
 
@@ -718,6 +729,7 @@ export const handlers = [
         listing.partType,
         listing.partClass as InventoryItem['catalog']['partClass'],
       ),
+      connectors: [],
     });
     return ok<BuyResponse>({
       partInstanceId: id,

@@ -61,6 +61,10 @@
       "button": "Format",
       "label": "Choose a ship format"
     },
+    "connectors": {
+      "disconnectedCount": "{{count}} part disconnected",
+      "disconnectedCount_other": "{{count}} parts disconnected"
+    },
     "yardHint": "Select a part, then click a cell to place it. Select a block to move, rotate or remove it.",
     "sheet": "Ship sheet",
     "shipRarityHint": "Ship rarity — the lowest rarity among installed parts",
