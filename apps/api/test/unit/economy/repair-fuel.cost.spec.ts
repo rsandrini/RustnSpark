@@ -13,7 +13,12 @@ import {
   type RepairPartInput,
 } from '../../../src/economy/repair-cost.calculator.js';
 
-const rules: GameRules = GAME_CONFIG_DEFAULTS;
+// The sim-parity numbers below were computed with the original prices (fuel 3, repair 6). The
+// shipped defaults were halved after the second playtest, so the harness pins the sim's prices.
+const rules: GameRules = {
+  ...GAME_CONFIG_DEFAULTS,
+  economy: { ...GAME_CONFIG_DEFAULTS.economy, fuel_price: 3, repair_price: 6 },
+};
 
 // Parity harness geometry: isolation 1.0, faction neutral → factor 1.0.
 const PARITY_ISO = 1;
@@ -46,10 +51,10 @@ describe('S5.8 — location factor (GDD §9 fator_local)', () => {
     expect(rules.economy.isolation_mult).toEqual({ 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 });
     expect(rules.economy.faction_mult).toEqual({ ally: 0.8, neutral: 1.0, hostile: 2.5 });
     expect(rules.economy.repair_factor).toBe(0.8);
-    expect(rules.economy.repair_price).toBe(6);
+    expect(GAME_CONFIG_DEFAULTS.economy.repair_price).toBe(3);
     expect(rules.economy.repair_price_ref).toBe(4);
     expect(rules.economy.maintenance_per_tier).toBe(100);
-    expect(rules.economy.fuel_price).toBe(3);
+    expect(GAME_CONFIG_DEFAULTS.economy.fuel_price).toBe(1.5);
   });
 });
 
@@ -171,5 +176,24 @@ describe('S8.3 — refuel cost (raw tank units × fuel_price × location factor)
       fuelCost(fuel({ isolation: 0.9, factionRelation: 'ally' }), rules),
       10,
     );
+  });
+});
+
+describe('repair of a part worth nothing (the bridge)', () => {
+  it('is never free: a part cheaper than the minimum base is repaired as if it cost the minimum', () => {
+    const parts = [{ basePrice: 0, fromCondition: 0, toCondition: 100 }];
+    const cost = repairCost(parts, 0, 1, 'neutral', rules);
+    // 50 (min base) × 100 % × 0.8 (repair_factor) × 6/4 (price ratio) = 60
+    expect(cost).toBe(60);
+    // ...and a part worth more than the minimum is unaffected by it.
+    expect(
+      repairCost([{ basePrice: 200, fromCondition: 0, toCondition: 100 }], 0, 1, 'neutral', rules),
+    ).toBe(240);
+  });
+
+  it('a no-change target costs nothing', () => {
+    expect(
+      repairCost([{ basePrice: 0, fromCondition: 80, toCondition: 80 }], 0, 1, 'neutral', rules),
+    ).toBe(0);
   });
 });

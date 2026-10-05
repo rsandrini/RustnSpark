@@ -1,6 +1,6 @@
 {
   "variants": [
-    "{part} seized under thrust — condition {condition}, {conditionLost} points gone. This leg is written off; so is the mission.",
-    "The drive quit mid-burn: {part} at {condition} after {conditionLost} points. The abort stands."
+    "{part} seized under thrust — condition {condition}, {conditionLost} points gone. Dead weight now; whatever else is still burning has to carry the ship alone.",
+    "The drive quit mid-burn: {part} at {condition} after {conditionLost} points. One less engine to push with."
   ]
 }

@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Job, Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -98,6 +99,7 @@ describe('economy milestone M8', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -182,24 +184,36 @@ describe('economy milestone M8', () => {
     const player = await onboardPlayer();
 
     // Mining rig + solar panel: the rig yields the loot, the panel keeps the hull viable.
-    await prisma.partInstance.createMany({
-      data: [
-        {
-          partType: 'mining_rig',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-        {
-          partType: 'reactor_solar',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-      ],
+    //
+    // Created in INVENTORY and placed through the real auto-assemble endpoint, not a raw
+    // `location: 'INSTALLED'` write: Connectors v0.1's connectivity graph walks ship.layout's
+    // own placements, so a part with no placement there is invisible to it (and counts as
+    // disconnected, zeroing exactly the `min` stat this test depends on).
+    const rig = await prisma.partInstance.create({
+      data: {
+        partType: 'mining_rig',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
     });
+    const reactor = await prisma.partInstance.create({
+      data: {
+        partType: 'reactor_solar',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const installedBefore = await prisma.partInstance.findMany({
+      where: { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED', shipId: player.shipId },
+      select: { id: true },
+    });
+    const autoAssembleResponse = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/auto-assemble`)
+      .set(auth(player.token))
+      .send({ partInstanceIds: [...installedBefore.map((p) => p.id), rig.id, reactor.id] });
+    expect(autoAssembleResponse.status).toBe(200);
     // Enough fuel to launch, little enough that the tank still needs a paid top-up.
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 60 } });
 

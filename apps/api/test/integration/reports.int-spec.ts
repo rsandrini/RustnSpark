@@ -99,6 +99,7 @@ interface ListBody {
     credits: number;
     legs: number;
     createdAt: string;
+    hadCombat: boolean;
   }[];
   nextCursor?: string;
 }
@@ -312,9 +313,38 @@ describe('reports API (S9.3)', () => {
       outcome: 'success',
       credits: 500,
       legs: 2,
+      // Owner: "almost impossible to know in the mission history log where I had a combat" —
+      // STORED has a combat_win event, so this run must flag itself.
+      hadCombat: true,
     });
     expect(Number.isNaN(Date.parse(body.items[0]!.createdAt))).toBe(false);
     expect(body.nextCursor).toBeUndefined();
+  });
+
+  it('flags hadCombat false for a run with no combat-category event at all', async () => {
+    const seeded = await seedAccountWithPlayer(prisma, testApp.app.get(PasswordService));
+    const noCombat = {
+      legs: [{ index: 0, status: 'completed' }],
+      events: [
+        {
+          leg: 0,
+          category: 'transit',
+          type: 'leg_travel',
+          actors: ACTORS,
+          effects: { hp: 0, condByPart: {}, credits: 0, loot: [] },
+          magnitude: 300,
+        },
+      ],
+    };
+    const missionId = await makeMission(seeded.player.id, { stored: noCombat });
+    const tokens = testApp.app.get(TokenService);
+    const token = await tokens.signAccessToken({
+      accountId: seeded.account.id,
+      playerId: seeded.player.id,
+      role: 'PLAYER',
+    });
+    const res = await list(token);
+    expect((res.body as ListBody).items[0]).toMatchObject({ missionId, hadCombat: false });
   });
 
   it('falls back to the stored events when the mission.resolved event is missing', async () => {

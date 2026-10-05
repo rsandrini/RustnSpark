@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import type { INestApplication } from '@nestjs/common';
 import type { PartInstance } from '@prisma/client';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { PasswordService } from '../../src/auth/password.service.js';
@@ -26,8 +27,11 @@ interface AuthPair {
 interface SheetShape {
   fuelCap: number;
   pot: number;
+  pdf: number;
   hp: number;
   mob: number;
+  condition: number;
+  mass: number;
 }
 
 interface ShipResponse {
@@ -40,6 +44,8 @@ interface ShipResponse {
   stance: string;
   layout: Array<Record<string, unknown>>;
   sheet: SheetShape;
+  yard: { cells: [number, number][] };
+  disconnectedPartIds: string[];
 }
 
 interface PreviewResponse {
@@ -111,7 +117,7 @@ describe('parts and ships API (S4.3)', () => {
 
   describe('onboarding', () => {
     it.each(['luna', 'sun', 'explorers'] as const)(
-      'creates a viable ship at the %s home port with a full tank',
+      'creates the %s ship with the starter kit loose (D44), a full tank, and a kit that assembles into a viable ship',
       async (faction) => {
         await freshSeededApp();
         const { token } = await seedAndToken();
@@ -123,20 +129,38 @@ describe('parts and ships API (S4.3)', () => {
         expect(ship.status).toBe('IN_PORT');
         expect(ship.stance).toBe('NEUTRAL');
         expect(ship.currentLocationId).toBe(HOME_LOCATIONS[faction]);
-        expect(ship.fuel).toBe(ship.sheet.fuelCap);
-        expect(ship.sheet.pot).toBeGreaterThan(0);
-        expect(ship.sheet.hp).toBeGreaterThan(0);
-        expect(ship.sheet.mob).toBeGreaterThanOrEqual(1);
+        // Nothing is installed: the pilot assembles the kit in the Hangar.
+        expect(ship.layout).toEqual([]);
+        expect(ship.sheet.pot).toBe(0);
+        expect(ship.fuel).toBeGreaterThan(0);
 
         const player = await prisma.player.findUniqueOrThrow({ where: { id: ship.ownerPlayerId } });
         expect(player.credits).toBe(200);
         expect(player.factionId).toBe(faction);
 
         const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: player.id } });
-        expect(parts.length).toBe(7);
+        // No battery (nothing else in the kit draws combat energy) and one cargo hold, not two
+        // (round-3 playtest review of the starter kit).
+        expect(parts.length).toBe(5);
         for (const part of parts) {
           expect(part.condition).toBe(80);
+          expect(part.location).toBe('INVENTORY');
+          expect(part.shipId).toBeNull();
         }
+
+        // Assembling the kit (the Hangar's Auto layout) gives a viable ship whose tank holds
+        // exactly the fuel the ship was created with.
+        await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+        const assembled = asShip(
+          await request(httpServer(testApp.app))
+            .get(`/v1/ships/${ship.id}`)
+            .set('Authorization', `Bearer ${token}`),
+        );
+        expect(assembled.layout).toHaveLength(5);
+        expect(assembled.sheet.pot).toBeGreaterThan(0);
+        expect(assembled.sheet.hp).toBeGreaterThan(0);
+        expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
+        expect(assembled.fuel).toBe(assembled.sheet.fuelCap);
       },
     );
 
@@ -150,6 +174,183 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(second.status).toBe(200);
       expect(asShip(second).id).toBe(asShip(first).id);
+    });
+
+    it('yard reports the ship\'s format cells, not a fixed square (round-11, Ship Format)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+
+      const response = await request(httpServer(testApp.app))
+        .get(`/v1/ships/${ship.id}`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(200);
+      const body = asShip(response);
+      expect(body.yard.cells).toHaveLength(400);
+      expect(body.yard.cells).toContainEqual([0, 0]);
+      expect(body.yard.cells).toContainEqual([-10, -10]);
+      expect(body.yard.cells).not.toContainEqual([10, 10]); // half-open upper bound
+    });
+
+    it('lists unlocked formats, always including classic_square, and switches format dropping out-of-shape parts', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+
+      await prisma.shipFormat.create({
+        data: {
+          id: 'tiny_test_format',
+          displayName: { en: 'Tiny', 'pt-BR': 'Minúsculo' },
+          description: { en: 'test', 'pt-BR': 'teste' },
+          cells: [[0, 0]],
+          minRarity: 'COMMON',
+          active: true,
+        },
+      });
+
+      const list = await request(httpServer(testApp.app))
+        .get('/v1/ship-formats')
+        .set('Authorization', `Bearer ${token}`);
+      expect(list.status).toBe(200);
+      const ids = (list.body as Array<{ id: string }>).map((f) => f.id);
+      expect(ids).toContain('classic_square');
+      expect(ids).toContain('tiny_test_format');
+
+      const before = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      const placedCount = before.layout.length;
+      expect(placedCount).toBeGreaterThan(1);
+
+      const switched = asShip(
+        await request(httpServer(testApp.app))
+          .post(`/v1/ships/${ship.id}/format`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ formatId: 'tiny_test_format' }),
+      );
+      expect(switched.yard.cells).toEqual([[0, 0]]);
+      expect(switched.layout.length).toBeLessThan(placedCount);
+
+      const inventory = await request(httpServer(testApp.app))
+        .get('/v1/inventory')
+        .set('Authorization', `Bearer ${token}`);
+      const installedStill = (inventory.body as Array<{ location: string }>).filter(
+        (p) => p.location === 'INSTALLED',
+      );
+      expect(installedStill.length).toBe(switched.layout.length);
+    });
+
+    it('rejects a format switch above the bridge\'s rarity', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await prisma.shipFormat.create({
+        data: {
+          id: 'legendary_only',
+          displayName: { en: 'Legendary', 'pt-BR': 'Lendário' },
+          description: { en: 'test', 'pt-BR': 'teste' },
+          cells: [[0, 0]],
+          minRarity: 'LEGENDARY',
+          active: true,
+        },
+      });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${ship.id}/format`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ formatId: 'legendary_only' });
+      expect(response.status).toBe(409);
+      expect((response.body as { message: { error: string } }).message.error).toBe(
+        'FORMAT_NOT_UNLOCKED',
+      );
+    });
+
+    it('lists only classic_square when the ship has no bridge installed yet', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      await onboard(token, 'luna');
+
+      const list = await request(httpServer(testApp.app))
+        .get('/v1/ship-formats')
+        .set('Authorization', `Bearer ${token}`);
+      expect(list.status).toBe(200);
+      const ids = (list.body as Array<{ id: string }>).map((f) => f.id);
+      expect(ids).toEqual(['classic_square']);
+    });
+
+    it('a disconnected part counts as mass/structure/hp but not its function (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+
+      const before = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      expect(before.disconnectedPartIds).toEqual([]);
+
+      const rows = await prisma.partInstance.findMany({
+        where: { id: { in: before.layout.map((p) => p.partInstanceId as string) } },
+        include: { partCatalog: true },
+      });
+      const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
+      const targetId = (before.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId) as string;
+
+      // Force this part's connectors to something that can never match its neighbors (every
+      // real catalog part defaults to the universal fallback, so this directly fabricates a
+      // mismatch): an explicit empty-cells layout — no side has anything.
+      await prisma.partInstance.update({
+        where: { id: targetId },
+        data: { connectors: { cells: [] } },
+      });
+
+      const beforeSheet = before.sheet;
+      const after = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+      expect(after.disconnectedPartIds).toContain(targetId);
+      expect(after.sheet.mass).toBe(beforeSheet.mass); // structural: unchanged
+      expect(after.sheet.pot).toBeLessThanOrEqual(beforeSheet.pot); // functional: can only drop
+    });
+
+    it('saving a layout with a disconnected part succeeds (200), not a build error (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      const ship = asShip(await onboard(token, 'luna'));
+      await assembleStarterKit(httpServer(testApp.app), token, ship.id);
+      const assembled = asShip(
+        await request(httpServer(testApp.app))
+          .get(`/v1/ships/${ship.id}`)
+          .set('Authorization', `Bearer ${token}`),
+      );
+
+      const rows = await prisma.partInstance.findMany({
+        where: { id: { in: assembled.layout.map((p) => p.partInstanceId as string) } },
+        include: { partCatalog: true },
+      });
+      const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
+      const targetId = (assembled.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId) as string;
+      await prisma.partInstance.update({
+        where: { id: targetId },
+        data: { connectors: { cells: [] } },
+      });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${ship.id}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: assembled.layout });
+      expect(response.status).toBe(200);
+      const saved = asShip(response);
+      expect(saved.disconnectedPartIds).toContain(targetId);
     });
 
     it('creates exactly one ship and one starter credit under concurrent onboarding', async () => {
@@ -250,19 +451,11 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(response.status).toBe(200);
       const items = response.body as Array<Record<string, unknown>>;
-      expect(items.length).toBe(7);
+      // No battery (nothing else in the kit draws combat energy) and one cargo hold, not two
+      // (round-3 playtest review of the starter kit).
+      expect(items.length).toBe(5);
       const types = items.map((item) => item.partType as string).sort();
-      expect(types).toEqual(
-        [
-          'bridge',
-          'battery_small',
-          'cargo',
-          'cargo',
-          'engine_chem_small',
-          'hull',
-          'tank_small',
-        ].sort(),
-      );
+      expect(types).toEqual(['bridge', 'cargo', 'engine_chem_small', 'hull', 'tank_small'].sort());
       for (const item of items) {
         expect(item.condition).toBe(80);
         expect(item.catalog).toBeDefined();
@@ -272,6 +465,22 @@ describe('parts and ships API (S4.3)', () => {
         expect(name.en).not.toBe('');
         expect(name['pt-BR']).not.toBe('');
         expect(name.en).not.toBe(item.partType);
+      }
+    });
+
+    it('inventory items carry their own resolved connectors (Connectors v0.1)', async () => {
+      await freshSeededApp();
+      const { token } = await seedAndToken();
+      await onboard(token, 'luna');
+
+      const response = await request(httpServer(testApp.app))
+        .get('/v1/inventory')
+        .set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBe(200);
+      const items = response.body as Array<{ connectors: unknown[] }>;
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item.connectors).toEqual([]); // universal fallback: nothing to draw
       }
     });
   });
@@ -336,10 +545,8 @@ describe('parts and ships API (S4.3)', () => {
         { partInstanceId: take('bridge').id, gx: 0, gy: 0, rot: 0 },
         { partInstanceId: take('engine_chem_small').id, gx: 1, gy: 0, rot: 0 },
         { partInstanceId: take('tank_small').id, gx: 2, gy: 0, rot: 0 },
-        { partInstanceId: take('battery_small').id, gx: 3, gy: 0, rot: 0 },
-        { partInstanceId: take('cargo').id, gx: 4, gy: 0, rot: 0 },
-        { partInstanceId: take('cargo').id, gx: 5, gy: 0, rot: 0 },
-        { partInstanceId: take('hull').id, gx: 6, gy: 0, rot: 0 },
+        { partInstanceId: take('cargo').id, gx: 3, gy: 0, rot: 0 },
+        { partInstanceId: take('hull').id, gx: 4, gy: 0, rot: 0 },
       ];
 
       const response = await request(httpServer(testApp.app))
@@ -355,7 +562,7 @@ describe('parts and ships API (S4.3)', () => {
       const installed = await prisma.partInstance.findMany({
         where: { ownerPlayerId: seeded.player.id, location: 'INSTALLED' },
       });
-      expect(installed.length).toBe(7);
+      expect(installed.length).toBe(5);
       for (const part of installed) {
         expect(part.shipId).toBe(shipId);
       }
@@ -499,6 +706,74 @@ describe('parts and ships API (S4.3)', () => {
 
       expect(response.status).toBe(400);
     });
+
+    it('saves a below-minimum layout instead of blocking it with SHIP_NOT_VIABLE (playtest: cannot remove a part to sell it)', async () => {
+      // A player stripping a ship down to sell a part — or one mid-refit — needs to save a
+      // layout that can't fly yet. Flight-viability is only enforced where it actually matters:
+      // dispatch, travel eligibility and scavenge start.
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      const bridge = parts.find((p) => p.partType === 'bridge');
+      if (bridge === undefined) throw new Error('missing part bridge');
+      // A bare bridge with nothing else installed: no engine, no tank — not flight-viable.
+      const layout = [{ partInstanceId: bridge.id, gx: 0, gy: 0, rot: 0 }];
+
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(preview.status).toBe(200);
+      expect((preview.body as { viability: { viable: boolean } }).viability.viable).toBe(false);
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+
+      expect(response.status).toBe(200);
+      const ship = asShip(response);
+      expect(ship.layout).toEqual(layout);
+
+      // The now-uninstalled parts are back in inventory, free to be sold.
+      const inInventory = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id, location: 'INVENTORY' },
+      });
+      expect(inInventory.length).toBe(parts.length - 1);
+    });
+
+    it('saves an entirely empty layout (every part pulled out)', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: [] });
+
+      expect(response.status).toBe(200);
+      const ship = asShip(response);
+      expect(ship.layout).toEqual([]);
+    });
   });
 
   describe('auto-assemble', () => {
@@ -547,6 +822,7 @@ describe('parts and ships API (S4.3)', () => {
           displayName: hull.displayName ?? {},
           description: hull.description ?? {},
           specialProp: hull.specialProp ?? undefined,
+          connectorLayouts: hull.connectorLayouts ?? undefined,
         },
       });
       const oversized = await prisma.partInstance.create({
@@ -608,6 +884,7 @@ describe('parts and ships API (S4.3)', () => {
       const { token, seeded } = await seedAndToken();
       const onboarded = await onboard(token, 'luna');
       const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
       await prisma.ship.update({ where: { id: shipId }, data: { status: 'ON_MISSION' } });
 
       const layout = (await prisma.ship.findUniqueOrThrow({ where: { id: shipId } }))
@@ -633,6 +910,106 @@ describe('parts and ships API (S4.3)', () => {
       expect(
         after.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort(),
       ).toEqual(before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort());
+    });
+
+    describe('with a virtual (not-yet-owned) part', () => {
+      it('swaps a virtual candidate in for the installed part of the same class', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const inventory = await request(httpServer(testApp.app))
+          .get('/v1/inventory')
+          .set('Authorization', `Bearer ${token}`);
+        const hull = (
+          inventory.body as Array<{ id: string; partType: string; location: string }>
+        ).find((item) => item.partType === 'hull' && item.location === 'INSTALLED');
+        expect(hull).toBeDefined();
+
+        const before = await request(httpServer(testApp.app))
+          .get(`/v1/ships/${shipId}`)
+          .set('Authorization', `Bearer ${token}`);
+
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({
+            virtualPart: { partType: 'hull_uncommon', condition: 100 },
+            replacePartInstanceId: hull!.id,
+          });
+
+        expect(response.status).toBe(200);
+        const preview = asPreview(response);
+        // hull partHp 20 -> hull_uncommon partHp 26: the sheet's hp goes up by exactly the gap,
+        // nothing else about the ship (still using the real installed set otherwise) changes it.
+        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 6);
+        // The endpoint never mutates anything: this is a read.
+        const after = await prisma.partInstance.findUnique({ where: { id: hull!.id } });
+        expect(after?.partType).toBe('hull');
+      });
+
+      it('adds a virtual candidate with nothing to replace when no part of its class is installed', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const before = await request(httpServer(testApp.app))
+          .get(`/v1/ships/${shipId}`)
+          .set('Authorization', `Bearer ${token}`);
+        // The starter kit has no weapon: a weapon_ballistic candidate is a pure addition.
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 100 } });
+
+        expect(response.status).toBe(200);
+        const preview = asPreview(response);
+        expect(preview.sheet.pdf).toBeGreaterThan(asShip(before).sheet.pdf ?? 0);
+      });
+
+      it("uses the candidate's own condition in the resulting ship-average condition", async () => {
+        // Ruling (plan Task 1, Review Focus #3): deriveSheet() sums every effect stat straight
+        // from the catalog, condition-agnostic — a part's condition never scales its own pdf/pot/
+        // etc. contribution (that only happens for `hp` in the separate `effectiveSheet()`, which
+        // preview() never calls). What condition DOES feed, confirmed by reading sheet.deriver.ts,
+        // is the ship-wide average `condition` field — so that is what a "used listing" case
+        // actually has to prove reaches the comparison, not a stat-sum difference.
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+        await assembleStarterKit(httpServer(testApp.app), token, shipId);
+
+        const full = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 100 } });
+        const half = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'weapon_ballistic', condition: 50 } });
+
+        expect(asPreview(half).sheet.pdf).toBe(asPreview(full).sheet.pdf);
+        expect(asPreview(half).sheet.condition).toBeLessThan(asPreview(full).sheet.condition);
+      });
+
+      it('rejects a virtual part type that does not exist', async () => {
+        await freshSeededApp();
+        const { token } = await seedAndToken();
+        const onboarded = await onboard(token, 'luna');
+        const shipId = asShip(onboarded).id;
+
+        const response = await request(httpServer(testApp.app))
+          .post(`/v1/ships/${shipId}/preview`)
+          .set('Authorization', `Bearer ${token}`)
+          .send({ virtualPart: { partType: 'not_a_real_part', condition: 100 } });
+
+        expect(response.status).toBe(404);
+      });
     });
   });
 

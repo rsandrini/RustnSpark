@@ -6,10 +6,14 @@ import {
 } from '@nestjs/common';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
+import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { refuelCost } from './fuel-cost.calculator.js';
 import { PricingService } from './pricing.service.js';
@@ -146,14 +150,70 @@ export class RefuelService {
     };
   }
 
+  /**
+   * What a refuel would buy and cost, without touching the wallet: the screen's slider asks this
+   * for each amount, and start (`refuel`) prices with the very same functions.
+   */
+  async quote(shipId: string, playerId: string, mode: RefuelMode, amount?: number) {
+    const ship = await this.prisma.ship.findFirst({
+      where: { id: shipId, ownerPlayerId: playerId },
+      select: { id: true, status: true, currentLocationId: true, fuel: true },
+    });
+    if (!ship) {
+      throw new NotFoundException('ship not found');
+    }
+    assertRefuelable(ship.status);
+    if (
+      mode === 'partial' &&
+      !(typeof amount === 'number' && Number.isFinite(amount) && amount > ZERO)
+    ) {
+      throw new BadRequestException({ error: 'INVALID_AMOUNT' });
+    }
+    const rules = this.config.snapshot().rules;
+    const context = await this.pricing.contextForLocation(ship.currentLocationId, playerId);
+    const fuelCap = await this.fuelCapOf(playerId, shipId, rules);
+    const space = Math.max(ZERO, fuelCap - ship.fuel);
+    const units = mode === 'full' ? space : Math.min(amount ?? ZERO, space);
+    const cost =
+      units <= ZERO
+        ? ZERO
+        : Math.max(
+            1,
+            Math.round(
+              refuelCost(units, context.location.isolation, context.factionRelation, rules),
+            ),
+          );
+    // What one unit costs here (before whole-credit rounding): the screen prices its slider with
+    // it, so dragging never waits on the server. `cost` for `units` is max(1, round(units × unitPrice)).
+    const unitPrice = refuelCost(1, context.location.isolation, context.factionRelation, rules);
+    return { shipId, units, cost, unitPrice, fuel: ship.fuel, fuelCap, space };
+  }
+
   // fuelCap is derived from installed parts (sum of `fuelCap` stats), so it is
   // recomputed per call — refitting the tank mid-session changes the ceiling.
   private async fuelCapOf(playerId: string, shipId: string, rules: GameRules): Promise<number> {
-    const rows = await this.parts.findPlayerParts(playerId);
-    const installed = rows
-      .filter((row) => row.location === 'INSTALLED' && row.shipId === shipId)
-      .map((row) => ({ instance: row, catalog: pickCatalogStats(row.partCatalog) }));
-    return deriveSheet(installed, rules).fuelCap;
+    const [rows, ship] = await Promise.all([
+      this.parts.findPlayerParts(playerId),
+      this.prisma.ship.findUniqueOrThrow({ where: { id: shipId }, select: { layout: true } }),
+    ]);
+    const installedRows = rows.filter(
+      (row) => row.location === 'INSTALLED' && row.shipId === shipId,
+    );
+    const installed = installedRows.map((row) => ({
+      instance: row,
+      catalog: pickCatalogStats(row.partCatalog),
+    }));
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    return deriveSheet(installedConnected, rules).fuelCap;
   }
 
   private async creditsOf(playerId: string): Promise<number> {

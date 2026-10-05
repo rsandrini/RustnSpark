@@ -1,6 +1,7 @@
 export type ConfigValueType = 'number' | 'integer' | 'boolean' | 'string' | 'json';
 
 export type ConfigGroup =
+  | 'admin'
   | 'combat'
   | 'detection'
   | 'economy'
@@ -22,6 +23,7 @@ export type ConfigGroup =
   | 'world';
 
 export type ConfigKey =
+  | 'admin.debug_fast_ops_seconds'
   | 'combat.armor_cap'
   | 'combat.attack_die'
   | 'combat.damage_die'
@@ -47,9 +49,11 @@ export type ConfigKey =
   | 'economy.mood_min'
   | 'economy.payout_floor_integrity'
   | 'economy.rarity_base_price'
+  | 'economy.market_rarity_chance'
   | 'economy.repair_factor'
   | 'economy.repair_price'
   | 'economy.repair_price_ref'
+  | 'economy.repair_min_base_price'
   | 'economy.repair_seconds_per_point'
   | 'economy.rescue_cost'
   | 'economy.rescue_fuel_fraction'
@@ -59,16 +63,20 @@ export type ConfigKey =
   | 'economy.reward_distance_ref'
   | 'economy.reward_per_tier'
   | 'economy.reward_type_bonus'
+  | 'economy.sell_min_condition'
   | 'economy.sell_ratio'
   | 'economy.start_credits'
   | 'economy.upgrade_costs'
+  | 'economy.part_upgrade_price_multiplier'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
   | 'encounter.pirate_min_hp'
   | 'encounter.pirate_min_pdf'
   | 'encounter.pirate_mob_jitter'
+  | 'encounter.pirate_motive_weights'
   | 'encounter.pirate_sen_jitter'
   | 'encounter.pirate_strength_options'
+  | 'encounter.pirate_zone_strength'
   | 'escape.enemy_sen_weight'
   | 'escape.preset_bonus'
   | 'escort.client_target_share'
@@ -79,6 +87,7 @@ export type ConfigKey =
   | 'integrity.combat_factor'
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
+  | 'mining.job_duration_seconds'
   | 'mining.material_price'
   | 'mining.rarity'
   | 'mining.richness'
@@ -99,6 +108,10 @@ export type ConfigKey =
   | 'rescue.reference_mob'
   | 'scavenging.chance'
   | 'scavenging.cooldown_seconds'
+  | 'scavenging.duration_seconds'
+  | 'scavenging.scrap_share'
+  | 'scavenging.zone_quality_bonus'
+  | 'scavenging.zone_rarity_bias'
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
   | 'ship_class.cargo_share'
@@ -113,16 +126,32 @@ export type ConfigKey =
   | 'wear.choke_loss_max'
   | 'wear.choke_loss_min'
   | 'wear.choke_threshold'
+  | 'wear.danger_cap'
+  | 'wear.danger_floor'
+  | 'wear.danger_ref'
   | 'wear.dead_at_or_below'
   | 'wear.defeat_loss_max'
   | 'wear.defeat_loss_min'
+  | 'wear.defense_wear_bonus'
   | 'wear.env_multiplier'
+  | 'wear.other_exposed_wear_factor'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
   | 'wear.performance_slope'
   | 'wear.scale_mode'
+  | 'wear.system_base_max'
+  | 'wear.system_base_min'
+  | 'wear.system_defeat_share'
   | 'world.seed';
+
+export type GameRulesAdmin = Readonly<{
+  /**
+   * How long a job actually takes for a player whose Player.debugFastOps is set (the switch
+   * itself is per-account, not global — see the Player model, not this config).
+   */
+  debug_fast_ops_seconds: number;
+}>;
 
 export interface ConfigRegistryEntry {
   key: string;
@@ -136,6 +165,7 @@ export interface ConfigRegistryEntry {
 }
 
 export type GameRules = Readonly<{
+  admin: GameRulesAdmin;
   combat: Readonly<{
     armor_cap: number;
     attack_die: number;
@@ -169,6 +199,21 @@ export type GameRules = Readonly<{
     overload_min: number;
     overload_max: number;
     scale_mode: 'all_stats' | 'hp_only';
+    // Round-2 playtest fix (owner: bridge/cargo should not degrade like an engine): passive
+    // classes (bridge, cargo, reactor, utility) take this tiny flat wear instead of base/env;
+    // every exposed class's base+environment roll is scaled by dangerFactor(leg.danger).
+    danger_ref: number;
+    danger_floor: number;
+    danger_cap: number;
+    system_base_min: number;
+    system_base_max: number;
+    /** Share of a combat-defeat's rolled loss a passive-class part takes (see partDefeatWear). */
+    system_defeat_share: number;
+    // Round-4 wear rework: DEFENSE-class parts (Hull Frame, shields) absorb a fixed total extra
+    // share of ambient and defeat wear, split evenly across however many are installed; every
+    // other exposed class absorbs correspondingly less while at least one is installed.
+    defense_wear_bonus: number;
+    other_exposed_wear_factor: number;
   }>;
   economy: Readonly<{
     fuel_price: number;
@@ -186,21 +231,34 @@ export type GameRules = Readonly<{
     combat_win_per_tier: number;
     combat_loss_penalty: number;
     upgrade_costs: Readonly<Record<string, number>>;
+    /** Multiplier on the base-price gap to the next rarity tier, keyed by the part's current
+        rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
+    part_upgrade_price_multiplier: Readonly<Record<string, number>>;
     start_credits: number;
     rescue_cost: number;
     rescue_fuel_fraction: number;
+    /** Cheap parts (the bridge) are repaired as if they cost at least this much. */
+    repair_min_base_price: number;
+    /** Parts below this condition (%) cannot be sold: no port takes them, even for nothing. */
+    sell_min_condition: number;
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;
     mood_min: number;
     mood_max: number;
     rarity_base_price: Readonly<Record<string, number>>;
+    /** Daily chance (0-1) a catalog listing of this rarity is actually in a port's new-parts shelf. */
+    market_rarity_chance: Readonly<Record<string, number>>;
     payout_floor_integrity: number;
     repair_seconds_per_point: Readonly<Record<string, number>>;
   }>;
   encounter: Readonly<{
     chance_divisor: number;
     pirate_strength_options: readonly number[];
+    /** Zone → the strongest pirate multiplier met there (safer zones, weaker pirates). */
+    pirate_zone_strength: Readonly<Record<string, number>>;
+    /** What a pirate who wins wants: relative weights of cargo, parts (from storage), territory. */
+    pirate_motive_weights: Readonly<Record<string, number>>;
     pirate_mob_jitter: readonly number[];
     pirate_sen_jitter: readonly number[];
     pirate_bli_ratio: number;
@@ -233,6 +291,9 @@ export type GameRules = Readonly<{
     rarity: Readonly<Record<string, number>>;
     material_price: Readonly<Record<string, number>>;
     attempts_per_stop: number;
+    /** An independent mining job at a minable location (round 10): like a scavenging job,
+        fixed duration scaled by `missions.time_scale`, same place in and out. */
+    job_duration_seconds: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;
@@ -263,6 +324,14 @@ export type GameRules = Readonly<{
     quality_min: number;
     quality_max: number;
     cooldown_seconds: number;
+    /** How long a scavenging job takes (like a mission: scaled by `missions.time_scale`). */
+    duration_seconds: number;
+    /** In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap. */
+    scrap_share: number;
+    /** Condition points added to the quality range per zone: riskier places, better finds. */
+    zone_quality_bonus: number;
+    /** Extra weight of the rarer drop tiers per zone (0 = none). */
+    zone_rarity_bias: number;
   }>;
   parts: Readonly<{
     starter_condition: number;

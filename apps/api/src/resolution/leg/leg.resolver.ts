@@ -2,6 +2,7 @@ import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { fuelUnits } from '../../economy/fuel-cost.calculator.js';
 import type { ShipSheet } from '../../ships/sheet.types.js';
+import { isDead } from '../../parts/condition.js';
 import { resolveEncounter } from '../encounter/encounter.resolver.js';
 import type { EncounterOutcome } from '../encounter/encounter.resolver.js';
 import type { EscapePreset } from '../encounter/escape.resolver.js';
@@ -12,6 +13,7 @@ import type {
   Stance,
 } from '../encounter/encounter-policy.js';
 import { generatePirate } from '../encounter/pirate.generator.js';
+import { rollPirateDemand, type StoredPart } from '../encounter/pirate-motive.js';
 import type { CombatSheet, CombatSide } from '../combat/combat.types.js';
 import {
   applyIntegrityLoss,
@@ -24,11 +26,18 @@ import { resolveMining, toMiningLootEvents } from '../mining/mining.resolver.js'
 import { missionEvent } from '../events/mission-event.js';
 import type {
   MissionActors,
+  MissionCombatRound,
   MissionDamageCascade,
   MissionEvent,
   MissionLoot,
 } from '../events/mission-event.js';
-import { applyWear, missionWear, defeatWear } from '../wear/wear.calculator.js';
+import {
+  applyWear,
+  countDefenseParts,
+  partAmbientWear,
+  partDefeatWear,
+  defeatWear,
+} from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
 
@@ -76,6 +85,8 @@ export interface LegMissionContext {
   readonly objectCarried: boolean;
   readonly client: EscortClient | null;
   readonly mining: { readonly stop: MiningStop; readonly miner: MinerRig } | null;
+  /** Parts kept in storage when the ship left port: what a pirate may take (never installed ones). */
+  readonly storage: readonly StoredPart[];
 }
 
 export interface LegShipState {
@@ -86,6 +97,9 @@ export interface LegShipState {
   readonly fuel: number;
   readonly hp: number;
   readonly esc: number;
+  readonly energyMode?: 'BATTERY' | 'FULL' | 'OVERRIDE';
+  readonly weaponEnergyDraw: number;
+  readonly shieldEnergyDraw: number;
 }
 
 export interface LegInput {
@@ -162,6 +176,11 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
     sen: ship.sheet.sen,
     hp: ship.hp,
     mob: ship.sheet.mob,
+    energyMode: ship.energyMode,
+    batOutput: ship.sheet.batOutput,
+    energyCont: ship.sheet.energyCont,
+    weaponEnergyDraw: ship.weaponEnergyDraw,
+    shieldEnergyDraw: ship.shieldEnergyDraw,
   };
 }
 
@@ -237,7 +256,6 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   let parts = input.ship.parts.map((part) => ({ ...part }));
   let fuel = input.ship.fuel - fuelBurned;
-  const motorAbort = chokeEvents.some((event) => event.type === 'motor');
 
   for (const event of chokeEvents) {
     const idx = parts.findIndex((part) => part.id === event.partId);
@@ -264,6 +282,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }),
     );
   }
+
+  // A chokeEvent of type 'motor' means ONE engine failed this leg, not that the ship is
+  // dead in the water — a ship with a second, still-working engine keeps going. Abort only
+  // when every installed ENGINE part is either already dead or just choked this leg
+  // (owner playtest: lost a redundant engine and the mission failed anyway even though
+  // another engine could still push the ship).
+  const chokedMotorPartIds = new Set(
+    chokeEvents.filter((event) => event.type === 'motor').map((event) => event.partId),
+  );
+  const engineParts = input.ship.parts.filter((part) => part.partClass === 'ENGINE');
+  const motorAbort =
+    engineParts.length > 0 &&
+    engineParts.every(
+      (part) => isDead(part.condition, rules) || chokedMotorPartIds.has(part.id),
+    );
 
   events.push(
     missionEvent({
@@ -293,14 +326,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   // Motor abort: fuel burned + wear still apply; no encounter, no pay path.
   if (motorAbort) {
-    const wearMap = applyPartsWear(parts, input.route.env.level, rules, wearRng);
+    const wearMap = applyPartsWear(
+      parts,
+      input.route.danger,
+      input.route.env.level,
+      rules,
+      wearRng,
+    );
+    const partsBeforeWear = parts;
     parts = mergeConditions(parts, wearMap);
     ship = { ...ship, parts };
     objectIntegrity = applyIntegrityLoss(
       objectIntegrity,
       environmentIntegrityLoss(input.route.env.level, rules),
     );
-    events.push(...wearEvents(input.index, actors, parts, wearMap));
+    events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
     return {
       index: input.index,
       status: 'motor_abort',
@@ -317,7 +357,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   }
 
   // 3. Encounter (D17: per leg).
-  const pirate = generatePirate(combatSheetFor(ship, chokeFlags), rules, encounterRng);
+  const pirate = generatePirate(
+    combatSheetFor(ship, chokeFlags),
+    rules,
+    encounterRng,
+    rules.encounter.pirate_zone_strength[String(input.route.zone)],
+  );
   const encounter: EncounterOutcome = resolveEncounter(
     {
       zone: input.route.zone,
@@ -330,7 +375,9 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         sensorAlive: chokeFlags.sensorAlive,
       },
       enemy: { sheet: pirate },
-      relation: input.context.relation,
+      // The ship met is a generated pirate: hostile to everyone, whatever the employer thinks of
+      // the player's faction (that relation is about the employer, not about who attacks).
+      relation: 'HOSTILE',
       mission: input.context.type,
       missionForcesFlee: input.context.missionForcesFlee,
       huntTargetMatch: false,
@@ -354,6 +401,22 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     // (shields → armor → hull). One fight-level triple, attached to every
     // combat event of this fight; the escort share is a separate effect.
     const cascade = fightCascade(result.rounds, playerIsA ? 'A' : 'B', hpLost);
+    // Round-4 playtest request: the raw attack-by-attack log, same attachment pattern as
+    // cascade (cascade is just this array's own totals) — translated to player/enemy so the
+    // report never has to know which side held slot A.
+    const combatRounds: MissionCombatRound[] = result.rounds.map((attack) => ({
+      round: attack.round,
+      attacker: (attack.attacker === 'A') === playerIsA ? 'player' : 'enemy',
+      roll: attack.roll,
+      pdf: attack.pdf,
+      bonus: attack.bonus,
+      dc: attack.dc,
+      hit: attack.hit,
+      damage: attack.damage,
+      armorAbsorbed: attack.armorAbsorbed,
+      shieldAbsorbed: attack.shieldAbsorbed,
+      hullDamage: attack.damage - attack.shieldAbsorbed,
+    }));
     let hp: number;
     let esc: number;
 
@@ -373,6 +436,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           magnitude: clientTakes,
           hp: -toPlayer,
           cascade,
+          rounds: combatRounds,
         }),
       );
       if (client.hp <= 0) {
@@ -418,6 +482,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           hp: hp - hpBefore,
           credits: combatCredits,
           cascade,
+          rounds: combatRounds,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
@@ -428,9 +493,13 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       combatResult = 'loss';
       combatCredits = -rules.economy.combat_loss_penalty;
       const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
+      const defenseCount = countDefenseParts(parts);
       parts = parts.map((part) => ({
         ...part,
-        condition: applyWear(part.condition, defeatLoss),
+        condition: applyWear(
+          part.condition,
+          partDefeatWear(part.partClass, defeatLoss, defenseCount, rules),
+        ),
       }));
       events.push(
         missionEvent({
@@ -443,14 +512,33 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           credits: combatCredits,
           condByPart: Object.fromEntries(parts.map((part) => [part.id, part.condition])),
           cascade,
+          rounds: combatRounds,
         }),
       );
       objectIntegrity = applyIntegrityLoss(
         objectIntegrity,
         combatIntegrityLoss(hpBefore, Math.max(0, hpBefore - hp), rules),
       );
+      // The pirate who won says what it wanted (seeded, on its own RNG stream so nothing else moves).
+      const demand = rollPirateDemand(
+        { objectCarried: input.context.objectCarried, storage: input.context.storage },
+        rules,
+        encounterRng.child('motive'),
+      );
+      events.push(
+        missionEvent({
+          leg: input.index,
+          category: 'failure',
+          type: 'pirate_demand',
+          actors: { ...actors, enemy: 'pirate' },
+          magnitude: demand.stolen.length,
+          motive: demand.motive,
+          stolen: demand.stolen,
+        }),
+      );
       ship = { ...ship, parts, hp, esc };
-      if (input.context.objectCarried) {
+      // Cargo taken, or driven off their territory: the mission is over.
+      if (input.context.objectCarried || demand.motive === 'territory') {
         return {
           index: input.index,
           status: 'defeat_failed',
@@ -467,6 +555,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }
     } else {
       combatResult = winner === 'draw' ? 'loss' : 'escape';
+      if (winner === 'draw') {
+        // Nobody won: the fight still happened and still cost hull, so the report says so.
+        events.push(
+          missionEvent({
+            leg: input.index,
+            category: 'combat',
+            type: 'combat_draw',
+            actors: { ...actors, enemy: 'pirate' },
+            magnitude: 0,
+            hp: hp - hpBefore,
+            cascade,
+            rounds: combatRounds,
+          }),
+        );
+      }
       if (encounter.escaped) {
         combatResult = 'escape';
         events.push(
@@ -484,19 +587,39 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     ship = { ...ship, hp, esc };
   } else if (encounter.escaped) {
     combatResult = 'escape';
+    // Slipping away is part of the story too: the report says so.
+    events.push(
+      missionEvent({
+        leg: input.index,
+        category: 'combat',
+        type: 'escaped',
+        actors: { ...actors, enemy: 'pirate' },
+        magnitude: 0,
+        hp: 0,
+      }),
+    );
   } else if (encounter.encountered && encounter.decision === 'IGNORE') {
     combatResult = 'ignore';
   }
 
   // 4. Environment wear + integrity (production per-part draws).
-  const wearMap = applyPartsWear(ship.parts, input.route.env.level, rules, wearRng);
+  const wearMap = applyPartsWear(
+    ship.parts,
+    input.route.danger,
+    input.route.env.level,
+    rules,
+    wearRng,
+  );
+  // The event reports how much condition was lost, so it needs the parts as they were BEFORE
+  // the wear (reading them after made every leg say "0 worn" while the parts really wore down).
+  const partsBeforeWear = ship.parts;
   parts = mergeConditions(ship.parts, wearMap);
   ship = { ...ship, parts };
   objectIntegrity = applyIntegrityLoss(
     objectIntegrity,
     environmentIntegrityLoss(input.route.env.level, rules),
   );
-  events.push(...wearEvents(input.index, actors, parts, wearMap));
+  events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
 
   // Escort object integrity IS the client HP share (Appendix E identity).
   if (input.context.type === 'ESCORT' && client !== null) {
@@ -543,14 +666,16 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
 function applyPartsWear(
   parts: readonly PartSnapshot[],
+  danger: number,
   envNivel: number,
   rules: GameRules,
   rng: Rng,
 ): ReadonlyMap<string, number> {
   const next = new Map<string, number>();
+  const defenseCount = countDefenseParts(parts);
   for (const part of parts) {
-    const { total } = missionWear(envNivel, rules, rng);
-    next.set(part.id, applyWear(part.condition, total));
+    const loss = partAmbientWear(part.partClass, danger, envNivel, defenseCount, rules, rng);
+    next.set(part.id, applyWear(part.condition, loss));
   }
   return next;
 }

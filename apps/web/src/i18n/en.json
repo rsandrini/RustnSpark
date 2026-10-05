@@ -10,6 +10,8 @@
     }
   },
   "register": {
+    "nameHint": "3–24 characters: letters, digits, _ or -",
+    "passwordHint": "At least 10 characters",
     "title": "Create account",
     "nameLabel": "Name",
     "emailLabel": "Email",
@@ -17,6 +19,8 @@
     "submit": "Create account",
     "loginLink": "Already have an account? Sign in",
     "error": {
+      "conflict": "That email or player name is already taken",
+      "invalid": "Check the fields: name 3–24 characters (letters, digits, _ or -), password at least 10 characters",
       "generic": "Could not create account"
     }
   },
@@ -46,31 +50,78 @@
     }
   },
   "hangar": {
-    "title": "Hangar",
+    "title": "My Ship",
     "tray": "Parts",
     "trayEmpty": "No loose parts in storage.",
+    "stage": {
+      "hide": "Hide animation",
+      "show": "Show animation"
+    },
+    "format": {
+      "button": "Format",
+      "label": "Choose a ship format"
+    },
+    "connectors": {
+      "disconnectedCount": "{{count}} part disconnected",
+      "disconnectedCount_other": "{{count}} parts disconnected"
+    },
     "yardHint": "Select a part, then click a cell to place it. Select a block to move, rotate or remove it.",
     "sheet": "Ship sheet",
+    "shipRarityHint": "Ship rarity — the lowest rarity among installed parts",
     "class": "Class",
     "stats": {
-      "pot": "Power",
+      "pot": "Engine power",
       "pdf": "Firepower",
-      "bli": "Battery life",
-      "esc": "Escaped",
+      "bli": "Armor",
+      "esc": "Shield",
       "sen": "Sensors",
-      "crg": "Cargo",
-      "min": "Mining",
+      "crg": "Cargo capacity",
+      "min": "Mining capacity",
       "hp": "Hull points",
       "mass": "Mass",
-      "fuelCap": "Fuel tank",
-      "fuelUse": "Fuel use",
-      "energyCont": "Energy (continuous)",
-      "energyCombat": "Energy (combat)",
+      "fuelCap": "Fuel tank capacity",
+      "fuelUse": "Fuel burn rate",
+      "energyCont": "Cruising power",
+      "energyCombat": "Combat power",
+      "batCharge": "Battery capacity",
+      "batOutput": "Battery output",
+      "batInput": "Recharge rate",
       "autonomy": "Autonomy",
       "condition": "Condition",
-      "structure": "Structure",
+      "structure": "Structure budget",
       "mob": "Mobility",
       "structureValue": "{{used}} / {{budget}}"
+    },
+    "groups": {
+      "combat": "Combat",
+      "power": "Power",
+      "propulsion": "Propulsion & Range",
+      "cargo": "Cargo",
+      "hull": "Hull"
+    },
+    "headline": {
+      "firepower": "Firepower",
+      "defense": "Defense",
+      "defenseHelp": "Armor plus Shield: the ship's two defenses against incoming hits, combined.",
+      "cargo": "Cargo",
+      "mobility": "Mobility",
+      "autonomy": "Autonomy",
+      "condition": "Condition",
+      "energy": "Energy",
+      "structure": "Structure"
+    },
+    "summary": {
+      "ready": "Ready to fly",
+      "problemCount": "{{count}} problem(s)",
+      "showAllStats": "Show all stats"
+    },
+    "energyStatus": {
+      "surplus": "Surplus +{{value}}",
+      "deficit": "Deficit {{value}}",
+      "breakdown": "Generates {{generate}} · Consumes {{consume}}",
+      "draw": "Draws {{value}}/round",
+      "covered": "Battery covers it ({{output}}/round)",
+      "insufficient": "Exceeds battery output ({{output}}/round)"
     },
     "classes": {
       "HAULER": "Hauler",
@@ -114,15 +165,77 @@
       "OUT_OF_BOUNDS": "Part is outside the grid.",
       "OVERLAP": "Parts overlap.",
       "DISCONNECTED": "Parts must touch the bridge.",
-      "INVALID_LAYOUT": "The layout is not valid."
+      "INVALID_LAYOUT": "The layout is not valid.",
+      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — install a battery, or a bigger one.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
       "generic": "Could not save the layout."
     },
-    "yardLabel": "Assembly yard"
+    "yardLabel": "Assembly yard",
+    "zoom": {
+      "label": "Zoom",
+      "out": "Zoom out",
+      "in": "Zoom in",
+      "minus": "−",
+      "plus": "+",
+      "fit": "Fit ship",
+      "percent": "{{value}}%"
+    },
+    "side": {
+      "parts": "Parts",
+      "store": "Store",
+      "storeUnavailable": "The store is only available while the ship is docked."
+    },
+    "kit": {
+      "title": "Your starter kit",
+      "body": "These are the parts your ship starts with. Nothing is installed yet: press Auto layout to assemble them, or select a part and click the grid."
+    },
+    "detail": "Part details",
+    "fix": {
+      "needs": " Add a {{part}} part.",
+      "findInStore": "Find in store"
+    },
+    "detailClose": "Close details",
+    "detailCloseGlyph": "×",
+    "colorBy": {
+      "label": "Colour blocks by",
+      "rarity": "Rarity",
+      "condition": "Condition"
+    },
+    "rotate": {
+      "square": "This part is 1×1: it looks the same rotated. Rotation only changes parts that are not square.",
+      "blocked": "There is no room to rotate this part here: move a neighbour away first.",
+      "nudged": "Rotated (moved a cell or two to make room)."
+    },
+    "statHelp": {
+      "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",
+      "mob": "How fast the ship travels: total engine power divided by mass, times a fixed factor. More power or less mass raises it.",
+      "crg": "How much cargo the ship can carry, from every installed cargo hold.",
+      "min": "How much ore the ship can mine per trip, from every installed mining rig.",
+      "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
+      "pot": "Total thrust from every installed engine. Feeds mobility.",
+      "pdf": "Combat damage output from every installed weapon.",
+      "bli": "Reduces the damage of each hit that gets through the shield.",
+      "esc": "Absorbs damage first in a fight, before armor or the hull take any. Regenerates a little each combat round. Draws Combat power from the battery — with no battery to power it, it can't be installed.",
+      "sen": "Spots ambushes early, lowering the chance of being surprised in an encounter.",
+      "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
+      "fuelCap": "How much fuel the ship can hold, from every installed tank.",
+      "fuelUse": "How much fuel is burned per unit of travel.",
+      "energyCont": "Continuous power balance: reactor/solar generation minus everything that always draws power (sensors, life support, mining rigs...). Must stay at zero or above, or the ship can't fly — separate from Combat power below, and never drawn from the battery.",
+      "energyCombat": "Total combat-only power draw from every installed weapon and shield (always zero or negative). Covered by the battery's charge and output, never by Cruising power or the reactor — see Battery capacity / Battery output.",
+      "batCharge": "Total energy the battery can store for combat. Must cover the ship's whole Combat power draw, or weapons/shields can't be installed.",
+      "batOutput": "The most energy the battery can deliver in a single round. Must cover the ship's whole Combat power draw per round, or weapons/shields can't be installed.",
+      "batInput": "How fast the battery recharges between fights.",
+      "autonomy": "How many full tanks of fuel the ship's burn rate can sustain, as a percentage.",
+      "condition": "Average wear across every installed part, from 100% (new) down.",
+      "structure": "How much of the structure budget the bridge sets is used by everything else installed."
+    }
   },
   "home": {
+    "play": "Play",
     "title": "Home",
     "greeting": "Welcome, {{name}}",
     "loginLink": "Sign in",
@@ -134,13 +247,16 @@
     "title": "Admin",
     "logout": "Sign out",
     "placeholder": "Admin dashboard placeholder",
-    "navigation": "Admin navigation",
     "loadError": "Failed to load admin data",
     "dashboard": "Dashboard",
     "economy": "Economy",
     "world": "World",
     "players": "Players",
     "system": "System",
+    "navGroups": {
+      "stats": "Stats",
+      "editable": "Editable"
+    },
     "window": {
       "label": "Period",
       "24h": "Last 24 hours",
@@ -212,6 +328,7 @@
       "grant": "Grant credits",
       "remove": "Remove credits",
       "clear": "Clear negative balance",
+      "password": "Change password",
       "unstick": "Unstick ship",
       "ban": "Ban",
       "reset": "Reset"
@@ -220,11 +337,14 @@
       "grant": "Adds credits to the player's wallet. Recorded in the audit log.",
       "remove": "Removes credits from the wallet (cannot go below zero).",
       "clear": "Sets a negative balance back to zero.",
+      "password": "Sets a new password for this account and signs it out everywhere. The password itself is never recorded in the audit log.",
       "unstick": "Expires the ship's active mission and parks the ship in port. Its future route presence is deleted.",
       "ban": "Suspends the account at once and ends all sessions. Admin accounts cannot be banned.",
       "reset": "Wipes parts, materials, repairs, missions and sessions, returns the ship to the home port and re-applies the starter kit and credits. History is kept. This cannot be undone."
     },
     "amount": "Amount",
+    "newPassword": "New password",
+    "newPasswordHint": "10–128 characters",
     "ship": "Ship",
     "reasonLabel": "Reason",
     "confirmAction": "Confirm",
@@ -300,6 +420,8 @@
     "no": "No",
     "reasonLabel": "Reason",
     "defaultReason": "Tuning change",
+    "autoSaving": "Saving…",
+    "autoSaved": "Saved",
     "configChangeReason": "Tuning config change",
     "configResetReason": "Reset to factory default",
     "retireReason": "Retire entity",
@@ -334,6 +456,7 @@
     "revertConfirm": "Revert revision {{id}}?",
     "entityNames": {
       "parts": "Parts",
+      "ship-formats": "Ship formats",
       "materials": "Materials",
       "factions": "Factions",
       "locations": "Locations",
@@ -366,12 +489,15 @@
   },
   "nav": {
     "label": "Game navigation",
-    "hangar": "Hangar",
+    "hangar": "My Ship",
     "map": "Map",
     "board": "Board",
     "transit": "Transit",
     "port": "Port",
-    "profile": "Profile"
+    "profile": "Profile",
+    "admin": "Admin",
+    "logout": "Sign out",
+    "transitDisabled": "Nothing to watch: accept a mission or start a trip first."
   },
   "port": {
     "title": "Port",
@@ -382,9 +508,13 @@
       "market": "Market",
       "repair": "Repair",
       "refuel": "Refuel",
-      "scavenging": "Scavenging"
+      "upgrade": "Upgrade",
+      "scavenging": "Scavenging",
+      "mining": "Mining",
+      "goods": "Your goods"
     },
     "buy": "Buy",
+    "notEnoughFunds": "Not enough funds",
     "sell": "Sell",
     "buyConfirm": "Buy {{name}} for {{price}} ¢?",
     "sellConfirm": "Sell {{name}}?",
@@ -396,31 +526,86 @@
     "sold": "Sold {{name}} for {{price}} ¢.",
     "failed": "The port rejected that action.",
     "marketEmpty": "Nothing for sale at this port.",
-    "forSale": "For sale",
     "yourGoods": "Your goods",
     "materials": "Mined materials",
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ each",
+    "repairDestroyed": "A destroyed part cannot be repaired: replace it.",
     "repairNoDamage": "Every installed part is at full condition.",
     "repairAll": "Repair all",
     "repairSlider": "Repair to {{value}}%",
     "repairStart": "Start repair",
-    "repairStarted": "Repair started for {{cost}} ¢ — completes in {{seconds}}s.",
+    "repairStarted": "Repair started for {{cost}} ¢ — completes in {{time}}.",
     "repairLoading": "Ordering repairs…",
     "refuelGauge": "Fuel {{fuel}} / {{cap}}",
+    "refuelAfford": "Max I can afford",
+    "refuelUnitPrice": "{{price}} ¢ per unit",
     "refuelFill": "Fill tank",
+    "refuelNoTank": "This ship has no fuel tank installed, so there is nowhere to put fuel — install a tank in My Ship first.",
     "refuelFull": "The tank is already full.",
     "refueled": "Filled {{units}} units for {{cost}} ¢.",
-    "scavWarn": "Scavenging alone wears your ship down. Scavenging missions pay better — and are far more dangerous.",
-    "scavenge": "Scavenge the field",
-    "scavFound": "Salvaged: {{part}} (condition {{condition}}).",
-    "scavNone": "Nothing salvageable — try again in {{seconds}}s.",
-    "scavBusy": "You are already scavenging.",
-    "repairQuote": "Repair cost: {{cost}} ¢ · {{seconds}} s",
+    "scavenge": "Send the ship scavenging",
+    "repairQuote": "Repair cost: {{cost}} ¢ · {{time}}",
     "repairConfirmTitle": "Repair for {{cost}} ¢?",
     "repairConfirm": "Start repair",
     "noShip": "You have no ship.",
-    "sellAll": "Sell all"
+    "sellAll": "Sell all",
+    "portPays": "Port pays",
+    "noLooseParts": "You have no loose parts to sell.",
+    "conditionNow": "{{value}}%",
+    "conditionToTarget": "{{from}}% → {{to}}%",
+    "fuelBar": "Fuel tank",
+    "refuelHint": "Fuel is bought by the unit; a full tank costs the price shown when you confirm.",
+    "scav": {
+      "what": "Send your ship to search the wreckage around {{place}} for parts other pilots left behind. It is a job like a mission: the ship is out of port while it works, and a report tells you what it found.",
+      "time": "It takes about {{minutes}} minutes, and the ship cannot be used meanwhile.",
+      "risk": "The risk comes from the place (zone {{zone}}): pirates may find you while you search, and the riskier the place, the better the finds.",
+      "quality": "Everything you find is USED: about {{min}}–{{max}}% condition at this place. Repair it, install it or sell it.",
+      "finds": "At {{place}} you can find one or more parts; a pirate-held field gives the most.",
+      "scrap": "Wreckage here also holds scrap: worn-out remains that sell at a fixed price at any port.",
+      "field": {
+        "common": "an ordinary port",
+        "mission": "a mission site",
+        "pirate": "a pirate-held debris field"
+      },
+      "where": "It only works where your ship is docked, and each place has its own waiting time between jobs.",
+      "ready": "Ready to go.",
+      "nextAttempt": "Next job in",
+      "title": "Scavenge the wreckage"
+    },
+    "mine": {
+      "title": "Mine the field",
+      "what": "If this place is minable and your ship carries a mining rig, send it out to dig: a timed job like scavenging, no pay up front, no report of what it turns up until the job ends.",
+      "action": "Send the ship mining"
+    },
+    "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
+    "repairNoChange": "No change",
+    "repairNothingSelected": "Nothing selected yet: move a slider, or set everything to 100%.",
+    "repairWallet": "Current balance",
+    "repairFee": "Workshop fee",
+    "repairTotal": "Total",
+    "repairAllTo100": "Set all to 100%",
+    "repairReset": "Back to current",
+    "repairOverBudget": "Not enough credits for this repair: lower some targets.",
+    "refuelAmount": "How much fuel to buy",
+    "refuelUnits": "{{units}} units",
+    "refuelBuy": "Buy {{units}}",
+    "tooDamaged": "Too damaged to sell",
+    "discardNote": "{{count}} loose part(s) are under {{min}}% condition: no port buys them. Repair them (fit them first) or discard them.",
+    "discardAction": "Discard {{count}}",
+    "discarded": "Discarded {{count}} damaged part(s).",
+    "discardConfirmTitle": "Destroy {{count}} damaged part(s)?",
+    "discardConfirmBody": "Every loose part under {{min}}% condition is destroyed for good. Parts installed on the ship are never touched. This cannot be undone.",
+    "discardConfirm": "Destroy them",
+    "upgradeHelp": "Upgrade a part in place to its next rarity tier: same slot, same condition, better stats.",
+    "upgradeNone": "None of your parts have a next tier to upgrade to right now.",
+    "upgradeCost": "Upgrade cost",
+    "upgradesTo": "Upgrades to {{name}}",
+    "upgrade": "Upgrade",
+    "upgradeConfirmTitle": "Upgrade for {{cost}} ¢?",
+    "upgradeQuote": "Upgrade {{name}} to {{nextName}} for {{cost}} ¢?",
+    "upgradeConfirm": "Upgrade",
+    "upgraded": "Upgraded to {{name}}."
   },
   "inventory": {
     "title": "Inventory",
@@ -440,14 +625,25 @@
     "history": "Mission history",
     "noHistory": "No completed missions yet.",
     "legCount": "{{count}} legs",
-    "credits": "+{{amount}} ¢"
+    "credits": "+{{amount}} ¢",
+    "combatTag": "Combat",
+    "combatTagHint": "This run had a fight — jump straight to the round-by-round log."
   },
   "report": {
     "title": "Mission report",
     "tabs": {
       "summary": "Summary",
-      "narrative": "Narrative",
-      "log": "Log"
+      "narrative": "The story",
+      "log": "Log",
+      "detail": "Details"
+    },
+    "detail": {
+      "partsDamage": "Parts that took damage",
+      "partsDamageIntro": "Every part whose condition dropped during the run, dispatch versus now.",
+      "noDamage": "Nothing took damage on this run.",
+      "before": "Before",
+      "after": "Now",
+      "lost": "−{{amount}}"
     },
     "noReport": "No report for this mission yet.",
     "eventDetails": "Event details",
@@ -464,6 +660,20 @@
       "armor": "Armor absorbed",
       "hp": "Hull damage"
     },
+    "combatLog": {
+      "title": "Round by round",
+      "round": "Round",
+      "attacker": "Attacker",
+      "rollDc": "Roll / DC",
+      "result": "Result",
+      "target": "Target",
+      "hit": "Hit",
+      "miss": "Miss",
+      "side": {
+        "player": "You",
+        "enemy": "Enemy"
+      }
+    },
     "refKind": {
       "loot": "Item",
       "part": "Part"
@@ -472,6 +682,37 @@
     "refCategory": {
       "part": "Class",
       "loot": "Rarity"
+    },
+    "glyph": {
+      "ok": "✔",
+      "warn": "◐",
+      "bad": "✖"
+    },
+    "debrief": {
+      "balance": "Balance {{balance}} ¢",
+      "legs": "Legs",
+      "distance": "Distance",
+      "fights": "Fights",
+      "fightsValue": "{{won}} won · {{lost}} lost · {{escaped}} escaped",
+      "noFights": "None",
+      "damage": "Damage taken",
+      "damageValueNoShield": "Armor {{armor}} · hull {{hull}}",
+      "damageValue": "Shield {{shield}} · armor {{armor}} · hull {{hull}}",
+      "noDamage": "None",
+      "failures": "Parts failed",
+      "fuelLost": "Fuel leaked",
+      "loot": "Loot",
+      "lootItem": "{{quantity}} × {{name}}",
+      "repairHint": "Your parts took a beating: check the Repair tab at the port before the next run.",
+      "next": "What next?",
+      "fightsValueDrawn": "{{won}} won · {{lost}} lost · {{escaped}} escaped · {{drawn}} drawn",
+      "stolen": "Parts stolen",
+      "pirates": "Pirates",
+      "drivenOff": "Drove you off",
+      "cargoLost": "Took the cargo",
+      "found": "Found",
+      "foundPart": "{{name}} ({{condition}}%)",
+      "foundScrap": "Scrap: {{name}}"
     }
   },
   "transit": {
@@ -491,11 +732,34 @@
     "held": "This mission is only held. Accept it on the board to start it.",
     "resolving": "Resolving the mission…",
     "lastMission": "Last mission",
-    "lastReport": "Read the report"
+    "lastReport": "Read the report",
+    "briefLabel": "Mission brief",
+    "scene": {
+      "alt": "Your ship in flight"
+    },
+    "stakes": "At stake",
+    "cargo": "Cargo",
+    "distance": "Distance",
+    "danger": "Danger",
+    "legsCount": "{{count}} legs",
+    "nowFlying": "Now flying {{route}}",
+    "readyTitle": "Ready to depart",
+    "facts": {
+      "reward": "Reward",
+      "route": "Route",
+      "distance": "Distance",
+      "legs": "Legs",
+      "danger": "Danger",
+      "zone": "Zone"
+    },
+    "legPlanTitle": "Planned route",
+    "cancelMission": "Cancel mission",
+    "scavengeTitle": "Scavenging"
   },
   "board": {
     "title": "Mission board",
     "filterAll": "All missions",
+    "onlyEligible": "Only eligible",
     "accept": "Accept",
     "hold": "Hold",
     "release": "Release",
@@ -512,7 +776,9 @@
       "TRANSPORT": "Transport",
       "ESCORT": "Escort",
       "MINING": "Mining",
-      "RESCUE": "Rescue"
+      "RESCUE": "Rescue",
+      "TRAVEL": "Travel",
+      "SCAVENGE": "Scavenging"
     },
     "status": {
       "AVAILABLE": "Open",
@@ -528,7 +794,7 @@
       "ACTIVE_MISSION_EXISTS": "A mission is already active",
       "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location",
       "CARGO_TYPE": "Cargo hold does not fit this cargo",
-      "PRESSURIZED_LIFE_SUPPORT": "Needs pressurized life support",
+      "PRESSURIZED_LIFE_SUPPORT": "Needs a Passenger Cabin and Life Support (both installed)",
       "WEAPONS": "Needs weapons",
       "MIN_MOBILITY": "Mobility below the mission minimum",
       "MINER": "Needs a mining system",
@@ -540,12 +806,43 @@
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded"
     },
+    "requirements": {
+      "CARGO_TYPE": "Cargo capacity for this load",
+      "PRESSURIZED_LIFE_SUPPORT": "Passenger Cabin and Life Support, both installed",
+      "WEAPONS": "At least one installed weapon",
+      "MIN_MOBILITY": "Mobility above the escort minimum",
+      "MINER": "A mining rig installed",
+      "SPEED": "Mobility above the rescue reference speed"
+    },
+    "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",
-    "starterBadge": "Starter mission"
+    "starterBadge": "Starter mission",
+    "arrow": "→",
+    "facts": {
+      "distance": "Distance",
+      "legs": "Legs",
+      "time": "Flight time",
+      "fuel": "Fuel needed"
+    },
+    "fuelUses": "uses {{needed}}",
+    "lowFuel": "Your ship does not carry enough fuel for this trip: refuel first.",
+    "needsTitle": "You need:",
+    "needs": {
+      "DELIVERY": "cargo space for the load (see Cargo in the Hangar).",
+      "TRANSPORT": "a Passenger Cabin plus a Life Support module.",
+      "ESCORT": "at least one weapon and good mobility to keep up.",
+      "MINING": "a Mining Rig and cargo space for the ore.",
+      "RESCUE": "a fast ship (mobility) and room for the survivors.",
+      "TRAVEL": "nothing special: fuel for the trip."
+    },
+    "mining": {
+      "contracted": "Contract: mine {{quantity}} × {{material}}. It pays only if you bring the full amount.",
+      "free": "Mine {{material}}: you keep what you dig up and sell it at a port."
+    }
   },
   "map": {
     "title": "Sector map",
-    "hint": "Select a node to inspect it.",
+    "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",
     "missions": "{{count}} missions on the board",
     "noMissions": "No offers on the board",
@@ -561,6 +858,36 @@
       "frontier": "Frontier",
       "dead_zone": "Dead zone",
       "relay": "Relay"
+    },
+    "inTransit": "In flight",
+    "headingTo": "heading to {{destination}}, arriving in",
+    "dockedAt": "Docked at {{place}}",
+    "shipHere": "Your ship",
+    "popup": {
+      "missionsHere": "Missions here",
+      "missionsToHere": "Missions to here",
+      "to": "To {{destination}}",
+      "from": "From {{origin}}"
+    },
+    "travel": {
+      "title": "Fly there without a mission",
+      "time": "Flight time",
+      "distance": "Distance",
+      "fuel": "Fuel for the trip",
+      "fuelNeeded": "Fuel {{needed}} of {{have}} on board",
+      "noPay": "A trip costs only the fuel it burns and pays nothing. Pirates and other pilots can still find you on the way.",
+      "go": "Fly to {{place}}",
+      "failed": "The trip could not start.",
+      "blockers": {
+        "NO_SHIP": "You have no ship.",
+        "SAME_PLACE": "You are already here.",
+        "NO_ROUTE": "There is no route to this place.",
+        "ACTIVE_MISSION_EXISTS": "Finish or cancel your current mission first.",
+        "SHIP_NOT_IN_PORT": "The ship must be docked to leave.",
+        "SHIP_REPAIRING": "The ship is being repaired.",
+        "SHIP_NOT_VIABLE": "The ship cannot fly yet: assemble it in the Hangar first.",
+        "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
+      }
     }
   },
   "notFound": {
@@ -585,11 +912,12 @@
     "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
     "ACCOUNT_BANNED": "This account has been suspended.",
     "BALANCE_NEGATIVE": "Your balance is negative — earn credits before spending.",
-    "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build.",
-    "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build.",
+    "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build — install a battery, or a bigger one.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build — install a battery, or a bigger one.",
     "CREDIT_OVERFLOW": "That sale is too large to credit.",
     "DISCONNECTED": "Some parts are not connected to the bridge.",
-    "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — add power.",
+    "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — install a reactor, a bigger one, or fewer continuous-draw parts.",
+    "FORMAT_NOT_UNLOCKED": "That ship format isn't unlocked for your current bridge.",
     "FUEL_EMPTY": "The tank is empty.",
     "HOLD_NOT_OWNED": "You are not holding this mission.",
     "INSUFFICIENT_FUNDS": "Not enough credits.",
@@ -600,7 +928,8 @@
     "INVALID_LIMIT": "Invalid page size.",
     "INVALID_LISTING": "That offer is no longer listed.",
     "INVALID_QUANTITY": "Invalid quantity.",
-    "INVALID_REPAIR_TARGET": "A repair target is invalid.",
+    "PART_DESTROYED": "A destroyed part (0%) cannot be repaired. Replace it.",
+    "INVALID_REPAIR_TARGET": "That repair would go below the part’s current condition. Reload the repair tab and try again.",
     "MAINTENANCE": "The game is down for maintenance. Try again shortly.",
     "MISSION_EXPIRED": "This mission has expired.",
     "MISSION_MALFORMED": "This mission is malformed.",
@@ -626,7 +955,13 @@
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
     "RATE_LIMITED": "Too many requests — slow down for a moment.",
-    "UNAUTHORIZED": "Your session ended — sign in again."
+    "UNAUTHORIZED": "Your session ended — sign in again.",
+    "LISTING_SOLD": "That used part was just sold.",
+    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
+    "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
+    "NO_ROUTE": "There is no route out of this place, so there is nothing to search around.",
+    "NOT_MINABLE": "There is nothing to mine here.",
+    "NO_MINING_RIG": "A mining rig needs to be installed first."
   },
   "language": {
     "label": "Language"
@@ -636,5 +971,171 @@
     "body": "Your ship ran out of fuel and is drifting. A tow brings it back to port — it costs credits and may leave your balance negative.",
     "action": "Call a tow",
     "done": "Towed back to port for {{cost}} ¢. Fuel on board: {{fuel}}."
+  },
+  "parts": {
+    "info": "Details",
+    "close": "Close",
+    "size": "Size",
+    "price": "Price",
+    "condition": "Condition",
+    "class": "Class",
+    "rarity": "Rarity",
+    "rarities": {
+      "COMMON": "Common",
+      "UNCOMMON": "Uncommon",
+      "RARE": "Rare",
+      "EPIC": "Epic",
+      "LEGENDARY": "Legendary"
+    },
+    "rarityBadge": "Rarity: {{rarity}}",
+    "whyTitle": "Why you need it",
+    "role": {
+      "BRIDGE": "Required. Every ship needs exactly one: it is the command core, keeps the pilot alive if the ship is destroyed, and sets how much structure the ship can carry.",
+      "ENGINE": "Required: a ship with no engine cannot move. Chemical engines also need a fuel tank; ion engines need steady power instead.",
+      "TANK": "Holds the fuel. Any ship with a chemical engine needs at least one, and a bigger tank means longer trips between refuels.",
+      "BATTERY": "Stores energy for combat. Weapons and shields draw from it, so it must cover their demand or the ship is not allowed to fly.",
+      "REACTOR": "Generates energy continuously. Engines and systems draw power all the time, so total generation must cover them.",
+      "WEAPON": "Adds firepower. Needed for escort missions and to win fights; costs energy in combat.",
+      "DEFENSE": "Adds armor, shield and hit points so the ship survives attacks. It adds no speed, cargo or firepower, and its mass slows you down.",
+      "CARGO": "Adds cargo capacity. More cargo means bigger deliveries and better pay, but adds mass.",
+      "SENSOR": "Spots trouble early, which lowers the chance of being ambushed on a route.",
+      "UTILITY": "Special equipment that unlocks certain missions (mining rigs, life support, and so on)."
+    },
+    "flag": {
+      "pressurized": "Passenger module: a ship carrying one needs a life support part.",
+      "lifeSupport": "Life support: required as soon as the ship has a passenger module."
+    },
+    "stat": {
+      "pot": {
+        "label": "Thrust",
+        "hint": "Pushes the ship. Mobility is total thrust divided by total mass."
+      },
+      "pdf": {
+        "label": "Firepower",
+        "hint": "Damage dealt in combat."
+      },
+      "bli": {
+        "label": "Armor",
+        "hint": "Reduces the damage taken from hits."
+      },
+      "esc": {
+        "label": "Shield",
+        "hint": "Absorbs damage first and recharges during a fight."
+      },
+      "sen": {
+        "label": "Sensors",
+        "hint": "Spots ambushes early, lowering the chance of being surprised."
+      },
+      "crg": {
+        "label": "Cargo",
+        "hint": "Cargo capacity for deliveries."
+      },
+      "min": {
+        "label": "Mining",
+        "hint": "Mining power for ore missions."
+      },
+      "fuelCap": {
+        "label": "Fuel tank",
+        "hint": "How much fuel it holds."
+      },
+      "fuelUse": {
+        "label": "Fuel use",
+        "hint": "How fast the engine burns fuel; lower is better."
+      },
+      "energyCont": {
+        "label": "Energy (flight)",
+        "hint": "Energy generated (+) or drawn (−) continuously while flying."
+      },
+      "energyCombat": {
+        "label": "Energy (combat)",
+        "hint": "Extra energy drawn while fighting."
+      },
+      "batCharge": {
+        "label": "Battery charge",
+        "hint": "Energy stored for combat."
+      },
+      "batOutput": {
+        "label": "Battery output",
+        "hint": "The most energy the battery can deliver at once."
+      },
+      "batInput": {
+        "label": "Recharge",
+        "hint": "How fast the battery recharges."
+      },
+      "mass": {
+        "label": "Mass",
+        "hint": "Heavier ships are slower."
+      },
+      "structureCost": {
+        "label": "Structure",
+        "hint": "Uses part of the bridge's structure budget; the total must stay within it."
+      },
+      "partHp": {
+        "label": "Hit points",
+        "hint": "Damage this part can take before it breaks."
+      }
+    },
+    "summaryNone": "Structural part",
+    "infoGlyph": "i",
+    "broken": "BROKEN",
+    "brokenNote": "Broken: it counts for nothing until it is repaired.",
+    "compare": {
+      "title": "If you install this now",
+      "titleSwap": "If you swap this in for {{name}}",
+      "loading": "Checking what this would do to the ship…",
+      "error": "Couldn't check what this would do to the ship.",
+      "stat": "Stat",
+      "value": "This part",
+      "ifInstalled": "Ship, if installed",
+      "scenarioLabel": "Compare as",
+      "addOption": "Add it",
+      "replaceOption": "Replace {{name}}"
+    }
+  },
+  "market": {
+    "all": "All",
+    "filterByType": "Filter by part type",
+    "search": "Search parts",
+    "searchPlaceholder": "Search parts…",
+    "condition": "Condition",
+    "conditionAll": "New and used",
+    "conditionNew": "New only",
+    "conditionUsed": "Used only",
+    "sort": "Sort",
+    "sortName": "Name",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low",
+    "sortCondition": "Best condition",
+    "noMatches": "No parts match these filters.",
+    "used": "Used",
+    "youPay": "You pay"
+  },
+  "ship": {
+    "empty": {
+      "title": "Your ship is not assembled",
+      "body": "Nothing is installed yet, so the ship cannot take a mission. Assemble your starter kit in the Hangar first.",
+      "action": "Go to the Hangar"
+    },
+    "energyMode": {
+      "label": "Energy",
+      "BATTERY": "Battery only",
+      "FULL": "Full energy",
+      "OVERRIDE": "Override"
+    }
+  },
+  "duration": {
+    "s": "{{s}}s",
+    "ms": "{{m}}m {{s}}s",
+    "hm": "{{h}}h {{m}}m"
+  },
+  "stage": {
+    "mode": {
+      "idle": "Docked and ready",
+      "flying": "In flight",
+      "scavenging": "Scavenging the wreckage",
+      "repairing": "Repairs under way"
+    },
+    "docked": "Docked at {{place}}",
+    "repairingAt": "in the workshop at {{place}}"
   }
 }

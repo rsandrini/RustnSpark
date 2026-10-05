@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -10,8 +11,12 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+// The canonical bridge structureCost (was -100; the owner asked for a smaller starting
+// structure budget, -60, during round-3 playtesting) — kept as a single constant so this
+// regression test for the migration pattern doesn't drift from whatever it currently is.
+const BRIDGE_STRUCTURE_COST = -60;
 const MIGRATION_SQL = `UPDATE "PartCatalog"
-SET "structureCost" = -100
+SET "structureCost" = ${BRIDGE_STRUCTURE_COST}
 WHERE "partType" = 'bridge' AND "structureCost" = 0;`;
 
 interface ShipSheetResponse {
@@ -78,11 +83,11 @@ describe('bridge structure budget fix migration (S4 C1)', () => {
     });
   }
 
-  it('migrates an old bridge structureCost from 0 to -100 and makes onboarding viable', async () => {
+  it('migrates an old bridge structureCost from 0 to its canonical value and makes onboarding viable', async () => {
     await freshSeededApp();
 
     const before = await prisma.partCatalog.findUnique({ where: { partType: 'bridge' } });
-    expect(before?.structureCost).toBe(-100);
+    expect(before?.structureCost).toBe(BRIDGE_STRUCTURE_COST);
 
     const otherBefore = await prisma.partCatalog.findMany({
       where: { partType: { not: 'bridge' } },
@@ -98,7 +103,7 @@ describe('bridge structure budget fix migration (S4 C1)', () => {
     await prisma.$executeRawUnsafe(MIGRATION_SQL);
 
     const after = await prisma.partCatalog.findUnique({ where: { partType: 'bridge' } });
-    expect(after?.structureCost).toBe(-100);
+    expect(after?.structureCost).toBe(BRIDGE_STRUCTURE_COST);
 
     const otherAfter = await prisma.partCatalog.findMany({
       where: { partType: { not: 'bridge' } },
@@ -116,8 +121,13 @@ describe('bridge structure budget fix migration (S4 C1)', () => {
       .send({ faction: 'luna' });
 
     expect(response.status).toBe(200);
-    const ship = asShip(response);
-    expect(ship.sheet.structureBudget).toBe(100);
+    await assembleStarterKit(httpServer(testApp.app), token, asShip(response).id);
+    const ship = asShip(
+      await request(httpServer(testApp.app))
+        .get(`/v1/ships/${asShip(response).id}`)
+        .set('Authorization', `Bearer ${token}`),
+    );
+    expect(ship.sheet.structureBudget).toBe(-BRIDGE_STRUCTURE_COST);
     expect(ship.sheet.structureUsed).toBeLessThanOrEqual(ship.sheet.structureBudget);
     expect(ship.sheet.hp).toBeGreaterThan(0);
   });

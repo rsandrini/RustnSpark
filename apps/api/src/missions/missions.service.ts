@@ -9,20 +9,32 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma, type MissionInstance, type Ship } from '@prisma/client';
 import type { Queue } from 'bullmq';
+import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 import { MISSION_QUEUE_NAME } from '../jobs/queues.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
-import type { InstalledPart } from '../parts/part.types.js';
+import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
+import { PROVISIONAL_TIER } from './generator/template.filler.js';
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import { bilingual } from '../parts/parts.service.js';
+import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
-import { checkMissionRequirements } from './requirements.checker.js';
+import {
+  checkMissionRequirements,
+  missionRequirementChecklist,
+  type RequirementCheck,
+} from './requirements.checker.js';
 import { MissionResolveService } from './resolve.service.js';
 
 // Two-int advisory-lock namespace for hold bookkeeping (class | hashtext(playerId)),
@@ -32,7 +44,7 @@ const HOLD_LOCK_CLASS = 6201;
 
 const DEFAULT_VIEWER_TIER = 1;
 
-const ACTIVE_STATUSES = ['ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
+export const ACTIVE_STATUSES = ['ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
 const PLAYER_VISIBLE_STATUSES = ['HELD', 'ACCEPTED', 'IN_TRANSIT', 'RESOLVING'] as const;
 const RESERVABLE_STATUSES = ['AVAILABLE', 'HELD'] as const;
 
@@ -54,7 +66,34 @@ export interface BoardEligibility {
   readonly reasons: readonly EligibilityReason[];
 }
 
-export type BoardOffer = BoardMission & { readonly eligibility: BoardEligibility };
+/**
+ * What a pilot needs to judge an offer without leaving the board: the template's own words,
+ * the size of the trip, an estimate for THEIR ship, and (mining) what to dig for.
+ */
+export interface OfferInfo {
+  readonly title: { readonly en: string; readonly 'pt-BR': string };
+  readonly description: { readonly en: string; readonly 'pt-BR': string };
+  readonly legCount: number;
+  readonly totalDistance: number;
+  readonly peakDanger: number;
+  readonly peakZone: number;
+  /** Time and fuel for the viewer's ship; null when they have no flyable ship. */
+  readonly estimate: { readonly durationSeconds: number; readonly fuelNeeded: number } | null;
+  readonly material: {
+    readonly name: { readonly en: string; readonly 'pt-BR': string };
+    readonly contracted: boolean;
+    readonly quantity: number | null;
+  } | null;
+  /** Round-10 owner request: the full requirement checklist (met + unmet), not just the
+      failure reasons — so the board can show what a mission demands even when the viewer's
+      ship already clears it. Empty when there is no ship to check against. */
+  readonly requirements: readonly RequirementCheck[];
+}
+
+export type BoardOffer = BoardMission & {
+  readonly eligibility: BoardEligibility;
+  readonly info: OfferInfo;
+};
 
 // Per-leg transit windows (S10.7) served from RoutePresence — written pro-rata by leg
 // distance at dispatch (S7.1), so the client shows the current leg without deriving time.
@@ -65,12 +104,29 @@ export interface LegWindow {
   readonly to: Date;
 }
 
-export type ActiveMission = MissionInstance & { readonly legWindows: LegWindow[] };
+export type ActiveMission = MissionInstance & {
+  readonly legWindows: LegWindow[];
+  /** The template's own title/description (S9 owner request: a brief on the active-mission view). */
+  readonly brief: {
+    readonly title: { readonly en: string; readonly 'pt-BR': string };
+    readonly description: { readonly en: string; readonly 'pt-BR': string };
+  };
+};
 
 interface ViewerContext {
   readonly tier: number;
   readonly ship: Ship | undefined;
   readonly installed: InstalledPart[];
+}
+
+// The highest per-leg zone a mission's route touches (GDD §2: zone 0-1 is the safe core, same
+// boundary `riskOfZone` uses for a location's own risk band) — used to keep a brand-new
+// player's board to the safe core (§9.1 round-4 fix), not a new danger scale of its own.
+function peakZoneOf(rawLegs: unknown): number {
+  const legs = (Array.isArray(rawLegs) ? rawLegs : []) as ReadonlyArray<{
+    readonly zone?: number;
+  }>;
+  return legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
 }
 
 function unavailableError(mission: MissionInstance, playerId: string): string {
@@ -113,17 +169,54 @@ export class MissionsService implements OnModuleInit {
 
   async getBoard(locationId: string, playerId: string): Promise<BoardOffer[]> {
     const viewer = await this.viewerContext(playerId, locationId);
+    const { rules } = this.config.snapshot();
+    const completed = await this.prisma.missionInstance.count({
+      where: { playerId, status: { in: ['DONE', 'FAILED'] } },
+    });
+    const isNewPlayer =
+      rules.missions.starter_guarantee_max_completed > 0 &&
+      completed < rules.missions.starter_guarantee_max_completed;
+
     const rows = await this.board.getBoard(locationId, viewer.tier, playerId);
-    const offers = await this.withEligibility(rows, viewer, playerId, locationId);
+    const offers = await this.withEligibility(
+      this.capForNewPlayer(rows, playerId, isNewPlayer, rules),
+      viewer,
+      playerId,
+      locationId,
+    );
     if (offers.some((offer) => offer.eligibility.eligible)) return offers;
 
     // D43: nothing on the board is takeable for this player. A new player must always have a
     // first mission, so a private start-safe one is created (or already exists) and the board
     // is read again to include it.
-    const created = await this.ensureStarterOffer(playerId, locationId, viewer);
+    const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
     if (!created) return offers;
     const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId);
-    return this.withEligibility(withStarter, viewer, playerId, locationId);
+    return this.withEligibility(
+      this.capForNewPlayer(withStarter, playerId, isNewPlayer, rules),
+      viewer,
+      playerId,
+      locationId,
+    );
+  }
+
+  // §9.1 round-4 fix: "the very first quest a new player can take should be easy/low-risk, not
+  // medium" — while the player is still new by D43's own threshold, the shared board (other
+  // players' offers are unaffected) is capped to the same safe-core zone D43's own private
+  // offer already generates within. The player's own private offer (if any) is exempt: it is
+  // always inside that cap by construction, and must never be filtered out by this or any
+  // future drift between the two config values.
+  private capForNewPlayer(
+    rows: readonly BoardMission[],
+    playerId: string,
+    isNewPlayer: boolean,
+    rules: GameRules,
+  ): readonly BoardMission[] {
+    if (!isNewPlayer) return rows;
+    const maxZone = rules.missions.starter_max_zone;
+    return rows.filter(
+      (row) => row.privatePlayerId === playerId || peakZoneOf(row.legs) <= maxZone,
+    );
   }
 
   /**
@@ -136,20 +229,16 @@ export class MissionsService implements OnModuleInit {
     playerId: string,
     locationId: string,
     viewer: ViewerContext,
+    completed: number,
   ): Promise<boolean> {
     const { rules } = this.config.snapshot();
     const { ship } = viewer;
     if (rules.missions.starter_guarantee_max_completed <= 0 || ship === undefined) return false;
     if (ship.currentLocationId !== locationId || ship.status !== 'IN_PORT') return false;
 
-    const [completed, active] = await Promise.all([
-      this.prisma.missionInstance.count({
-        where: { playerId, status: { in: ['DONE', 'FAILED'] } },
-      }),
-      this.prisma.missionInstance.count({
-        where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
-      }),
-    ]);
+    const active = await this.prisma.missionInstance.count({
+      where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
+    });
     if (completed >= rules.missions.starter_guarantee_max_completed || active > 0) return false;
 
     const sheet = deriveSheet(viewer.installed, rules);
@@ -193,8 +282,25 @@ export class MissionsService implements OnModuleInit {
       orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
     });
     if (rows.length === 0) return [];
-    const windows = await this.legWindows(rows.map((row) => row.id));
-    return rows.map((row) => ({ ...row, legWindows: windows.get(row.id) ?? [] }));
+    const [windows, templates] = await Promise.all([
+      this.legWindows(rows.map((row) => row.id)),
+      this.prisma.missionTemplate.findMany({
+        where: { id: { in: [...new Set(rows.map((row) => row.templateId))] } },
+        select: { id: true, displayName: true, description: true },
+      }),
+    ]);
+    const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+    return rows.map((row) => {
+      const template = wordsById.get(row.templateId);
+      return {
+        ...row,
+        legWindows: windows.get(row.id) ?? [],
+        brief: {
+          title: bilingual(template?.displayName),
+          description: bilingual(template?.description),
+        },
+      };
+    });
   }
 
   // RoutePresence rows exist only while the mission is in transit (created at dispatch,
@@ -299,6 +405,37 @@ export class MissionsService implements OnModuleInit {
     });
   }
 
+  /**
+   * Backs out of an accepted mission that has not left port: it returns to the board (or expires,
+   * if its offer window closed meanwhile) and the reward goes back to the provisional estimate.
+   * Once dispatched it is a flight, not an offer, so this refuses with a 409.
+   */
+  async abandon(missionId: string, playerId: string): Promise<MissionInstance> {
+    const { rules } = this.config.snapshot();
+    const mission = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
+    if (!mission || mission.playerId !== playerId) throw new NotFoundException('mission not found');
+    if (mission.status !== 'ACCEPTED') {
+      throw new ConflictException({ error: 'MISSION_NOT_ABANDONABLE' });
+    }
+
+    const expired = mission.expiresAt.getTime() <= Date.now();
+    const updated = await this.prisma.missionInstance.updateMany({
+      where: { id: mission.id, playerId, status: 'ACCEPTED' },
+      data: {
+        status: expired ? 'EXPIRED' : 'AVAILABLE',
+        playerId: null,
+        shipId: null,
+        acceptedAt: null,
+        reward: missionReward(mission, PROVISIONAL_TIER, rules),
+        version: { increment: 1 },
+      },
+    });
+    if (updated.count === 0) {
+      throw new ConflictException({ error: 'MISSION_NOT_ABANDONABLE' });
+    }
+    return this.prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+  }
+
   async release(missionId: string, playerId: string): Promise<MissionInstance> {
     const mission = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!mission) throw new NotFoundException('mission not found');
@@ -368,10 +505,20 @@ export class MissionsService implements OnModuleInit {
     const installedRows = rows.filter(
       (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
     );
-    const installed = installedRows.map((part) => ({
+    const installedRaw = installedRows.map((part) => ({
       instance: part,
       catalog: pickCatalogStats(part.partCatalog),
     }));
+    const catalogForConnectivity = new Map(installedRaw.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installed = applyConnectivity(installedRaw, connectedIds);
 
     const sheet = deriveSheet(installed, rules);
     const viability = checkViability(sheet, installed, rules);
@@ -456,10 +603,20 @@ export class MissionsService implements OnModuleInit {
       ship === undefined
         ? []
         : rows.filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id);
-    const installed = installedRows.map((part) => ({
+    const installedRaw = installedRows.map((part) => ({
       instance: part,
       catalog: pickCatalogStats(part.partCatalog),
     }));
+    const catalogForConnectivity = new Map(installedRaw.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship?.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    const installed = applyConnectivity(installedRaw, connectedIds);
     const tier =
       ship === undefined
         ? DEFAULT_VIEWER_TIER
@@ -483,9 +640,23 @@ export class MissionsService implements OnModuleInit {
 
     const templates = await this.prisma.missionTemplate.findMany({
       where: { id: { in: [...new Set(rows.map((row) => row.templateId))] } },
-      select: { id: true, requirements: true },
+      select: { id: true, requirements: true, displayName: true, description: true },
     });
     const requirementsById = new Map(templates.map((entry) => [entry.id, entry.requirements]));
+    const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+
+    const materialIds = rows.flatMap((row) => {
+      const id = (row.cargo as { materialId?: unknown } | null)?.materialId;
+      return typeof id === 'string' ? [id] : [];
+    });
+    const materials =
+      materialIds.length === 0
+        ? []
+        : await this.prisma.material.findMany({
+            where: { id: { in: [...new Set(materialIds)] } },
+            select: { id: true, displayName: true },
+          });
+    const materialsById = new Map(materials.map((entry) => [entry.id, entry.displayName]));
 
     const active = await this.prisma.missionInstance.count({
       where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
@@ -522,7 +693,20 @@ export class MissionsService implements OnModuleInit {
           reasons.push(...check.reasons);
         }
       }
-      return { ...row, eligibility: { eligible: reasons.length === 0, reasons } };
+      return {
+        ...row,
+        eligibility: { eligible: reasons.length === 0, reasons },
+        info: offerInfo(
+          row,
+          wordsById.get(row.templateId),
+          materialsById,
+          sheet,
+          viewer.ship === undefined ? null : viewer.installed,
+          requirementsById.get(row.templateId),
+          viability,
+          rules,
+        ),
+      };
     });
   }
 
@@ -532,4 +716,83 @@ export class MissionsService implements OnModuleInit {
       data: { status: 'EXPIRED', playerId: null },
     });
   }
+}
+
+interface OfferLeg {
+  readonly distance?: number;
+  readonly danger?: number;
+  readonly zone?: number;
+  readonly env?: { readonly fuelMult?: number };
+}
+
+function offerInfo(
+  row: BoardMission,
+  template: { displayName: unknown; description: unknown } | undefined,
+  materialsById: ReadonlyMap<string, unknown>,
+  sheet: ReturnType<typeof deriveSheet> | null,
+  parts: readonly InstalledPart[] | null,
+  requirementsJson: unknown,
+  viability: { readonly viable: boolean } | null,
+  rules: GameRules,
+): OfferInfo {
+  const legs = (Array.isArray(row.legs) ? row.legs : []) as OfferLeg[];
+  const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
+  const peakDanger = legs.reduce((peak, leg) => Math.max(peak, leg.danger ?? 0), 0);
+  const peakZone = legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
+
+  let estimate: OfferInfo['estimate'] = null;
+  if (sheet !== null && viability?.viable === true && sheet.mob > 0) {
+    estimate = {
+      durationSeconds: missionDuration({
+        totalDistance,
+        mobility: sheet.mob,
+        durationK: rules.missions.duration_k,
+        timeScale: rules.missions.time_scale,
+        classCutoffs: rules.missions.duration_class_cutoffs,
+      }).durationSeconds,
+      fuelNeeded: legs.reduce(
+        (sum, leg) =>
+          sum +
+          fuelUnits({
+            fuelUse: sheet.fuelUse,
+            distance: leg.distance ?? 0,
+            envFuelMult: leg.env?.fuelMult ?? 1,
+          }),
+        0,
+      ),
+    };
+  }
+
+  const cargo = (row.cargo ?? {}) as {
+    materialId?: unknown;
+    contracted?: unknown;
+    quantity?: unknown;
+  };
+  const materialName =
+    typeof cargo.materialId === 'string' ? materialsById.get(cargo.materialId) : undefined;
+  const requirements =
+    sheet === null || parts === null
+      ? []
+      : missionRequirementChecklist(
+          { missionType: row.type, requirements: requirementsJson, sheet, parts },
+          rules,
+        );
+  return {
+    title: bilingual(template?.displayName),
+    description: bilingual(template?.description),
+    legCount: legs.length,
+    totalDistance,
+    peakDanger,
+    peakZone,
+    estimate,
+    material:
+      materialName === undefined
+        ? null
+        : {
+            name: bilingual(materialName),
+            contracted: cargo.contracted === true,
+            quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
+          },
+    requirements,
+  };
 }

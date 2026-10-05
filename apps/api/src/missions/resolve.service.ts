@@ -5,6 +5,7 @@ import type { DispatchJobData } from './dispatch.service.js';
 // the classes (Nest boot fails without this).
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { loadScavengeContext } from './scavenge-context.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
@@ -13,6 +14,7 @@ import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
 // schema its version selects before it is written.
 import { toJsonInput } from '../common/prisma-json.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 
@@ -119,6 +121,10 @@ export class MissionResolveService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      scavenge:
+        mission.type === 'SCAVENGE'
+          ? await loadScavengeContext(this.prisma, mission.destinationId)
+          : null,
     });
     const outcome = resolveMission(
       buildResolveInput({
@@ -160,10 +166,62 @@ export class MissionResolveService {
           legs: toJsonInput({ legs: outcome.legs, events, context }),
         },
       });
+      // What the pirates took from storage (chosen by the seeded engine and frozen in the log):
+      // the parts leave the player's inventory in the same transaction as everything else.
+      const stolenIds = outcome.events.flatMap((event) => event.stolen ?? []);
+      if (stolenIds.length > 0) {
+        const taken = await tx.partInstance.findMany({
+          where: { id: { in: stolenIds }, ownerPlayerId: mission.playerId!, location: 'INVENTORY' },
+          select: { id: true, partType: true },
+        });
+        if (taken.length > 0) {
+          await tx.partInstance.deleteMany({ where: { id: { in: taken.map((part) => part.id) } } });
+          await this.events.record(
+            {
+              playerId: mission.playerId!,
+              type: 'pirate.theft',
+              payload: { missionId, partTypes: taken.map((part) => part.partType) },
+            },
+            tx,
+          );
+        }
+      }
+      // A scavenging job's finds land in the inventory in the same transaction as the log: used
+      // parts as new part instances, scrap as fixed-price materials.
+      for (const event of outcome.events) {
+        const found = event.found;
+        if (event.type !== 'scavenge_find' || found === undefined) continue;
+        if (found.kind === 'part') {
+          await tx.partInstance.create({
+            data: {
+              partType: found.partType,
+              ownerPlayerId: mission.playerId!,
+              condition: found.condition,
+              location: 'INVENTORY',
+              connectors: toJsonInput(await rollConnectorsForPartType(tx, found.partType)),
+            },
+          });
+        } else {
+          const materialId = `scrap_${found.partType}`;
+          const exists = await tx.material.findUnique({
+            where: { id: materialId },
+            select: { id: true },
+          });
+          if (exists !== null) {
+            await tx.playerMaterial.upsert({
+              where: { playerId_materialId: { playerId: mission.playerId!, materialId } },
+              create: { playerId: mission.playerId!, materialId, quantity: 1 },
+              update: { quantity: { increment: 1 } },
+            });
+          }
+        }
+      }
       for (const part of outcome.parts) {
         await tx.partInstance.updateMany({
           where: { id: part.id },
-          data: { condition: part.condition },
+          // Whole numbers only: the screen shows whole percent, and a stored 79.6 shown as 80 made
+          // "no change" repairs cost money. The log's events are integers already.
+          data: { condition: Math.round(part.condition) },
         });
       }
       await tx.ship.update({

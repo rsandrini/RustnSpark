@@ -30,11 +30,14 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   fuel_exhausted: 'transit',
   combat_win: 'combat',
   combat_loss: 'combat',
+  combat_draw: 'combat',
   escaped: 'combat',
   escort_absorbed: 'combat',
   escort_client_destroyed: 'failure',
   mission_wear: 'environment',
   mission_payout: 'payment',
+  pirate_demand: 'failure',
+  scavenge_find: 'loot',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -47,7 +50,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   sensor: 'failure',
 };
 
-const CASCADE_TYPES = ['combat_win', 'combat_loss', 'escort_absorbed'] as const;
+const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
 const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
 
 function v2Event(
@@ -69,6 +72,13 @@ function v2Event(
   };
   if ((CASCADE_TYPES as readonly string[]).includes(type)) {
     base['cascade'] = { shield: 4, armor: 6, hp: 3 };
+  }
+  if (type === 'scavenge_find') {
+    base['found'] = { kind: 'part', partType: 'cargo', condition: 55 };
+  }
+  if (type === 'pirate_demand') {
+    base['motive'] = 'parts';
+    base['stolen'] = ['part-9'];
   }
   if ((PART_FAILURE_TYPES as readonly string[]).includes(type)) {
     base['consequence'] = 'fuel_leak' satisfies FailureConsequence;

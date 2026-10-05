@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,14 +11,11 @@ import { AdminRoute } from '../features/auth/admin-route';
 import { OnboardingRoute } from '../features/onboarding/onboarding.page';
 import { HangarPage } from '../features/hangar/hangar.page';
 import { MapPage } from '../features/map/map.page';
-import { BoardPage } from '../features/board/board.page';
-import { TransitPage } from '../features/transit/transit.page';
 import { ReportPage } from '../features/report/report.page';
-import { PortPage } from '../features/port/port.page';
 import { ProfilePage } from '../features/profile/profile.page';
-import { GameNav } from '../ui/GameNav';
+import { TopBar } from '../ui/TopBar';
+import { useWalletSync } from '../features/transit/use-active-mission';
 import { NoticeBanner } from '../ui/NoticeBanner';
-import { HomePage } from '../pages/home.page';
 import { NotFoundPage } from '../pages/not-found.page';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
@@ -28,13 +25,33 @@ function AdminFallback() {
   return <p>{t('tuning.loading')}</p>;
 }
 
+/** Board/Transit/Port are real nested routes under /hangar again (reversing the query-param
+    form of the round-3 nav consolidation — Port and Board are reachable from the top nav now,
+    not just a tab inside My Ship); these three bare paths stay only as redirects for any stray
+    old bookmark/link, keeping whichever tab it meant to open and any other query string it
+    carried (e.g. /board?location=X for the mission board's own origin filter). */
+function RedirectToHangarTab({ tab }: { tab?: 'board' | 'port' }) {
+  const location = useLocation();
+  const path = tab === undefined ? '/hangar' : `/hangar/${tab}`;
+  return <Navigate to={`${path}${location.search}`} replace />;
+}
+
+function InGameChrome() {
+  useWalletSync();
+  return (
+    <>
+      <TopBar />
+      <NoticeBanner />
+    </>
+  );
+}
+
 function AppChrome() {
   const { user } = useAuthContext();
   const inGame = user?.factionId != null;
   return (
     <>
-      {inGame && <NoticeBanner />}
-      {inGame && <GameNav />}
+      {inGame ? <InGameChrome /> : <LanguageSwitcher />}
       <Outlet />
     </>
   );
@@ -43,7 +60,6 @@ function AppChrome() {
 function RootLayout() {
   return (
     <AuthProvider>
-      <LanguageSwitcher />
       <AppChrome />
     </AuthProvider>
   );
@@ -53,7 +69,20 @@ export const routes = [
   {
     element: <RootLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
+      {
+        // Home was retired (round-3 nav consolidation): My Ship (the Hangar) is the landing
+        // page. The guard chain still does the right thing for every visitor: no session →
+        // /login (ProtectedRoute); no faction yet → /onboarding (RequireFaction); otherwise →
+        // /hangar.
+        path: '/',
+        element: (
+          <ProtectedRoute>
+            <RequireFaction>
+              <Navigate to="/hangar" replace />
+            </RequireFaction>
+          </ProtectedRoute>
+        ),
+      },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       {
@@ -65,7 +94,7 @@ export const routes = [
         ),
       },
       {
-        path: '/hangar',
+        path: '/hangar/:tab?',
         element: (
           <ProtectedRoute>
             <RequireFaction>
@@ -84,42 +113,16 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
-      {
-        path: '/board',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <BoardPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/transit',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <TransitPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
+      // Bare bookmarks from before Port/Board got their own nested routes back.
+      { path: '/board', element: <RedirectToHangarTab tab="board" /> },
+      { path: '/transit', element: <RedirectToHangarTab /> },
+      { path: '/port', element: <RedirectToHangarTab tab="port" /> },
       {
         path: '/report/:missionId',
         element: (
           <ProtectedRoute>
             <RequireFaction>
               <ReportPage />
-            </RequireFaction>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/port',
-        element: (
-          <ProtectedRoute>
-            <RequireFaction>
-              <PortPage />
             </RequireFaction>
           </ProtectedRoute>
         ),

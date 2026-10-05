@@ -6,6 +6,7 @@ import { OnboardingService } from '../../players/onboarding.service.js';
 import { InsufficientFundsError, WalletService } from '../../players/wallet.service.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { AccountStatusCache } from '../../common/guards/account-status.cache.js';
+import type { PasswordService } from '../../auth/password.service.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 import { SupportService, type SupportContext } from './support.service.js';
 
@@ -86,11 +87,22 @@ function makeFixture() {
     }),
   } as unknown as GameConfigService;
   const onboarding = { applyStarterKit } as unknown as OnboardingService;
+  const passwordHash = jest
+    .fn<(plain: string) => Promise<string>>()
+    .mockResolvedValue('hashed-password');
+  const passwords = { hash: passwordHash } as unknown as PasswordService;
 
   return {
-    service: new SupportService(prisma, audit, wallet, config, onboarding, {
-      forget: jest.fn(),
-    } as unknown as AccountStatusCache),
+    service: new SupportService(
+      prisma,
+      audit,
+      wallet,
+      config,
+      onboarding,
+      { forget: jest.fn() } as unknown as AccountStatusCache,
+      passwords,
+    ),
+    passwordHash,
     playerFindUnique,
     playerFindUniqueOrThrow,
     accountFindUnique,
@@ -207,6 +219,34 @@ describe('SupportService (S11.4)', () => {
     expect(f.walletCredit).not.toHaveBeenCalled();
     expect(f.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'SUPPORT_CLEAR_NEGATIVE_BALANCE' }),
+      expect.anything(),
+    );
+  });
+
+  it('sets a new password, revokes refresh tokens, and never audits the password itself', async () => {
+    const f = makeFixture();
+    f.playerFindUnique.mockResolvedValueOnce(makePlayer());
+    f.accountFindUnique.mockResolvedValueOnce({ id: 'account-1' });
+
+    const result = await f.service.setPassword('player-1', 'a-new-strong-password', context);
+
+    expect(f.passwordHash).toHaveBeenCalledWith('a-new-strong-password');
+    expect(f.accountUpdate).toHaveBeenCalledWith({
+      where: { id: 'account-1' },
+      data: { passwordHash: 'hashed-password' },
+    });
+    expect(f.refreshDeleteMany).toHaveBeenCalledWith({ where: { accountId: 'account-1' } });
+    expect(result).toEqual({
+      action: 'SUPPORT_SET_PASSWORD',
+      target: 'player-1',
+      before: { passwordChanged: false },
+      after: { passwordChanged: true },
+    });
+    expect(f.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'SUPPORT_SET_PASSWORD',
+        after: { passwordChanged: true, reason: 'stuck after crash' },
+      }),
       expect.anything(),
     );
   });

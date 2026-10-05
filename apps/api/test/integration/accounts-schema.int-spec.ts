@@ -5,7 +5,16 @@ import { closeTestPrismaClient, getTestPrismaClient } from '../support/test-db.j
 // email" acceptance: any extra column (or missing one) fails this test mechanically.
 const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   Account: ['id', 'email', 'passwordHash', 'role', 'status', 'createdAt'],
-  Player: ['id', 'accountId', 'name', 'credits', 'locale', 'factionId', 'createdAt'],
+  Player: [
+    'id',
+    'accountId',
+    'name',
+    'credits',
+    'locale',
+    'factionId',
+    'debugFastOps',
+    'createdAt',
+  ],
   RefreshToken: [
     'id',
     'accountId',

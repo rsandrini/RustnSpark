@@ -21,9 +21,15 @@ import {
   applyMissionWearToParts,
   applyWear,
   chokeWear,
+  countDefenseParts,
+  dangerFactor,
   defeatWear,
+  isPassiveWearClass,
   missionWear,
   overloadWear,
+  partAmbientWear,
+  partDefeatWear,
+  systemWear,
 } from '../../../src/resolution/wear/wear.calculator.js';
 import { CHOKE_CASES, CHOKE_CONSEQUENCE_CASES } from '../../fixtures/appendix-e.js';
 
@@ -146,6 +152,140 @@ describe('S5.5 — wear calculator', () => {
     expect(next.get('a')).toBe(46);
     expect(next.get('b')).toBe(15);
     rng.assertDrained();
+  });
+});
+
+describe('round-2 playtest fix — passive classes wear from usage only, exposed classes scale by danger', () => {
+  it('bridge, cargo, reactor and utility are the passive classes; everything else is exposed', () => {
+    expect(isPassiveWearClass('BRIDGE')).toBe(true);
+    expect(isPassiveWearClass('CARGO')).toBe(true);
+    expect(isPassiveWearClass('REACTOR')).toBe(true);
+    expect(isPassiveWearClass('UTILITY')).toBe(true);
+    for (const exposed of ['ENGINE', 'TANK', 'BATTERY', 'WEAPON', 'DEFENSE', 'SENSOR']) {
+      expect(isPassiveWearClass(exposed)).toBe(false);
+    }
+  });
+
+  it('dangerFactor scales linearly between the floor and the cap', () => {
+    expect(dangerFactor(0, rules)).toBe(rules.wear.danger_floor);
+    expect(dangerFactor(rules.wear.danger_ref, rules)).toBeCloseTo(1, 12);
+    expect(dangerFactor(1000, rules)).toBe(rules.wear.danger_cap);
+  });
+
+  it('systemWear draws uniform(system_base_min, system_base_max), tiny and unscaled', () => {
+    const rng = new ScriptedRng(
+      [
+        {
+          fn: 'uniform',
+          args: [rules.wear.system_base_min, rules.wear.system_base_max],
+          value: 0.1,
+        },
+      ],
+      [],
+      'system-wear',
+    );
+    expect(systemWear(rules, rng)).toBe(0.1);
+    rng.assertDrained();
+  });
+
+  it('partAmbientWear routes a passive class to systemWear, ignoring danger and environment', () => {
+    const rng = new ScriptedRng(
+      [
+        {
+          fn: 'uniform',
+          args: [rules.wear.system_base_min, rules.wear.system_base_max],
+          value: 0.12,
+        },
+      ],
+      [],
+      'passive-ambient',
+    );
+    // A high-danger, high-env leg still costs the passive class only its flat usage tick.
+    expect(partAmbientWear('CARGO', 8, 3, 0, rules, rng)).toBe(0.12);
+    rng.assertDrained();
+  });
+
+  it('partAmbientWear scales an exposed class by the leg danger', () => {
+    const rng = new ScriptedRng([{ fn: 'uniform', args: [3, 5], value: 4 }], [], 'exposed-ambient');
+    // total = 4 + 1×1.2 = 5.2; danger 0 floors at danger_floor (0.1) → 0.52.
+    expect(partAmbientWear('ENGINE', 0, 1, 0, rules, rng)).toBeCloseTo(
+      5.2 * rules.wear.danger_floor,
+      10,
+    );
+    rng.assertDrained();
+  });
+
+  it("a simple, safe leg (low danger) barely touches an exposed part — the owner's complaint", () => {
+    // Two legs at danger 2 (zone 0, the mildest), env level 1: with the shipped defaults this
+    // must cost an exposed part a small fraction of what the old flat formula did (~4-6/leg).
+    let condition = 80;
+    for (let i = 0; i < 2; i += 1) {
+      const rng = createRng(1000 + i);
+      const loss = partAmbientWear('ENGINE', 2, 1, 0, rules, rng);
+      condition = applyWear(condition, loss);
+    }
+    expect(80 - condition).toBeLessThan(4);
+  });
+
+  it('partDefeatWear gives a passive class only system_defeat_share of the roll; exposed the whole roll with no DEFENSE part installed', () => {
+    expect(partDefeatWear('CARGO', 12, 0, rules)).toBeCloseTo(
+      12 * rules.wear.system_defeat_share,
+      10,
+    );
+    expect(partDefeatWear('ENGINE', 12, 0, rules)).toBe(12);
+  });
+
+  it('countDefenseParts counts only DEFENSE-class parts', () => {
+    expect(
+      countDefenseParts([
+        { partClass: 'DEFENSE' },
+        { partClass: 'ENGINE' },
+        { partClass: 'DEFENSE' },
+        { partClass: 'CARGO' },
+      ]),
+    ).toBe(2);
+    expect(countDefenseParts([{ partClass: 'ENGINE' }])).toBe(0);
+    expect(countDefenseParts([])).toBe(0);
+  });
+
+  // Round-4 wear rework: DEFENSE absorbs a fixed total extra share, split across however many
+  // DEFENSE parts exist; every other exposed class absorbs correspondingly less.
+  it('partDefeatWear: one DEFENSE part gets the full bonus, other exposed classes get the compensating factor', () => {
+    expect(partDefeatWear('DEFENSE', 12, 1, rules)).toBeCloseTo(
+      12 * (1 + rules.wear.defense_wear_bonus),
+      10,
+    );
+    expect(partDefeatWear('ENGINE', 12, 1, rules)).toBeCloseTo(
+      12 * rules.wear.other_exposed_wear_factor,
+      10,
+    );
+    // Passive classes are untouched by a DEFENSE part being installed.
+    expect(partDefeatWear('CARGO', 12, 1, rules)).toBeCloseTo(
+      12 * rules.wear.system_defeat_share,
+      10,
+    );
+  });
+
+  it('partDefeatWear: two DEFENSE parts split the same total bonus, not double it', () => {
+    const oneDefense = partDefeatWear('DEFENSE', 12, 1, rules);
+    const twoDefenseEach = partDefeatWear('DEFENSE', 12, 2, rules);
+    expect(twoDefenseEach).toBeCloseTo(12 * (1 + rules.wear.defense_wear_bonus / 2), 10);
+    expect(twoDefenseEach).toBeLessThan(oneDefense);
+    // Collective extra absorbed (beyond the 1x baseline) stays the same either way.
+    const oneDefenseTotalExtra = oneDefense - 12;
+    const twoDefenseTotalExtra = 2 * twoDefenseEach - 2 * 12;
+    expect(twoDefenseTotalExtra).toBeCloseTo(oneDefenseTotalExtra, 10);
+  });
+
+  it('partAmbientWear: a DEFENSE part absorbs more, an other exposed class absorbs less, same roll', () => {
+    const baseRng = () =>
+      new ScriptedRng([{ fn: 'uniform', args: [3, 5], value: 4 }], [], 'defense-ambient');
+    // total = 4 + 1×1.2 = 5.2, danger 6 → dangerFactor 1 (danger/danger_ref = 6/6 = 1).
+    const noDefense = partAmbientWear('ENGINE', 6, 1, 0, rules, baseRng());
+    const withDefense = partAmbientWear('DEFENSE', 6, 1, 1, rules, baseRng());
+    const otherExposedWithDefense = partAmbientWear('ENGINE', 6, 1, 1, rules, baseRng());
+    expect(withDefense).toBeCloseTo(noDefense * (1 + rules.wear.defense_wear_bonus), 10);
+    expect(otherExposedWithDefense).toBeCloseTo(noDefense * rules.wear.other_exposed_wear_factor, 10);
   });
 });
 

@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -89,6 +90,7 @@ describe('rescue API (S8.6)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -274,11 +276,19 @@ describe('rescue API (S8.6)', () => {
     expect(body.credits).toBe(500 - 800);
     expect(body.status).toBe('IN_PORT');
 
-    const installed = await installedParts(player.shipId);
-    expect(installed).toHaveLength(starterParts.length);
-    for (const part of installed) {
+    // The restart kit comes back loose (D44): nothing is installed until the pilot assembles.
+    expect(await installedParts(player.shipId)).toHaveLength(0);
+    const kit = await prisma.partInstance.findMany({
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INVENTORY',
+        condition: restartCondition,
+      },
+      include: { partCatalog: { select: { rarity: true } } },
+    });
+    expect(kit).toHaveLength(starterParts.length);
+    for (const part of kit) {
       expect(part.partCatalog.rarity).toBe('COMMON');
-      expect(part.condition).toBe(restartCondition);
       expect(part.condition).toBeLessThanOrEqual(50);
     }
 
@@ -292,7 +302,16 @@ describe('rescue API (S8.6)', () => {
 
     const ship = await shipRow(player.shipId);
     expect(ship.status).toBe('IN_PORT');
-    expect(ship.layout).toHaveLength(starterParts.length);
+    expect(ship.layout).toEqual([]);
+
+    // ...and the kit assembles into a viable ship.
+    await assembleStarterKit(
+      httpServer(testApp.app),
+      player.token,
+      player.shipId,
+      kit.map((part) => part.id),
+    );
+    expect(await installedParts(player.shipId)).toHaveLength(starterParts.length);
   });
 
   it('restart kit clamps fuel to the new tank ceiling (review item 5)', async () => {
@@ -316,15 +335,28 @@ describe('rescue API (S8.6)', () => {
     expect(rescued.status).toBe(200);
     expect((rescued.body as RescueBody).restartParts.length).toBeGreaterThan(0);
 
-    const installed = await prisma.partInstance.findMany({
-      where: { shipId: player.shipId, location: 'INSTALLED' },
+    const rules = configService.snapshot().rules;
+    const kit = await prisma.partInstance.findMany({
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INVENTORY',
+        condition: rules.parts.restart_condition_max,
+      },
       include: { partCatalog: { select: { fuelCap: true } } },
     });
-    const kitFuelCap = installed.reduce((total, row) => total + (row.partCatalog.fuelCap ?? 0), 0);
+    const kitFuelCap = kit.reduce((total, row) => total + (row.partCatalog.fuelCap ?? 0), 0);
     expect(kitFuelCap).toBeGreaterThan(0);
 
     const ship = await shipRow(player.shipId);
     expect(ship.fuel).toBe(kitFuelCap);
+
+    // The kit is loose: assemble it (the pilot's next step) before the pump check below.
+    await assembleStarterKit(
+      httpServer(testApp.app),
+      player.token,
+      player.shipId,
+      kit.map((part) => part.id),
+    );
 
     // A full refuel is a free no-op: the tank sits exactly at its cap, never above it.
     const full = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });

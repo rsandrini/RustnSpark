@@ -11,7 +11,11 @@ function check(
   missionType: MissionType,
   parts: ReturnType<typeof buildInstalled>,
   requirements?: unknown,
-): { eligible: boolean; reasons: { code: string }[] } {
+): {
+  eligible: boolean;
+  reasons: { code: string }[];
+  checklist: { code: string; message: string; met: boolean }[];
+} {
   const sheet = deriveSheet(parts, rules);
   return checkMissionRequirements({ missionType, requirements, sheet, parts: parts }, rules);
 }
@@ -260,5 +264,45 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
     const types: MissionType[] = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE'];
     const eligible = types.filter((type) => check(type, buildInstalled(STARTER)).eligible);
     expect(eligible).toEqual(['DELIVERY']);
+  });
+});
+
+// Round-10 owner request: "show the requirements for the mission, in a clear way, not only
+// the text" — the board/accept flow only ever saw `reasons` (failures only), so a player who
+// was ELIGIBLE never saw what the mission actually demanded. `checklist` is the same checks,
+// always returned with a `met` flag, so the UI can render a full requirement list either way.
+describe('S6.3 — full requirement checklist (met and unmet), round 10', () => {
+  it('DELIVERY checklist reports cargo met or unmet, never omitted on success', () => {
+    const ok = check('DELIVERY', buildInstalled(STARTER));
+    expect(ok.checklist).toEqual([{ code: 'CARGO_TYPE', message: expect.any(String), met: true }]);
+
+    const bad = check('DELIVERY', buildInstalled(NO_CARGO));
+    expect(bad.checklist).toEqual([
+      { code: 'CARGO_TYPE', message: expect.any(String), met: false },
+    ]);
+  });
+
+  it('ESCORT checklist lists weapons and mobility as two independent entries', () => {
+    const result = check('ESCORT', buildInstalled(STARTER));
+    expect(result.checklist).toEqual([
+      { code: 'WEAPONS', message: expect.any(String), met: false },
+      { code: 'MIN_MOBILITY', message: expect.any(String), met: true },
+    ]);
+  });
+
+  it('TRAVEL/SCAVENGE have nothing to check: an empty checklist, not a hidden one', () => {
+    expect(check('TRAVEL', buildInstalled(STARTER)).checklist).toEqual([]);
+    expect(check('SCAVENGE', buildInstalled(STARTER)).checklist).toEqual([]);
+  });
+
+  it('checklist and reasons always agree on exactly what is unmet', () => {
+    const types: MissionType[] = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE'];
+    for (const type of types) {
+      for (const build of [STARTER, NO_CARGO, MINER_NO_CARGO, ARMED_SLOW, FAST_NO_CARGO]) {
+        const result = check(type, buildInstalled(build));
+        const unmetCodes = result.checklist.filter((entry) => !entry.met).map((e) => e.code);
+        expect(unmetCodes).toEqual(codes(result));
+      }
+    }
   });
 });

@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import type { MissionInstance } from '@prisma/client';
 import { Job, Queue, QueueEvents } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { EnvService } from '../../src/common/env/env.module.js';
 import { SUPPORTED_LOCALES } from '../../src/common/locale/locale.js';
@@ -94,6 +95,7 @@ describe('mission resolve processor (S7.3)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -276,6 +278,80 @@ describe('mission resolve processor (S7.3)', () => {
     );
   }, 30_000);
 
+  it('pirates take parts from STORAGE (never installed ones) in the resolve transaction, and the log names them', async () => {
+    const player = await authFor(testApp.app);
+    const playerId = player.seeded.player.id;
+    const spares = await Promise.all(
+      ['cargo', 'hull', 'tank_small'].map((partType) =>
+        prisma.partInstance.create({
+          data: { partType, ownerPlayerId: playerId, condition: 80, location: 'INVENTORY' },
+        }),
+      ),
+    );
+    const installedIds = (
+      await prisma.partInstance.findMany({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+        select: { id: true },
+      })
+    ).map((part) => part.id);
+
+    let theft: { stolen: string[] } | undefined;
+    for (let attempt = 0; attempt < 80 && theft === undefined; attempt += 1) {
+      // A clean ship for every try: repaired parts, docked, and a mission through zone-3 danger.
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+        data: { condition: 100 },
+      });
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { status: 'IN_PORT', currentLocationId: 'ceres' },
+      });
+      const mission = await createAcceptedMission(player, `w1-theft-${attempt}`, [150]);
+      await prisma.missionInstance.update({
+        where: { id: mission.id },
+        data: {
+          legs: [
+            {
+              routeId: (await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } })).id,
+              distance: 150,
+              danger: 20,
+              zone: 3,
+              env: { id: 'open', level: 1, fuelMult: 1 },
+            },
+          ],
+        },
+      });
+      const job = await dispatchedJob(player, mission, 10_000);
+      await processor.process(job);
+
+      const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId: mission.id } });
+      const events = (
+        log.legs as { events: Array<{ type: string; motive?: string; stolen?: string[] }> }
+      ).events;
+      const demand = events.find(
+        (event) => event.type === 'pirate_demand' && event.motive === 'parts',
+      );
+      if (demand !== undefined) theft = { stolen: demand.stolen ?? [] };
+    }
+
+    expect(theft).toBeDefined();
+    expect(theft!.stolen.length).toBeGreaterThan(0);
+    const spareIds = spares.map((part) => part.id);
+    for (const id of theft!.stolen) {
+      expect(spareIds).toContain(id);
+      expect(await prisma.partInstance.findUnique({ where: { id } })).toBeNull();
+    }
+    // Installed parts are never touched, and the parts that were not taken are still there.
+    expect(await prisma.partInstance.count({ where: { id: { in: installedIds } } })).toBe(
+      installedIds.length,
+    );
+    const kept = spareIds.filter((id) => !theft!.stolen.includes(id));
+    expect(await prisma.partInstance.count({ where: { id: { in: kept } } })).toBe(kept.length);
+    expect(
+      await prisma.playerEvent.count({ where: { playerId, type: 'pirate.theft' } }),
+    ).toBeGreaterThan(0);
+  }, 120_000);
+
   it('stores no template text: the log is structured events, rendering happens at read time (S9.3)', async () => {
     const player = await authFor(testApp.app);
     const mission = await createAcceptedMission(player, 's9.3-notemplate-seed', [150, 100]);
@@ -346,6 +422,7 @@ describe('mission resolve processor (S7.3)', () => {
         fuel: 0,
         currentLocationId: 'ceres',
         stance: 'NEUTRAL',
+        energyMode: 'FULL',
         parts: [],
         legs: [],
       },
@@ -428,24 +505,36 @@ describe('mission resolve processor (S7.3)', () => {
     // The starter ship has no mining rig (min = 0 → zero yield by construction), and the
     // rig draws −3 continuous energy that the starter build cannot cover — so the rig
     // lands together with a solar panel to keep the hull viable (plan S7.1 re-check).
-    await prisma.partInstance.createMany({
-      data: [
-        {
-          partType: 'mining_rig',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-        {
-          partType: 'reactor_solar',
-          ownerPlayerId: player.seeded.player.id,
-          condition: 100,
-          location: 'INSTALLED',
-          shipId: player.shipId,
-        },
-      ],
+    //
+    // Created in INVENTORY and placed through the real auto-assemble endpoint, not a raw
+    // `location: 'INSTALLED'` write: Connectors v0.1's connectivity graph walks ship.layout's
+    // own placements, so a part with no placement there is invisible to it (and counts as
+    // disconnected, zeroing exactly the `min` stat this test is about).
+    const rig = await prisma.partInstance.create({
+      data: {
+        partType: 'mining_rig',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
     });
+    const reactor = await prisma.partInstance.create({
+      data: {
+        partType: 'reactor_solar',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const installedBefore = await prisma.partInstance.findMany({
+      where: { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED', shipId: player.shipId },
+      select: { id: true },
+    });
+    const autoAssembleResponse = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/auto-assemble`)
+      .set('Authorization', `Bearer ${player.token}`)
+      .send({ partInstanceIds: [...installedBefore.map((p) => p.id), rig.id, reactor.id] });
+    expect(autoAssembleResponse.status).toBe(200);
     const mission = await createMiningMission(player, 's8.7-mining-seed');
     const creditsBefore = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },
@@ -494,6 +583,7 @@ describe('mission resolve processor (S7.3)', () => {
             fuel: 0,
             currentLocationId: 'ceres',
             stance: 'NEUTRAL',
+            energyMode: 'FULL',
             parts: [],
             legs: [],
           },

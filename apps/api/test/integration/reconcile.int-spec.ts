@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import type { MissionInstance } from '@prisma/client';
 import { Job, Queue, QueueEvents } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { EnvService } from '../../src/common/env/env.module.js';
 import { PasswordService } from '../../src/auth/password.service.js';
@@ -116,6 +117,7 @@ describe('reconciliation tick (S7.4)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -283,6 +285,7 @@ describe('reconciliation tick (S7.4)', () => {
             fuel: 0,
             currentLocationId: 'ceres',
             stance: 'NEUTRAL',
+            energyMode: 'FULL',
             parts: [],
             legs: [],
           },

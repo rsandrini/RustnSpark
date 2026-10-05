@@ -3,6 +3,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { InjectQueue } from '@nestjs/bullmq';
 import { Prisma } from '@prisma/client';
 import type { Queue } from 'bullmq';
+import { jobDelayMs } from '../config/debug-timing.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 import { REPAIR_JOB_NAME, REPAIR_QUEUE_NAME } from '../jobs/queues.js';
@@ -11,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
 import { shipTier } from '../ships/ship-tier.js';
-import { repairCost } from './repair-cost.calculator.js';
+import { locationFactor, repairCost } from './repair-cost.calculator.js';
 
 export const REPAIR_STARTED_EVENT = 'repair.started';
 export const REPAIR_COMPLETED_EVENT = 'repair.completed';
@@ -57,6 +58,9 @@ function repairSecondsPerPoint(rules: GameRules, zone: number): number {
   return table[key] ?? table['hub'] ?? 0;
 }
 
+// Float noise (79.999999 stored, 80 shown) must not turn a fair repair target into an invalid one.
+const CONDITION_EPSILON = 0.000001;
+
 @Injectable()
 export class RepairService {
   private readonly logger = new Logger(RepairService.name);
@@ -77,8 +81,8 @@ export class RepairService {
    * between the two calls, which start() re-derives and charges at the new value).
    */
   async quote(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
-    const { cost, durationSeconds } = await this.plan(shipId, playerId, targets);
-    return { shipId, cost, durationSeconds };
+    const { cost, durationSeconds, items, fee } = await this.plan(shipId, playerId, targets);
+    return { shipId, cost, durationSeconds, items, fee };
   }
 
   private async plan(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
@@ -117,7 +121,12 @@ export class RepairService {
       if (!part) {
         throw new ConflictException({ error: 'PART_NOT_INSTALLED' });
       }
-      if (target.toCondition < part.condition) {
+      // A destroyed part is beyond a workshop: it can only be replaced (or discarded).
+      if (part.condition <= rules.wear.dead_at_or_below) {
+        throw new ConflictException({ error: 'PART_DESTROYED' });
+      }
+      // A hair of float noise (a stored 79.999999 shown as 80) must not make a fair target invalid.
+      if (target.toCondition < part.condition - CONDITION_EPSILON) {
         throw new ConflictException({ error: 'INVALID_REPAIR_TARGET' });
       }
       stored.push({
@@ -161,12 +170,43 @@ export class RepairService {
     );
     const secondsPerPoint = repairSecondsPerPoint(rules, ship.location.zone);
     const durationSeconds = points * secondsPerPoint;
-    return { stored, cost, durationSeconds };
+
+    // Per-part breakdown for the repair screen: each part's own share of the price and time, and
+    // the workshop fee (the per-action maintenance charge) as whatever is left, so the lines
+    // always add up to exactly the total that start() charges.
+    const location = locationFactor(ship.location.isolation, relationKey, rules);
+    const items = stored.map((target) => {
+      const part = byId.get(target.partInstanceId)!;
+      const lost = Math.max(0, target.toCondition - target.fromCondition);
+      const itemCost = Math.round(
+        Math.max(part.partCatalog.basePrice, rules.economy.repair_min_base_price) *
+          (lost / 100) *
+          rules.economy.repair_factor *
+          (rules.economy.repair_price / rules.economy.repair_price_ref) *
+          location,
+      );
+      return {
+        partInstanceId: target.partInstanceId,
+        cost: itemCost,
+        durationSeconds: lost * secondsPerPoint,
+      };
+    });
+    const fee = cost - items.reduce((sum, item) => sum + item.cost, 0);
+    return { stored, cost, durationSeconds, items, fee };
   }
 
   async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
     const { stored, cost, durationSeconds } = await this.plan(shipId, playerId, targets);
     const completesAt = new Date(Date.now() + durationSeconds * MS_PER_SECOND);
+    const rules = this.config.snapshot().rules;
+    // A plain per-account flag, not part of the ship state the lock below protects.
+    const debugFastOps =
+      (
+        await this.prisma.player.findUnique({
+          where: { id: playerId },
+          select: { debugFastOps: true },
+        })
+      )?.debugFastOps ?? false;
 
     let job: Awaited<ReturnType<typeof this.prisma.repairJob.create>>;
     try {
@@ -245,7 +285,7 @@ export class RepairService {
       await this.repairs.add(
         REPAIR_JOB_NAME,
         { repairJobId: job.id },
-        { jobId: job.id, delay: durationSeconds * MS_PER_SECOND },
+        { jobId: job.id, delay: jobDelayMs(durationSeconds * MS_PER_SECOND, rules, debugFastOps) },
       );
     } catch (error) {
       this.logger.warn(

@@ -1,13 +1,30 @@
 import { useMemo, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { client } from '../../api/client';
-import type { ShipResponse, WorldLocation, WorldResponse } from '../../api/generated';
+import { EmptyShipNotice } from '../ship/empty-ship-notice';
+import { client, serverNow } from '../../api/client';
+import type {
+  ActiveMission,
+  DispatchResponse,
+  MissionOffer,
+  ShipResponse,
+  TravelQuote,
+  WorldLocation,
+  WorldResponse,
+} from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { formatDuration } from '../../ui/duration';
+import { Gauge } from '../../ui/Gauge';
+import { Popup } from '../../ui/Popup';
+import { errorText } from '../../api/errors';
+import { PlaceArt } from '../../ui/PlaceArt';
 import { RiskBadge } from '../../ui/RiskBadge';
+import { useNow } from '../../ui/useNow';
+import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
+import { transitPollInterval } from '../transit/poll';
 
 const NODE_RADIUS = 9;
 const VIEW_PADDING = 70;
@@ -37,8 +54,18 @@ export function MapPage({ guided = false }: MapPageProps) {
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
   });
 
+  const activeQuery = useQuery({
+    queryKey: ['active'],
+    refetchInterval: (query) => transitPollInterval(query.state.data, serverNow()),
+    queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
+  });
+
   const world = worldQuery.data;
   const shipLocation = shipsQuery.data?.[0]?.currentLocationId ?? null;
+  const flight = (activeQuery.data ?? []).find(
+    (mission) => mission.status === 'IN_TRANSIT' && mission.legWindows.length > 0,
+  );
+  const now = useNow(flight !== undefined);
 
   const bounds = useMemo(() => {
     if (world === undefined || world.locations.length === 0) return null;
@@ -56,6 +83,17 @@ export function MapPage({ guided = false }: MapPageProps) {
     [world],
   );
   const selected = selectedId === null ? undefined : byId.get(selectedId);
+
+  const journey = useMemo(() => {
+    if (flight === undefined || world === undefined) return null;
+    const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
+    return { nodeIds, stops: journeyStops(nodeIds, world.locations) };
+  }, [flight, world]);
+  const position =
+    flight !== undefined && journey !== null
+      ? positionAt(journey.stops, flight.legWindows, now)
+      : null;
+  const inFlight = position !== null && !position.docked;
 
   if (worldQuery.isLoading || shipsQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
@@ -79,10 +117,10 @@ export function MapPage({ guided = false }: MapPageProps) {
 
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('map.title')}</h1>
-        <span className="sub">{t('map.hint')}</span>
-      </header>
+      {/* Owner request: no text before the map — "you are here" and the in-flight ship are
+          already shown directly on the map itself (the you-tag label and the moving marker). */}
+      <h1 className="sr-only">{t('map.title')}</h1>
+      <EmptyShipNotice />
 
       <div className="stage">
         <svg
@@ -105,8 +143,15 @@ export function MapPage({ guided = false }: MapPageProps) {
               />
             );
           })}
+          {journey !== null && inFlight && (
+            <polyline
+              className="flight-path"
+              points={journey.stops.map((stop) => `${stop.x},${stop.y}`).join(' ')}
+            />
+          )}
           {world.locations.map((location) => {
-            const isHere = location.id === shipLocation;
+            const isHere = location.id === shipLocation && !inFlight;
+            const isDestination = inFlight && flight?.destinationId === location.id;
             const label = isHere
               ? `${nameOf(location)} — ${t('map.youAreHere')}`
               : nameOf(location);
@@ -118,15 +163,25 @@ export function MapPage({ guided = false }: MapPageProps) {
                 role="button"
                 tabIndex={0}
                 aria-label={label}
+                data-risk={location.risk}
                 onClick={() => selectNode(location.id)}
                 onKeyDown={(event) => handleNodeKeyDown(event, location.id)}
               >
                 <circle
-                  className="ncore"
+                  className="nhit"
+                  cx={location.x}
+                  cy={location.y}
+                  r={NODE_RADIUS + 16}
+                  fill="transparent"
+                />
+                {/* The ring already carries the faction color; the core's own fill is the risk
+                    band (owner: the risk legend had nothing left on the node to point at once
+                    the ring stopped meaning risk) — two independent channels on one glyph. */}
+                <circle
+                  className={`ncore risk-${location.risk}`}
                   cx={location.x}
                   cy={location.y}
                   r={NODE_RADIUS}
-                  fill="var(--bg)"
                 />
                 <circle
                   className="nring"
@@ -136,15 +191,29 @@ export function MapPage({ guided = false }: MapPageProps) {
                   style={{ stroke: `var(${factionVar})` }}
                 />
                 {isHere && (
+                  <>
+                    <circle
+                      className="here-pulse"
+                      cx={location.x}
+                      cy={location.y}
+                      r={NODE_RADIUS + 6}
+                    />
+                    <g
+                      className="you-tag"
+                      transform={`translate(${location.x} ${location.y - 34})`}
+                    >
+                      <rect x={-50} y={-11} width={100} height={18} rx={9} />
+                      <text y={2}>{t('map.youAreHere')}</text>
+                      <path d="M-5,7 L0,13 L5,7 Z" />
+                    </g>
+                  </>
+                )}
+                {isDestination && (
                   <circle
-                    className="here-ring"
+                    className="dest-ring"
                     cx={location.x}
                     cy={location.y}
-                    r={NODE_RADIUS + 7}
-                    fill="none"
-                    stroke="var(--spark)"
-                    strokeDasharray="4 3"
-                    strokeWidth={1.5}
+                    r={NODE_RADIUS + 8}
                   />
                 )}
                 <text className="nlabel" x={location.x} y={location.y + 24}>
@@ -161,6 +230,17 @@ export function MapPage({ guided = false }: MapPageProps) {
               </g>
             );
           })}
+          {position !== null && inFlight && (
+            <g
+              className="ship-marker"
+              transform={`translate(${position.x} ${position.y}) rotate(${position.heading})`}
+              role="img"
+              aria-label={t('map.shipHere')}
+            >
+              <circle className="ship-halo" r={13} />
+              <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
+            </g>
+          )}
         </svg>
       </div>
 
@@ -183,48 +263,210 @@ export function MapPage({ guided = false }: MapPageProps) {
         </span>
       </div>
 
-      {selected !== undefined && (
-        <div className="sheet open" role="dialog" aria-label={nameOf(selected)}>
-          <div className="ph">
-            <div>
-              <h2>{nameOf(selected)}</h2>
-              <div className="sub">
-                {t(`map.types.${selected.type}`, { defaultValue: selected.type })}
-              </div>
-            </div>
-            <button type="button" className="btn" onClick={() => setSelectedId(null)}>
-              {t('ui.close')}
-            </button>
-          </div>
-          <div className="pc">
-            <p className="sub">{descriptionOf(selected)}</p>
-            <div className="row-between">
-              <FactionBadge factionId={selected.factionId} />
-              <RiskBadge band={selected.risk} />
-            </div>
-            <div className="statrow">
-              <span>{t('map.zone', { zone: selected.zone })}</span>
-              <b>
-                {selected.missionCount > 0
-                  ? t('map.missions', { count: selected.missionCount })
-                  : t('map.noMissions')}
-              </b>
-            </div>
-            {selected.id === shipLocation && (
-              <p className="sub">
-                <b>{t('map.youAreHere')}</b>
-              </p>
-            )}
-            <Link
-              className="btn primary block"
-              to={`/board?location=${selected.id}`}
-              style={{ marginTop: 12, textAlign: 'center', textDecoration: 'none' }}
-            >
-              {t('map.board')}
-            </Link>
-          </div>
-        </div>
-      )}
+      <Popup
+        open={selected !== undefined}
+        title={selected === undefined ? '' : nameOf(selected)}
+        onClose={() => setSelectedId(null)}
+      >
+        {selected !== undefined && (
+          <PlaceDetails
+            canTravel={shipLocation !== null && !inFlight}
+            place={selected}
+            description={descriptionOf(selected)}
+            isHere={selected.id === shipLocation && !inFlight}
+            shipLocation={shipLocation}
+            byId={byId}
+          />
+        )}
+      </Popup>
     </main>
+  );
+}
+
+interface PlaceDetailsProps {
+  /** The ship is docked (not flying): only then can the pilot ask for a trip. */
+  canTravel: boolean;
+  place: WorldLocation;
+  description: string;
+  isHere: boolean;
+  /** Where the ship actually is, so a place that isn't it can suggest missions from the
+      pilot's own board that deliver there, instead of that remote place's own board (which the
+      ship isn't at and can't accept from). Null with no ship. */
+  shipLocation: string | null;
+  byId: ReadonlyMap<string, WorldLocation>;
+}
+
+// What a place offers, in one dialog: who runs it, how risky it is, and missions relevant to it.
+// Clicking the place the ship is already at shows that place's own board (what you could accept
+// right now). Clicking anywhere else instead suggests missions from the pilot's OWN board that
+// are headed there — the ones actually worth anything, since a remote board's offers can't be
+// accepted from here (owner: "suggest quests to deliver that, not the remote quests").
+function PlaceDetails({ canTravel, place, description, isHere, shipLocation, byId }: PlaceDetailsProps) {
+  const { t, i18n } = useTranslation();
+  const suggestingDeliveries = !isHere && shipLocation !== null;
+  const boardLocationId = suggestingDeliveries ? shipLocation : place.id;
+  const boardQuery = useQuery({
+    queryKey: ['board', boardLocationId],
+    queryFn: () => client.get<MissionOffer[]>(`/v1/locations/${boardLocationId}/missions`),
+  });
+  const offers = (boardQuery.data ?? []).filter(
+    (offer) => !suggestingDeliveries || offer.destinationId === place.id,
+  );
+  const placeName = (id: string) => {
+    const found = byId.get(id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
+  };
+
+  return (
+    <div className="stack place-details">
+      <PlaceArt placeId={place.id} variant="square" />
+      <p className="sub">
+        {[
+          t(`map.types.${place.type}`, { defaultValue: place.type }),
+          t('map.zone', { zone: place.zone }),
+        ].join(' · ')}
+      </p>
+      <p>{description}</p>
+      <div className="row-between">
+        <FactionBadge factionId={place.factionId} />
+        <RiskBadge band={place.risk} />
+      </div>
+      {isHere && (
+        <p>
+          <span className="you-badge">{t('map.youAreHere')}</span>
+        </p>
+      )}
+
+      {!isHere && canTravel && <TravelSection place={place} byId={byId} />}
+
+      <h3>{suggestingDeliveries ? t('map.popup.missionsToHere') : t('map.popup.missionsHere')}</h3>
+      {boardQuery.isLoading && <p className="sub">{t('loading')}</p>}
+      {boardQuery.isSuccess && offers.length === 0 && <p className="sub">{t('map.noMissions')}</p>}
+      <ul className="place-missions">
+        {offers.map((offer) => (
+          <li key={offer.id} className="place-mission">
+            <div className="row-between">
+              <b>{pickLocalized(offer.info.title, i18n.language)}</b>
+              <span className="spark">{t('board.reward', { amount: offer.reward })}</span>
+            </div>
+            <div className="sub">
+              {suggestingDeliveries
+                ? t('map.popup.from', { origin: placeName(offer.originId) })
+                : t('map.popup.to', { destination: placeName(offer.destinationId) })}
+            </div>
+            <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+              {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+            </span>
+            {!offer.eligibility.eligible && (
+              // Same requirement reasons the Board shows (owner: "I see some that I cannot
+              // get for requirements but I cannot see why ... in the quest panel I can see
+              // but not here").
+              <ul className="reasons">
+                {offer.eligibility.reasons.map((reason, index) => (
+                  <li key={`${reason.code}-${index}`}>
+                    {t(`board.reasons.${reason.code}`, {
+                      defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
+                    })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        className="btn primary block"
+        // Suggested deliveries live on the pilot's OWN board (their ship's location), not this
+        // place's — that's the whole point (the remote board's offers can't be accepted here).
+        to={suggestingDeliveries ? '/board' : `/board?location=${place.id}`}
+        style={{ textAlign: 'center', textDecoration: 'none' }}
+      >
+        {t('map.board')}
+      </Link>
+    </div>
+  );
+}
+
+interface TravelSectionProps {
+  place: WorldLocation;
+  byId: ReadonlyMap<string, WorldLocation>;
+}
+
+// "Fly there without a mission": the server prices the trip (route, time, fuel) and says
+// whether the ship can leave; the pilot only confirms. The trip costs fuel and pays nothing.
+function TravelSection({ place, byId }: TravelSectionProps) {
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const quoteQuery = useQuery({
+    queryKey: ['travelQuote', place.id],
+    queryFn: () => client.get<TravelQuote>(`/v1/travel/quote?destinationId=${place.id}`),
+  });
+  const fly = useMutation({
+    mutationFn: () => client.post<DispatchResponse>('/v1/travel', { destinationId: place.id }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['active'] });
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void navigate('/transit');
+    },
+  });
+  const quote = quoteQuery.data;
+  const nameOf = (id: string) => {
+    const found = byId.get(id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
+  };
+
+  return (
+    <section className="travel-box" data-testid="travel">
+      <h3>{t('map.travel.title')}</h3>
+      {quoteQuery.isLoading && <p className="sub">{t('loading')}</p>}
+      {quote !== undefined && quote.legs.length > 0 && (
+        <>
+          <p className="sub">
+            {[nameOf(quote.originId), ...quote.legs.map((leg) => nameOf(leg.toId))].join(' → ')}
+          </p>
+          <div className="statrow">
+            <span>{t('map.travel.time')}</span>
+            <b>{formatDuration(quote.durationSeconds, t)}</b>
+          </div>
+          <div className="statrow">
+            <span>{t('map.travel.distance')}</span>
+            <b>{quote.totalDistance}</b>
+          </div>
+          <Gauge
+            value={Math.min(quote.fuelNeeded, quote.fuelHave)}
+            max={Math.max(quote.fuelHave, quote.fuelNeeded, 1)}
+            tone={quote.fuelNeeded > quote.fuelHave ? 'bad' : 'fuel'}
+            ariaLabel={t('map.travel.fuel')}
+            label={t('map.travel.fuelNeeded', {
+              needed: Math.round(quote.fuelNeeded),
+              have: Math.round(quote.fuelHave),
+            })}
+          />
+          <p className="sub">{t('map.travel.noPay')}</p>
+        </>
+      )}
+      {quote !== undefined && quote.blockers.length > 0 && (
+        <ul className="reasons">
+          {quote.blockers.map((blocker) => (
+            <li key={blocker}>{t(`map.travel.blockers.${blocker}`)}</li>
+          ))}
+        </ul>
+      )}
+      {fly.isError && (
+        <p className="error-text" role="alert">
+          {errorText(t, fly.error, t('map.travel.failed'))}
+        </p>
+      )}
+      <button
+        type="button"
+        className="btn primary block"
+        disabled={quote === undefined || !quote.canDepart || fly.isPending}
+        onClick={() => fly.mutate()}
+      >
+        {t('map.travel.go', { place: nameOf(place.id) })}
+      </button>
+    </section>
   );
 }

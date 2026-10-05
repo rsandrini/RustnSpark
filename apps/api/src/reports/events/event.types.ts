@@ -14,6 +14,7 @@ export {
   type MissionEvent,
   type MissionEventCategory,
   type MissionDamageCascade,
+  type MissionCombatRound,
   type MissionActors,
   type MissionLoot,
 } from '../../resolution/events/mission-event.js';

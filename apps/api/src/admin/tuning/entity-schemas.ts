@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 export type EntityFieldType =
-  'string' | 'integer' | 'float' | 'boolean' | 'json' | 'enum' | 'locale-map';
+  | 'string'
+  | 'integer'
+  | 'float'
+  | 'boolean'
+  | 'json'
+  | 'enum'
+  | 'locale-map'
+  | 'grid-cells'
+  | 'connector-layout';
 
 export interface EntitySchemaField {
   name: string;
@@ -25,6 +33,38 @@ const localeMapSchema = z.object({
   'pt-BR': z.string().min(1),
 });
 
+// Ship Format's admin drawing-canvas ceiling (2026-10-02-ship-format-design.md) — enforced
+// server-side here, not only by the web widget.
+const GRID_CELLS_CEILING = 15;
+
+const gridCellsSchema = z
+  .array(z.tuple([z.number().int(), z.number().int()]))
+  .refine((cells) => cells.some(([x, y]) => x === 0 && y === 0), {
+    message: 'cells must include the bridge anchor [0, 0]',
+  })
+  .refine(
+    (cells) =>
+      cells.every(([x, y]) => Math.abs(x) <= GRID_CELLS_CEILING && Math.abs(y) <= GRID_CELLS_CEILING),
+    { message: 'cells must stay within the +/-15 drawing ceiling' },
+  );
+
+// Connectors v0.1 (2026-10-02-connectors-v1-design.md): shape-only validation here (dx/dy
+// integers, side/kind enums) — the cross-field "cells stay within this part's own w x h"
+// check needs the sibling w/h fields on the same payload, which a single-field validator
+// can't see, so that lives in entity-tuning.service.ts's validateEntityRules hook instead.
+const connectorLayoutSchema = z.array(
+  z.object({
+    cells: z.array(
+      z.object({
+        dx: z.number().int(),
+        dy: z.number().int(),
+        side: z.enum(['N', 'E', 'S', 'W']),
+        kind: z.enum(['none', 'central', 'split', 'universal']),
+      }),
+    ),
+  }),
+);
+
 function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
   switch (field.type) {
     case 'string':
@@ -41,6 +81,10 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
       return z.enum(field.enumValues as [string, ...string[]]);
     case 'locale-map':
       return localeMapSchema;
+    case 'grid-cells':
+      return gridCellsSchema;
+    case 'connector-layout':
+      return connectorLayoutSchema;
     default:
       return z.never();
   }
@@ -86,7 +130,15 @@ const PART_CLASS_VALUES = [
   'UTILITY',
   'BRIDGE',
 ];
-const MISSION_TYPE_VALUES = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE'];
+const MISSION_TYPE_VALUES = [
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'TRAVEL',
+  'SCAVENGE',
+];
 
 const PART_FIELDS: EntitySchemaField[] = [
   {
@@ -294,6 +346,15 @@ const PART_FIELDS: EntitySchemaField[] = [
     type: 'json',
     required: false,
     description: localeMap('Special properties', 'Propriedades especiais'),
+  },
+  {
+    name: 'connectorLayouts',
+    type: 'connector-layout',
+    required: false,
+    description: localeMap(
+      'Candidate connector layouts (one picked at random per instance)',
+      'Layouts de conectores candidatos (um sorteado por instância)',
+    ),
   },
   {
     name: 'active',
@@ -642,6 +703,46 @@ const DROP_TABLE_FIELDS: EntitySchemaField[] = [
   },
 ];
 
+const SHIP_FORMAT_FIELDS: EntitySchemaField[] = [
+  {
+    name: 'id',
+    type: 'string',
+    required: true,
+    description: localeMap('Unique format code', 'Código único do formato'),
+  },
+  {
+    name: 'displayName',
+    type: 'locale-map',
+    required: true,
+    description: localeMap('Display name by locale', 'Nome de exibição por idioma'),
+  },
+  {
+    name: 'description',
+    type: 'locale-map',
+    required: true,
+    description: localeMap('Description by locale', 'Descrição por idioma'),
+  },
+  {
+    name: 'cells',
+    type: 'grid-cells',
+    required: true,
+    description: localeMap(
+      'Buildable cells, relative to the bridge at [0,0]',
+      'Células construíveis, relativas à ponte em [0,0]',
+    ),
+  },
+  {
+    name: 'minRarity',
+    type: 'enum',
+    required: true,
+    enumValues: RARITY_VALUES,
+    description: localeMap(
+      'Minimum bridge rarity that unlocks this format',
+      'Raridade mínima de ponte que desbloqueia este formato',
+    ),
+  },
+];
+
 const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   parts: { entity: 'parts', model: 'partCatalog', fields: PART_FIELDS },
   materials: { entity: 'materials', model: 'material', fields: MATERIAL_FIELDS },
@@ -655,6 +756,7 @@ const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
     fields: MISSION_TEMPLATE_FIELDS,
   },
   'drop-tables': { entity: 'drop-tables', model: 'dropTable', fields: DROP_TABLE_FIELDS },
+  'ship-formats': { entity: 'ship-formats', model: 'shipFormat', fields: SHIP_FORMAT_FIELDS },
 };
 
 export function getEntityNames(): string[] {

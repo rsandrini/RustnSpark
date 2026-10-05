@@ -58,6 +58,12 @@ export async function registerAndLaunch(
   await page.locator('label.faction-card', { hasText: new RegExp(faction, 'i') }).click();
   await page.getByRole('button', { name: 'Launch' }).click();
   await expect(page.getByRole('navigation')).toBeVisible();
+
+  // The starter kit arrives loose (D44): assemble it the way a new pilot does, with Auto layout.
+  await expect(page).toHaveURL(/\/hangar/);
+  const assembled = page.waitForResponse((response) => response.url().includes('/auto-assemble'));
+  await page.getByRole('button', { name: 'Auto layout' }).click();
+  expect((await assembled).ok()).toBe(true);
 }
 
 /** Credits shown in the port header, as a number. */
@@ -72,5 +78,6 @@ export async function flyOneMission(page: Page): Promise<void> {
   await page.locator('button:has-text("Accept"):not([disabled])').first().click();
   await expect(page).toHaveURL(/\/transit/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
-  await expect(page.getByTestId('last-mission')).toBeVisible({ timeout: 90_000 });
+  // The transit screen sends the pilot to the report when the flight ends.
+  await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 }

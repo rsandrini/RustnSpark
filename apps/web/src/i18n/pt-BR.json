@@ -10,6 +10,8 @@
     }
   },
   "register": {
+    "nameHint": "3 a 24 caracteres: letras, dígitos, _ ou -",
+    "passwordHint": "Pelo menos 10 caracteres",
     "title": "Criar conta",
     "nameLabel": "Nome",
     "emailLabel": "E-mail",
@@ -17,6 +19,8 @@
     "submit": "Criar conta",
     "loginLink": "Já tem uma conta? Entre",
     "error": {
+      "conflict": "Esse e-mail ou nome de jogador já está em uso",
+      "invalid": "Confira os campos: nome de 3 a 24 caracteres (letras, dígitos, _ ou -), senha com pelo menos 10 caracteres",
       "generic": "Não foi possível criar a conta"
     }
   },
@@ -46,31 +50,78 @@
     }
   },
   "hangar": {
-    "title": "Hangar",
+    "title": "Minha Nave",
     "tray": "Peças",
     "trayEmpty": "Nenhuma peça solta no estoque.",
+    "stage": {
+      "hide": "Ocultar animação",
+      "show": "Mostrar animação"
+    },
+    "format": {
+      "button": "Formato",
+      "label": "Escolher um formato de nave"
+    },
+    "connectors": {
+      "disconnectedCount": "{{count}} peça desconectada",
+      "disconnectedCount_other": "{{count}} peças desconectadas"
+    },
     "yardHint": "Selecione uma peça e clique numa célula para posicionar. Selecione um bloco para mover, girar ou remover.",
     "sheet": "Folha da nave",
+    "shipRarityHint": "Raridade da nave — a menor raridade entre as peças instaladas",
     "class": "Classe",
     "stats": {
-      "pot": "Potência",
+      "pot": "Potência dos motores",
       "pdf": "Poder de fogo",
-      "bli": "Duração da bateria",
-      "esc": "Fugas",
+      "bli": "Blindagem",
+      "esc": "Escudo",
       "sen": "Sensores",
-      "crg": "Carga",
-      "min": "Mineração",
+      "crg": "Capacidade de carga",
+      "min": "Capacidade de mineração",
       "hp": "Pontos de casco",
       "mass": "Massa",
-      "fuelCap": "Tanque de combustível",
-      "fuelUse": "Consumo de combustível",
-      "energyCont": "Energia (contínua)",
-      "energyCombat": "Energia (combate)",
+      "fuelCap": "Capacidade do tanque",
+      "fuelUse": "Taxa de consumo de combustível",
+      "energyCont": "Potência de cruzeiro",
+      "energyCombat": "Potência de combate",
+      "batCharge": "Capacidade da bateria",
+      "batOutput": "Saída da bateria",
+      "batInput": "Taxa de recarga",
       "autonomy": "Autonomia",
       "condition": "Condição",
-      "structure": "Estrutura",
+      "structure": "Orçamento de estrutura",
       "mob": "Mobilidade",
       "structureValue": "{{used}} / {{budget}}"
+    },
+    "groups": {
+      "combat": "Combate",
+      "power": "Energia",
+      "propulsion": "Propulsão e Alcance",
+      "cargo": "Carga",
+      "hull": "Casco"
+    },
+    "headline": {
+      "firepower": "Poder de fogo",
+      "defense": "Defesa",
+      "defenseHelp": "Blindagem mais Escudo: as duas defesas da nave contra acertos, somadas.",
+      "cargo": "Carga",
+      "mobility": "Mobilidade",
+      "autonomy": "Autonomia",
+      "condition": "Condição",
+      "energy": "Energia",
+      "structure": "Estrutura"
+    },
+    "summary": {
+      "ready": "Pronta para voar",
+      "problemCount": "{{count}} problema(s)",
+      "showAllStats": "Ver todas as estatísticas"
+    },
+    "energyStatus": {
+      "surplus": "Excedente +{{value}}",
+      "deficit": "Déficit {{value}}",
+      "breakdown": "Gera {{generate}} · Consome {{consume}}",
+      "draw": "Consome {{value}}/rodada",
+      "covered": "A bateria cobre ({{output}}/rodada)",
+      "insufficient": "Excede a saída da bateria ({{output}}/rodada)"
     },
     "classes": {
       "HAULER": "Cargueiro",
@@ -114,15 +165,77 @@
       "OUT_OF_BOUNDS": "Peça fora da grade.",
       "OVERLAP": "Peças sobrepostas.",
       "DISCONNECTED": "Peças precisam tocar a ponte.",
-      "INVALID_LAYOUT": "O layout não é válido."
+      "INVALID_LAYOUT": "O layout não é válido.",
+      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
       "generic": "Não foi possível salvar o layout."
     },
-    "yardLabel": "Área de montagem"
+    "yardLabel": "Área de montagem",
+    "zoom": {
+      "label": "Zoom",
+      "out": "Diminuir zoom",
+      "in": "Aumentar zoom",
+      "minus": "−",
+      "plus": "+",
+      "fit": "Enquadrar nave",
+      "percent": "{{value}}%"
+    },
+    "side": {
+      "parts": "Peças",
+      "store": "Loja",
+      "storeUnavailable": "A loja só está disponível com a nave atracada."
+    },
+    "kit": {
+      "title": "Seu kit inicial",
+      "body": "Estas são as peças com que sua nave começa. Nada está instalado ainda: use Layout automático para montar, ou selecione uma peça e clique na grade."
+    },
+    "detail": "Detalhes da peça",
+    "fix": {
+      "needs": " Adicione uma peça de {{part}}.",
+      "findInStore": "Ver na loja"
+    },
+    "detailClose": "Fechar detalhes",
+    "detailCloseGlyph": "×",
+    "colorBy": {
+      "label": "Colorir blocos por",
+      "rarity": "Raridade",
+      "condition": "Condição"
+    },
+    "rotate": {
+      "square": "Esta peça é 1×1: ela fica igual girada. A rotação só muda peças que não são quadradas.",
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
+      "nudged": "Girada (movida uma ou duas casas para abrir espaço)."
+    },
+    "statHelp": {
+      "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
+      "mob": "Quão rápida a nave viaja: potência total dos motores dividida pela massa, vezes um fator fixo. Mais potência ou menos massa aumenta.",
+      "crg": "Quanta carga a nave pode transportar, de cada compartimento de carga instalado.",
+      "min": "Quanto minério a nave pode minerar por viagem, de cada plataforma de mineração instalada.",
+      "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
+      "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
+      "pdf": "Dano de combate de cada arma instalada.",
+      "bli": "Reduz o dano de cada acerto que passa pelo escudo.",
+      "esc": "Absorve o dano primeiro numa luta, antes da blindagem ou do casco. Regenera um pouco a cada rodada de combate. Consome Potência de combate da bateria — sem bateria para alimentá-lo, não pode ser instalado.",
+      "sen": "Detecta emboscadas antes, reduzindo a chance de ser surpreendido num encontro.",
+      "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
+      "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
+      "fuelUse": "Quanto combustível é consumido por unidade de viagem.",
+      "energyCont": "Balanço de energia contínua: geração do reator/painel solar menos tudo que sempre consome (sensores, suporte de vida, plataformas de mineração...). Precisa ficar em zero ou mais, ou a nave não voa — é separado da Potência de combate abaixo, e nunca é tirado da bateria.",
+      "energyCombat": "Consumo total de energia só de combate, de cada arma e escudo instalado (sempre zero ou negativo). Coberto pela carga e pela saída da bateria, nunca pela Potência de cruzeiro ou pelo reator — veja Capacidade da bateria / Saída da bateria.",
+      "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
+      "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
+      "batInput": "Quão rápido a bateria recarrega entre lutas.",
+      "autonomy": "Quantos tanques cheios de combustível o consumo da nave aguenta, em porcentagem.",
+      "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
+      "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
+    }
   },
   "home": {
+    "play": "Jogar",
     "title": "Início",
     "greeting": "Bem-vindo, {{name}}",
     "loginLink": "Entrar",
@@ -134,13 +247,16 @@
     "title": "Admin",
     "logout": "Sair",
     "placeholder": "Painel de administração provisório",
-    "navigation": "Navegação de admin",
     "loadError": "Falha ao carregar os dados do admin",
     "dashboard": "Painel",
     "economy": "Economia",
     "world": "Mundo",
     "players": "Jogadores",
     "system": "Sistema",
+    "navGroups": {
+      "stats": "Estatísticas",
+      "editable": "Editáveis"
+    },
     "window": {
       "label": "Período",
       "24h": "Últimas 24 horas",
@@ -212,6 +328,7 @@
       "grant": "Conceder créditos",
       "remove": "Remover créditos",
       "clear": "Zerar saldo negativo",
+      "password": "Alterar senha",
       "unstick": "Destravar nave",
       "ban": "Banir",
       "reset": "Resetar"
@@ -220,11 +337,14 @@
       "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
       "remove": "Remove créditos da carteira (não pode ficar abaixo de zero).",
       "clear": "Leva um saldo negativo de volta a zero.",
+      "password": "Define uma nova senha para esta conta e encerra a sessão em todos os lugares. A senha em si nunca é registrada no log de auditoria.",
       "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",
       "ban": "Suspende a conta imediatamente e encerra todas as sessões. Contas de admin não podem ser banidas.",
       "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito."
     },
     "amount": "Quantidade",
+    "newPassword": "Nova senha",
+    "newPasswordHint": "10–128 caracteres",
     "ship": "Nave",
     "reasonLabel": "Motivo",
     "confirmAction": "Confirmar",
@@ -300,6 +420,8 @@
     "no": "Não",
     "reasonLabel": "Motivo",
     "defaultReason": "Mudança de ajuste",
+    "autoSaving": "Salvando…",
+    "autoSaved": "Salvo",
     "configChangeReason": "Mudança de configuração",
     "configResetReason": "Redefinir para o padrão de fábrica",
     "retireReason": "Desativar entidade",
@@ -334,6 +456,7 @@
     "revertConfirm": "Reverter revisão {{id}}?",
     "entityNames": {
       "parts": "Peças",
+      "ship-formats": "Formatos de nave",
       "materials": "Materiais",
       "factions": "Facções",
       "locations": "Locais",
@@ -366,12 +489,15 @@
   },
   "nav": {
     "label": "Navegação do jogo",
-    "hangar": "Hangar",
+    "hangar": "Minha Nave",
     "map": "Mapa",
     "board": "Quadro",
     "transit": "Trânsito",
     "port": "Porto",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "admin": "Admin",
+    "logout": "Sair",
+    "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro."
   },
   "port": {
     "title": "Porto",
@@ -382,9 +508,13 @@
       "market": "Mercado",
       "repair": "Reparo",
       "refuel": "Abastecer",
-      "scavenging": "Scavenging"
+      "upgrade": "Melhorar",
+      "scavenging": "Saque",
+      "mining": "Mineração",
+      "goods": "Seus bens"
     },
     "buy": "Comprar",
+    "notEnoughFunds": "Fundos insuficientes",
     "sell": "Vender",
     "buyConfirm": "Comprar {{name}} por {{price}} ¢?",
     "sellConfirm": "Vender {{name}}?",
@@ -396,31 +526,86 @@
     "sold": "Vendeu {{name}} por {{price}} ¢.",
     "failed": "O porto rejeitou essa ação.",
     "marketEmpty": "Nada à venda neste porto.",
-    "forSale": "À venda",
     "yourGoods": "Suas mercadorias",
     "materials": "Materiais minerais",
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ cada",
+    "repairDestroyed": "Peça destruída não pode ser reparada: troque-a.",
     "repairNoDamage": "Todas as peças instaladas estão em perfeito estado.",
     "repairAll": "Reparar tudo",
     "repairSlider": "Reparar para {{value}}%",
     "repairStart": "Iniciar reparo",
-    "repairStarted": "Reparo iniciado por {{cost}} ¢ — conclui em {{seconds}}s.",
+    "repairStarted": "Reparo iniciado por {{cost}} ¢ — termina em {{time}}.",
     "repairLoading": "Encomendando reparos…",
     "refuelGauge": "Combustível {{fuel}} / {{cap}}",
+    "refuelAfford": "O que dá pra pagar",
+    "refuelUnitPrice": "{{price}} ¢ por unidade",
     "refuelFill": "Encher o tanque",
+    "refuelNoTank": "Esta nave não tem tanque de combustível instalado, então não há onde colocar combustível — instale um tanque em Minha Nave primeiro.",
     "refuelFull": "O tanque já está cheio.",
     "refueled": "Abasteceu {{units}} unidades por {{cost}} ¢.",
-    "scavWarn": "Vasculhar sozinho desgasta sua nave. Missões de scavenging rendem melhor — e são muito mais perigosas.",
-    "scavenge": "Vasculhar o campo",
-    "scavFound": "Salvou: {{part}} (condição {{condition}}).",
-    "scavNone": "Nada aproveitável — tente de novo em {{seconds}}s.",
-    "scavBusy": "Você já está vasculhando.",
-    "repairQuote": "Custo do reparo: {{cost}} ¢ · {{seconds}} s",
+    "scavenge": "Mandar a nave vasculhar",
+    "repairQuote": "Custo do reparo: {{cost}} ¢ · {{time}}",
     "repairConfirmTitle": "Reparar por {{cost}} ¢?",
     "repairConfirm": "Iniciar reparo",
     "noShip": "Você não tem uma nave.",
-    "sellAll": "Vender tudo"
+    "sellAll": "Vender tudo",
+    "portPays": "Porto paga",
+    "noLooseParts": "Você não tem peças soltas para vender.",
+    "conditionNow": "{{value}}%",
+    "conditionToTarget": "{{from}}% → {{to}}%",
+    "fuelBar": "Tanque de combustível",
+    "refuelHint": "O combustível é vendido por unidade; o tanque cheio custa o valor mostrado ao confirmar.",
+    "scav": {
+      "what": "Mande sua nave vasculhar os destroços ao redor de {{place}} atrás de peças que outros pilotos deixaram. É um trabalho como uma missão: a nave fica fora do porto enquanto trabalha, e um relatório conta o que ela achou.",
+      "time": "Leva cerca de {{minutes}} minutos, e a nave não pode ser usada nesse tempo.",
+      "risk": "O risco vem do lugar (zona {{zone}}): piratas podem te encontrar durante a busca, e quanto mais arriscado o lugar, melhores os achados.",
+      "quality": "Tudo o que você acha é USADO: cerca de {{min}}–{{max}}% de condição neste lugar. Conserte, instale ou venda.",
+      "finds": "Em {{place}} você pode achar uma ou mais peças; um campo dominado por piratas rende mais.",
+      "scrap": "Os destroços daqui também têm sucata: restos gastos que vendem por preço fixo em qualquer porto.",
+      "field": {
+        "common": "um porto comum",
+        "mission": "um local de missão",
+        "pirate": "um campo de destroços pirata"
+      },
+      "where": "Só funciona onde sua nave está atracada, e cada lugar tem o próprio tempo de espera entre trabalhos.",
+      "ready": "Pronto para partir.",
+      "nextAttempt": "Próximo trabalho em",
+      "title": "Vasculhar os destroços"
+    },
+    "mine": {
+      "title": "Minerar o campo",
+      "what": "Se este lugar for minerável e sua nave tiver uma plataforma de mineração, envie-a para escavar: um trabalho cronometrado como o saque, sem pagamento adiantado, sem relatório do que traz até o trabalho terminar.",
+      "action": "Enviar a nave para minerar"
+    },
+    "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
+    "repairNoChange": "Sem mudança",
+    "repairNothingSelected": "Nada selecionado ainda: mova um controle ou ponha tudo em 100%.",
+    "repairWallet": "Saldo atual",
+    "repairFee": "Taxa da oficina",
+    "repairTotal": "Total",
+    "repairAllTo100": "Tudo em 100%",
+    "repairReset": "Voltar ao atual",
+    "repairOverBudget": "Créditos insuficientes para este reparo: reduza alguns alvos.",
+    "refuelAmount": "Quanto combustível comprar",
+    "refuelUnits": "{{units}} unidades",
+    "refuelBuy": "Comprar {{units}}",
+    "tooDamaged": "Danificada demais para vender",
+    "discardNote": "{{count}} peça(s) solta(s) com menos de {{min}}% de condição: nenhum porto compra. Conserte (instale primeiro) ou descarte.",
+    "discardAction": "Descartar {{count}}",
+    "discarded": "{{count}} peça(s) danificada(s) descartada(s).",
+    "discardConfirmTitle": "Destruir {{count}} peça(s) danificada(s)?",
+    "discardConfirmBody": "Toda peça solta com menos de {{min}}% de condição é destruída de vez. Peças instaladas na nave nunca são tocadas. Não dá para desfazer.",
+    "discardConfirm": "Destruir",
+    "upgradeHelp": "Melhore uma peça no lugar para o próximo tier de raridade: mesmo slot, mesma condição, atributos melhores.",
+    "upgradeNone": "Nenhuma das suas peças tem um próximo tier para melhorar agora.",
+    "upgradeCost": "Custo da melhoria",
+    "upgradesTo": "Melhora para {{name}}",
+    "upgrade": "Melhorar",
+    "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
+    "upgradeQuote": "Melhorar {{name}} para {{nextName}} por {{cost}} ¢?",
+    "upgradeConfirm": "Melhorar",
+    "upgraded": "Melhorado para {{name}}."
   },
   "inventory": {
     "title": "Inventário",
@@ -440,14 +625,25 @@
     "history": "Histórico de missões",
     "noHistory": "Nenhuma missão concluída ainda.",
     "legCount": "{{count}} trechos",
-    "credits": "+{{amount}} ¢"
+    "credits": "+{{amount}} ¢",
+    "combatTag": "Combate",
+    "combatTagHint": "Esta missão teve uma luta — vá direto para o registro rodada a rodada."
   },
   "report": {
     "title": "Relatório da missão",
     "tabs": {
       "summary": "Resumo",
-      "narrative": "Narrativa",
-      "log": "Registro"
+      "narrative": "A história",
+      "log": "Registro",
+      "detail": "Detalhes"
+    },
+    "detail": {
+      "partsDamage": "Peças que sofreram dano",
+      "partsDamageIntro": "Toda peça cuja condição caiu durante a corrida, no despacho comparado a agora.",
+      "noDamage": "Nada sofreu dano nesta corrida.",
+      "before": "Antes",
+      "after": "Agora",
+      "lost": "−{{amount}}"
     },
     "noReport": "Ainda não há relatório para esta missão.",
     "eventDetails": "Detalhes do evento",
@@ -464,6 +660,20 @@
       "armor": "Absorvido pela blindagem",
       "hp": "Dano ao casco"
     },
+    "combatLog": {
+      "title": "Rodada a rodada",
+      "round": "Rodada",
+      "attacker": "Atacante",
+      "rollDc": "Rolagem / CD",
+      "result": "Resultado",
+      "target": "Alvo",
+      "hit": "Acerto",
+      "miss": "Erro",
+      "side": {
+        "player": "Você",
+        "enemy": "Inimigo"
+      }
+    },
     "refKind": {
       "loot": "Item",
       "part": "Peça"
@@ -472,6 +682,37 @@
     "refCategory": {
       "part": "Classe",
       "loot": "Raridade"
+    },
+    "glyph": {
+      "ok": "✔",
+      "warn": "◐",
+      "bad": "✖"
+    },
+    "debrief": {
+      "balance": "Saldo {{balance}} ¢",
+      "legs": "Trechos",
+      "distance": "Distância",
+      "fights": "Combates",
+      "fightsValue": "{{won}} vencidos · {{lost}} perdidos · {{escaped}} fugas",
+      "noFights": "Nenhum",
+      "damage": "Dano recebido",
+      "damageValueNoShield": "Blindagem {{armor}} · casco {{hull}}",
+      "damageValue": "Escudo {{shield}} · blindagem {{armor}} · casco {{hull}}",
+      "noDamage": "Nenhum",
+      "failures": "Peças com falha",
+      "fuelLost": "Combustível vazado",
+      "loot": "Espólio",
+      "lootItem": "{{quantity}} × {{name}}",
+      "repairHint": "Suas peças apanharam: confira a aba Reparo no porto antes da próxima viagem.",
+      "next": "E agora?",
+      "fightsValueDrawn": "{{won}} vencidos · {{lost}} perdidos · {{escaped}} fugas · {{drawn}} empates",
+      "stolen": "Peças roubadas",
+      "pirates": "Piratas",
+      "drivenOff": "Expulsaram você",
+      "cargoLost": "Levaram a carga",
+      "found": "Achados",
+      "foundPart": "{{name}} ({{condition}}%)",
+      "foundScrap": "Sucata: {{name}}"
     }
   },
   "transit": {
@@ -491,11 +732,34 @@
     "held": "Esta missão está apenas reservada. Aceite-a no quadro para começar.",
     "resolving": "Resolvendo a missão…",
     "lastMission": "Última missão",
-    "lastReport": "Ler o relatório"
+    "lastReport": "Ler o relatório",
+    "briefLabel": "Resumo da missão",
+    "scene": {
+      "alt": "Sua nave em voo"
+    },
+    "stakes": "Em jogo",
+    "cargo": "Carga",
+    "distance": "Distância",
+    "danger": "Perigo",
+    "legsCount": "{{count}} trechos",
+    "nowFlying": "Voando agora {{route}}",
+    "readyTitle": "Pronta para partir",
+    "facts": {
+      "reward": "Recompensa",
+      "route": "Rota",
+      "distance": "Distância",
+      "legs": "Trechos",
+      "danger": "Perigo",
+      "zone": "Zona"
+    },
+    "legPlanTitle": "Rota planejada",
+    "cancelMission": "Cancelar missão",
+    "scavengeTitle": "Saque de destroços"
   },
   "board": {
     "title": "Quadro de missões",
     "filterAll": "Todas as missões",
+    "onlyEligible": "Só elegíveis",
     "accept": "Aceitar",
     "hold": "Reservar",
     "release": "Soltar",
@@ -512,7 +776,9 @@
       "TRANSPORT": "Transporte",
       "ESCORT": "Escolta",
       "MINING": "Mineração",
-      "RESCUE": "Resgate"
+      "RESCUE": "Resgate",
+      "TRAVEL": "Viagem",
+      "SCAVENGE": "Saque"
     },
     "status": {
       "AVAILABLE": "Aberta",
@@ -528,7 +794,7 @@
       "ACTIVE_MISSION_EXISTS": "Já existe uma missão ativa",
       "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local",
       "CARGO_TYPE": "Porão não comporta essa carga",
-      "PRESSURIZED_LIFE_SUPPORT": "Requer suporte de vida pressurizado",
+      "PRESSURIZED_LIFE_SUPPORT": "Requer Cabine de Passageiros e Suporte de Vida (os dois instalados)",
       "WEAPONS": "Requer armamentos",
       "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão",
       "MINER": "Requer sistema de mineração",
@@ -540,12 +806,43 @@
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
     },
+    "requirements": {
+      "CARGO_TYPE": "Capacidade de carga para esta carga",
+      "PRESSURIZED_LIFE_SUPPORT": "Cabine de passageiros e suporte de vida, ambos instalados",
+      "WEAPONS": "Pelo menos uma arma instalada",
+      "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
+      "MINER": "Uma plataforma de mineração instalada",
+      "SPEED": "Mobilidade acima da velocidade de referência de resgate"
+    },
+    "controlledBy": "Controlado por {{faction}}",
     "expiredLabel": "Expirada",
-    "starterBadge": "Missão inicial"
+    "starterBadge": "Missão inicial",
+    "arrow": "→",
+    "facts": {
+      "distance": "Distância",
+      "legs": "Trechos",
+      "time": "Tempo de voo",
+      "fuel": "Combustível"
+    },
+    "fuelUses": "consome {{needed}}",
+    "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: reabasteça primeiro.",
+    "needsTitle": "Você precisa de:",
+    "needs": {
+      "DELIVERY": "espaço de carga para o pacote (veja Carga no Hangar).",
+      "TRANSPORT": "uma Cabine de Passageiros e um módulo de Suporte de Vida.",
+      "ESCORT": "pelo menos uma arma e boa mobilidade para acompanhar.",
+      "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
+      "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
+      "TRAVEL": "nada especial: combustível para a viagem."
+    },
+    "mining": {
+      "contracted": "Contrato: minere {{quantity}} × {{material}}. Só paga se trouxer a quantidade completa.",
+      "free": "Minere {{material}}: você fica com o que extrair e vende num porto."
+    }
   },
   "map": {
     "title": "Mapa do setor",
-    "hint": "Selecione um nó para inspecioná-lo.",
+    "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",
     "missions": "{{count}} missões no quadro",
     "noMissions": "Sem ofertas no quadro",
@@ -561,6 +858,36 @@
       "frontier": "Fronteira",
       "dead_zone": "Zona morta",
       "relay": "Relé"
+    },
+    "inTransit": "Em voo",
+    "headingTo": "rumo a {{destination}}, chegando em",
+    "dockedAt": "Atracado em {{place}}",
+    "shipHere": "Sua nave",
+    "popup": {
+      "missionsHere": "Missões aqui",
+      "missionsToHere": "Missões para cá",
+      "to": "Para {{destination}}",
+      "from": "De {{origin}}"
+    },
+    "travel": {
+      "title": "Voar até lá sem missão",
+      "time": "Tempo de voo",
+      "distance": "Distância",
+      "fuel": "Combustível da viagem",
+      "fuelNeeded": "Combustível {{needed}} de {{have}} a bordo",
+      "noPay": "Uma viagem custa só o combustível que queima e não paga nada. Piratas e outros pilotos ainda podem te encontrar no caminho.",
+      "go": "Voar para {{place}}",
+      "failed": "A viagem não pôde começar.",
+      "blockers": {
+        "NO_SHIP": "Você não tem nave.",
+        "SAME_PLACE": "Você já está aqui.",
+        "NO_ROUTE": "Não há rota até este lugar.",
+        "ACTIVE_MISSION_EXISTS": "Termine ou cancele sua missão atual primeiro.",
+        "SHIP_NOT_IN_PORT": "A nave precisa estar atracada para partir.",
+        "SHIP_REPAIRING": "A nave está em reparo.",
+        "SHIP_NOT_VIABLE": "A nave ainda não pode voar: monte-a no Hangar primeiro.",
+        "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
+      }
     }
   },
   "notFound": {
@@ -585,11 +912,12 @@
     "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
     "ACCOUNT_BANNED": "Esta conta foi suspensa.",
     "BALANCE_NEGATIVE": "Seu saldo está negativo — ganhe créditos antes de gastar.",
-    "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem.",
-    "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem.",
+    "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
+    "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
     "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
+    "FORMAT_NOT_UNLOCKED": "Esse formato de nave não está desbloqueado para a ponte atual.",
     "FUEL_EMPTY": "O tanque está vazio.",
     "HOLD_NOT_OWNED": "Você não está com esta missão reservada.",
     "INSUFFICIENT_FUNDS": "Créditos insuficientes.",
@@ -600,7 +928,8 @@
     "INVALID_LIMIT": "Tamanho de página inválido.",
     "INVALID_LISTING": "Essa oferta não está mais disponível.",
     "INVALID_QUANTITY": "Quantidade inválida.",
-    "INVALID_REPAIR_TARGET": "Um alvo de reparo é inválido.",
+    "PART_DESTROYED": "Uma peça destruída (0%) não pode ser reparada. Troque-a.",
+    "INVALID_REPAIR_TARGET": "Esse reparo ficaria abaixo da condição atual da peça. Recarregue a aba de reparo e tente de novo.",
     "MAINTENANCE": "O jogo está em manutenção. Tente novamente em breve.",
     "MISSION_EXPIRED": "Esta missão expirou.",
     "MISSION_MALFORMED": "Esta missão está malformada.",
@@ -626,7 +955,13 @@
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "RATE_LIMITED": "Requisições demais — aguarde um instante.",
-    "UNAUTHORIZED": "Sua sessão terminou — entre novamente."
+    "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
+    "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
+    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
+    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
+    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
+    "NOT_MINABLE": "Não há nada para minerar aqui.",
+    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro."
   },
   "language": {
     "label": "Idioma"
@@ -636,5 +971,171 @@
     "body": "Sua nave ficou sem combustível e está à deriva. Um reboque a traz de volta ao porto — custa créditos e pode deixar seu saldo negativo.",
     "action": "Chamar reboque",
     "done": "Rebocada de volta ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
+  },
+  "parts": {
+    "info": "Detalhes",
+    "close": "Fechar",
+    "size": "Tamanho",
+    "price": "Preço",
+    "condition": "Condição",
+    "class": "Classe",
+    "rarity": "Raridade",
+    "rarities": {
+      "COMMON": "Comum",
+      "UNCOMMON": "Incomum",
+      "RARE": "Rara",
+      "EPIC": "Épica",
+      "LEGENDARY": "Lendária"
+    },
+    "rarityBadge": "Raridade: {{rarity}}",
+    "whyTitle": "Por que você precisa",
+    "role": {
+      "BRIDGE": "Obrigatória. Toda nave precisa de exatamente uma: é o núcleo de comando, mantém o piloto vivo se a nave for destruída e define quanta estrutura a nave aguenta.",
+      "ENGINE": "Obrigatório: sem motor a nave não anda. Motores químicos também precisam de tanque; motores iônicos precisam de energia constante.",
+      "TANK": "Guarda o combustível. Toda nave com motor químico precisa de pelo menos um, e tanque maior significa viagens mais longas entre reabastecimentos.",
+      "BATTERY": "Guarda energia para o combate. Armas e escudos consomem dela; ela precisa cobrir a demanda ou a nave não pode voar.",
+      "REACTOR": "Gera energia continuamente. Motores e sistemas consomem o tempo todo, então a geração total precisa cobrir isso.",
+      "WEAPON": "Aumenta o poder de fogo. Necessária para missões de escolta e para vencer combates; gasta energia em combate.",
+      "DEFENSE": "Aumenta blindagem, escudo e pontos de casco para a nave sobreviver a ataques. Não dá velocidade, carga nem poder de fogo, e a massa deixa a nave mais lenta.",
+      "CARGO": "Aumenta a capacidade de carga. Mais carga significa entregas maiores e melhor pagamento, mas adiciona massa.",
+      "SENSOR": "Detecta problemas cedo, reduzindo a chance de emboscada na rota.",
+      "UTILITY": "Equipamento especial que libera certas missões (mineradoras, suporte de vida etc.)."
+    },
+    "flag": {
+      "pressurized": "Módulo de passageiros: uma nave que leva um precisa de suporte de vida.",
+      "lifeSupport": "Suporte de vida: obrigatório assim que a nave tem um módulo de passageiros."
+    },
+    "stat": {
+      "pot": {
+        "label": "Empuxo",
+        "hint": "Empurra a nave. A mobilidade é o empuxo total dividido pela massa total."
+      },
+      "pdf": {
+        "label": "Poder de fogo",
+        "hint": "Dano causado em combate."
+      },
+      "bli": {
+        "label": "Blindagem",
+        "hint": "Reduz o dano recebido dos ataques."
+      },
+      "esc": {
+        "label": "Escudo",
+        "hint": "Absorve o dano primeiro e recarrega durante a luta."
+      },
+      "sen": {
+        "label": "Sensores",
+        "hint": "Detecta emboscadas cedo, reduzindo a chance de ser surpreendido."
+      },
+      "crg": {
+        "label": "Carga",
+        "hint": "Capacidade de carga para entregas."
+      },
+      "min": {
+        "label": "Mineração",
+        "hint": "Poder de mineração para missões de minério."
+      },
+      "fuelCap": {
+        "label": "Tanque",
+        "hint": "Quanto combustível cabe."
+      },
+      "fuelUse": {
+        "label": "Consumo",
+        "hint": "Quão rápido o motor queima combustível; menor é melhor."
+      },
+      "energyCont": {
+        "label": "Energia (voo)",
+        "hint": "Energia gerada (+) ou consumida (−) continuamente em voo."
+      },
+      "energyCombat": {
+        "label": "Energia (combate)",
+        "hint": "Energia extra consumida durante a luta."
+      },
+      "batCharge": {
+        "label": "Carga da bateria",
+        "hint": "Energia guardada para o combate."
+      },
+      "batOutput": {
+        "label": "Saída da bateria",
+        "hint": "O máximo de energia que a bateria entrega de uma vez."
+      },
+      "batInput": {
+        "label": "Recarga",
+        "hint": "Quão rápido a bateria recarrega."
+      },
+      "mass": {
+        "label": "Massa",
+        "hint": "Naves mais pesadas são mais lentas."
+      },
+      "structureCost": {
+        "label": "Estrutura",
+        "hint": "Usa parte do orçamento de estrutura da ponte; o total precisa ficar dentro dele."
+      },
+      "partHp": {
+        "label": "Pontos de casco",
+        "hint": "Dano que esta peça aguenta antes de quebrar."
+      }
+    },
+    "summaryNone": "Peça estrutural",
+    "infoGlyph": "i",
+    "broken": "QUEBRADA",
+    "brokenNote": "Quebrada: não conta para nada até ser consertada.",
+    "compare": {
+      "title": "Se você instalar agora",
+      "titleSwap": "Se você trocar por {{name}}",
+      "loading": "Verificando o que isso faria à nave…",
+      "error": "Não foi possível verificar o efeito disso na nave.",
+      "stat": "Estatística",
+      "value": "Esta peça",
+      "ifInstalled": "Nave, se instalada",
+      "scenarioLabel": "Comparar como",
+      "addOption": "Adicionar",
+      "replaceOption": "Trocar por {{name}}"
+    }
+  },
+  "market": {
+    "all": "Todas",
+    "filterByType": "Filtrar por tipo de peça",
+    "search": "Buscar peças",
+    "searchPlaceholder": "Buscar peças…",
+    "condition": "Condição",
+    "conditionAll": "Novas e usadas",
+    "conditionNew": "Só novas",
+    "conditionUsed": "Só usadas",
+    "sort": "Ordenar",
+    "sortName": "Nome",
+    "sortPriceAsc": "Preço: menor para maior",
+    "sortPriceDesc": "Preço: maior para menor",
+    "sortCondition": "Melhor condição",
+    "noMatches": "Nenhuma peça combina com esses filtros.",
+    "used": "Usada",
+    "youPay": "Você paga"
+  },
+  "ship": {
+    "empty": {
+      "title": "Sua nave não está montada",
+      "body": "Nada está instalado ainda, então ela não pode aceitar uma missão. Monte seu kit inicial no Hangar primeiro.",
+      "action": "Ir para o Hangar"
+    },
+    "energyMode": {
+      "label": "Energia",
+      "BATTERY": "Somente bateria",
+      "FULL": "Energia total",
+      "OVERRIDE": "Override"
+    }
+  },
+  "duration": {
+    "s": "{{s}}s",
+    "ms": "{{m}}min {{s}}s",
+    "hm": "{{h}}h {{m}}min"
+  },
+  "stage": {
+    "mode": {
+      "idle": "Atracada e pronta",
+      "flying": "Em voo",
+      "scavenging": "Vasculhando os destroços",
+      "repairing": "Reparos em andamento"
+    },
+    "docked": "Atracada em {{place}}",
+    "repairingAt": "na oficina de {{place}}"
   }
 }

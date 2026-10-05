@@ -16,7 +16,9 @@
   "legStatuses": {
     "completed": "completed",
     "adrift": "adrift",
-    "escort_destroyed": "escort lost"
+    "escort_destroyed": "escort lost",
+    "motor_abort": "engine failure",
+    "defeat_failed": "defeated"
   },
   "summary": {
     "result": "{outcome}",

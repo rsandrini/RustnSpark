@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Nenhum dos lados conseguiu terminar — {hp} de casco a menos; o escudo levou {shield}, a blindagem {armor}, o casco {hull}. Os saqueadores recuaram e você também.",
+    "Uma troca longa e feia sem vencedor — {shield} de escudo, {armor} de blindagem, {hull} de casco. As duas naves se afastaram mancando."
+  ],
+  "legacy": [
+    "Nenhum dos lados conseguiu terminar — {hp} de casco a menos. Os saqueadores recuaram e você também.",
+    "Uma troca longa e feia sem vencedor. As duas naves se afastaram mancando."
+  ]
+}

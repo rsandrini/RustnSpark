@@ -3,6 +3,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   fillMission,
+  isMiningEligible,
   MissionGenerationError,
   type FillMissionInput,
   type FillerEnvironment,
@@ -226,6 +227,35 @@ describe('S6.2 — template filler (pure generation)', () => {
     expect(contracts.some((c) => !c)).toBe(true);
   });
 
+  it('never contracts for more ore than a single stop can possibly yield', () => {
+    // One mining stop rolls rules.mining.attempts_per_stop independent attempts, at most
+    // one unit each — a contract above that cap is mechanically unfulfillable no matter
+    // how good the ship's mining rig is (owner playtest: mining contracts "almost always
+    // fail").
+    for (let epoch = 0; epoch < 50; epoch += 1) {
+      const draft = fill(`gamma|${epoch}|v1`, LOC_GAMMA, [MINING_EXPLORERS]);
+      const cargo = draft.cargo as MiningCargo;
+      if (cargo.contracted === true) {
+        expect(cargo.quantity!).toBeLessThanOrEqual(rules.mining.attempts_per_stop);
+      }
+    }
+  });
+
+  it('caps contracted quantity at an achievable 1-3 units', () => {
+    // A starter rig (MIN 1) in open space has a ~14% find chance per attempt, so the
+    // expected yield per mission is ~1.4 units. Asking for 5-10 made contracts fail
+    // most of the time; the calibrated cap keeps common-rarity contracts winnable
+    // while rarer materials still reward upgrading the rig.
+    for (let epoch = 0; epoch < 50; epoch += 1) {
+      const draft = fill(`gamma|${epoch}|v2`, LOC_GAMMA, [MINING_EXPLORERS]);
+      const cargo = draft.cargo as MiningCargo;
+      if (cargo.contracted === true) {
+        expect(cargo.quantity!).toBeGreaterThanOrEqual(1);
+        expect(cargo.quantity!).toBeLessThanOrEqual(3);
+      }
+    }
+  });
+
   it('sets board expiry inside the prototype window (6–40 minutes)', () => {
     const sixMinutesMs = 6 * 60 * 1000;
     const fortyMinutesMs = 40 * 60 * 1000;
@@ -314,5 +344,27 @@ describe('S6.2 — template filler (pure generation)', () => {
       const plain = fill('alpha|3|v1', LOC_ALPHA);
       expect(plain).toEqual(fill('alpha|3|v1', LOC_ALPHA));
     });
+  });
+});
+
+// Round-10 owner request: "add independent mining missions at minable locations" — a
+// location only counts as minable when an active MINING template would actually be offered
+// there, the exact same eligibility a board offer already uses (never a second, drifting
+// definition of "minable").
+describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => {
+  it('is eligible where a MINING template already matches the origin', () => {
+    expect(isMiningEligible(LOC_GAMMA, [MINING_EXPLORERS])).toBe(true);
+  });
+
+  it('is not eligible where no MINING template matches (wrong faction)', () => {
+    expect(isMiningEligible(LOC_ALPHA, [MINING_EXPLORERS])).toBe(false);
+  });
+
+  it('is not eligible when the only matching template is inactive', () => {
+    expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, active: false }])).toBe(false);
+  });
+
+  it('ignores templates of other types even if they match the origin', () => {
+    expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, type: 'DELIVERY' }])).toBe(false);
   });
 });

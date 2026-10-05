@@ -9,10 +9,15 @@ import {
 import type { MissionInstance } from '@prisma/client';
 import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
+import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 
@@ -32,13 +37,21 @@ export interface DispatchSnapshot {
   readonly fuel: number;
   readonly currentLocationId: string;
   readonly stance: string;
+  readonly energyMode: string;
   readonly parts: ReadonlyArray<{
     readonly id: string;
     readonly partType: string;
     readonly condition: number;
     readonly catalog: ReturnType<typeof pickCatalogStats>;
+    /** Connectors v0.1: whether this part had a compatible connector chain back to the bridge
+        at dispatch time. Carried through for Connectors v0.2 (mid-mission disconnection,
+        separate future spec) — not consumed by anything yet except being present in the
+        stored snapshot. */
+    readonly connected: boolean;
   }>;
   readonly legs: readonly DispatchLeg[];
+  /** Loose parts when the ship left port: the only parts a pirate can take (frozen, D19). */
+  readonly storage?: ReadonlyArray<{ readonly id: string; readonly partType: string }>;
 }
 
 export interface DispatchJobData {
@@ -101,6 +114,20 @@ export async function rebuildDispatchData(
   const installedRows = rows.filter(
     (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
   );
+  const installed = installedRows.map((part) => ({
+    instance: part,
+    catalog: pickCatalogStats(part.partCatalog),
+  }));
+  const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+  const connectorsByInstance = new Map(
+    installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+  );
+  const connectedIds = connectedPartIds(
+    (ship.layout as unknown as Placement[]) ?? [],
+    catalogForConnectivity,
+    connectorsByInstance,
+  );
+  const installedConnected = applyConnectivity(installed, connectedIds);
   const legs = parseDispatchLegs(mission.legs);
   return {
     missionId: mission.id,
@@ -110,13 +137,18 @@ export async function rebuildDispatchData(
       fuel: ship.fuel,
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
-      parts: installedRows.map((part) => ({
-        id: part.id,
-        partType: part.partType,
-        condition: part.condition,
-        catalog: pickCatalogStats(part.partCatalog),
+      energyMode: ship.energyMode,
+      parts: installedConnected.map((part) => ({
+        id: part.instance.id,
+        partType: part.instance.partType,
+        condition: part.instance.condition,
+        catalog: part.catalog,
+        connected: connectedIds.has(part.instance.id),
       })),
       legs,
+      storage: rows
+        .filter((part) => part.location === 'INVENTORY')
+        .map((part) => ({ id: part.id, partType: part.partType })),
     },
   };
 }
@@ -157,6 +189,15 @@ export class DispatchService {
 
     const { rules } = this.config.snapshot();
     const serverTime = new Date();
+    // Read once, outside the transaction: a plain per-account flag, not part of the ship/mission
+    // state the lock below protects.
+    const debugFastOps =
+      (
+        await this.prisma.player.findUnique({
+          where: { id: playerId },
+          select: { debugFastOps: true },
+        })
+      )?.debugFastOps ?? false;
 
     const outcome = await this.prisma.$transaction(async (tx) => {
       const mission = await tx.missionInstance.findUnique({ where: { id: missionId } });
@@ -207,8 +248,18 @@ export class DispatchService {
         instance: part,
         catalog: pickCatalogStats(part.partCatalog),
       }));
-      const sheet = deriveSheet(installed, rules);
-      const viability = checkViability(sheet, installed, rules);
+      const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+      const connectorsByInstance = new Map(
+        installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+      );
+      const connectedIds = connectedPartIds(
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+      );
+      const installedConnected = applyConnectivity(installed, connectedIds);
+      const sheet = deriveSheet(installedConnected, rules);
+      const viability = checkViability(sheet, installedConnected, rules);
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
@@ -233,13 +284,18 @@ export class DispatchService {
         fuel: ship.fuel,
         currentLocationId: ship.currentLocationId,
         stance: ship.stance,
-        parts: installed.map((part) => ({
+        energyMode: ship.energyMode,
+        parts: installedConnected.map((part) => ({
           id: part.instance.id,
           partType: part.instance.partType,
           condition: part.instance.condition,
           catalog: part.catalog,
+          connected: connectedIds.has(part.instance.id),
         })),
         legs,
+        storage: rows
+          .filter((part) => part.location === 'INVENTORY')
+          .map((part) => ({ id: part.id, partType: part.partType })),
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({
@@ -301,7 +357,10 @@ export class DispatchService {
         arrivalAt: arrivalAt.toISOString(),
         snapshot: outcome.snapshot,
       };
-      await this.producer.enqueueResolve(data, arrivalAt.getTime() - serverTime.getTime());
+      await this.producer.enqueueResolve(
+        data,
+        jobDelayMs(arrivalAt.getTime() - serverTime.getTime(), rules, debugFastOps),
+      );
     } catch (error) {
       // Enqueue runs after commit by design: the mission is already reconcilable state,
       // so a Redis blip must not fail the dispatch (S7.2 acceptance, plan line 435).

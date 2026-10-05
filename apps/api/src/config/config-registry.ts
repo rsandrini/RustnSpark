@@ -3,6 +3,20 @@ import { GAME_CONFIG_DEFAULTS } from './game-config.defaults.js';
 
 export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
+    key: 'admin.debug_fast_ops_seconds',
+    group: 'admin',
+    type: 'integer',
+    min: 1,
+    max: 300,
+    unit: 's',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.debug_fast_ops_seconds),
+    description: {
+      en: 'How long a timed job (missions, travel, scavenging, repair) actually takes for a player whose account has the debug switch on (Player.debugFastOps — set per account by an admin, never here), regardless of the real, displayed duration.',
+      'pt-BR':
+        'Quanto um trabalho cronometrado (missões, viagem, saque, reparo) realmente demora para um jogador com o interruptor de depuração ligado na conta (Player.debugFastOps — definido por conta por um admin, nunca aqui), independente da duração real exibida.',
+    },
+  },
+  {
     key: 'combat.dodge_factor',
     group: 'combat',
     type: 'number',
@@ -339,10 +353,114 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.danger_ref',
+    group: 'wear',
+    type: 'number',
+    min: 0.1,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_ref),
+    description: {
+      en: "Leg danger that scales an exposed part's ambient wear ×1 (danger / danger_ref, clamped by danger_floor/danger_cap). A safe, simple leg costs a small fraction of the base roll; a dangerous one costs multiples of it.",
+      'pt-BR':
+        'Perigo do trecho que escala em ×1 o desgaste ambiente de uma peça exposta (perigo / danger_ref, limitado por danger_floor/danger_cap). Um trecho seguro e simples custa uma fração do sorteio base; um perigoso custa múltiplos dele.',
+    },
+  },
+  {
+    key: 'wear.danger_floor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_floor),
+    description: {
+      en: "Lowest danger multiplier an exposed part's ambient wear can fall to, so even a danger-0 leg still costs a little.",
+      'pt-BR':
+        'Menor multiplicador de perigo ao qual o desgaste ambiente de uma peça exposta pode cair, para que mesmo um trecho com perigo 0 custe um pouco.',
+    },
+  },
+  {
+    key: 'wear.danger_cap',
+    group: 'wear',
+    type: 'number',
+    min: 1,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.danger_cap),
+    description: {
+      en: "Highest danger multiplier an exposed part's ambient wear can reach, capping the worst legs.",
+      'pt-BR':
+        'Maior multiplicador de perigo que o desgaste ambiente de uma peça exposta pode atingir, limitando os trechos mais perigosos.',
+    },
+  },
+  {
+    key: 'wear.system_base_min',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_base_min),
+    description: {
+      en: 'Minimum flat per-leg "usage" wear for passive-class parts (bridge, cargo, reactor, utility) — not scaled by environment or danger.',
+      'pt-BR':
+        'Desgaste mínimo fixo de "uso" por trecho para peças de classe passiva (ponte, carga, reator, utilidade) — não escalado por ambiente ou perigo.',
+    },
+  },
+  {
+    key: 'wear.system_base_max',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_base_max),
+    description: {
+      en: 'Maximum flat per-leg "usage" wear for passive-class parts (bridge, cargo, reactor, utility) — not scaled by environment or danger.',
+      'pt-BR':
+        'Desgaste máximo fixo de "uso" por trecho para peças de classe passiva (ponte, carga, reator, utilidade) — não escalado por ambiente ou perigo.',
+    },
+  },
+  {
+    key: 'wear.system_defeat_share',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.system_defeat_share),
+    description: {
+      en: "Share of a combat defeat's rolled condition loss a passive-class part takes (0–1); exposed classes take the full roll.",
+      'pt-BR':
+        'Fração da perda de condição sorteada numa derrota em combate que uma peça de classe passiva sofre (0–1); classes expostas sofrem o sorteio inteiro.',
+    },
+  },
+  {
+    key: 'wear.defense_wear_bonus',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.defense_wear_bonus),
+    description: {
+      en: 'Total extra multiplier DEFENSE-class parts (Hull Frame, shields) absorb on both ambient and defeat wear, split evenly across however many are installed — 0.8 means ×1.8 for one, ×1.4 for two, and so on, so stacking DEFENSE parts never multiplies the total benefit.',
+      'pt-BR':
+        'Multiplicador extra total que peças de classe DEFESA (Estrutura de Casco, escudos) absorvem no desgaste ambiente e no de derrota, dividido igualmente entre quantas estiverem instaladas — 0,8 significa ×1,8 para uma, ×1,4 para duas, e assim por diante, então empilhar peças de DEFESA nunca multiplica o benefício total.',
+    },
+  },
+  {
+    key: 'wear.other_exposed_wear_factor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.other_exposed_wear_factor),
+    description: {
+      en: "Compensating factor on every non-DEFENSE exposed class's ambient and defeat wear, applied only while at least one DEFENSE part is installed — keeps the ship's average wear roughly where it was before this part absorbed a bigger share.",
+      'pt-BR':
+        'Fator de compensação no desgaste ambiente e de derrota de toda classe exposta que não seja DEFESA, aplicado só enquanto pelo menos uma peça de DEFESA estiver instalada — mantém o desgaste médio da nave próximo de onde estava antes dessa peça absorver uma fração maior.',
+    },
+  },
+  {
     key: 'economy.fuel_price',
     group: 'economy',
-    type: 'integer',
-    min: 1,
+    type: 'number',
+    min: 0.1,
     max: 20,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.fuel_price),
@@ -559,6 +677,34 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.repair_min_base_price',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 1000,
+    unit: '¢',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_min_base_price),
+    description: {
+      en: 'Repair price base for cheap parts: a part worth less than this is repaired as if it were worth this (keeps the bridge from being repaired for free).',
+      'pt-BR':
+        'Base do preço de reparo para peças baratas: uma peça que vale menos que isso é reparada como se valesse isso (impede reparar a ponte de graça).',
+    },
+  },
+  {
+    key: 'economy.sell_min_condition',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 100,
+    unit: '%',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.sell_min_condition),
+    description: {
+      en: 'Parts below this condition cannot be sold (a port never takes a part for nothing). They can be repaired or discarded.',
+      'pt-BR':
+        'Peças abaixo desta condição não podem ser vendidas (o porto nunca leva uma peça por nada). Podem ser consertadas ou descartadas.',
+    },
+  },
+  {
     key: 'economy.sell_ratio',
     group: 'economy',
     type: 'number',
@@ -619,6 +765,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.part_upgrade_price_multiplier',
+    group: 'economy',
+    type: 'json',
+    min: 1,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.part_upgrade_price_multiplier),
+    description: {
+      en: 'Multiplier on the price gap to a part’s next rarity tier, charged to upgrade it in place — by the part’s current rarity.',
+      'pt-BR':
+        'Multiplicador sobre a diferença de preço para o próximo tier de raridade da peça, cobrado para melhorá-la no lugar — por raridade atual da peça.',
+    },
+  },
+  {
     key: 'economy.rarity_base_price',
     group: 'economy',
     type: 'json',
@@ -628,6 +787,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Base price per item rarity.',
       'pt-BR': 'Preço base por raridade de item.',
+    },
+  },
+  {
+    key: 'economy.market_rarity_chance',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.market_rarity_chance),
+    description: {
+      en: 'Daily chance (0-1) a rarity actually shows up in a port’s new-parts shelf. 0 means never; 1 means always.',
+      'pt-BR':
+        'Chance diária (0-1) de uma raridade aparecer na prateleira de peças novas de um porto. 0 significa nunca; 1 significa sempre.',
     },
   },
   {
@@ -677,6 +849,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Possible pirate strength multipliers.',
       'pt-BR': 'Multiplicadores de força pirata possíveis.',
+    },
+  },
+  {
+    key: 'encounter.pirate_zone_strength',
+    group: 'encounter',
+    type: 'json',
+    min: 0.1,
+    max: 5.0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_zone_strength),
+    description: {
+      en: 'Strongest pirate strength multiplier per zone: safer zones meet weaker pirates.',
+      'pt-BR':
+        'Maior multiplicador de força pirata por zona: zonas mais seguras têm piratas mais fracos.',
+    },
+  },
+  {
+    key: 'encounter.pirate_motive_weights',
+    group: 'encounter',
+    type: 'json',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_motive_weights),
+    description: {
+      en: 'What a winning pirate wants, as relative weights: cargo (the mission cargo), parts (from storage) or territory (drives the ship off).',
+      'pt-BR':
+        'O que um pirata vencedor quer, em pesos relativos: cargo (a carga da missão), parts (peças do depósito) ou territory (expulsa a nave).',
     },
   },
   {
@@ -917,6 +1115,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Number of mining attempts allowed per stop.',
       'pt-BR': 'Número de tentativas de mineração permitidas por parada.',
+    },
+  },
+  {
+    key: 'mining.job_duration_seconds',
+    group: 'mining',
+    type: 'integer',
+    min: 1,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.job_duration_seconds),
+    description: {
+      en: 'How long an independent mining job takes, in mission time (scaled by missions.time_scale).',
+      'pt-BR':
+        'Quanto dura um trabalho de mineração independente, em tempo de missão (escalado por missions.time_scale).',
     },
   },
   {
@@ -1161,6 +1372,58 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Cooldown between scavenging attempts at the same location.',
       'pt-BR': 'Tempo de recarga entre tentativas de saque no mesmo local.',
+    },
+  },
+  {
+    key: 'scavenging.duration_seconds',
+    group: 'scavenging',
+    type: 'integer',
+    min: 1,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.duration_seconds),
+    description: {
+      en: 'How long a scavenging job takes, in mission time (scaled by missions.time_scale).',
+      'pt-BR':
+        'Quanto dura um trabalho de saque, em tempo de missão (escalado por missions.time_scale).',
+    },
+  },
+  {
+    key: 'scavenging.scrap_share',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_share),
+    description: {
+      en: 'In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap instead of parts.',
+      'pt-BR':
+        'Em lugares de sucata (campos de detritos, zonas mortas, relés) a fração dos achados que é sucata em vez de peças.',
+    },
+  },
+  {
+    key: 'scavenging.zone_quality_bonus',
+    group: 'scavenging',
+    type: 'integer',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.zone_quality_bonus),
+    description: {
+      en: 'Condition points added to the quality range per zone: riskier places give better finds.',
+      'pt-BR':
+        'Pontos de condição somados à faixa de qualidade por zona: lugares mais arriscados dão achados melhores.',
+    },
+  },
+  {
+    key: 'scavenging.zone_rarity_bias',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.zone_rarity_bias),
+    description: {
+      en: 'Extra weight of the rarer drop tiers per zone (0 = none): riskier places give rarer finds.',
+      'pt-BR':
+        'Peso extra das faixas de drop mais raras por zona (0 = nenhum): lugares mais arriscados dão achados mais raros.',
     },
   },
   {

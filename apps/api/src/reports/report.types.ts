@@ -36,6 +36,18 @@ export interface ReportLog {
   readonly credits: number;
   /** D37: balance after the payout; absent on pre-S9.0 PlayerEvents. */
   readonly balanceAfter?: number;
+  /**
+   * True when the dispatched ship had at least one shield-providing DEFENSE part (`catalog.esc >
+   * 0`, the same test `failureCategory` uses). The debrief must not report "shield took 0
+   * damage" for a ship that never had one to begin with.
+   */
+  readonly hasShield: boolean;
+  /** Every installed part's condition at dispatch — the "before" half of the Details tab's table. */
+  readonly partsBefore: readonly {
+    readonly id: string;
+    readonly partType: string;
+    readonly condition: number;
+  }[];
 }
 
 /** View-chrome strings for one locale (S9.3's `view.json`). */

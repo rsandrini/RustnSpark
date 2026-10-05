@@ -9,6 +9,7 @@ import type { Locale } from '../common/locale/locale.js';
 import { localizeDisplayName } from '../common/locale/localize.js';
 import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
+import { bilingual } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { renderReport, type ViewResult } from './report.render.js';
 import { type ReportLegRef, type ReportLog, VIEW_NAMES, type ViewName } from './report.types.js';
@@ -17,6 +18,7 @@ import {
   UnsupportedMissionLogSchemaError,
   type ParsedMissionEvent,
 } from './events/event.schema.js';
+import { computeReportStats, type ReportStats } from './report.stats.js';
 import { type EntityNames } from './templates/template.engine.js';
 
 const DEFAULT_LIST_LIMIT = 20;
@@ -28,6 +30,10 @@ export interface ReportListItem {
   readonly credits: number;
   readonly legs: number;
   readonly createdAt: string;
+  /** Owner: "almost impossible to know in the mission history log where I had a combat" — any
+      combat-category event (win/loss/draw/escort-absorbed/escaped/PvP), so the history list can
+      flag it without the client fetching every full report. */
+  readonly hadCombat: boolean;
 }
 
 export interface ReportListResponse {
@@ -39,7 +45,19 @@ export type ReportResponse = {
   readonly locale: Locale;
   /** Mission outcome, so the report screen needs no second call to label itself. */
   readonly outcome: string;
+  /** The run in numbers, for the debrief header (same on every view). */
+  readonly stats: ReportStats;
+  /** What the mission was, when its row still exists. */
+  readonly mission?: ReportMission;
 } & ViewResult;
+
+export interface ReportMission {
+  readonly type: string;
+  readonly originId: string;
+  readonly destinationId: string;
+  readonly title: { readonly en: string; readonly 'pt-BR': string };
+  readonly reward: number;
+}
 
 interface StoredLogJson {
   readonly legs?: unknown;
@@ -57,8 +75,13 @@ export function encodeCursor(createdAt: Date, id: string): string {
 // Dispatch snapshot (D19) → instance id → catalog type; exported so the admin replay
 // (S11.4) builds the same ReportLog.partTypeById the player path builds.
 export function partTypesOf(snapshot: unknown): Record<string, string> {
-  const parts = (snapshot as { parts?: unknown } | null)?.parts;
-  if (!Array.isArray(parts)) return {};
+  const record = snapshot as { parts?: unknown; storage?: unknown } | null;
+  const parts = [
+    ...(Array.isArray(record?.parts) ? (record.parts as unknown[]) : []),
+    // Storage parts too: the report names what a pirate took from the hold.
+    ...(Array.isArray(record?.storage) ? (record.storage as unknown[]) : []),
+  ];
+  if (parts.length === 0) return {};
   const out: Record<string, string> = {};
   for (const entry of parts) {
     const candidate = entry as { id?: unknown; partType?: unknown };
@@ -67,6 +90,49 @@ export function partTypesOf(snapshot: unknown): Record<string, string> {
     }
   }
   return out;
+}
+
+interface SnapshotPartEntry {
+  readonly id?: unknown;
+  readonly partType?: unknown;
+  readonly condition?: unknown;
+  readonly catalog?: { readonly partClass?: unknown; readonly esc?: unknown };
+}
+
+function installedPartsOf(snapshot: unknown): SnapshotPartEntry[] {
+  const record = snapshot as { parts?: unknown } | null;
+  return Array.isArray(record?.parts) ? (record.parts as SnapshotPartEntry[]) : [];
+}
+
+/** Every installed part's condition at dispatch — the Details tab's "before" column. */
+export function partsBeforeOf(
+  snapshot: unknown,
+): readonly { id: string; partType: string; condition: number }[] {
+  const out: { id: string; partType: string; condition: number }[] = [];
+  for (const entry of installedPartsOf(snapshot)) {
+    if (
+      typeof entry.id === 'string' &&
+      typeof entry.partType === 'string' &&
+      typeof entry.condition === 'number'
+    ) {
+      out.push({ id: entry.id, partType: entry.partType, condition: entry.condition });
+    }
+  }
+  return out;
+}
+
+/**
+ * True when the dispatched ship had a shield: a DEFENSE part whose catalog ESC is > 0 — the same
+ * test `failureCategory('DEFENSE', providesEsc)` uses to decide choke-criticality. Armor plates
+ * (DEFENSE without ESC) do not count.
+ */
+export function hasShieldOf(snapshot: unknown): boolean {
+  return installedPartsOf(snapshot).some(
+    (entry) =>
+      entry.catalog?.partClass === 'DEFENSE' &&
+      typeof entry.catalog.esc === 'number' &&
+      entry.catalog.esc > 0,
+  );
 }
 
 function readBalanceAfter(payload: unknown): number | undefined {
@@ -125,17 +191,19 @@ export class ReportsService {
     const items = page.map((row) => {
       const stored = (row.legs ?? {}) as StoredLogJson;
       const resolved = resolvedByMission.get(row.missionId);
-      // Stored events are parsed only when the mission.resolved event is missing:
-      // the wallet movement is the source of truth for credits, the events a fallback.
-      const credits =
-        resolved?.creditsDelta ??
-        sumStoredCredits(this.parseStoredEvents(row.missionId, row.schemaVersion, stored.events));
+      // "Fails loudly" (S9.1) is the single-report path's rule, not the list's: one row whose
+      // schemaVersion this build can't read must never break the whole history, so this parse
+      // is lenient here on purpose (credits still has the wallet event as its real source either
+      // way; hadCombat has no such fallback, so an unreadable row just reads as no combat).
+      const events = this.parseStoredEventsLeniently(row.missionId, row.schemaVersion, stored.events);
+      const credits = resolved?.creditsDelta ?? sumStoredCredits(events);
       return {
         missionId: row.missionId,
         outcome: row.outcome,
         credits,
         legs: Array.isArray(stored.legs) ? stored.legs.length : 0,
         createdAt: row.createdAt.toISOString(),
+        hadCombat: events.some((event) => event.category === 'combat'),
       };
     });
     const last = page[page.length - 1];
@@ -182,7 +250,33 @@ export class ReportsService {
     const locale = await this.localeFor(playerId, explicitLocale);
     const names = await this.entityNames(locale, log.partTypeById);
     const result = renderReport(log, locale, view as ViewName, names);
-    return { locale, outcome: log.outcome, ...result };
+    const mission = await this.prisma.missionInstance.findUnique({
+      where: { id: log.missionId },
+      select: {
+        type: true,
+        originId: true,
+        destinationId: true,
+        reward: true,
+        template: { select: { displayName: true } },
+      },
+    });
+    return {
+      locale,
+      outcome: log.outcome,
+      stats: computeReportStats(log, names),
+      ...(mission === null
+        ? {}
+        : {
+            mission: {
+              type: mission.type,
+              originId: mission.originId,
+              destinationId: mission.destinationId,
+              reward: mission.reward,
+              title: bilingual(mission.template.displayName),
+            },
+          }),
+      ...result,
+    };
   }
 
   private async loadReportLog(missionId: string): Promise<ReportLog | null> {
@@ -204,9 +298,30 @@ export class ReportsService {
       events,
       legs,
       partTypeById: partTypesOf(log.shipSnapshot),
+      hasShield: hasShieldOf(log.shipSnapshot),
+      partsBefore: partsBeforeOf(log.shipSnapshot),
       credits: resolved?.creditsDelta ?? sumStoredCredits(events),
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
     };
+  }
+
+  // The list: one row whose schemaVersion this build can't read must never break the whole
+  // history (an existing, tested guarantee) — empty events for that one row, not a 500. Logs
+  // the same way parseStoredEvents does, just doesn't re-throw.
+  private parseStoredEventsLeniently(
+    missionId: string,
+    schemaVersion: number,
+    raw: unknown,
+  ): ParsedMissionEvent[] {
+    try {
+      return parseMissionLogEvents(schemaVersion, raw);
+    } catch (error) {
+      if (error instanceof UnsupportedMissionLogSchemaError) {
+        this.logger.error(`mission ${missionId}: ${error.message}`);
+        return [];
+      }
+      throw error;
+    }
   }
 
   // An unreadable log must fail loudly (S9.1): rendering "no events" for an unknown
@@ -295,6 +410,12 @@ export class ReportsService {
       materials: Object.fromEntries(
         materials.map((row) => [
           row.id,
+          localizeDisplayName(row.displayName as Record<string, unknown>, locale),
+        ]),
+      ),
+      partTypes: Object.fromEntries(
+        parts.map((row) => [
+          row.partType,
           localizeDisplayName(row.displayName as Record<string, unknown>, locale),
         ]),
       ),

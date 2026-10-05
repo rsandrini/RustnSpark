@@ -104,6 +104,12 @@ export const adminApi = {
       { amount, reason },
       { idempotencyKey: key },
     ),
+  setPassword: (playerId: string, password: string, reason: string, key: string) =>
+    client.post<SupportResult>(
+      `/v1/admin/players/${playerId}/password`,
+      { password, reason },
+      { idempotencyKey: key },
+    ),
   clearBalance: (playerId: string, reason: string, key: string) =>
     client.post<SupportResult>(
       `/v1/admin/players/${playerId}/clear-balance`,

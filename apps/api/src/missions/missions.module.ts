@@ -9,6 +9,7 @@ import {
   RESOLVE_JOB_ATTEMPTS,
   bullConnectionOptions,
 } from '../jobs/queues.js';
+import { Clock } from '../common/clock/clock.js';
 import { PartsModule } from '../parts/parts.module.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
@@ -19,6 +20,12 @@ import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
+import { MiningJobController } from './mining-job.controller.js';
+import { MiningJobService } from './mining-job.service.js';
+import { ScavengeJobController } from './scavenge-job.controller.js';
+import { ScavengeJobService } from './scavenge-job.service.js';
+import { TravelController } from './travel.controller.js';
+import { TravelService } from './travel.service.js';
 
 // The API process enqueues resolve jobs here (S7.2/S7.3 via MissionProducer); the worker
 // process registers the same queue name with MissionProcessor inside JobsModule — separate
@@ -47,13 +54,17 @@ import { MissionResolveService } from './resolve.service.js';
       },
     }),
   ],
-  controllers: [MissionsController],
+  controllers: [MissionsController, TravelController, ScavengeJobController, MiningJobController],
   providers: [
     BoardService,
     MissionsService,
     DispatchService,
     MissionProducer,
     MissionResolveService,
+    TravelService,
+    ScavengeJobService,
+    MiningJobService,
+    Clock,
     EncounterService,
     RoutePresenceService,
     WalletService,

@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { PrismaClient } from '@prisma/client';
+import { PARTS } from '../../prisma/seed-data/parts.js';
 import { seed } from '../../prisma/seed.js';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
@@ -112,15 +113,22 @@ describe('database seed (S3.4)', () => {
     await seed(prisma);
 
     const counts = await countRows(prisma);
-    expect(counts.gameConfig).toBe(101);
+    // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
+    expect(counts.gameConfig).toBe(121);
     expect(counts.locations).toBe(12);
     expect(counts.routes).toBe(17);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
-    expect(counts.materials).toBe(3);
+    // 3 ores + one fixed-price scrap material per scavengeable part (every part but the bridge).
+    expect(counts.materials).toBe(3 + PARTS.filter((part) => part.partClass !== 'BRIDGE').length);
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
+
+    const classicSquare = await prisma.shipFormat.findUnique({ where: { id: 'classic_square' } });
+    expect(classicSquare).not.toBeNull();
+    expect((classicSquare!.cells as [number, number][]).length).toBe(400);
+    expect(classicSquare!.minRarity).toBe('COMMON');
   });
 
   it('is idempotent: a second seed run makes no changes', async () => {

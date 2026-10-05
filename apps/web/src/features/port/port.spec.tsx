@@ -3,7 +3,14 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { economyState, resetEconomyState } from '../../test/msw/handlers';
+import {
+  addWreck,
+  classicSquareCells,
+  destroyEngine,
+  economyState,
+  setWallet,
+  resetEconomyState,
+} from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
 
@@ -23,11 +30,22 @@ const onboarded = () =>
   );
 
 function rowButton(label: string | RegExp): Element {
-  const row = screen.getByText(label).closest('.item');
+  const row = screen.getByText(label).closest('.pcard');
   if (row === null) throw new Error('row not found');
-  const button = row.querySelector('button');
+  const button = row.querySelector('button:not(.info-btn)');
   if (button === null) throw new Error('button not found');
   return button;
+}
+
+async function renderPort(): Promise<void> {
+  // Port is a nested route now (owner request: the old Ship/Port/Board switcher duplicated the
+  // top nav and got removed) — land on it directly instead of clicking a tab that no longer
+  // exists.
+  renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+  await screen.findByRole('heading', { name: 'My Ship' });
+  // Port's own tab bar (Market/Goods/Repair/…) only renders once its data has loaded — a
+  // sharper ready signal than the wallet testid, which My Ship's own header already shows.
+  await screen.findByRole('tab', { name: 'Market' });
 }
 
 describe('port (S10.9)', () => {
@@ -37,10 +55,9 @@ describe('port (S10.9)', () => {
   });
 
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
-    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
-    expect(screen.getByTestId('wallet')).toHaveTextContent('4,820 ¢');
+    expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,820 ¢');
     expect(screen.getByText('Plated Hull')).toBeInTheDocument();
 
     fireEvent.click(rowButton('Plated Hull'));
@@ -51,7 +68,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Bought Plated Hull for 300 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,520 ¢'));
   });
 
   it('disables spending on a negative balance while scavenging stays open', async () => {
@@ -70,64 +87,216 @@ describe('port (S10.9)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
-    expect(await screen.findByTestId('wallet')).toHaveTextContent('-120 ¢');
+    expect(await screen.findByTestId('topbar-wallet')).toHaveTextContent('-120 ¢');
     expect(screen.getByText(/Negative balance/i)).toBeInTheDocument();
     expect(rowButton('Plated Hull')).toBeDisabled();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Refuel' }));
-    expect(screen.getByRole('button', { name: 'Fill tank' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Buy \d+/ })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
-    expect(screen.getByRole('button', { name: /scavenge/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
   });
 
   it('sells all mined materials after the quote popup', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Market' }));
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
     fireEvent.click(rowButton(/Iron/));
     const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
     expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
     fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Sold Iron for 24 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,844 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,844 ¢'));
   });
 
-  it('repairs every damaged installed part from the repair tab', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+  it('a destroyed part has no repair slider and is skipped by "set all to 100%"', async () => {
+    destroyEngine();
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
-    expect(screen.getAllByRole('slider')).toHaveLength(6);
+    expect(
+      await screen.findByText('A destroyed part cannot be repaired: replace it.'),
+    ).toBeInTheDocument();
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders).toHaveLength(6);
+    expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Repair all' }));
-    // The exact cost is quoted by the server and confirmed before anything is charged.
+  it('repair defaults to a full repair, prices each part and the total, then charges once', async () => {
+    await renderPort();
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders).toHaveLength(6);
+    // A full repair is the default the first time there's damage to quote (owner: the workshop
+    // fee should be a real number as soon as the tab opens, not 0 until a slider moves): every
+    // slider already sits at 100.
+    for (const slider of sliders) {
+      expect((slider as HTMLInputElement).value).toBe('100');
+    }
+    const summary = screen.getByTestId('repair-summary');
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(within(summary).getByText('Current balance')).toBeInTheDocument();
+    expect(within(summary).getByText('4,820 ¢')).toBeInTheDocument();
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
+    expect(
+      screen.getAllByTestId('repair-line').every((line) => /¢/.test(line.textContent ?? '')),
+    ).toBe(true);
+
+    // "Back to current" undoes it without repairing anything...
+    fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
+    expect(screen.getByTestId('repair-summary')).toHaveTextContent('Nothing selected yet');
+    // ...and one click on "Set all to 100%" puts it right back.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+
+    fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
     const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
-    expect(popup).toHaveTextContent('Repair cost: 1188 ¢ · 30 s');
     expect(economyState.wallet).toBe(4820);
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Repair started for 1188 ¢ — completes in 30s.',
+    expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('3,632 ¢'));
+  });
+
+  it('never lets "Start repair" open on a stale (pre-refetch) quote for a bigger plan', async () => {
+    // A slow quote for the "set all to 100%" plan: while it is loading, `keepPreviousData` would
+    // otherwise show the smaller, single-part quote already on screen. The trigger must not
+    // offer that stale, cheaper number as if it priced the current (bigger) plan.
+    const gate: { release: (() => void) | null } = { release: null };
+    server.use(
+      http.post('/v1/ships/:id/repair/quote', async ({ request }) => {
+        const body = (await request.json()) as { targets: Array<{ toCondition: number }> };
+        if (body.targets.length > 1) {
+          await new Promise<void>((resolve) => {
+            gate.release = resolve;
+          });
+          return HttpResponse.json(
+            { shipId: 'ship-1', cost: 1188, durationSeconds: 30, items: [], fee: 0 },
+            { status: 200 },
+          );
+        }
+        return HttpResponse.json(
+          { shipId: 'ship-1', cost: 20, durationSeconds: 5, items: [], fee: 0 },
+          { status: 200 },
+        );
+      }),
     );
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('3,632 ¢'));
+    await renderPort();
+
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    const summary = screen.getByTestId('repair-summary');
+    // The default is already a full repair (every part), which this test's mock would gate as
+    // the "bigger plan": back out to nothing selected first, then pick a single part, to get the
+    // small quote this test actually wants as its starting point.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
+    const [slider] = screen.getAllByRole('slider');
+    fireEvent.change(slider!, { target: { value: '100' } });
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('20 ¢'));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
+
+    // Now the bigger plan's quote is loading: the trigger must not offer the old, smaller price.
+    fireEvent.click(within(summary).getByRole('button', { name: 'Set all to 100%' }));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeDisabled();
+
+    await waitFor(() => expect(gate.release).not.toBeNull());
+    gate.release?.();
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
   });
 
   it('fills the tank and scavenges the field', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
     expect(screen.getByText('Fuel 25 / 40')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    // The slider defaults to filling the tank; the price shown is the server's quote of that amount.
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,775 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,775 ¢'));
 
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Scavenge the field' }));
+    // The tab explains itself: time, risk, what you find, and where it works.
+    const scav = await screen.findByTestId('scavenging');
+    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
+    expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
+    expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
+
+    // Starting the job sends the ship out and back to the Ship view, where the travel
+    // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
+    fireEvent.click(screen.getByRole('button', { name: 'Send the ship scavenging' }));
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Salvaged: Cargo Rack (condition 40).'),
+      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
     );
+  });
+
+  // Round-10 owner request: "add independent mining missions at minable locations" — its
+  // own tab, as visible/findable as Scavenging (not nested inside it), server decides
+  // eligibility (NOT_MINABLE / NO_MINING_RIG surface as an ordinary action error, same as
+  // any other gated action here).
+  it('starts an independent mining job from its own Mining tab', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
+
+    const mining = await screen.findByTestId('mining-job');
+    expect(within(mining).getByText(/minable/)).toBeInTheDocument();
+
+    fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
+    await waitFor(() =>
+      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
+    );
+  });
+
+  it('surfaces NOT_MINABLE from the server as a plain action error', async () => {
+    server.use(
+      http.post('/v1/locations/:id/mine', () =>
+        HttpResponse.json({ statusCode: 409, message: { error: 'NOT_MINABLE' } }, { status: 409 }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send the ship mining' }));
+    expect(await screen.findByText('There is nothing to mine here.')).toBeInTheDocument();
+  });
+
+  it('refuel tab explains there is no tank instead of claiming a 0/0 tank is already full', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'sun starter',
+              fuel: 0,
+              status: 'IN_PORT',
+              currentLocationId: 'hedus',
+              stance: 'NEUTRAL',
+              layout: [],
+              // An all-ion (or mid-refit) ship: no tank installed, so fuelCap is 0 — this must
+              // not read as "0 / 0 = full" the way a genuinely topped-up tank would.
+              sheet: { fuelCap: 0 },
+              shipClass: 'MULTIROLE',
+              yard: { cells: classicSquareCells() },
+              activity: { kind: 'idle', until: null, missionId: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    expect(
+      await screen.findByText(/no fuel tank installed/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/tank is already full/i)).toBeNull();
+    expect(screen.queryByTestId('refuel-cost')).toBeNull();
   });
 
   it('opens the market of the port where the ship is docked, not a hard-coded one', async () => {
@@ -147,6 +316,8 @@ describe('port (S10.9)', () => {
               layout: [],
               sheet: { fuelCap: 40 },
               shipClass: 'MULTIROLE',
+              yard: { cells: classicSquareCells() },
+              activity: { kind: 'idle', until: null, missionId: null },
             },
           ],
           { status: 200 },
@@ -155,13 +326,12 @@ describe('port (S10.9)', () => {
       http.get('/v1/locations/:id/market', ({ params }) => {
         requested.push(String(params.id));
         return HttpResponse.json(
-          { locationId: String(params.id), listings: [], sellOffers: [] },
+          { locationId: String(params.id), listings: [], sellOffers: [], sellMinCondition: 15 },
           { status: 200 },
         );
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
-    expect(await screen.findByRole('heading', { name: 'Port' })).toBeInTheDocument();
+    await renderPort();
     expect(requested).toContain('hedus');
     expect(requested).not.toContain('ceres');
   });
@@ -185,7 +355,7 @@ describe('port (S10.9)', () => {
         );
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
 
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
@@ -202,9 +372,10 @@ describe('port (S10.9)', () => {
   });
 
   it('refuel, sell and repair are refused by the (strict) mock without a key — and the UI sends one', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Fill tank' }));
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     // The strict mock answers 400 IDEMPOTENCY_KEY_REQUIRED if the header is missing.
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units');
     expect(queryByRoleSafe('alert')).toBeNull();
@@ -219,7 +390,7 @@ describe('port (S10.9)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog');
@@ -230,13 +401,14 @@ describe('port (S10.9)', () => {
   });
 
   it('sells an inventory part at the port quote on the first click', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    await renderPort();
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     let popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
     await screen.findByRole('status');
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Your goods' }));
     const sell = await screen.findAllByRole('button', { name: 'Sell' });
     fireEvent.click(sell[0]!);
     popup = await screen.findByRole('dialog');
@@ -254,14 +426,121 @@ describe('port (S10.9)', () => {
         return HttpResponse.json({ accessToken: 'token-x' }, { status: 200 });
       }),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
-    await screen.findByTestId('wallet');
+    await renderPort();
+    await screen.findByTestId('topbar-wallet');
     const before = sessionRefreshes;
     await screen.findByText('Plated Hull');
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
-    await waitFor(() => expect(screen.getByTestId('wallet')).toHaveTextContent('4,520 ¢'));
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,520 ¢'));
     expect(sessionRefreshes).toBe(before);
+  });
+
+  it('refuel opens on what the pilot can afford, never on a price they cannot pay', async () => {
+    setWallet(30);
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    // 3 ¢ a unit and 30 ¢ in the wallet: ten units, not the whole tank.
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('30 ¢'));
+    expect(screen.getByRole('button', { name: 'Buy 10' })).toBeEnabled();
+  });
+
+  it('refuel: the slider picks how much to buy and the price follows the amount', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    const slider = await screen.findByLabelText('How much fuel to buy');
+    fireEvent.change(slider, { target: { value: '5' } });
+    await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('15 ¢'));
+    fireEvent.click(screen.getByRole('button', { name: 'Buy 5' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Filled 5 units for 15 ¢.');
+  });
+
+  it('a too-damaged loose part cannot be sold; discard asks first, then destroys it', async () => {
+    addWreck();
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const note = await screen.findByTestId('discard-note');
+    expect(note).toHaveTextContent('under 15% condition');
+    expect(screen.getByText('Too damaged to sell')).toBeInTheDocument();
+
+    fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
+    const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Discarded 1 damaged part(s).');
+    await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
+  });
+
+  it('upgrade tab lists only parts the catalog has a next tier for (round 5, item 4)', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+
+    // hull and both cargo racks have a next-tier fixture entry; bridge/engine/tank/battery don't.
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    expect(screen.getAllByText('Cargo Rack')).toHaveLength(2);
+    expect(screen.queryByText('Bridge')).toBeNull();
+    expect(screen.queryByText('Small Chemical Engine')).toBeNull();
+  });
+
+  // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
+  // part" — the same before/after popup Market already has, built from a virtual part at the
+  // next tier (which doesn't exist as an owned instance yet).
+  it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as {
+          virtualPart?: { partType: string; condition: number };
+          replacePartInstanceId?: string;
+        };
+        // The exact wiring under test: the diff is a REPLACE of this instance with the next
+        // tier's catalog code, not a plain addition.
+        expect(body.virtualPart?.partType).toBe('hull_uncommon');
+        expect(body.replacePartInstanceId).toBe('part-hull');
+        return HttpResponse.json({
+          sheet: {
+            pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 60, mass: 24,
+            energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
+            fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40, autonomy: 40,
+            mob: 2, condition: 1,
+          },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+
+    const hullRow = (await screen.findByText('Plated Hull')).closest('article');
+    expect(hullRow).not.toBeNull();
+    // The upgrade-target info button opens the diff popup for "Reinforced Hull" (the next
+    // tier), not another popup for "Plated Hull" itself (that one already exists separately).
+    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Reinforced Hull' }));
+
+    const popup = await screen.findByRole('dialog', { name: 'Reinforced Hull' });
+    // Replacing Plated Hull, not adding a second hull — the comparison's own wording says so.
+    await within(popup).findByText('If you swap this in for Plated Hull');
+    // The next tier's own higher hp (60 vs the ship's current 40) shows as a positive delta.
+    const hpRow = within(popup).getByRole('row', { name: /^Hit points/ });
+    await waitFor(() => expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument());
+  });
+
+  it('upgrades a part behind a confirm popup and updates the wallet', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
+    expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,705 ¢'));
+    // The upgraded part is now UNCOMMON, so it drops off this tab (no further chain in the fixture).
+    await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
   });
 });

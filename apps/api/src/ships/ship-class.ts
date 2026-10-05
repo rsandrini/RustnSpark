@@ -4,8 +4,13 @@ import type { InstalledPart } from '../parts/part.types.js';
 export type ShipClassType = 'HAULER' | 'TRANSPORT' | 'WARSHIP' | 'MINER' | 'MULTIROLE';
 
 export function deriveShipClass(parts: InstalledPart[], rules: GameRules): ShipClassType {
-  const bridge = parts.find((part) => part.catalog.partClass === 'BRIDGE');
-  const budget = bridge === undefined ? 0 : Math.abs(bridge.catalog.structureCost);
+  // Class is the shape of what the pilot built, so shares are measured against the structure
+  // actually fitted (everything but the bridge), not against the bridge's budget: a small ship
+  // that is mostly cargo is a hauler even though it uses a fraction of the budget. (Measured
+  // against the budget, no small ship ever reached a threshold and every ship was Multirole.)
+  const budget = parts
+    .filter((part) => part.catalog.partClass !== 'BRIDGE')
+    .reduce((total, part) => total + Math.max(0, part.catalog.structureCost), 0);
   if (budget <= 0) {
     return 'MULTIROLE';
   }

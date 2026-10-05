@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import type { MissionInstance } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { AppModule } from '../../src/app.module.js';
 import { EnvService } from '../../src/common/env/env.module.js';
@@ -78,6 +79,7 @@ describe('ship dispatch API (S7.2)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -225,6 +227,53 @@ describe('ship dispatch API (S7.2)', () => {
     const snapshot = (job?.data as { snapshot: { parts: unknown[]; legs: unknown[] } }).snapshot;
     expect(snapshot.parts.length).toBeGreaterThan(0);
     expect(snapshot.legs).toHaveLength(2);
+  });
+
+  // Owner debug switch (playtest round 2): the displayed duration and arrivalAt stay the real,
+  // computed ones; only the queued job's actual delay is capped.
+  it("a player's own debugFastOps shortens the queued delay without touching the displayed duration, and leaves other players alone", async () => {
+    await freshSeededApp();
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops_seconds' },
+      data: { value: 5 },
+    });
+    await configService.refresh();
+    try {
+      const player = await onboardPlayer();
+      const other = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { debugFastOps: true },
+      });
+      const mission = await createMission(player, [750, 250]);
+      const otherMission = await createMission(other, [750, 250]);
+      const serverTime = new Date();
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/dispatch`)
+        .set(auth(player.token))
+        .send({ missionId: mission.id });
+      expect(response.status).toBe(200);
+      const body = response.body as { arrivalAt: string };
+      const realDelayMs = new Date(body.arrivalAt).getTime() - serverTime.getTime();
+      // A fresh delivery mission's real trip is well over 5 seconds; the displayed figure is
+      // untouched by the debug switch.
+      expect(realDelayMs).toBeGreaterThan(5000);
+
+      const job = await queue.getJob(mission.id);
+      expect(job).toBeDefined();
+      expect(job?.opts.delay).toBeLessThanOrEqual(5000);
+
+      // The other player's own dispatch is untouched: no global switch was flipped.
+      const otherResponse = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${other.shipId}/dispatch`)
+        .set(auth(other.token))
+        .send({ missionId: otherMission.id });
+      expect(otherResponse.status).toBe(200);
+      const otherJob = await queue.getJob(otherMission.id);
+      expect(otherJob?.opts.delay).toBeGreaterThan(5000);
+    } finally {
+      await configService.refresh();
+    }
   });
 
   // S10.7: the transit screen counts down per leg against the windows the server

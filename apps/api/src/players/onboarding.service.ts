@@ -1,4 +1,3 @@
-import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
   ConflictException,
@@ -7,12 +6,17 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
+import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
 import { ShipsService } from '../ships/ships.service.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 
@@ -93,8 +97,8 @@ export class OnboardingService {
   }
 
   /**
-   * The starter loadout: create `onboarding.starter_parts` in INVENTORY, auto-layout them
-   * onto the ship, verify viability, install and fill the tank. Extracted from `onboard`
+   * The starter loadout: create `onboarding.starter_parts` in INVENTORY (uninstalled, D44),
+   * verify the kit is viable when assembled, and fill the tank. Extracted from `onboard`
    * so the S11.4 support reset can re-kit an existing hull with the exact same proven
    * path (and the same conflict errors) instead of a second implementation.
    */
@@ -108,13 +112,14 @@ export class OnboardingService {
     const condition = rules.parts.starter_condition;
 
     const instances = await Promise.all(
-      starterParts.map((partType) =>
+      starterParts.map(async (partType) =>
         tx.partInstance.create({
           data: {
             partType,
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
+            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType)),
           },
         }),
       ),
@@ -132,27 +137,28 @@ export class OnboardingService {
     }));
 
     const catalogMap = new Map(installedParts.map((p) => [p.instance.id, p.catalog]));
-    const layout = autoLayout(installedParts, catalogMap);
+    const layout = autoLayout(installedParts, catalogMap, CLASSIC_SQUARE_CELLS);
     if (layout.length !== installedParts.length) {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
 
-    const sheet = deriveSheet(installedParts, rules);
-    const { viable, problems } = checkViability(sheet, installedParts, rules);
+    const connectorsByInstance = new Map(
+      partsWithCatalog.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(layout, catalogMap, connectorsByInstance);
+    const installedConnected = applyConnectivity(installedParts, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const { viable, problems } = checkViability(sheet, installedConnected, rules);
     if (!viable) {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems });
     }
 
-    for (const placement of layout) {
-      await tx.partInstance.update({
-        where: { id: placement.partInstanceId },
-        data: { location: 'INSTALLED', shipId },
-      });
-    }
-
+    // The kit arrives as loose parts (D44): the player assembles the ship in the Hangar. The
+    // auto-layout above only proves the kit *can* fly; nothing is installed here. The tank is
+    // filled for the kit's capacity so the ship is ready the moment it is assembled.
     await tx.ship.update({
       where: { id: shipId },
-      data: { layout: toJsonInput(layout), fuel: sheet.fuelCap },
+      data: { layout: [], fuel: sheet.fuelCap },
     });
   }
 }

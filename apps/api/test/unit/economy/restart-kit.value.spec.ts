@@ -9,7 +9,6 @@ const STARTER_KIT_BASE_PRICES: Record<string, number> = {
   bridge: 0,
   engine_chem_small: 100,
   tank_small: 200,
-  battery_small: 150,
   cargo: 80,
   hull: 100,
 };
@@ -26,14 +25,16 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
   it('sells for strictly less than rescue_cost under the default config', () => {
     const rules = GAME_CONFIG_DEFAULTS;
     const value = worstCaseRestartKitValue(rules, basePriceOf);
-    expect(value).toBe(737);
+    // 737 before round-3 dropped the battery (582); a round-3 follow-up then dropped the kit to
+    // one cargo hold instead of two, dropping the worst-case resale value again.
+    expect(value).toBe(499);
     expect(value).toBeLessThan(rules.economy.rescue_cost);
   });
 
   it('would not hold at the old default of 50 — why restart_condition_max is 30', () => {
     const rules = rulesWith({ restart_condition_max: 50 });
     const value = worstCaseRestartKitValue(rules, basePriceOf);
-    expect(value).toBe(1227);
+    expect(value).toBe(830);
     expect(value).toBeGreaterThanOrEqual(rules.economy.rescue_cost);
   });
 
@@ -50,7 +51,7 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
   it('accounts for rescue_cost: lowering it below the kit value must be visible as a violation', () => {
     const rules: GameRules = {
       ...GAME_CONFIG_DEFAULTS,
-      economy: { ...GAME_CONFIG_DEFAULTS.economy, rescue_cost: 700 },
+      economy: { ...GAME_CONFIG_DEFAULTS.economy, rescue_cost: 490 },
     };
     expect(worstCaseRestartKitValue(rules, basePriceOf)).toBeGreaterThanOrEqual(
       rules.economy.rescue_cost,

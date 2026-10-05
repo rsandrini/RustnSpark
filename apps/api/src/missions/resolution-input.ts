@@ -2,9 +2,12 @@ import type { GameRules } from '../config/game-config.types.js';
 import type { EscapePreset } from '../resolution/encounter/escape.resolver.js';
 import type { FactionRelation, Stance } from '../resolution/encounter/encounter-policy.js';
 import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
+import type { ScavengeContext } from '../resolution/scavenge/scavenge.resolver.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
+import { combatEnergyDraw } from '../ships/combat-energy.js';
+import { isEnergyMode } from '../ships/energy-mode.types.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { shipTier } from '../ships/ship-tier.js';
 import type { DispatchSnapshot } from './dispatch.service.js';
@@ -35,6 +38,8 @@ export interface ResolutionContext {
   /** MINING only. */
   readonly mining?: { readonly materialId: string; readonly materialRarity: string };
   readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
+  /** SCAVENGE only: what the place can give, frozen with the run (D19). */
+  readonly scavenge?: ScavengeContext;
 }
 
 export function relationOf(
@@ -73,6 +78,8 @@ export interface LiveContextSource {
   readonly destinationIsolation: number;
   /** Rarity of the mined material (lower-case), when the mission mines one. */
   readonly materialRarity?: string | null;
+  /** SCAVENGE jobs: the place's scavenging context. */
+  readonly scavenge?: ScavengeContext | null;
 }
 
 /** Reads the context from live data at resolution time (and for logs stored before it existed). */
@@ -90,6 +97,9 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
     client: parseClient(cargo['client']),
     ...(source.type === 'MINING' && materialId !== undefined
       ? { mining: { materialId, materialRarity: source.materialRarity ?? 'common' } }
+      : {}),
+    ...(source.scavenge !== undefined && source.scavenge !== null
+      ? { scavenge: source.scavenge }
       : {}),
     ...(cargo['contracted'] === true &&
     materialId !== undefined &&
@@ -119,12 +129,14 @@ export function buildResolveInput(args: {
     catalog: part.catalog,
   }));
   const sheet = deriveSheet(installed, rules);
+  const { weaponEnergyDraw, shieldEnergyDraw } = combatEnergyDraw(installed);
   const partSnaps: PartSnapshot[] = snapshot.parts.map((part) => ({
     id: part.id,
     partClass: part.catalog.partClass,
     providesEsc: part.catalog.esc > 0,
     condition: part.condition,
   }));
+  const energyMode = isEnergyMode(snapshot.energyMode) ? snapshot.energyMode : undefined;
   const missionSnapshot: MissionSnapshot = {
     shipId: snapshot.shipId,
     parts: partSnaps,
@@ -132,6 +144,10 @@ export function buildResolveInput(args: {
     fuel: snapshot.fuel,
     hp: sheet.hp,
     esc: sheet.esc,
+    energyMode,
+    weaponEnergyDraw,
+    shieldEnergyDraw,
+    storage: snapshot.storage ?? [],
   };
 
   // D29: accept finalizes the board reward from the accepting ship's tier; the resolution rates
@@ -173,6 +189,7 @@ export function buildResolveInput(args: {
         }
       : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
+    ...(context.scavenge ? { scavenge: context.scavenge } : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }

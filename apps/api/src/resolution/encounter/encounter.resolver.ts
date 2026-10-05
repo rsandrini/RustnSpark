@@ -146,7 +146,9 @@ export function resolveEncounter(
     },
     rules.stance,
   );
-  if (decision === 'IGNORE') {
+  // A pirate that attacks cannot be "ignored" by the ship it attacks: the player's policy only
+  // decides how they answer (fight or flee); it never makes an attack disappear.
+  if (decision === 'IGNORE' && input.enemyDecision !== 'ATTACK') {
     return emptyOutcome(stages, { encountered: true, ambushed, decision });
   }
 

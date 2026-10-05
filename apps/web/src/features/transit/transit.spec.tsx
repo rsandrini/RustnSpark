@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { resetActiveState } from '../../test/msw/handlers';
+import { resetActiveState, resetEconomyState } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { ActiveMission } from '../../api/generated';
 
@@ -45,27 +45,54 @@ const mission = (over: Partial<ActiveMission> = {}): ActiveMission => ({
   seed: 'seed-1',
   version: 1,
   legWindows: [],
+  brief: {
+    title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+    description: {
+      en: 'Deliver cargo from Ceres to Hedus.',
+      'pt-BR': 'Entregar carga de Ceres para Hedus.',
+    },
+  },
   ...over,
 });
 
 describe('transit (S10.7)', () => {
   beforeEach(() => {
     resetActiveState();
+    resetEconomyState();
     server.use(onboarded());
   });
 
-  it('shows an empty state with a link to the board when nothing is active', async () => {
+  it('embedded on My Ship, shows nothing at all when there is no active mission or last report', async () => {
+    // Home is gone and Transit is embedded now (round-3): with nothing active and no report
+    // yet, the host's own idle ActiveShipStage scene already says "docked" — the old
+    // standalone empty-state text/link would just be a second, redundant one.
     server.use(
       http.get('/v1/missions/active', () => HttpResponse.json([], { status: 200 })),
       http.get('/v1/reports', () => HttpResponse.json({ items: [] }, { status: 200 })),
     );
-    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
-    expect(
-      await screen.findByText('No active mission. Accept one from the mission board.'),
-    ).toBeInTheDocument();
-    const boardLink = screen.getByRole('link', { name: 'Mission board' });
-    expect(boardLink).toHaveAttribute('href', '/board');
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
+    expect(await screen.findByText('Docked and ready')).toBeInTheDocument();
+    expect(screen.queryByTestId('last-mission')).toBeNull();
+    expect(screen.queryByTestId('held')).toBeNull();
+    expect(screen.queryByTestId('in-transit')).toBeNull();
+  });
+
+  // Round-10 owner request: "in My Ship, before dispatch the mission, we need a better UI
+  // ... I cannot see the origin -> destination, I cannot see the details". Embedded (My
+  // Ship) skipped the standalone header that carried routeLabel, so the pre-dispatch
+  // briefing had no route at all — add it as a fact, plus the per-leg breakdown.
+  it('embedded on My Ship, the pre-dispatch briefing shows the route and the leg plan', async () => {
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    expect(await screen.findByText('Mission accepted — ready for departure.')).toBeInTheDocument();
+    const briefing = screen.getByTestId('briefing');
+    expect(within(briefing).getByText('Porto Ceres → Base Hedus')).toBeInTheDocument();
+
+    expect(screen.getByTestId('leg-plan')).toBeInTheDocument();
+    expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
+    expect(screen.getByText('Portão Kessler → Base Hedus')).toBeInTheDocument();
   });
 
   it('dispatches the accepted mission and flips to the in-transit view', async () => {
@@ -76,13 +103,20 @@ describe('transit (S10.7)', () => {
 
     const view = await screen.findByTestId('in-transit');
     expect(view).toBeInTheDocument();
-    expect(screen.getByRole('timer')).toBeInTheDocument();
+    expect(screen.getByTestId('transit-scene')).toHaveClass('moving');
+    expect(screen.getByTestId('briefing')).toBeInTheDocument();
+    expect(screen.getAllByRole('timer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Leg 1 of 2')).toBeInTheDocument();
     expect(screen.getByText('Leg 2 of 2')).toBeInTheDocument();
     expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
     expect(screen.getByText('Portão Kessler → Base Hedus')).toBeInTheDocument();
     expect(screen.getAllByText('Awaiting the next window')).toHaveLength(1);
-    expect(screen.getAllByText('Arrives in').length).toBeGreaterThanOrEqual(1);
+    // Round-10 owner follow-up ("too big, show the quest details"): the current leg's own
+    // status now carries a real countdown to when THAT leg ends, not just a bare "Arrives
+    // in" label with no value — one of the two timers on screen belongs to it.
+    const currentLeg = screen.getByText('Leg 1 of 2').closest('li')!;
+    expect(within(currentLeg).getByText(/Arrives in/)).toBeInTheDocument();
+    expect(within(currentLeg).getByRole('timer')).toBeInTheDocument();
   });
 
   it('renders a mission that is already in transit with leg progress', async () => {
@@ -116,20 +150,66 @@ describe('transit (S10.7)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
 
-    expect(await screen.findByTestId('in-transit')).toBeInTheDocument();
-    expect(screen.getByRole('timer')).toBeInTheDocument();
+    const inTransit = await screen.findByTestId('in-transit');
+    expect(inTransit).toBeInTheDocument();
+    expect(screen.getAllByRole('timer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(within(inTransit).getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  // Round-10 owner follow-up: "the quest panels... is too big, they too much space and
+  // don't show enough information" — a single-leg trip has nothing an itinerary box would
+  // add over one compact status line, so the per-leg list (and its redundant single entry)
+  // is dropped entirely for that case.
+  it('a single-leg trip shows one compact status line instead of a redundant one-item itinerary', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              status: 'IN_TRANSIT',
+              shipId: 'ship-1',
+              arrivalAt: iso(30 * 60 * 1000),
+              legWindows: [
+                { legIndex: 0, routeId: 'ceres-gate', from: iso(-1 * 60 * 1000), to: iso(30 * 60 * 1000) },
+              ],
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+    const inTransit = await screen.findByTestId('in-transit');
+    expect(within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/)).toBeInTheDocument();
+    expect(within(inTransit).getByText(/Arrives in/)).toBeInTheDocument();
+    expect(within(inTransit).getByRole('timer')).toBeInTheDocument();
+    // No itinerary list at all: one leg has nothing left to itemize.
+    expect(within(inTransit).queryByText('Leg 1 of 1')).toBeNull();
+    expect(within(inTransit).queryByRole('list')).toBeNull();
   });
 
   it('shows the delivered panel once the server reports no active mission', async () => {
-    let calls = 0;
+    // Deterministic on the Dispatch click itself, not a fragile call-count race: the mission
+    // stays active until dispatched, then the server never reports one again.
+    let dispatched = false;
     server.use(
-      http.get('/v1/missions/active', () => {
-        calls += 1;
-        if (calls <= 1) return HttpResponse.json([mission()], { status: 200 });
-        return HttpResponse.json([], { status: 200 });
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(dispatched ? [] : [mission()], { status: 200 }),
+      ),
+      http.post('/v1/ships/:id/dispatch', () => {
+        dispatched = true;
+        return HttpResponse.json(
+          {
+            missionId: 'm-1',
+            arrivalAt: iso(3600 * 1000),
+            serverTime: iso(0),
+            durationSeconds: 3600,
+          },
+          { status: 200 },
+        );
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
@@ -138,13 +218,12 @@ describe('transit (S10.7)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dispatch' }));
 
     // The last run comes from the server's report list, so it survives a reload and shows
-    // the real outcome — not just "no active mission".
-    expect(await screen.findByTestId('last-mission')).toHaveTextContent('Last mission');
-    const reportLink = screen.getByRole('link', { name: 'Read the report' });
+    // the real outcome — not just "no active mission". It reaches the pilot as a "Last
+    // mission" link next to the Ship/Board/Port tabs, going straight to its report.
+    // (Embedded, the old "Back to the map" shortcut is gone — Map is always one click away
+    // in the persistent GameNav now.)
+    const reportLink = await screen.findByRole('link', { name: 'Last mission' });
     expect(reportLink).toHaveAttribute('href', '/report/m-1');
-    await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Back to the map' })).toHaveAttribute('href', '/map'),
-    );
   });
 
   it('shows the last report after a reload, with its real outcome', async () => {
@@ -168,9 +247,7 @@ describe('transit (S10.7)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
-    const panel = await screen.findByTestId('last-mission');
-    expect(panel).toHaveTextContent('Mission failed');
-    expect(within(panel).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Last mission' })).toHaveAttribute(
       'href',
       '/report/m-7',
     );
@@ -232,10 +309,75 @@ describe('transit (S10.7)', () => {
 
     resolved = true;
     await queryClient.invalidateQueries({ queryKey: ['active'] });
-    const panel = await screen.findByTestId('last-mission');
-    expect(within(panel).getByRole('link', { name: 'Read the report' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Last mission' })).toHaveAttribute(
       'href',
       '/report/m-9',
     );
   });
+
+  it('lets the pilot back out: cancel an accepted mission, release a held one', async () => {
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByText('Mission accepted — ready for departure.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel mission' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Cancel mission' })).toBeNull(),
+    );
+    expect(screen.queryByText('Mission accepted — ready for departure.')).toBeNull();
+  });
+
+  it('offers Release on a held mission', async () => {
+    let released = 0;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([{ ...mission(), status: 'HELD' }], { status: 200 }),
+      ),
+      http.delete('/v1/missions/:id/hold', () => {
+        released += 1;
+        return HttpResponse.json({ status: 'AVAILABLE' }, { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const held = await screen.findByTestId('held');
+    fireEvent.click(within(held).getByRole('button', { name: 'Release' }));
+    await waitFor(() => expect(released).toBe(1));
+  });
+
+  it('takes a pilot who is watching to the report when the mission ends, and refreshes the wallet', async () => {
+    let profileReads = 0;
+    server.use(
+      http.get('/v1/players/me', () => {
+        profileReads += 1;
+        return HttpResponse.json(
+          {
+            id: 'player-1',
+            name: 'Test Pilot',
+            credits: 100,
+            role: 'PLAYER',
+            locale: 'en',
+            factionId: 'luna',
+          },
+          { status: 200 },
+        );
+      }),
+      // In flight for ~4 s (the poll is fast that close to arrival), then gone.
+      http.get('/v1/missions/active', () =>
+        Date.now() < endsAt
+          ? HttpResponse.json(
+              [{ ...mission(), status: 'IN_TRANSIT', arrivalAt: iso(endsAt - Date.now()) }],
+              { status: 200 },
+            )
+          : HttpResponse.json([], { status: 200 }),
+      ),
+    );
+    const endsAt = Date.now() + 4000;
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByTestId('in-transit')).toBeInTheDocument();
+    const readsWhileFlying = profileReads;
+
+    // The mission ends while the pilot is on this screen: the report opens on its own.
+    expect(
+      await screen.findByRole('heading', { name: 'Mission report' }, { timeout: 12_000 }),
+    ).toBeInTheDocument();
+    expect(profileReads).toBeGreaterThan(readsWhileFlying);
+  }, 20_000);
 });

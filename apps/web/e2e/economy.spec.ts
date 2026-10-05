@@ -11,7 +11,7 @@ import { assertClean, flyOneMission, registerAndLaunch, walletOf } from './suppo
 test('buy a part, see it in your goods, sell it back for less than you paid', async ({ page }) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/port');
-  await expect(page.getByRole('heading', { name: 'Port' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Port', exact: true })).toBeVisible();
   const before = await walletOf(page);
 
   // Cheapest thing the player can afford.
@@ -29,6 +29,7 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   await assertClean(page, 'port after buy');
 
   // The purchase is now in "Your goods" and can be sold (used parts sell for less than new).
+  await page.getByRole('tab', { name: 'Your goods' }).click();
   const sell = page.locator('button:has-text("Sell"):not(:has-text("Sell all"))').first();
   await expect(sell).toBeVisible();
   await sell.click();
@@ -39,21 +40,26 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   expect(afterSell).toBeLessThan(before + 1);
 });
 
-test('after a flight: fill the tank for credits, then the tank is full', async ({ page }) => {
+test('after a flight: refuel opens on what the pilot can afford, and paying debits the wallet', async ({
+  page,
+}) => {
   await registerAndLaunch(page, 'sun');
   await flyOneMission(page);
   await page.goto('/port');
   await page.getByRole('tab', { name: 'Refuel' }).click();
 
-  const fill = page.getByRole('button', { name: 'Fill tank' });
-  if (await fill.isEnabled()) {
+  // The slider opens on what the wallet covers (the whole tank only when affordable).
+  const buy = page.getByRole('button', { name: /^Buy \d+$/ });
+  if (await buy.isVisible()) {
     const before = await walletOf(page);
-    await fill.click();
+    await expect(buy).toBeEnabled();
+    await buy.click();
     await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
     expect(await walletOf(page)).toBeLessThanOrEqual(before);
+  } else {
+    await expect(page.getByText('The tank is already full.')).toBeVisible();
   }
-  await expect(page.getByText('The tank is already full.')).toBeVisible();
-  await assertClean(page, 'port refuel after fill');
+  await assertClean(page, 'port refuel');
 });
 
 test('repair: worn parts are quoted, confirmed and charged; a clean ship says so', async ({
@@ -70,8 +76,13 @@ test('repair: worn parts are quoted, confirmed and charged; a clean ship says so
     return;
   }
   const before = await walletOf(page);
-  // "Repair all" quotes the whole ship and opens the confirmation dialog.
-  await page.getByRole('button', { name: 'Repair all' }).click();
+  // Nothing is selected until the pilot moves a slider; "Set all to 100%" selects the whole ship,
+  // the screen shows the server's price and time per part and in total, and "Start repair"
+  // opens the confirmation dialog.
+  await expect(page.getByTestId('repair-summary')).toContainText('Nothing selected yet');
+  await page.getByRole('button', { name: 'Set all to 100%' }).click();
+  await expect(page.getByTestId('repair-total')).toContainText('¢');
+  await page.getByTestId('repair-summary').getByRole('button', { name: 'Start repair' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Repair cost');
   await dialog.getByRole('button', { name: 'Start repair' }).click();

@@ -29,11 +29,14 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   fuel_exhausted: 'transit',
   combat_win: 'combat',
   combat_loss: 'combat',
+  combat_draw: 'combat',
   escaped: 'combat',
   escort_absorbed: 'combat',
   escort_client_destroyed: 'failure',
   mission_wear: 'environment',
   mission_payout: 'payment',
+  pirate_demand: 'failure',
+  scavenge_find: 'loot',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -46,7 +49,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   sensor: 'failure',
 };
 
-const CASCADE_TYPES = ['combat_win', 'combat_loss', 'escort_absorbed'];
+const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'];
 const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'];
 
 function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unknown> {
@@ -83,6 +86,13 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
     magnitude: type === 'leg_travel' ? 742 : type === 'mining' ? 3 : 26,
   };
   if (CASCADE_TYPES.includes(type)) base['cascade'] = { shield: 18, armor: 9, hp: 4 };
+  if (type === 'scavenge_find') {
+    base['found'] = { kind: 'part', partType: 'cargo', condition: 55 };
+  }
+  if (type === 'pirate_demand') {
+    base['motive'] = 'parts';
+    base['stolen'] = ['part-instance-1'];
+  }
   if (PART_FAILURE_TYPES.includes(type)) {
     base['effects'] = {
       hp: 0,
@@ -305,7 +315,7 @@ describe('S9.2 — failure modes', () => {
 
     it('finds the types that print v2-only data', () => {
       expect([...v2TypedTypes].sort()).toEqual(
-        ['combat_loss', 'combat_win', 'escort_absorbed', 'tank'].sort(),
+        ['combat_draw', 'combat_loss', 'combat_win', 'escort_absorbed', 'tank'].sort(),
       );
     });
 

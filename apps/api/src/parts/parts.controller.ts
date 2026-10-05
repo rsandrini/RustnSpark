@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -30,6 +30,12 @@ export class PartsController {
   @Get('catalog/materials/:id')
   materialDetail(@Param('id') id: string): Promise<CatalogDetail> {
     return this.partsService.materialDetail(id);
+  }
+
+  @Post('inventory/discard')
+  @HttpCode(HttpStatus.OK)
+  discard(@CurrentUser() user: CurrentUserPayload): Promise<{ discarded: number }> {
+    return this.partsService.discardDamaged(user.playerId);
   }
 
   @Get('inventory')

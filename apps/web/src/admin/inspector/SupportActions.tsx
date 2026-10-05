@@ -8,8 +8,17 @@ import { adminApi, type SupportResult } from '../admin.api';
 
 const MAX_AMOUNT = 1_000_000_000;
 const MAX_REASON = 500;
+const MIN_PASSWORD = 10;
+const MAX_PASSWORD = 128;
 
-export type SupportActionKey = 'grant' | 'remove' | 'clear' | 'unstick' | 'ban' | 'reset';
+export type SupportActionKey =
+  | 'grant'
+  | 'remove'
+  | 'clear'
+  | 'password'
+  | 'unstick'
+  | 'ban'
+  | 'reset';
 
 interface PendingAction {
   readonly key: SupportActionKey;
@@ -24,6 +33,7 @@ interface ActionContext {
   readonly reason: string;
   readonly amount: number;
   readonly shipId: string;
+  readonly password: string;
 }
 
 // Screen D's support half (GDD §17). Every action opens a dialog that collects the
@@ -45,11 +55,12 @@ export function SupportActions({
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('1');
   const [shipId, setShipId] = useState(ships[0]?.id ?? '');
+  const [password, setPassword] = useState('');
 
   const mutation = useMutation<SupportResult, Error, ActionContext>({
-    mutationFn: async ({ reason: why, amount: value, shipId: hull }) => {
+    mutationFn: async ({ reason: why, amount: value, shipId: hull, password: pass }) => {
       // Same intent (action + target + inputs) keeps the same key across retries.
-      const key = intent.keyFor(`${pending?.key}:${playerId}:${hull}:${value}:${why}`);
+      const key = intent.keyFor(`${pending?.key}:${playerId}:${hull}:${value}:${pass}:${why}`);
       switch (pending?.key) {
         case 'grant':
           return adminApi.grantCredits(playerId, value, why, key);
@@ -57,6 +68,8 @@ export function SupportActions({
           return adminApi.removeCredits(playerId, value, why, key);
         case 'clear':
           return adminApi.clearBalance(playerId, why, key);
+        case 'password':
+          return adminApi.setPassword(playerId, pass, why, key);
         case 'unstick':
           return adminApi.unstickShip(playerId, hull, why, key);
         case 'ban':
@@ -79,6 +92,7 @@ export function SupportActions({
     setReason('');
     setAmount('1');
     setShipId(ships[0]?.id ?? '');
+    setPassword('');
     mutation.reset();
     setPending({ key });
   };
@@ -90,15 +104,19 @@ export function SupportActions({
 
   const needsAmount = pending?.key === 'grant' || pending?.key === 'remove';
   const needsShip = pending?.key === 'unstick';
+  const needsPassword = pending?.key === 'password';
   const parsedAmount = Number(amount);
   const amountValid =
     !needsAmount ||
     (Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= MAX_AMOUNT);
-  const canConfirm = reason.trim() !== '' && amountValid && (!needsShip || shipId !== '');
+  const passwordValid =
+    !needsPassword || (password.length >= MIN_PASSWORD && password.length <= MAX_PASSWORD);
+  const canConfirm =
+    reason.trim() !== '' && amountValid && passwordValid && (!needsShip || shipId !== '');
 
   const submit = () => {
     if (pending === null || !canConfirm) return;
-    mutation.mutate({ reason: reason.trim(), amount: parsedAmount, shipId });
+    mutation.mutate({ reason: reason.trim(), amount: parsedAmount, shipId, password });
   };
 
   const destructive = pending?.key === 'ban' || pending?.key === 'reset';
@@ -116,6 +134,9 @@ export function SupportActions({
         </button>
         <button type="button" onClick={() => open('clear')}>
           {label('clear')}
+        </button>
+        <button type="button" onClick={() => open('password')}>
+          {label('password')}
         </button>
         <button type="button" onClick={() => open('unstick')}>
           {label('unstick')}
@@ -165,6 +186,22 @@ export function SupportActions({
                   onChange={(event) => setAmount(event.target.value)}
                 />
               </label>
+            )}
+            {needsPassword && (
+              <>
+                <label>
+                  {t('admin.newPassword')}
+                  <input
+                    type="text"
+                    minLength={MIN_PASSWORD}
+                    maxLength={MAX_PASSWORD}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </label>
+                <p className="sub">{t('admin.newPasswordHint')}</p>
+              </>
             )}
             {needsShip && (
               <label>

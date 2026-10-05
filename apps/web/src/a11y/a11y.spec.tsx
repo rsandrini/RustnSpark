@@ -27,12 +27,12 @@ const onboarded = () =>
     ),
   );
 
+// Board, Port and Transit folded into My Ship as tabs/sections (round-3 nav consolidation):
+// /board, /port and /transit now redirect to /hangar and render the exact same DOM this entry
+// already audits, so they are no longer separate screens to list here.
 const SCREENS: ReadonlyArray<{ path: string; ready: RegExp | string; name: string }> = [
   { path: '/map', ready: 'Sector map', name: 'map' },
-  { path: '/board', ready: 'Mission board', name: 'board' },
-  { path: '/hangar', ready: 'Hangar', name: 'hangar' },
-  { path: '/transit', ready: 'In transit', name: 'transit' },
-  { path: '/port', ready: 'Port', name: 'port' },
+  { path: '/hangar', ready: 'My Ship', name: 'hangar' },
   { path: '/profile', ready: /profile|pilot/i, name: 'profile' },
   { path: '/report/m-1', ready: 'Mission report', name: 'report' },
 ];

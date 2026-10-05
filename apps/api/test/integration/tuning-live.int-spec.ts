@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -117,6 +118,7 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(response.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (response.body as { id: string }).id);
     return { playerId: seeded.player.id, token, shipId: (response.body as { id: string }).id };
   }
 
@@ -187,6 +189,19 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
       request(httpServer(testApp.app)).post('/v1/locations/ceres/scavenge').set(auth(player.token));
 
     expect((await scavenge()).status).toBe(200);
+    // Free the ship (as if the job had ended) so what stops the next job is the cooldown itself.
+    const jobs = await prisma.missionInstance.findMany({
+      where: { type: 'SCAVENGE' },
+      select: { id: true },
+    });
+    await prisma.routePresence.deleteMany({
+      where: { missionId: { in: jobs.map((job) => job.id) } },
+    });
+    await prisma.missionInstance.deleteMany({ where: { id: { in: jobs.map((job) => job.id) } } });
+    await prisma.ship.updateMany({
+      where: { ownerPlayerId: player.playerId },
+      data: { status: 'IN_PORT' },
+    });
     const blocked = await scavenge();
     expect(blocked.status).toBe(409);
     expect(blocked.body).toMatchObject({ message: { error: 'SCAVENGE_COOL_DOWN' } });

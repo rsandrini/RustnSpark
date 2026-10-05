@@ -7,7 +7,7 @@ import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
 
 describe('auth flow', () => {
-  it('logs an onboarded pilot in and lands on the home page', async () => {
+  it('logs an onboarded pilot in and lands on My Ship (the former home page)', async () => {
     server.use(
       http.get('/v1/players/me', () =>
         HttpResponse.json(
@@ -31,7 +31,7 @@ describe('auth flow', () => {
     await user.type(screen.getByLabelText(/password/i), 'password');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(await screen.findByRole('heading', { name: /home/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
   });
 
   it('routes a pilot without a faction to onboarding after login', async () => {

@@ -1,5 +1,5 @@
 import type { Locale } from '../common/locale/locale.js';
-import type { MissionDamageCascade } from '../resolution/events/mission-event.js';
+import type { MissionCombatRound, MissionDamageCascade } from '../resolution/events/mission-event.js';
 import type { EntityNames, ReportLine } from './templates/template.engine.js';
 import { renderEventLine, substituteTokens } from './templates/template.engine.js';
 import { type ReportLog, viewChrome } from './report.types.js';
@@ -7,7 +7,11 @@ import { type ReportLog, viewChrome } from './report.types.js';
 /** A narrative event line; `detail` carries the popup payload (S10.8). */
 export interface NarrativeLine extends ReportLine {
   /** Present only when the stored event carries a v2 cascade (S9.0). */
-  readonly detail?: { readonly cascade: MissionDamageCascade };
+  readonly detail?: {
+    readonly cascade: MissionDamageCascade;
+    /** Round-4: absent on rows written before this field existed, even on v2 logs. */
+    readonly rounds?: readonly MissionCombatRound[];
+  };
 }
 
 export interface NarrativeChapter {
@@ -40,7 +44,11 @@ export function renderNarrative(
     log.events.forEach((event, storedIndex) => {
       if (event.leg !== leg) return;
       const line = renderEventLine(event, storedIndex, log.seed, locale, names);
-      lines.push(event.cascade ? { ...line, detail: { cascade: event.cascade } } : line);
+      lines.push(
+        event.cascade
+          ? { ...line, detail: { cascade: event.cascade, rounds: event.rounds } }
+          : line,
+      );
     });
     return { leg, header, lines };
   });

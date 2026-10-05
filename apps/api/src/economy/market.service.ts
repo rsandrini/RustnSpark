@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -5,11 +6,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { rollConnectors } from '../parts/connectors.js';
 import { localize } from '../common/i18n/localize.js';
+import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
+import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Clock } from '../common/clock/clock.js';
+import { inStockToday } from './market-stock.js';
 import { PricingService } from './pricing.service.js';
 import {
   catalogListingId,
@@ -29,6 +34,9 @@ export interface MarketListing {
   readonly partType: string;
   readonly partClass: string;
   readonly displayName: { en: string; 'pt-BR': string };
+  readonly description: { en: string; 'pt-BR': string };
+  readonly rarity: string;
+  readonly catalog: ReturnType<typeof pickCatalogStats>;
   readonly condition: number;
   readonly price: number;
 }
@@ -48,6 +56,8 @@ export interface MarketResponse {
    * try instead of learning it from a PRICE_CHANGED round trip.
    */
   readonly sellOffers: readonly SellOffer[];
+  /** Parts below this condition (%) are refused at every port. */
+  readonly sellMinCondition: number;
 }
 
 export interface BuyResponse {
@@ -72,6 +82,7 @@ export class MarketService {
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
     private readonly clock: Clock,
+    private readonly config: GameConfigService,
   ) {}
 
   // GDD §13: the board and purchases are the port you are docked at — a ship mid-jump
@@ -109,8 +120,19 @@ export class MarketService {
       orderBy: { partType: 'asc' },
     });
     const day = dayKey(this.clock.now());
+    const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
 
-    const listings: MarketListing[] = catalogs.map((row) => ({
+    // Round-5/6 backlog: rare+ parts are meant to be scarce or absent from the market (drops/the
+    // upgrade mechanic instead) — each catalog row rolls, once per port per day, whether it's
+    // actually on the shelf, deterministically (buy() re-derives the same roll, never trusts the
+    // client's listingId alone). Applies to BOTH shelves: the used shelf's own random slots must
+    // draw from this same in-stock pool, not the full catalog, or a rarity excluded from "new"
+    // listings could still turn up used (owner report, round 6 — this is exactly what happened
+    // before this fix).
+    const inStockCatalogs = catalogs.filter((row) =>
+      inStockToday(locationId, day, row.partType, row.rarity, rarityChance),
+    );
+    const listings: MarketListing[] = inStockCatalogs.map((row) => ({
       listingId: catalogListingId(locationId, row.partType),
       kind: 'catalog' as const,
       partType: row.partType,
@@ -119,12 +141,15 @@ export class MarketService {
         en: localize(row.displayName, 'en'),
         'pt-BR': localize(row.displayName, 'pt-BR'),
       },
+      description: bilingual(row.description),
+      rarity: row.rarity,
+      catalog: pickCatalogStats(row),
       condition: 100,
       price: this.pricing.buy(context, row, 100),
     }));
 
     for (let index = 0; index < USED_OFFER_COUNT; index += 1) {
-      const { condition, part: partRow } = usedOffer(locationId, day, index, catalogs);
+      const { condition, part: partRow } = usedOffer(locationId, day, index, inStockCatalogs);
       if (!partRow) continue;
       listings.push({
         listingId: usedListingId(locationId, day, index, partRow.partType),
@@ -135,22 +160,49 @@ export class MarketService {
           en: localize(partRow.displayName, 'en'),
           'pt-BR': localize(partRow.displayName, 'pt-BR'),
         },
+        description: bilingual(partRow.description),
+        rarity: partRow.rarity,
+        catalog: pickCatalogStats(partRow),
         condition,
         price: this.pricing.buy(context, partRow, condition),
       });
     }
+
+    const usedIds = listings.filter((l) => l.kind === 'used').map((l) => l.listingId);
+    const sold = await this.soldListingIds(usedIds);
+    const shelf = listings.filter((l) => l.kind !== 'used' || !sold.has(l.listingId));
 
     const owned = await this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId, location: 'INVENTORY' },
       include: { partCatalog: { select: { basePrice: true } } },
       orderBy: { id: 'asc' },
     });
-    const sellOffers = owned.map((part) => ({
-      partInstanceId: part.id,
-      price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
-    }));
+    const sellMinCondition = this.config.snapshot().rules.economy.sell_min_condition;
+    const sellOffers = owned
+      // A part too damaged to sell gets no quote: the port never takes it, not even for nothing.
+      .filter((part) => part.condition >= sellMinCondition)
+      .map((part) => ({
+        partInstanceId: part.id,
+        price: this.pricing.sell(context, part, { basePrice: part.partCatalog.basePrice }),
+      }));
 
-    return { locationId, listings, sellOffers };
+    return { locationId, listings: shelf, sellOffers, sellMinCondition };
+  }
+
+  /** Which of these used listings already have a purchase on record (any player). */
+  private async soldListingIds(
+    listingIds: readonly string[],
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Set<string>> {
+    if (listingIds.length === 0) return new Set();
+    const rows = await tx.playerEvent.findMany({
+      where: {
+        type: MARKET_BUY_EVENT,
+        OR: listingIds.map((id) => ({ payload: { path: ['listingId'], equals: id } })),
+      },
+      select: { payload: true },
+    });
+    return new Set(rows.map((row) => (row.payload as { listingId: string }).listingId));
   }
 
   async buy(playerId: string, listingId: string, expectedPrice: number): Promise<BuyResponse> {
@@ -173,6 +225,16 @@ export class MarketService {
       where: { partType: parsed.partType },
     });
     if (!catalog || !catalog.active) throw new NotFoundException('listing not found');
+    // Same re-derivation as the used-shelf day check above: a "catalog" listing id carries no
+    // day itself (it's stable so it can be bookmarked/priced client-side), so buy() re-rolls
+    // today's stock the same way market() did when it built the list — a client can't buy a
+    // rarity that was never actually on the shelf just by knowing its listingId shape.
+    if (parsed.kind === 'catalog') {
+      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      if (!inStockToday(parsed.locationId, dayKey(this.clock.now()), catalog.partType, catalog.rarity, rarityChance)) {
+        throw new BadRequestException({ error: 'INVALID_LISTING' });
+      }
+    }
 
     let condition = 100;
     if (parsed.kind === 'used') {
@@ -180,7 +242,14 @@ export class MarketService {
         where: { active: true },
         orderBy: { partType: 'asc' },
       });
-      const offer = usedOffer(parsed.locationId, parsed.day!, parsed.index!, catalogs);
+      // Must match market()'s own pool exactly (same filter, same order) — usedOffer() picks by
+      // index into this array, so a different pool size here would resolve a different part
+      // than what the board actually showed for the same index.
+      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      const inStockCatalogs = catalogs.filter((row) =>
+        inStockToday(parsed.locationId, parsed.day!, row.partType, row.rarity, rarityChance),
+      );
+      const offer = usedOffer(parsed.locationId, parsed.day!, parsed.index!, inStockCatalogs);
       if (!offer.part || offer.part.partType !== parsed.partType) {
         throw new NotFoundException('listing not found');
       }
@@ -194,6 +263,14 @@ export class MarketService {
 
     try {
       const part = await this.prisma.$transaction(async (tx) => {
+        if (parsed.kind === 'used') {
+          // A used part is one physical item: the first buyer takes it off the shelf for the
+          // day. The lock serializes two buyers of the same listing; the second sees the sale.
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${listingId}::text))::text`;
+          if ((await this.soldListingIds([listingId], tx)).size > 0) {
+            throw new ConflictException({ error: 'LISTING_SOLD' });
+          }
+        }
         const player = await tx.player.findUnique({
           where: { id: playerId },
           select: { credits: true },
@@ -208,6 +285,7 @@ export class MarketService {
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
+            connectors: toJsonInput(rollConnectors(catalog.connectorLayouts)),
           },
         });
         await this.events.record(
@@ -250,6 +328,9 @@ export class MarketService {
     });
     if (!part || part.ownerPlayerId !== playerId) {
       throw new NotFoundException('part not found');
+    }
+    if (part.condition < this.config.snapshot().rules.economy.sell_min_condition) {
+      throw new ConflictException({ error: 'TOO_DAMAGED_TO_SELL' });
     }
 
     // A ship in transit trades nothing (S7.7 lock family), and a sale is the port action

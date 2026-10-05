@@ -1,21 +1,20 @@
+import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
-import { afterAll, afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
-import type { Queue } from 'bullmq';
+import type { Job, Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
-import { Clock } from '../../src/common/clock/clock.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
-import { MISSION_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../../src/jobs/queues.js';
+import { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
+import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
+import type { DispatchJobData } from '../../src/missions/dispatch.service.js';
+import { MissionResolveService } from '../../src/missions/resolve.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
-import {
-  fieldTypeOf,
-  scavengeOutcome,
-  type ScavengeOutcome,
-} from '../../src/economy/scavenging.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
@@ -30,45 +29,27 @@ interface AuthPair {
   shipId: string;
 }
 
-interface ScavengeBody {
-  locationId: string;
-  attempt: number;
-  fieldType: string;
-  dropped: boolean;
-  part: {
-    partInstanceId: string;
-    partType: string;
-    condition: number;
-    displayName: { en: string; 'pt-BR': string };
-  } | null;
-  cooldownSeconds: number;
-}
-
-// S8.5 acceptance (plan line 481): drop chances 25/55/75 by field type, quality
-// 30-70 damaged, common parts mostly (DropTable), deterministic per world seed,
-// per-player cooldown (D28, 5 min default), loot lands in inventory. The pure
-// outcome function is imported so the HTTP responses are asserted against the
-// exact seeded rolls — zero flake, and the endpoint is pinned to the same
-// algorithm the unit tests pin.
-describe('scavenging API (S8.5)', () => {
+// W8: scavenging is a timed job (a mission of type SCAVENGE that starts and ends at the ship's
+// own port): the ship is locked for the duration, encounters come from the place's danger, and
+// the finds (always USED parts, some scrap) arrive with the report. Scrap sells at a fixed price.
+describe('scavenging job (W8)', () => {
   let testApp: TestApp;
   let prisma: PrismaService;
   let configService: GameConfigService;
-  let missionQueue: Queue;
-  let repairQueue: Queue;
+  let queue: Queue;
+  let processor: MissionProcessor;
 
   beforeAll(async () => {
     testApp = await createTestApp();
     prisma = testApp.app.get(PrismaService);
     configService = testApp.app.get(GameConfigService);
-    missionQueue = testApp.app.get(getQueueToken(MISSION_QUEUE_NAME));
-    repairQueue = testApp.app.get(getQueueToken(REPAIR_QUEUE_NAME));
+    queue = testApp.app.get(getQueueToken(MISSION_QUEUE_NAME));
+    processor = new MissionProcessor(testApp.app.get(MissionResolveService));
   });
 
   afterEach(async () => {
     await resetDatabase(prisma);
-    await missionQueue.obliterate({ force: true }).catch(() => undefined);
-    await repairQueue.obliterate({ force: true }).catch(() => undefined);
+    await queue.obliterate({ force: true }).catch(() => undefined);
   });
 
   afterAll(async () => {
@@ -81,15 +62,11 @@ describe('scavenging API (S8.5)', () => {
     await configService.refresh();
   }
 
-  const auth = (token: string): { Authorization: string } => ({
-    Authorization: `Bearer ${token}`,
-  });
+  const auth = (token: string): { Authorization: string } => ({ Authorization: `Bearer ${token}` });
 
   async function onboardPlayer(): Promise<AuthPair> {
-    const passwords = testApp.app.get(PasswordService);
-    const tokens = testApp.app.get(TokenService);
-    const seeded = await seedAccountWithPlayer(prisma, passwords);
-    const token = await tokens.signAccessToken({
+    const seeded = await seedAccountWithPlayer(prisma, testApp.app.get(PasswordService));
+    const token = await testApp.app.get(TokenService).signAccessToken({
       accountId: seeded.account.id,
       playerId: seeded.player.id,
       role: 'PLAYER',
@@ -99,286 +76,183 @@ describe('scavenging API (S8.5)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
-    return { seeded, token, shipId: (onboarded.body as { id: string }).id };
+    const shipId = (onboarded.body as { id: string }).id;
+    await assembleStarterKit(httpServer(testApp.app), token, shipId);
+    return { seeded, token, shipId };
   }
 
-  function scavenge(token: string, locationId: string) {
-    return request(httpServer(testApp.app))
-      .post(`/v1/locations/${locationId}/scavenge`)
-      .set(auth(token));
-  }
+  const start = (token: string, locationId: string) =>
+    request(httpServer(testApp.app)).post(`/v1/locations/${locationId}/scavenge`).set(auth(token));
 
-  async function setCooldown(seconds: number): Promise<void> {
-    await prisma.gameConfig.update({
-      where: { key: 'scavenging.cooldown_seconds' },
-      data: { value: seconds },
-    });
-    await configService.refresh();
-  }
-
-  // Recomputes the seeded outcome for an attempt so HTTP responses can be
-  // asserted exactly (same inputs, same pure function the service calls).
-  async function expectedOutcome(
-    playerId: string,
-    locationId: string,
-    attempt: number,
-  ): Promise<ScavengeOutcome> {
-    const [location, table] = await Promise.all([
-      prisma.location.findUniqueOrThrow({ where: { id: locationId } }),
-      prisma.dropTable.findFirstOrThrow({
-        where: { source: 'scavenging' },
-        orderBy: { id: 'asc' },
-      }),
-    ]);
-    const catalog = await prisma.partCatalog.findMany({
-      where: { active: true },
-      orderBy: { partType: 'asc' },
-      select: { partType: true, rarity: true },
-    });
-    const rules = configService.snapshot().rules;
-    return scavengeOutcome({
-      seed: rules.world.seed,
-      playerId,
-      locationId,
-      attempt,
-      fieldType: fieldTypeOf(location),
-      chance: rules.scavenging.chance,
-      qualityMin: rules.scavenging.quality_min,
-      qualityMax: rules.scavenging.quality_max,
-      tiers: table.tiers as unknown as Array<{ tier: string; chance: number }>,
-      catalog,
-    });
-  }
-
-  function assertMatchesExpected(body: ScavengeBody, outcome: ScavengeOutcome): void {
-    expect(body.dropped).toBe(outcome.dropped);
-    if (outcome.dropped) {
-      expect(body.part).toMatchObject({
-        partType: outcome.partType,
-        condition: outcome.condition,
-      });
-      // Localized name shipped with the drop (S10.9): the client never shows a raw code.
-      expect(body.part!.displayName.en).not.toBe('');
-      expect(body.part!.displayName['pt-BR']).not.toBe('');
-      expect(body.part!.condition).toBeGreaterThanOrEqual(30);
-      expect(body.part!.condition).toBeLessThanOrEqual(70);
-    } else {
-      expect(body.part).toBeNull();
-    }
-  }
-
-  it('resolves attempts deterministically and lands loot in inventory', async () => {
+  it('starts a job: a SCAVENGE mission at the same port, ship locked, no reward, about the configured time', async () => {
     await freshSeededApp();
-    await setCooldown(0);
     const player = await onboardPlayer();
-    const drops: Array<{ partType: string; condition: number }> = [];
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const expected = await expectedOutcome(player.seeded.player.id, 'ceres', attempt);
-      const response = await scavenge(player.token, 'ceres');
-      expect(response.status).toBe(200);
-      const body = response.body as ScavengeBody;
-      expect(body).toMatchObject({
-        locationId: 'ceres',
-        attempt,
-        fieldType: 'common',
-        cooldownSeconds: 0,
-      });
-      assertMatchesExpected(body, expected);
-      if (body.part) drops.push({ partType: body.part.partType, condition: body.part.condition });
+    const response = await start(player.token, 'ceres');
+    expect(response.status).toBe(200);
+    const body = response.body as {
+      missionId: string;
+      arrivalAt: string;
+      durationSeconds?: number;
+    };
+    expect(body.durationSeconds).toBeGreaterThan(0);
+    expect(
+      Math.abs(
+        (body.durationSeconds ?? 0) - configService.snapshot().rules.scavenging.duration_seconds,
+      ),
+    ).toBeLessThanOrEqual(5);
 
-      const events = await prisma.playerEvent.findMany({
-        where: { playerId: player.seeded.player.id, type: 'scavenge' },
-        orderBy: { at: 'asc' },
-      });
-      expect(events).toHaveLength(attempt + 1);
-      expect(events.at(-1)!.payload).toMatchObject({
-        locationId: 'ceres',
-        attempt,
-        dropped: expected.dropped,
-      });
-    }
+    const mission = await prisma.missionInstance.findUniqueOrThrow({
+      where: { id: body.missionId },
+    });
+    expect(mission).toMatchObject({
+      type: 'SCAVENGE',
+      status: 'IN_TRANSIT',
+      originId: 'ceres',
+      destinationId: 'ceres',
+      reward: 0,
+    });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('ON_MISSION');
+    expect(await queue.getJob(mission.id)).toBeTruthy();
 
-    const inventory = await prisma.partInstance.findMany({
+    // One flight at a time, and only at the ship's own port.
+    expect((await start(player.token, 'ceres')).status).toBe(409);
+    expect((await start(player.token, 'hedus')).status).toBe(409);
+    expect((await start(player.token, 'nowhere')).status).toBe(404);
+  });
+
+  it('resolves into a report: used parts in the inventory (or scrap), no payment, ship back in the same port', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const before = await prisma.partInstance.count({
       where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
     });
-    expect(inventory).toHaveLength(drops.length);
-    for (const drop of drops) {
-      expect(inventory).toEqual(expect.arrayContaining([expect.objectContaining(drop)]));
-    }
-  });
+    const started = await start(player.token, 'ceres');
+    const missionId = (started.body as { missionId: string }).missionId;
+    const job = (await queue.getJob(missionId)) as Job<DispatchJobData>;
+    const result = await processor.process(job);
+    expect(result.skipped).toBe(false);
 
-  it('classifies the pirate-held debris field as the 75% tier', async () => {
-    await freshSeededApp();
-    await setCooldown(0);
-    const player = await onboardPlayer();
-    await prisma.ship.update({
-      where: { id: player.shipId },
-      data: { currentLocationId: 'drift' },
-    });
+    const mission = await prisma.missionInstance.findUniqueOrThrow({ where: { id: missionId } });
+    expect(['DONE', 'FAILED']).toContain(mission.status);
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.currentLocationId).toBe('ceres');
+    expect(ship.status).toBe('IN_PORT');
 
-    const expected = await expectedOutcome(player.seeded.player.id, 'drift', 0);
-    const response = await scavenge(player.token, 'drift');
-    expect(response.status).toBe(200);
-    const body = response.body as ScavengeBody;
-    expect(body).toMatchObject({ locationId: 'drift', attempt: 0, fieldType: 'pirate' });
-    assertMatchesExpected(body, expected);
-    if (body.part) {
-      const part = await prisma.partInstance.findUniqueOrThrow({
-        where: { id: body.part.partInstanceId },
+    const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId } });
+    const events = (
+      log.legs as { events: Array<{ type: string; found?: { kind: string; condition: number } }> }
+    ).events;
+    expect(events.some((event) => event.type === 'mission_payout')).toBe(false);
+    const finds = events.filter((event) => event.type === 'scavenge_find');
+    if (mission.status === 'DONE') {
+      expect(finds.length).toBeGreaterThan(0);
+      const parts = await prisma.partInstance.count({
+        where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
       });
-      expect(part.location).toBe('INVENTORY');
-      expect(part.ownerPlayerId).toBe(player.seeded.player.id);
+      const partFinds = finds.filter((event) => event.found?.kind === 'part');
+      expect(parts - before).toBe(partFinds.length);
+      // Used parts only: every find carries a condition below 100.
+      for (const event of partFinds) expect(event.found!.condition).toBeLessThan(100);
+      // The report shows what was found.
+      const report = await request(httpServer(testApp.app))
+        .get(`/v1/reports/${missionId}?view=summary`)
+        .set(auth(player.token));
+      expect(report.status).toBe(200);
+      expect((report.body as { stats: { found: unknown[] } }).stats.found.length).toBe(
+        finds.length,
+      );
+    } else {
+      // Pirates got the better of the search: nothing is found.
+      expect(finds).toEqual([]);
     }
   });
 
-  it('enforces the per-player cooldown (D28): second attempt 409 with retry hint', async () => {
+  it('tells the pilot the place: odds, zone, time, scrap and the wait', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
+    const info = await request(httpServer(testApp.app))
+      .get('/v1/locations/drift/scavenge')
+      .set(auth(player.token));
+    expect(info.status).toBe(200);
+    expect(info.body).toMatchObject({
+      fieldType: 'pirate',
+      zone: 3,
+      scrapPlace: true,
+      durationSeconds: 300,
+      retryAfterSeconds: 0,
+    });
+    const safe = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/scavenge')
+      .set(auth(player.token));
+    expect(safe.body).toMatchObject({ fieldType: 'common', zone: 0, scrapPlace: false });
+    // Riskier places give better parts.
+    expect((info.body as { qualityMin: number }).qualityMin).toBeGreaterThan(
+      (safe.body as { qualityMin: number }).qualityMin,
+    );
+  });
 
-    // Fresh seed: cooldown_seconds is the D28 default of 300.
-    const first = await scavenge(player.token, 'ceres');
+  it('enforces the wait between jobs at the same place', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await configService.setValue('scavenging.cooldown_seconds', 600, 'tester', 'W8 test');
+    const first = await start(player.token, 'ceres');
     expect(first.status).toBe(200);
-    expect((first.body as ScavengeBody).cooldownSeconds).toBe(300);
-
-    const second = await scavenge(player.token, 'ceres');
-    expect(second.status).toBe(409);
-    expect(second.body).toMatchObject({
-      statusCode: 409,
-      message: {
-        error: 'SCAVENGE_COOL_DOWN',
-        retryAfterSeconds: expect.any(Number),
-      },
-    });
-    const retryAfter = (second.body as { message: { retryAfterSeconds: number } }).message
-      .retryAfterSeconds;
-    expect(retryAfter).toBeGreaterThan(0);
-    expect(retryAfter).toBeLessThanOrEqual(300);
-
-    // Only one attempt was consumed.
-    const events = await prisma.playerEvent.count({
-      where: { playerId: player.seeded.player.id, type: 'scavenge' },
-    });
-    expect(events).toBe(1);
+    // Finish it so the ship is free again, then try to go straight back out.
+    const job = (await queue.getJob(
+      (first.body as { missionId: string }).missionId,
+    )) as Job<DispatchJobData>;
+    await processor.process(job);
+    const again = await start(player.token, 'ceres');
+    expect(again.status).toBe(409);
+    expect(again.body).toMatchObject({ message: { error: 'SCAVENGE_COOL_DOWN' } });
+    const info = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/scavenge')
+      .set(auth(player.token));
+    expect((info.body as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(0);
   });
 
-  it('guards: unknown location 404, ship elsewhere 409, on mission 409', async () => {
+  it('scrap has a fixed price: the same everywhere, whatever the port or the mood', async () => {
     await freshSeededApp();
-    await setCooldown(0);
     const player = await onboardPlayer();
-
-    const missing = await scavenge(player.token, 'no-such-location');
-    expect(missing.status).toBe(404);
-
-    const away = await scavenge(player.token, 'drift');
-    expect(away.status).toBe(409);
-    expect(away.body).toMatchObject({
-      statusCode: 409,
-      message: { error: 'SHIP_NOT_AT_LOCATION' },
+    const playerId = player.seeded.player.id;
+    const scrapValue = (
+      await prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'cargo' } })
+    ).scrapValue;
+    await prisma.playerMaterial.create({
+      data: { playerId, materialId: 'scrap_cargo', quantity: 3 },
     });
+    const listAt = async (place: string) => {
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { currentLocationId: place },
+      });
+      const res = await request(httpServer(testApp.app))
+        .get('/v1/materials')
+        .set(auth(player.token));
+      return (
+        res.body as { materials: Array<{ materialId: string; unitPrice: number }> }
+      ).materials.find((entry) => entry.materialId === 'scrap_cargo')!.unitPrice;
+    };
+    expect(await listAt('ceres')).toBe(scrapValue);
+    expect(await listAt('drift')).toBe(scrapValue);
+    expect(await listAt('hedus')).toBe(scrapValue);
 
-    await prisma.ship.update({
-      where: { id: player.shipId },
-      data: { status: 'ON_MISSION' },
-    });
-    const onMission = await scavenge(player.token, 'ceres');
-    expect(onMission.status).toBe(409);
-    expect(onMission.body).toMatchObject({
-      statusCode: 409,
-      message: { error: 'SHIP_ON_MISSION' },
-    });
+    const sold = await request(httpServer(testApp.app))
+      .post('/v1/market/sell-material')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ materialId: 'scrap_cargo', quantity: 3, expectedPrice: scrapValue * 3 });
+    expect(sold.status).toBe(200);
+    expect((sold.body as { price: number }).price).toBe(scrapValue * 3);
   });
 
-  it('stays allowed on a negative balance (GDD §14: dig and keep digging)', async () => {
+  it('scrap is never something a mining offer asks you to dig', async () => {
     await freshSeededApp();
-    await setCooldown(0);
-    const player = await onboardPlayer();
-    await prisma.player.update({
-      where: { id: player.seeded.player.id },
-      data: { credits: -50 },
-    });
-
-    const response = await scavenge(player.token, 'ceres');
-    expect(response.status).toBe(200);
-
-    const credits = await prisma.player.findUniqueOrThrow({
-      where: { id: player.seeded.player.id },
-      select: { credits: true },
-    });
-    expect(credits.credits).toBe(-50);
-  });
-
-  // Review items 8–9: the attempt counter and cooldown live in their own
-  // (player, location) row — wiping the audit trail doesn't reset them, and each
-  // location keeps its own count.
-  it('the cooldown lives in the per-location counter, not the event history', async () => {
-    await freshSeededApp();
-    const player = await onboardPlayer();
-
-    const first = await scavenge(player.token, 'ceres');
-    expect(first.status).toBe(200);
-    expect((first.body as ScavengeBody).attempt).toBe(0);
-
-    const ceresCounter = await prisma.scavengeCounter.findUniqueOrThrow({
-      where: {
-        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'ceres' },
-      },
-    });
-    expect(ceresCounter.attemptCount).toBe(1);
-    expect(ceresCounter.lastAttemptAt).not.toBeNull();
-
-    // Wipe the scavenging events: with history-based counting this would let the player
-    // dig again from attempt 0 — the counter owns the state now.
-    await prisma.playerEvent.deleteMany({
-      where: { playerId: player.seeded.player.id, type: 'scavenge' },
-    });
-    const blocked = await scavenge(player.token, 'ceres');
-    expect(blocked.status).toBe(409);
-    expect(blocked.body).toMatchObject({
-      statusCode: 409,
-      message: { error: 'SCAVENGE_COOL_DOWN', retryAfterSeconds: expect.any(Number) },
-    });
-
-    // Another location has its own counter row and its own attempt number.
-    await prisma.ship.update({
-      where: { id: player.shipId },
-      data: { currentLocationId: 'drift' },
-    });
-    const elsewhere = await scavenge(player.token, 'drift');
-    expect(elsewhere.status).toBe(200);
-    expect((elsewhere.body as ScavengeBody).attempt).toBe(0);
-
-    const driftCounter = await prisma.scavengeCounter.findUniqueOrThrow({
-      where: {
-        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'drift' },
-      },
-    });
-    expect(driftCounter.attemptCount).toBe(1);
-    const ceresAfter = await prisma.scavengeCounter.findUniqueOrThrow({
-      where: {
-        playerId_locationId: { playerId: player.seeded.player.id, locationId: 'ceres' },
-      },
-    });
-    expect(ceresAfter.attemptCount).toBe(1);
-  });
-
-  it('advancing the injected clock releases the cooldown without waiting', async () => {
-    await freshSeededApp();
-    const player = await onboardPlayer();
-
-    expect((await scavenge(player.token, 'ceres')).status).toBe(200);
-    const blocked = await scavenge(player.token, 'ceres');
-    expect(blocked.status).toBe(409);
-
-    const clock = testApp.app.get(Clock);
-    const realNow = clock.now.bind(clock);
-    jest.spyOn(clock, 'now').mockImplementation(() => new Date(realNow().getTime() + 301_000));
-    try {
-      const after = await scavenge(player.token, 'ceres');
-      expect(after.status).toBe(200);
-      expect((after.body as ScavengeBody).attempt).toBe(1);
-    } finally {
-      jest.restoreAllMocks();
-    }
+    const scrap = await prisma.material.count({ where: { fixedPrice: true } });
+    expect(scrap).toBeGreaterThan(10);
+    const mining = await prisma.missionInstance.count({ where: { type: 'MINING' } });
+    expect(mining).toBe(0);
   });
 });

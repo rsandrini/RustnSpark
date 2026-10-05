@@ -4,7 +4,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import { createRng } from '../../../src/common/rng/rng.js';
 import { ScriptedRng } from '../../../src/common/rng/scripted.rng.js';
-import { escortAttackShare } from '../../../src/resolution/leg/leg.resolver.js';
+import { escortAttackShare, type PartSnapshot } from '../../../src/resolution/leg/leg.resolver.js';
 import {
   resolveMission,
   type MissionInput,
@@ -54,6 +54,9 @@ function snapshot(overrides: Partial<MissionSnapshot> = {}): MissionSnapshot {
     fuel: 1000,
     hp: 145,
     esc: 14,
+    energyMode: 'FULL',
+    weaponEnergyDraw: 0,
+    shieldEnergyDraw: 0,
     ...overrides,
   };
 }
@@ -206,6 +209,32 @@ describe('S5.9 — motor choke aborts the leg and fails the mission', () => {
     expect(aborted).toBe(true);
     void rngEntries;
   });
+
+  it('a second, healthy engine keeps the leg going when the first chokes', () => {
+    // engine-1 is near-dead and will choke; engine-2 is healthy (condition 80 is
+    // above choke_threshold 30, so it never rolls a choke at all) and should be
+    // enough on its own to keep the ship moving.
+    const twoEngines = [
+      ...PARTS.map((part) => (part.id === 'engine-1' ? { ...part, condition: 10 } : part)),
+      { id: 'engine-2', partClass: 'ENGINE', providesEsc: false, condition: 80 },
+    ];
+    let sawMotorChoke = false;
+    for (let seed = 0; seed < 200; seed += 1) {
+      const out = resolve(
+        seed,
+        snapshot({ parts: twoEngines, fuel: 100 }),
+        mission({
+          legs: [{ distance: 100, danger: 0, zone: 1, env: { id: 'open', level: 1, fuelMult: 1 } }],
+        }),
+      );
+      if (out.events.some((event) => event.type === 'motor')) {
+        sawMotorChoke = true;
+        expect(out.status).not.toBe('failed');
+        expect(out.legs[0]?.status).not.toBe('motor_abort');
+      }
+    }
+    expect(sawMotorChoke).toBe(true);
+  });
 });
 
 describe('S5.9 — event shape', () => {
@@ -356,5 +385,45 @@ describe('S9.0 — event enrichment (schemaVersion 2)', () => {
     }
     expect(sawConsequence).toBe(true);
     expect(sawTankLeak).toBe(true);
+  });
+});
+
+describe('round-2 playtest fix — wear tracks danger, and passive parts wear far slower', () => {
+  function conditionOf(id: string, parts: readonly PartSnapshot[]): number {
+    return parts.find((part) => part.id === id)!.condition;
+  }
+
+  it('a simple, safe delivery (danger 0) costs even an exposed part almost nothing', () => {
+    const twoSafeLegs = mission({
+      legs: [
+        { distance: 400, danger: 0, zone: 0, env: { id: 'open', level: 1, fuelMult: 1 } },
+        { distance: 400, danger: 0, zone: 0, env: { id: 'open', level: 1, fuelMult: 1 } },
+      ],
+    });
+    for (const seed of ['safe-a', 'safe-b', 'safe-c']) {
+      const out = resolve(seed, snapshot(), twoSafeLegs);
+      const last = out.legs.at(-1)!;
+      for (const part of PARTS) {
+        expect(80 - conditionOf(part.id, last.ship.parts)).toBeLessThan(4);
+      }
+    }
+  });
+
+  it('over many dangerous legs, an exposed part (engine) wears far more than a passive one (cargo)', () => {
+    const dangerousLeg = mission({
+      legs: [{ distance: 400, danger: 8, zone: 3, env: { id: 'open', level: 1, fuelMult: 1 } }],
+    });
+    let engineLoss = 0;
+    let cargoLoss = 0;
+    const runs = 40;
+    for (let seed = 0; seed < runs; seed += 1) {
+      const out = resolve(seed, snapshot(), dangerousLeg);
+      const parts = out.legs[0]!.ship.parts;
+      engineLoss += 80 - conditionOf('engine-1', parts);
+      cargoLoss += 80 - conditionOf('cargo-1', parts);
+    }
+    // Passive stays a small, near-flat usage tick; exposed tracks the leg's own danger.
+    expect(cargoLoss / runs).toBeLessThan(0.2);
+    expect(engineLoss).toBeGreaterThan(cargoLoss * 5);
   });
 });

@@ -1,11 +1,15 @@
-import { toJsonInput } from '../common/prisma-json.js';
 import { ConflictException, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
-import type { InstalledPart } from '../parts/part.types.js';
+import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { autoLayout } from '../ships/auto-layout.js';
+import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
+import { applyConnectivity } from '../ships/connectivity.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
 
@@ -64,7 +68,13 @@ export class InventoryService {
     for (const partType of starterParts) {
       kit.push(
         await tx.partInstance.create({
-          data: { partType, ownerPlayerId: playerId, condition, location: 'INVENTORY' },
+          data: {
+            partType,
+            ownerPlayerId: playerId,
+            condition,
+            location: 'INVENTORY',
+            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType)),
+          },
           include: { partCatalog: true },
         }),
       );
@@ -75,23 +85,25 @@ export class InventoryService {
     }));
 
     const catalogMap = new Map(kitParts.map((part) => [part.instance.id, part.catalog]));
-    const layout = autoLayout(kitParts, catalogMap);
+    const layout = autoLayout(kitParts, catalogMap, CLASSIC_SQUARE_CELLS);
     if (layout.length !== kitParts.length) {
       throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
     }
 
-    const kitSheet = deriveSheet(kitParts, rules);
-    const viability = checkViability(kitSheet, kitParts, rules);
+    const kitConnectorsByInstance = new Map(
+      kit.map((part) => [part.id, part.connectors as ConnectorLayout | null]),
+    );
+    const kitConnectedIds = connectedPartIds(layout, catalogMap, kitConnectorsByInstance);
+    const kitPartsConnected = applyConnectivity(kitParts, kitConnectedIds);
+    const kitSheet = deriveSheet(kitPartsConnected, rules);
+    const viability = checkViability(kitSheet, kitPartsConnected, rules);
     if (!viability.viable) {
       throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
     }
 
-    for (const placement of layout) {
-      await tx.partInstance.update({
-        where: { id: placement.partInstanceId },
-        data: { location: 'INSTALLED', shipId },
-      });
-    }
+    // The kit comes back loose (D44), like the onboarding kit: the pilot re-assembles in the
+    // Hangar. The layout above only proves the kit can fly. Everything that was installed is
+    // already back in inventory, so the hull is empty until the player assembles it.
     // The hull can drift in with more fuel than the kit's tank holds (the old tank was
     // sold off while ADRIFT, or swapped for a smaller one), so the stored fuel is clamped
     // to the new ceiling — fuel above fuelCap is unspendable at the pump (refuel sees no
@@ -103,7 +115,7 @@ export class InventoryService {
     const fuel = Math.min(shipRow.fuel, kitSheet.fuelCap);
     await tx.ship.update({
       where: { id: shipId },
-      data: { layout: toJsonInput(layout), fuel },
+      data: { layout: [], fuel },
     });
 
     return { restartParts: starterParts, viability, fuelCap: kitSheet.fuelCap };
@@ -113,12 +125,28 @@ export class InventoryService {
     tx: Prisma.TransactionClient,
     shipId: string,
   ): Promise<InstalledPart[]> {
-    const rows = await tx.partInstance.findMany({
-      where: { shipId, location: 'INSTALLED' },
-      include: { partCatalog: true },
-      orderBy: { id: 'asc' },
-    });
-    return rows.map((row) => ({ instance: row, catalog: pickCatalogStats(row.partCatalog) }));
+    const [rows, ship] = await Promise.all([
+      tx.partInstance.findMany({
+        where: { shipId, location: 'INSTALLED' },
+        include: { partCatalog: true },
+        orderBy: { id: 'asc' },
+      }),
+      tx.ship.findUniqueOrThrow({ where: { id: shipId }, select: { layout: true } }),
+    ]);
+    const installed = rows.map((row) => ({
+      instance: row,
+      catalog: pickCatalogStats(row.partCatalog),
+    }));
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
+    return applyConnectivity(installed, connectedIds);
   }
 
   private viabilityOf(parts: InstalledPart[], rules: GameRules): ViabilityReport {

@@ -43,6 +43,11 @@ model Player {
   locale          String            @default("en")
   // Faction chosen during onboarding; null until a player completes onboarding.
   factionId       String?
+  // Owner debug switch, per account (never global — a global flag would speed up every
+  // player's jobs): while true, this player's timed jobs (missions, travel, scavenging,
+  // repair) still show and store their real duration, but actually finish after
+  // admin.debug_fast_ops_seconds. Off for everyone by default; set only by an admin.
+  debugFastOps    Boolean           @default(false)
   createdAt       DateTime          @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
@@ -145,6 +150,11 @@ enum MissionType {
   ESCORT
   MINING
   RESCUE
+  // A trip the pilot asks for on their own: no cargo, no reward, only fuel (never on a board).
+  TRAVEL
+  // A timed search of the wreckage around a port: starts and ends in the same place, no reward,
+  // finds used parts or scrap when it resolves (never on a board).
+  SCAVENGE
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union
@@ -350,9 +360,10 @@ model PartCatalog {
   batCharge     Float?
   batOutput     Float?
   batInput      Float?
-  specialProp   Json?
-  active        Boolean        @default(true)
-  instances     PartInstance[]
+  specialProp      Json?
+  connectorLayouts Json?
+  active           Boolean        @default(true)
+  instances        PartInstance[]
 }
 
 model MissionTemplate {
@@ -507,6 +518,8 @@ model Material {
   description     Json
   rarity          Rarity
   basePrice       Int
+  // Sells for exactly basePrice at every port (scrap): no isolation, faction, mood or sell ratio.
+  fixedPrice      Boolean          @default(false)
   active          Boolean          @default(true)
   playerMaterials PlayerMaterial[]
 }
@@ -519,12 +532,23 @@ model PartInstance {
   location      PartLocation @default(INVENTORY)
   shipId        String?
   propRoll      Json?
+  connectors    Json?
   partCatalog   PartCatalog  @relation(fields: [partType], references: [partType])
   owner         Player       @relation(fields: [ownerPlayerId], references: [id])
   ship          Ship?        @relation(fields: [shipId], references: [id])
 
   @@index([ownerPlayerId, location])
   @@index([shipId])
+}
+
+model ShipFormat {
+  id          String   @id
+  displayName Json
+  description Json
+  cells       Json
+  minRarity   Rarity
+  active      Boolean  @default(true)
+  ships       Ship[]
 }
 
 model Ship {
@@ -536,12 +560,15 @@ model Ship {
   status            ShipStatus        @default(IN_PORT)
   currentLocationId String
   stance            ShipStance        @default(NEUTRAL)
+  energyMode        String            @default("FULL")
+  formatId          String            @default("classic_square")
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]
   location          Location          @relation(fields: [currentLocationId], references: [id])
   missions          MissionInstance[]
   presences         RoutePresence[]
   repairJobs        RepairJob[]
+  format            ShipFormat        @relation(fields: [formatId], references: [id])
 
   @@index([currentLocationId])
   @@index([ownerPlayerId])

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { seedShipFormats } from '../../prisma/seed-data/ship-formats.js';
 
 // Points integration/e2e tests at the compose `test` profile's tmpfs Postgres (S1.4): run
 // `docker compose --profile test up -d --wait postgres-test` before using this helper.
@@ -70,4 +71,6 @@ export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   if (tables.length === 0) return;
   const qualifiedNames = tables.map((table) => `"public"."${table.tablename}"`).join(', ');
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${qualifiedNames} RESTART IDENTITY CASCADE`);
+  // Reference data that ships (and their layout validation) depend on must survive resets.
+  await seedShipFormats(prisma);
 }

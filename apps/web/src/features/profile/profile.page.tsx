@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,16 @@ export interface ProfilePageProps {
 
 export function ProfilePage({ guided = false }: ProfilePageProps) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuthContext();
+  const { user, reloadProfile } = useAuthContext();
+
+  // The balance may have moved while this tab was in the background (a mission ending): re-read
+  // it on entry and whenever the window regains focus.
+  useEffect(() => {
+    void reloadProfile();
+    const onFocus = () => void reloadProfile();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [reloadProfile]);
 
   const reportsQuery = useQuery({
     queryKey: ['reports'],
@@ -51,10 +61,23 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
           <ItemCard
             key={item.missionId}
             name={t(`report.outcome.${item.outcome}`, { defaultValue: item.outcome })}
-            description={[
-              t('profile.legCount', { count: item.legs }),
-              dateFormat.format(new Date(item.createdAt)),
-            ].join(' · ')}
+            description={
+              <>
+                {item.hadCombat && (
+                  <Link
+                    className="pill pill-combat"
+                    to={`/report/${item.missionId}#combat`}
+                    title={t('profile.combatTagHint')}
+                  >
+                    {t('profile.combatTag')}
+                  </Link>
+                )}{' '}
+                {[
+                  t('profile.legCount', { count: item.legs }),
+                  dateFormat.format(new Date(item.createdAt)),
+                ].join(' · ')}
+              </>
+            }
             action={
               <Link className="btn" to={`/report/${item.missionId}`}>
                 {t('transit.viewReport')}

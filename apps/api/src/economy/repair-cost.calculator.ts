@@ -41,7 +41,12 @@ export function repairCost(
   let partsSum = 0;
   for (const part of parts) {
     const conditionLost = Math.max(0, part.toCondition - part.fromCondition) / 100;
-    partsSum += part.basePrice * conditionLost * e.repair_factor * priceRatio;
+    // A cheap part (the bridge is worth 0) is repaired as if it were worth the configured minimum.
+    partsSum +=
+      Math.max(part.basePrice, e.repair_min_base_price) *
+      conditionLost *
+      e.repair_factor *
+      priceRatio;
   }
   // Sim rounds the parts expression once, then adds maintenance unrounded.
   const base = roundHalfEven(partsSum) + tier * e.maintenance_per_tier;

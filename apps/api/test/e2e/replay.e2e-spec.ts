@@ -6,6 +6,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import type { MissionInstance, MissionLog, Prisma } from '@prisma/client';
 import { Job, Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -158,6 +159,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -333,6 +335,9 @@ describe('MissionLog replay determinism (S7.6)', () => {
         fuel: wrongSnapshot.fuel,
         hp: wrongSheet.hp,
         esc: wrongSheet.esc,
+        energyMode: 'FULL',
+        weaponEnergyDraw: 0,
+        shieldEnergyDraw: 0,
       },
       mission: missionInputFrom(missionRow, wrongSnapshot),
       rules: configService.snapshot().rules,

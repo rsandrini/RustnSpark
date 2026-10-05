@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
@@ -34,6 +35,7 @@ interface MarketListingBody {
     partType: string;
     price: number;
     condition: number;
+    rarity: string;
   }>;
   sellOffers: Array<{ partInstanceId: string; price: number }>;
 }
@@ -84,6 +86,7 @@ describe('market API (S8.2)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
@@ -193,6 +196,79 @@ describe('market API (S8.2)', () => {
     });
     expect(instance.location).toBe('INVENTORY');
     expect(instance.ownerPlayerId).toBe(player.seeded.player.id);
+  });
+
+  it('rolls connectors once at purchase, from the catalog\'s own candidates (round 11, Connectors v0.1)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await prisma.partCatalog.update({
+      where: { partType: 'cargo' },
+      data: {
+        connectorLayouts: [{ cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] }],
+      },
+    });
+
+    const board = await getMarket(player.token, 'ceres');
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
+    );
+    expect(listing).toBeDefined();
+
+    const response = await buy(player.token, randomUUID(), {
+      listingId: listing!.listingId,
+      expectedPrice: listing!.price,
+    });
+    expect(response.status).toBe(200);
+    const instanceId = (response.body as { partInstanceId: string }).partInstanceId;
+
+    const row = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
+    expect(row.connectors).toEqual({ cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] });
+  });
+
+  it('rolls null (the universal fallback) when the catalog has no connectorLayouts', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    // 'cargo' has no connectorLayouts in the fresh seed — this is the default state of every
+    // part type today.
+    const board = await getMarket(player.token, 'ceres');
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
+    );
+    expect(listing).toBeDefined();
+
+    const response = await buy(player.token, randomUUID(), {
+      listingId: listing!.listingId,
+      expectedPrice: listing!.price,
+    });
+    const instanceId = (response.body as { partInstanceId: string }).partInstanceId;
+    const row = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
+    expect(row.connectors).toBeNull();
+  });
+
+  it('does not retroactively reroll an existing instance when its catalog later gains connectorLayouts (no backfill, ever)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const listing = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
+    );
+    expect(listing).toBeDefined();
+
+    const response = await buy(player.token, randomUUID(), {
+      listingId: listing!.listingId,
+      expectedPrice: listing!.price,
+    });
+    const instanceId = (response.body as { partInstanceId: string }).partInstanceId;
+    const before = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
+    expect(before.connectors).toBeNull(); // bought before the catalog had any candidates
+
+    await prisma.partCatalog.update({
+      where: { partType: 'cargo' },
+      data: { connectorLayouts: [{ cells: [{ dx: 0, dy: 0, side: 'N', kind: 'universal' }] }] },
+    });
+
+    const after = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
+    expect(after.connectors).toBeNull(); // unchanged — no backfill job touched it
   });
 
   it('buy is idempotent: missing key 400, same key+body replays once', async () => {
@@ -306,6 +382,100 @@ describe('market API (S8.2)', () => {
       condition: used!.condition,
       price: used!.price,
     });
+  });
+
+  it('a used part is one item: after it is bought it leaves the shelf and cannot be bought again', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const used = (board.body as MarketListingBody).listings.find((entry) => entry.kind === 'used')!;
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: used.price * 3 },
+    });
+
+    const first = await buy(player.token, randomUUID(), {
+      listingId: used.listingId,
+      expectedPrice: used.price,
+    });
+    expect(first.status).toBe(200);
+
+    const again = await buy(player.token, randomUUID(), {
+      listingId: used.listingId,
+      expectedPrice: used.price,
+    });
+    expect(again.status).toBe(409);
+    expect(again.body).toMatchObject({ message: { error: 'LISTING_SOLD' } });
+
+    const after = await getMarket(player.token, 'ceres');
+    const ids = (after.body as MarketListingBody).listings.map((entry) => entry.listingId);
+    expect(ids).not.toContain(used.listingId);
+    // New parts are a different story: the port restocks them (D25), so they stay for sale.
+    expect((after.body as MarketListingBody).listings.some((e) => e.kind === 'catalog')).toBe(true);
+    // Exactly one part was created and paid for.
+    await expect(
+      prisma.partInstance.count({
+        where: { ownerPlayerId: player.seeded.player.id, partType: used.partType },
+      }),
+    ).resolves.toBeGreaterThanOrEqual(1);
+    const bought = await prisma.playerEvent.count({
+      where: {
+        type: 'market.buy',
+        payload: { path: ['listingId'], equals: used.listingId },
+      },
+    });
+    expect(bought).toBe(1);
+  });
+
+  it('a part below the sell threshold gets no quote and cannot be sold; discard destroys it (W5)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const playerId = player.seeded.player.id;
+    const wreck = await prisma.partInstance.create({
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 9, location: 'INVENTORY' },
+    });
+    const worn = await prisma.partInstance.create({
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 40, location: 'INVENTORY' },
+    });
+
+    const board = (await getMarket(player.token, 'ceres')).body as {
+      sellOffers: Array<{ partInstanceId: string }>;
+      sellMinCondition: number;
+    };
+    expect(board.sellMinCondition).toBe(15);
+    const quoted = board.sellOffers.map((offer) => offer.partInstanceId);
+    expect(quoted).not.toContain(wreck.id);
+    expect(quoted).toContain(worn.id);
+
+    const refused = await sell(player.token, randomUUID(), {
+      partInstanceId: wreck.id,
+      expectedPrice: 0,
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ message: { error: 'TOO_DAMAGED_TO_SELL' } });
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).not.toBeNull();
+
+    // Discard destroys exactly the too-damaged parts that are in storage; nothing installed.
+    const installedBefore = await prisma.partInstance.count({
+      where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+    });
+    const discarded = await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token));
+    expect(discarded.status).toBe(200);
+    expect(discarded.body).toEqual({ discarded: 1 });
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).toBeNull();
+    expect(await prisma.partInstance.findUnique({ where: { id: worn.id } })).not.toBeNull();
+    expect(
+      await prisma.partInstance.count({
+        where: { ownerPlayerId: playerId, location: 'INSTALLED' },
+      }),
+    ).toBe(installedBefore);
+    // Naturally idempotent.
+    const again = await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token));
+    expect(again.body).toEqual({ discarded: 0 });
   });
 
   it('parallel buys cannot overspend: exactly floor(balance/price) succeed', async () => {
@@ -594,5 +764,88 @@ describe('market API (S8.2)', () => {
     } finally {
       at.mockRestore();
     }
+  });
+
+  describe('rarity-gated new-parts shelf (round-5 backlog: scarce rare/epic, no legendary)', () => {
+    it('never lists a LEGENDARY catalog part (chance 0 by default)', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+
+      const legendaryRows = await prisma.partCatalog.findMany({
+        where: { active: true, rarity: 'LEGENDARY' },
+        select: { partType: true },
+      });
+      expect(legendaryRows.length).toBeGreaterThan(0);
+
+      const board = await getMarket(player.token, 'ceres');
+      const catalogListings = (board.body as MarketListingBody).listings.filter(
+        (entry) => entry.kind === 'catalog',
+      );
+      const listedLegendary = catalogListings.filter((entry) =>
+        legendaryRows.some((row) => row.partType === entry.partType),
+      );
+      expect(listedLegendary).toHaveLength(0);
+    });
+
+    it('always lists every COMMON catalog part (chance 1 by default)', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+
+      const commonRows = await prisma.partCatalog.findMany({
+        where: { active: true, rarity: 'COMMON' },
+        select: { partType: true },
+      });
+      expect(commonRows.length).toBeGreaterThan(0);
+
+      const board = await getMarket(player.token, 'ceres');
+      const listedTypes = new Set(
+        (board.body as MarketListingBody).listings
+          .filter((entry) => entry.kind === 'catalog')
+          .map((entry) => entry.partType),
+      );
+      for (const row of commonRows) {
+        expect(listedTypes.has(row.partType)).toBe(true);
+      }
+    });
+
+    it('rejects buying a LEGENDARY part even with a hand-built catalog listing id', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { credits: 1_000_000 },
+      });
+
+      const legendary = await prisma.partCatalog.findFirstOrThrow({
+        where: { active: true, rarity: 'LEGENDARY' },
+      });
+
+      const response = await buy(player.token, randomUUID(), {
+        listingId: `catalog:ceres:${legendary.partType}`,
+        expectedPrice: legendary.basePrice,
+      });
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ message: { error: 'INVALID_LISTING' } });
+    });
+
+    it('the used shelf never draws a LEGENDARY part either, across many days', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      const clock = testApp.app.get(Clock);
+      const at = jest.spyOn(clock, 'now');
+      try {
+        const seenRarities = new Set<string>();
+        for (let day = 1; day <= 25; day += 1) {
+          at.mockReturnValue(new Date(`2026-04-${String(day).padStart(2, '0')}T12:00:00Z`));
+          const board = await getMarket(player.token, 'ceres');
+          for (const listing of (board.body as MarketListingBody).listings) {
+            if (listing.kind === 'used') seenRarities.add(listing.rarity);
+          }
+        }
+        expect(seenRarities.has('LEGENDARY')).toBe(false);
+      } finally {
+        at.mockRestore();
+      }
+    });
   });
 });

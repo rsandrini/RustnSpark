@@ -16,7 +16,7 @@ for (const faction of FACTIONS) {
     // --- hangar: the starter ship, named parts ---------------------------------------------
     await page.goto('/hangar');
     await expect(page.getByRole('heading', { name: 'Hangar' })).toBeVisible();
-    await expect(page.getByText('Assembly yard').or(page.getByRole('group'))).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Assembly yard' })).toBeVisible();
     await assertClean(page, 'hangar');
 
     // --- map ---------------------------------------------------------------------------------
@@ -28,8 +28,8 @@ for (const faction of FACTIONS) {
     // --- board: a real starter ship must be able to take at least one mission ------------------
     await page.goto('/board');
     await expect(page.getByRole('heading', { name: 'Mission board' })).toBeVisible();
-    // The board itself must work: offers are listed.
-    await expect(page.locator('.item').first()).toBeVisible();
+    // The board itself must work: offers are listed, each with its description and trip facts.
+    await expect(page.locator('.mcard').first()).toBeVisible();
     // D43: on default settings a freshly onboarded player must always have a mission they can
     // accept — a private start-safe one when the shared board has nothing takeable.
     const accept = page.locator('button:has-text("Accept"):not([disabled])').first();
@@ -45,25 +45,25 @@ for (const faction of FACTIONS) {
     await page.getByRole('button', { name: 'Dispatch' }).click();
     await expect(page.getByTestId('in-transit')).toBeVisible();
     await assertClean(page, 'transit');
-    await expect(page.getByTestId('last-mission')).toBeVisible({ timeout: 90_000 });
+    await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 
     // --- report: all three views ---------------------------------------------------------------
-    await page.getByRole('link', { name: 'Read the report' }).click();
     await expect(page.getByRole('heading', { name: 'Mission report' })).toBeVisible();
-    await expect(page.locator('.verdict')).toBeVisible();
-    await assertClean(page, 'report summary');
-    await page.getByRole('tab', { name: 'Narrative' }).click();
+    // The debrief leads (verdict, mission, credits, fights), then the story.
+    await expect(page.getByTestId('debrief')).toBeVisible();
     await expect(page.locator('article.event').first()).toBeVisible();
-    await assertClean(page, 'report narrative');
+    await assertClean(page, 'report story');
+    await page.getByRole('tab', { name: 'Summary' }).click();
+    await assertClean(page, 'report summary');
     await page.getByRole('tab', { name: 'Log' }).click();
     await expect(page.locator('ol.log-lines li').first()).toBeVisible();
     await assertClean(page, 'report log');
 
     // --- port ----------------------------------------------------------------------------------
     await page.goto('/port');
-    await expect(page.getByRole('heading', { name: 'Port' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Port', exact: true })).toBeVisible();
     await expect(page.getByTestId('wallet')).toBeVisible();
-    await expect(page.locator('.item').first()).toBeVisible();
+    await expect(page.locator('.pcard').first()).toBeVisible();
     await assertClean(page, 'port market');
     await page.getByRole('tab', { name: 'Refuel' }).click();
     await assertClean(page, 'port refuel');

@@ -3,6 +3,10 @@ import type { GameRules } from './game-config.types.js';
 import { GameConfigValidationError } from './game-config.types.js';
 import { getRegistryEntry } from './config-registry.js';
 
+const adminSchema = z.object({
+  debug_fast_ops_seconds: z.number().int().min(1).max(300),
+});
+
 const combatSchema = z.object({
   dodge_factor: z.number().min(0.1).max(5.0),
   dc_base: z.number().int().min(1).max(50),
@@ -38,10 +42,22 @@ const wearSchema = z.object({
   overload_min: z.number().int().min(0).max(50),
   overload_max: z.number().int().min(0).max(50),
   scale_mode: z.enum(['all_stats', 'hp_only']),
+  danger_ref: z.number().min(0.1).max(50),
+  danger_floor: z.number().min(0).max(1),
+  danger_cap: z.number().min(1).max(10),
+  system_base_min: z.number().min(0).max(10),
+  system_base_max: z.number().min(0).max(10),
+  system_defeat_share: z.number().min(0).max(1),
+  // Round-4 wear rework: DEFENSE-class parts (Hull Frame, shields) absorb a fixed total "extra"
+  // share of ambient and defeat wear, split evenly across however many are installed (so
+  // stacking DEFENSE parts doesn't multiply the total benefit) — every other exposed class
+  // absorbs correspondingly less while at least one is installed.
+  defense_wear_bonus: z.number().min(0).max(5),
+  other_exposed_wear_factor: z.number().min(0).max(1),
 });
 
 const economySchema = z.object({
-  fuel_price: z.number().int().min(1).max(20),
+  fuel_price: z.number().min(0.1).max(20),
   repair_price: z.number().int().min(1).max(20),
   repair_price_ref: z.number().int().min(1).max(20),
   repair_factor: z.number().min(0.1).max(2.0),
@@ -56,15 +72,19 @@ const economySchema = z.object({
   combat_win_per_tier: z.number().int().min(0).max(500),
   combat_loss_penalty: z.number().int().min(0).max(1000),
   upgrade_costs: z.record(z.string(), z.number().min(0).max(100000)),
+  part_upgrade_price_multiplier: z.record(z.string(), z.number().min(1).max(5)),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
   rescue_fuel_fraction: z.number().min(0).max(1),
+  repair_min_base_price: z.number().min(0).max(1000),
+  sell_min_condition: z.number().min(0).max(100),
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),
   mood_min: z.number().min(0).max(2),
   mood_max: z.number().min(0).max(2),
   rarity_base_price: z.record(z.string(), z.number().min(0).max(50000)),
+  market_rarity_chance: z.record(z.string(), z.number().min(0).max(1)),
   payout_floor_integrity: z.number().min(0).max(1),
   repair_seconds_per_point: z.record(z.string(), z.number().min(0).max(60)),
 });
@@ -72,6 +92,8 @@ const economySchema = z.object({
 const encounterSchema = z.object({
   chance_divisor: z.number().int().min(1).max(100),
   pirate_strength_options: z.array(z.number().min(0.1).max(5.0)),
+  pirate_zone_strength: z.record(z.string(), z.number().min(0.1).max(5.0)),
+  pirate_motive_weights: z.record(z.string(), z.number().min(0).max(100)),
   pirate_mob_jitter: z.array(z.number().int().min(-5).max(5)),
   pirate_sen_jitter: z.array(z.number().int().min(-5).max(5)),
   pirate_bli_ratio: z.number().min(0).max(1),
@@ -110,6 +132,7 @@ const miningSchema = z.object({
   rarity: z.record(z.string(), z.number().min(0).max(1)),
   material_price: z.record(z.string(), z.number().min(0).max(10000)),
   attempts_per_stop: z.number().int().min(1).max(100),
+  job_duration_seconds: z.number().int().min(1).max(86400),
 });
 
 const rescueSchema = z.object({
@@ -145,6 +168,10 @@ const scavengingSchema = z.object({
   quality_min: z.number().int().min(0).max(100),
   quality_max: z.number().int().min(0).max(100),
   cooldown_seconds: z.number().int().min(0).max(86400),
+  duration_seconds: z.number().int().min(1).max(86400),
+  scrap_share: z.number().min(0).max(1),
+  zone_quality_bonus: z.number().int().min(0).max(50),
+  zone_rarity_bias: z.number().min(0).max(10),
 });
 
 const partsSchema = z.object({
@@ -162,6 +189,7 @@ const worldSchema = z.object({
 });
 
 const gameRulesSchema = z.object({
+  admin: adminSchema,
   combat: combatSchema,
   ship: shipSchema,
   wear: wearSchema,

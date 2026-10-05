@@ -6,12 +6,14 @@ import { getQueueToken } from '@nestjs/bullmq';
 import type { MissionInstance } from '@prisma/client';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { PartsService } from '../../src/parts/parts.service.js';
 import { RepairService } from '../../src/economy/repair.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
@@ -79,6 +81,7 @@ describe('repair job API (S8.4)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
+    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
     // Repair cost depends on which (randomly-identified) parts a test damages; the 200-credit
     // start balance cannot cover every combination. Tests about affording set their own balance.
     await prisma.player.update({
@@ -306,6 +309,80 @@ describe('repair job API (S8.4)', () => {
     expect(after.condition).toBe(70);
   });
 
+  it('a destroyed part (condition 0) cannot be repaired, and nothing is charged', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 0);
+
+    const response = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ message: { error: 'PART_DESTROYED' } });
+    expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
+  });
+
+  it('while a repair runs the part shows the share of the work done so far', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 40);
+    const started = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+    ]);
+    expect(started.status).toBe(200);
+
+    const conditionNow = async () => {
+      const rows = await testApp.app.get(PartsService).findPlayerParts(player.seeded.player.id);
+      return rows.find((row) => row.id === part.id)?.condition ?? -1;
+    };
+    // Just started: still (about) the starting value; halfway: about halfway; the stored value
+    // stays untouched until the job completes.
+    expect(await conditionNow()).toBeLessThanOrEqual(45);
+    await prisma.repairJob.updateMany({
+      where: { shipId: player.shipId },
+      data: {
+        startedAt: new Date(Date.now() - 90_000),
+        completesAt: new Date(Date.now() + 90_000),
+      },
+    });
+    const half = await conditionNow();
+    expect(half).toBeGreaterThanOrEqual(69);
+    expect(half).toBeLessThanOrEqual(71);
+    const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: part.id } });
+    expect(stored.condition).toBe(40);
+  });
+
+  it("a player's own debugFastOps shortens the queued repair delay without touching the displayed duration", async () => {
+    await freshSeededApp();
+    await prisma.gameConfig.update({
+      where: { key: 'admin.debug_fast_ops_seconds' },
+      data: { value: 5 },
+    });
+    await configService.refresh();
+    try {
+      const player = await onboardPlayer();
+      await prisma.player.update({
+        where: { id: player.seeded.player.id },
+        data: { debugFastOps: true },
+      });
+      const part = await damagedInstalledPart(player, 5);
+
+      const started = await startRepair(player.token, player.shipId, randomUUID(), [
+        { partInstanceId: part.id, toCondition: 100 },
+      ]);
+      expect(started.status).toBe(200);
+      const body = started.body as { repairJobId: string; durationSeconds: number };
+      // Hub k = 3 s/point × 99 points is well over 5 seconds; the figure charged and shown is real.
+      expect(body.durationSeconds).toBeGreaterThan(5);
+
+      const job = await repairQueue.getJob(body.repairJobId);
+      expect(job).toBeDefined();
+      expect(job?.opts.delay).toBeLessThanOrEqual(5000);
+    } finally {
+      await configService.refresh();
+    }
+  });
+
   it('quote returns the exact cost and duration start will charge, without charging (S10.9)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -322,8 +399,17 @@ describe('repair job API (S8.4)', () => {
       .set(auth(player.token))
       .send({ targets });
     expect(quoted.status).toBe(200);
-    const quote = quoted.body as { cost: number; durationSeconds: number };
+    const quote = quoted.body as {
+      cost: number;
+      durationSeconds: number;
+      fee: number;
+      items: Array<{ partInstanceId: string; cost: number; durationSeconds: number }>;
+    };
     expect(quote.durationSeconds).toBe(50 * 3);
+    // The per-part lines plus the workshop fee are exactly the total that start() charges.
+    expect(quote.items).toHaveLength(1);
+    expect(quote.items[0]).toMatchObject({ partInstanceId: part.id, durationSeconds: 50 * 3 });
+    expect(quote.items.reduce((sum, item) => sum + item.cost, 0) + quote.fee).toBe(quote.cost);
     expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
     const unchanged = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },

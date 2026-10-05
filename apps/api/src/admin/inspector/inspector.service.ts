@@ -4,6 +4,8 @@ import {
   ReportsService,
   decodeCursor,
   encodeCursor,
+  hasShieldOf,
+  partsBeforeOf,
   partTypesOf,
   parseLimit,
 } from '../../reports/reports.service.js';
@@ -236,6 +238,8 @@ export class InspectorService {
       events: replayedEvents,
       legs: recomputed.legs.map((leg) => ({ index: leg.index, status: leg.status })),
       partTypeById: partTypesOf(log.shipSnapshot),
+      hasShield: hasShieldOf(log.shipSnapshot),
+      partsBefore: partsBeforeOf(log.shipSnapshot),
       credits: recomputed.creditsDelta,
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
     };

@@ -15,10 +15,9 @@ describe('router', () => {
     );
 
     const user = userEvent.setup();
+    // Home was retired (round-3): a signed-out visit to '/' lands straight on the sign-in page.
     renderWithRouter(routes);
-
-    await user.click(screen.getByRole('link', { name: /sign in/i }));
-    expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', { name: /create an account/i }));
     expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();

@@ -13,9 +13,13 @@ import type {
   MaterialsResponse,
   MissionOffer,
   Placement,
+  PartUpgradeQuoteResponse,
+  PartUpgradeResponse,
   PlayerProfileResponse,
   PreviewResponse,
   RefreshResponse,
+  DiscardResponse,
+  RefuelQuoteResponse,
   RefuelResponse,
   RegisterResponse,
   RepairQuoteResponse,
@@ -23,7 +27,9 @@ import type {
   RescueResponse,
   ReportListResponse,
   ReportResponse,
-  ScavengeResponse,
+  ScavengeInfo,
+  ShipFormat,
+  TravelQuote,
   SellMaterialResponse,
   SellResponse,
   CatalogDetail,
@@ -82,6 +88,10 @@ const PART_NAMES: Record<string, LocalizedText> = {
   cargo: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
   hull: { en: 'Plated Hull', 'pt-BR': 'Casco Blindado' },
 };
+const partDescriptionOf = (partType: string): LocalizedText => ({
+  en: `${partNameOf(partType).en}: what it does, why you need it, its trade-off.`,
+  'pt-BR': `${partNameOf(partType)['pt-BR']}: o que faz, por que precisa, o custo.`,
+});
 const partNameOf = (partType: string): LocalizedText =>
   PART_NAMES[partType] ?? { en: partType, 'pt-BR': partType };
 
@@ -122,16 +132,23 @@ const starterInventory = (): InventoryItem[] => [
     id: 'part-bridge',
     partType: 'bridge',
     displayName: partNameOf('bridge'),
+    description: partDescriptionOf('bridge'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('bridge', 'BRIDGE', { w: 2, h: 2, mass: 6, structureCost: 0 }),
+    connectors: [],
   },
   {
     id: 'part-engine',
     partType: 'engine_chem_small',
     displayName: partNameOf('engine_chem_small'),
+    description: partDescriptionOf('engine_chem_small'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('engine_chem_small', 'ENGINE', {
@@ -140,21 +157,29 @@ const starterInventory = (): InventoryItem[] => [
       fuelCap: 0,
       mass: 3,
     }),
+    connectors: [],
   },
   {
     id: 'part-tank',
     partType: 'tank_small',
     displayName: partNameOf('tank_small'),
+    description: partDescriptionOf('tank_small'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('tank_small', 'TANK', { fuelCap: 40, mass: 5 }),
+    connectors: [],
   },
   {
     id: 'part-battery',
     partType: 'battery_small',
     displayName: partNameOf('battery_small'),
+    description: partDescriptionOf('battery_small'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('battery_small', 'BATTERY', {
@@ -163,35 +188,58 @@ const starterInventory = (): InventoryItem[] => [
       energyCont: 8,
       mass: 2,
     }),
+    connectors: [],
   },
   {
     id: 'part-hull',
     partType: 'hull',
     displayName: partNameOf('hull'),
+    description: partDescriptionOf('hull'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('hull', 'DEFENSE', { partHp: 40, mass: 4, w: 2, h: 2 }),
+    connectors: [],
   },
   {
     id: 'part-cargo-a',
     partType: 'cargo',
     displayName: partNameOf('cargo'),
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
     condition: 1,
+    broken: false,
     location: 'INSTALLED',
     shipId: 'ship-1',
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
   },
   {
     id: 'part-cargo-b',
     partType: 'cargo',
     displayName: partNameOf('cargo'),
-    condition: 1,
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
+    condition: 80,
+    broken: false,
     location: 'INVENTORY',
     shipId: null,
     catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
   },
 ];
+
+export function classicSquareCells(): [number, number][] {
+  const cells: [number, number][] = [];
+  for (let y = -10; y < 10; y += 1) {
+    for (let x = -10; x < 10; x += 1) {
+      cells.push([x, y]);
+    }
+  }
+  return cells;
+}
 
 const starterLayout = (): Placement[] => [
   { partInstanceId: 'part-bridge', gx: 0, gy: 0, rot: 0 },
@@ -210,10 +258,22 @@ const ship = (): ShipResponse => ({
   status: shipStatus,
   currentLocationId: 'ceres',
   stance: 'NEUTRAL',
+  energyMode: 'FULL',
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
-  yard: { halfSize: 10 },
+  yard: { cells: classicSquareCells() },
+  disconnectedPartIds: [],
+  // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
+  // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
+  activity:
+    shipStatus === 'ON_MISSION'
+      ? {
+          kind: 'flying',
+          until: activeState?.arrivalAt ?? null,
+          missionId: activeState?.id ?? null,
+        }
+      : { kind: 'idle', until: null, missionId: null },
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -225,6 +285,9 @@ const marketListings: MarketListing[] = [
     partType: 'hull',
     partClass: 'DEFENSE',
     displayName: { en: 'Plated Hull', 'pt-BR': 'Casco Blindado' },
+    description: partDescriptionOf('hull'),
+    rarity: 'COMMON',
+    catalog: catalog('hull', 'DEFENSE'),
     condition: 100,
     price: 300,
   },
@@ -234,6 +297,9 @@ const marketListings: MarketListing[] = [
     partType: 'cargo',
     partClass: 'CARGO',
     displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
+    catalog: catalog('cargo', 'CARGO'),
     condition: 100,
     price: 120,
   },
@@ -243,6 +309,9 @@ const marketListings: MarketListing[] = [
     partType: 'cargo',
     partClass: 'CARGO',
     displayName: { en: 'Cargo Rack (used)', 'pt-BR': 'Suporte de Carga (usado)' },
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
+    catalog: catalog('cargo', 'CARGO'),
     condition: 60,
     price: 80,
   },
@@ -273,6 +342,37 @@ export const economyState = {
     return shipStatus;
   },
 };
+
+/** Sets the fixture wallet (a pilot who cannot afford a full tank). */
+export function setWallet(value: number): void {
+  wallet = value;
+}
+
+/** Destroys the installed engine (condition 0): the workshop cannot repair it. */
+export function destroyEngine(): void {
+  const engine = inventoryState.find((entry) => entry.id === 'part-engine');
+  if (engine !== undefined) {
+    engine.condition = 0;
+    engine.broken = true;
+  }
+}
+
+/** Adds a loose part too damaged to sell (below the 15 % threshold) to the fixture inventory. */
+export function addWreck(): void {
+  inventoryState.push({
+    id: 'part-wreck',
+    partType: 'cargo',
+    displayName: partNameOf('cargo'),
+    description: partDescriptionOf('cargo'),
+    rarity: 'COMMON',
+    condition: 6,
+    broken: false,
+    location: 'INVENTORY',
+    shipId: null,
+    catalog: catalog('cargo', 'CARGO', { crg: 5, mass: 2, w: 2, h: 1 }),
+    connectors: [],
+  });
+}
 
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
 export function setShipStatus(status: ShipStatus): void {
@@ -334,6 +434,37 @@ const repairTargets = (raw: RepairTargetBody[]) =>
 const repairCostOf = (targets: { fromCondition: number; toCondition: number }[]) =>
   targets.reduce((sum, target) => sum + (target.toCondition - target.fromCondition) * 2, 0);
 
+// Fixture stand-in for the real mechanism's tier-naming convention: only these two families are
+// "chained" here, same as the real catalog leaves some families unchained (round 5, item 4).
+const UPGRADE_TIERS: Record<
+  string,
+  {
+    nextPartType: string;
+    nextName: LocalizedText;
+    nextDescription: LocalizedText;
+    nextRarity: string;
+    nextCatalog: InventoryItem['catalog'];
+    cost: number;
+  }
+> = {
+  hull: {
+    nextPartType: 'hull_uncommon',
+    nextName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
+    nextDescription: { en: 'A tougher hull plate.', 'pt-BR': 'Uma placa de casco mais resistente.' },
+    nextRarity: 'UNCOMMON',
+    nextCatalog: catalog('hull_uncommon', 'DEFENSE', { partHp: 60, mass: 4, w: 2, h: 2 }),
+    cost: 115,
+  },
+  cargo: {
+    nextPartType: 'cargo_uncommon',
+    nextName: { en: 'Reinforced Cargo Rack', 'pt-BR': 'Suporte de Carga Reforçado' },
+    nextDescription: { en: 'A bigger cargo rack.', 'pt-BR': 'Um suporte de carga maior.' },
+    nextRarity: 'UNCOMMON',
+    nextCatalog: catalog('cargo_uncommon', 'CARGO', { crg: 8, mass: 2, w: 2, h: 1 }),
+    cost: 35,
+  },
+};
+
 /**
  * A 200 response whose body is checked against the shared contract (`packages/contract`): a
  * mock that drifts from the real response shape fails to compile instead of passing against
@@ -375,10 +506,13 @@ export const handlers = [
       status: 'IN_PORT',
       currentLocationId: 'ceres',
       stance: 'NEUTRAL',
+      energyMode: 'FULL',
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
-      yard: { halfSize: 10 },
+      yard: { cells: classicSquareCells() },
+      disconnectedPartIds: [],
+      activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
 
@@ -396,12 +530,31 @@ export const handlers = [
       viability: { viable: true, problems: [] },
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
+      disconnectedPartIds: [],
     });
   }),
 
   http.post('/v1/ships/:id/assemble', () => ok<ShipResponse>(ship())),
 
   http.post('/v1/ships/:id/auto-assemble', () => ok<ShipResponse>(ship())),
+
+  http.post('/v1/ships/:id/energy-mode', async ({ request }) => {
+    const body = (await request.json()) as { energyMode: ShipResponse['energyMode'] };
+    return ok<ShipResponse>({ ...ship(), energyMode: body.energyMode });
+  }),
+
+  http.get('/v1/ship-formats', () =>
+    ok<ShipFormat[]>([
+      {
+        id: 'classic_square',
+        displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+        description: { en: 'The original grid.', 'pt-BR': 'A grade original.' },
+        cells: classicSquareCells(),
+        minRarity: 'COMMON',
+      },
+    ]),
+  ),
+  http.post('/v1/ships/:id/format', () => ok<ShipResponse>(ship())),
 
   http.get('/v1/locations', () => ok<WorldResponse>(world())),
 
@@ -423,6 +576,10 @@ export const handlers = [
       mission.playerId = 'player-1';
     }
     return HttpResponse.json(mission ?? {}, { status: 200 });
+  }),
+  http.post('/v1/missions/:id/abandon', () => {
+    activeState = null;
+    return HttpResponse.json({ status: 'AVAILABLE' }, { status: 200 });
   }),
   http.delete('/v1/missions/:id/hold', ({ params }) => {
     const mission = boardState.find((offer) => offer.id === params.id);
@@ -446,6 +603,7 @@ export const handlers = [
     activeState.status = 'IN_TRANSIT';
     activeState.shipId = String(params.id);
     activeState.arrivalAt = arrivalAt;
+    shipStatus = 'ON_MISSION';
     activeState.legWindows = [
       {
         legIndex: 0,
@@ -477,6 +635,8 @@ export const handlers = [
           credits: 1400,
           legs: 2,
           createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+          // m-1's own narrative detail (below) has a real fight — keep this truthful to it.
+          hadCombat: true,
         },
       ],
     }),
@@ -490,8 +650,9 @@ export const handlers = [
     ok<MarketResponse>({
       locationId: String(params.id),
       listings: marketListings,
+      sellMinCondition: 15,
       sellOffers: inventoryState
-        .filter((entry) => entry.location === 'INVENTORY')
+        .filter((entry) => entry.location === 'INVENTORY' && entry.condition >= 15)
         .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
     }),
   ),
@@ -558,13 +719,17 @@ export const handlers = [
       id,
       partType: listing.partType,
       displayName: partNameOf(listing.partType),
+      description: listing.description,
+      rarity: listing.rarity,
       condition: listing.condition,
+      broken: false,
       location: 'INVENTORY',
       shipId: null,
       catalog: catalog(
         listing.partType,
         listing.partClass as InventoryItem['catalog']['partClass'],
       ),
+      connectors: [],
     });
     return ok<BuyResponse>({
       partInstanceId: id,
@@ -624,19 +789,90 @@ export const handlers = [
       credits: wallet,
     });
   }),
+  http.post('/v1/ships/:id/refuel/quote', async ({ params, request }) => {
+    const body = (await request.json()) as { mode: string; amount?: number };
+    const fuelCap = 40;
+    const space = Math.max(0, fuelCap - fuelState);
+    const units = body.mode === 'full' ? space : Math.min(body.amount ?? 0, space);
+    return ok<RefuelQuoteResponse>({
+      shipId: String(params.id),
+      units,
+      cost: units * 3,
+      unitPrice: 3,
+      fuel: fuelState,
+      fuelCap,
+      space,
+    });
+  }),
+  http.post('/v1/inventory/discard', () => {
+    const before = inventoryState.length;
+    inventoryState = inventoryState.filter(
+      (entry) => !(entry.location === 'INVENTORY' && entry.condition < 15),
+    );
+    return ok<DiscardResponse>({ discarded: before - inventoryState.length });
+  }),
+
+  http.post('/v1/parts/:id/upgrade/quote', ({ params }) => {
+    const part = inventoryState.find((entry) => entry.id === params.id);
+    const tier = part === undefined ? undefined : UPGRADE_TIERS[part.partType];
+    if (tier === undefined) {
+      return ok<PartUpgradeQuoteResponse>({
+        partInstanceId: String(params.id),
+        eligible: false,
+        reason: 'NO_NEXT_TIER',
+      });
+    }
+    return ok<PartUpgradeQuoteResponse>({
+      partInstanceId: String(params.id),
+      eligible: true,
+      nextPartType: tier.nextPartType,
+      nextDisplayName: tier.nextName,
+      cost: tier.cost,
+      nextRarity: tier.nextRarity,
+      nextDescription: tier.nextDescription,
+      nextCatalog: tier.nextCatalog,
+    });
+  }),
+  http.post('/v1/parts/:id/upgrade', ({ params, request }) => {
+    const rejected = missingKey(request);
+    if (rejected !== null) return rejected;
+    const part = inventoryState.find((entry) => entry.id === params.id);
+    const tier = part === undefined ? undefined : UPGRADE_TIERS[part.partType];
+    if (part === undefined || tier === undefined) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'NO_NEXT_TIER' } },
+        { status: 409 },
+      );
+    }
+    if (wallet < tier.cost) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'INSUFFICIENT_FUNDS' } },
+        { status: 409 },
+      );
+    }
+    wallet -= tier.cost;
+    part.partType = tier.nextPartType;
+    part.displayName = tier.nextName;
+    part.rarity = 'UNCOMMON';
+    return ok<PartUpgradeResponse>({
+      partInstanceId: part.id,
+      partType: part.partType,
+      displayName: part.displayName,
+      rarity: part.rarity,
+      condition: part.condition,
+      cost: tier.cost,
+      credits: wallet,
+    });
+  }),
   http.post('/v1/ships/:id/refuel', async ({ params, request }) => {
     const rejected = missingKey(request);
     if (rejected !== null) return rejected;
-    const body = (await request.json()) as { mode: string };
+    const body = (await request.json()) as { mode: string; amount?: number };
     const fuelCap = 40;
-    if (body.mode !== 'full') {
-      return HttpResponse.json(
-        { statusCode: 400, message: 'partial not used in fixtures' },
-        { status: 400 },
-      );
-    }
-    // Like the real API: a full tank is a free no-op (units 0), not an error.
-    const units = Math.max(0, fuelCap - fuelState);
+    // Like the real API: a full tank is a free no-op (units 0), not an error; a partial amount is
+    // capped by the free space.
+    const space = Math.max(0, fuelCap - fuelState);
+    const units = body.mode === 'full' ? space : Math.min(body.amount ?? 0, space);
     const cost = units * 3;
     if (wallet < cost) {
       return HttpResponse.json(
@@ -645,7 +881,7 @@ export const handlers = [
       );
     }
     wallet -= cost;
-    fuelState = fuelCap;
+    fuelState = Math.min(fuelCap, fuelState + units);
     return ok<RefuelResponse>({
       shipId: String(params.id),
       units,
@@ -664,10 +900,18 @@ export const handlers = [
         { status: 409 },
       );
     }
+    const cost = repairCostOf(targets);
+    const items = targets.map((target) => ({
+      partInstanceId: target.partInstanceId,
+      cost: repairCostOf([target]),
+      durationSeconds: 5,
+    }));
     return ok<RepairQuoteResponse>({
       shipId: String(params.id),
-      cost: repairCostOf(targets),
-      durationSeconds: 30,
+      cost,
+      durationSeconds: items.length * 5,
+      items,
+      fee: cost - items.reduce((sum, item) => sum + item.cost, 0),
     });
   }),
   http.post('/v1/ships/:id/repair', async ({ params, request }) => {
@@ -724,7 +968,54 @@ export const handlers = [
       restartParts: [],
     });
   }),
-  http.post('/v1/locations/:id/scavenge', ({ params }) => {
+  http.get('/v1/travel/quote', ({ request }) => {
+    const destinationId = new URL(request.url).searchParams.get('destinationId') ?? '';
+    return ok<TravelQuote>({
+      originId: 'ceres',
+      destinationId,
+      legs: [
+        {
+          routeId: 'ceres-gate',
+          fromId: 'ceres',
+          toId: destinationId,
+          distance: 400,
+          danger: 5,
+          zone: 1,
+        },
+      ],
+      totalDistance: 400,
+      durationSeconds: 150,
+      fuelNeeded: 12,
+      fuelHave: 25,
+      peakDanger: 5,
+      blockers: [],
+      canDepart: true,
+    });
+  }),
+  http.post('/v1/travel', () =>
+    ok<DispatchResponse>({
+      missionId: 'travel-1',
+      arrivalAt: new Date(Date.now() + 150_000).toISOString(),
+      serverTime: new Date().toISOString(),
+    }),
+  ),
+  http.get('/v1/locations/:id/scavenge', ({ params }) => {
+    const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
+    return ok<ScavengeInfo>({
+      locationId: String(params.id),
+      fieldType: 'common',
+      dropChance: 0.25,
+      zone: 1,
+      scrapPlace: false,
+      durationSeconds: 300,
+      cooldownSeconds: 300,
+      retryAfterSeconds: retry,
+      attempts: retry > 0 ? 1 : 0,
+      qualityMin: 30,
+      qualityMax: 70,
+    });
+  }),
+  http.post('/v1/locations/:id/scavenge', () => {
     const now = Date.now();
     if (now < scavCooldownUntil) {
       const seconds = Math.ceil((scavCooldownUntil - now) / 1000);
@@ -734,29 +1025,20 @@ export const handlers = [
       );
     }
     scavCooldownUntil = now + 60_000;
-    buyCounter += 1;
-    const id = `part-scav-${buyCounter}`;
-    inventoryState.push({
-      id,
-      partType: 'cargo',
-      displayName: partNameOf('cargo'),
-      condition: 40,
-      location: 'INVENTORY',
-      shipId: null,
-      catalog: catalog('cargo', 'CARGO'),
+    return ok<DispatchResponse>({
+      missionId: 'scavenge-1',
+      arrivalAt: new Date(now + 300_000).toISOString(),
+      serverTime: new Date(now).toISOString(),
+      durationSeconds: 300,
     });
-    return ok<ScavengeResponse>({
-      locationId: String(params.id),
-      attempt: 1,
-      fieldType: 'common',
-      dropped: true,
-      part: {
-        partInstanceId: id,
-        partType: 'cargo',
-        displayName: { en: 'Cargo Rack', 'pt-BR': 'Suporte de Carga' },
-        condition: 40,
-      },
-      cooldownSeconds: 60,
+  }),
+  http.post('/v1/locations/:id/mine', () => {
+    const now = Date.now();
+    return ok<DispatchResponse>({
+      missionId: 'mining-job-1',
+      arrivalAt: new Date(now + 300_000).toISOString(),
+      serverTime: new Date(now).toISOString(),
+      durationSeconds: 300,
     });
   }),
 ];
@@ -766,11 +1048,45 @@ const reportLine = (text: string) => ({
   segments: [{ t: 'text' as const, value: text }],
 });
 
+const reportExtras = {
+  stats: {
+    credits: 1400,
+    balanceAfter: 1400,
+    legs: 2,
+    distance: 820,
+    fights: { won: 1, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
+    damage: { shield: 4, armor: 3, hull: 2 },
+    hasShield: true,
+    partsDamage: [
+      {
+        partId: 'part-engine',
+        partType: 'engine_chem_small',
+        name: 'Small Chem Engine',
+        before: 100,
+        after: 82,
+      },
+    ],
+    partFailures: 0,
+    fuelLost: 0,
+    found: [],
+    pirates: { stolenParts: 0, motive: null },
+    loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
+  },
+  mission: {
+    type: 'DELIVERY' as const,
+    originId: 'ceres',
+    destinationId: 'hedus',
+    reward: 1200,
+    title: { en: 'Corporate Delivery', 'pt-BR': 'Entrega Corporativa' },
+  },
+};
+
 const reportFixture = (view: string): ReportResponse => {
   if (view === 'narrative') {
     return {
       locale: 'en',
       outcome: 'success',
+      ...reportExtras,
       view: 'narrative',
       chapters: [
         {
@@ -780,7 +1096,47 @@ const reportFixture = (view: string): ReportResponse => {
             reportLine('Departed Porto Ceres on schedule.'),
             {
               ...reportLine('A raider hit the hull in transit.'),
-              detail: { cascade: { shield: 4, armor: 3, hp: 2 } },
+              detail: {
+                cascade: { shield: 4, armor: 3, hp: 2 },
+                rounds: [
+                  {
+                    round: 1,
+                    attacker: 'enemy',
+                    roll: 14,
+                    pdf: 3,
+                    bonus: 2,
+                    dc: 10,
+                    hit: true,
+                    damage: 4,
+                    armorAbsorbed: 1,
+                    shieldAbsorbed: 3,
+                    hullDamage: 1,
+                  },
+                  {
+                    round: 1,
+                    attacker: 'player',
+                    roll: 6,
+                    dc: 12,
+                    hit: false,
+                    damage: 0,
+                    armorAbsorbed: 0,
+                    shieldAbsorbed: 0,
+                    hullDamage: 0,
+                  },
+                  {
+                    round: 2,
+                    attacker: 'enemy',
+                    roll: 17,
+                    pdf: 5,
+                    dc: 10,
+                    hit: true,
+                    damage: 3,
+                    armorAbsorbed: 2,
+                    shieldAbsorbed: 0,
+                    hullDamage: 1,
+                  },
+                ],
+              },
             },
           ],
         },
@@ -791,6 +1147,7 @@ const reportFixture = (view: string): ReportResponse => {
     return {
       locale: 'en',
       outcome: 'success',
+      ...reportExtras,
       view: 'log',
       lines: [
         reportLine('[00:00] depart ceres'),
@@ -802,6 +1159,7 @@ const reportFixture = (view: string): ReportResponse => {
   return {
     locale: 'en',
     outcome: 'success',
+    ...reportExtras,
     view: 'summary',
     lines: [reportLine('Mission accomplished — balance 1400 ¢'), reportLine('Payment +1400 ¢')],
   };
@@ -816,7 +1174,13 @@ const acceptedMission = (): ActiveMission => ({
   factionId: 'luna',
   originId: 'ceres',
   destinationId: 'hedus',
-  legs: [],
+  // Real missions carry this from generation onward — legWindows (timing) is the only thing
+  // written at dispatch, not the plan itself (missions.service.ts getActive spreads the DB
+  // row's own `legs` unmodified at every status).
+  legs: [
+    { routeId: 'ceres-gate', distance: 400, danger: 5, zone: 1 },
+    { routeId: 'gate-hedus', distance: 430, danger: 5, zone: 1 },
+  ],
   cargo: {},
   reward: 1200,
   expiresAt: iso(2 * 60 * 60 * 1000),
@@ -830,6 +1194,13 @@ const acceptedMission = (): ActiveMission => ({
   seed: 'seed-1',
   version: 1,
   legWindows: [],
+  brief: {
+    title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+    description: {
+      en: 'Deliver cargo from Ceres to Hedus.',
+      'pt-BR': 'Entregar carga de Ceres para Hedus.',
+    },
+  },
 });
 
 let activeState: ActiveMission | null = acceptedMission();
@@ -839,7 +1210,10 @@ export function resetActiveState(): void {
   activeState = acceptedMission();
 }
 
-const boardOffer = (over: Partial<MissionOffer> & { id: string }): MissionOffer => ({
+const boardOffer = (
+  over: Partial<MissionOffer> & { id: string },
+  infoOverride: Partial<MissionOffer['info']> = {},
+): MissionOffer => ({
   templateId: `tpl-${over.id}`,
   type: 'DELIVERY',
   factionId: 'luna',
@@ -860,6 +1234,21 @@ const boardOffer = (over: Partial<MissionOffer> & { id: string }): MissionOffer 
   version: 1,
   rewardEstimate: 1350,
   eligibility: { eligible: true, reasons: [] },
+  info: {
+    title: { en: 'Corporate Delivery', 'pt-BR': 'Entrega Corporativa' },
+    description: {
+      en: 'Deliver sealed cargo to the destination.',
+      'pt-BR': 'Entregue a carga lacrada no destino.',
+    },
+    legCount: 2,
+    totalDistance: 820,
+    peakDanger: 5,
+    peakZone: 1,
+    estimate: { durationSeconds: 300, fuelNeeded: 8 },
+    material: null,
+    requirements: [],
+    ...infoOverride,
+  },
   ...over,
 });
 
@@ -872,20 +1261,28 @@ const boardState: MissionOffer[] = [
     reward: 800,
     rewardEstimate: 900,
   }),
-  boardOffer({
-    id: 'b-3',
-    type: 'MINING',
-    destinationId: 'spur',
-    reward: 2400,
-    rewardEstimate: 2600,
-    eligibility: {
-      eligible: false,
-      reasons: [
-        { code: 'MINER', message: 'Needs a mining system' },
-        { code: 'MOB_TOO_LOW', message: 'Mobility too low' },
+  boardOffer(
+    {
+      id: 'b-3',
+      type: 'MINING',
+      destinationId: 'spur',
+      reward: 2400,
+      rewardEstimate: 2600,
+      eligibility: {
+        eligible: false,
+        reasons: [
+          { code: 'MINER', message: 'Needs a mining system' },
+          { code: 'MOB_TOO_LOW', message: 'Mobility too low' },
+        ],
+      },
+    },
+    {
+      requirements: [
+        { code: 'MINER', message: 'Needs a mining system', met: false },
+        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true },
       ],
     },
-  }),
+  ),
   boardOffer({
     id: 'b-4',
     type: 'RESCUE',

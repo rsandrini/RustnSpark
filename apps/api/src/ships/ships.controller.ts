@@ -17,7 +17,14 @@ import {
 import { OwnedResource } from '../common/decorators/owned-resource.decorator.js';
 import { OwnershipGuard } from '../common/guards/ownership.guard.js';
 import { ShipsService } from './ships.service.js';
-import { AssembleDto, AutoAssembleDto, PreviewDto, StanceDto } from './dto/ship-operations.dto.js';
+import {
+  AssembleDto,
+  AutoAssembleDto,
+  EnergyModeDto,
+  PreviewDto,
+  SetFormatDto,
+  StanceDto,
+} from './dto/ship-operations.dto.js';
 
 @Controller('ships')
 export class ShipsController {
@@ -57,7 +64,13 @@ export class ShipsController {
   @UseGuards(OwnershipGuard)
   @OwnedResource({ type: 'ship', param: 'id' })
   preview(@Param('id') shipId: string, @Body() dto: PreviewDto) {
-    return this.shipsService.preview(shipId, dto.layout, dto.partInstanceIds);
+    return this.shipsService.preview(
+      shipId,
+      dto.layout,
+      dto.partInstanceIds,
+      dto.virtualPart,
+      dto.replacePartInstanceId,
+    );
   }
 
   @Post(':id/stance')
@@ -66,5 +79,21 @@ export class ShipsController {
   @OwnedResource({ type: 'ship', param: 'id' })
   stance(@Param('id') shipId: string, @Body() dto: StanceDto) {
     return this.shipsService.setStance(shipId, dto.stance);
+  }
+
+  @Post(':id/energy-mode')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  energyMode(@Param('id') shipId: string, @Body() dto: EnergyModeDto) {
+    return this.shipsService.setEnergyMode(shipId, dto.energyMode);
+  }
+
+  @Post(':id/format')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  setFormat(@Param('id') shipId: string, @Body() dto: SetFormatDto) {
+    return this.shipsService.setFormat(shipId, dto.formatId);
   }
 }

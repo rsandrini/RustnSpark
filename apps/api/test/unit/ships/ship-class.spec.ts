@@ -94,4 +94,27 @@ describe('deriveShipClass', () => {
     ]);
     expect(deriveShipClass(parts, rules)).toBe('HAULER');
   });
+
+  it('judges a small ship by its own shape, not by the bridge budget', () => {
+    // 6 + 4 + 4 + 4 = 18 structure fitted, 8 of it cargo (44 %): a hauler despite the 100 budget.
+    expect(
+      deriveShipClass(
+        buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'cargo']),
+        rules,
+      ),
+    ).toBe('HAULER');
+    // Engine + two weapons + armor: 6 + 5 + 7 + 12 = 30 fitted, 24 of it combat (80 %).
+    expect(
+      deriveShipClass(
+        buildInstalled([
+          'bridge',
+          'engine_chem_small',
+          'weapon_ballistic',
+          'weapon_laser',
+          'armor_plate',
+        ]),
+        rules,
+      ),
+    ).toBe('WARSHIP');
+  });
 });

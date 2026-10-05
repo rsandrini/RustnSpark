@@ -20,6 +20,9 @@ export interface RewardBaseInput {
  *  × (1 + (distance − reward_distance_ref) / reward_distance_divisor) × type_bonus`.
  */
 export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
+  // A trip the pilot asked for pays nothing: it costs fuel and time, nothing more.
+  const type = input.missionType.toUpperCase();
+  if (type === 'TRAVEL' || type === 'SCAVENGE') return 0;
   const e = rules.economy;
   const tierBase = e.reward_base + input.tier * e.reward_per_tier;
   const dangerMod = 1 + input.danger / e.reward_danger_divisor;

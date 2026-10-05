@@ -123,14 +123,27 @@ export type PartCatalogStats = z.infer<typeof PartCatalogStatsSchema>;
 
 export const PartLocationSchema = z.enum(['INVENTORY', 'INSTALLED']);
 
+export const ConnectorCellSchema = z.object({
+  dx: z.number(),
+  dy: z.number(),
+  side: z.enum(['N', 'E', 'S', 'W']),
+  kind: z.enum(['none', 'central', 'split', 'universal']),
+});
+export type ConnectorCell = z.infer<typeof ConnectorCellSchema>;
+
 export const InventoryItemSchema = z.object({
   id: z.string(),
   partType: z.string(),
   displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  rarity: z.string(),
   condition: z.number(),
+  /** Dead: at or below the wear threshold, it counts for nothing until repaired. */
+  broken: z.boolean(),
   location: PartLocationSchema,
   shipId: z.string().nullable(),
   catalog: PartCatalogStatsSchema,
+  connectors: z.array(ConnectorCellSchema),
 });
 export type InventoryItem = z.infer<typeof InventoryItemSchema>;
 
@@ -176,6 +189,9 @@ export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 
 export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 
+export const EnergyModeSchema = z.enum(['BATTERY', 'FULL', 'OVERRIDE']);
+export type EnergyMode = z.infer<typeof EnergyModeSchema>;
+
 export const ShipResponseSchema = z.object({
   id: z.string(),
   ownerPlayerId: z.string(),
@@ -184,13 +200,33 @@ export const ShipResponseSchema = z.object({
   status: ShipStatusSchema,
   currentLocationId: z.string(),
   stance: ShipStanceSchema,
+  energyMode: EnergyModeSchema,
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
-  /** The assembly yard: cells run [-halfSize, halfSize) on both axes. */
-  yard: z.object({ halfSize: z.number() }),
+  /** The assembly yard: exactly these cells (relative to the bridge at [0,0]) are buildable —
+      the ship's own ShipFormat selection, not a fixed bound. */
+  yard: z.object({ cells: z.array(z.tuple([z.number(), z.number()])) }),
+  /** Installed part instance ids with no compatible connector chain back to the bridge right
+      now — still counted as mass/structure/HP, not contributing anything else. */
+  disconnectedPartIds: z.array(z.string()),
+  /** What the ship is doing now: drives the animated ship stage. */
+  activity: z.object({
+    kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
+    until: IsoDate.nullable(),
+    missionId: z.string().nullable(),
+  }),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
+
+export const ShipFormatSchema = z.object({
+  id: z.string(),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  cells: z.array(z.tuple([z.number(), z.number()])),
+  minRarity: z.string(),
+});
+export type ShipFormat = z.infer<typeof ShipFormatSchema>;
 
 export const ProblemSchema = z.object({ code: z.string(), message: z.string() });
 export type Problem = z.infer<typeof ProblemSchema>;
@@ -201,6 +237,7 @@ export const PreviewResponseSchema = z.object({
   viability: z.object({ viable: z.boolean(), problems: z.array(ProblemSchema) }),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
+  disconnectedPartIds: z.array(z.string()),
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
 
@@ -218,7 +255,15 @@ export type RescueResponse = z.infer<typeof RescueResponseSchema>;
 // World, board, missions
 // ---------------------------------------------------------------------------------------------
 
-export const MissionTypeSchema = z.enum(['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE']);
+export const MissionTypeSchema = z.enum([
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'TRAVEL',
+  'SCAVENGE',
+]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
 export const MissionStatusSchema = z.enum([
@@ -278,6 +323,15 @@ export const BoardEligibilitySchema = z.object({
 });
 export type BoardEligibility = z.infer<typeof BoardEligibilitySchema>;
 
+/** One requirement check, always present regardless of pass/fail (round 10: "show the
+    requirements for the mission, in a clear way, not only the text"). */
+export const RequirementCheckSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  met: z.boolean(),
+});
+export type RequirementCheck = z.infer<typeof RequirementCheckSchema>;
+
 export const MissionInstanceDataSchema = z.object({
   id: z.string(),
   templateId: z.string(),
@@ -303,9 +357,28 @@ export const MissionInstanceDataSchema = z.object({
 export type MissionInstanceData = z.infer<typeof MissionInstanceDataSchema>;
 
 /** GET /v1/locations/:id/missions — board rows carry the estimate and the upfront verdict. */
+export const OfferInfoSchema = z.object({
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  legCount: z.number(),
+  totalDistance: z.number(),
+  peakDanger: z.number(),
+  peakZone: z.number(),
+  /** Time and fuel for the viewer's own ship; null when they have no flyable ship. */
+  estimate: z.object({ durationSeconds: z.number(), fuelNeeded: z.number() }).nullable(),
+  /** Mining offers: what to dig for. */
+  material: z
+    .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })
+    .nullable(),
+  /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
+  requirements: z.array(RequirementCheckSchema),
+});
+export type OfferInfo = z.infer<typeof OfferInfoSchema>;
+
 export const MissionOfferSchema = MissionInstanceDataSchema.extend({
   rewardEstimate: z.number(),
   eligibility: BoardEligibilitySchema,
+  info: OfferInfoSchema,
 });
 export type MissionOffer = z.infer<typeof MissionOfferSchema>;
 
@@ -317,9 +390,17 @@ export const LegWindowSchema = z.object({
 });
 export type LegWindow = z.infer<typeof LegWindowSchema>;
 
+/** Just enough of the template's own words to caption an active mission (title + full brief). */
+export const MissionBriefSchema = z.object({
+  title: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+});
+export type MissionBrief = z.infer<typeof MissionBriefSchema>;
+
 /** GET /v1/missions/active — the raw instance plus the in-transit leg windows (empty before dispatch). */
 export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   legWindows: z.array(LegWindowSchema),
+  brief: MissionBriefSchema,
 });
 export type ActiveMission = z.infer<typeof ActiveMissionSchema>;
 
@@ -365,8 +446,30 @@ export const MissionDamageCascadeSchema = z.object({
 });
 export type MissionDamageCascade = z.infer<typeof MissionDamageCascadeSchema>;
 
+/** One attack inside a fight's round-by-round log (player's own perspective). */
+export const MissionCombatRoundSchema = z.object({
+  round: z.number(),
+  attacker: z.enum(['player', 'enemy']),
+  roll: z.number(),
+  // Optional: reports resolved before this breakdown existed have rounds but no pdf/bonus.
+  pdf: z.number().optional(),
+  bonus: z.number().optional(),
+  dc: z.number(),
+  hit: z.boolean(),
+  damage: z.number(),
+  armorAbsorbed: z.number(),
+  shieldAbsorbed: z.number(),
+  hullDamage: z.number(),
+});
+export type MissionCombatRound = z.infer<typeof MissionCombatRoundSchema>;
+
 export const NarrativeLineSchema = ReportLineSchema.extend({
-  detail: z.object({ cascade: MissionDamageCascadeSchema }).optional(),
+  detail: z
+    .object({
+      cascade: MissionDamageCascadeSchema,
+      rounds: z.array(MissionCombatRoundSchema).optional(),
+    })
+    .optional(),
 });
 export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
 
@@ -377,7 +480,61 @@ export const NarrativeChapterSchema = z.object({
 });
 export type NarrativeChapter = z.infer<typeof NarrativeChapterSchema>;
 
-const reportBase = { locale: z.string(), outcome: z.string() };
+export const ReportStatsSchema = z.object({
+  credits: z.number(),
+  balanceAfter: z.number().nullable(),
+  legs: z.number(),
+  distance: z.number(),
+  fights: z.object({
+    won: z.number(),
+    lost: z.number(),
+    escaped: z.number(),
+    drawn: z.number(),
+    pvp: z.number(),
+  }),
+  damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+  /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
+  hasShield: z.boolean(),
+  /** Every part that lost condition during the run, dispatch vs final. */
+  partsDamage: z.array(
+    z.object({
+      partId: z.string(),
+      partType: z.string(),
+      name: z.string(),
+      before: z.number(),
+      after: z.number(),
+    }),
+  ),
+  partFailures: z.number(),
+  fuelLost: z.number(),
+  found: z.array(
+    z.object({
+      kind: z.enum(['part', 'scrap']),
+      partType: z.string(),
+      name: z.string(),
+      condition: z.number(),
+    }),
+  ),
+  pirates: z.object({ stolenParts: z.number(), motive: z.string().nullable() }),
+  loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
+});
+export type ReportStats = z.infer<typeof ReportStatsSchema>;
+
+export const ReportMissionSchema = z.object({
+  type: MissionTypeSchema,
+  originId: z.string(),
+  destinationId: z.string(),
+  reward: z.number(),
+  title: LocalizedTextSchema,
+});
+export type ReportMission = z.infer<typeof ReportMissionSchema>;
+
+const reportBase = {
+  locale: z.string(),
+  outcome: z.string(),
+  stats: ReportStatsSchema,
+  mission: ReportMissionSchema.optional(),
+};
 export const ReportResponseSchema = z.discriminatedUnion('view', [
   z.object({ ...reportBase, view: z.literal('summary'), lines: z.array(ReportLineSchema) }),
   z.object({ ...reportBase, view: z.literal('log'), lines: z.array(ReportLineSchema) }),
@@ -395,6 +552,9 @@ export const ReportListItemSchema = z.object({
   credits: z.number(),
   legs: z.number(),
   createdAt: IsoDate,
+  /** Any combat-category event in the run (win/loss/draw/escort-absorbed/escaped/PvP) — the
+      mission history list's own "Combat" flag, owner request. */
+  hadCombat: z.boolean(),
 });
 export type ReportListItem = z.infer<typeof ReportListItemSchema>;
 
@@ -426,6 +586,10 @@ export const MarketListingSchema = z.object({
   partType: z.string(),
   partClass: z.string(),
   displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  rarity: z.string(),
+  /** The part's stats, so a listing can be inspected before buying. */
+  catalog: PartCatalogStatsSchema,
   condition: z.number(),
   price: z.number(),
 });
@@ -439,8 +603,13 @@ export const MarketResponseSchema = z.object({
   locationId: z.string(),
   listings: z.array(MarketListingSchema),
   sellOffers: z.array(SellOfferSchema),
+  /** Parts below this condition (%) are refused at every port: no quote is given for them. */
+  sellMinCondition: z.number(),
 });
 export type MarketResponse = z.infer<typeof MarketResponseSchema>;
+
+export const DiscardResponseSchema = z.object({ discarded: z.number() });
+export type DiscardResponse = z.infer<typeof DiscardResponseSchema>;
 
 export const BuyResponseSchema = z.object({
   partInstanceId: z.string(),
@@ -491,10 +660,28 @@ export const RefuelResponseSchema = z.object({
 });
 export type RefuelResponse = z.infer<typeof RefuelResponseSchema>;
 
+export const RefuelQuoteResponseSchema = z.object({
+  shipId: z.string(),
+  units: z.number(),
+  cost: z.number(),
+  /** Price of one unit here; cost for n units is max(1, round(n × unitPrice)). */
+  unitPrice: z.number(),
+  fuel: z.number(),
+  fuelCap: z.number(),
+  /** Room left in the tank. */
+  space: z.number(),
+});
+export type RefuelQuoteResponse = z.infer<typeof RefuelQuoteResponseSchema>;
+
 export const RepairQuoteResponseSchema = z.object({
   shipId: z.string(),
   cost: z.number(),
   durationSeconds: z.number(),
+  /** Each target's own price and time; `fee` is the workshop charge, so items + fee = cost. */
+  items: z.array(
+    z.object({ partInstanceId: z.string(), cost: z.number(), durationSeconds: z.number() }),
+  ),
+  fee: z.number(),
 });
 export type RepairQuoteResponse = z.infer<typeof RepairQuoteResponseSchema>;
 
@@ -514,22 +701,91 @@ export const RepairStartResponseSchema = z.object({
 });
 export type RepairStartResponse = z.infer<typeof RepairStartResponseSchema>;
 
-export const ScavengeResponseSchema = z.object({
-  locationId: z.string(),
-  attempt: z.number(),
-  fieldType: z.enum(['common', 'mission', 'pirate']),
-  dropped: z.boolean(),
-  part: z
-    .object({
-      partInstanceId: z.string(),
-      partType: z.string(),
-      displayName: LocalizedTextSchema,
-      condition: z.number(),
-    })
-    .nullable(),
-  cooldownSeconds: z.number(),
+// Upgrade a part to its next rarity tier in place (round 5 backlog item 4): mechanism only, no
+// curated chains decided here — eligibility is derived from the catalog's own naming convention
+// (`hull` -> `hull_uncommon` -> `hull_rare` -> ...), so any tier the catalog happens to define is
+// automatically upgradeable and one not yet defined simply reports ineligible.
+export const PartUpgradeQuoteResponseSchema = z.object({
+  partInstanceId: z.string(),
+  eligible: z.boolean(),
+  reason: z.enum(['MAX_TIER', 'NO_NEXT_TIER', 'NOT_FULL_CONDITION']).optional(),
+  nextPartType: z.string().optional(),
+  nextDisplayName: LocalizedTextSchema.optional(),
+  cost: z.number().optional(),
+  /** The next tier's own rarity and full catalog stats, so the client can build a virtual
+      part and reuse the same before/after diff popup Market already has. */
+  nextRarity: z.string().optional(),
+  nextDescription: LocalizedTextSchema.optional(),
+  nextCatalog: PartCatalogStatsSchema.optional(),
 });
-export type ScavengeResponse = z.infer<typeof ScavengeResponseSchema>;
+export type PartUpgradeQuoteResponse = z.infer<typeof PartUpgradeQuoteResponseSchema>;
+
+export const PartUpgradeResponseSchema = z.object({
+  partInstanceId: z.string(),
+  partType: z.string(),
+  displayName: LocalizedTextSchema,
+  rarity: z.string(),
+  condition: z.number(),
+  cost: z.number(),
+  credits: z.number(),
+});
+export type PartUpgradeResponse = z.infer<typeof PartUpgradeResponseSchema>;
+
+export const ScavengeInfoSchema = z.object({
+  locationId: z.string(),
+  fieldType: z.enum(['common', 'mission', 'pirate']),
+  /** Chance of each extra find beyond the guaranteed first one. */
+  dropChance: z.number(),
+  zone: z.number(),
+  scrapPlace: z.boolean(),
+  /** How long a job takes (mission time). */
+  durationSeconds: z.number(),
+  cooldownSeconds: z.number(),
+  retryAfterSeconds: z.number(),
+  attempts: z.number(),
+  qualityMin: z.number(),
+  qualityMax: z.number(),
+});
+export type ScavengeInfo = z.infer<typeof ScavengeInfoSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Travel without a quest
+// ---------------------------------------------------------------------------------------------
+
+export const TravelBlockerSchema = z.enum([
+  'NO_SHIP',
+  'SAME_PLACE',
+  'NO_ROUTE',
+  'ACTIVE_MISSION_EXISTS',
+  'SHIP_NOT_IN_PORT',
+  'SHIP_REPAIRING',
+  'SHIP_NOT_VIABLE',
+  'NOT_ENOUGH_FUEL',
+]);
+export type TravelBlocker = z.infer<typeof TravelBlockerSchema>;
+
+export const TravelQuoteSchema = z.object({
+  originId: z.string(),
+  destinationId: z.string(),
+  legs: z.array(
+    z.object({
+      routeId: z.string(),
+      fromId: z.string(),
+      toId: z.string(),
+      distance: z.number(),
+      danger: z.number(),
+      zone: z.number(),
+    }),
+  ),
+  totalDistance: z.number(),
+  durationSeconds: z.number(),
+  fuelNeeded: z.number(),
+  fuelHave: z.number(),
+  peakDanger: z.number(),
+  blockers: z.array(TravelBlockerSchema),
+  canDepart: z.boolean(),
+});
+export type TravelQuote = z.infer<typeof TravelQuoteSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Admin tuning
@@ -603,6 +859,8 @@ export const EntityFieldTypeSchema = z.enum([
   'json',
   'enum',
   'locale-map',
+  'grid-cells',
+  'connector-layout',
 ]);
 export type EntityFieldType = z.infer<typeof EntityFieldTypeSchema>;
 

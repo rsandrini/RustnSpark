@@ -20,12 +20,15 @@ import {
   PlayerProfileResponseSchema,
   PreviewResponseSchema,
   RefreshResponseSchema,
+  RefuelQuoteResponseSchema,
   RefuelResponseSchema,
+  DiscardResponseSchema,
   RegisterResponseSchema,
   RepairQuoteResponseSchema,
   RepairStartResponseSchema,
   RescueResponseSchema,
-  ScavengeResponseSchema,
+  ScavengeInfoSchema,
+  TravelQuoteSchema,
   SellMaterialResponseSchema,
   SellResponseSchema,
   ShipResponseSchema,
@@ -239,6 +242,15 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
   it('refuel and repair (quote and start)', async () => {
     await prisma.ship.update({ where: { id: shipId }, data: { fuel: 1 } });
+    const refuelQuote = await post(`/v1/ships/${shipId}/refuel/quote`, {
+      mode: 'partial',
+      amount: 10,
+    });
+    expect(refuelQuote.status).toBe(200);
+    contract(RefuelQuoteResponseSchema, refuelQuote.body, 'POST /ships/:id/refuel/quote');
+    const discard = await post('/v1/inventory/discard', {});
+    expect(discard.status).toBe(200);
+    contract(DiscardResponseSchema, discard.body, 'POST /inventory/discard');
     const refuel = await post(`/v1/ships/${shipId}/refuel`, { mode: 'full' });
     expect(refuel.status).toBe(200);
     contract(RefuelResponseSchema, refuel.body, 'POST /ships/:id/refuel');
@@ -261,10 +273,31 @@ describe('HTTP contract: real responses match packages/contract', () => {
     await prisma.partInstance.update({ where: { id: installed.id }, data: { condition: 100 } });
   });
 
+  it('travel quote', async () => {
+    const travelQuote = await request(server)
+      .get('/v1/travel/quote?destinationId=hedus')
+      .set(auth(token));
+    expect(travelQuote.status).toBe(200);
+    contract(TravelQuoteSchema, travelQuote.body, 'GET /travel/quote');
+  });
+
   it('scavenging', async () => {
+    const scavengeInfo = await request(server).get('/v1/locations/ceres/scavenge').set(auth(token));
+    expect(scavengeInfo.status).toBe(200);
+    contract(ScavengeInfoSchema, scavengeInfo.body, 'GET /locations/:id/scavenge');
     const scavenge = await request(server).post('/v1/locations/ceres/scavenge').set(auth(token));
     expect(scavenge.status).toBe(200);
-    contract(ScavengeResponseSchema, scavenge.body, 'POST /locations/:id/scavenge');
+    contract(DispatchResponseSchema, scavenge.body, 'POST /locations/:id/scavenge');
+    // Leave the ship free for the tests that follow.
+    const jobs = await prisma.missionInstance.findMany({
+      where: { type: 'SCAVENGE' },
+      select: { id: true },
+    });
+    await prisma.routePresence.deleteMany({
+      where: { missionId: { in: jobs.map((job) => job.id) } },
+    });
+    await prisma.missionInstance.deleteMany({ where: { id: { in: jobs.map((job) => job.id) } } });
+    await prisma.ship.update({ where: { id: shipId }, data: { status: 'IN_PORT' } });
   });
 
   it('board, accept, dispatch and the active mission with its leg windows', async () => {

@@ -1,4 +1,4 @@
-import { GRID_HALF_SIZE } from './geometry.js';
+import { cellKey, formatCellsFromJson } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
   BadRequestException,
@@ -8,20 +8,35 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import type { PartCatalog as PrismaPartCatalog, PartInstance, Ship } from '@prisma/client';
+import type { PartCatalog as PrismaPartCatalog, PartInstance, Prisma, Ship } from '@prisma/client';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
+import { RIGHT_ANGLE, type ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
-import { validateLayout } from './geometry.js';
+import { applyConnectivity } from './connectivity.js';
+import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 import { checkViability, type ViabilityProblem } from './viability.js';
+
+// Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
+// apps/web's part-detail.tsx lowestRarity — a local copy, not a shared import, since
+// ships.service.ts doesn't otherwise depend on economy/part-upgrade.calculator.ts.
+const RARITY_ORDER: readonly string[] = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+
+/** What the ship is doing now (drives the ship stage on the client). */
+export interface ShipActivity {
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  /** When it ends (arrival or repair completion), if it does. */
+  readonly until: string | null;
+  readonly missionId: string | null;
+}
 
 export interface ShipResponse {
   id: string;
@@ -31,11 +46,25 @@ export interface ShipResponse {
   status: string;
   currentLocationId: string;
   stance: string;
+  energyMode: string;
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
-  yard: { halfSize: number };
+  yard: { cells: [number, number][] };
+  /** Installed part instance ids with no compatible connector chain back to the bridge right
+      now — still counted as mass/structure/HP, not contributing anything else. */
+  disconnectedPartIds: string[];
+  /** What the ship is doing now: drives the animated ship stage. */
+  activity: ShipActivity;
+}
+
+/** What the ship is doing now (flying, scavenging, repairing or idle). */
+export interface ShipActivity {
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  /** When it ends (arrival or repair completion), if it does. */
+  readonly until: string | null;
+  readonly missionId: string | null;
 }
 
 export interface PreviewResponse {
@@ -44,6 +73,7 @@ export interface PreviewResponse {
   viability: { viable: boolean; problems: ViabilityProblem[] };
   layout: Placement[];
   omittedPartInstanceIds: string[];
+  disconnectedPartIds: string[];
 }
 
 @Injectable()
@@ -69,6 +99,7 @@ export class ShipsService implements OnModuleInit {
     const ships = await this.prisma.ship.findMany({
       where: { ownerPlayerId: playerId },
       orderBy: { id: 'asc' },
+      include: { format: { select: { cells: true } } },
     });
     const rules = this.configService.snapshot().rules;
     return Promise.all(ships.map((ship) => this.toResponse(ship, rules)));
@@ -85,11 +116,13 @@ export class ShipsService implements OnModuleInit {
     this.assertCanModify(ship);
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
-    this.assertLayoutValid(layout, playerParts, shipId);
+    this.assertLayoutValid(layout, playerParts, ship);
 
-    const installed = this.buildInstalledParts(layout, playerParts);
-    const sheet = deriveSheet(installed, rules);
-    this.assertViable(sheet, installed, rules);
+    // Saving a layout never requires it to be flight-viable: a player mid-refit — say,
+    // pulling a part to sell it in Port — needs to save the smaller layout to free the part
+    // up, even though the ship can't fly yet. Viability is enforced separately, at the point
+    // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
+    // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
     await this.persistLayout(shipId, layout, playerParts);
 
@@ -103,18 +136,17 @@ export class ShipsService implements OnModuleInit {
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-    const { layout, placed, omitted } = arrange(candidateParts.map(toInstalledPart));
+    const formatCells = formatCellsFromJson(ship.format.cells);
+    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart), formatCells);
     if (omitted.length > 0) {
       throw new BadRequestException({
         error: 'AUTO_LAYOUT_OMITTED_PARTS',
         omittedPartInstanceIds: omitted.map((part) => part.instance.id),
       });
     }
-    const installed = placed;
 
-    this.assertLayoutValid(layout, playerParts, shipId);
-    const sheet = deriveSheet(installed, rules);
-    this.assertViable(sheet, installed, rules);
+    this.assertLayoutValid(layout, playerParts, ship);
+    // Same as assemble() above: saving never requires flight-viability.
 
     await this.persistLayout(shipId, layout, playerParts);
 
@@ -126,35 +158,96 @@ export class ShipsService implements OnModuleInit {
     shipId: string,
     layout?: Placement[],
     partInstanceIds?: string[],
+    virtualPart?: { partType: string; condition: number },
+    replacePartInstanceId?: string,
   ): Promise<PreviewResponse> {
     const { ship, rules } = await this.loadShipWithRules(shipId);
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+
+    if (virtualPart !== undefined) {
+      return this.previewWithVirtualPart(ship, rules, playerParts, virtualPart, replacePartInstanceId);
+    }
 
     let installed: InstalledPart[];
     let effectiveLayout: Placement[];
     let omittedPartInstanceIds: string[] = [];
 
+    const formatCells = formatCellsFromJson(ship.format.cells);
     if (layout !== undefined && layout.length > 0) {
-      this.assertLayoutValid(layout, playerParts, shipId);
+      this.assertLayoutValid(layout, playerParts, ship);
       effectiveLayout = layout;
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      const arranged = arrange(candidateParts.map(toInstalledPart));
+      const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
       installed = arranged.placed;
       effectiveLayout = arranged.layout;
       omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
-      this.assertLayoutValid(effectiveLayout, playerParts, shipId);
+      this.assertLayoutValid(effectiveLayout, playerParts, ship);
     }
 
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      playerParts.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance);
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const viability = checkViability(sheet, installedConnected, rules);
+    return {
+      sheet,
+      shipClass: deriveShipClass(installedConnected, rules),
+      viability,
+      layout: effectiveLayout,
+      omittedPartInstanceIds,
+      disconnectedPartIds: installed
+        .filter((p) => !connectedIds.has(p.instance.id))
+        .map((p) => p.instance.id),
+    };
+  }
+
+  // Market-compare only: builds the sheet as if `virtualPart` (a catalog type the player does not
+  // yet own) were installed in place of `replacePartInstanceId` (or simply added, when omitted).
+  // Skips arrange()/assertLayoutValid() entirely — a stat preview needs no real grid slot, only
+  // deriveSheet()'s per-part stat sums, so the virtual part's own condition is all it contributes.
+  private async previewWithVirtualPart(
+    ship: Ship,
+    rules: GameRules,
+    playerParts: PartInstanceWithCatalog[],
+    virtualPart: { partType: string; condition: number },
+    replacePartInstanceId?: string,
+  ): Promise<PreviewResponse> {
+    const catalogRow = await this.prisma.partCatalog.findUnique({
+      where: { partType: virtualPart.partType },
+    });
+    if (!catalogRow || !catalogRow.active) {
+      throw new NotFoundException('part type not found');
+    }
+
+    const installedReal = playerParts.filter(
+      (part) =>
+        part.location === 'INSTALLED' &&
+        part.shipId === ship.id &&
+        part.id !== replacePartInstanceId,
+    );
+    const synthetic: InstalledPart = {
+      instance: {
+        id: 'virtual',
+        partType: virtualPart.partType,
+        condition: virtualPart.condition,
+      },
+      catalog: pickCatalogStats(catalogRow),
+    };
+    const installed = [...installedReal.map(toInstalledPart), synthetic];
     const sheet = deriveSheet(installed, rules);
     const viability = checkViability(sheet, installed, rules);
     return {
       sheet,
       shipClass: deriveShipClass(installed, rules),
       viability,
-      layout: effectiveLayout,
-      omittedPartInstanceIds,
+      layout: (ship.layout as unknown as Placement[]) ?? [],
+      omittedPartInstanceIds: [],
+      disconnectedPartIds: [],
     };
   }
 
@@ -165,17 +258,114 @@ export class ShipsService implements OnModuleInit {
     const updated = await this.prisma.ship.update({
       where: { id: shipId },
       data: { stance },
+      include: { format: { select: { cells: true } } },
     });
     return this.toResponse(updated, rules);
   }
 
-  private async loadShip(shipId: string): Promise<Ship> {
-    const ship = await this.prisma.ship.findUnique({ where: { id: shipId } });
-    if (!ship) throw new NotFoundException('ship not found');
-    return ship;
+  async setEnergyMode(shipId: string, energyMode: string): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+
+    const updated = await this.prisma.ship.update({
+      where: { id: shipId },
+      data: { energyMode },
+      include: { format: { select: { cells: true } } },
+    });
+    return this.toResponse(updated, rules);
   }
 
-  private async loadShipWithRules(shipId: string): Promise<{ ship: Ship; rules: GameRules }> {
+  async listFormats(playerId: string): Promise<Array<{
+    id: string;
+    displayName: unknown;
+    description: unknown;
+    cells: [number, number][];
+    minRarity: string;
+  }>> {
+    const ship = await this.prisma.ship.findFirst({ where: { ownerPlayerId: playerId } });
+    const bridgeRarity = await this.currentBridgeRarity(ship);
+    const rarityRank = RARITY_ORDER.indexOf(bridgeRarity);
+    const formats = await this.prisma.shipFormat.findMany({ where: { active: true } });
+    return formats
+      .filter((format) => RARITY_ORDER.indexOf(format.minRarity) <= rarityRank)
+      .map((format) => ({
+        id: format.id,
+        displayName: format.displayName,
+        description: format.description,
+        cells: format.cells as [number, number][],
+        minRarity: format.minRarity,
+      }));
+  }
+
+  async setFormat(shipId: string, formatId: string): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+
+    const target = await this.prisma.shipFormat.findUnique({ where: { id: formatId } });
+    if (!target || !target.active) {
+      throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+    }
+    const bridgeRarity = await this.currentBridgeRarity(ship);
+    if (RARITY_ORDER.indexOf(target.minRarity) > RARITY_ORDER.indexOf(bridgeRarity)) {
+      throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+    }
+
+    const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+    const catalogMap = buildCatalogMapFromPrisma(playerParts);
+    const newCells = formatCellsFromJson(target.cells);
+    const currentLayout = (ship.layout as unknown as Placement[]) ?? [];
+
+    const fits = (placement: Placement): boolean => {
+      const part = catalogMap.get(placement.partInstanceId);
+      if (part === undefined) return false;
+      const width = placement.rot === RIGHT_ANGLE ? part.h : part.w;
+      const height = placement.rot === RIGHT_ANGLE ? part.w : part.h;
+      for (let dx = 0; dx < width; dx += 1) {
+        for (let dy = 0; dy < height; dy += 1) {
+          if (!newCells.has(cellKey(placement.gx + dx, placement.gy + dy))) return false;
+        }
+      }
+      return true;
+    };
+    const keptLayout = currentLayout.filter(fits);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ship.update({
+        where: { id: shipId },
+        data: { formatId, layout: toJsonInput(keptLayout) },
+      });
+      const droppedIds = currentLayout.filter((p) => !fits(p)).map((p) => p.partInstanceId);
+      if (droppedIds.length > 0) {
+        await tx.partInstance.updateMany({
+          where: { id: { in: droppedIds } },
+          data: { location: 'INVENTORY', shipId: null },
+        });
+      }
+    });
+
+    const updated = await this.loadShip(shipId);
+    return this.toResponse(updated, rules);
+  }
+
+  private async currentBridgeRarity(ship: Ship | null): Promise<string> {
+    if (ship === null) return 'COMMON';
+    const bridgeInstalled = await this.prisma.partInstance.findFirst({
+      where: { shipId: ship.id, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
+      include: { partCatalog: true },
+    });
+    return bridgeInstalled?.partCatalog.rarity ?? 'COMMON';
+  }
+
+  private async loadShip(shipId: string): Promise<ShipWithFormat> {
+    const ship = await this.prisma.ship.findUnique({
+      where: { id: shipId },
+      include: { format: { select: { cells: true } } },
+    });
+    if (!ship) throw new NotFoundException('ship not found');
+    return ship as ShipWithFormat;
+  }
+
+  private async loadShipWithRules(shipId: string): Promise<{ ship: ShipWithFormat; rules: GameRules }> {
     const ship = await this.loadShip(shipId);
     const rules = this.configService.snapshot().rules;
     return { ship, rules };
@@ -190,7 +380,7 @@ export class ShipsService implements OnModuleInit {
   private assertLayoutValid(
     layout: Placement[],
     playerParts: PartInstanceWithCatalog[],
-    shipId: string,
+    ship: ShipWithFormat,
   ): void {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     if (layoutIds.size !== layout.length) {
@@ -205,13 +395,13 @@ export class ShipsService implements OnModuleInit {
       if (!part) {
         throw new ForbiddenException('layout references a part not owned by player');
       }
-      if (part.location === 'INSTALLED' && part.shipId !== shipId) {
+      if (part.location === 'INSTALLED' && part.shipId !== ship.id) {
         throw new ConflictException('part is installed in another ship');
       }
     }
 
     const catalogMap = buildCatalogMapFromPrisma(playerParts);
-    const geometryErrors = validateLayout(layout, catalogMap);
+    const geometryErrors = validateLayout(layout, catalogMap, formatCellsFromJson(ship.format.cells));
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
         error: 'INVALID_LAYOUT',
@@ -247,13 +437,6 @@ export class ShipsService implements OnModuleInit {
     return playerParts.filter((part) => allowed.has(part.id));
   }
 
-  private assertViable(sheet: ShipSheet, installed: InstalledPart[], rules: GameRules): void {
-    const { viable, problems } = checkViability(sheet, installed, rules);
-    if (!viable) {
-      throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems });
-    }
-  }
-
   private async persistLayout(
     shipId: string,
     layout: Placement[],
@@ -285,12 +468,21 @@ export class ShipsService implements OnModuleInit {
     });
   }
 
-  private async toResponse(ship: Ship, rules: GameRules): Promise<ShipResponse> {
+  private async toResponse(ship: ShipWithFormat, rules: GameRules): Promise<ShipResponse> {
     const parts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
-    const installed = parts
-      .filter((part) => part.location === 'INSTALLED' && part.shipId === ship.id)
-      .map(toInstalledPart);
-    const sheet = deriveSheet(installed, rules);
+    const installedRows = parts.filter(
+      (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
+    );
+    const installed = installedRows.map(toInstalledPart);
+    const shipLayout = (ship.layout as unknown as Placement[]) ?? [];
+    const catalogForConnectivity = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectorsByInstance = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
+    const installedConnected = applyConnectivity(installed, connectedIds);
+    const sheet = deriveSheet(installedConnected, rules);
+    const activity = await this.activityOf(ship);
     return {
       id: ship.id,
       ownerPlayerId: ship.ownerPlayerId,
@@ -299,15 +491,53 @@ export class ShipsService implements OnModuleInit {
       status: ship.status,
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
-      layout: (ship.layout as unknown as Placement[]) ?? [],
+      energyMode: ship.energyMode,
+      layout: shipLayout,
       sheet,
-      shipClass: deriveShipClass(installed, rules),
-      yard: { halfSize: GRID_HALF_SIZE },
+      shipClass: deriveShipClass(installedConnected, rules),
+      disconnectedPartIds: installedRows
+        .filter((row) => !connectedIds.has(row.id))
+        .map((row) => row.id),
+      yard: { cells: ship.format.cells as [number, number][] },
+      activity,
     };
+  }
+
+  /**
+   * What the ship is doing right now, for the animated ship stage: flying (a mission or a trip in
+   * flight), scavenging (a scavenging job), repairing (a pending repair job) or idle. Read from the
+   * mission and repair rows, so it can never disagree with them.
+   */
+  private async activityOf(ship: Ship): Promise<ShipActivity> {
+    const [mission, repair] = await Promise.all([
+      this.prisma.missionInstance.findFirst({
+        where: { shipId: ship.id, status: { in: ['IN_TRANSIT', 'RESOLVING'] } },
+        select: { id: true, type: true, arrivalAt: true },
+      }),
+      this.prisma.repairJob.findFirst({
+        where: { shipId: ship.id, status: 'PENDING' },
+        select: { completesAt: true },
+      }),
+    ]);
+    if (mission !== null) {
+      return {
+        kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : 'flying',
+        until: mission.arrivalAt?.toISOString() ?? null,
+        missionId: mission.id,
+      };
+    }
+    if (repair !== null) {
+      return { kind: 'repairing', until: repair.completesAt.toISOString(), missionId: null };
+    }
+    return { kind: 'idle', until: null, missionId: null };
   }
 }
 
 type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog };
+
+type ShipWithFormat = Prisma.ShipGetPayload<{
+  include: { format: { select: { cells: true } } };
+}>;
 
 function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
   return { instance: part, catalog: pickCatalogStats(part.partCatalog) };
@@ -315,12 +545,15 @@ function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
 
 // autoLayout may leave parts out when they do not fit; callers must derive and check the sheet
 // from `placed` (what is actually saved), never from the requested list.
-function arrange(requested: InstalledPart[]): {
+function arrange(
+  requested: InstalledPart[],
+  formatCells: ReadonlySet<string>,
+): {
   layout: Placement[];
   placed: InstalledPart[];
   omitted: InstalledPart[];
 } {
-  const layout = autoLayout(requested, buildCatalogMap(requested));
+  const layout = autoLayout(requested, buildCatalogMap(requested), formatCells);
   const placedIds = new Set(layout.map((placement) => placement.partInstanceId));
   return {
     layout,

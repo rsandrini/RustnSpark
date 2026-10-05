@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { Player, Prisma } from '@prisma/client';
+import { PasswordService } from '../../auth/password.service.js';
 import { GameConfigService } from '../../config/game-config.service.js';
 import { OnboardingService } from '../../players/onboarding.service.js';
 import { WalletError, WalletService } from '../../players/wallet.service.js';
@@ -62,6 +63,7 @@ export class SupportService {
     private readonly config: GameConfigService,
     private readonly onboarding: OnboardingService,
     private readonly accounts: AccountStatusCache,
+    private readonly passwords: PasswordService,
   ) {}
 
   async grantCredits(
@@ -128,6 +130,26 @@ export class SupportService {
     // After the commit, so a request racing the transaction cannot re-cache the old status.
     if (bannedAccountId !== undefined) this.accounts.forget(bannedAccountId);
     return result;
+  }
+
+  // There is no self-service or forgot-password flow yet (round-2 playtest gap): this is the
+  // only way to recover a locked-out account short of the local `set-password.cli.ts`. Same
+  // bounds as registration (SetPasswordDto). The audit row never carries the password itself,
+  // hashed or not — only that one was set.
+  async setPassword(
+    playerId: string,
+    password: string,
+    context: SupportContext,
+  ): Promise<SupportActionResult> {
+    return this.run(playerId, context, 'SUPPORT_SET_PASSWORD', async (tx, player) => {
+      const account = await tx.account.findUnique({ where: { id: player.accountId } });
+      if (account === null) throw new NotFoundException('account not found');
+      const passwordHash = await this.passwords.hash(password);
+      await tx.account.update({ where: { id: account.id }, data: { passwordHash } });
+      // Force a fresh login everywhere the old password was still signed in.
+      await tx.refreshToken.deleteMany({ where: { accountId: account.id } });
+      return { before: { passwordChanged: false }, after: { passwordChanged: true } };
+    });
   }
 
   async unstickShip(
@@ -261,6 +283,20 @@ export class SupportService {
         activeMissions: 0,
       };
       return { before, after };
+    });
+  }
+
+  // Owner-only debug switch (round-2 playtest follow-up): per account by design, never a global
+  // config value — a global one would speed up every player's jobs. See config/debug-timing.ts.
+  async setDebugFastOps(
+    playerId: string,
+    enabled: boolean,
+    context: SupportContext,
+  ): Promise<SupportActionResult> {
+    return this.run(playerId, context, 'SUPPORT_SET_DEBUG_FAST_OPS', async (tx, player) => {
+      const before = { debugFastOps: player.debugFastOps };
+      await tx.player.update({ where: { id: playerId }, data: { debugFastOps: enabled } });
+      return { before, after: { debugFastOps: enabled } };
     });
   }
 

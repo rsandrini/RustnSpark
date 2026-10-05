@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
+import { factionCardStyle } from '../../ui/factionArt';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 
@@ -24,7 +25,7 @@ export function OnboardingRoute() {
     return <Navigate to="/login" replace />;
   }
   if (user.factionId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/hangar" replace />;
   }
   return <OnboardingPage />;
 }
@@ -40,7 +41,7 @@ export function OnboardingPage() {
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
-      void navigate('/');
+      void navigate('/hangar');
     },
   });
 
@@ -63,7 +64,11 @@ export function OnboardingPage() {
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
         <legend className="sr-only">{t('onboarding.title')}</legend>
         {PLAYABLE_FACTIONS.map((faction) => (
-          <label key={faction} className={`faction-card${selected === faction ? ' on' : ''}`}>
+          <label
+            key={faction}
+            className={`faction-card${selected === faction ? ' on' : ''}`}
+            style={factionCardStyle(faction)}
+          >
             <input
               type="radio"
               name="faction"

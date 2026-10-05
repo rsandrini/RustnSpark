@@ -1,6 +1,6 @@
 {
   "variants": [
-    "{part} travou sob empuxo — condição {condition}, {conditionLost} pontos a menos. A perna é dada como perdida; a missão também.",
-    "A propulsão parou no meio da queimada: {part} em {condition} após {conditionLost} pontos. O aborto vale."
+    "{part} travou sob empuxo — condição {condition}, {conditionLost} pontos a menos. Peso morto agora; o que ainda estiver queimando tem que carregar a nave sozinho.",
+    "A propulsão parou no meio da queimada: {part} em {condition} após {conditionLost} pontos. Um motor a menos para empurrar."
   ]
 }

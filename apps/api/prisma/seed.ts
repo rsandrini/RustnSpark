@@ -3,9 +3,10 @@ import { seedDropTables } from './seed-data/drop-tables.js';
 import { seedEnvironments } from './seed-data/environments.js';
 import { seedFactions } from './seed-data/factions.js';
 import { seedGameConfig } from './seed-data/game-config.js';
-import { seedMaterials } from './seed-data/materials.js';
+import { seedMaterials, seedScrapMaterials } from './seed-data/materials.js';
 import { seedMissionTemplates } from './seed-data/mission-templates.js';
 import { seedParts } from './seed-data/parts.js';
+import { seedShipFormats } from './seed-data/ship-formats.js';
 import { seedWorld } from './seed-data/world-builder.js';
 
 export async function seed(prisma?: PrismaClient): Promise<void> {
@@ -16,8 +17,10 @@ export async function seed(prisma?: PrismaClient): Promise<void> {
     await seedFactions(client);
     await seedEnvironments(client);
     await seedWorld(client);
+    await seedShipFormats(client);
     await seedParts(client);
     await seedMaterials(client);
+    await seedScrapMaterials(client);
     await seedMissionTemplates(client);
     await seedDropTables(client);
     await seedGameConfig(client);

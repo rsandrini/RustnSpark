@@ -214,7 +214,9 @@ describe('config tuning (S3.7)', () => {
     const expectedRevision = await getCurrentRevision(prisma);
     const before = gameConfigService.snapshot();
 
-    // At 60 the worst-case kit sells for 1472¢ ≥ rescue_cost 800¢.
+    // At condition 60 the worst-case kit sells for 1409¢ ≥ rescue_cost 800¢ (both numbers
+    // move with the live parts catalog's basePrice — worstCaseRestartKitValue recomputes
+    // from whatever is seeded, so this is a real boundary check, not a pinned constant).
     const condition = await request(server)
       .patch('/v1/admin/tuning/config/parts.restart_condition_max')
       .set('Authorization', `Bearer ${token}`)
@@ -227,7 +229,8 @@ describe('config tuning (S3.7)', () => {
       ],
     });
 
-    // Lowering rescue_cost below the kit's worst-case 737¢ is the same violation.
+    // Lowering rescue_cost below the kit's worst-case (706¢ at the default condition 30) is
+    // the same violation.
     const rescue = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
@@ -238,16 +241,16 @@ describe('config tuning (S3.7)', () => {
       issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
     });
 
-    // 737 < 750 still holds, so the same key accepts a safe value.
+    // 706 < 710 still holds, so the same key accepts a safe value.
     const allowed = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 750, expectedRevision, reason: 'slightly cheaper rescue' });
+      .send({ value: 710, expectedRevision, reason: 'slightly cheaper rescue' });
     expect(allowed.status).toBe(200);
 
     const after = gameConfigService.snapshot();
     expect(after.rules.parts.restart_condition_max).toBe(before.rules.parts.restart_condition_max);
-    expect(after.rules.economy.rescue_cost).toBe(750);
+    expect(after.rules.economy.rescue_cost).toBe(710);
     const conditionRevisions = await prisma.tuningRevision.findMany({
       where: { entityId: 'parts.restart_condition_max' },
     });
@@ -450,7 +453,7 @@ describe('config tuning (S3.7)', () => {
     const rejected = await request(server)
       .post('/v1/admin/tuning/bundle')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 500 }] });
+      .send({ entries: [{ key: 'economy.rescue_cost', value: 490 }] });
     expect(rejected.status).toBe(400);
 
     const listResponse = await request(server)

@@ -13,9 +13,16 @@ const MS_PER_SECOND = 1000;
 
 // Mining contracts (design missoes §4 "dois modos"): v0.1 placeholder split and quantity
 // range, both explicitly listed as calibratable later (design missoes §8).
+//
+// Quantity is capped low because a single mining stop rolls attempts_per_stop independent
+// find rolls and each success yields one unit. A starter rig (MIN 1) in open space has a
+// ~14% find chance per attempt → expected yield of ~1.4 units per mission. Asking for 5-10
+// units made contracted mining "almost always fail" even though the recent cap prevented
+// values above attempts_per_stop. Keeping the max at 3 keeps common-rarity contracts
+// achievable for starter rigs while rarer materials still reward upgrading the rig.
 const CONTRACTED_CHANCE = 0.5;
-const MIN_CONTRACT_QUANTITY = 5;
-const MAX_CONTRACT_QUANTITY = 15;
+const MIN_CONTRACT_QUANTITY = 1;
+const MAX_CONTRACT_QUANTITY = 3;
 
 // D29 finalizes reward from the accepting ship's tier; the stored figure is the
 // provisional board value at generation time (starter-ship tier).
@@ -130,26 +137,44 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
   };
 }
 
+function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
+  const requirements = requirementsOf(template);
+  const factionMatch =
+    requirements.originFactions === undefined ||
+    requirements.originFactions.includes(origin.factionId);
+  const typeMatch =
+    requirements.originTypes === undefined || requirements.originTypes.includes(origin.type);
+  return factionMatch && typeMatch;
+}
+
+/**
+ * Whether `origin` is a "minable location" (round 10: independent mining jobs) — the same
+ * eligibility a MINING board template already uses, so "minable" never drifts from whatever
+ * the admin-tunable MissionTemplate rows already say about where mining is offered.
+ */
+export function isMiningEligible(
+  origin: FillerLocation,
+  templates: readonly FillerTemplate[],
+): boolean {
+  return templates.some(
+    (template) => template.active && template.type === 'MINING' && matchesOrigin(origin, template),
+  );
+}
+
 function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTemplate[] {
   return (
     world.templates
       .filter((template) => template.active)
+      // Pilot-requested trips are never board offers.
+      .filter((template) => template.type !== 'TRAVEL' && template.type !== 'SCAVENGE')
       // A mining board offer is meaningless without a material to name.
       .filter((template) => template.type !== 'MINING' || world.materials.length > 0)
-      .filter((template) => {
-        const requirements = requirementsOf(template);
-        const factionMatch =
-          requirements.originFactions === undefined ||
-          requirements.originFactions.includes(origin.factionId);
-        const typeMatch =
-          requirements.originTypes === undefined || requirements.originTypes.includes(origin.type);
-        return factionMatch && typeMatch;
-      })
+      .filter((template) => matchesOrigin(origin, template))
       .sort(byId)
   );
 }
 
-function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]> {
+export function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]> {
   const adjacency = new Map<string, Adjacent[]>();
   const sorted = [...routes].sort(byId);
   for (const route of sorted) {
@@ -174,7 +199,7 @@ function buildAdjacency(routes: readonly FillerRoute[]): Map<string, Adjacent[]>
 
 // Deterministic Dijkstra by distance: adjacency is pre-sorted and equal distances never
 // displace an earlier discovery, so the same world always yields the same path.
-function shortestPath(
+export function shortestPath(
   originId: string,
   destinationId: string,
   adjacency: Map<string, Adjacent[]>,
@@ -235,7 +260,7 @@ function environmentForRoute(routeId: string, world: FillerWorld): FillerEnviron
 
 // Zone of a leg is the riskier of its endpoints — same "max of the two nodes" rule the
 // world builder uses for route danger (D24).
-function legForRoute(
+export function legForRoute(
   route: FillerRoute,
   locationsById: Map<string, FillerLocation>,
   world: FillerWorld,
@@ -255,14 +280,22 @@ function legForRoute(
   };
 }
 
-function miningCargo(rng: Rng, materials: readonly FillerMaterial[]): Record<string, unknown> {
+function miningCargo(
+  rng: Rng,
+  materials: readonly FillerMaterial[],
+  rules: GameRules,
+): Record<string, unknown> {
   const material = rng.child('mining').pick(materials);
   const contracted = rng.child('contracted').float() < CONTRACTED_CHANCE;
   if (contracted) {
+    // A single mining stop can yield at most attempts_per_stop units (mining.resolver.ts
+    // rolls that many independent attempts, one unit each) — a contract above that cap is
+    // unfulfillable no matter the ship's rig, so it is clamped to never exceed it.
+    const maxQuantity = Math.min(MAX_CONTRACT_QUANTITY, rules.mining.attempts_per_stop);
     return {
       materialId: material.id,
       contracted: true,
-      quantity: rng.child('quantity').int(MIN_CONTRACT_QUANTITY, MAX_CONTRACT_QUANTITY),
+      quantity: rng.child('quantity').int(MIN_CONTRACT_QUANTITY, maxQuantity),
     };
   }
   return { materialId: material.id, contracted: false };
@@ -322,7 +355,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const legs: LegRoute[] =
     template.type === 'RESCUE' ? [...outbound, ...[...outbound].reverse()] : outbound;
 
-  const cargo = template.type === 'MINING' ? miningCargo(rng, world.materials) : {};
+  const cargo = template.type === 'MINING' ? miningCargo(rng, world.materials, rules) : {};
 
   let deadlineAt: Date | null = null;
   if (template.type === 'RESCUE') {

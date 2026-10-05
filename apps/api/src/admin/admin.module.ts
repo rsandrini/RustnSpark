@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PasswordService } from '../auth/password.service.js';
 import { ConfigModule } from '../config/config.module.js';
 import { PlayersModule } from '../players/players.module.js';
 import { ReportsModule } from '../reports/reports.module.js';
@@ -56,6 +57,9 @@ import { RevisionService } from './tuning/revision.service.js';
     SupportService,
     InspectorService,
     AccountStatusCache,
+    // A second instance of a stateless service (own only dep is the @Global EnvService):
+    // AdminModule cannot import AuthModule (AuthModule already imports AdminModule).
+    PasswordService,
   ],
   // Consumed outside this module: AuthController gates register.open on SystemFlagService,
   // the global MaintenanceGuard reads the maintenance flag, and S11.4's support actions

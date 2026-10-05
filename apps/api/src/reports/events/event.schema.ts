@@ -36,7 +36,7 @@ const FAILURE_CONSEQUENCE_VALUES = [
 const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
 
 /** Combat events carry the GDD §15 layer split from S9.0 on. */
-const CASCADE_TYPES = ['combat_win', 'combat_loss', 'escort_absorbed'] as const;
+const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
 
 /** The category every event type is emitted under — checked against the
  *  `MissionEventCategory` union at compile time and against every emitter
@@ -46,11 +46,14 @@ const CATEGORY_OF = {
   fuel_exhausted: 'transit',
   combat_win: 'combat',
   combat_loss: 'combat',
+  combat_draw: 'combat',
   escaped: 'combat',
   escort_absorbed: 'combat',
   escort_client_destroyed: 'failure',
   mission_wear: 'environment',
   mission_payout: 'payment',
+  pirate_demand: 'failure',
+  scavenge_find: 'loot',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -121,6 +124,39 @@ function eventMembers(
             armor: num,
             hp: num,
           });
+          // Optional even on v2 (unlike cascade): rows written before this field existed have
+          // no rounds at all, and must keep reading back fine (D36 — only ADD optional fields).
+          extras['rounds'] = z
+            .array(
+              object({
+                round: num,
+                attacker: z.enum(['player', 'enemy']),
+                roll: num,
+                // Optional even within a `rounds` row (not just the array itself): rows written
+                // before this breakdown existed have rounds but no pdf/bonus, and must keep
+                // reading back fine (D36 — only ADD optional fields).
+                pdf: num.optional(),
+                bonus: num.optional(),
+                dc: num,
+                hit: z.boolean(),
+                damage: num,
+                armorAbsorbed: num,
+                shieldAbsorbed: num,
+                hullDamage: num,
+              }),
+            )
+            .optional();
+        }
+        if (type === 'scavenge_find') {
+          extras['found'] = object({
+            kind: z.enum(['part', 'scrap']),
+            partType: z.string().min(1),
+            condition: num,
+          });
+        }
+        if (type === 'pirate_demand') {
+          extras['motive'] = z.enum(['cargo', 'parts', 'territory']);
+          extras['stolen'] = z.array(z.string().min(1));
         }
         if ((PART_FAILURE_TYPES as readonly string[]).includes(type)) {
           extras['consequence'] = z.enum(FAILURE_CONSEQUENCE_VALUES);

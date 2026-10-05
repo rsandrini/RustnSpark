@@ -182,7 +182,8 @@ describe('happy path over the API (S9.4)', () => {
     const inventory = await request(server).get('/v1/inventory').set(auth(token));
     expect(inventory.status).toBe(200);
     const partIds = (inventory.body as readonly { id: string }[]).map((part) => part.id);
-    expect(partIds.length).toBeGreaterThanOrEqual(9);
+    // 5 starter parts (round-3 playtest fix: one cargo hold, not two) + the 2 bought above.
+    expect(partIds.length).toBeGreaterThanOrEqual(7);
     const assembled = await request(server)
       .post(`/v1/ships/${shipId}/auto-assemble`)
       .set(auth(token))

@@ -86,7 +86,7 @@ a {
 }
 
 .app.wide {
-  max-width: 1100px;
+  max-width: 1440px;
 }
 
 /* headers ------------------------------------------------------------- */
@@ -160,6 +160,45 @@ a {
   border-bottom: 1px solid var(--line);
 }
 
+/* My Ship's "Last mission" link (owner request: the Ship/Board/Port switcher that used to share
+   this row was removed — it duplicated the top nav, which reaches the same three places). */
+.hangar-links-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.hangar-links-row .nav-link {
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--spark);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.hangar-links-row .nav-link:hover {
+  color: var(--ink);
+}
+
+/* Port's own tab row (Market/Your goods/Repair/…) plus its wallet chip. Owner request: on My
+   Ship this row portals above the ship animation, left-aligned, right under the top nav — the
+   class and layout stay the same either way, only *where in the DOM* it lands changes. */
+.page-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.page-tabs-row .tabs {
+  flex: 0 1 auto;
+}
+
 .tab {
   flex: 0 0 auto;
   background: transparent;
@@ -176,6 +215,16 @@ a {
 .tab.on {
   color: var(--ink);
   border-bottom-color: var(--spark);
+}
+
+/* A tab strip nested one level down (My Ship's Parts/Store, inside the Ship tab): its own
+   accent colour and a gap above, so it doesn't read as a continuation of the tabs above it. */
+.tabs-sub {
+  margin-top: 6px;
+}
+
+.tabs-sub .tab.on {
+  border-bottom-color: var(--blue);
 }
 
 .tab .count {
@@ -589,11 +638,14 @@ a {
   background: radial-gradient(circle at 50% 40%, #101720, var(--bg));
   border: 1px solid var(--line);
   border-radius: 12px;
+  /* Bounded so the map fits on screen without scrolling in fullscreen (owner: "today is bigger
+     than that") — the svg's own viewBox scales to fit inside this, letterboxed, not stretched. */
+  height: min(68vh, 620px);
 }
 
 .stage svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   touch-action: none;
 }
@@ -620,6 +672,21 @@ a {
 .ncore {
   stroke: #0b0e13;
   stroke-width: 2.5;
+}
+
+.ncore.risk-lo {
+  fill: var(--risk-lo);
+  fill-opacity: 0.55;
+}
+
+.ncore.risk-md {
+  fill: var(--risk-md);
+  fill-opacity: 0.55;
+}
+
+.ncore.risk-hi {
+  fill: var(--risk-hi);
+  fill-opacity: 0.55;
 }
 
 .nring {
@@ -811,10 +878,7 @@ a {
 
 /* hangar (montagem) ---------------------------------------------------- */
 .hangar-scene {
-  background:
-    linear-gradient(var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, var(--yard-panel) 1px, transparent 1px) 0 0 / 28px 28px,
-    radial-gradient(circle at 50% 40%, #171d22, #0e1215);
+  background: radial-gradient(circle at 50% 40%, #171d22, #0e1215);
   border: 1px solid var(--steel);
   border-radius: 12px;
 }
@@ -984,6 +1048,117 @@ a {
 }
 
 /* navigation (S10.10) ---------------------------------------------------- */
+/* One merged top bar: game nav, language and account menu in a single row instead of three
+   stacked bars. .game-nav/.lang-switch/.account-menu keep their own rules below (each is also
+   used standalone — .lang-switch alone on the signed-out layout) but lose their own border/
+   background/padding once nested inside .top-bar, which owns the outer chrome instead. */
+.top-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.top-bar .game-nav {
+  justify-self: start;
+}
+
+.top-bar .top-bar-right {
+  justify-self: end;
+}
+
+.ship-identity {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ship-identity-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22ch;
+}
+
+.ship-identity-status {
+  font-size: 12px;
+  color: var(--mut);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28ch;
+}
+
+.ship-identity-status::before {
+  content: '—';
+  margin-inline: 6px;
+  color: var(--line);
+}
+
+.ship-identity-energy select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ship-identity-energy select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .top-bar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .top-bar .game-nav,
+  .top-bar .top-bar-right {
+    justify-self: center;
+  }
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.top-bar .game-nav,
+.top-bar .lang-switch,
+.top-bar .account-menu {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.top-bar .last-mission-link {
+  color: var(--mut);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.top-bar .last-mission-link:hover {
+  color: var(--ink);
+}
+
 .game-nav {
   display: flex;
   flex-wrap: wrap;
@@ -1020,6 +1195,43 @@ a {
   flex-wrap: wrap;
 }
 
+/* Part popup title row (owner request, round 6): a rarity icon next to the name, not just the
+   card's border colour — same rarity colour tokens the rest of the part UI already uses. */
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-title-row h2 {
+  margin: 0;
+}
+
+.rarity-badge {
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.rarity-badge.rarity-common {
+  color: var(--rar-common);
+}
+
+.rarity-badge.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+
+.rarity-badge.rarity-rare {
+  color: var(--rar-rare);
+}
+
+.rarity-badge.rarity-epic {
+  color: var(--rar-epic);
+}
+
+.rarity-badge.rarity-legendary {
+  color: var(--rar-legendary);
+}
+
 /* onboarding (S10.2) ---------------------------------------------------- */
 .sr-only {
   position: absolute;
@@ -1047,7 +1259,10 @@ a {
   grid-template-columns: auto 1fr;
   gap: 4px 12px;
   align-items: center;
-  background: var(--panel);
+  /* backgroundImage (the faction's art + a darkening gradient) is set inline per card. */
+  background-color: var(--panel);
+  background-size: cover;
+  background-position: center;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 13px 15px;
@@ -1061,7 +1276,7 @@ a {
 
 .faction-card.on {
   border-color: var(--spark);
-  background: linear-gradient(160deg, var(--panel2), var(--panel));
+  box-shadow: inset 0 0 0 1px var(--spark);
 }
 
 .faction-card input {
@@ -1070,25 +1285,22 @@ a {
 
 .faction-card .fac {
   justify-self: start;
+  background: rgba(5, 7, 11, 0.55);
 }
 
 .faction-card .desc {
   grid-column: 2;
   font-size: 12.5px;
-  color: var(--mut);
+  color: #d6dbe3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 /* hangar yard (S10.4) ---------------------------------------------------- */
-.yard-grid {
+.yard-cell {
+  fill: var(--yard-panel);
   stroke: var(--line);
   stroke-width: 0.03;
-  fill: none;
   opacity: 0.7;
-  pointer-events: none;
-}
-
-.yard-cell {
-  fill: transparent;
 }
 
 .yard-cell:hover {
@@ -1114,6 +1326,10 @@ svg .block.selected {
 svg .block.floating {
   stroke: var(--bad);
   stroke-dasharray: 0.2 0.12;
+}
+
+svg .block.disconnected {
+  opacity: 0.45;
 }
 
 .block-label {
@@ -1153,6 +1369,11 @@ svg .block.floating {
   background: #28323a;
 }
 
+.part-btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .part-btn .meta {
   display: block;
   font-size: 10px;
@@ -1162,9 +1383,9 @@ svg .block.floating {
 
 .hangar-layout {
   display: grid;
-  grid-template-columns: 220px 1fr 260px;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
   gap: 12px;
-  margin-top: 14px;
+  margin-top: 10px;
   align-items: start;
 }
 
@@ -1172,4 +1393,2495 @@ svg .block.floating {
   .hangar-layout {
     grid-template-columns: 1fr;
   }
+
+  /* Stacked layout: nothing to "keep in view" beside it, so let the list flow naturally. */
+  .hangar-side {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+/* auth + home ---------------------------------------------------------- */
+.auth {
+  max-width: 420px;
+  padding-top: 8vh;
+}
+
+.auth h1 {
+  margin: 0 0 14px;
+  font-size: 22px;
+}
+
+.auth .hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.auth .btn.block {
+  text-align: center;
+  text-decoration: none;
+  padding: 10px 13px;
+}
+
+.auth-alt {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.lang-switch {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 14px 0;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.account-menu {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 6px 14px 0;
+}
+
+.account-menu .nav-link {
+  color: var(--mut);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.account-menu .nav-link:hover {
+  color: var(--ink);
+}
+
+.wallet-chip {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
+.lang-switch .input {
+  width: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* part details, market filters ----------------------------------------- */
+.info-btn {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 50%;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+/* My Ship's tray: the info button sits inside its part's card, near the top corner, instead of
+   trailing it as a separate column — a sibling of the card's <button> in the DOM (two nested
+   interactive controls is an accessibility violation, not just a style choice), positioned to
+   look like it belongs to the card with plain CSS. */
+.part-btn-wrap {
+  position: relative;
+}
+
+/* Tray-row hover card (round 5/6, owner request: "add it at the side of the mouse, right
+   side"). Anchored to the cursor in fixed/viewport coordinates (left/top set inline, per hover)
+   rather than positioned relative to the row: the tray sidebar (.hangar-side) scrolls
+   vertically, which per the CSS spec also makes its overflow-x compute to "auto" (not
+   "visible"), clipping anything positioned past the column's own edge — position: fixed escapes
+   that entirely, since it's relative to the viewport, not any scrolling ancestor. */
+.compare-hover-card {
+  position: fixed;
+  z-index: 30;
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.part-btn-wrap .info-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  font-size: 12px;
+}
+
+.part-summary,
+.part-desc-short,
+.part-price {
+  display: block;
+}
+
+.part-summary {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.part-desc-short {
+  color: var(--mut);
+  font-size: 12px;
+  margin: 2px 0;
+}
+
+.part-price {
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.part-detail p {
+  margin: 4px 0;
+}
+
+/* The description and "why you need it" text moved behind a hover tag next to the name (owner
+   request — the stats table is the point of this popup now, not always-on prose). */
+.part-why-tag,
+.mission-why-tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.mission-brief-line {
+  margin: 4px 0;
+}
+
+.part-compare-note {
+  margin: 10px 0 2px;
+  font-size: 12px;
+}
+
+/* Owner request (round 6): "check if the part fits the ship" — a viability problem the swap
+   would cause (e.g. over the structure budget), not just the raw stat deltas. */
+.compare-viability-warning {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.part-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.part-stats-table th,
+.part-stats-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.part-stats-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--mut);
+  font-weight: 700;
+}
+
+.part-stats-table th:last-child,
+.part-stats-table td:last-child {
+  text-align: right;
+}
+
+.part-stats-table .delta {
+  font-weight: 700;
+}
+
+/* Owner request (round 5): color the comparison by whether it helps or hurts, not one flat
+   color for every change — same green/red language RiskBadge already uses for low/high risk. */
+.part-stats-table .delta-same {
+  color: var(--mut);
+  font-weight: 600;
+}
+
+.part-stats-table .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-table .delta-bad {
+  color: var(--risk-hi);
+}
+
+/* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
+   (shield/armor/hull), not just the last one, is right-aligned; a miss row is dimmed. */
+.combat-log-table {
+  display: block;
+  overflow-x: auto;
+}
+
+.combat-log-table th:nth-child(n + 5),
+.combat-log-table td:nth-child(n + 5) {
+  text-align: right;
+}
+
+/* Owner request (round 8, from a demo comparison): this popup specifically needs more room
+   than the default confirm-dialog width — a scoped override, not a change to every `.modal`. */
+.modal.combat-log-modal {
+  width: min(640px, 94vw);
+}
+
+/* Result as a colored pill, not flat text — Hit is the meaningful outcome (something happened),
+   Miss stays muted, matching the row's own dimming. */
+.pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pill-hit {
+  background: rgba(46, 160, 67, 0.18);
+  color: var(--ok);
+}
+
+.pill-miss {
+  background: rgba(139, 148, 158, 0.18);
+  color: var(--mut);
+}
+
+/* Ship sheet's own ok/bad pills (energy surplus/deficit, battery coverage) — same shape as the
+   combat log's, but a plain ok/bad semantic rather than hit/miss specifically. Qualified with
+   `.statrow` for the same specificity reason as `.tone-*` above. */
+.pill-ok,
+.statrow .pill-ok {
+  background: rgba(46, 160, 67, 0.18);
+  color: var(--ok);
+}
+
+.pill-bad,
+.statrow .pill-bad {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--bad);
+}
+
+/* Mission history's own "Combat" tag (owner: "almost impossible to know... where I had a
+   combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
+   round-by-round detail (links straight to the report with #combat). */
+.pill-combat {
+  background: rgba(248, 81, 73, 0.18);
+  color: var(--bad);
+  text-decoration: none;
+  margin-right: 6px;
+}
+
+.pill-combat:hover {
+  background: rgba(248, 81, 73, 0.3);
+}
+
+/* Generic text-color tones for a value that has a pass/fail threshold (energy, autonomy,
+   condition, structure) — distinct from `.gauge.ok/.warn/.bad`, which style a bar's fill, not
+   plain text. Qualified with the parent class so they outrank `.statrow b`/`.statrow span`
+   above, which would otherwise win on specificity and repaint everything muted grey. */
+.tone-ok,
+.statrow .tone-ok {
+  color: var(--ok);
+}
+
+.tone-warn,
+.statrow .tone-warn {
+  color: var(--risk-md);
+}
+
+.tone-bad,
+.statrow .tone-bad {
+  color: var(--bad);
+}
+
+/* Ship sheet (owner request, round 8: "too long and hard to understand") — a short status, an
+   8-number headline always visible, and the full 20-row breakdown grouped and collapsed behind
+   a disclosure, instead of one flat list. */
+.sheet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.sheet-status.ready {
+  background: rgba(46, 160, 67, 0.14);
+  color: var(--ok);
+}
+
+.sheet-status.problem {
+  background: rgba(248, 81, 73, 0.14);
+  color: var(--bad);
+}
+
+.sheet-headline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-headline-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet-headline-tile span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mut);
+}
+
+.sheet-headline-tile b {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sheet-details summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--blue);
+  list-style: none;
+  margin-bottom: 6px;
+}
+
+.sheet-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.sheet-details summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 5px;
+  transition: transform 0.15s ease;
+}
+
+.sheet-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.sheet-group {
+  margin-bottom: 10px;
+}
+
+.sheet-group:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-group-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mut);
+  font-weight: 700;
+  padding-top: 6px;
+}
+
+.sheet-group:first-child .sheet-group-title {
+  padding-top: 0;
+}
+
+/* Cruising/Combat power's generate/consume (or draw/coverage) line under the pill. */
+.statrow .substat {
+  display: block;
+  font-size: 11px;
+  color: var(--mut);
+  margin-top: 1px;
+}
+
+/* One consistent color per damage type, reused nowhere else so it never collides with rarity,
+   risk or faction colors. */
+.combat-log-table .dmg-shield {
+  color: var(--blue);
+}
+
+.combat-log-table .dmg-armor {
+  color: var(--amber);
+}
+
+.combat-log-table .dmg-hull {
+  color: var(--bad);
+}
+
+/* Owner follow-up: color-code "who's attacking" (text + a faint row tint) so it reads without
+   checking the Attacker column on every row — reuses the app's own accent (you) and danger
+   (enemy) tokens, not new colors, and stays distinct from the shield/armor/hull palette above. */
+.combat-log-table .attacker-player {
+  color: var(--spark);
+}
+
+.combat-log-table .attacker-enemy {
+  color: var(--bad);
+}
+
+.combat-log-table tr.attacker-player {
+  background: rgba(240, 165, 0, 0.06);
+}
+
+.combat-log-table tr.attacker-enemy {
+  background: rgba(248, 81, 73, 0.06);
+}
+
+.part-stats {
+  margin: 12px 0 0;
+}
+
+.part-stats .statrow {
+  align-items: baseline;
+  gap: 12px;
+}
+
+.part-stats dt {
+  min-width: 110px;
+}
+
+.part-stats dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.stat-hint {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* ship yard: hover-only stats card (round-3 follow-up) — numbers only, no popup. */
+.part-hover-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 220px;
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.part-stats-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.part-stats-card .part-stats {
+  margin-top: 6px;
+}
+
+.part-stats-card .statrow {
+  gap: 8px;
+  font-size: 12px;
+}
+
+.part-stats-card dt {
+  min-width: 0;
+}
+
+/* Tray hover card's own compare column (round 5): same delta language as the popup's
+   .part-stats-table, scoped separately since this card uses a <dl>, not a <table>. */
+.part-stats-card .delta {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.part-stats-card .delta-same {
+  color: var(--mut);
+  font-weight: 600;
+}
+
+.part-stats-card .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-card .delta-bad {
+  color: var(--risk-hi);
+}
+
+.market-filters {
+  display: grid;
+  gap: 8px;
+  /* Same top space as Board's own filter row (owner request — the removed "For sale" heading
+     no longer sets it, and the two lists should feel like siblings). */
+  margin: 12px 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--mut);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip.on {
+  border-color: var(--spark);
+  color: var(--spark);
+  background: rgba(240, 165, 0, 0.12);
+}
+
+.market-controls {
+  display: grid;
+  grid-template-columns: minmax(140px, 2fr) 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .market-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* hangar: zoom tools, side tabs, kit note ------------------------------ */
+.yard-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.yard-tools .btn {
+  padding: 4px 10px;
+}
+
+.yard-zoom {
+  min-width: 44px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+/* Its own scroll region (owner request): a long parts/store list scrolls in place instead of
+   carrying the ship yard out of view with it. */
+.hangar-side {
+  max-height: calc(100vh - 260px);
+  min-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.hangar-side .tabs {
+  margin-bottom: 10px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+.hangar-side .grid-cards {
+  grid-template-columns: 1fr;
+}
+
+
+.kit-note {
+  margin-bottom: 10px;
+  border-color: var(--spark);
+}
+
+.kit-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.fix-hint {
+  display: block;
+  color: var(--mut);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.fix-hint .btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.hangar-side .market-controls {
+  grid-template-columns: 1fr;
+}
+
+.used-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--risk-md);
+  color: var(--risk-md);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.balance {
+  margin: 0;
+  font-size: 14px;
+}
+
+.balance b {
+  color: var(--spark);
+}
+
+/* map: position, flight, place popup ------------------------------------ */
+.map-status {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.you-badge {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: rgba(240, 165, 0, 0.16);
+  border: 1px solid var(--spark);
+  color: var(--spark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.flight-path {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  opacity: 0.85;
+  animation: flight-dash 1.2s linear infinite;
+}
+
+.dest-ring {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+
+.here-pulse {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 2.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: here-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.you-tag {
+  pointer-events: none;
+}
+
+.you-tag rect {
+  fill: var(--spark);
+}
+
+.you-tag path {
+  fill: var(--spark);
+}
+
+.you-tag text {
+  fill: #0b0e13;
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ship-marker {
+  pointer-events: none;
+}
+
+.ship-halo {
+  fill: rgba(240, 165, 0, 0.18);
+  stroke: var(--spark);
+  stroke-width: 1.2;
+}
+
+.ship-glyph {
+  fill: var(--spark);
+  stroke: #0b0e13;
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.place-missions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.place-mission {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel2);
+}
+
+.place-details h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--spark);
+}
+
+.spark {
+  color: var(--spark);
+  font-weight: 700;
+}
+
+@keyframes flight-dash {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+@keyframes here-pulse {
+  from {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flight-path,
+  .here-pulse {
+    animation: none;
+  }
+}
+
+/* transit: the moving scene ------------------------------------------------ */
+.transit-scene {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 60% 50%, #0d1622 0%, #05070b 75%);
+  margin: 12px 0;
+}
+
+.stage-place-label {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  z-index: 1;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(5, 7, 11, 0.55);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+  will-change: background-position;
+}
+
+.stars-far {
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 90px 120px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 160px 70px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 230px 200px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 150px, #8aa0c0 50%, transparent 51%),
+    radial-gradient(1px 1px at 60px 240px, #8aa0c0 50%, transparent 51%);
+  background-size: 320px 280px;
+  opacity: 0.55;
+}
+
+.stars-mid {
+  background-image:
+    radial-gradient(1.5px 1.5px at 40px 60px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 140px 190px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 250px 110px, #cfe0ff 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 340px 250px, #cfe0ff 55%, transparent 56%);
+  background-size: 380px 300px;
+  opacity: 0.8;
+}
+
+.stars-near {
+  background-image:
+    radial-gradient(2.2px 2.2px at 70px 90px, #fff 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 240px 220px, #fff 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 400px 40px, #ffe9b0 55%, transparent 56%);
+  background-size: 480px 300px;
+}
+
+.scene-ship {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -40px 0 0 -80px;
+}
+
+.scene-ship svg {
+  display: block;
+  overflow: visible;
+}
+
+.ship-hull {
+  fill: #2b3947;
+  stroke: #6f8296;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.ship-wing {
+  fill: #223040;
+  stroke: #56697d;
+  stroke-width: 1.2;
+}
+
+.ship-cockpit {
+  fill: #f0a500;
+  opacity: 0.9;
+}
+
+.ship-engine {
+  fill: #4a5a6b;
+}
+
+.ship-flame {
+  fill: #ff8a2b;
+  opacity: 0;
+}
+
+.transit-scene.moving .stars-far {
+  animation: stars-scroll-far 40s linear infinite;
+}
+
+.transit-scene.moving .stars-mid {
+  animation: stars-scroll-mid 22s linear infinite;
+}
+
+.transit-scene.moving .stars-near {
+  animation: stars-scroll-near 9s linear infinite;
+}
+
+.transit-scene.moving .scene-ship {
+  animation: ship-hover 4.5s ease-in-out infinite;
+}
+
+.transit-scene.moving .ship-flame {
+  opacity: 1;
+  animation: flame-flicker 0.18s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+@keyframes stars-scroll-far {
+  to {
+    background-position-x: -320px;
+  }
+}
+
+@keyframes stars-scroll-mid {
+  to {
+    background-position-x: -380px;
+  }
+}
+
+@keyframes stars-scroll-near {
+  to {
+    background-position-x: -480px;
+  }
+}
+
+@keyframes ship-hover {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  30% {
+    transform: translate(6px, -7px) rotate(-1.2deg);
+  }
+  65% {
+    transform: translate(-5px, 6px) rotate(1deg);
+  }
+}
+
+@keyframes flame-flicker {
+  from {
+    transform: scaleX(0.7);
+    opacity: 0.75;
+  }
+  to {
+    transform: scaleX(1.25);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.moving .stars-far,
+  .transit-scene.moving .stars-mid,
+  .transit-scene.moving .stars-near,
+  .transit-scene.moving .scene-ship,
+  .transit-scene.moving .ship-flame {
+    animation: none;
+  }
+}
+
+/* Owner follow-up (round 10): the old bordered-tile grid gave four simple facts a whole
+   row of boxes each — same information, as a dense wrapped strip of "label value" pairs
+   instead, so it reads in one glance rather than taking up a quarter of the screen. */
+.briefing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin: 8px 0;
+}
+
+.briefing .fact {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.briefing .fact .k {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mut);
+}
+
+.briefing .fact .v {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Route names (owner request: "I cannot see the origin -> destination" on the pre-dispatch
+   screen) run longer than the other facts — give it the full width, above the rest. */
+.briefing .fact-route {
+  flex-basis: 100%;
+}
+
+.briefing .fact-route .v {
+  font-size: 13px;
+}
+
+.mission-leg-plan {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mission-leg-plan li {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+/* gauges: condition and fuel bars -------------------------------------------- */
+.gauge {
+  position: relative;
+  height: 18px;
+  min-width: 90px;
+  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.gauge-fill,
+.gauge-planned {
+  position: absolute;
+  inset: 0 auto 0 0;
+}
+
+.gauge-consume {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--spark);
+}
+
+.gauge-planned {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(230, 237, 243, 0.28),
+    rgba(230, 237, 243, 0.28) 4px,
+    rgba(230, 237, 243, 0.12) 4px,
+    rgba(230, 237, 243, 0.12) 8px
+  );
+}
+
+.gauge.ok .gauge-fill {
+  background: var(--ok);
+}
+
+.gauge.warn .gauge-fill {
+  background: var(--risk-md);
+}
+
+.gauge.bad .gauge-fill {
+  background: var(--bad);
+}
+
+.gauge.fuel .gauge-fill {
+  background: var(--blue);
+}
+
+.gauge-label {
+  position: relative;
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.gauge.big {
+  height: 26px;
+}
+
+.gauge.big .gauge-label {
+  line-height: 24px;
+  font-size: 13px;
+}
+
+/* compact repair list */
+.repair-list {
+  display: grid;
+  gap: 4px;
+}
+
+.repair-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1.1fr) minmax(150px, 2fr) minmax(90px, 1fr) minmax(
+      120px,
+      0.9fr
+    );
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.repair-row .rname {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.repair-row .rname small {
+  display: block;
+  font-weight: 400;
+  color: var(--mut);
+  font-size: 11px;
+}
+
+.repair-row input[type='range'] {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .repair-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scav-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* part cards: one part per card, stacked ------------------------------------- */
+:root {
+  --rar-common: #8b949e;
+  --rar-uncommon: #3fb950;
+  --rar-rare: #4493f8;
+  --rar-epic: #ab7df8;
+  --rar-legendary: #f0a500;
+}
+
+.pcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.hangar-side .pcard-grid {
+  grid-template-columns: 1fr;
+}
+
+.pcard {
+  --accent: var(--rar-common);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.pcard.rarity-uncommon {
+  --accent: var(--rar-uncommon);
+}
+
+.pcard.rarity-rare {
+  --accent: var(--rar-rare);
+}
+
+.pcard.rarity-epic {
+  --accent: var(--rar-epic);
+}
+
+.pcard.rarity-legendary {
+  --accent: var(--rar-legendary);
+}
+
+.pcard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pcard-name {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.pcard-price {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pcard-price b {
+  display: block;
+  font-size: 17px;
+  color: var(--spark);
+}
+
+.pcard-price small {
+  font-size: 10.5px;
+  color: var(--mut);
+}
+
+.pcard-meta {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pcard-summary {
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.pcard-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mut);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pcard-actions {
+  margin-top: auto;
+  padding-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pcard-actions .btn.primary {
+  flex: 1;
+}
+
+/* hangar: rarity colours, condition bars --------------------------------------- */
+svg .block.rar-common {
+  stroke: var(--rar-common);
+}
+
+svg .block.rar-uncommon {
+  stroke: var(--rar-uncommon);
+  fill: rgba(63, 185, 80, 0.16);
+}
+
+svg .block.rar-rare {
+  stroke: var(--rar-rare);
+  fill: rgba(68, 147, 248, 0.18);
+}
+
+svg .block.rar-epic {
+  stroke: var(--rar-epic);
+  fill: rgba(171, 125, 248, 0.2);
+}
+
+svg .block.rar-legendary {
+  stroke: var(--rar-legendary);
+  fill: rgba(240, 165, 0, 0.2);
+}
+
+svg .block.cond-ok {
+  fill: rgba(46, 160, 67, 0.28);
+  stroke: var(--ok);
+}
+
+svg .block.cond-warn {
+  fill: rgba(232, 131, 58, 0.3);
+  stroke: var(--risk-md);
+}
+
+svg .block.cond-bad {
+  fill: rgba(248, 81, 73, 0.32);
+  stroke: var(--bad);
+}
+
+.cond-track {
+  fill: rgba(0, 0, 0, 0.55);
+}
+
+.cond-bar.cond-ok {
+  fill: var(--ok);
+}
+
+.cond-bar.cond-warn {
+  fill: var(--risk-md);
+}
+
+.cond-bar.cond-bad {
+  fill: var(--bad);
+}
+
+.cond-label {
+  fill: #fff;
+  font-size: 0.09px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.65);
+  stroke-width: 0.018px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.yard-color-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.yard-color-toggle .btn.on {
+  border-color: var(--spark);
+  color: var(--spark);
+}
+
+.part-btn {
+  border-left: 4px solid var(--rar-common);
+}
+
+.part-btn.rarity-uncommon {
+  border-left-color: var(--rar-uncommon);
+}
+
+.part-btn.rarity-rare {
+  border-left-color: var(--rar-rare);
+}
+
+.part-btn.rarity-epic {
+  border-left-color: var(--rar-epic);
+}
+
+.part-btn.rarity-legendary {
+  border-left-color: var(--rar-legendary);
+}
+
+.part-btn .gauge {
+  margin-top: 5px;
+  height: 14px;
+}
+
+.part-btn .gauge-label {
+  line-height: 12px;
+  font-size: 10px;
+}
+
+.repair-row .rcost {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--spark);
+}
+
+.repair-summary .statrow.total {
+  font-size: 16px;
+}
+
+.stack-h {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.travel-box {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--spark);
+  border-radius: 10px;
+  background: rgba(240, 165, 0, 0.06);
+}
+
+.travel-box h3 {
+  margin: 0;
+}
+
+/* mission cards ------------------------------------------------------------------ */
+.mcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.mcard {
+  --accent: var(--blue);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.mcard.type-transport {
+  --accent: var(--luna);
+}
+
+.mcard.type-escort {
+  --accent: var(--pirata);
+}
+
+.mcard.type-mining {
+  --accent: var(--explorers);
+}
+
+.mcard.type-rescue {
+  --accent: var(--risk-md);
+}
+
+.mcard.type-travel {
+  --accent: var(--mut);
+}
+
+.mcard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.mcard-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.mcard-title {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.mcard-reward {
+  text-align: right;
+}
+
+.mcard-reward b {
+  display: block;
+  font-size: 18px;
+  color: var(--spark);
+}
+
+.mcard-reward small {
+  color: var(--mut);
+  font-size: 11px;
+}
+
+.mcard-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.mcard-route .arrow {
+  color: var(--mut);
+}
+
+.mcard-desc,
+.mcard-material,
+.mcard-needs {
+  margin: 0;
+  font-size: 13px;
+}
+
+.mcard-desc {
+  color: var(--mut);
+}
+
+.mcard-material {
+  color: var(--explorers);
+  font-weight: 600;
+}
+
+.mcard-needs {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--panel2);
+}
+
+.mcard-requirements {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mcard-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mcard-requirements .req-unmet {
+  color: var(--bad);
+}
+
+.mcard-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+}
+
+/* Fuel lives outside the facts grid (a gauge's label needs more room than a 1/3-width cell
+   gives it) as its own full-width row instead. */
+.mcard-fuel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mcard-fuel .k {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--mut);
+  flex: 0 0 auto;
+}
+
+.mcard-fuel .gauge {
+  flex: 1 1 auto;
+  min-width: 60px;
+}
+
+.mcard-fuel-need {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--mut);
+  white-space: nowrap;
+}
+
+.mcard-fuel.bad .mcard-fuel-need {
+  color: var(--bad);
+}
+
+.mcard-fuel.bad {
+  border-color: var(--bad);
+}
+
+.mcard-facts div {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mcard-facts dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--mut);
+}
+
+.mcard-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mcard-facts .bad dd {
+  color: var(--bad);
+}
+
+.mcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcard-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.mcard-actions .btn.primary {
+  flex: 1;
+}
+
+/* report debrief --------------------------------------------------------------- */
+.debrief {
+  --tone: var(--ok);
+  margin: 12px 0 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--tone);
+  border-radius: 14px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tone) 18%, var(--panel)),
+    var(--panel) 70%
+  );
+}
+
+.debrief.warn {
+  --tone: var(--risk-md);
+}
+
+.debrief.bad {
+  --tone: var(--bad);
+}
+
+.debrief-verdict {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.debrief-glyph {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--tone);
+  color: var(--tone);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.debrief-outcome {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--tone);
+}
+
+.debrief-mission {
+  margin-top: 2px;
+  color: var(--mut);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.debrief-credits {
+  margin-left: auto;
+  text-align: right;
+}
+
+.debrief-credits b {
+  display: block;
+  font-size: 30px;
+}
+
+.debrief-credits b.pos {
+  color: var(--ok);
+}
+
+.debrief-credits b.neg {
+  color: var(--bad);
+}
+
+.debrief-credits small {
+  color: var(--mut);
+}
+
+.debrief-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.debrief-tiles div {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.debrief-tiles dt {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mut);
+}
+
+.debrief-tiles dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.debrief-tiles .bad dd {
+  color: var(--bad);
+}
+
+.debrief-loot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.loot-chip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--explorers);
+  background: rgba(63, 166, 106, 0.14);
+  color: var(--ink);
+}
+
+.debrief-hint {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.1);
+  color: var(--ink);
+}
+
+/* the story as a timeline */
+.report-story .event {
+  position: relative;
+  margin-left: 12px;
+  padding: 10px 14px 12px 20px;
+  border-left: 3px solid var(--line-strong);
+}
+
+.report-story .event::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 14px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--spark);
+  border: 2px solid var(--bg);
+}
+
+.report-story .event h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--spark);
+}
+
+.report-story .event ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.nav-link.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.repair-row .rcost.over,
+.repair-summary .statrow.over b {
+  color: var(--bad);
+}
+
+.refuel-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.refuel-panel input[type='range'] {
+  width: 100%;
+}
+
+.refuel-panel .over {
+  color: var(--bad);
+}
+
+.discard-note {
+  border-color: var(--bad);
+  display: grid;
+  gap: 8px;
+}
+
+.discard-note p {
+  margin: 0;
+}
+
+.pcard-note {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* broken parts (condition at zero): a red, pulsing outline everywhere the part shows */
+svg .block.broken {
+  fill: rgba(248, 81, 73, 0.22);
+  stroke: var(--bad);
+  stroke-width: 0.14;
+  stroke-dasharray: 0.25 0.15;
+  animation: broken-pulse 1.4s ease-in-out infinite;
+}
+
+.part-btn.broken,
+.pcard.broken {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad) inset;
+}
+
+@keyframes broken-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg .block.broken {
+    animation: none;
+  }
+}
+
+/* art: places and parts ------------------------------------------------------------ */
+.place-art {
+  display: block;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.place-art-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.place-art-square {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+}
+
+.place-art-wide {
+  width: 100%;
+  height: 120px;
+}
+
+.place-banner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 110px;
+  padding: 14px 18px;
+  margin: 8px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.place-banner h1,
+.place-banner h2 {
+  margin: 0;
+}
+
+.part-thumb {
+  --accent: var(--rar-common);
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel2));
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.part-thumb.rarity-uncommon {
+  --accent: var(--rar-uncommon);
+}
+
+.part-thumb.rarity-rare {
+  --accent: var(--rar-rare);
+}
+
+.part-thumb.rarity-epic {
+  --accent: var(--rar-epic);
+}
+
+.part-thumb.rarity-legendary {
+  --accent: var(--rar-legendary);
+}
+
+.pcard-head .part-thumb {
+  margin-right: 8px;
+}
+
+.pcard-title-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.debrief {
+  position: relative;
+  overflow: hidden;
+}
+
+.debrief-art {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.debrief > *:not(.debrief-art) {
+  position: relative;
+}
+
+.part-thumb.small {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  border-radius: 6px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.part-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ship stage: modes ------------------------------------------------------------------ */
+.ship-stage-wrap {
+  margin: 12px 0;
+}
+
+.transit-scene.stage-compact {
+  height: 170px;
+  margin: 0;
+}
+
+.transit-scene.stage-compact .scene-ship {
+  transform: scale(0.75);
+  transform-origin: center;
+}
+
+.transit-scene.parked {
+  background-size: cover;
+  background-position: center;
+}
+
+.transit-scene.parked .stars {
+  opacity: 0.15;
+}
+
+.transit-scene.parked .scene-ship {
+  animation: ship-idle 7s ease-in-out infinite;
+}
+
+.transit-scene.parked .ship-flame {
+  opacity: 0.35;
+  animation: flame-flicker 0.9s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+.stage-caption {
+  margin: 6px 2px 0;
+  font-size: 14px;
+}
+
+/* Collapsed animation (owner request: extra screen space) — a slim bar instead of the full
+   scene, same caption text every mode already has, just visible instead of sr-only for idle. */
+.ship-stage-collapsed {
+  margin: 12px 0;
+}
+
+.ship-stage-collapsed .stage-caption {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.ship-stage-overlay-host {
+  position: relative;
+}
+
+.stage-toggle-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(5, 7, 11, 0.55);
+}
+
+/* Reserve room so the overlay toggle never sits under the collapsed caption's own text. */
+.ship-stage-collapsed .stage-caption {
+  padding-right: 130px;
+}
+
+.debris {
+  position: absolute;
+  right: -40px;
+  background: #3a3f47;
+  border: 1px solid #6b7480;
+  clip-path: polygon(10% 30%, 40% 0, 90% 20%, 100% 60%, 60% 100%, 15% 85%);
+  animation: debris-drift linear infinite;
+  opacity: 0.9;
+}
+
+.drone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  animation: drone-orbit linear infinite;
+}
+
+.drone-body {
+  position: absolute;
+  left: -7px;
+  top: -5px;
+  width: 14px;
+  height: 10px;
+  border-radius: 5px;
+  background: #cfd8e3;
+  border: 1px solid #56697d;
+  box-shadow: 0 0 8px rgba(120, 190, 255, 0.7);
+}
+
+.drone-beam {
+  position: absolute;
+  left: -1px;
+  top: 5px;
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(#7fd0ff, transparent);
+  opacity: 0.8;
+}
+
+.stage-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffd76a;
+  box-shadow: 0 0 10px 3px rgba(255, 190, 60, 0.9);
+  animation: spark-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes ship-idle {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(0, -4px);
+  }
+}
+
+@keyframes drone-orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--r)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--r)) rotate(-360deg);
+  }
+}
+
+@keyframes spark-blink {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes debris-drift {
+  from {
+    transform: translateX(0) rotate(0deg);
+  }
+  to {
+    transform: translateX(-140vw) rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.parked .scene-ship,
+  .transit-scene.parked .ship-flame,
+  .drone,
+  .spark,
+  .debris {
+    animation: none;
+  }
+}
+
+/* admin (S11): the screens were built with no CSS hooks of their own — every element below is
+   bare markup in ~15 different files. This skins them generically under one wrapper instead of
+   a className in each file; a per-screen layout pass (grouped filter bars, grid forms) can
+   follow later. ------------------------------------------------------------------------------ */
+.admin-shell {
+  padding-top: 14px;
+}
+
+.admin-nav {
+  margin: 0 0 8px;
+  border-radius: 10px;
+}
+
+/* Round-5 owner follow-up: each of Stats/Editable is one click-to-open menu now, not a
+   permanently expanded row. */
+.admin-nav-dropdown {
+  position: relative;
+}
+
+.admin-nav-trigger {
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-nav-trigger::after {
+  content: '▾';
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.admin-nav-trigger[aria-expanded='true']::after {
+  content: '▴';
+}
+
+.admin-nav-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.admin-nav-panel .nav-link {
+  padding: 7px 10px;
+  border-radius: 6px;
+}
+
+.admin-nav-panel .nav-link:hover {
+  background: var(--panel);
+}
+
+.admin-shell h2 {
+  margin: 22px 0 10px;
+  font-size: 18px;
+}
+
+.admin-shell h2:first-child {
+  margin-top: 0;
+}
+
+.admin-shell h3 {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  color: var(--mut);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.admin-shell section {
+  margin-bottom: 22px;
+}
+
+.admin-shell p {
+  color: var(--mut);
+  margin: 4px 0;
+}
+
+.admin-shell a:not(.nav-link) {
+  color: var(--blue);
+}
+
+.admin-shell table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.admin-shell th,
+.admin-shell td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.admin-shell th {
+  color: var(--mut);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.admin-shell tbody tr:hover {
+  background: var(--panel2);
+}
+
+.admin-shell button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 2px 4px 2px 0;
+}
+
+.admin-shell button:hover:not(:disabled) {
+  border-color: var(--mut);
+}
+
+.admin-shell button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tuning-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.grid-cells-editor {
+  display: inline-block;
+  border: 1px solid var(--line);
+}
+
+.grid-cells-row {
+  display: flex;
+}
+
+.grid-cells-cell {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+}
+
+.grid-cells-cell.painted {
+  background: var(--spark);
+}
+
+.grid-cells-cell.anchor {
+  background: var(--bad);
+  cursor: default;
+}
+
+.connector-layout-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.connector-candidate {
+  display: inline-block;
+  border: 1px solid var(--line);
+  padding: 4px;
+}
+
+.connector-cell-row {
+  display: flex;
+}
+
+.connector-cell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+}
+
+.connector-side {
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-dim);
+}
+
+.connector-side-N { grid-column: 1 / 3; grid-row: 1; }
+.connector-side-S { grid-column: 1 / 3; grid-row: 2; }
+.connector-side-W { grid-column: 1; grid-row: 1 / 3; }
+.connector-side-E { grid-column: 2; grid-row: 1 / 3; }
+
+.connector-kind-central { color: var(--spark); font-weight: 700; }
+.connector-kind-split { color: var(--amber); font-weight: 700; }
+.connector-kind-universal { color: var(--ok); font-weight: 700; }
+
+/* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
+   otherwise flatten these back into square admin buttons — round-5 owner request (filters),
+   scoped fix only; the wider "admin CSS is a mess" cleanup is its own backlog item. */
+.admin-shell .chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  margin: 0;
+  font-size: 12px;
+  background: var(--panel);
+  color: var(--mut);
+}
+
+/* Owner request (round 5, auto-save): a small status word next to Save instead of a silent
+   background write. */
+.auto-save-status {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.admin-shell input:focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.admin-shell label {
+  display: block;
+  font-size: 12px;
+  color: var(--mut);
+  margin: 10px 0 4px;
+}
+
+/* Round-5 cleanup ("the admin tables/forms CSS is a mess"): a long single-column list of fields
+   (Parts has ~20) made every edit a lot of scrolling. Short fields (numbers, selects) pair up
+   two-to-a-row on a wide-enough modal; locale-map pairs and JSON stay full width. */
+.schema-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 16px;
+}
+
+.schema-form-grid .field {
+  margin: 0;
+}
+
+.schema-form-grid .field-wide {
+  grid-column: 1 / -1;
+}
+
+.schema-form-grid .field-wide input {
+  display: inline-block;
+  width: calc(50% - 6px);
+}
+
+.schema-form-grid .field-wide input:first-of-type {
+  margin-right: 12px;
+}
+
+.field-required {
+  margin-left: 6px;
+  color: var(--spark);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 3px;
+  color: var(--mut);
+  font-size: 11px;
+}
+
+/* Entity edit/create forms (Parts alone has ~20 fields) need more room than the default
+   confirm-dialog width once they're a two-column grid. */
+.admin-shell .modal {
+  width: min(640px, 94vw);
+}
+
+.admin-shell ul {
+  padding-left: 18px;
+  color: var(--mut);
+}
+
+/* A dialog-like confirm/import panel (BundleDialog and friends): plain divs today, but this
+   keeps them from reading as part of the page flow if a screen adds a fixed/floating one. */
+.admin-shell .panel,
+.admin-shell dialog {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+/* report: parts-damage table (Details tab) ------------------------------------------------ */
+.parts-damage-list {
+  padding: 0;
+  list-style: none;
+}
+
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.parts-damage-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.parts-damage-lost {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
