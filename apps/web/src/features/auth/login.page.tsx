@@ -53,6 +53,7 @@ export function LoginPage() {
           <button className="btn primary block" type="submit" disabled={login.isPending}>
             {t('login.submit')}
           </button>
+          
           {login.isError && (
             <p className="error-text" role="alert">
               {t(rateLimited ? 'error.RATE_LIMITED' : 'login.error.invalidCredentials')}
@@ -61,6 +62,9 @@ export function LoginPage() {
         </form>
         <p className="auth-alt">
           <Link to="/register">{t('login.registerLink')}</Link>
+        </p>
+        <p className="auth-alt">
+          <Link to="/forgot-password">{t('login.forgotPasswordLink')}</Link>
         </p>
       </section>
     </main>

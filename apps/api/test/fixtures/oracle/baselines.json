@@ -1,40 +1,91 @@
 {
   "alvos": {
-    "combate_winrate": [45, 60],
-    "engasgo_pct": [2, 12],
-    "falencia_pct": [2, 15],
-    "margem_mediana": [80, 400],
-    "missoes_tier2": [4, 10],
-    "missoes_tier5": [60, 160],
-    "tier5_pct": [15, 55]
+    "combate_winrate": [
+      45,
+      60
+    ],
+    "engasgo_pct": [
+      2,
+      12
+    ],
+    "falencia_pct": [
+      2,
+      15
+    ],
+    "margem_mediana": [
+      80,
+      400
+    ],
+    "missoes_tier2": [
+      4,
+      10
+    ],
+    "missoes_tier5": [
+      60,
+      160
+    ],
+    "tier5_pct": [
+      15,
+      55
+    ]
   },
   "layer3": {
     "life_sweep": {
       "band": {
         "bankruptcy_pct": 0,
         "choke_pct_max": 3,
-        "combat_winrate": [53.5, 57.5],
-        "median_margin": [760, 820],
-        "missions_tier2_median": [8, 10],
+        "combat_winrate": [
+          53.5,
+          57.5
+        ],
+        "median_margin": [
+          760,
+          820
+        ],
+        "missions_tier2_median": [
+          8,
+          10
+        ],
         "missions_tier5_median": {
-          "manutencao_100": [113, 129],
-          "manutencao_200": [121, 137],
-          "manutencao_350": [136, 152]
+          "manutencao_100": [
+            113,
+            129
+          ],
+          "manutencao_200": [
+            121,
+            137
+          ],
+          "manutencao_350": [
+            136,
+            152
+          ]
         }
       },
       "n_lives": 2000,
       "oracle": {
         "bankruptcy_pct": 0,
-        "choke_pct": [0, 2],
-        "combat_winrate": [55, 56],
-        "median_margin": [778, 803],
+        "choke_pct": [
+          0,
+          2
+        ],
+        "combat_winrate": [
+          55,
+          56
+        ],
+        "median_margin": [
+          778,
+          803
+        ],
         "missions_tier2_median": 9,
         "missions_tier5_median": {
           "manutencao_100": 121,
           "manutencao_200": 129,
           "manutencao_350": 144
         },
-        "tier5_reached_pct": [98, 100]
+        "tier5_reached_pct": [
+          98,
+          100
+        ]
       },
       "seed": 1
     },
@@ -65,33 +116,63 @@
       },
       "n_per_order": 1500,
       "oracle": {
-        "Blindado": [40.6, 41.3],
-        "DanoAlto": [54.4, 55.1],
-        "spread": [13.3, 14.0]
+        "Blindado": [
+          40.6,
+          41.3
+        ],
+        "DanoAlto": [
+          54.4,
+          55.1
+        ],
+        "spread": [
+          13.3,
+          14.0
+        ]
       }
     }
   },
   "layer4": {
     "band": {
-      "combat_winrate": [45, 60],
-      "engasgo_pct": [0.5, 12],
-      "falencia_pct": [0, 15],
-      "median_margin": [740, 950],
-      "missions_tier2_median": [4, 10],
-      "missions_tier5_median": [60, 160],
-      "tier5_pct": [90, 100]
+      "combat_winrate": [
+        45,
+        60
+      ],
+      "engasgo_pct": [
+        2,
+        12
+      ],
+      "falencia_pct": [
+        0,
+        15
+      ],
+      "median_margin": [
+        740,
+        850
+      ],
+      "missions_tier2_median": [
+        4,
+        10
+      ],
+      "missions_tier5_median": [
+        60,
+        160
+      ],
+      "tier5_pct": [
+        90,
+        100
+      ]
     },
     "baseline": {
-      "combat_winrate": 54.2,
-      "engasgo_pct": 0.8,
+      "combat_winrate": 55.1,
+      "engasgo_pct": 2.33,
       "falencia_pct": 0,
-      "median_margin": 881.6,
-      "missions_tier2_median": 8,
-      "missions_tier5_median": 113,
-      "tier5_pct": 99.2
+      "median_margin": 766.4,
+      "missions_tier2_median": 10,
+      "missions_tier5_median": 135,
+      "tier5_pct": 97.2
     },
     "n_lives_per_config": 120,
-    "note": "Production-mode baseline recorded by test/validation/production-mode.spec.ts (first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, median margin ~780 > 400) the band anchors to oracle-measured reality (layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13). Re-baselined 2026-09-29 (owner request, playtest round 3): reward_danger_divisor 15→8 and reward_distance_divisor 3000→1500 roughly double the reward spread between an easy/short mission and a hard/long one. Expected, accepted consequences of paying more: median_margin rose (766→882, still capped below runaway) and engasgo_pct fell (2.33%→0.8%, better-funded pilots repair more and choke less) — the floor was lowered rather than removed so the wear mechanic still has to bite sometimes."
+    "note": "Production-mode baseline recorded by test/validation/production-mode.spec.ts (first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, median margin ~780 > 400) the band anchors to oracle-measured reality (layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13)."
   },
   "version": 1
 }

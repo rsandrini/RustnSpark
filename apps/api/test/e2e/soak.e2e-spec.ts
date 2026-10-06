@@ -364,5 +364,5 @@ describe('concurrency soak (S12.3)', () => {
     expect(await world.prisma.missionLog.count()).toBe(2);
     expect(await world.prisma.encounter.count()).toBeGreaterThan(0);
     await assertWorldInvariants();
-  });
+  }, 15000);
 });

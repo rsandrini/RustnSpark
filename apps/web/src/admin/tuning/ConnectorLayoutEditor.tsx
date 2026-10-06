@@ -12,6 +12,7 @@ export interface ConnectorLayout {
 
 const CYCLE: ConnectorKind[] = ['none', 'central', 'split', 'universal'];
 const SIDES: ConnectorSide[] = ['N', 'E', 'S', 'W'];
+const ADD_CANDIDATE_LABEL = 'Add candidate';
 
 export interface ConnectorLayoutEditorProps {
   value: ConnectorLayout[] | undefined;
@@ -76,7 +77,7 @@ export function ConnectorLayoutEditor({ value, w, h, onChange }: ConnectorLayout
         </div>
       ))}
       <button type="button" onClick={() => onChange([...layouts, { cells: [] }])}>
-        Add candidate
+        {ADD_CANDIDATE_LABEL}
       </button>
     </div>
   );

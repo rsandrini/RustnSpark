@@ -282,7 +282,7 @@ export function EntityScreen() {
           />
         )}
         <SchemaForm
-          key={String(editingRow?.id ?? editingRow?.partType ?? 'create')}
+          key={editingRow === null ? 'create' : String(editingRow.id ?? editingRow.partType)}
           fields={visibleFields}
           initialData={editingRow ?? undefined}
           onSubmit={handleSubmit}

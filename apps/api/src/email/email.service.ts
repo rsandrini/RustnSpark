@@ -1,0 +1,41 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Resend } from 'resend';
+
+@Injectable()
+export class EmailService {
+  private readonly resend: Resend;
+
+  constructor(private readonly configService: ConfigService) {
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is not defined');
+    }
+
+    this.resend = new Resend(apiKey);
+  }
+
+  async sendTemplate(to: string | string[], subject: string, html: string): Promise<void> {
+    const fromName = this.configService.get<string>('RESEND_FROM_NAME');
+    const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL');
+    const from = fromName && fromEmail ? `${fromName} <${fromEmail}>` : 'noreply@example.com';
+
+    await this.resend.emails.send({
+      from,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    });
+  }
+
+  async sendPasswordReset(email: string, resetUrl: string): Promise<void> {
+    const html = `
+      <p>You requested a password reset in RustnSpark.</p>
+      <p><a href="${resetUrl}">Reset your password</a></p>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    await this.sendTemplate(email, 'Reset your password', html);
+  }
+}

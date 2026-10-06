@@ -24,6 +24,30 @@
       "generic": "Não foi possível criar a conta"
     }
   },
+  "forgotPasswordLink": "Esqueceu a senha?",
+  "forgotPassword": {
+    "title": "Redefinir senha",
+    "emailLabel": "E-mail",
+    "submit": "Enviar link de redefinição",
+    "success": "Se este e-mail estiver cadastrado, você receberá um link de redefinição.",
+    "backToLogin": "Voltar para o login",
+    "error": {
+      "generic": "Não foi possível solicitar a redefinição de senha"
+    }
+  },
+  "resetPassword": {
+    "title": "Escolha uma nova senha",
+    "passwordLabel": "Nova senha",
+    "confirmPasswordLabel": "Confirmar nova senha",
+    "submit": "Atualizar senha",
+    "success": "Senha atualizada. Redirecionando para o login...",
+    "backToLogin": "Voltar para o login",
+    "error": {
+      "mismatch": "As senhas não coincidem",
+      "invalidPassword": "A senha deve ter 8 a 64 caracteres",
+      "invalidToken": "Link de redefinição inválido ou expirado"
+    }
+  },
   "onboarding": {
     "title": "Escolha sua facção",
     "subtitle": "Uma escolha para todo o contrato — sua bandeira voa em cada missão depois disto.",

@@ -30,4 +30,12 @@ export const authApi = {
   async updateLocale(body: dto.UpdateLocaleRequest): Promise<dto.UpdateLocaleResponse> {
     return client.post<dto.UpdateLocaleResponse>('/v1/players/me/locale', body);
   },
+
+  async requestPasswordReset(email: string): Promise<void> {
+    return client.post<void>('/v1/auth/forgot-password', { email });
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    return client.post<void>('/v1/auth/reset-password', { token, newPassword });
+  },
 };

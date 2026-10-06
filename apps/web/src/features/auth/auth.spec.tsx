@@ -77,4 +77,36 @@ describe('auth flow', () => {
       await screen.findByRole('heading', { name: /choose your faction/i }),
     ).toBeInTheDocument();
   });
+
+  it('submits the forgot-password form and shows a success message', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/forgot-password'] });
+
+    await user.type(screen.getByLabelText(/email/i), 'pilot@example.com');
+    await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+    expect(await screen.findByText(/if this email is registered/i)).toBeInTheDocument();
+  });
+
+  it('submits the reset-password form and shows a success message', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/reset-password?token=abc123'] });
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'new-password-2');
+    await user.type(screen.getByLabelText(/confirm new password/i), 'new-password-2');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(await screen.findByText(/password updated/i)).toBeInTheDocument();
+  });
+
+  it('shows a validation error when reset passwords do not match', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(routes, { initialEntries: ['/reset-password?token=abc123'] });
+
+    await user.type(screen.getByLabelText(/^new password$/i), 'new-password-2');
+    await user.type(screen.getByLabelText(/confirm new password/i), 'different-password');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
+  });
 });

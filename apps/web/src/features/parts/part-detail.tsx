@@ -280,7 +280,7 @@ export function PartDetail({ part, compare }: PartDetailProps) {
   const rows = [
     ...EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
       key,
-      sheetKey: key as keyof ShipSheet,
+      sheetKey: key,
       value: format(catalog[key]),
     })),
     ...BASE_STATS.map((stat) => ({ key: stat.key, sheetKey: stat.sheetKey, value: format(stat.read(catalog)) })),
@@ -429,7 +429,7 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
     : [];
   const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
     key,
-    sheetKey: key as keyof ShipSheet,
+    sheetKey: key,
     value: format(catalog[key]),
   }));
   const baseRows = BASE_STATS.map((stat) => ({

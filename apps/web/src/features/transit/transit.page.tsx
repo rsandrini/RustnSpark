@@ -39,6 +39,7 @@ export function TransitPage({
 }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const legSeparator = ' · ';
   const [dispatchServerTime, setDispatchServerTime] = useState<string | undefined>(undefined);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -400,7 +401,7 @@ export function TransitPage({
               {currentIndex !== -1 && windows[0] !== undefined
                 ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
                 : t('transit.waitingLeg')}
-              {' · '}
+              {legSeparator}
               {t('transit.arrivesIn')}{' '}
               {(mission.arrivalAt ?? '') !== '' && (
                 <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />

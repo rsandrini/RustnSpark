@@ -102,6 +102,9 @@ export function ShipSheetPanel({
   const conditionBand = conditionTone(sheet.condition);
   const structureBand = structureTone(sheet.structureUsed, sheet.structureBudget);
   const defense = sheet.bli + sheet.esc;
+  const autonomyText = `${number(sheet.autonomy)}%`;
+  const conditionText = `${number(sheet.condition)}%`;
+  const structureText = `${number(sheet.structureUsed)} / ${number(sheet.structureBudget)}`;
 
   const valueFor = (key: string): string => {
     switch (key) {
@@ -117,7 +120,7 @@ export function ShipSheetPanel({
       case 'autonomy':
         return `${number(sheet.autonomy)}%`;
       default:
-        return number(sheet[key as keyof ShipSheet] as number);
+        return number(sheet[key as keyof ShipSheet]);
     }
   };
 
@@ -187,11 +190,11 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.autonomy')}>
           <span>{t('hangar.headline.autonomy')}</span>
-          <b className={`tone-${autonomyBand}`}>{number(sheet.autonomy)}%</b>
+          <b className={`tone-${autonomyBand}`}>{autonomyText}</b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
           <span>{t('hangar.headline.condition')}</span>
-          <b className={`tone-${conditionBand}`}>{number(sheet.condition)}%</b>
+          <b className={`tone-${conditionBand}`}>{conditionText}</b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
           <span>{t('hangar.headline.energy')}</span>
@@ -202,9 +205,7 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.structure')}>
           <span>{t('hangar.headline.structure')}</span>
-          <b className={`tone-${structureBand}`}>
-            {number(sheet.structureUsed)} / {number(sheet.structureBudget)}
-          </b>
+          <b className={`tone-${structureBand}`}>{structureText}</b>
         </div>
       </div>
       <details className="sheet-details">

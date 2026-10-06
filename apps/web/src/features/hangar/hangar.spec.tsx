@@ -238,8 +238,11 @@ describe('hangar (S10.4)', () => {
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    const bridgeBlock = block(container, 'part-bridge');
-    expect(bridgeBlock).not.toBeNull();
+    const bridgeBlock = await waitFor(() => {
+      const el = block(container, 'part-bridge');
+      expect(el).not.toBeNull();
+      return el;
+    });
     // Not printed on the block itself — only in the popup that appears on hover.
     expect(bridgeBlock?.closest('g')?.querySelector('text.rarity-label')).toBeNull();
 

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { Prisma, type Account, type Player } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
 import { toPlayerProfile, type PlayerProfile } from '../players/players.service.js';
@@ -10,6 +10,9 @@ import {
   type IssuedRefreshToken,
 } from './refresh-token.service.js';
 import { TokenService } from './token.service.js';
+import { createHash, randomBytes } from 'crypto';
+import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../email/email.service.js';
 
 // R25/R29: bad credentials, a banned account, and every refresh-token failure collapse to one
 // generic message each — the client must not be able to tell which case it hit.
@@ -22,6 +25,8 @@ export const REGISTER_CONFLICT_MESSAGE = 'email or player name is already in use
 // verification cost matches a real login regardless of the running env's ARGON2_* settings.
 const DUMMY_PASSWORD_HASH =
   '$argon2id$v=19$m=19456,t=2,p=1$gxCS/XYj2xmKqkSToyszhg$Y7AbPCUe6tiYs0Aty/BzR+nvBIIUr3+AQAvEfO77Psk';
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export interface RegisterInput {
   email: string;
@@ -43,6 +48,8 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
     private readonly refreshTokenService: RefreshTokenService,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   // S3 C1: register creates the account + player and returns a full session so the client can
@@ -152,5 +159,69 @@ export class AuthService {
       role: account.role,
     });
     return { accessToken, refresh, player: toPlayerProfile(player, account.role) };
+  }
+
+  async forgotPassword(rawEmail: string): Promise<void> {
+    const email = rawEmail.toLowerCase().trim();
+    const account = await this.prisma.account.findUnique({
+       where: { email }, 
+       select: { id: true, email: true }
+      });
+
+    if (!account) return;
+
+    const recent = await this.prisma.passwordResetToken.findFirst({
+      where: {
+        accountId: account.id,
+        usedAt: null,
+        createdAt: {gt: new Date(Date.now() - 5 * 60 * 1000)},
+      },
+    });
+
+    if (recent) return;
+
+    const rawToken = randomBytes(32).toString('base64url');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        accountId: account.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    });
+
+    const webUrl = this.configService.get<string>('WEB_URL') ?? 'http://localhost:3000';
+    const resetUrl = `${webUrl}/reset-password?token=${rawToken}`;
+    await this.emailService.sendPasswordReset(account.email, resetUrl);
+  }
+
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const passwordHash = await this.passwordService.hash(newPassword);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.account.update({
+        where: { id: resetToken.accountId },
+        data: { passwordHash },
+      });
+      await tx.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      });
+
+      await tx.refreshToken.deleteMany({ 
+        where: { accountId: resetToken.accountId } 
+      });
+    });
+
   }
 }
