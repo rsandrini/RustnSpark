@@ -43,6 +43,7 @@ describe('validateEnv', () => {
       ARGON2_TIME_COST: 2,
       ARGON2_PARALLELISM: 1,
       RECONCILE_INTERVAL_MS: 30000,
+      WEB_URL: 'http://localhost:3000',
     });
   });
 
@@ -66,6 +67,35 @@ describe('validateEnv', () => {
     const source: Record<string, string | undefined> = validSource();
     delete source[key];
     expect(validateEnv(source)[key as keyof ReturnType<typeof validateEnv>]).toBe(defaultValue);
+  });
+
+  it('defaults WEB_URL to http://localhost:3000', () => {
+    const source: Record<string, string | undefined> = validSource();
+    delete source.WEB_URL;
+    expect(validateEnv(source).WEB_URL).toBe('http://localhost:3000');
+  });
+
+  it.each(['not a url', ''])('refuses an invalid WEB_URL (%p)', (value) => {
+    expect(errorOf({ ...validSource(), WEB_URL: value }).message).toContain('WEB_URL');
+  });
+
+  it('treats Resend email variables as optional', () => {
+    expect(validateEnv(validSource()).RESEND_API_KEY).toBeUndefined();
+    expect(validateEnv(validSource()).RESEND_FROM_EMAIL).toBeUndefined();
+    expect(validateEnv(validSource()).RESEND_FROM_NAME).toBeUndefined();
+    const withEmail = validateEnv({
+      ...validSource(),
+      RESEND_API_KEY: 're_test',
+      RESEND_FROM_EMAIL: 'noreply@example.com',
+      RESEND_FROM_NAME: 'RustnSpark',
+    });
+    expect(withEmail.RESEND_API_KEY).toBe('re_test');
+    expect(withEmail.RESEND_FROM_EMAIL).toBe('noreply@example.com');
+    expect(withEmail.RESEND_FROM_NAME).toBe('RustnSpark');
+  });
+
+  it('accepts an empty RESEND_API_KEY as "email disabled"', () => {
+    expect(validateEnv({ ...validSource(), RESEND_API_KEY: '' }).RESEND_API_KEY).toBe('');
   });
 
   it.each(['ARGON2_MEMORY_KIB', 'ARGON2_TIME_COST', 'ARGON2_PARALLELISM', 'RECONCILE_INTERVAL_MS'])(

@@ -9,10 +9,14 @@ import { createSecurityWorld, type SecurityWorld } from './support.js';
 // can neither hide a missing key nor keep a route that later gained one.
 
 const NATURALLY_IDEMPOTENT: Record<string, string> = {
+  'POST /v1/auth/forgot-password':
+    'always 204: a repeat only (re)issues a reset token — no game state, no enumeration',
   'POST /v1/auth/login': 'issues a new session each time; no game state changes',
   'POST /v1/auth/logout': 'revoking an already revoked token is a no-op',
   'POST /v1/auth/refresh': 'rotation with reuse detection (R-series): a replay revokes the family',
   'POST /v1/auth/register': 'email is unique: a repeat is a 409, never a second account',
+  'POST /v1/auth/reset-password':
+    'single-use token: a repeat is rejected, never a second password change',
   'POST /v1/players/me/locale': 'sets a value: repeating is the same state',
   'POST /v1/players/me/onboarding':
     'single-shot per player, guarded by a row lock: repeat returns the ship',

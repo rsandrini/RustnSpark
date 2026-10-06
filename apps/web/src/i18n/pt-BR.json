@@ -5,6 +5,7 @@
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "registerLink": "Criar uma conta",
+    "forgotPasswordLink": "Esqueceu a senha?",
     "error": {
       "invalidCredentials": "Credenciais inválidas"
     }
@@ -24,7 +25,6 @@
       "generic": "Não foi possível criar a conta"
     }
   },
-  "forgotPasswordLink": "Esqueceu a senha?",
   "forgotPassword": {
     "title": "Redefinir senha",
     "emailLabel": "E-mail",

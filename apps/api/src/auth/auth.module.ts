@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from '../admin/admin.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -13,7 +14,7 @@ import { EmailModule } from '../email/email.module.js';
 // AdminModule is imported for SystemFlagService only: register gates on the `register.open`
 // feature flag (S11.2). It exports services, not auth dependencies, so no cycle forms.
 @Module({
-  imports: [AdminModule, EmailModule],
+  imports: [AdminModule, EmailModule, ConfigModule],
   controllers: [AuthController],
   providers: [AuthService, PasswordService, RefreshTokenService, TokenService],
   exports: [AuthService],

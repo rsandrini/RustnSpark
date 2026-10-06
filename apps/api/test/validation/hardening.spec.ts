@@ -63,6 +63,7 @@ function makeEnv(): EnvService {
     ARGON2_TIME_COST: 1,
     ARGON2_PARALLELISM: 1,
     RECONCILE_INTERVAL_MS: 30000,
+    WEB_URL: 'http://localhost:3000',
   });
 }
 

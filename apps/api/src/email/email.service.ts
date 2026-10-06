@@ -4,19 +4,19 @@ import { Resend } from 'resend';
 
 @Injectable()
 export class EmailService {
-  private readonly resend: Resend;
+  // Null when RESEND_API_KEY is absent (tests/CI/local shells without email config):
+  // the app must boot either way — only an actual send fails.
+  private readonly resend: Resend | null;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
-
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is not defined');
-    }
-
-    this.resend = new Resend(apiKey);
+    this.resend = apiKey ? new Resend(apiKey) : null;
   }
 
   async sendTemplate(to: string | string[], subject: string, html: string): Promise<void> {
+    if (!this.resend) {
+      throw new Error('Email is not configured: RESEND_API_KEY is not set');
+    }
     const fromName = this.configService.get<string>('RESEND_FROM_NAME');
     const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL');
     const from = fromName && fromEmail ? `${fromName} <${fromEmail}>` : 'noreply@example.com';
