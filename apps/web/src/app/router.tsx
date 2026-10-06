@@ -17,6 +17,8 @@ import { TopBar } from '../ui/TopBar';
 import { useWalletSync } from '../features/transit/use-active-mission';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { NotFoundPage } from '../pages/not-found.page';
+import { ForgotPasswordPage } from '../features/auth/forgot-password.page';
+import { ResetPasswordPage } from '../features/auth/reset-password.page';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
 
@@ -85,6 +87,8 @@ export const routes = [
       },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
       {
         path: '/onboarding',
         element: (

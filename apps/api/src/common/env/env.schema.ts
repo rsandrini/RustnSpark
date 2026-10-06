@@ -44,6 +44,14 @@ export const envSchema = z.object({
   ARGON2_PARALLELISM: positiveInt(DEFAULT_ARGON2_PARALLELISM),
   // Reconcile tick granularity (D4): infrastructure, not balance — default 30 s.
   RECONCILE_INTERVAL_MS: positiveInt(DEFAULT_RECONCILE_INTERVAL_MS),
+  // Browser-facing origin for links the API generates in emails (password reset).
+  // Default matches the AuthService fallback used when compose/vite never set it.
+  WEB_URL: z.url().default('http://localhost:3000'),
+  // Resend email (password reset). Optional by design: EmailService boots with a
+  // null client when RESEND_API_KEY is absent (CI, tests, local shells).
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+  RESEND_FROM_NAME: z.string().optional(),
 });
 
 export type Env = z.output<typeof envSchema>;

@@ -488,6 +488,10 @@ export const handlers = [
 
   http.post('/v1/auth/logout', () => new HttpResponse(null, { status: 204 })),
 
+  http.post('/v1/auth/forgot-password', () => new HttpResponse(null, { status: 204 })),
+
+  http.post('/v1/auth/reset-password', () => new HttpResponse(null, { status: 204 })),
+
   http.get('/v1/system/notices', () => ok<SystemNoticesResponse>({ items: [] })),
 
   http.get('/v1/players/me', () => ok<PlayerProfileResponse>(profile())),

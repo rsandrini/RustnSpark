@@ -9,10 +9,14 @@ import { createSecurityWorld, type SecurityWorld } from './support.js';
 // can neither hide a missing key nor keep a route that later gained one.
 
 const NATURALLY_IDEMPOTENT: Record<string, string> = {
+  'POST /v1/auth/forgot-password':
+    'always 204: a repeat only (re)issues a reset token — no game state, no enumeration',
   'POST /v1/auth/login': 'issues a new session each time; no game state changes',
   'POST /v1/auth/logout': 'revoking an already revoked token is a no-op',
   'POST /v1/auth/refresh': 'rotation with reuse detection (R-series): a replay revokes the family',
   'POST /v1/auth/register': 'email is unique: a repeat is a 409, never a second account',
+  'POST /v1/auth/reset-password':
+    'single-use token: a repeat is rejected, never a second password change',
   'POST /v1/players/me/locale': 'sets a value: repeating is the same state',
   'POST /v1/players/me/onboarding':
     'single-shot per player, guarded by a row lock: repeat returns the ship',
@@ -27,6 +31,11 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'conditional ACCEPTED→IN_TRANSIT and IN_PORT→ON_MISSION updates: a repeat is a 409 with no second effect',
   'POST /v1/locations/:id/scavenge':
     'per-location cooldown (D28): a repeat inside the window is a 409 SCAVENGE_COOL_DOWN with no second roll',
+  'POST /v1/locations/:id/mine':
+    'the one-active-mission unique index: a repeat while a dig is flying is a 409 with no second effect',
+  'POST /v1/parts/:id/upgrade/quote': 'read-shaped: no state change',
+  'POST /v1/ships/:id/energy-mode': 'sets a value: repeating is the same state',
+  'POST /v1/ships/:id/format': 'sets the ship format to a value: repeating is the same state',
   'POST /v1/ships/:id/refuel/quote': 'read-shaped: no state change',
   'POST /v1/inventory/discard':
     'destroys what is currently below the threshold: a repeat finds nothing',

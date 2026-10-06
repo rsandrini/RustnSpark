@@ -19,10 +19,12 @@ const key = (route: RouteInfo): string => `${route.method} ${route.path}`;
 
 /** Routes reachable without a token. Anything else being @Public() is a leak. */
 const PUBLIC_ROUTES = new Set([
+  'POST /v1/auth/forgot-password',
   'POST /v1/auth/login',
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
   'POST /v1/auth/register',
+  'POST /v1/auth/reset-password',
   'GET /v1/health',
   'GET /v1/health/live',
   'GET /v1/health/ready',
@@ -40,6 +42,9 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'GET /v1/locations/:id/missions': 'world data; the board hides other players’ private missions',
   'GET /v1/locations/:id/scavenge': 'world odds plus the caller’s own attempt counter only',
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
+  'POST /v1/locations/:id/mine': 'service checks the caller’s ship is at the location and has no active mission',
+  'POST /v1/parts/:id/upgrade': 'service checks the part instance belongs to the caller',
+  'POST /v1/parts/:id/upgrade/quote': 'service checks the part instance belongs to the caller (read-shaped)',
   'POST /v1/missions/:id/accept': 'service checks holder/private owner against the caller',
   'POST /v1/missions/:id/abandon':
     'service only lets the accepting player back out (404 otherwise)',
@@ -54,6 +59,9 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
   'POST /v1/locations/:id/scavenge',
+  'POST /v1/locations/:id/mine',
+  'POST /v1/parts/:id/upgrade',
+  'POST /v1/parts/:id/upgrade/quote',
   'POST /v1/missions/:id/abandon',
   'POST /v1/missions/:id/hold',
   'DELETE /v1/missions/:id/hold',

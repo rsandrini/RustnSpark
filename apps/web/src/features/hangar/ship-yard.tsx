@@ -24,6 +24,10 @@ interface View {
 const LABEL_ZOOM_CAP = 2.4;
 const LABEL_FONT = 0.42;
 
+function formatCondition(condition: number): string {
+  return `${Math.round(condition)}%`;
+}
+
 /** Word-wrap a part name into the lines that fit a block of the given size at this zoom. */
 export function labelLines(name: string, width: number, height: number, zoom: number): string[] {
   const boost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
@@ -419,7 +423,7 @@ export function ShipYard({
                     x={placement.gx + width / 2}
                     y={placement.gy + height - 0.155}
                   >
-                    {Math.round(look.condition)}%
+                    {formatCondition(look.condition)}
                   </text>
                 </g>
               )}

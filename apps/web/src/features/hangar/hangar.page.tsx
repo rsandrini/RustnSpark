@@ -145,7 +145,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // now-disabled tab.
   useEffect(() => {
     if (ship !== undefined && ship.status !== 'IN_PORT' && pageTab !== 'ship') {
-      navigate('/hangar', { replace: true });
+      void navigate('/hangar', { replace: true });
     }
   }, [ship, pageTab, navigate]);
 
@@ -433,11 +433,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
           mission now lives in the persistent top bar instead of taking a line here. */}
-      <TransitPage embedded onGoToBoard={() => goToTab('board')} />
+      <TransitPage embedded onGoToBoard={() => { void goToTab('board'); }} />
 
-      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => goToTab('ship')} />}
+      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => { void goToTab('ship'); }} />}
       {pageTab === 'port' && (
-        <PortPage embedded onGoToShip={() => goToTab('ship')} subNavContainer={subNavNode} />
+        <PortPage embedded onGoToShip={() => { void goToTab('ship'); }} subNavContainer={subNavNode} />
       )}
 
       {pageTab === 'ship' && (

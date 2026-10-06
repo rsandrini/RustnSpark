@@ -21,8 +21,6 @@ export interface CombatOptions {
   readonly firstStrikeSide?: CombatSide;
 }
 
-type EnergyMode = NonNullable<CombatSheet['energyMode']>;
-
 interface EnergyState {
   budget: number;
   shieldPaid: boolean;

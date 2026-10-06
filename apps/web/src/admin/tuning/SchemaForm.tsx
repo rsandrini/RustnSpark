@@ -136,7 +136,6 @@ export function SchemaForm({
       if (autoSaveTimer.current !== null) clearTimeout(autoSaveTimer.current);
       flushAutoSaveRef.current();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (name: string, value: unknown, subKey?: string) => {

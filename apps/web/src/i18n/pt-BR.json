@@ -5,6 +5,7 @@
     "passwordLabel": "Senha",
     "submit": "Entrar",
     "registerLink": "Criar uma conta",
+    "forgotPasswordLink": "Esqueceu a senha?",
     "error": {
       "invalidCredentials": "Credenciais inválidas"
     }
@@ -22,6 +23,29 @@
       "conflict": "Esse e-mail ou nome de jogador já está em uso",
       "invalid": "Confira os campos: nome de 3 a 24 caracteres (letras, dígitos, _ ou -), senha com pelo menos 10 caracteres",
       "generic": "Não foi possível criar a conta"
+    }
+  },
+  "forgotPassword": {
+    "title": "Redefinir senha",
+    "emailLabel": "E-mail",
+    "submit": "Enviar link de redefinição",
+    "success": "Se este e-mail estiver cadastrado, você receberá um link de redefinição.",
+    "backToLogin": "Voltar para o login",
+    "error": {
+      "generic": "Não foi possível solicitar a redefinição de senha"
+    }
+  },
+  "resetPassword": {
+    "title": "Escolha uma nova senha",
+    "passwordLabel": "Nova senha",
+    "confirmPasswordLabel": "Confirmar nova senha",
+    "submit": "Atualizar senha",
+    "success": "Senha atualizada. Redirecionando para o login...",
+    "backToLogin": "Voltar para o login",
+    "error": {
+      "mismatch": "As senhas não coincidem",
+      "invalidPassword": "A senha deve ter 8 a 64 caracteres",
+      "invalidToken": "Link de redefinição inválido ou expirado"
     }
   },
   "onboarding": {

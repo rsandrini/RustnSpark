@@ -362,7 +362,7 @@ export class ShipsService implements OnModuleInit {
       include: { format: { select: { cells: true } } },
     });
     if (!ship) throw new NotFoundException('ship not found');
-    return ship as ShipWithFormat;
+    return ship;
   }
 
   private async loadShipWithRules(shipId: string): Promise<{ ship: ShipWithFormat; rules: GameRules }> {

@@ -11,6 +11,9 @@ import { AuthService, type AuthSession } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { REFRESH_TOKEN_TTL_MS } from './refresh-token.service.js';
+import { FORGOT_PASSWORD_POLICY, RESET_PASSWORD_POLICY } from '../common/throttling/policies.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 
 // D5/R26: the rotating refresh token rides an HttpOnly cookie scoped to the auth routes only;
 // `cookie` is used directly (no cookie-parser, no @nestjs/cookie). R26: `Secure` stays on even in
@@ -90,6 +93,20 @@ export class AuthController {
     await this.authService.logout(readRefreshCookie(request));
     clearRefreshCookie(response);
   }
+
+  @Post('forgot-password')
+  @HttpCode(204)
+  @ThrottleRoute(FORGOT_PASSWORD_POLICY)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    await this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(204)
+  @ThrottleRoute(RESET_PASSWORD_POLICY)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+  }
 }
 
 function setRefreshCookie(response: Response, session: AuthSession): void {
@@ -114,3 +131,4 @@ function readRefreshCookie(request: Request): string | undefined {
   if (!header) return undefined;
   return parseCookie(header)[REFRESH_COOKIE_NAME];
 }
+

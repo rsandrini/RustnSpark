@@ -53,3 +53,15 @@ export function defaultPolicyFor(method: string | undefined): ThrottleRoutePolic
 
 /** Interim per-IP default of D42, kept as the read class limit. */
 export const THROTTLE_LIMIT = READ_POLICY.limit;
+
+export const FORGOT_PASSWORD_POLICY: ThrottleRoutePolicy = {
+  limit: 3,
+  ttlMs: THROTTLE_TTL_MS,
+  key: 'ip',
+};
+
+export const RESET_PASSWORD_POLICY: ThrottleRoutePolicy = {
+  limit: 3,
+  ttlMs: THROTTLE_TTL_MS,
+  key: 'ip',
+};

@@ -5,6 +5,7 @@
     "passwordLabel": "Password",
     "submit": "Sign in",
     "registerLink": "Create an account",
+    "forgotPasswordLink": "Forgot your password?",
     "error": {
       "invalidCredentials": "Invalid credentials"
     }
@@ -22,6 +23,29 @@
       "conflict": "That email or player name is already taken",
       "invalid": "Check the fields: name 3–24 characters (letters, digits, _ or -), password at least 10 characters",
       "generic": "Could not create account"
+    }
+  },
+  "forgotPassword": {
+    "title": "Reset password",
+    "emailLabel": "Email",
+    "submit": "Send reset link",
+    "success": "If this email is registered, you will receive a reset link.",
+    "backToLogin": "Back to sign in",
+    "error": {
+      "generic": "Could not request password reset"
+    }
+  },
+  "resetPassword": {
+    "title": "Choose a new password",
+    "passwordLabel": "New password",
+    "confirmPasswordLabel": "Confirm new password",
+    "submit": "Update password",
+    "success": "Password updated. Redirecting to sign in...",
+    "backToLogin": "Back to sign in",
+    "error": {
+      "mismatch": "Passwords do not match",
+      "invalidPassword": "Password must be 8-64 characters",
+      "invalidToken": "Invalid or expired reset link"
     }
   },
   "onboarding": {
