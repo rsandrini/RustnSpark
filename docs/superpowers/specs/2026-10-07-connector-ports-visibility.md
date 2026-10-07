@@ -1,6 +1,6 @@
 # Connector ports: generation rules + visibility (no more universal)
 
-**Status:** reviewed plan (rev 3, 2026-10-07), not started. Branch:
+**Status:** reviewed plan (rev 4, 2026-10-07; phase E added, held), not started. Branch:
 `feat/connector-ports-visibility`. Scope: admin-defined **connector generation rules** per
 part type, deterministic generation per listing, seed of default rules, ports visible in
 Port/Market (before buy) and Hangar (build). Existing ships/instances: **no backfill** —
@@ -75,7 +75,9 @@ New nullable JSON column `PartCatalog.connectorRules`:
 ## Decisions (locked)
 
 1. **Default seed rules** (factory defaults, fill-if-null): every side `central` 100;
-   **ENGINE/WEAPON: `W` = `none` 100** (rotation changes facing; editable in admin).
+   **ENGINE/WEAPON: `W` = `none` 100**. In v1 `W` is the fixed class-constant facing side
+   for ENGINE/WEAPON (shared with phase E); admin validation rejects a non-`none` `W` for
+   those classes. A per-type `facingSide` is a later enhancement.
    `split` not in default rules.
 2. **Palette:** green = connected, red = incorrect, blue = available. Shapes: dot =
    central, bar = split, ring = universal, nothing = none.
@@ -92,7 +94,9 @@ New nullable JSON column `PartCatalog.connectorRules`:
    `market()` and `buy()` call one pure generator; `buy()` stores exactly that layout.
    Other creation points (kits, scavenge) generate with a fresh random seed.
 8. **Connector rules (`compatible`, `rotateSide`, world↔authored mapping) shared** in
-   `packages/contract`; API and web import them.
+   `packages/contract`; API and web import them. **Written 4-way from day one**
+   (`rot` ∈ 0|90|180|270 as quarter-turns, tested at all 4 angles × 4 sides) even though
+   `PlacementSchema.rot` stays `0|90` until phase E — avoids rewriting the helpers.
 9. **Existing `connectorLayouts` candidates column/editor retired from admin** (column
    left in DB for now, unused; instances keep storing concrete layouts). No ship-reset
    script.
@@ -122,6 +126,7 @@ New nullable JSON column `PartCatalog.connectorRules`:
   `connectorRules` (replacing `connectorLayouts`) with validation above; remove old
   footprint-cell validation. New admin editor `ConnectorRulesEditor.tsx` (4 sides ×
   kinds+weights, limits, blacklist rows) replacing `ConnectorLayoutEditor`; en + pt-BR.
+  Validator also rejects non-`none` `W` for ENGINE/WEAPON (decision 1).
 - **A6** `market()` attaches `connectors: ConnectorLayout | null` per listing (A2 with
   decision-7 seed); `buy()` re-derives the same value and persists it. Integration test:
   listed layout == bought instance layout (catalog + used); differs across days/slots.
@@ -173,5 +178,49 @@ New nullable JSON column `PartCatalog.connectorRules`:
 - Admin edits to rules affect only parts generated afterwards; a listing re-derived after
   an edit may show a different layout than before the edit — accepted (owner decision).
 
-**Estimate:** 3–4 days (admin rules editor added). **Order:** A0→A1→A2→A3→A4, A6→A7, A5,
+## Phase E — Part direction rules (HELD: separate branch, starts only after A–D merged)
+
+Source: owner brief "Part direction rules (engines exhaust / weapons facing)". Ports land
+first so direction rules are visible while testing.
+
+Locked: (1) **half-plane, literal** — ENGINE: no other part's cell beyond its rear edge
+along facing F, across the whole ship depth; WEAPON: same in firing direction (project
+occupied cells onto F; fail if another part's projection > this footprint's max
+projection). (2) **`rot` becomes 0|90|180|270**; facing = rotate(default, rot); ENGINE and
+WEAPON default facing `W` at rot 0 (class constant). (3) **Connector rule:** facing-side
+footprint cells carry only `none` — satisfied by construction by the phase A defaults.
+(4) no migration; (5) existing starter layouts may become invalid (owner resets DB).
+
+- **E1** API `validateLayout` (`ships/geometry.ts`): new `LayoutErrorCode`s
+  `EXHAUST_BLOCKED`, `FACING_BLOCKED` (`part.types.ts:47`) + facing-side connector check
+  (use the already-present `_connectorsByInstance` param). Auto-layout and save/preview
+  (`assertLayoutValid`) inherit it; blocked engines/weapons land in the existing omitted
+  list.
+- **E2** 4-way `rot` ripple: contract `PlacementSchema` (`index.ts:~155`), DTO
+  `@IsIn([0,90,180,270])`, footprint dims `rot % 180 !== 0` (`geometry.ts:63-64`, client
+  `hangar.geometry.ts`), auto-layout rotations `[0,90,180,270]`, rotate handler cycles 4
+  (`hangar.page.tsx ~:345`), and `canPlace` mirror. Connector side rotation already 4-way
+  from phase A (decision 8) — only wiring + `geometry.ts:164-181` switching from the
+  `rot===0` ternary to quarter-turns.
+- **E3** Client `canPlace` returns a reason (bounds/overlap/exhaust/facing) feeding the
+  rotate-hint status line; optional facing arrow on engine/weapon blocks.
+- **E4** Tests: geometry.spec (half-plane both classes × 4 rots; facing-side connector;
+  4-angle connector rotation), auto-layout.spec, DTO/contract; web `hangar.geometry.spec`,
+  `hangar.spec` (4-step rotate, blocked drop, problems panel), `ship-yard.spec` (update
+  2-step rotate assumptions). **Shared test vectors** between API and web placement rules
+  to prevent divergence.
+- **E5** i18n en + pt-BR: `hangar.problems.EXHAUST_BLOCKED`, `FACING_BLOCKED` (+ FIX_CLASS
+  map entries, `hangar.page.tsx:39`).
+- **E6** Fixtures: MSW starter layout + onboarding starter ship comply with the new rules
+  (or tests updated). Ops note (no code): owner resets DB/ship.
+- **E7** Gates as D1–D2. Risks: connector 4-way math (mitigated by early helpers + tests),
+  client/server divergence, auto-layout omitting engines often (surfaced already).
+
+Open questions for E: (a) instances with `connectors` null/`[]` (legacy, effectively
+universal) would fail the facing-side check — recommend **skipping that check when
+connectors are null/empty** so old parts aren't bricked before the reset; confirm.
+(b) The brief's "weapons never enclosed" is covered by the half-plane on the firing side
+only — sides/rear may be enclosed; confirm that is intended.
+
+**Estimate:** A–D 3–4 days; phase E +2–3 days (admin rules editor added). **Order:** A0→A1→A2→A3→A4, A6→A7, A5,
 C1, then B1–B3 / C2–C6, then D.
