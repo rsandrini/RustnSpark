@@ -106,6 +106,28 @@ an untested backup is a hope. Because mission resolution is deterministic (D19) 
 `MissionLog` stores its seed, rules hash and dispatch snapshot, any mission can be replayed from a
 restored database (Admin → Players → report → Replay).
 
+### 5.1 Keeping Admin-tuned values across a DB reset
+
+A reset (drop/recreate DB) loses everything tuned in the Admin. Save it first, re-apply after:
+
+```sh
+# 1. BEFORE the reset: export GameConfig + every entity table (read-only)
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --export /tmp/tuning.json
+docker compose cp api:/tmp/tuning.json ./backups/tuning-snapshot-$(date +%F).json
+
+# 2. reset the DB, then migrate + seed as usual (seed fills defaults only)
+
+# 3. AFTER: dry run (default) — shows creates/updates/unchanged and rows that fail validation
+docker compose cp ./backups/tuning-snapshot-<date>.json api:/tmp/tuning.json
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json
+# 4. apply (snapshot values win over seed defaults; exits 1 if any row failed)
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json --apply
+```
+
+Notes: fields the running build no longer has (e.g. a retired column) are skipped and listed
+under `skippedFields`; `null` values in the snapshot ("never set") are left at whatever the seed
+filled. Every applied row writes an audited tuning revision (actor `tuning-snapshot-cli`).
+
 ## 6. Operating the game
 
 | Situation | Action |

@@ -35,7 +35,7 @@ const ID_FIELD: Record<string, string> = {
   parts: 'partType',
 };
 
-function getIdField(entity: string): string {
+export function getIdField(entity: string): string {
   return ID_FIELD[entity] ?? 'id';
 }
 
