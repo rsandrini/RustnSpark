@@ -137,11 +137,13 @@
       "batCharge": "Battery capacity",
       "batOutput": "Battery output",
       "batInput": "Recharge rate",
-      "autonomy": "Autonomy",
+      "autonomy": "Range",
       "condition": "Condition",
       "structure": "Structure budget",
       "mob": "Mobility",
-      "structureValue": "{{used}} / {{budget}}"
+      "structureValue": "{{used}} / {{budget}}",
+      "unlimited": "unlimited",
+      "routesCovered": "covers {{covered}} of {{total}} routes"
     },
     "groups": {
       "combat": "Combat",
@@ -156,7 +158,7 @@
       "defenseHelp": "Armor plus Shield: the ship's two defenses against incoming hits, combined.",
       "cargo": "Cargo",
       "mobility": "Mobility",
-      "autonomy": "Autonomy",
+      "autonomy": "Range",
       "condition": "Condition",
       "energy": "Energy",
       "structure": "Structure"
@@ -281,7 +283,7 @@
       "batCharge": "Total energy the battery can store for combat. Must cover the ship's whole Combat power draw, or weapons/shields can't be installed.",
       "batOutput": "The most energy the battery can deliver in a single round. Must cover the ship's whole Combat power draw per round, or weapons/shields can't be installed.",
       "batInput": "How fast the battery recharges between fights.",
-      "autonomy": "How many full tanks of fuel the ship's burn rate can sustain, as a percentage.",
+      "autonomy": "How far a full tank takes the ship, in route-distance units (the same units as route lengths). Below it: how many of the world's routes that covers.",
       "condition": "Average wear across every installed part, from 100% (new) down.",
       "structure": "How much of the structure budget the bridge sets is used by everything else installed."
     },
@@ -546,7 +548,10 @@
       "invert": "Invert",
       "clear": "Clear",
       "previewLabel": "Ship format preview ({{count}} cells)"
-    }
+    },
+    "clone": "Clone",
+    "cloneEntity": "Clone",
+    "cloneSuffix": "(copy)"
   },
   "factions": {
     "luna": "Luna Authority",

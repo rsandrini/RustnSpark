@@ -137,11 +137,13 @@
       "batCharge": "Capacidade da bateria",
       "batOutput": "Saída da bateria",
       "batInput": "Taxa de recarga",
-      "autonomy": "Autonomia",
+      "autonomy": "Alcance",
       "condition": "Condição",
       "structure": "Orçamento de estrutura",
       "mob": "Mobilidade",
-      "structureValue": "{{used}} / {{budget}}"
+      "structureValue": "{{used}} / {{budget}}",
+      "unlimited": "ilimitado",
+      "routesCovered": "cobre {{covered}} de {{total}} rotas"
     },
     "groups": {
       "combat": "Combate",
@@ -156,7 +158,7 @@
       "defenseHelp": "Blindagem mais Escudo: as duas defesas da nave contra acertos, somadas.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
-      "autonomy": "Autonomia",
+      "autonomy": "Alcance",
       "condition": "Condição",
       "energy": "Energia",
       "structure": "Estrutura"
@@ -281,7 +283,7 @@
       "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
       "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
       "batInput": "Quão rápido a bateria recarrega entre lutas.",
-      "autonomy": "Quantos tanques cheios de combustível o consumo da nave aguenta, em porcentagem.",
+      "autonomy": "Até onde um tanque cheio leva a nave, em unidades de distância de rota (as mesmas unidades do comprimento das rotas). Abaixo: quantas rotas do mundo isso cobre.",
       "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
       "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
     },
@@ -546,7 +548,10 @@
       "invert": "Inverter",
       "clear": "Limpar",
       "previewLabel": "Prévia do formato da nave ({{count}} células)"
-    }
+    },
+    "clone": "Clonar",
+    "cloneEntity": "Clonar",
+    "cloneSuffix": "(cópia)"
   },
   "factions": {
     "luna": "Autoridade de Luna",

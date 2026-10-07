@@ -10,6 +10,22 @@ import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
 
 const RETIREABLE_ENTITIES = ['parts', 'materials', 'mission-templates', 'routes'];
+// A clone opens the create form pre-filled from an existing row (new id required): worth having
+// where a row is expensive to redraw from scratch (a ship format's cell grid).
+const CLONEABLE_ENTITIES = ['ship-formats'];
+
+/** The pre-filled form data for cloning `row`: a fresh id and "(copy)"-tagged names, the rest
+    (cells, rarity gate, target) copied as is. */
+function cloneOf(row: Record<string, unknown>, suffix: string): Record<string, unknown> {
+  const copy: Record<string, unknown> = { ...row, id: `${String(row.id)}_copy` };
+  const name = row.displayName;
+  if (typeof name === 'object' && name !== null) {
+    copy.displayName = Object.fromEntries(
+      Object.entries(name as Record<string, string>).map(([locale, text]) => [locale, `${text} ${suffix}`]),
+    );
+  }
+  return copy;
+}
 
 // Every enum field on any entity screen gets a filter chip row for free (driven by the schema's
 // own `type: 'enum'`/`enumValues`, same shape for every entity) — this covers Parts (class,
@@ -78,6 +94,7 @@ export function EntityScreen() {
   const queryClient = useQueryClient();
   const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
   const [creating, setCreating] = useState(false);
+  const [cloneSource, setCloneSource] = useState<Record<string, unknown> | null>(null);
   const [confirmRetire, setConfirmRetire] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string | null>>({});
@@ -112,6 +129,7 @@ export function EntityScreen() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       setCreating(false);
+      setCloneSource(null);
       setFormErrors([]);
     },
     onError: (error: Error) => setFormErrors([error.message]),
@@ -252,6 +270,18 @@ export function EntityScreen() {
                 >
                   {t('tuning.edit')}
                 </button>
+                {CLONEABLE_ENTITIES.includes(entityName) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCloneSource(row);
+                      setCreating(true);
+                    }}
+                    aria-label={`${t('tuning.clone')} ${String(row[idField])}`}
+                  >
+                    {t('tuning.clone')}
+                  </button>
+                )}
                 {RETIREABLE_ENTITIES.includes(entityName) && (
                   <button
                     type="button"
@@ -274,10 +304,17 @@ export function EntityScreen() {
           the default confirm-dialog width. */}
       <Popup
         open={creating || editingRow !== null}
-        title={creating ? t('tuning.createEntity') : t('tuning.editEntity')}
+        title={
+          cloneSource !== null
+            ? t('tuning.cloneEntity')
+            : creating
+              ? t('tuning.createEntity')
+              : t('tuning.editEntity')
+        }
         className="modal-tuning-full"
         onClose={() => {
           setCreating(false);
+          setCloneSource(null);
           setEditingRow(null);
           setFormErrors([]);
           setAutoSaveStatus('idle');
@@ -292,12 +329,21 @@ export function EntityScreen() {
           />
         )}
         <SchemaForm
-          key={editingRow === null ? 'create' : String(editingRow.id ?? editingRow.partType)}
+          key={
+            editingRow !== null
+              ? String(editingRow.id ?? editingRow.partType)
+              : cloneSource !== null
+                ? `clone-${String(cloneSource.id)}`
+                : 'create'
+          }
           fields={visibleFields}
-          initialData={editingRow ?? undefined}
+          initialData={
+            editingRow ?? (cloneSource === null ? undefined : cloneOf(cloneSource, t('tuning.cloneSuffix')))
+          }
           onSubmit={handleSubmit}
           onCancel={() => {
             setCreating(false);
+            setCloneSource(null);
             setEditingRow(null);
             setFormErrors([]);
             setAutoSaveStatus('idle');

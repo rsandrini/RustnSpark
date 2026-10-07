@@ -165,6 +165,80 @@ describe('EntityScreen', () => {
     expect(screen.queryByText(/\[\[0,0\]/)).not.toBeInTheDocument();
   });
 
+  it('clones a ship format: opens the create form pre-filled with a new id and the same cells, then creates a copy', async () => {
+    const schema = {
+      entity: 'ship-formats',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Format id', 'pt-BR': 'ID' } },
+        { name: 'displayName', type: 'locale-map', required: true, description: { en: 'Display name', 'pt-BR': 'Nome' } },
+        { name: 'cells', type: 'grid-cells', required: true, description: { en: 'Format cells', 'pt-BR': 'Células' } },
+      ],
+    };
+    const rows = [
+      { id: 'scout', displayName: { en: 'Scout', 'pt-BR': 'Batedor' }, cells: [[0, 0], [1, 0], [2, 0]], active: true },
+    ];
+    let created: { data: Record<string, unknown> } | null = null;
+    server.use(
+      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json(rows, { status: 200 })),
+      http.post('/v1/admin/tuning/ship-formats', async ({ request }) => {
+        created = (await request.json()) as { data: Record<string, unknown> };
+        return HttpResponse.json({ row: created.data, revision: { id: '1' } }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Clone scout' }));
+    // pre-filled: a fresh id (the original is untouched) and tagged names
+    expect(await screen.findByDisplayValue('scout_copy')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Scout (copy)')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(created).not.toBeNull());
+    expect(created!.data.id).toBe('scout_copy');
+    expect(created!.data.cells).toEqual([[0, 0], [1, 0], [2, 0]]);
+  });
+
+  it('lays a ship format form out as a details column beside the centered drawing area', async () => {
+    const schema = {
+      entity: 'ship-formats',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Format id', 'pt-BR': 'ID' } },
+        { name: 'cells', type: 'grid-cells', required: true, description: { en: 'Format cells', 'pt-BR': 'Células' } },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json([], { status: 200 })),
+    );
+    const user = userEvent.setup();
+    const { container } = renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Create' }));
+    const side = document.body.querySelector('.schema-form-split .schema-form-side');
+    const main = document.body.querySelector('.schema-form-split .schema-form-main');
+    expect(side).not.toBeNull();
+    expect(main).not.toBeNull();
+    expect(side!.querySelector('#id')).not.toBeNull(); // details on the left...
+    expect(main!.querySelector('#id')).toBeNull();
+    expect(main!.textContent).toMatch(/format cells/i); // ...drawing area in the main column
+    void container;
+  });
+
   it('filters the list by an enum field, driven by the schema alone (round 5)', async () => {
     server.use(
       http.get('/v1/admin/tuning/schema/materials', () =>

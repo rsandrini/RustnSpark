@@ -690,6 +690,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   shipClass={shipClass}
                   sheet={sheet}
                   problemCount={allProblems.length}
+                  routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}

@@ -264,6 +264,7 @@ const ship = (): ShipResponse => ({
   shipClass: 'MULTIROLE',
   yard: { cells: classicSquareCells() },
   disconnectedPartIds: [],
+  routeCoverage: { covered: 14, total: 17 },
   // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
   // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
   activity:
@@ -523,6 +524,7 @@ export const handlers = [
       shipClass: 'MULTIROLE',
       yard: { cells: classicSquareCells() },
       disconnectedPartIds: [],
+      routeCoverage: null,
       activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
@@ -542,6 +544,7 @@ export const handlers = [
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],
+      routeCoverage: { covered: 14, total: 17 },
     });
   }),
 

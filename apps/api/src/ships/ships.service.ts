@@ -20,6 +20,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
 import { applyConnectivity } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
+import { routeCoverage, type RouteCoverage } from './route-coverage.js';
 import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
@@ -58,6 +59,8 @@ export interface ShipResponse {
   disconnectedPartIds: string[];
   /** What the ship is doing now: drives the animated ship stage. */
   activity: ShipActivity;
+  /** The sheet's range read as routes: how many a full tank crosses; null = no fuel burn. */
+  routeCoverage: RouteCoverage | null;
 }
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
@@ -75,6 +78,7 @@ export interface PreviewResponse {
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];
+  routeCoverage: RouteCoverage | null;
 }
 
 @Injectable()
@@ -206,6 +210,7 @@ export class ShipsService implements OnModuleInit {
       viability,
       layout: effectiveLayout,
       omittedPartInstanceIds,
+      routeCoverage: await this.routeCoverageFor(sheet),
       disconnectedPartIds: installed
         .filter((p) => !connectedIds.has(p.instance.id))
         .map((p) => p.instance.id),
@@ -254,6 +259,7 @@ export class ShipsService implements OnModuleInit {
       layout: (ship.layout as unknown as Placement[]) ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],
+      routeCoverage: await this.routeCoverageFor(sheet),
     };
   }
 
@@ -515,7 +521,27 @@ export class ShipsService implements OnModuleInit {
         .map((row) => row.id),
       yard: { cells: ship.format.cells as [number, number][] },
       activity,
+      routeCoverage: await this.routeCoverageFor(sheet),
     };
+  }
+
+  // The sheet's range as "covers N of M routes": every route's distance with its harshest
+  // environment's fuel multiplier, so it follows whatever the Admin tunes on routes/environments.
+  private async routeCoverageFor(sheet: ShipSheet): Promise<RouteCoverage | null> {
+    if (sheet.fuelUse <= 0) return null;
+    const routes = await this.prisma.route.findMany({
+      select: {
+        distance: true,
+        routeEnvironments: { select: { environment: { select: { fuelMult: true } } } },
+      },
+    });
+    return routeCoverage(
+      sheet,
+      routes.map((route) => ({
+        distance: route.distance,
+        envFuelMult: Math.max(1, ...route.routeEnvironments.map((link) => link.environment.fuelMult)),
+      })),
+    );
   }
 
   /**

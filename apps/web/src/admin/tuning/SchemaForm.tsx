@@ -293,6 +293,32 @@ export function SchemaForm({
     );
   };
 
+  const renderField = (field: dto.EntitySchemaField) => {
+    const wide =
+      field.type === 'locale-map' ||
+      field.type === 'json' ||
+      field.type === 'grid-cells' ||
+      field.type === 'connector-rules';
+    return (
+      <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
+        <label className="lbl" htmlFor={field.name}>
+          {getFieldLabel(field, locale)}
+          {field.required && (
+            <span className="field-required" aria-label={t('tuning.required')}>
+              {t('tuning.required')}
+            </span>
+          )}
+        </label>
+        {renderInput(field)}
+        {field.min !== undefined || field.max !== undefined ? (
+          <small className="field-hint">
+            {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
+          </small>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -307,44 +333,32 @@ export function SchemaForm({
           ))}
         </ul>
       )}
-      <div className="schema-form-grid">
-        {fields.map((field) => {
-          const wide =
-            field.type === 'locale-map' ||
-            field.type === 'json' ||
-            field.type === 'grid-cells' ||
-            field.type === 'connector-rules';
-          return (
-            <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
-              <label className="lbl" htmlFor={field.name}>
-                {getFieldLabel(field, locale)}
-                {field.required && (
-                  <span className="field-required" aria-label={t('tuning.required')}>
-                    {t('tuning.required')}
-                  </span>
-                )}
-              </label>
-              {renderInput(field)}
-              {field.min !== undefined || field.max !== undefined ? (
-                <small className="field-hint">
-                  {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
-                </small>
-              ) : null}
-            </div>
-          );
-        })}
-        <div className="field">
-          <label className="lbl" htmlFor="reason">
-            {t('tuning.versionLabel')}
-          </label>
-          <input
-            id="reason"
-            type="text"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            required
-          />
+      {/* A form with a cell-drawing field (ship formats) is laid out as a left column of details and
+          the drawing area centered beside it, instead of a left-aligned grid with every detail
+          stacked underneath (owner request). Other forms keep the single paired-field grid. */}
+      <div className={fields.some((f) => f.type === 'grid-cells') ? 'schema-form-split' : undefined}>
+        <div className="schema-form-grid schema-form-side">
+          {fields
+            .filter((field) => field.type !== 'grid-cells')
+            .map((field) => renderField(field))}
+          <div className="field">
+            <label className="lbl" htmlFor="reason">
+              {t('tuning.versionLabel')}
+            </label>
+            <input
+              id="reason"
+              type="text"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+            />
+          </div>
         </div>
+        {fields.some((f) => f.type === 'grid-cells') && (
+          <div className="schema-form-main">
+            {fields.filter((field) => field.type === 'grid-cells').map((field) => renderField(field))}
+          </div>
+        )}
       </div>
       <div>
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>

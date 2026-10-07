@@ -232,13 +232,19 @@ describe('hangar (S10.4)', () => {
       'Firepower',
       'Defense',
       'Mobility',
-      'Autonomy',
+      'Range',
       'Condition',
       'Energy',
       'Structure',
     ]) {
       expect(within(headline).getByText(label)).toBeInTheDocument();
     }
+
+    // Range replaces the old "autonomy %": a plain distance plus how many routes it covers.
+    const rangeTile = within(headline).getByText('Range').closest('.sheet-headline-tile');
+    expect(rangeTile).toHaveTextContent('40');
+    expect(rangeTile).toHaveTextContent('covers 14 of 17 routes');
+    expect(rangeTile).not.toHaveTextContent('%');
 
     // The full 20-row breakdown is behind a closed-by-default disclosure, grouped into sections.
     const details = container.querySelector('details.sheet-details');

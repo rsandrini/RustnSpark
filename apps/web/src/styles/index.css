@@ -4087,3 +4087,35 @@ svg .block.dir-blocked {
   stroke-width: 0.07;
   stroke-dasharray: 0.16 0.1;
 }
+
+/* Ship-format (cell drawing) form: details in a left column, the drawing area centered beside it. */
+.schema-form-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 24px;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.schema-form-split .schema-form-side {
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.schema-form-split .schema-form-main {
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  max-height: 100%;
+}
+
+.schema-form-split .schema-form-main .field {
+  width: auto;
+  max-width: 100%;
+}
+
+.schema-form-split .schema-form-main .lbl {
+  text-align: center;
+}

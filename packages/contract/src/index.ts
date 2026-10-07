@@ -193,6 +193,10 @@ export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 export const EnergyModeSchema = z.enum(['BATTERY', 'FULL', 'OVERRIDE']);
 export type EnergyMode = z.infer<typeof EnergyModeSchema>;
 
+/** The sheet's range read as routes: how many a full tank crosses. null = the ship burns no fuel. */
+export const RouteCoverageSchema = z.object({ covered: z.number(), total: z.number() });
+export type RouteCoverage = z.infer<typeof RouteCoverageSchema>;
+
 export const ShipResponseSchema = z.object({
   id: z.string(),
   ownerPlayerId: z.string(),
@@ -217,6 +221,7 @@ export const ShipResponseSchema = z.object({
     until: IsoDate.nullable(),
     missionId: z.string().nullable(),
   }),
+  routeCoverage: RouteCoverageSchema.nullable(),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
 
@@ -239,6 +244,7 @@ export const PreviewResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
   disconnectedPartIds: z.array(z.string()),
+  routeCoverage: RouteCoverageSchema.nullable(),
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
 

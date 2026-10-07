@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { PartCatalogStats, ShipSheet } from '../../api/generated';
+import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 
 export interface ShipSheetPanelProps {
@@ -10,6 +10,8 @@ export interface ShipSheetPanelProps {
       its fix actions still renders separately, lower on the page — this is a pointer to it, not
       a replacement for it. */
   problemCount: number;
+  /** The range read as routes ("covers 14 of 17"); null = the ship burns no fuel. */
+  routeCoverage?: RouteCoverage | null;
   /** Every part actually installed right now: the sheet only carries Cruising power's net
       total, not the generate/consume split (owner example: "generate", "consume", not a bare
       signed number), so that split is derived here from each part's own catalog value. */
@@ -49,11 +51,13 @@ const ROWS: readonly Row[] = [
   { key: 'structure', group: 'hull' },
 ];
 
-// Autonomy has no hard game rule (unlike the energy balance, which must be >= 0 or the ship
-// can't fly) — these bands are a display judgment call, not a simulated threshold.
-function autonomyTone(value: number): Tone {
-  if (value >= 50) return 'ok';
-  if (value >= 20) return 'warn';
+// Range (the sheet's `autonomy`: route distance a full tank covers) has no hard game rule, unlike
+// the energy balance — the bands are a display judgment call on how much of the world it reaches.
+function rangeTone(coverage: RouteCoverage | null | undefined): Tone {
+  if (coverage === null || coverage === undefined || coverage.total === 0) return 'ok';
+  const share = coverage.covered / coverage.total;
+  if (share >= 0.75) return 'ok';
+  if (share >= 0.4) return 'warn';
   return 'bad';
 }
 
@@ -73,6 +77,7 @@ export function ShipSheetPanel({
   sheet,
   problemCount,
   installedCatalogs,
+  routeCoverage,
 }: ShipSheetPanelProps) {
   const { t, i18n } = useTranslation();
   const number = (value: number) =>
@@ -98,11 +103,16 @@ export function ShipSheetPanel({
   );
   const combatDraw = Math.abs(sheet.energyCombat);
   const combatCovered = sheet.batOutput >= combatDraw;
-  const autonomyBand = autonomyTone(sheet.autonomy);
+  const unlimitedRange = sheet.fuelUse <= 0;
+  const autonomyBand = rangeTone(unlimitedRange ? null : routeCoverage);
   const conditionBand = conditionTone(sheet.condition);
   const structureBand = structureTone(sheet.structureUsed, sheet.structureBudget);
   const defense = sheet.bli + sheet.esc;
-  const autonomyText = `${number(sheet.autonomy)}%`;
+  const autonomyText = unlimitedRange ? t('hangar.stats.unlimited') : number(sheet.autonomy);
+  const coverageText =
+    !unlimitedRange && routeCoverage !== null && routeCoverage !== undefined
+      ? t('hangar.stats.routesCovered', routeCoverage)
+      : null;
   const conditionText = `${number(sheet.condition)}%`;
   const structureText = `${number(sheet.structureUsed)} / ${number(sheet.structureBudget)}`;
 
@@ -118,7 +128,7 @@ export function ShipSheetPanel({
       case 'condition':
         return `${number(sheet.condition)}%`;
       case 'autonomy':
-        return `${number(sheet.autonomy)}%`;
+        return coverageText === null ? autonomyText : `${autonomyText} · ${coverageText}`;
       default:
         return number(sheet[key as keyof ShipSheet]);
     }
@@ -191,6 +201,7 @@ export function ShipSheetPanel({
         <div className="sheet-headline-tile" title={t('hangar.statHelp.autonomy')}>
           <span>{t('hangar.headline.autonomy')}</span>
           <b className={`tone-${autonomyBand}`}>{autonomyText}</b>
+          {coverageText !== null && <small>{coverageText}</small>}
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
           <span>{t('hangar.headline.condition')}</span>

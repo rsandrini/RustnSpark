@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
 import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
-import { directionErrors, facingSide } from '../../../src/ships/direction.js';
+import { directionErrors, facingSide, withDirectionProblems } from '../../../src/ships/direction.js';
 
 const BASE: PartCatalog = {
   partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
@@ -74,5 +74,33 @@ describe('facing-side connector rule', () => {
     expect(directionErrors(at(0), catalog, new Map([['e', null]]))).toEqual([]);
     expect(directionErrors(at(0), catalog, new Map([['e', { cells: [] }]]))).toEqual([]);
     expect(directionErrors(at(0), catalog)).toEqual([]);
+  });
+});
+
+describe('withDirectionProblems', () => {
+  const catalog = new Map<string, PartCatalog>([
+    ['e', { ...BASE, partClass: 'ENGINE' }],
+    ['p', BASE],
+    ['f', { ...BASE, partClass: 'ENGINE' }],
+  ]);
+  const ok = { viable: true, problems: [] };
+
+  it('leaves a clean layout viable and untouched', () => {
+    const layout: Placement[] = [
+      { partInstanceId: 'p', gx: 2, gy: 0, rot: 0 },
+      { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
+    ];
+    expect(withDirectionProblems(ok, layout, catalog, new Map())).toBe(ok);
+  });
+
+  it('makes a blocked engine a flight problem, once per code however many engines are blocked', () => {
+    const layout: Placement[] = [
+      { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
+      { partInstanceId: 'f', gx: 1, gy: 1, rot: 0 },
+    ];
+    const result = withDirectionProblems(ok, layout, catalog, new Map());
+    expect(result.viable).toBe(false);
+    expect(result.problems.map((problem) => problem.code)).toEqual(['EXHAUST_BLOCKED']);
   });
 });
