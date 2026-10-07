@@ -1,6 +1,6 @@
 # Connector ports: generation rules + visibility (no more universal)
 
-**Status:** reviewed plan (rev 4, 2026-10-07; phase E added, held), not started. Branch:
+**Status:** reviewed plan (rev 5, 2026-10-07; phase E held, phase F added), not started. Branch:
 `feat/connector-ports-visibility`. Scope: admin-defined **connector generation rules** per
 part type, deterministic generation per listing, seed of default rules, ports visible in
 Port/Market (before buy) and Hangar (build). Existing ships/instances: **no backfill** —
@@ -216,11 +216,41 @@ footprint cells carry only `none` — satisfied by construction by the phase A d
 - **E7** Gates as D1–D2. Risks: connector 4-way math (mitigated by early helpers + tests),
   client/server divergence, auto-layout omitting engines often (surfaced already).
 
-Open questions for E: (a) instances with `connectors` null/`[]` (legacy, effectively
-universal) would fail the facing-side check — recommend **skipping that check when
-connectors are null/empty** so old parts aren't bricked before the reset; confirm.
-(b) The brief's "weapons never enclosed" is covered by the half-plane on the firing side
-only — sides/rear may be enclosed; confirm that is intended.
+Resolved (owner): (a) the DB is being reset, so legacy instances are moot; default stays
+**skip the facing-side connector check when an instance's connectors are null/empty**
+(harmless, avoids bricking anything that survives). (b) **Weapons may point in any
+direction** (down, up, back, forward) — covered by the 4-way `rot` (facing = rotate(`W`,
+rot)); the half-plane applies only on the chosen firing side, so a weapon can sit on any
+border but never in the middle of the ship. No per-type `facingSide` needed for this.
 
-**Estimate:** A–D 3–4 days; phase E +2–3 days (admin rules editor added). **Order:** A0→A1→A2→A3→A4, A6→A7, A5,
+## Phase F — Tuning snapshot & restore (before the DB reset; independent of A–E)
+
+Why: the owner has tuned values in Admin that must survive the reset. Existing tooling
+covers only GameConfig (`GET/POST /v1/admin/config/bundle`, `bundle.service.ts`); the
+**entity tables** (`entity-schemas.ts:758-770`: parts, materials, factions, locations,
+routes, environments, mission-templates, drop-tables, ship-formats) have no export.
+Chosen approach: **save then re-apply after reset** (owner OK'd). Promoting values into
+code defaults is deferred (large diff, loses audit trail, conflicts with "DB wins").
+
+- **F1** `tuning-snapshot` CLI (`src/admin/cli/`, like `reset-player.cli.ts`):
+  `--export <file>` writes one JSON: GameConfig bundle + every entity table row (all
+  admin-editable fields, keyed by natural key such as `partType`/`id`), with version +
+  timestamp. Read-only; safe to run **now**, before any schema work.
+- **F2** `--import <file>` (`--dry-run` default, `--apply` to write): upserts by natural
+  key through the existing entity-tuning/bundle validators (so schema rules, audit and
+  revisions apply); unknown/removed fields (e.g. old `connectorLayouts`) are reported and
+  skipped, never fatal. GameConfig goes through `BundleService.import`.
+- **F3** Reset runbook (docs): `export` → drop/recreate DB → `db:migrate` → `db:seed`
+  (defaults fill) → `import --apply` (owner values win over seed defaults, matching the
+  tuning policy) → verify counts per table. Tests: round-trip int-spec (export →
+  wipe → seed → import → equal), dry-run writes nothing.
+- **F4** Interaction with phase A: `connectorRules` seed defaults fill NULLs, and an
+  imported snapshot taken **before** A has no `connectorRules`, so those stay at the
+  seed defaults — intended. Take the snapshot first anyway (it is the only copy of the
+  tuned values).
+
+Recommendation: do **F1 first, immediately** (cheap, protects the tuned data), the rest of
+F alongside or just before the reset.
+
+**Estimate:** A–D 3–4 days; phase E +2–3 days; phase F ~1 day (admin rules editor added). **Order:** A0→A1→A2→A3→A4, A6→A7, A5,
 C1, then B1–B3 / C2–C6, then D.
