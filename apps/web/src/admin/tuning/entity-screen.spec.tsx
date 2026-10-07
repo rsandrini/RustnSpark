@@ -109,6 +109,62 @@ describe('EntityScreen', () => {
     expect(screen.getByText('10')).toBeInTheDocument();
   });
 
+  it('shows an SVG shape preview for grid-cells fields instead of the raw cell list', async () => {
+    const shipFormatsSchema = {
+      entity: 'ship-formats',
+      fields: [
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Format id', 'pt-BR': 'ID do formato' },
+        },
+        {
+          name: 'displayName',
+          type: 'locale-map',
+          required: true,
+          description: { en: 'Display name', 'pt-BR': 'Nome de exibição' },
+        },
+        {
+          name: 'cells',
+          type: 'grid-cells',
+          required: true,
+          description: { en: 'Format cells', 'pt-BR': 'Células do formato' },
+        },
+      ],
+    };
+    const shipFormatsRows = [
+      {
+        id: 'scout',
+        displayName: { en: 'Scout', 'pt-BR': 'Batedor' },
+        cells: [[0, 0], [1, 0], [2, 0]],
+        active: true,
+      },
+    ];
+    server.use(
+      http.get('/v1/admin/tuning/schema/ship-formats', () =>
+        HttpResponse.json(shipFormatsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/ship-formats', () =>
+        HttpResponse.json(shipFormatsRows, { status: 200 }),
+      ),
+    );
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
+        <Routes>
+          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        </Routes>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+
+    expect(await screen.findByText('scout')).toBeInTheDocument();
+    const preview = screen.getByRole('img', { name: /3 cells/i });
+    expect(preview.querySelectorAll('rect')).toHaveLength(3);
+    expect(screen.queryByText(/\[\[0,0\]/)).not.toBeInTheDocument();
+  });
+
   it('filters the list by an enum field, driven by the schema alone (round 5)', async () => {
     server.use(
       http.get('/v1/admin/tuning/schema/materials', () =>
@@ -226,7 +282,7 @@ describe('EntityScreen', () => {
     );
     await user.selectOptions(screen.getByRole('combobox', { name: /rarity/i }), 'COMMON');
     await user.type(screen.getByRole('spinbutton', { name: /base price/i }), '15');
-    await user.type(screen.getByRole('textbox', { name: /reason/i }), 'add copper');
+    await user.type(screen.getByRole('textbox', { name: /version/i }), 'add copper');
 
     await user.click(screen.getByRole('button', { name: /save/i }));
 

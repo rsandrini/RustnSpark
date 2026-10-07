@@ -8,6 +8,9 @@ import { GridCellsEditor } from './GridCellsEditor';
 // while typing, flushed immediately on blur (moving to another field, or closing).
 const AUTO_SAVE_DEBOUNCE_MS = 1200;
 
+// Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
+const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
+
 interface SchemaFormProps {
   fields: dto.EntitySchemaField[];
   initialData?: Record<string, unknown>;
@@ -39,6 +42,15 @@ function buildPayload(
 function getFieldLabel(field: dto.EntitySchemaField, locale: string, subKey?: string): string {
   const description = field.description?.[locale as 'en' | 'pt-BR'] ?? field.name;
   return subKey ? `${description} (${subKey})` : description;
+}
+
+// Audit reason as a version tag instead of free-text nobody wants to type: a timestamped
+// auto version is prefilled as the field's VALUE (editable); clearing it falls back to a
+// freshly generated one on submit — the version is never empty.
+function generateAutoVersion(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `auto-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
 function parseValue(
@@ -98,7 +110,7 @@ export function SchemaForm({
     return initial;
   };
   const [values, setValues] = useState<Record<string, unknown>>(buildInitialValues);
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(() => generateAutoVersion());
 
   // Refs so the debounced/blur-triggered flush always sees the latest edit, never a value
   // frozen at the moment the timer was scheduled or the effect was set up.
@@ -118,7 +130,7 @@ export function SchemaForm({
     const snapshot = JSON.stringify(payload);
     if (snapshot === lastSavedSnapshot.current) return;
     lastSavedSnapshot.current = snapshot;
-    onAutoSave(payload, reasonRef.current.trim() || t('tuning.defaultReason'));
+    onAutoSave(payload, reasonRef.current.trim() || generateAutoVersion());
   };
   const flushAutoSaveRef = useRef(flushAutoSave);
   flushAutoSaveRef.current = flushAutoSave;
@@ -157,7 +169,7 @@ export function SchemaForm({
     }
     const payload = buildPayload(values, fields);
     lastSavedSnapshot.current = JSON.stringify(payload);
-    void onSubmit(payload, reason || t('tuning.defaultReason'));
+    void onSubmit(payload, reason.trim() || generateAutoVersion());
   };
 
   const renderInput = (field: dto.EntitySchemaField) => {
@@ -200,24 +212,34 @@ export function SchemaForm({
     if (field.type === 'locale-map') {
       const map = (value as Record<string, string> | undefined) ?? { en: '', 'pt-BR': '' };
       return (
-        <>
-          <input
-            id={`${field.name}-en`}
-            type="text"
-            value={map.en}
-            onChange={(event) => handleChange(field.name, event.target.value, 'en')}
-            aria-label={getFieldLabel(field, locale, 'en')}
-            required={field.required}
-          />
-          <input
-            id={`${field.name}-pt-BR`}
-            type="text"
-            value={map['pt-BR']}
-            onChange={(event) => handleChange(field.name, event.target.value, 'pt-BR')}
-            aria-label={getFieldLabel(field, locale, 'pt-BR')}
-            required={field.required}
-          />
-        </>
+        <div className="locale-pair">
+          <div className="locale-input">
+            <label className="lbl" htmlFor={`${field.name}-en`}>
+              {LOCALE_CODES.en}
+            </label>
+            <input
+              id={`${field.name}-en`}
+              type="text"
+              value={map.en}
+              onChange={(event) => handleChange(field.name, event.target.value, 'en')}
+              aria-label={getFieldLabel(field, locale, 'en')}
+              required={field.required}
+            />
+          </div>
+          <div className="locale-input">
+            <label className="lbl" htmlFor={`${field.name}-pt-BR`}>
+              {LOCALE_CODES['pt-BR']}
+            </label>
+            <input
+              id={`${field.name}-pt-BR`}
+              type="text"
+              value={map['pt-BR']}
+              onChange={(event) => handleChange(field.name, event.target.value, 'pt-BR')}
+              aria-label={getFieldLabel(field, locale, 'pt-BR')}
+              required={field.required}
+            />
+          </div>
+        </div>
       );
     }
 
@@ -238,6 +260,11 @@ export function SchemaForm({
         <GridCellsEditor
           value={value as [number, number][] | undefined}
           onChange={(cells) => handleChange(field.name, cells)}
+          target={
+            typeof values.cellTarget === 'number' && Number.isFinite(values.cellTarget)
+              ? values.cellTarget
+              : undefined
+          }
         />
       );
     }
@@ -291,7 +318,7 @@ export function SchemaForm({
             field.type === 'connector-layout';
           return (
             <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
-              <label htmlFor={field.name}>
+              <label className="lbl" htmlFor={field.name}>
                 {getFieldLabel(field, locale)}
                 {field.required && (
                   <span className="field-required" aria-label={t('tuning.required')}>
@@ -309,7 +336,9 @@ export function SchemaForm({
           );
         })}
         <div className="field">
-          <label htmlFor="reason">{t('tuning.reasonLabel')}</label>
+          <label className="lbl" htmlFor="reason">
+            {t('tuning.versionLabel')}
+          </label>
           <input
             id="reason"
             type="text"

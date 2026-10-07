@@ -4,6 +4,7 @@ import { useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm } from './SchemaForm';
+import { GridCellsPreview } from './GridCellsPreview';
 import { Popup } from '../../ui/Popup';
 import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
@@ -235,7 +236,13 @@ export function EntityScreen() {
           {filteredRows.map((row) => (
             <tr key={String(row[idField])}>
               {visibleFields.slice(0, 5).map((field) => (
-                <td key={field.name}>{formatCellValue(row[field.name], field.type)}</td>
+                <td key={field.name}>
+                  {field.type === 'grid-cells' ? (
+                    <GridCellsPreview cells={row[field.name]} />
+                  ) : (
+                    formatCellValue(row[field.name], field.type)
+                  )}
+                </td>
               ))}
               <td>
                 <button
@@ -262,10 +269,13 @@ export function EntityScreen() {
 
       {/* A modal instead of an inline block appended after the table (owner-reported bug: on a
           long entity list — mission-templates has ~29 rows — that inline block rendered far
-          below the fold with no scroll-into-view, so clicking Edit looked like it did nothing). */}
+          below the fold with no scroll-into-view, so clicking Edit looked like it did nothing).
+          Full-viewport: schema forms (Parts ~20 fields, ship formats' cell grid) don't fit
+          the default confirm-dialog width. */}
       <Popup
         open={creating || editingRow !== null}
         title={creating ? t('tuning.createEntity') : t('tuning.editEntity')}
+        className="modal-tuning-full"
         onClose={() => {
           setCreating(false);
           setEditingRow(null);

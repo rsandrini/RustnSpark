@@ -90,7 +90,7 @@ describe('SchemaForm', () => {
     await user.type(screen.getByRole('textbox', { name: /display name \(pt-BR\)/i }), 'Teste');
     await user.click(screen.getByRole('textbox', { name: /metadata/i }));
     await user.paste('{"foo":1}');
-    await user.type(screen.getByRole('textbox', { name: /reason/i }), 'test reason');
+    await user.type(screen.getByRole('textbox', { name: /version/i }), 'test version');
 
     await user.click(screen.getByRole('button', { name: /save/i }));
 

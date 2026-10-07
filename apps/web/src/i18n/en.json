@@ -83,7 +83,11 @@
     },
     "format": {
       "button": "Format",
-      "label": "Choose a ship format"
+      "label": "Choose a ship format",
+      "apply": "Apply format",
+      "cancel": "Cancel",
+      "droppedWarning": "{{count}} placed part outside this format will return to your available parts.",
+      "droppedWarning_other": "{{count}} placed parts outside this format will return to your available parts."
     },
     "connectors": {
       "disconnectedCount": "{{count}} part disconnected",
@@ -443,6 +447,7 @@
     "yes": "Yes",
     "no": "No",
     "reasonLabel": "Reason",
+    "versionLabel": "Version",
     "defaultReason": "Tuning change",
     "autoSaving": "Saving…",
     "autoSaved": "Saved",
@@ -488,6 +493,15 @@
       "environments": "Environments",
       "mission-templates": "Mission templates",
       "drop-tables": "Drop tables"
+    },
+    "gridCells": {
+      "group": "Format cells",
+      "selection": "Selection actions",
+      "add": "Add",
+      "remove": "Remove",
+      "invert": "Invert",
+      "clear": "Clear",
+      "previewLabel": "Ship format preview ({{count}} cells)"
     }
   },
   "factions": {

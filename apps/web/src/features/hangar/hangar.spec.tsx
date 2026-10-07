@@ -161,19 +161,61 @@ describe('hangar (S10.4)', () => {
     expect(screen.getByRole('button', { name: 'Show animation' })).toBeInTheDocument();
   });
 
-  it('shows a format picker and switches the yard shape on selection', async () => {
+  it('previews a format in a confirm popup and only applies after confirmation', async () => {
     server.use(onboarded());
+    let formatCalls = 0;
+    server.use(
+      http.post('/v1/ships/:id/format', () => {
+        formatCalls += 1;
+        return HttpResponse.json(shipEcho([]), { status: 200 });
+      }),
+    );
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Format' }));
-    const option = await screen.findByRole('button', { name: 'Classic Square' });
-    fireEvent.click(option);
+    fireEvent.click(await screen.findByRole('button', { name: 'Classic Square' }));
 
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img', { name: 'Classic Square' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /apply/i })).toBeInTheDocument();
+    // Nothing applied yet — the popup is a gate, not a shortcut.
+    expect(formatCalls).toBe(0);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /apply/i }));
     await waitFor(() => {
-      // The yard re-renders with the (mocked) format's cells once the switch resolves.
-      expect(document.querySelector('[data-gx="-10"][data-gy="-10"]')).not.toBeNull();
+      expect(formatCalls).toBe(1);
     });
+  });
+
+  it('warns in the confirm popup when placed parts fall outside the format', async () => {
+    server.use(onboarded());
+    server.use(
+      http.get('/v1/ship-formats', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'tiny_square',
+              displayName: { en: 'Tiny Square', 'pt-BR': 'Quadrado Pequeno' },
+              description: { en: 'One cell.', 'pt-BR': 'Uma célula.' },
+              cells: [[0, 0]],
+              minRarity: 'COMMON',
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Format' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiny Square' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img', { name: 'Tiny Square' })).toBeInTheDocument();
+    // Starter layout has parts at (2,0)/(3,0)/(2,1)/(0,2)/(2,2) — all outside [[0,0]].
+    expect(within(dialog).getByText(/[5-6] placed parts? outside this format/)).toBeInTheDocument();
   });
 
   it('shows a headline summary (8 key numbers) above the full stat breakdown, collapsed by default (owner request, round 8: ship sheet too long)', async () => {

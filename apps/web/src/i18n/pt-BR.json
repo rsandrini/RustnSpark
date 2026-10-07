@@ -83,7 +83,11 @@
     },
     "format": {
       "button": "Formato",
-      "label": "Escolher um formato de nave"
+      "label": "Escolher um formato de nave",
+      "apply": "Aplicar formato",
+      "cancel": "Cancelar",
+      "droppedWarning": "{{count}} parte instalada fora deste formato voltará para suas peças disponíveis.",
+      "droppedWarning_other": "{{count}} partes instaladas fora deste formato voltarão para suas peças disponíveis."
     },
     "connectors": {
       "disconnectedCount": "{{count}} peça desconectada",
@@ -443,6 +447,7 @@
     "yes": "Sim",
     "no": "Não",
     "reasonLabel": "Motivo",
+    "versionLabel": "Versão",
     "defaultReason": "Mudança de ajuste",
     "autoSaving": "Salvando…",
     "autoSaved": "Salvo",
@@ -488,6 +493,15 @@
       "environments": "Ambientes",
       "mission-templates": "Modelos de missão",
       "drop-tables": "Tabelas de drop"
+    },
+    "gridCells": {
+      "group": "Células do formato",
+      "selection": "Ações de seleção",
+      "add": "Adicionar",
+      "remove": "Remover",
+      "invert": "Inverter",
+      "clear": "Limpar",
+      "previewLabel": "Prévia do formato da nave ({{count}} células)"
     }
   },
   "factions": {

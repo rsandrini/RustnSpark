@@ -10,6 +10,9 @@ const FIT_MARGIN = 2;
 const ZOOM_STEP = 1.4;
 // Pointer travel (px) below which a press is a click, not the start of a pan.
 const PAN_THRESHOLD = 5;
+// Zoom-out overshoot: the yard can shrink to 80% of the window so there is always empty
+// slack around it to pan into (owner: movement was locked the moment the view was fully fit).
+const VIEW_OVERSHOOT = 1.25;
 
 interface View {
   cx: number;
@@ -22,17 +25,53 @@ interface View {
 // shrinks (in units) as the player zooms in, which lets more characters and lines fit a block;
 // past LABEL_ZOOM_CAP the labels just keep growing on screen.
 const LABEL_ZOOM_CAP = 2.4;
-const LABEL_FONT = 0.42;
+// Owner: installed-part names too big — halved twice (0.42 → 0.32 → 0.16). Wrap capacity
+// below is derived from this font so names keep filling their block instead of truncating
+// against stale character metrics.
+const LABEL_FONT = 0.16;
+// Character/line capacity per cell at a reference font of 0.42 (4.3 chars, 2 lines per cell);
+// scaled as `reference / LABEL_FONT` whenever the font changes.
+const LABEL_REF_FONT = 0.42;
+const LABEL_REF_CHARS = 4.3;
+const LABEL_REF_LINES = 2;
+
+// Owner request (hangar): scale part labels DOWN with the format's total area — bigger yards
+// get smaller letters so text stops overflowing parts; never scaled UP (a small yard keeps
+// the baseline size, growth made names unreadable). Baseline is classic_square (20×20 = 400
+// cells); the shrink is clamped so extreme formats stay sane.
+const LABEL_BASELINE_AREA = 400;
+const LABEL_AREA_FACTOR_MIN = 0.5;
+
+/** Label size factor for a yard of the given total cell count (1 = classic_square baseline;
+    always ≤ 1 — the label only shrinks as the yard grows). */
+export function labelAreaFactor(yardArea: number): number {
+  const factor = Math.sqrt(LABEL_BASELINE_AREA / Math.max(1, yardArea));
+  return Math.min(1, Math.max(LABEL_AREA_FACTOR_MIN, factor));
+}
 
 function formatCondition(condition: number): string {
   return `${Math.round(condition)}%`;
 }
 
-/** Word-wrap a part name into the lines that fit a block of the given size at this zoom. */
-export function labelLines(name: string, width: number, height: number, zoom: number): string[] {
-  const boost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
-  const maxChars = Math.max(2, Math.floor((width - 0.15) * 4.3 * boost));
-  const maxLines = Math.max(1, Math.floor((height - 0.1) * 2 * boost));
+/** Word-wrap a part name into the lines that fit a block of the given size at this zoom.
+    areaFactor (1 = classic_square) shrinks/grows the font with the yard's total area —
+    capacity is ∝ 1/font, so a smaller font fits more characters and lines. */
+export function labelLines(
+  name: string,
+  width: number,
+  height: number,
+  zoom: number,
+  areaFactor = 1,
+): string[] {
+  const boost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP) / Math.max(areaFactor, 0.01);
+  const maxChars = Math.max(
+    2,
+    Math.floor((width - 0.15) * (LABEL_REF_CHARS * LABEL_REF_FONT) / LABEL_FONT * boost),
+  );
+  const maxLines = Math.max(
+    1,
+    Math.floor((height - 0.1) * (LABEL_REF_LINES * LABEL_REF_FONT) / LABEL_FONT * boost),
+  );
   const lines: string[] = [];
   let current = '';
   for (const word of name.split(' ')) {
@@ -127,13 +166,18 @@ export function ShipYard({
 
   const clampView = useCallback(
     (view: View): View => {
-      const span = Math.min(cellCount, Math.max(MIN_SPAN, view.span));
-      const limitX = (bounds.maxX - bounds.minX) / 2 - span / 2;
-      const limitY = (bounds.maxY - bounds.minY) / 2 - span / 2;
+      const span = Math.min(cellCount * VIEW_OVERSHOOT, Math.max(MIN_SPAN, view.span));
+      // Pan range: the plain `yard/2 - span/2` hit zero at full span and the view froze
+      // (owner: "blocked"). Floor the range at a half-window / quarter-yard so the ship can
+      // always slide around, including fully fitted or zoomed-out overshoot views.
+      const rangeFor = (yard: number) =>
+        Math.max(yard / 2 - span / 2, Math.min(span / 2, yard / 4));
+      const rangeX = rangeFor(bounds.maxX - bounds.minX);
+      const rangeY = rangeFor(bounds.maxY - bounds.minY);
       return {
         span,
-        cx: Math.min(centerX + limitX, Math.max(centerX - limitX, view.cx)),
-        cy: Math.min(centerY + limitY, Math.max(centerY - limitY, view.cy)),
+        cx: Math.min(centerX + rangeX, Math.max(centerX - rangeX, view.cx)),
+        cy: Math.min(centerY + rangeY, Math.max(centerY - rangeY, view.cy)),
       };
     },
     [cellCount, bounds, centerX, centerY],
@@ -183,7 +227,10 @@ export function ShipYard({
   const zoomBy = useCallback(
     (factor: number, anchor?: { x: number; y: number }) => {
       setView((current) => {
-        const span = Math.min(cellCount, Math.max(MIN_SPAN, current.span / factor));
+        const span = Math.min(
+          cellCount * VIEW_OVERSHOOT,
+          Math.max(MIN_SPAN, current.span / factor),
+        );
         // Keep the point under the cursor fixed while the window resizes around it.
         const ax = anchor?.x ?? current.cx;
         const ay = anchor?.y ?? current.cy;
@@ -254,7 +301,16 @@ export function ShipYard({
 
     const travelled = Math.hypot(next.x - previous.x, next.y - previous.y);
     if (!gesture.current.moved && travelled < PAN_THRESHOLD) return;
-    gesture.current.moved = true;
+    if (!gesture.current.moved) {
+      gesture.current.moved = true;
+      // Once this is a pan (not a pending click) capture the pointer so dragging past the
+      // svg edge or over another element can't strand the gesture mid-move.
+      try {
+        svg.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer already released — nothing to capture.
+      }
+    }
     pointers.current.set(event.pointerId, next);
     setView(
       clampView({
@@ -281,7 +337,10 @@ export function ShipYard({
 
   const zoom = cellCount / view.span;
   const labelBoost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
-  const labelFont = LABEL_FONT / labelBoost;
+  // Total format area (the cells prop), not the placed-parts span — labels scale with the
+  // yard the player is building on, whatever is installed right now.
+  const areaFactor = labelAreaFactor(cells.length);
+  const labelFont = (LABEL_FONT * areaFactor) / labelBoost;
 
   return (
     <div className="stage hangar-scene">
@@ -290,7 +349,7 @@ export function ShipYard({
           type="button"
           className="btn"
           aria-label={t('hangar.zoom.out')}
-          disabled={view.span >= cellCount}
+          disabled={view.span >= cellCount * VIEW_OVERSHOOT}
           onClick={() => zoomBy(1 / ZOOM_STEP)}
         >
           {t('hangar.zoom.minus')}
@@ -357,7 +416,7 @@ export function ShipYard({
           if (catalog === undefined) return null;
           const { width, height } = footprint(catalog, placement.rot);
           const name = nameById.get(placement.partInstanceId) ?? catalog.partType;
-          const lines = labelLines(name, width, height, zoom);
+          const lines = labelLines(name, width, height, zoom, areaFactor);
           const look = lookById?.get(placement.partInstanceId);
           const lineHeight = labelFont * 1.15;
           // Nudged up so the condition bar along the bottom edge never sits on the text.

@@ -732,6 +732,17 @@ const SHIP_FORMAT_FIELDS: EntitySchemaField[] = [
     ),
   },
   {
+    name: 'cellTarget',
+    type: 'integer',
+    required: false,
+    min: 1,
+    max: 961,
+    description: localeMap(
+      'Target cell count for this format (soft budget, shown in the editor)',
+      'Contagem-alvo de células do formato (orçamento suave, exibido no editor)',
+    ),
+  },
+  {
     name: 'minRarity',
     type: 'enum',
     required: true,

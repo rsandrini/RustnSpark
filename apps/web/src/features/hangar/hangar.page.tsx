@@ -14,7 +14,8 @@ import type {
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
-import { canPlace } from './hangar.geometry';
+import { canPlace, footprint } from './hangar.geometry';
+import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartStatsCard, RarityBadge, lowestRarity, type PartCompareContext } from '../parts/part-detail';
@@ -240,6 +241,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
   });
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const [formatPreview, setFormatPreview] = useState<ShipFormat | null>(null);
   const setFormat = useMutation({
     mutationFn: (formatId: string) =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/format`, { formatId }),
@@ -250,10 +252,37 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setSelectedId(null);
       setPendingPartId(null);
       setFormatPickerOpen(false);
+      setFormatPreview(null);
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
   });
+
+  // Parts whose placed footprint is not fully inside the previewed format — the server drops
+  // them back to inventory on apply, so the confirm popup must say so BEFORE it happens.
+  const formatDropped = useMemo(() => {
+    if (formatPreview === null) return [] as string[];
+    const cellKeys = new Set(formatPreview.cells.map(([x, y]) => `${x},${y}`));
+    const dropped: string[] = [];
+    for (const placement of effectiveLayout) {
+      const catalog = catalogById.get(placement.partInstanceId);
+      if (catalog === undefined) continue;
+      const { width, height } = footprint(catalog, placement.rot);
+      let fits = true;
+      for (let dy = 0; dy < height && fits; dy += 1) {
+        for (let dx = 0; dx < width; dx += 1) {
+          if (!cellKeys.has(`${placement.gx + dx},${placement.gy + dy}`)) {
+            fits = false;
+            break;
+          }
+        }
+      }
+      if (!fits) {
+        dropped.push(nameById.get(placement.partInstanceId) ?? catalog.partType);
+      }
+    }
+    return dropped;
+  }, [formatPreview, effectiveLayout, catalogById, nameById]);
 
   const auto = useMutation({
     // Auto layout re-arranges the parts that are IN the ship. Only an empty ship (a new pilot, or
@@ -579,7 +608,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                           type="button"
                           className="btn"
                           disabled={setFormat.isPending}
-                          onClick={() => setFormat.mutate(format.id)}
+                          onClick={() => setFormatPreview(format)}
                         >
                           {pickLocalized(format.displayName, i18n.language)}
                         </button>
@@ -588,6 +617,44 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   </ul>
                 )}
               </div>
+              <Popup
+                open={formatPreview !== null}
+                title={
+                  formatPreview === null ? '' : pickLocalized(formatPreview.displayName, i18n.language)
+                }
+                onClose={() => setFormatPreview(null)}
+                actions={
+                  <>
+                    <button type="button" className="btn" onClick={() => setFormatPreview(null)}>
+                      {t('hangar.format.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={setFormat.isPending || formatPreview === null}
+                      onClick={() => {
+                        if (formatPreview !== null) setFormat.mutate(formatPreview.id);
+                      }}
+                    >
+                      {t('hangar.format.apply')}
+                    </button>
+                  </>
+                }
+              >
+                {formatPreview !== null && (
+                  <>
+                    <FormatCellsPreview
+                      cells={formatPreview.cells}
+                      name={pickLocalized(formatPreview.displayName, i18n.language)}
+                    />
+                    {formatDropped.length > 0 && (
+                      <p className="format-drop-warning" role="status">
+                        {t('hangar.format.droppedWarning', { count: formatDropped.length })}
+                      </p>
+                    )}
+                  </>
+                )}
+              </Popup>
             </section>
 
             <section aria-label={t('hangar.sheet')}>
@@ -708,5 +775,38 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         </>
       )}
     </main>
+  );
+}
+
+// Format thumbnail for the confirm popup — same visual language as the admin list preview:
+// painted cells in spark, the bridge anchor [0,0] in bad.
+function FormatCellsPreview({ cells, name }: { cells: readonly [number, number][]; name: string }) {
+  if (cells.length === 0) return null;
+  const xs = cells.map(([x]) => x);
+  const ys = cells.map(([, y]) => y);
+  const minX = Math.min(0, ...xs);
+  const maxX = Math.max(0, ...xs);
+  const minY = Math.min(0, ...ys);
+  const maxY = Math.max(0, ...ys);
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  return (
+    <svg
+      className="format-preview"
+      viewBox={`${minX - 0.2} ${minY - 0.2} ${width + 0.4} ${height + 0.4}`}
+      role="img"
+      aria-label={name}
+    >
+      {cells.map(([x, y]) => (
+        <rect
+          key={`${x},${y}`}
+          x={x}
+          y={y}
+          width={1}
+          height={1}
+          className={x === 0 && y === 0 ? 'grid-preview-anchor' : 'grid-preview-cell'}
+        />
+      ))}
+    </svg>
   );
 }

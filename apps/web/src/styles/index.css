@@ -1307,6 +1307,21 @@ a {
   fill: rgba(240, 165, 0, 0.08);
 }
 
+/* Format confirm popup (hangar): shape thumbnail + dropped-parts warning. Preview reuses
+   the admin list-preview cell classes (.grid-preview-*) — same spark/bad visual language. */
+.format-preview {
+  display: block;
+  width: min(240px, 55vw);
+  height: auto;
+  margin: 10px 0;
+}
+
+.format-drop-warning {
+  color: var(--bad);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
 svg .block {
   fill: var(--yard-panel2);
   stroke: var(--steel-lt);
@@ -1626,6 +1641,45 @@ svg .block.disconnected {
    than the default confirm-dialog width — a scoped override, not a change to every `.modal`. */
 .modal.combat-log-modal {
   width: min(640px, 94vw);
+}
+
+/* Admin tuning edit box (create/edit entity): schema forms — Parts has ~20 fields, ship
+   formats carry a 31×31 cell grid — are unusable in the default confirm-dialog width.
+   Full-viewport dialog: body scrolls, short fields pair up wider, the cell grid scales up.
+   Specificity note: `.admin-shell .modal` (same 2 classes, later in this file) forces 640px
+   on every admin modal — this selector needs the third class to outrank it. */
+.admin-shell .modal.modal-tuning-full {
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px;
+}
+
+.modal.modal-tuning-full form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.modal-tuning-full .schema-form-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* The editor's fixed 14px cells leave most of a full-screen dialog empty; 20px keeps a
+   31×31 grid (~620px) comfortable without turning the list preview (its own .grid-cells-preview)
+   into a wall. */
+.modal.modal-tuning-full .grid-cells-cell {
+  width: 20px;
+  height: 20px;
 }
 
 /* Result as a colored pill, not flat text — Hit is the meaningful outcome (something happened),
@@ -3708,6 +3762,69 @@ svg .block.broken {
   cursor: default;
 }
 
+.grid-cells-editor-wrap {
+  display: inline-block;
+}
+
+.grid-cells-cell.preview-paint {
+  box-shadow: inset 0 0 0 1px var(--spark);
+}
+
+.grid-cells-cell.preview-erase {
+  box-shadow: inset 0 0 0 1px var(--bad);
+  opacity: 0.45;
+}
+
+.grid-cells-cell.selected {
+  box-shadow: inset 0 0 0 1px var(--amber);
+}
+
+.grid-cells-toolbar {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.grid-cells-count {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+/* Over the cellTarget soft budget: the count line and the wrap ring go red. Cells stay
+   spark/bad — the set is unordered, so there is no meaningful "extra" cell to recolor. */
+.grid-cells-count.over {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.grid-cells-editor-wrap.over-target .grid-cells-editor {
+  outline: 1px solid var(--bad);
+}
+
+.grid-cells-preview {
+  display: block;
+  width: 72px;
+  height: 72px;
+}
+
+.grid-preview-cell {
+  fill: var(--spark);
+  stroke: var(--line);
+  stroke-width: 0.08;
+}
+
+.grid-preview-anchor {
+  fill: var(--bad);
+  stroke: var(--line);
+  stroke-width: 0.08;
+}
+
+.grid-preview-fallback {
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
 .connector-layout-editor {
   display: flex;
   flex-wrap: wrap;
@@ -3816,13 +3933,20 @@ svg .block.broken {
   grid-column: 1 / -1;
 }
 
-.schema-form-grid .field-wide input {
-  display: inline-block;
-  width: calc(50% - 6px);
+.schema-form-grid .field-wide .locale-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
 }
 
-.schema-form-grid .field-wide input:first-of-type {
-  margin-right: 12px;
+.schema-form-grid .field-wide .locale-input {
+  display: block;
+  width: calc(50% - 6px);
+  min-width: 160px;
+}
+
+.schema-form-grid .field-wide input {
+  width: 100%;
 }
 
 .field-required {
