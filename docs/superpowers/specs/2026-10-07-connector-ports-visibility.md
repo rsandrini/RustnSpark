@@ -1,6 +1,6 @@
 # Connector ports: generation rules + visibility (no more universal)
 
-**Status:** reviewed plan (rev 5, 2026-10-07; phase E held, phase F added), not started. Branch:
+**Status:** reviewed plan (rev 6, 2026-10-07; F done, A–C implemented, D in verification, E next on its own branch), not started. Branch:
 `feat/connector-ports-visibility`. Scope: admin-defined **connector generation rules** per
 part type, deterministic generation per listing, seed of default rules, ports visible in
 Port/Market (before buy) and Hangar (build). Existing ships/instances: **no backfill** —
@@ -105,8 +105,13 @@ New nullable JSON column `PartCatalog.connectorRules`:
 
 ### A. Data, generator & server (first)
 
-- **A0** Spike: confirm API can import runtime code from `@rustandspark/contract`
-  (ESM/build order/jest mapping). If not, mirror + shared fixtures; record here.
+- **A0** Spike — **result: NOT possible.** `@rustandspark/contract` ships raw `.ts`
+  (`main: ./src/index.ts`) and the API image/tsc build never bundles it (the API only touches it
+  from tests), so the API cannot import runtime code from it. Decision 8 therefore became:
+  **mirrored implementations pinned by shared vectors** in
+  `packages/contract/fixtures/connector-vectors.json`, asserted by both
+  `apps/api/test/unit/parts/connectors.spec.ts` and
+  `apps/web/src/features/hangar/connectors.spec.ts`.
 - **A1** Prisma: add `PartCatalog.connectorRules Json?` + migration. Contract/zod schema
   `ConnectorRulesSchema` (shared). Types in `apps/api/src/parts/part.types.ts`.
 - **A2** Pure generator `generateConnectors(rules, w, h, seed) → ConnectorLayout | null`
@@ -132,6 +137,15 @@ New nullable JSON column `PartCatalog.connectorRules`:
   listed layout == bought instance layout (catalog + used); differs across days/slots.
 - **A7** Contract: `ConnectorLayoutSchema`; `MarketListingSchema` += `connectors`
   (nullable). API contract test green.
+
+- **A8 (found during implementation)** `autoLayout` is now connector-aware: parts carrying
+  stored connectors are only placed where they connect back to the bridge. Without it,
+  onboarding/kit/arrange failed (`SHIP_NOT_VIABLE`) whenever an engine's `none` side faced its
+  only neighbour (10/24 market int tests failed pre-fix). Unit test varies placement order.
+- **A9 (found during implementation)** `connectedPartIds` indexed a part's authored layout with
+  the *rotated* footprint offsets — wrong for any non-square part at rot 90 (perimeter layouts of
+  2x1/2x2 parts exposed it). Fixed with `worldToAuthoredCell` + 4-way `rotateSide`/
+  `authoredSideAt` (vector-tested; regression test in `geometry.spec.ts`).
 
 ### B. Before buy (Port/Market)
 
