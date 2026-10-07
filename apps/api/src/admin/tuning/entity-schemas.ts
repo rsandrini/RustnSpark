@@ -185,7 +185,9 @@ const PART_FIELDS: EntitySchemaField[] = [
     name: 'structureCost',
     type: 'integer',
     required: true,
-    min: 0,
+    // Negative for bridges: they PROVIDE the structure budget (seeded -60 .. -150), so a 0 floor
+    // made every bridge un-saveable (and un-restorable) through the admin.
+    min: -1000,
     max: 1000,
     description: localeMap('Structure points consumed', 'Pontos de estrutura consumidos'),
   },
