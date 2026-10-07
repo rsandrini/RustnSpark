@@ -3825,49 +3825,42 @@ svg .block.broken {
   word-break: break-all;
 }
 
-.connector-layout-editor {
+.connector-rules-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.connector-rules-table {
+  border-collapse: collapse;
+}
+
+.connector-rules-table th,
+.connector-rules-table td {
+  padding: 3px 8px;
+  text-align: center;
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.connector-rules-table input {
+  width: 64px;
+}
+
+.connector-rules-limits,
+.connector-rules-forbidden-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: center;
 }
 
-.connector-candidate {
-  display: inline-block;
-  border: 1px solid var(--line);
-  padding: 4px;
-}
-
-.connector-cell-row {
+.connector-rules-forbidden {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
 }
-
-.connector-cell {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line);
-}
-
-.connector-side {
-  padding: 0;
-  font-size: 9px;
-  line-height: 1;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--ink-dim);
-}
-
-.connector-side-N { grid-column: 1 / 3; grid-row: 1; }
-.connector-side-S { grid-column: 1 / 3; grid-row: 2; }
-.connector-side-W { grid-column: 1; grid-row: 1 / 3; }
-.connector-side-E { grid-column: 2; grid-row: 1 / 3; }
-
-.connector-kind-central { color: var(--spark); font-weight: 700; }
-.connector-kind-split { color: var(--amber); font-weight: 700; }
-.connector-kind-universal { color: var(--ok); font-weight: 700; }
 
 /* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
    otherwise flatten these back into square admin buttons — round-5 owner request (filters),

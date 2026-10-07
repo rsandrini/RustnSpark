@@ -15,15 +15,54 @@ export interface ConnectorLayout {
   readonly cells: readonly ConnectorCell[];
 }
 
-const ROTATE_CW: Record<ConnectorSide, ConnectorSide> = { N: 'E', E: 'S', S: 'W', W: 'N' };
+const SIDE_ORDER: readonly ConnectorSide[] = ['N', 'E', 'S', 'W'];
+const QUARTERS_PER_TURN = 4;
+const HALF_TURN_QUARTERS = 2;
 
 export const RIGHT_ANGLE = 90;
 
-/** A placement's `rot` (0 or 90) rotates connector sides the same way it already rotates
-    width/height in canPlace/validateLayout — the catalog/instance data is always stored
-    unrotated; this applies the transform where placements are evaluated. */
+function quarterTurns(rot: number): number {
+  return Math.round(rot / RIGHT_ANGLE);
+}
+
+/** The world-facing side an unrotated-AUTHORED side ends up on after `rot` degrees clockwise
+    (any multiple of 90 — placements are 0|90 today, 4-way once part-direction rules land). The
+    catalog/instance data is always stored unrotated; this applies the transform where
+    placements are evaluated. Pinned by packages/contract/fixtures/connector-vectors.json,
+    which the web mirror (hangar/connectors.ts) also tests against. */
 export function rotateSide(side: ConnectorSide, rot: number): ConnectorSide {
-  return rot === RIGHT_ANGLE ? ROTATE_CW[side] : side;
+  const index = SIDE_ORDER.indexOf(side) + quarterTurns(rot);
+  return SIDE_ORDER[((index % QUARTERS_PER_TURN) + QUARTERS_PER_TURN) % QUARTERS_PER_TURN]!;
+}
+
+/** Inverse of `rotateSide`: the authored side that faces `side` in the world at `rot`. */
+export function authoredSideAt(side: ConnectorSide, rot: number): ConnectorSide {
+  return rotateSide(side, -rot);
+}
+
+/** Which authored cell of a w x h part occupies world-footprint offset (wx, wy) once placed at
+    `rot` (clockwise). Rotation moves cells, not just sides: authored (dx, dy) of a w x h part
+    lands at (h-1-dy, dx) after one quarter turn, so a lookup into the authored layout must
+    undo that — indexing it with the rotated footprint's offsets directly is wrong for any
+    non-square part. */
+export function worldToAuthoredCell(
+  wx: number,
+  wy: number,
+  w: number,
+  h: number,
+  rot: number,
+): { dx: number; dy: number } {
+  const turns = ((quarterTurns(rot) % QUARTERS_PER_TURN) + QUARTERS_PER_TURN) % QUARTERS_PER_TURN;
+  // world footprint dims after `turns` quarter turns of a w x h part
+  const swapped = turns % HALF_TURN_QUARTERS !== 0;
+  let width = swapped ? h : w;
+  let height = swapped ? w : h;
+  let x = wx;
+  let y = wy;
+  for (let turn = 0; turn < turns; turn += 1) {
+    [x, y, width, height] = [y, width - 1 - x, height, width];
+  }
+  return { dx: x, dy: y };
 }
 
 /** central<->central, split<->split, universal<->anything-but-none. central and split never

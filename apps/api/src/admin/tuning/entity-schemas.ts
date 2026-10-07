@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { connectorRulesSchema } from '../../parts/connector-rules.js';
 
 export type EntityFieldType =
   | 'string'
@@ -9,7 +10,7 @@ export type EntityFieldType =
   | 'enum'
   | 'locale-map'
   | 'grid-cells'
-  | 'connector-layout';
+  | 'connector-rules';
 
 export interface EntitySchemaField {
   name: string;
@@ -48,23 +49,6 @@ const gridCellsSchema = z
     { message: 'cells must stay within the +/-15 drawing ceiling' },
   );
 
-// Connectors v0.1 (2026-10-02-connectors-v1-design.md): shape-only validation here (dx/dy
-// integers, side/kind enums) — the cross-field "cells stay within this part's own w x h"
-// check needs the sibling w/h fields on the same payload, which a single-field validator
-// can't see, so that lives in entity-tuning.service.ts's validateEntityRules hook instead.
-const connectorLayoutSchema = z.array(
-  z.object({
-    cells: z.array(
-      z.object({
-        dx: z.number().int(),
-        dy: z.number().int(),
-        side: z.enum(['N', 'E', 'S', 'W']),
-        kind: z.enum(['none', 'central', 'split', 'universal']),
-      }),
-    ),
-  }),
-);
-
 function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
   switch (field.type) {
     case 'string':
@@ -83,8 +67,8 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
       return localeMapSchema;
     case 'grid-cells':
       return gridCellsSchema;
-    case 'connector-layout':
-      return connectorLayoutSchema;
+    case 'connector-rules':
+      return connectorRulesSchema;
     default:
       return z.never();
   }
@@ -348,12 +332,12 @@ const PART_FIELDS: EntitySchemaField[] = [
     description: localeMap('Special properties', 'Propriedades especiais'),
   },
   {
-    name: 'connectorLayouts',
-    type: 'connector-layout',
+    name: 'connectorRules',
+    type: 'connector-rules',
     required: false,
     description: localeMap(
-      'Candidate connector layouts (one picked at random per instance)',
-      'Layouts de conectores candidatos (um sorteado por instância)',
+      'Connector generation rules (weights per side, caps, blacklist) — used only when a part is generated',
+      'Regras de geração de conectores (pesos por lado, limites, lista negra) — usadas só quando a peça é gerada',
     ),
   },
   {

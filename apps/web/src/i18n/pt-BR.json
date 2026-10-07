@@ -443,6 +443,18 @@
     "outcomeValue": "Resultado: {{value}}"
   },
   "tuning": {
+    "connectorRules": {
+      "side": "Lado",
+      "notConfigured": "Não configurado: peças deste tipo recebem conectores universais até haver regras.",
+      "weightHelp": "Pesos relativos por lado (0 = nunca). Um tipo é sorteado por lado quando a peça é gerada; o resultado nunca muda depois. Motores/armas: o lado W deve ser nenhum.",
+      "maxConnected": "Máx. de lados conectados",
+      "maxSplit": "Máx. de lados divididos",
+      "unlimited": "sem limite",
+      "forbidden": "Combinações proibidas (um sorteio que bata com todos os lados escolhidos é rejeitado)",
+      "any": "qualquer",
+      "addForbidden": "Adicionar combinação proibida",
+      "removeForbidden": "Remover"
+    },
     "configTitle": "Ajustes",
     "entities": "Entidades",
     "revisionHistoryTitle": "Histórico de revisões",

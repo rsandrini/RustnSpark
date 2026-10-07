@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type * as dto from '../../api/generated';
-import { ConnectorLayoutEditor, type ConnectorLayout } from './ConnectorLayoutEditor';
+import { ConnectorRulesEditor, type ConnectorRules } from './ConnectorRulesEditor';
 import { GridCellsEditor } from './GridCellsEditor';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
@@ -101,7 +101,7 @@ export function SchemaForm({
         initial[field.name] = { en: existing.en ?? '', 'pt-BR': existing['pt-BR'] ?? '' };
       } else if (field.type === 'boolean') {
         initial[field.name] = initialData[field.name] ?? false;
-      } else if (field.type === 'connector-layout' || field.type === 'grid-cells') {
+      } else if (field.type === 'connector-rules' || field.type === 'grid-cells') {
         initial[field.name] = initialData[field.name] ?? undefined;
       } else {
         initial[field.name] = initialData[field.name] ?? '';
@@ -269,13 +269,11 @@ export function SchemaForm({
       );
     }
 
-    if (field.type === 'connector-layout') {
+    if (field.type === 'connector-rules') {
       return (
-        <ConnectorLayoutEditor
-          value={value as ConnectorLayout[] | undefined}
-          w={typeof values.w === 'number' ? values.w : 1}
-          h={typeof values.h === 'number' ? values.h : 1}
-          onChange={(layouts) => handleChange(field.name, layouts)}
+        <ConnectorRulesEditor
+          value={value as ConnectorRules | null | undefined}
+          onChange={(rules) => handleChange(field.name, rules)}
         />
       );
     }
@@ -315,7 +313,7 @@ export function SchemaForm({
             field.type === 'locale-map' ||
             field.type === 'json' ||
             field.type === 'grid-cells' ||
-            field.type === 'connector-layout';
+            field.type === 'connector-rules';
           return (
             <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
               <label className="lbl" htmlFor={field.name}>

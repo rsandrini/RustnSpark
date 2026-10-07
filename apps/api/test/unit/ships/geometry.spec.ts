@@ -250,6 +250,39 @@ describe('connectedPartIds', () => {
     expect(result).toEqual(new Set(['p-bridge'])); // the bridge is always connected to itself
   });
 
+  it('follows a rotated multi-cell part: the authored cell/side maps to the right world cell', () => {
+    // 2x1 "wide" authored left->right, placed rot 90 (clockwise) below the bridge, so it runs
+    // top->bottom: authored cell (0,0) is the top world cell, (1,0) the bottom one, and the
+    // authored E edge of (1,0) faces world SOUTH. A tank sits below it.
+    const WIDE: PartCatalog = { ...POD, partType: 'wide', w: 2, h: 1 };
+    const catalog = new Map([
+      ['p-bridge', BRIDGE],
+      ['p-wide', WIDE],
+      ['p-tank', POD],
+    ]);
+    const layout: Placement[] = [
+      { partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'p-wide', gx: 0, gy: 1, rot: 90 },
+      { partInstanceId: 'p-tank', gx: 0, gy: 3, rot: 0 },
+    ];
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] }],
+      [
+        'p-wide',
+        {
+          cells: [
+            { dx: 0, dy: 0, side: 'W', kind: 'central' }, // -> world N of the top cell
+            { dx: 1, dy: 0, side: 'E', kind: 'central' }, // -> world S of the bottom cell
+          ],
+        },
+      ],
+      ['p-tank', { cells: [{ dx: 0, dy: 0, side: 'N', kind: 'central' }] }],
+    ]);
+    expect(connectedPartIds(layout, catalog, connectors)).toEqual(
+      new Set(['p-bridge', 'p-wide', 'p-tank']),
+    );
+  });
+
   it('does not connect central to split', () => {
     const connectors = new Map<string, ConnectorLayout | null>([
       ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'central' }] }],

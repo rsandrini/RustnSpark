@@ -443,6 +443,18 @@
     "outcomeValue": "Outcome: {{value}}"
   },
   "tuning": {
+    "connectorRules": {
+      "side": "Side",
+      "notConfigured": "Not configured: parts of this type get universal connectors until rules are set.",
+      "weightHelp": "Relative weights per side (0 = never). One kind is rolled per side when a part is generated; the result never changes afterwards. Engines/weapons: side W must stay none.",
+      "maxConnected": "Max connected sides",
+      "maxSplit": "Max split sides",
+      "unlimited": "unlimited",
+      "forbidden": "Forbidden combinations (a roll matching every chosen side is rejected)",
+      "any": "any",
+      "addForbidden": "Add forbidden combination",
+      "removeForbidden": "Remove"
+    },
     "configTitle": "Tuning",
     "entities": "Entities",
     "revisionHistoryTitle": "Revision history",

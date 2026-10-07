@@ -1,8 +1,10 @@
 import type { PartCatalog, Placement, LayoutError } from '../parts/part.types.js';
 import {
+  authoredSideAt,
   compatible,
   RIGHT_ANGLE,
   sideKindAt,
+  worldToAuthoredCell,
   type ConnectorLayout,
 } from '../parts/connectors.js';
 
@@ -161,32 +163,26 @@ export function connectedPartIds(
   const startKey = cellKey(bridgePlacement.gx, bridgePlacement.gy);
   if (!occupied.has(startKey)) return new Set();
 
-  // rotateSide(side, 90) gives the rotated-WORLD side for a given unrotated-AUTHORED side
-  // (used when drawing/placing). Here we need the inverse — given a world-facing side, which
-  // authored side produced it — which for a 4-cycle 90° clockwise rotation is one step
-  // counter-clockwise. A direct reverse-lookup table, rather than three chained forward
-  // rotations, keeps that inverse obvious on inspection instead of resting on modular
-  // arithmetic ("270 clockwise == 90 counter-clockwise").
-  const ROTATE_CCW: Record<'N' | 'E' | 'S' | 'W', 'N' | 'E' | 'S' | 'W'> = {
-    N: 'W',
-    W: 'S',
-    S: 'E',
-    E: 'N',
-  };
+  // rotateSide gives the rotated-WORLD side for an unrotated-AUTHORED side (used when
+  // drawing/placing). Evaluating a placement needs the inverse — the authored cell and side that
+  // produced a given world cell/side — see worldToAuthoredCell / authoredSideAt.
   const connectedKindAt = (
     cell: OccupiedCell,
     side: 'N' | 'E' | 'S' | 'W',
   ): ReturnType<typeof sideKindAt> => {
     const rot = rotByInstance.get(cell.partInstanceId) ?? 0;
-    const authoredSide = rot === 0 ? side : ROTATE_CCW[side];
+    const part = catalog.get(cell.partInstanceId);
+    const authored =
+      part === undefined
+        ? { dx: cell.dx, dy: cell.dy }
+        : worldToAuthoredCell(cell.dx, cell.dy, part.w, part.h, rot);
     return sideKindAt(
       connectorsByInstance.get(cell.partInstanceId) ?? null,
-      cell.dx,
-      cell.dy,
-      authoredSide,
+      authored.dx,
+      authored.dy,
+      authoredSideAt(side, rot),
     );
   };
-
   const visitedCells = new Set<string>([startKey]);
   const connectedParts = new Set<string>();
   const queue: string[] = [startKey];

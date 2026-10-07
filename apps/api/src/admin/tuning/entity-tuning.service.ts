@@ -6,6 +6,7 @@ import { REDIS_CLIENT } from '../../common/redis/redis.module.js';
 import { GameConfigService } from '../../config/game-config.service.js';
 import { GameConfigRepository } from '../../config/game-config.repository.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
+import { parseConnectorRules, validateConnectorRules } from '../../parts/connector-rules.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 
@@ -364,40 +365,35 @@ export class EntityTuningService {
     if (entity === 'mission-templates' && data.factionId !== undefined) {
       await this.validateFactionExists(data.factionId as string);
     }
-    if (entity === 'parts' && Array.isArray(data.connectorLayouts)) {
-      await this.validateConnectorLayouts(data, existingId);
+    if (entity === 'parts' && data.connectorRules !== undefined && data.connectorRules !== null) {
+      await this.validateConnectorRules(data, existingId);
     }
   }
 
-  // Connectors v0.1 (2026-10-02-connectors-v1-design.md, Review Focus #5): a candidate's cells
-  // must stay within the part's own w x h footprint — checked server-side, not just by the
-  // admin widget. w/h may not be in `data` on a partial update that only touches
-  // connectorLayouts, so this falls back to the existing row's own w/h in that case.
-  private async validateConnectorLayouts(
+  // Connector generation rules: beyond the shape check, the rules must be able to generate
+  // something (at least one combination survives the caps/blacklist) and an ENGINE/WEAPON's
+  // facing side W may only ever be `none`. partClass may not be in a partial update, so it falls
+  // back to the existing row's own.
+  private async validateConnectorRules(
     data: Record<string, unknown>,
     existingId?: string,
   ): Promise<void> {
-    let w = typeof data.w === 'number' ? data.w : undefined;
-    let h = typeof data.h === 'number' ? data.h : undefined;
-    if ((w === undefined || h === undefined) && existingId !== undefined) {
-      const existing = await this.prisma.partCatalog.findUnique({
-        where: { partType: existingId },
-        select: { w: true, h: true },
-      });
-      w ??= existing?.w;
-      h ??= existing?.h;
+    let partClass = typeof data.partClass === 'string' ? data.partClass : undefined;
+    if (partClass === undefined && existingId !== undefined) {
+      partClass = (
+        await this.prisma.partCatalog.findUnique({
+          where: { partType: existingId },
+          select: { partClass: true },
+        })
+      )?.partClass;
     }
-    if (w === undefined || h === undefined) return; // create without w/h fails its own required-field check
-    const layouts = data.connectorLayouts as Array<{ cells: Array<{ dx: number; dy: number }> }>;
-    for (const layout of layouts) {
-      for (const cell of layout.cells) {
-        if (cell.dx < 0 || cell.dx >= w || cell.dy < 0 || cell.dy >= h) {
-          throw new GameConfigValidationError(
-            `connector cell (${cell.dx}, ${cell.dy}) is outside the part's ${w}x${h} footprint`,
-            [{ key: 'connectorLayouts', message: 'cell outside part footprint' }],
-          );
-        }
-      }
+    const rules = parseConnectorRules(data.connectorRules);
+    if (rules === null) return; // shape errors are reported by the field validator
+    const problem = validateConnectorRules(rules, partClass);
+    if (problem !== null) {
+      throw new GameConfigValidationError(`connectorRules: ${problem}`, [
+        { key: 'connectorRules', message: problem },
+      ]);
     }
   }
 

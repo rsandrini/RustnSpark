@@ -1,11 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
 import { defaultConnectorRules } from '../../../src/parts/connector-rules.js';
 import {
+  authoredSideAt,
   compatible,
   rollConnectors,
   rotateSide,
   sideKindAt,
+  worldToAuthoredCell,
+  type ConnectorKind,
   type ConnectorLayout,
+  type ConnectorSide,
 } from '../../../src/parts/connectors.js';
 
 describe('compatible', () => {
@@ -79,5 +85,42 @@ describe('rollConnectors', () => {
     const first = rollConnectors({ ...tank, connectorRules: rules }, 'listing-1');
     expect(first?.cells).toHaveLength(4);
     expect(rollConnectors({ ...tank, connectorRules: rules }, 'listing-1')).toEqual(first);
+  });
+});
+
+// Shared with the web mirror (apps/web/src/features/hangar/connectors.spec.ts): the same vectors
+// pin both implementations, so client marks and server connectivity cannot drift apart.
+describe('shared connector vectors', () => {
+  const vectors = JSON.parse(
+    readFileSync(
+      fileURLToPath(
+        new URL('../../../../../packages/contract/fixtures/connector-vectors.json', import.meta.url),
+      ),
+      'utf8',
+    ),
+  ) as {
+    compatible: [ConnectorKind, ConnectorKind, boolean][];
+    rotateSide: { side: ConnectorSide; rot: number; world: ConnectorSide }[];
+    cells: { w: number; h: number; rot: number; authored: [number, number]; world: [number, number] }[];
+  };
+
+  it('compatible matches every pair', () => {
+    for (const [a, b, expected] of vectors.compatible) expect(compatible(a, b)).toBe(expected);
+  });
+
+  it('rotateSide / authoredSideAt match at all four angles', () => {
+    for (const v of vectors.rotateSide) {
+      expect(rotateSide(v.side, v.rot)).toBe(v.world);
+      expect(authoredSideAt(v.world, v.rot)).toBe(v.side);
+    }
+  });
+
+  it('worldToAuthoredCell inverts the placement for every footprint and angle', () => {
+    for (const v of vectors.cells) {
+      expect(worldToAuthoredCell(v.world[0], v.world[1], v.w, v.h, v.rot)).toEqual({
+        dx: v.authored[0],
+        dy: v.authored[1],
+      });
+    }
   });
 });
