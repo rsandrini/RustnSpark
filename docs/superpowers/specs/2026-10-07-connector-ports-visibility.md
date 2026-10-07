@@ -1,6 +1,6 @@
 # Connector ports: generation rules + visibility (no more universal)
 
-**Status:** reviewed plan (rev 6, 2026-10-07; F done, A–C implemented, D in verification, E next on its own branch), not started. Branch:
+**Status:** reviewed plan (rev 7, 2026-10-07; F done, A–C implemented, E implemented on branch feat/part-direction-rules, D verified at the end), not started. Branch:
 `feat/connector-ports-visibility`. Scope: admin-defined **connector generation rules** per
 part type, deterministic generation per listing, seed of default rules, ports visible in
 Port/Market (before buy) and Hangar (build). Existing ships/instances: **no backfill** —
@@ -236,6 +236,20 @@ Resolved (owner): (a) the DB is being reset, so legacy instances are moot; defau
 direction** (down, up, back, forward) — covered by the 4-way `rot` (facing = rotate(`W`,
 rot)); the half-plane applies only on the chosen firing side, so a weapon can sit on any
 border but never in the middle of the ship. No per-type `facingSide` needed for this.
+
+### Phase E — implementation notes (branch `feat/part-direction-rules`)
+
+Built as specced, plus: the new codes are `EXHAUST_BLOCKED`, `FACING_BLOCKED` and
+`FACING_CONNECTOR` (a connector on the facing side; skipped for parts with null/empty stored
+connectors). API: `ships/direction.ts` (`directionErrors`, called from `validateLayout`),
+4-way `rot` in the DTO/contract/footprints/auto-layout, and `autoLayout` now rejects a candidate
+that creates any direction error anywhere (the error lands on the engine, not on the blocker).
+Web: `hangar.geometry.ts` (`placementIssue`, `directionViolations`, `nextRot`, `facingOf`), a new
+engine/weapon placed from the tray tries all four facings before refusing, the status line says
+why (`hangar.placement.exhaust|facing`), a facing arrow on engine/weapon blocks, MSW starter layout
+moved to a compliant one. Parity vectors: `packages/contract/fixtures/direction-vectors.json`
+(15 scenarios, asserted by `apps/api/test/unit/ships/direction.spec.ts` and
+`apps/web/src/features/hangar/hangar.geometry.spec.ts`).
 
 ## Phase F — Tuning snapshot & restore (before the DB reset; independent of A–E)
 

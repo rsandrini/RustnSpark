@@ -4070,3 +4070,11 @@ svg .block.broken {
   gap: 10px;
   margin: 6px 0;
 }
+
+/* Engine exhaust / weapon muzzle marker on the facing edge (part direction rules). */
+.facing-arrow {
+  fill: var(--amber);
+  stroke: var(--bg);
+  stroke-width: 0.02;
+  opacity: 0.9;
+}

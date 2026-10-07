@@ -1,12 +1,14 @@
 import type { PartCatalog, Placement, LayoutError } from '../parts/part.types.js';
+import { directionErrors } from './direction.js';
 import {
   authoredSideAt,
   compatible,
-  RIGHT_ANGLE,
   sideKindAt,
   worldToAuthoredCell,
   type ConnectorLayout,
 } from '../parts/connectors.js';
+
+const HALF_TURN = 180;
 
 /** Yard cells run [-GRID_HALF_SIZE, GRID_HALF_SIZE) on both axes — retained only as the admin
     format-drawing tool's canvas ceiling, not a gameplay constant: which cells actually exist
@@ -62,8 +64,10 @@ function footprintCells(
   placement: Placement,
   part: PartCatalog,
 ): Array<{ x: number; y: number; dx: number; dy: number }> {
-  const width = placement.rot === RIGHT_ANGLE ? part.h : part.w;
-  const height = placement.rot === RIGHT_ANGLE ? part.w : part.h;
+  // Quarter turns swap the footprint; a half turn does not.
+  const swapped = placement.rot % HALF_TURN !== 0;
+  const width = swapped ? part.h : part.w;
+  const height = swapped ? part.w : part.h;
   const cells: Array<{ x: number; y: number; dx: number; dy: number }> = [];
   for (let dx = 0; dx < width; dx += 1) {
     for (let dy = 0; dy < height; dy += 1) {
@@ -77,8 +81,7 @@ export function validateLayout(
   placements: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
+  connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
 ): LayoutError[] {
   const errors: LayoutError[] = [];
   const occupied = new Map<string, OccupiedCell>();
@@ -116,6 +119,7 @@ export function validateLayout(
     }
   }
 
+  errors.push(...directionErrors(placements, catalog, connectorsByInstance));
   return errors;
 }
 

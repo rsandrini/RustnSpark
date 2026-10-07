@@ -635,6 +635,46 @@ describe('hangar (S10.4)', () => {
     expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
   });
 
+  it('refuses to drop a part behind the engine\'s exhaust and says why', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 8, 0)); // east of the engine, which faces E
+    expect(block(container, 'part-cargo-b')).toBeNull();
+    expect(await screen.findByTestId('rotate-hint')).toHaveTextContent(/behind the engine/i);
+
+    // the same part beside the ship is fine
+    fireEvent.click(cell(container, 4, 0));
+    expect(block(container, 'part-cargo-b')).not.toBeNull();
+  });
+
+  it('rotate cycles four quarter turns: the footprint swaps, swaps back, and ends where it began', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const width = Number(cargo.getAttribute('width'));
+    const height = Number(cargo.getAttribute('height'));
+    fireEvent.pointerDown(cargo);
+
+    const dims: Array<[number, number]> = [];
+    for (let turn = 0; turn < 4; turn += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
+      const current = block(container, 'part-cargo-a');
+      dims.push([Number(current?.getAttribute('width')), Number(current?.getAttribute('height'))]);
+    }
+    expect(dims[0]![0]).toBeCloseTo(height, 3); // 90: swapped
+    expect(dims[1]![0]).toBeCloseTo(width, 3); // 180: back
+    expect(dims[2]![0]).toBeCloseTo(height, 3); // 270: swapped
+    expect(dims[3]![0]).toBeCloseTo(width, 3); // 360: where it started
+    expect(dims[3]![1]).toBeCloseTo(height, 3);
+  });
+
   it('saves the edited layout through assemble', async () => {
     server.use(onboarded());
     const assembled: Array<{ layout: Placement[] }> = [];

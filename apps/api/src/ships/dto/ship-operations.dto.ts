@@ -11,8 +11,9 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { ROTATIONS } from '../../parts/connectors.js';
 
-const RIGHT_ANGLE = 90;
+// Clockwise quarter turns; an engine/weapon faces W at rot 0 and turns with it.
 
 export class PlacementDto {
   @IsUUID('4')
@@ -24,7 +25,7 @@ export class PlacementDto {
   @IsInt()
   gy!: number;
 
-  @IsIn([0, RIGHT_ANGLE])
+  @IsIn([...ROTATIONS])
   rot!: number;
 }
 

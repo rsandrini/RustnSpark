@@ -97,3 +97,38 @@ describe('ShipYard port marks', () => {
     expect(container.querySelectorAll('[data-testid="port-mark"]')).toHaveLength(0);
   });
 });
+
+describe('ShipYard facing arrow', () => {
+  const part = (partClass: PartCatalogStats['partClass']): PartCatalogStats => ({
+    partType: 'x', partClass, w: 1, h: 1, mass: 1, structureCost: 1, partHp: 1, basePrice: 0,
+    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
+    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+  });
+  const props = {
+    cells: [[0, 0], [1, 0]] as [number, number][],
+    nameById: new Map([['e', 'E'], ['u', 'U']]),
+    selectedId: null,
+    draggingId: null,
+    onSelect: () => undefined,
+    onCellClick: () => undefined,
+    onCellHover: () => undefined,
+    onDragStart: () => undefined,
+    onDragEnd: () => undefined,
+  };
+
+  it('marks an engine\'s facing edge, turning with its rotation; other parts get none', () => {
+    const { container } = renderWithProviders(
+      <ShipYard
+        {...props}
+        catalogById={new Map([['e', part('ENGINE')], ['u', part('UTILITY')]])}
+        layout={[
+          { partInstanceId: 'e', gx: 0, gy: 0, rot: 180 },
+          { partInstanceId: 'u', gx: 1, gy: 0, rot: 0 },
+        ]}
+      />,
+    );
+    const arrows = container.querySelectorAll('.facing-arrow');
+    expect(arrows).toHaveLength(1);
+    expect(arrows[0]?.getAttribute('data-facing')).toBe('E'); // W rotated 180
+  });
+});

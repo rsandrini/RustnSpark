@@ -21,6 +21,12 @@ const HALF_TURN_QUARTERS = 2;
 
 export const RIGHT_ANGLE = 90;
 
+/** Every legal placement rotation: clockwise quarter turns (0, 90, 180, 270). */
+export const ROTATIONS: readonly number[] = Array.from(
+  { length: QUARTERS_PER_TURN },
+  (_, quarter) => quarter * RIGHT_ANGLE,
+);
+
 function quarterTurns(rot: number): number {
   return Math.round(rot / RIGHT_ANGLE);
 }

@@ -1,8 +1,11 @@
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
-import type { ConnectorLayout } from '../parts/connectors.js';
+import { ROTATIONS, type ConnectorLayout } from '../parts/connectors.js';
 import { CLASSIC_SQUARE_CELLS, connectedPartIds, validateLayout } from './geometry.js';
 
-const RIGHT_ANGLE = 90;
+// All four facings: an engine/weapon may need turning so nothing is behind its exhaust/muzzle.
+// Direction-rule errors land on the engine/weapon, not on the part that blocks it, so a newly
+// placed part is rejected for any of them (the layout so far is valid, so any is new).
+const DIRECTION_CODES = new Set(['EXHAUST_BLOCKED', 'FACING_BLOCKED', 'FACING_CONNECTOR']);
 
 export function autoLayout(
   parts: InstalledPart[],
@@ -44,14 +47,16 @@ function findPlacement(
     return { partInstanceId: part.instance.id, gx: 0, gy: 0, rot: 0 };
   }
 
-  const rotations = [0, RIGHT_ANGLE];
+  const rotations = ROTATIONS;
   const candidates = candidatePositions(existing);
 
   for (const { gx, gy } of candidates) {
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
-      const errors = validateLayout([...existing, placement], catalog, formatCells);
-      const relevant = errors.filter((error) => error.partInstanceId === part.instance.id);
+      const errors = validateLayout([...existing, placement], catalog, formatCells, connectors);
+      const relevant = errors.filter(
+        (error) => error.partInstanceId === part.instance.id || DIRECTION_CODES.has(error.code),
+      );
       if (relevant.length > 0) continue;
       if (
         connectors.size > 0 &&

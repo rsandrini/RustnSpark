@@ -392,3 +392,46 @@ describe('cellKey', () => {
     expect(cellKey(3, -2)).toBe('3,-2');
   });
 });
+
+describe('validateLayout — part direction rules', () => {
+  const base: PartCatalog = {
+    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
+    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
+    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+  };
+  const catalog = new Map<string, PartCatalog>([
+    ['e', { ...base, partClass: 'ENGINE' }],
+    ['p', base],
+  ]);
+
+  it('reports EXHAUST_BLOCKED when a part is behind the engine, and clears it once the engine is turned', () => {
+    const behind: Placement[] = [
+      { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
+    ];
+    expect(validateLayout(behind, catalog).map((e) => e.code)).toEqual(['EXHAUST_BLOCKED']);
+    expect(
+      validateLayout([behind[0]!, { ...behind[1]!, rot: 180 }], catalog).map((e) => e.code),
+    ).toEqual([]);
+  });
+
+  it('reports FACING_CONNECTOR for a connector on the facing side but not for a legacy part', () => {
+    const layout: Placement[] = [{ partInstanceId: 'e', gx: 0, gy: 0, rot: 0 }];
+    const bad = new Map<string, ConnectorLayout | null>([
+      ['e', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] }],
+    ]);
+    expect(validateLayout(layout, catalog, undefined, bad).map((e) => e.code)).toEqual([
+      'FACING_CONNECTOR',
+    ]);
+    expect(validateLayout(layout, catalog, undefined, new Map([['e', null]]))).toEqual([]);
+  });
+
+  it('treats 180 as a non-swapping rotation for footprints', () => {
+    const wide = new Map<string, PartCatalog>([['w', { ...base, w: 2, h: 1 }]]);
+    const cells = new Set(['0,0', '1,0']);
+    expect(validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 180 }], wide, cells)).toEqual([]);
+    expect(
+      validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 90 }], wide, cells).map((e) => e.code),
+    ).toEqual(['OUT_OF_BOUNDS']);
+  });
+});

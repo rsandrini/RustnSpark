@@ -219,7 +219,10 @@
       "INVALID_LAYOUT": "The layout is not valid.",
       "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
       "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — install a battery, or a bigger one.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one."
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one.",
+      "EXHAUST_BLOCKED": "An engine has parts behind its exhaust — move it to the back edge of the ship or turn it.",
+      "FACING_BLOCKED": "A weapon has parts in its line of fire — move it to the edge of the ship or turn it.",
+      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -283,6 +286,14 @@
       "autonomy": "How many full tanks of fuel the ship's burn rate can sustain, as a percentage.",
       "condition": "Average wear across every installed part, from 100% (new) down.",
       "structure": "How much of the structure budget the bridge sets is used by everything else installed."
+    },
+    "placement": {
+      "exhaust": "That spot would put parts behind the engine's exhaust. Turn the engine or move it to the back edge.",
+      "facing": "That spot would put parts in the weapon's line of fire. Turn the weapon or move it to the ship's edge."
+    },
+    "facing": {
+      "exhaust": "Exhaust side",
+      "weapon": "Firing side"
     }
   },
   "home": {

@@ -243,7 +243,7 @@ export function classicSquareCells(): [number, number][] {
 
 const starterLayout = (): Placement[] => [
   { partInstanceId: 'part-bridge', gx: 0, gy: 0, rot: 0 },
-  { partInstanceId: 'part-engine', gx: 2, gy: 0, rot: 0 },
+  { partInstanceId: 'part-engine', gx: 6, gy: 0, rot: 180 }, // on the back edge, exhaust facing E
   { partInstanceId: 'part-tank', gx: 3, gy: 0, rot: 0 },
   { partInstanceId: 'part-battery', gx: 2, gy: 1, rot: 0 },
   { partInstanceId: 'part-hull', gx: 0, gy: 2, rot: 0 },

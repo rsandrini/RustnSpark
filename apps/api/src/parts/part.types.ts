@@ -47,7 +47,15 @@ export interface Placement {
   rot: number;
 }
 
-export type LayoutErrorCode = 'OUT_OF_BOUNDS' | 'OVERLAP';
+export type LayoutErrorCode =
+  | 'OUT_OF_BOUNDS'
+  | 'OVERLAP'
+  /** An engine has another part beyond its exhaust edge (half-plane). */
+  | 'EXHAUST_BLOCKED'
+  /** A weapon has another part beyond its firing edge (half-plane). */
+  | 'FACING_BLOCKED'
+  /** An engine/weapon carries a connector on its facing side. */
+  | 'FACING_CONNECTOR';
 
 export interface LayoutError {
   code: LayoutErrorCode;

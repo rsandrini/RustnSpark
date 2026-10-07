@@ -13,7 +13,7 @@ import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
-import { RIGHT_ANGLE, type ConnectorLayout } from '../parts/connectors.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -318,8 +318,9 @@ export class ShipsService implements OnModuleInit {
     const fits = (placement: Placement): boolean => {
       const part = catalogMap.get(placement.partInstanceId);
       if (part === undefined) return false;
-      const width = placement.rot === RIGHT_ANGLE ? part.h : part.w;
-      const height = placement.rot === RIGHT_ANGLE ? part.w : part.h;
+      const swapped = placement.rot % HALF_TURN !== 0;
+      const width = swapped ? part.h : part.w;
+      const height = swapped ? part.w : part.h;
       for (let dx = 0; dx < width; dx += 1) {
         for (let dy = 0; dy < height; dy += 1) {
           if (!newCells.has(cellKey(placement.gx + dx, placement.gy + dy))) return false;
@@ -401,7 +402,15 @@ export class ShipsService implements OnModuleInit {
     }
 
     const catalogMap = buildCatalogMapFromPrisma(playerParts);
-    const geometryErrors = validateLayout(layout, catalogMap, formatCellsFromJson(ship.format.cells));
+    const connectorsByInstance = new Map(
+      playerParts.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const geometryErrors = validateLayout(
+      layout,
+      catalogMap,
+      formatCellsFromJson(ship.format.cells),
+      connectorsByInstance,
+    );
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
         error: 'INVALID_LAYOUT',
@@ -538,6 +547,8 @@ type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog }
 type ShipWithFormat = Prisma.ShipGetPayload<{
   include: { format: { select: { cells: true } } };
 }>;
+
+const HALF_TURN = 180;
 
 function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
   return { instance: part, catalog: pickCatalogStats(part.partCatalog) };

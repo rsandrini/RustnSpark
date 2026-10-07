@@ -61,4 +61,16 @@ describe('autoLayout', () => {
       expect(connectedPartIds(placements, catalog, connectors).size).toBe(parts.length);
     }
   });
+
+  it('places engines and weapons so nothing sits behind their exhaust/muzzle (all four facings available)', () => {
+    const rest = ['engine_chem_small', 'tank_small', 'battery_small', 'cargo', 'hull'];
+    for (let shift = 0; shift < rest.length; shift += 1) {
+      const types = ['bridge', ...rest.slice(shift), ...rest.slice(0, shift)];
+      const parts = buildInstalled(types);
+      const catalog = catalogByInstanceId(parts);
+      const placements = autoLayout(parts, catalog);
+      expect(placements).toHaveLength(parts.length);
+      expect(validateLayout(placements, catalog).map((e) => e.code)).toEqual([]);
+    }
+  });
 });

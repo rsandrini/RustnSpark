@@ -219,7 +219,10 @@
       "INVALID_LAYOUT": "O layout não é válido.",
       "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
       "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior."
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior.",
+      "EXHAUST_BLOCKED": "Um motor tem peças atrás do escapamento — mova-o para a borda traseira da nave ou gire-o.",
+      "FACING_BLOCKED": "Uma arma tem peças na linha de tiro — mova-a para a borda da nave ou gire-a.",
+      "FACING_CONNECTOR": "Um motor ou arma tem conector no lado voltado para fora."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -283,6 +286,14 @@
       "autonomy": "Quantos tanques cheios de combustível o consumo da nave aguenta, em porcentagem.",
       "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
       "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
+    },
+    "placement": {
+      "exhaust": "Esse lugar deixaria peças atrás do escapamento do motor. Gire o motor ou mova-o para a borda traseira.",
+      "facing": "Esse lugar deixaria peças na linha de tiro da arma. Gire a arma ou mova-a para a borda da nave."
+    },
+    "facing": {
+      "exhaust": "Lado do escapamento",
+      "weapon": "Lado do disparo"
     }
   },
   "home": {

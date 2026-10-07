@@ -147,12 +147,13 @@ export const InventoryItemSchema = z.object({
 });
 export type InventoryItem = z.infer<typeof InventoryItemSchema>;
 
-/** Grid placement: integer cells on the [-10, 10) yard, rotation at right angles only. */
+/** Grid placement: integer cells on the yard, rotation clockwise in quarter turns. At rot 0 an
+    engine/weapon faces W; its facing side turns with `rot` (part direction rules). */
 export const PlacementSchema = z.object({
   partInstanceId: z.string(),
   gx: z.number(),
   gy: z.number(),
-  rot: z.union([z.literal(0), z.literal(90)]),
+  rot: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
 });
 export type Placement = z.infer<typeof PlacementSchema>;
 

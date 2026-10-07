@@ -551,10 +551,11 @@ describe('parts and ships API (S4.3)', () => {
       };
       const layout = [
         { partInstanceId: take('bridge').id, gx: 0, gy: 0, rot: 0 },
-        { partInstanceId: take('engine_chem_small').id, gx: 1, gy: 0, rot: 0 },
-        { partInstanceId: take('tank_small').id, gx: 2, gy: 0, rot: 0 },
-        { partInstanceId: take('cargo').id, gx: 3, gy: 0, rot: 0 },
-        { partInstanceId: take('hull').id, gx: 4, gy: 0, rot: 0 },
+        { partInstanceId: take('tank_small').id, gx: 1, gy: 0, rot: 0 },
+        { partInstanceId: take('cargo').id, gx: 2, gy: 0, rot: 0 },
+        { partInstanceId: take('hull').id, gx: 3, gy: 0, rot: 0 },
+        // An engine faces W at rot 0, so it sits on the back (east) edge turned to face E.
+        { partInstanceId: take('engine_chem_small').id, gx: 5, gy: 0, rot: 180 },
       ];
 
       const response = await request(httpServer(testApp.app))
