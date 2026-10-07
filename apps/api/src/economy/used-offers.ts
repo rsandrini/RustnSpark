@@ -29,6 +29,18 @@ export function usedListingId(
   return `used:${locationId}:${day}:${index}:${partType}`;
 }
 
+// Seeds for the connector layout a listing carries (connector ports spec, decision 7): derived
+// only from the listing's own identity, so market() shows — and buy() stores — the same
+// layout. Used offers are one physical item per (port, day, slot); catalog (new) stock is the
+// same per (port, day, part type).
+export function usedConnectorSeed(locationId: string, day: string, index: number): string {
+  return `conn:${locationId}:${day}:${index}`;
+}
+
+export function catalogConnectorSeed(locationId: string, day: string, partType: string): string {
+  return `conn:${locationId}:${day}:${partType}`;
+}
+
 // The day's shelf: condition (already within the 40–90 band) and part for slot `index`.
 // market() lists it and buy() re-derives it, so both must read this one function or the
 // listed price and the charged price can drift apart.

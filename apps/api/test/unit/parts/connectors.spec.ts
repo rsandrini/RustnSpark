@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { defaultConnectorRules } from '../../../src/parts/connector-rules.js';
 import {
   compatible,
   rollConnectors,
@@ -66,26 +67,17 @@ describe('rotateSide', () => {
 });
 
 describe('rollConnectors', () => {
-  it('returns null (the universal fallback) when connectorLayouts is empty, absent, or malformed', () => {
-    expect(rollConnectors(null)).toBeNull();
-    expect(rollConnectors(undefined)).toBeNull();
-    expect(rollConnectors([])).toBeNull();
-    expect(rollConnectors('not an array')).toBeNull();
+  const tank = { w: 1, h: 1 };
+
+  it('returns null (the universal fallback) when the part type has no rules', () => {
+    expect(rollConnectors({ ...tank, connectorRules: null })).toBeNull();
+    expect(rollConnectors({ ...tank, connectorRules: { sides: {} } })).toBeNull();
   });
 
-  it('picks one of the candidates when connectorLayouts has entries', () => {
-    const candidates = [
-      { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
-      { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] },
-    ];
-    const seen = new Set<string>();
-    for (let i = 0; i < 50; i += 1) {
-      const result = rollConnectors(candidates);
-      expect(result).not.toBeNull();
-      seen.add(JSON.stringify(result));
-    }
-    // Over 50 rolls both candidates should show up — this is a randomness smoke test, not a
-    // strict distribution check (astronomically unlikely to false-fail at 50 draws from 2).
-    expect(seen.size).toBe(2);
+  it('generates from the rules, deterministically for a given seed', () => {
+    const rules = defaultConnectorRules('TANK');
+    const first = rollConnectors({ ...tank, connectorRules: rules }, 'listing-1');
+    expect(first?.cells).toHaveLength(4);
+    expect(rollConnectors({ ...tank, connectorRules: rules }, 'listing-1')).toEqual(first);
   });
 });

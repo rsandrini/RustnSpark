@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { rollConnectors } from '../parts/connectors.js';
+import { rollConnectors, type ConnectorCell } from '../parts/connectors.js';
 import { localize } from '../common/i18n/localize.js';
 import { bilingual, pickCatalogStats } from '../parts/parts.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
@@ -17,10 +17,12 @@ import { Clock } from '../common/clock/clock.js';
 import { inStockToday } from './market-stock.js';
 import { PricingService } from './pricing.service.js';
 import {
+  catalogConnectorSeed,
   catalogListingId,
   dayKey,
   parseListingId,
   USED_OFFER_COUNT,
+  usedConnectorSeed,
   usedListingId,
   usedOffer,
 } from './used-offers.js';
@@ -39,6 +41,9 @@ export interface MarketListing {
   readonly catalog: ReturnType<typeof pickCatalogStats>;
   readonly condition: number;
   readonly price: number;
+  /** The part's concrete connector cells — generated, fixed, and exactly what a buyer receives.
+      Empty = no layout (universal fallback). */
+  readonly connectors: readonly ConnectorCell[];
 }
 
 /** What this port pays for one of the player's uninstalled parts (S10.9). */
@@ -146,6 +151,7 @@ export class MarketService {
       catalog: pickCatalogStats(row),
       condition: 100,
       price: this.pricing.buy(context, row, 100),
+      connectors: rollConnectors(row, catalogConnectorSeed(locationId, day, row.partType))?.cells ?? [],
     }));
 
     for (let index = 0; index < USED_OFFER_COUNT; index += 1) {
@@ -165,6 +171,7 @@ export class MarketService {
         catalog: pickCatalogStats(partRow),
         condition,
         price: this.pricing.buy(context, partRow, condition),
+        connectors: rollConnectors(partRow, usedConnectorSeed(locationId, day, index))?.cells ?? [],
       });
     }
 
@@ -237,7 +244,14 @@ export class MarketService {
     }
 
     let condition = 100;
+    // Same seed market() used for this listing, so the stored layout is the one shown.
+    let connectorSeed = catalogConnectorSeed(
+      parsed.locationId,
+      dayKey(this.clock.now()),
+      parsed.partType,
+    );
     if (parsed.kind === 'used') {
+      connectorSeed = usedConnectorSeed(parsed.locationId, parsed.day!, parsed.index!);
       const catalogs = await this.prisma.partCatalog.findMany({
         where: { active: true },
         orderBy: { partType: 'asc' },
@@ -285,7 +299,7 @@ export class MarketService {
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
-            connectors: toJsonInput(rollConnectors(catalog.connectorLayouts)),
+            connectors: toJsonInput(rollConnectors(catalog, connectorSeed)),
           },
         });
         await this.events.record(

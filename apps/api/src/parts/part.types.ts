@@ -30,6 +30,9 @@ export interface PartInstance {
   id: string;
   partType: string;
   condition: number;
+  /** The instance's stored connector layout (null = universal fallback). Optional so callers
+      without it (pure geometry tests) skip connector-aware placement. */
+  connectors?: unknown;
 }
 
 export interface InstalledPart {

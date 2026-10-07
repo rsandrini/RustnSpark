@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createRng } from '../common/rng/rng.js';
+import { generateConnectors } from './connector-rules.js';
 
 export type ConnectorKind = 'none' | 'central' | 'split' | 'universal';
 export type ConnectorSide = 'N' | 'E' | 'S' | 'W';
@@ -49,16 +49,15 @@ export function sideKindAt(
   return match?.kind ?? 'none';
 }
 
-/** Picks one candidate layout uniformly at random, called once at instance-creation time —
-    never re-rolled. Returns null (the universal fallback) when there is nothing to pick from,
-    which is both "this part type has no authored candidates yet" and, by the same rule,
-    exactly what an instance created before this feature existed already has. No mission-seed
-    context exists at part-creation time (this is structural, not combat/economy-deterministic
-    per the spec), so this uses a fresh seed per roll — the same Rng.pick() shape every other
-    random choice in this codebase already goes through, just not a replay-chained one. */
-export function rollConnectors(connectorLayouts: unknown): ConnectorLayout | null {
-  if (!Array.isArray(connectorLayouts) || connectorLayouts.length === 0) return null;
-  const candidates = connectorLayouts as ConnectorLayout[];
-  const rng = createRng(randomUUID());
-  return rng.pick(candidates);
+/** Generates a part's concrete connector layout from its catalog row's admin-defined rules
+    (connector-rules.ts), called once at instance-creation time — never re-rolled. Returns null
+    (the universal fallback) when the part type has no rules configured, which is also exactly
+    what an instance created before this feature existed already has. `seed` defaults to a fresh
+    UUID (kits, scavenge finds); the market passes a listing-derived seed so the layout shown
+    before buying is the one the buyer gets. */
+export function rollConnectors(
+  row: { connectorRules: unknown; w: number; h: number },
+  seed: string = randomUUID(),
+): ConnectorLayout | null {
+  return generateConnectors(row.connectorRules, row.w, row.h, seed);
 }

@@ -278,6 +278,10 @@ const ship = (): ShipResponse => ({
 
 let inventoryState: InventoryItem[] = starterInventory();
 
+// A generated 1x1 layout as the API would list it: central on all four sides.
+const centralPorts = (): MarketListing['connectors'] =>
+  (['N', 'E', 'S', 'W'] as const).map((side) => ({ dx: 0, dy: 0, side, kind: 'central' as const }));
+
 const marketListings: MarketListing[] = [
   {
     listingId: 'catalog:ceres:hull',
@@ -290,6 +294,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('hull', 'DEFENSE'),
     condition: 100,
     price: 300,
+    connectors: centralPorts(),
   },
   {
     listingId: 'catalog:ceres:cargo',
@@ -302,6 +307,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('cargo', 'CARGO'),
     condition: 100,
     price: 120,
+    connectors: centralPorts(),
   },
   {
     listingId: 'used:ceres:2026-09-25:0:cargo',
@@ -314,6 +320,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('cargo', 'CARGO'),
     condition: 60,
     price: 80,
+    connectors: [],
   },
 ];
 

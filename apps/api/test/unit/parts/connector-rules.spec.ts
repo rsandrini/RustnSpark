@@ -1,0 +1,116 @@
+import { describe, expect, it } from '@jest/globals';
+import {
+  defaultConnectorRules,
+  enumerateCombos,
+  expandCombo,
+  generateConnectors,
+  parseConnectorRules,
+  validateConnectorRules,
+  type ConnectorRules,
+} from '../../../src/parts/connector-rules.js';
+
+const kinds = (list: Array<[string, number]>) =>
+  list.map(([kind, weight]) => ({ kind, weight })) as ConnectorRules['sides']['N'];
+const fixed = (kind: string) => kinds([[kind, 100]]);
+const coords = (cells: { dx: number; dy: number }[]) =>
+  cells.map((c) => `${c.dx},${c.dy}`).sort();
+
+describe('connector rules generation', () => {
+  it('returns null for missing or malformed rules (universal fallback)', () => {
+    expect(generateConnectors(null, 1, 1, 's')).toBeNull();
+    expect(generateConnectors({ sides: {} }, 1, 1, 's')).toBeNull();
+  });
+
+  it('is deterministic for a seed', () => {
+    const both = kinds([
+      ['central', 50],
+      ['split', 50],
+    ]);
+    const rules = { sides: { N: both, E: both, S: both, W: both } };
+    expect(generateConnectors(rules, 2, 2, 'abc')).toEqual(generateConnectors(rules, 2, 2, 'abc'));
+  });
+
+  it('honours weights roughly over many seeds', () => {
+    const rules = {
+      sides: {
+        N: kinds([
+          ['central', 80],
+          ['split', 20],
+        ]),
+        E: fixed('central'),
+        S: fixed('central'),
+        W: fixed('central'),
+      },
+    };
+    let split = 0;
+    for (let i = 0; i < 2000; i += 1) {
+      const layout = generateConnectors(rules, 1, 1, `seed-${i}`)!;
+      if (layout.cells.find((c) => c.side === 'N')?.kind === 'split') split += 1;
+    }
+    expect(split / 2000).toBeGreaterThan(0.15);
+    expect(split / 2000).toBeLessThan(0.25);
+  });
+
+  it('never violates maxConnected, maxSplit or the blacklist', () => {
+    const any = kinds([
+      ['none', 1],
+      ['central', 1],
+      ['split', 1],
+    ]);
+    const rules: ConnectorRules = {
+      sides: { N: any, E: any, S: any, W: any },
+      maxConnected: 3,
+      maxSplit: 1,
+      forbidden: [
+        { N: 'split', S: 'split' },
+        { E: 'none', W: 'none' },
+      ],
+    };
+    const combos = enumerateCombos(rules);
+    expect(combos.length).toBeGreaterThan(0);
+    for (const { combo } of combos) {
+      const values = Object.values(combo);
+      expect(values.filter((k) => k !== 'none').length).toBeLessThanOrEqual(3);
+      expect(values.filter((k) => k === 'split').length).toBeLessThanOrEqual(1);
+      expect(combo.N === 'split' && combo.S === 'split').toBe(false);
+      expect(combo.E === 'none' && combo.W === 'none').toBe(false);
+    }
+  });
+
+  it('rejects rules with no valid combination', () => {
+    const rules: ConnectorRules = {
+      sides: { N: fixed('split'), E: fixed('split'), S: fixed('central'), W: fixed('central') },
+      maxSplit: 1,
+    };
+    expect(validateConnectorRules(rules)).toMatch(/no side combination/);
+  });
+
+  it('requires none on the facing side W for ENGINE and WEAPON only', () => {
+    const rules: ConnectorRules = {
+      sides: { N: fixed('central'), E: fixed('central'), S: fixed('central'), W: fixed('central') },
+    };
+    expect(validateConnectorRules(rules, 'ENGINE')).toMatch(/W side/);
+    expect(validateConnectorRules(rules, 'WEAPON')).toMatch(/W side/);
+    expect(validateConnectorRules(rules, 'TANK')).toBeNull();
+    expect(validateConnectorRules(defaultConnectorRules('ENGINE'), 'ENGINE')).toBeNull();
+  });
+
+  it('writes only perimeter edges for a 2x2 and nothing for none sides', () => {
+    const layout = expandCombo({ N: 'central', E: 'split', S: 'none', W: 'central' }, 2, 2);
+    expect(layout.cells).toHaveLength(6);
+    expect(layout.cells.filter((c) => c.side === 'S')).toHaveLength(0);
+    expect(coords(layout.cells.filter((c) => c.side === 'N'))).toEqual(['0,0', '1,0']);
+    expect(coords(layout.cells.filter((c) => c.side === 'E'))).toEqual(['1,0', '1,1']);
+  });
+
+  it('a 1x1 part gets its sides on its single cell; defaults give an engine no W cell', () => {
+    const engine = generateConnectors(defaultConnectorRules('ENGINE'), 1, 1, 'x')!;
+    expect(engine.cells.map((c) => c.side).sort()).toEqual(['E', 'N', 'S']);
+    const tank = generateConnectors(defaultConnectorRules('TANK'), 1, 1, 'x')!;
+    expect(tank.cells).toHaveLength(4);
+  });
+
+  it('parses the default rules', () => {
+    expect(parseConnectorRules(defaultConnectorRules('TANK'))).not.toBeNull();
+  });
+});

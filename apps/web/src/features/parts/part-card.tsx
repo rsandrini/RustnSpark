@@ -10,6 +10,7 @@ import {
   type PartCompareContext,
   type PartInfoData,
 } from './part-detail';
+import { ConnectorGrid } from './connector-grid';
 import { PartInfoButton } from './part-info-button';
 import { useClampedPosition } from './use-hover-card-position';
 
@@ -77,6 +78,14 @@ export function PartCard({
       <div className="pcard-meta">
         {used && <span className="used-tag">{t('market.used')}</span>}
         {meta}
+        {part.connectors !== undefined && part.connectors.length > 0 && (
+          <ConnectorGrid
+            w={part.catalog.w}
+            h={part.catalog.h}
+            connectors={part.connectors}
+            size="mini"
+          />
+        )}
       </div>
       {(part.broken === true || note !== undefined) && (
         <div className="pcard-note">{part.broken === true ? t('parts.broken') : note}</div>

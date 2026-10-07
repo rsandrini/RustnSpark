@@ -592,6 +592,8 @@ export const MarketListingSchema = z.object({
   catalog: PartCatalogStatsSchema,
   condition: z.number(),
   price: z.number(),
+  /** The part's generated connector cells — what a buyer receives; empty = no layout. */
+  connectors: z.array(ConnectorCellSchema),
 });
 export type MarketListing = z.infer<typeof MarketListingSchema>;
 

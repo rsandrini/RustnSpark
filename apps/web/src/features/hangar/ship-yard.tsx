@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import type { PartCatalogStats, Placement } from '../../api/generated';
+import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
+import { PortGlyph } from '../parts/connector-grid';
+import { computePortMarks } from './connectors';
 import { footprint } from './hangar.geometry';
 
 const MIN_SPAN = 4;
@@ -111,6 +113,8 @@ export interface ShipYardProps {
   /** Instance ids with no compatible connector chain back to the bridge right now. */
   disconnectedPartIds?: ReadonlySet<string>;
   catalogById: ReadonlyMap<string, PartCatalogStats>;
+  /** Generated connector cells by instance id; parts without an entry (legacy) draw no ports. */
+  connectorsById?: ReadonlyMap<string, readonly ConnectorCell[]>;
   /** Localized part names by instance id. */
   nameById: ReadonlyMap<string, string>;
   selectedId: string | null;
@@ -134,6 +138,7 @@ export function ShipYard({
   cells,
   disconnectedPartIds,
   catalogById,
+  connectorsById,
   nameById,
   selectedId,
   draggingId,
@@ -146,6 +151,13 @@ export function ShipYard({
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  // Ports are always on (spec decision 3); the dragged block is already live in `layout` while it
+  // hovers, so its marks double as the placement preview.
+  const portMarks = useMemo(
+    () =>
+      connectorsById === undefined ? [] : computePortMarks(layout, catalogById, connectorsById),
+    [layout, catalogById, connectorsById],
+  );
 
   const bounds = (() => {
     let minX = 0;
@@ -486,6 +498,19 @@ export function ShipYard({
                   </text>
                 </g>
               )}
+              {portMarks
+                .filter((mark) => mark.partInstanceId === placement.partInstanceId)
+                .map((mark) => (
+                  <PortGlyph
+                    key={`${mark.x},${mark.y},${mark.side}`}
+                    x={mark.x}
+                    y={mark.y}
+                    side={mark.side}
+                    kind={mark.kind}
+                    state={mark.state}
+                    title={`${t(`connectors.kinds.${mark.kind}`)} — ${t(`connectors.states.${mark.state}`)}`}
+                  />
+                ))}
               <text
                 className="block-label"
                 x={placement.gx + width / 2}

@@ -4009,3 +4009,71 @@ svg .block.broken {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
+
+/* Connector ports (connector ports spec): shape = connection kind, colour = state. */
+.conn-mark {
+  --conn-color: var(--blue);
+  fill: var(--conn-color);
+  stroke: var(--conn-color);
+}
+.conn-mark.conn-connected {
+  --conn-color: var(--ok);
+}
+.conn-mark.conn-incorrect {
+  --conn-color: var(--bad);
+}
+.conn-mark.conn-available {
+  --conn-color: var(--blue);
+}
+.conn-mark.conn-kind-universal {
+  fill: none;
+}
+.conn-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+.conn-swatch::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--conn-color);
+}
+.conn-swatch.conn-connected {
+  --conn-color: var(--ok);
+}
+.conn-swatch.conn-incorrect {
+  --conn-color: var(--bad);
+}
+.conn-swatch.conn-available {
+  --conn-color: var(--blue);
+}
+.connector-grid {
+  display: block;
+}
+.connector-grid-cell {
+  fill: var(--panel2);
+  stroke: var(--line-strong);
+  stroke-width: 0.03;
+}
+.connector-grid-mini {
+  height: 22px;
+  width: auto;
+  max-width: 44px;
+  margin-top: 4px;
+}
+.connector-grid-full {
+  height: 72px;
+  width: auto;
+  max-width: 160px;
+}
+.part-ports {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}

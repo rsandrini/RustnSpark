@@ -1,5 +1,6 @@
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
-import { CLASSIC_SQUARE_CELLS, validateLayout } from './geometry.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds, validateLayout } from './geometry.js';
 
 const RIGHT_ANGLE = 90;
 
@@ -13,9 +14,17 @@ export function autoLayout(
   });
 
   const placements: Placement[] = [];
+  // Parts that carry their stored connectors are only placed where they actually connect back to
+  // the bridge — plain adjacency is no longer enough once real (non-universal) layouts exist,
+  // e.g. an engine with its exhaust side (none) facing the only neighbour.
+  const connectors = new Map<string, ConnectorLayout | null>(
+    parts
+      .filter((part) => part.instance.connectors !== undefined)
+      .map((part) => [part.instance.id, part.instance.connectors as ConnectorLayout | null]),
+  );
 
   for (const part of ordered) {
-    const placement = findPlacement(part, placements, catalog, formatCells);
+    const placement = findPlacement(part, placements, catalog, formatCells, connectors);
     if (placement !== null) {
       placements.push(placement);
     }
@@ -29,6 +38,7 @@ function findPlacement(
   existing: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   formatCells: ReadonlySet<string>,
+  connectors: ReadonlyMap<string, ConnectorLayout | null>,
 ): Placement | null {
   if (part.catalog.partClass === 'BRIDGE') {
     return { partInstanceId: part.instance.id, gx: 0, gy: 0, rot: 0 };
@@ -42,9 +52,14 @@ function findPlacement(
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
       const errors = validateLayout([...existing, placement], catalog, formatCells);
       const relevant = errors.filter((error) => error.partInstanceId === part.instance.id);
-      if (relevant.length === 0) {
-        return placement;
+      if (relevant.length > 0) continue;
+      if (
+        connectors.size > 0 &&
+        !connectedPartIds([...existing, placement], catalog, connectors).has(part.instance.id)
+      ) {
+        continue;
       }
+      return placement;
     }
   }
 

@@ -1,4 +1,5 @@
-import type { PartClass, PrismaClient, Rarity } from '@prisma/client';
+import { Prisma, type PartClass, type PrismaClient, type Rarity } from '@prisma/client';
+import { defaultConnectorRules } from '../../src/parts/connector-rules.js';
 
 // Part stats reconciled from the simulators (D10). The simulator values win over
 // design/catalogo-pecas-v0.1.md where they conflict.
@@ -1611,9 +1612,18 @@ export const PARTS: SeedPart[] = [
 
 export async function seedParts(prisma: PrismaClient): Promise<void> {
   for (const part of PARTS) {
+    // Factory default generation rules (connector ports spec): every side central, ENGINE/WEAPON
+    // none on the facing side W. Like every other seeded value they only FILL what is missing —
+    // an admin-edited connectorRules is never overwritten (DB wins over TS defaults).
+    const connectorRules = defaultConnectorRules(part.partClass) as unknown as Prisma.InputJsonValue;
     const existing = await prisma.partCatalog.findUnique({ where: { partType: part.partType } });
     if (existing === null) {
-      await prisma.partCatalog.create({ data: part });
+      await prisma.partCatalog.create({ data: { ...part, connectorRules } });
+    } else {
+      await prisma.partCatalog.updateMany({
+        where: { partType: part.partType, connectorRules: { equals: Prisma.DbNull } },
+        data: { connectorRules },
+      });
     }
   }
 }

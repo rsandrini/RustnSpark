@@ -62,6 +62,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'specialProp',
     'active',
     'connectorLayouts',
+    'connectorRules',
   ],
   MissionTemplate: [
     'id',

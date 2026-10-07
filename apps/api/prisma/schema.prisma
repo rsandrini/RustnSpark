@@ -375,6 +375,7 @@ model PartCatalog {
   batInput      Float?
   specialProp      Json?
   connectorLayouts Json?
+  connectorRules   Json?
   active           Boolean        @default(true)
   instances        PartInstance[]
 }

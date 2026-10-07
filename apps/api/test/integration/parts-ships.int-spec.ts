@@ -477,10 +477,18 @@ describe('parts and ships API (S4.3)', () => {
         .get('/v1/inventory')
         .set('Authorization', `Bearer ${token}`);
       expect(response.status).toBe(200);
-      const items = response.body as Array<{ connectors: unknown[] }>;
+      const items = response.body as Array<{
+        catalog: { partClass: string };
+        connectors: Array<{ side: string }>;
+      }>;
       expect(items.length).toBeGreaterThan(0);
       for (const item of items) {
-        expect(item.connectors).toEqual([]); // universal fallback: nothing to draw
+        // Generated from the seeded default rules: every part carries real ports, and an
+        // engine/weapon's facing side (W) never has a connector.
+        expect(item.connectors.length).toBeGreaterThan(0);
+        if (item.catalog.partClass === 'ENGINE' || item.catalog.partClass === 'WEAPON') {
+          expect(item.connectors.some((cell) => cell.side === 'W')).toBe(false);
+        }
       }
     });
   });
@@ -823,6 +831,7 @@ describe('parts and ships API (S4.3)', () => {
           description: hull.description ?? {},
           specialProp: hull.specialProp ?? undefined,
           connectorLayouts: hull.connectorLayouts ?? undefined,
+          connectorRules: hull.connectorRules ?? undefined,
         },
       });
       const oversized = await prisma.partInstance.create({

@@ -156,6 +156,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     return map;
   }, [parts]);
 
+  // Each owned part's generated connector cells (INSTALLED items included) for the yard's port marks.
+  const connectorsById = useMemo(() => {
+    const map = new Map<string, InventoryItem['connectors']>();
+    for (const part of parts) map.set(part.id, part.connectors);
+    return map;
+  }, [parts]);
+
   // Player-facing part names (both locales come from the server); never the raw part code.
   const nameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -553,6 +560,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 disconnectedPartIds={disconnectedPartIds}
                 layout={effectiveLayout}
                 catalogById={catalogById}
+                connectorsById={connectorsById}
                 nameById={nameById}
                 selectedId={selectedId}
                 draggingId={draggingId}
@@ -672,6 +680,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
                   </p>
                 )}
+                <p className="sub conn-legend" data-testid="port-legend" title={t('connectors.legend.shapes')}>
+                  <span>{t('connectors.legend.title')}</span>
+                  <span className="conn-swatch conn-connected">{t('connectors.legend.connected')}</span>
+                  <span className="conn-swatch conn-incorrect">{t('connectors.legend.incorrect')}</span>
+                  <span className="conn-swatch conn-available">{t('connectors.legend.available')}</span>
+                </p>
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}

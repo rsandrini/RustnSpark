@@ -73,6 +73,29 @@
       }
     }
   },
+  "connectors": {
+    "title": "Connection ports",
+    "gridLabel": "Connection ports of this part",
+    "fixed": "Generated with the part — this is exactly what you get.",
+    "kinds": {
+      "none": "No connector",
+      "central": "Central connector",
+      "split": "Split connector",
+      "universal": "Universal connector"
+    },
+    "states": {
+      "connected": "connected",
+      "incorrect": "incompatible neighbour",
+      "available": "free port"
+    },
+    "legend": {
+      "title": "Ports",
+      "connected": "Connected",
+      "incorrect": "Incorrect",
+      "available": "Available",
+      "shapes": "Dot = central · bar = split · ring = universal"
+    }
+  },
   "hangar": {
     "title": "My Ship",
     "tray": "Parts",

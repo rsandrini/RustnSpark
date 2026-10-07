@@ -73,6 +73,29 @@
       }
     }
   },
+  "connectors": {
+    "title": "Portas de conexão",
+    "gridLabel": "Portas de conexão desta peça",
+    "fixed": "Geradas junto com a peça — é exatamente isto que você recebe.",
+    "kinds": {
+      "none": "Sem conector",
+      "central": "Conector central",
+      "split": "Conector dividido",
+      "universal": "Conector universal"
+    },
+    "states": {
+      "connected": "conectada",
+      "incorrect": "vizinha incompatível",
+      "available": "porta livre"
+    },
+    "legend": {
+      "title": "Portas",
+      "connected": "Conectada",
+      "incorrect": "Incorreta",
+      "available": "Disponível",
+      "shapes": "Ponto = central · barra = dividido · anel = universal"
+    }
+  },
   "hangar": {
     "title": "Minha Nave",
     "tray": "Peças",
