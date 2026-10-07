@@ -29,6 +29,9 @@ export const connectorRulesSchema = z
       S: weightedKindsSchema,
       W: weightedKindsSchema,
     }),
+    /** Every connected side of a generated part carries the SAME kind (all central, all split or
+        all universal) — the "real" mix: types vary between parts, never within one. */
+    oneKindPerPart: z.boolean().optional(),
     maxConnected: z.number().int().min(0).max(MAX_SIDES).optional(),
     maxSplit: z.number().int().min(0).max(MAX_SIDES).optional(),
     forbidden: z
@@ -57,7 +60,12 @@ export function parseConnectorRules(json: unknown): ConnectorRules | null {
 
 /** Every allowed side combination with its weight (product of the per-side weights). A combo
     with zero total weight, or one breaking `maxConnected`/`maxSplit`/`forbidden`, is dropped. */
-export function enumerateCombos(rules: ConnectorRules): { combo: SideCombo; weight: number }[] {
+export function enumerateCombos(
+  rules: ConnectorRules,
+  /** Only combos whose connected sides all use these kinds (starter/restart kits: never `split`,
+      so any two kit parts can always be joined). */
+  allowedKinds?: readonly ConnectorKind[],
+): { combo: SideCombo; weight: number }[] {
   const out: { combo: SideCombo; weight: number }[] = [];
   const merged = (side: ConnectorSide): Map<ConnectorKind, number> => {
     const map = new Map<ConnectorKind, number>();
@@ -70,7 +78,10 @@ export function enumerateCombos(rules: ConnectorRules): { combo: SideCombo; weig
   const pick = (index: number, chosen: ConnectorKind[], weight: number): void => {
     if (index === SIDES.length) {
       const combo = Object.fromEntries(SIDES.map((side, i) => [side, chosen[i]!])) as SideCombo;
-      if (isAllowed(rules, combo)) out.push({ combo, weight });
+      const kindsOk =
+        allowedKinds === undefined ||
+        SIDES.every((side) => combo[side] === 'none' || allowedKinds.includes(combo[side]));
+      if (kindsOk && isAllowed(rules, combo)) out.push({ combo, weight });
       return;
     }
     for (const [kind, w] of options[index]!) pick(index + 1, [...chosen, kind], weight * w);
@@ -81,6 +92,9 @@ export function enumerateCombos(rules: ConnectorRules): { combo: SideCombo; weig
 
 function isAllowed(rules: ConnectorRules, combo: SideCombo): boolean {
   const kinds = SIDES.map((side) => combo[side]);
+  if (rules.oneKindPerPart === true && new Set(kinds.filter((kind) => kind !== 'none')).size > 1) {
+    return false;
+  }
   if (rules.maxConnected !== undefined && kinds.filter((k) => k !== 'none').length > rules.maxConnected) {
     return false;
   }
@@ -138,10 +152,13 @@ export function generateConnectors(
   w: number,
   h: number,
   seed: string,
+  allowedKinds?: readonly ConnectorKind[],
 ): ConnectorLayout | null {
   const rules = parseConnectorRules(rulesJson);
   if (rules === null) return null;
-  const combos = enumerateCombos(rules);
+  // A restriction that leaves nothing to roll falls back to the rules as authored.
+  const restricted = allowedKinds === undefined ? [] : enumerateCombos(rules, allowedKinds);
+  const combos = restricted.length > 0 ? restricted : enumerateCombos(rules);
   if (combos.length === 0) return null;
   const total = combos.reduce((sum, entry) => sum + entry.weight, 0);
   let roll = createRng(seed).float() * total;
@@ -152,10 +169,20 @@ export function generateConnectors(
   return expandCombo(combos[combos.length - 1]!.combo, w, h);
 }
 
-/** Factory default (seed): every side central; ENGINE/WEAPON get `none` on the facing side W. */
+/** Factory default (seed): every connected side may be central, split or universal with equal
+    chance, but one kind per part (`oneKindPerPart`) — so a generated part is all-central,
+    all-split or all-universal, ports at the same place on every side. ENGINE/WEAPON get `none`
+    on the facing side W. Admin edits the rules per part type; the seed only fills missing ones. */
 export function defaultConnectorRules(partClass: string): ConnectorRules {
-  const central = [{ kind: 'central' as const, weight: 100 }];
-  const none = [{ kind: 'none' as const, weight: 100 }];
+  const mixed = [
+    { kind: 'central' as const, weight: 1 },
+    { kind: 'split' as const, weight: 1 },
+    { kind: 'universal' as const, weight: 1 },
+  ];
+  const none = [{ kind: 'none' as const, weight: 1 }];
   const directional = partClass === 'ENGINE' || partClass === 'WEAPON';
-  return { sides: { N: central, E: central, S: central, W: directional ? none : central } };
+  return {
+    sides: { N: mixed, E: mixed, S: mixed, W: directional ? none : mixed },
+    oneKindPerPart: true,
+  };
 }

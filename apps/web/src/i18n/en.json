@@ -93,7 +93,7 @@
       "connected": "Connected",
       "incorrect": "Incorrect",
       "available": "Available",
-      "shapes": "Dot = central · bar = split · ring = universal"
+      "shapes": "Dot = central · two small dots = split · three = universal"
     }
   },
   "hangar": {
@@ -464,7 +464,8 @@
       "forbidden": "Forbidden combinations (a roll matching every chosen side is rejected)",
       "any": "any",
       "addForbidden": "Add forbidden combination",
-      "removeForbidden": "Remove"
+      "removeForbidden": "Remove",
+      "oneKindPerPart": "One kind per part (all connected sides use the same kind, ports at the same place on every side)"
     },
     "configTitle": "Tuning",
     "entities": "Entities",

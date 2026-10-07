@@ -4019,11 +4019,7 @@ svg .block.broken {
 .conn-mark.conn-available {
   --conn-color: var(--blue);
 }
-.conn-mark.conn-kind-universal {
-  fill: none;
-  stroke: var(--conn-color);
-  stroke-width: 0.04;
-}
+
 .conn-legend {
   display: flex;
   flex-wrap: wrap;

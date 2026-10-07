@@ -73,7 +73,7 @@ export class InventoryService {
             ownerPlayerId: playerId,
             condition,
             location: 'INVENTORY',
-            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType)),
+            connectors: toJsonInput(await rollConnectorsForPartType(tx, partType, true)),
           },
           include: { partCatalog: true },
         }),

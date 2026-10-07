@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service.js';
-import { rollConnectors, type ConnectorLayout } from './connectors.js';
+import { KIT_KINDS, rollConnectors, type ConnectorLayout } from './connectors.js';
 
 /** For the 3 creation call sites that only have a bare partType string in scope (onboarding's
     starter kit, a restart kit, a scavenge find) — fetches just enough of the catalog row to
@@ -9,10 +9,12 @@ import { rollConnectors, type ConnectorLayout } from './connectors.js';
 export async function rollConnectorsForPartType(
   tx: Prisma.TransactionClient | PrismaService,
   partType: string,
+  /** A starter/restart kit part: restricted to kinds that always join (no `split`). */
+  kit = false,
 ): Promise<ConnectorLayout | null> {
   const row = await tx.partCatalog.findUniqueOrThrow({
     where: { partType },
     select: { connectorRules: true, w: true, h: true },
   });
-  return rollConnectors(row);
+  return rollConnectors(row, undefined, kit ? KIT_KINDS : undefined);
 }

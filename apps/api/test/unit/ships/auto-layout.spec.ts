@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { autoLayout } from '../../../src/ships/auto-layout.js';
 import { defaultConnectorRules, generateConnectors } from '../../../src/parts/connector-rules.js';
+import { KIT_KINDS } from '../../../src/parts/connectors.js';
 import { connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
 import { buildInstalled, catalogByInstanceId, CATALOG_BY_TYPE } from './fixtures/catalog.js';
 
@@ -51,6 +52,7 @@ describe('autoLayout', () => {
             part.catalog.w,
             part.catalog.h,
             `s${seed}-${index}`,
+            KIT_KINDS, // a kit: central/universal only, so every part can join the bridge
           ),
         },
       }));

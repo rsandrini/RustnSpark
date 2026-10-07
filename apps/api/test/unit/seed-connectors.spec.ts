@@ -24,17 +24,21 @@ describe('seeded connector rules', () => {
     }
   });
 
-  it('ENGINE/WEAPON have no W cells and every other perimeter side central; others all central', () => {
+  it('ENGINE/WEAPON have no W cells; every part carries ONE kind on all its ports; all three kinds occur across the catalog', () => {
+    const seen = new Set<string>();
     for (const part of PARTS) {
-      const layout = generateConnectors(defaultConnectorRules(part.partClass), part.w, part.h, 'x')!;
+      const layout = generateConnectors(defaultConnectorRules(part.partClass), part.w, part.h, part.partType)!;
       const directional = part.partClass === 'ENGINE' || part.partClass === 'WEAPON';
       const sides = new Set(layout.cells.map((cell) => cell.side));
       expect(sides.has('W')).toBe(!directional);
       for (const side of ['N', 'E', 'S'] as const) expect(sides.has(side)).toBe(true);
-      expect(layout.cells.every((cell) => cell.kind === 'central')).toBe(true);
+      const kinds = new Set(layout.cells.map((cell) => cell.kind));
+      expect(kinds.size).toBe(1); // one kind per part, same ports on every side
+      kinds.forEach((kind) => seen.add(kind));
       // perimeter edges: 2*(w + h) minus the W edge for directional parts
       const expected = directional ? 2 * part.w + part.h : 2 * (part.w + part.h);
       expect(layout.cells).toHaveLength(expected);
     }
+    expect([...seen].sort()).toEqual(['central', 'split', 'universal']);
   });
 });

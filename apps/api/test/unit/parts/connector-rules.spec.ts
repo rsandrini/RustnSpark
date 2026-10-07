@@ -110,7 +110,39 @@ describe('connector rules generation', () => {
     expect(tank.cells).toHaveLength(4);
   });
 
+  it('oneKindPerPart: every connected side of a part shares one kind, and each kind occurs about equally', () => {
+    const rules = defaultConnectorRules('TANK');
+    expect(rules.oneKindPerPart).toBe(true);
+    for (const { combo } of enumerateCombos(rules)) {
+      expect(new Set(Object.values(combo).filter((k) => k !== 'none')).size).toBeLessThanOrEqual(1);
+    }
+    const counts: Record<string, number> = { central: 0, split: 0, universal: 0 };
+    for (let i = 0; i < 3000; i += 1) {
+      const kind = generateConnectors(rules, 1, 1, `seed-${i}`)!.cells[0]!.kind;
+      counts[kind] = (counts[kind] ?? 0) + 1;
+    }
+    for (const count of Object.values(counts)) {
+      expect(count / 3000).toBeGreaterThan(0.29);
+      expect(count / 3000).toBeLessThan(0.38);
+    }
+  });
+
+  it('without oneKindPerPart, sides may mix kinds', () => {
+    const mixed = { ...defaultConnectorRules('TANK'), oneKindPerPart: undefined };
+    expect(enumerateCombos(mixed).some(({ combo }) => new Set(Object.values(combo)).size > 1)).toBe(true);
+  });
+
   it('parses the default rules', () => {
     expect(parseConnectorRules(defaultConnectorRules('TANK'))).not.toBeNull();
+  });
+
+  it('allowedKinds (kits) never rolls split, and falls back to the rules when nothing is left', () => {
+    const rules = defaultConnectorRules('TANK');
+    for (let i = 0; i < 500; i += 1) {
+      const kind = generateConnectors(rules, 1, 1, `kit-${i}`, ['central', 'universal'])!.cells[0]!.kind;
+      expect(kind).not.toBe('split');
+    }
+    const splitOnly: ConnectorRules = { sides: { N: fixed('split'), E: fixed('split'), S: fixed('split'), W: fixed('split') } };
+    expect(generateConnectors(splitOnly, 1, 1, 'x', ['central'])!.cells[0]!.kind).toBe('split');
   });
 });

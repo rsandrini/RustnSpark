@@ -1,6 +1,8 @@
 # Admin editing UX + connector port types
 
-**Status:** PLAN — not started, awaiting owner approval. Evidence below comes from a live
+**Status:** APPROVED (owner, 2026-10-07): admin edit/create as pages in the shell; mixed seed defaults = ONE kind per part (all-central, all-split or all-universal, equal chance, ports at the same place on every side) — no weighted 70/25/5 mix. Kits (starter/restart) never roll split so they always assemble. Added: a per-player 'fast missions' toggle in the player detail screen (today CLI/API only).
+
+Original status: PLAN. Evidence below comes from a live
 Playwright audit of every admin route (1400×900) against a throwaway stack.
 
 ## Findings
@@ -75,7 +77,7 @@ Playwright audit of every admin route (1400×900) against a throwaway stack.
 Estimate: 3–4 days. No API changes except (optionally) a small endpoint returning the possible
 combinations + samples for a rules payload so the editor and the server can never disagree.
 
-## Open decisions
+## Open decisions (resolved above)
 1. Edit/create as **pages in the shell** (recommended; URLs, Back, menu always visible) or keep a
    modal but non-fullscreen, below the menu?
 2. **Seed defaults:** keep all-central, or a mixed default (e.g. central 70 / split 25 / universal

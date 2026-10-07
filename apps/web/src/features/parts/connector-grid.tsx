@@ -2,16 +2,29 @@ import { useTranslation } from 'react-i18next';
 import type { ConnectorCell } from '../../api/generated';
 import type { Kind, PortState, Side } from '../hangar/connectors';
 
-// Shapes carry the connection KIND (dot = central, bar = split, ring = universal, nothing = none);
-// colour carries the STATE (green connected, red incorrect, blue available) — so a colour-blind
-// player can still read the kind, and the state is also in the <title>.
+// Shapes carry the connection KIND by how many ports sit on the edge — central: ONE dot at the
+// centre; split: TWO small dots either side of the centre; universal: THREE (the centre dot plus
+// the two small ones, so it visibly contains both and joins either); none: nothing. Colour carries
+// the STATE (green connected, red incorrect, blue available), and the state is also in <title>.
 const INSET = 0.13;
 const MID = 0.5;
-const DOT_RADIUS = 0.07;
-const RING_RADIUS = 0.085;
-const BAR_HALF = 0.17;
-const BAR_THICK = 0.06;
-const GLYPH_STROKE = 0.04;
+const CENTRAL_RADIUS = 0.075;
+const SMALL_RADIUS = 0.05;
+const SMALL_OFFSET = 0.17;
+
+/** Offsets along the edge, and the dot radius, for each kind. */
+const DOTS: Record<Exclude<Kind, 'none'>, { offset: number; radius: number }[]> = {
+  central: [{ offset: 0, radius: CENTRAL_RADIUS }],
+  split: [
+    { offset: -SMALL_OFFSET, radius: SMALL_RADIUS },
+    { offset: SMALL_OFFSET, radius: SMALL_RADIUS },
+  ],
+  universal: [
+    { offset: -SMALL_OFFSET, radius: SMALL_RADIUS },
+    { offset: 0, radius: CENTRAL_RADIUS },
+    { offset: SMALL_OFFSET, radius: SMALL_RADIUS },
+  ],
+};
 
 function anchor(x: number, y: number, side: Side): { cx: number; cy: number } {
   switch (side) {
@@ -49,19 +62,14 @@ export function PortGlyph({
   return (
     <g className={className} style={{ pointerEvents: 'none' }} data-testid="port-mark">
       {title !== undefined && <title>{title}</title>}
-      {kind === 'central' && <circle cx={cx} cy={cy} r={DOT_RADIUS} />}
-      {kind === 'universal' && (
-        <circle cx={cx} cy={cy} r={RING_RADIUS} fill="none" strokeWidth={GLYPH_STROKE} />
-      )}
-      {kind === 'split' && (
-        <rect
-          x={horizontalEdge ? cx - BAR_HALF : cx - BAR_THICK / 2}
-          y={horizontalEdge ? cy - BAR_THICK / 2 : cy - BAR_HALF}
-          width={horizontalEdge ? BAR_HALF * 2 : BAR_THICK}
-          height={horizontalEdge ? BAR_THICK : BAR_HALF * 2}
-          rx={BAR_THICK / 2}
+      {DOTS[kind].map((dot) => (
+        <circle
+          key={dot.offset}
+          cx={horizontalEdge ? cx + dot.offset : cx}
+          cy={horizontalEdge ? cy : cy + dot.offset}
+          r={dot.radius}
         />
-      )}
+      ))}
     </g>
   );
 }

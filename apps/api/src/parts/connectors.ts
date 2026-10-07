@@ -103,6 +103,11 @@ export function sideKindAt(
 export function rollConnectors(
   row: { connectorRules: unknown; w: number; h: number },
   seed: string = randomUUID(),
+  allowedKinds?: readonly ConnectorKind[],
 ): ConnectorLayout | null {
-  return generateConnectors(row.connectorRules, row.w, row.h, seed);
+  return generateConnectors(row.connectorRules, row.w, row.h, seed, allowedKinds);
 }
+
+/** Kit parts (starter / restart) never roll `split`: central and universal join each other and
+    themselves, so any kit can always be assembled into one connected ship. */
+export const KIT_KINDS: readonly ConnectorKind[] = ['central', 'universal'];

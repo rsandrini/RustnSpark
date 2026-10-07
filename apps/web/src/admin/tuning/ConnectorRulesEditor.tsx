@@ -8,6 +8,8 @@ const MAX_SIDES = 4;
 
 export interface ConnectorRules {
   sides: Record<Side, { kind: Kind; weight: number }[]>;
+  /** Every connected side of a generated part carries the same kind. */
+  oneKindPerPart?: boolean;
   maxConnected?: number;
   maxSplit?: number;
   forbidden?: Partial<Record<Side, Kind>>[];
@@ -93,6 +95,20 @@ export function ConnectorRulesEditor({ value, onChange }: ConnectorRulesEditorPr
         </tbody>
       </table>
       <small className="field-hint">{t('tuning.connectorRules.weightHelp')}</small>
+
+      <label className="connector-rules-one-kind">
+        <input
+          type="checkbox"
+          data-testid="rules-oneKindPerPart"
+          checked={rules.oneKindPerPart === true}
+          onChange={(event) => {
+            const { oneKindPerPart: _removed, ...rest } = rules;
+            void _removed;
+            onChange(event.target.checked ? { ...rest, oneKindPerPart: true } : rest);
+          }}
+        />
+        {t('tuning.connectorRules.oneKindPerPart')}
+      </label>
 
       <div className="connector-rules-limits">
         {(['maxConnected', 'maxSplit'] as const).map((key) => (

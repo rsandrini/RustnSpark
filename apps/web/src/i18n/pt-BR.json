@@ -93,7 +93,7 @@
       "connected": "Conectada",
       "incorrect": "Incorreta",
       "available": "Disponível",
-      "shapes": "Ponto = central · barra = dividido · anel = universal"
+      "shapes": "Ponto = central · dois pontos pequenos = dividido · três = universal"
     }
   },
   "hangar": {
@@ -464,7 +464,8 @@
       "forbidden": "Combinações proibidas (um sorteio que bata com todos os lados escolhidos é rejeitado)",
       "any": "qualquer",
       "addForbidden": "Adicionar combinação proibida",
-      "removeForbidden": "Remover"
+      "removeForbidden": "Remover",
+      "oneKindPerPart": "Um tipo por peça (todos os lados conectados usam o mesmo tipo, portas no mesmo lugar em cada lado)"
     },
     "configTitle": "Ajustes",
     "entities": "Entidades",
