@@ -4007,7 +4007,8 @@ svg .block.broken {
 .conn-mark {
   --conn-color: var(--blue);
   fill: var(--conn-color);
-  stroke: var(--conn-color);
+  /* Dots and bars are filled only: an SVG stroke defaults to 1 user unit = a whole yard cell. */
+  stroke: none;
 }
 .conn-mark.conn-connected {
   --conn-color: var(--ok);
@@ -4020,6 +4021,8 @@ svg .block.broken {
 }
 .conn-mark.conn-kind-universal {
   fill: none;
+  stroke: var(--conn-color);
+  stroke-width: 0.04;
 }
 .conn-legend {
   display: flex;
