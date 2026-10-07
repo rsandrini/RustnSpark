@@ -4081,3 +4081,9 @@ svg .block.broken {
   stroke-width: 0.02;
   opacity: 0.9;
 }
+
+svg .block.dir-blocked {
+  stroke: var(--bad);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.16 0.1;
+}

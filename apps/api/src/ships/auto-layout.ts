@@ -1,11 +1,9 @@
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { ROTATIONS, type ConnectorLayout } from '../parts/connectors.js';
+import { directionErrors } from './direction.js';
 import { CLASSIC_SQUARE_CELLS, connectedPartIds, validateLayout } from './geometry.js';
 
 // All four facings: an engine/weapon may need turning so nothing is behind its exhaust/muzzle.
-// Direction-rule errors land on the engine/weapon, not on the part that blocks it, so a newly
-// placed part is rejected for any of them (the layout so far is valid, so any is new).
-const DIRECTION_CODES = new Set(['EXHAUST_BLOCKED', 'FACING_BLOCKED', 'FACING_CONNECTOR']);
 
 export function autoLayout(
   parts: InstalledPart[],
@@ -54,10 +52,12 @@ function findPlacement(
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
       const errors = validateLayout([...existing, placement], catalog, formatCells, connectors);
-      const relevant = errors.filter(
-        (error) => error.partInstanceId === part.instance.id || DIRECTION_CODES.has(error.code),
-      );
+      const relevant = errors.filter((error) => error.partInstanceId === part.instance.id);
       if (relevant.length > 0) continue;
+      // Direction errors land on the engine/weapon, not on the part that blocks it, so a newly
+      // placed part is rejected for any (the layout so far is clean, so any is new). Auto-layout
+      // always produces a layout that satisfies them; manual editing is allowed to break them.
+      if (directionErrors([...existing, placement], catalog, connectors).length > 0) continue;
       if (
         connectors.size > 0 &&
         !connectedPartIds([...existing, placement], catalog, connectors).has(part.instance.id)

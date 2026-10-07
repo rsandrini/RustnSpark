@@ -260,9 +260,7 @@
       "condition": "Condition"
     },
     "rotate": {
-      "square": "This part is 1×1: it looks the same rotated. Rotation only changes parts that are not square.",
-      "blocked": "There is no room to rotate this part here: move a neighbour away first.",
-      "nudged": "Rotated (moved a cell or two to make room)."
+      "blocked": "There is no room to rotate this part here: move a neighbour away first."
     },
     "statHelp": {
       "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",
@@ -288,8 +286,8 @@
       "structure": "How much of the structure budget the bridge sets is used by everything else installed."
     },
     "placement": {
-      "exhaust": "That spot would put parts behind the engine's exhaust. Turn the engine or move it to the back edge.",
-      "facing": "That spot would put parts in the weapon's line of fire. Turn the weapon or move it to the ship's edge."
+      "exhaust": "Parts are behind this engine's exhaust — turn it or move it to the back edge of the ship.",
+      "facing": "Parts are in this weapon's line of fire — turn it or move it to the edge of the ship."
     },
     "facing": {
       "exhaust": "Exhaust side",

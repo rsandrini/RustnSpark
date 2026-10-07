@@ -635,19 +635,17 @@ describe('hangar (S10.4)', () => {
     expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
   });
 
-  it('refuses to drop a part behind the engine\'s exhaust and says why', async () => {
+  it('lets a part go anywhere, even behind the engine, and outlines the engine as a problem', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     const trayButton = await screen.findByRole('button', { name: /^cargo/i });
 
     fireEvent.click(trayButton);
     fireEvent.click(cell(container, 8, 0)); // east of the engine, which faces E
-    expect(block(container, 'part-cargo-b')).toBeNull();
-    expect(await screen.findByTestId('rotate-hint')).toHaveTextContent(/behind the engine/i);
-
-    // the same part beside the ship is fine
-    fireEvent.click(cell(container, 4, 0));
     expect(block(container, 'part-cargo-b')).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull(),
+    );
   });
 
   it('rotate cycles four quarter turns: the footprint swaps, swaps back, and ends where it began', async () => {
@@ -752,18 +750,40 @@ describe('hangar (S10.4)', () => {
     expect(sentIds).toHaveLength(6);
   });
 
-  it('rotate: a 1×1 part explains itself, a blocked rotation says why', async () => {
+  it('rotate turns the part in place: same cell, no nudging, even for a 1×1 part (its ports turn)', async () => {
     server.use(onboarded());
-    renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    await screen.findByRole('heading', { name: 'My Ship' });
-    const block = await waitFor(() => {
-      const found = document.querySelector('rect.block');
-      if (found === null) throw new Error('no block yet');
-      return found;
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const bridge = await waitFor(() => {
+      const element = block(container, 'part-bridge');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
     });
-    fireEvent.pointerDown(block);
+    const gx = bridge.getAttribute('data-gx');
+    const gy = bridge.getAttribute('data-gy');
+    fireEvent.pointerDown(bridge);
     fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
-    // Whatever part that is, the pilot gets an answer instead of a silent click.
+    const after = block(container, 'part-bridge');
+    expect(after?.getAttribute('data-gx')).toBe(gx);
+    expect(after?.getAttribute('data-gy')).toBe(gy);
+    expect(screen.queryByTestId('rotate-hint')).toBeNull();
+  });
+
+  it('a rotation that would overlap a neighbour is refused with a reason instead of moving anything', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    // cargo-a is 2x1 at (2,2); battery sits at (2,1) and the tank at (3,0): turning cargo-a into
+    // a 1x2 stays clear, so drop the loose cargo right below it first to make (2,3) occupied
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 2, 3));
+    expect(block(container, 'part-cargo-b')).not.toBeNull();
+
+    const cargoA = block(container, 'part-cargo-a') as SVGRectElement;
+    const before = [cargoA.getAttribute('data-gx'), cargoA.getAttribute('data-gy')];
+    fireEvent.pointerDown(cargoA);
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
     expect(await screen.findByTestId('rotate-hint')).toBeInTheDocument();
+    const after = block(container, 'part-cargo-a') as SVGRectElement;
+    expect([after.getAttribute('data-gx'), after.getAttribute('data-gy')]).toEqual(before);
   });
 });

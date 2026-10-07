@@ -260,9 +260,7 @@
       "condition": "Condição"
     },
     "rotate": {
-      "square": "Esta peça é 1×1: ela fica igual girada. A rotação só muda peças que não são quadradas.",
-      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
-      "nudged": "Girada (movida uma ou duas casas para abrir espaço)."
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro."
     },
     "statHelp": {
       "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
@@ -288,8 +286,8 @@
       "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
     },
     "placement": {
-      "exhaust": "Esse lugar deixaria peças atrás do escapamento do motor. Gire o motor ou mova-o para a borda traseira.",
-      "facing": "Esse lugar deixaria peças na linha de tiro da arma. Gire a arma ou mova-a para a borda da nave."
+      "exhaust": "Há peças atrás do escapamento deste motor — gire-o ou mova-o para a borda traseira da nave.",
+      "facing": "Há peças na linha de tiro desta arma — gire-a ou mova-a para a borda da nave."
     },
     "facing": {
       "exhaust": "Lado do escapamento",

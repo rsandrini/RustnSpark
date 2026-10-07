@@ -1,5 +1,4 @@
 import type { PartCatalog, Placement, LayoutError } from '../parts/part.types.js';
-import { directionErrors } from './direction.js';
 import {
   authoredSideAt,
   compatible,
@@ -81,7 +80,8 @@ export function validateLayout(
   placements: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
-  connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
 ): LayoutError[] {
   const errors: LayoutError[] = [];
   const occupied = new Map<string, OccupiedCell>();
@@ -119,7 +119,6 @@ export function validateLayout(
     }
   }
 
-  errors.push(...directionErrors(placements, catalog, connectorsByInstance));
   return errors;
 }
 

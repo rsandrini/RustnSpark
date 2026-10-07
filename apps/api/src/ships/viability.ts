@@ -12,7 +12,12 @@ export type ViabilityProblemCode =
   | 'BATTERY_OUTPUT_INSUFFICIENT'
   | 'BATTERY_CHARGE_INSUFFICIENT'
   | 'NO_LIFE_SUPPORT'
-  | 'STRUCTURE_EXCEEDED';
+  | 'STRUCTURE_EXCEEDED'
+  // Part direction rules (ships/direction.ts): reported like any other flight problem — saving a
+  // layout is never blocked by them (a refit needs free placement), flying with them is.
+  | 'EXHAUST_BLOCKED'
+  | 'FACING_BLOCKED'
+  | 'FACING_CONNECTOR';
 
 export interface ViabilityProblem {
   code: ViabilityProblemCode;

@@ -14,6 +14,7 @@ import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity } from '../ships/connectivity.js';
+import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
@@ -259,7 +260,12 @@ export class DispatchService {
       );
       const installedConnected = applyConnectivity(installed, connectedIds);
       const sheet = deriveSheet(installedConnected, rules);
-      const viability = checkViability(sheet, installedConnected, rules);
+      const viability = withDirectionProblems(
+        checkViability(sheet, installedConnected, rules),
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+      );
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }

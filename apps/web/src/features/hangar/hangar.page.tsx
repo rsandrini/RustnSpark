@@ -14,7 +14,7 @@ import type {
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
-import { footprint, nextRot, placementIssue, type PlacementIssue, type Rot } from './hangar.geometry';
+import { directionViolations, footprint, nextRot, placementIssue, type Rot } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
@@ -316,43 +316,33 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   const modifyBlocked = ship?.status === 'ON_MISSION';
 
-  const placePart = (partInstanceId: string, gx: number, gy: number, announce = false) => {
+  const placePart = (partInstanceId: string, gx: number, gy: number) => {
     if (modifyBlocked) return;
     const existing = effectiveLayout.find(
       (placement) => placement.partInstanceId === partInstanceId,
     );
-    // A new engine/weapon may need turning to fit (its rear/firing half-plane must be empty):
-    // try the four facings, otherwise keep the first refusal to tell the pilot why.
-    const candidates: Rot[] = existing ? [existing.rot] : [0, 90, 180, 270];
-    let rot: Rot | undefined;
-    let refusal: PlacementIssue | null = null;
-    for (const candidate of candidates) {
-      const issue = placementIssue(
-        effectiveLayout,
-        catalogById,
-        partInstanceId,
-        gx,
-        gy,
-        candidate,
-        yardCellSet,
-      );
-      if (issue === null) {
-        rot = candidate;
-        break;
-      }
-      refusal ??= issue;
-    }
-    if (rot === undefined) {
-      if (announce && (refusal === 'exhaust' || refusal === 'facing')) {
-        setRotateHint(t(`hangar.placement.${refusal}`));
-      }
+    const rot: Rot = existing?.rot ?? 0;
+    if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet) !== null) {
       return;
+    }
+    // A NEW engine/weapon is dropped facing a way that has nothing behind it when one exists;
+    // moving or placing anywhere is never refused for direction (that is a problem, not a block).
+    let startRot: Rot = rot;
+    if (existing === undefined) {
+      const clean = ([0, 90, 180, 270] as const).find((candidate) => {
+        if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, candidate, yardCellSet) !== null) {
+          return false;
+        }
+        const trial = [...effectiveLayout, { partInstanceId, gx, gy, rot: candidate }];
+        return directionViolations(trial, catalogById).length === 0;
+      });
+      startRot = clean ?? 0;
     }
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
         )
-      : [...effectiveLayout, { partInstanceId, gx, gy, rot }];
+      : [...effectiveLayout, { partInstanceId, gx, gy, rot: startRot }];
     setRotateHint(null);
     setLayout(next);
     setSaved(false);
@@ -363,11 +353,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   const handleCellClick = (gx: number, gy: number) => {
     if (pendingPartId !== null) {
-      placePart(pendingPartId, gx, gy, true);
+      placePart(pendingPartId, gx, gy);
       return;
     }
     if (selectedId !== null) {
-      placePart(selectedId, gx, gy, true);
+      placePart(selectedId, gx, gy);
     }
   };
 
@@ -375,50 +365,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     if (draggingId !== null) placePart(draggingId, gx, gy);
   };
 
-  // Rotate: a 1×1 part looks the same rotated (say so); a rotation that would overlap a neighbour
-  // is tried on nearby cells before giving up, and the pilot is told when nothing fits.
+  // Rotate turns the part IN PLACE (clockwise quarter turn, same top-left cell) — its ports turn
+  // with it, so even a 1×1 part changes which sides face which neighbours. It never moves the
+  // part: if the turned footprint would overlap a neighbour or leave the format, say so.
   const rotateSelected = () => {
     if (selectedId === null || modifyBlocked) return;
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
-    const catalog = catalogById.get(selectedId);
-    if (existing === undefined || catalog === undefined) return;
-    // A square part looks the same rotated — except an engine/weapon, whose facing turns.
-    const directional = catalog.partClass === 'ENGINE' || catalog.partClass === 'WEAPON';
-    if (catalog.w === catalog.h && !directional) {
-      setRotateHint(t('hangar.rotate.square'));
-      return;
-    }
+    if (existing === undefined || catalogById.get(selectedId) === undefined) return;
     const turned = nextRot(existing.rot);
-    const offsets = [0, 1, -1, 2, -2].flatMap((dx) => [0, 1, -1, 2, -2].map((dy) => [dx, dy]));
-    offsets.sort((a, b) => Math.abs(a[0]!) + Math.abs(a[1]!) - (Math.abs(b[0]!) + Math.abs(b[1]!)));
-    let refusal = null as PlacementIssue | null;
-    const spot = offsets.find(([dx, dy]) => {
-      const issue = placementIssue(
-        effectiveLayout,
-        catalogById,
-        selectedId,
-        existing.gx + dx!,
-        existing.gy + dy!,
-        turned,
-        yardCellSet,
-      );
-      if (issue !== null && dx === 0 && dy === 0) refusal = issue;
-      return issue === null;
-    });
-    if (spot === undefined) {
-      setRotateHint(
-        refusal === 'exhaust' || refusal === 'facing'
-          ? t(`hangar.placement.${refusal}`)
-          : t('hangar.rotate.blocked'),
-      );
+    if (
+      placementIssue(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, turned, yardCellSet) !==
+      null
+    ) {
+      setRotateHint(t('hangar.rotate.blocked'));
       return;
     }
-    setRotateHint(spot[0] === 0 && spot[1] === 0 ? null : t('hangar.rotate.nudged'));
+    setRotateHint(null);
     setLayout(
       effectiveLayout.map((placement) =>
-        placement.partInstanceId === selectedId
-          ? { ...placement, gx: existing.gx + spot[0]!, gy: existing.gy + spot[1]!, rot: turned }
-          : placement,
+        placement.partInstanceId === selectedId ? { ...placement, rot: turned } : placement,
       ),
     );
     setSaved(false);

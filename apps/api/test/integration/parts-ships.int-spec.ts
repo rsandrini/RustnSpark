@@ -528,6 +528,52 @@ describe('parts and ships API (S4.3)', () => {
   });
 
   describe('assemble', () => {
+    it('saves a layout with a part behind the engine (free placement) and reports it as a flight problem', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
+      const idOf = (partType: string): string => parts.find((p) => p.partType === partType)!.id;
+      // bridge west of the engine, the engine facing W (rot 0): the bridge is behind its exhaust
+      const layout = [
+        { partInstanceId: idOf('bridge'), gx: 0, gy: 0, rot: 0 },
+        { partInstanceId: idOf('engine_chem_small'), gx: 1, gy: 0, rot: 0 },
+      ];
+
+      const saved = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(saved.status).toBe(200);
+
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(preview.status).toBe(200);
+      const viability = (preview.body as { viability: { viable: boolean; problems: { code: string }[] } })
+        .viability;
+      expect(viability.viable).toBe(false);
+      expect(viability.problems.map((p) => p.code)).toContain('EXHAUST_BLOCKED');
+
+      // turned to face away, the same parts are fine
+      const turned = [layout[0]!, { ...layout[1]!, rot: 180 }];
+      const ok = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: turned });
+      const codes = (ok.body as { viability: { problems: { code: string }[] } }).viability.problems.map(
+        (p) => p.code,
+      );
+      expect(codes).not.toContain('EXHAUST_BLOCKED');
+    });
+
     it('POST /v1/ships/:id/assemble with a valid layout updates the ship and parts', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();

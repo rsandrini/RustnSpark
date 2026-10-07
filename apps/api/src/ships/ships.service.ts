@@ -19,6 +19,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
 import { applyConnectivity } from './connectivity.js';
+import { withDirectionProblems } from './direction.js';
 import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
@@ -193,7 +194,12 @@ export class ShipsService implements OnModuleInit {
     const connectedIds = connectedPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance);
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    const viability = checkViability(sheet, installedConnected, rules);
+    const viability = withDirectionProblems(
+      checkViability(sheet, installedConnected, rules),
+      effectiveLayout,
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
     return {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),

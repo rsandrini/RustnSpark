@@ -1,6 +1,7 @@
 import type { ConnectorLayout, ConnectorSide } from '../parts/connectors.js';
 import { authoredSideAt, rotateSide, worldToAuthoredCell } from '../parts/connectors.js';
 import type { LayoutError, PartCatalog, Placement } from '../parts/part.types.js';
+import type { ViabilityProblem } from './viability.js';
 
 // Part direction rules: ENGINEs have an exhaust and WEAPONs a firing line, both facing W at rot 0
 // and turning clockwise with the placement's `rot`. The half-plane rule is literal — no other
@@ -94,4 +95,25 @@ export function directionErrors(
     }
   }
   return errors;
+}
+
+/** Direction rules as flight-viability problems: layout editing stays free, but a ship with an
+    engine/weapon that has parts behind its facing edge (or a connector on it) cannot fly. */
+export function withDirectionProblems(
+  viability: { viable: boolean; problems: ViabilityProblem[] },
+  placements: readonly Placement[],
+  catalog: ReadonlyMap<string, PartCatalog>,
+  connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null>,
+): { viable: boolean; problems: ViabilityProblem[] } {
+  const extra = directionErrors(placements, catalog, connectorsByInstance).map(
+    (error): ViabilityProblem => ({
+      code: error.code as ViabilityProblem['code'],
+      message: error.message,
+    }),
+  );
+  if (extra.length === 0) return viability;
+  // one entry per code (several engines blocked is still one problem for the pilot to read)
+  const seen = new Set(viability.problems.map((problem) => problem.code));
+  const unique = extra.filter((problem) => !seen.has(problem.code) && seen.add(problem.code));
+  return { viable: false, problems: [...viability.problems, ...unique] };
 }

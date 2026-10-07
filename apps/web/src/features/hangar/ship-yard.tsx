@@ -5,7 +5,7 @@ import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/gener
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks } from './connectors';
-import { facingOf, footprint } from './hangar.geometry';
+import { directionViolations, facingOf, footprint } from './hangar.geometry';
 
 const MIN_SPAN = 4;
 const FIT_MARGIN = 2;
@@ -193,6 +193,12 @@ export function ShipYard({
   const svgRef = useRef<SVGSVGElement>(null);
   // Ports are always on (spec decision 3); the dragged block is already live in `layout` while it
   // hovers, so its marks double as the placement preview.
+  // Engines/weapons with parts behind their facing edge: outlined red (direction rules are
+  // problems, never placement refusals).
+  const directionBlocked = useMemo(
+    () => new Map(directionViolations(layout, catalogById).map((v) => [v.partInstanceId, v.kind])),
+    [layout, catalogById],
+  );
   const portMarks = useMemo(
     () =>
       connectorsById === undefined ? [] : computePortMarks(layout, catalogById, connectorsById),
@@ -483,6 +489,7 @@ export function ShipYard({
                   'block',
                   look?.broken === true ? 'broken' : '',
                   disconnectedPartIds?.has(placement.partInstanceId) === true ? 'disconnected' : '',
+                  directionBlocked.has(placement.partInstanceId) ? 'dir-blocked' : '',
                   look === undefined
                     ? ''
                     : colorBy === 'rarity'
@@ -506,9 +513,16 @@ export function ShipYard({
                 onPointerLeave={() => onHoverPart?.(null)}
               />
               <title>
-                {look === undefined
-                  ? name
-                  : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`}
+                {[
+                  look === undefined
+                    ? name
+                    : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`,
+                  directionBlocked.has(placement.partInstanceId)
+                    ? t(`hangar.placement.${directionBlocked.get(placement.partInstanceId)}`)
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n')}
               </title>
               {look !== undefined && (
                 <g style={{ pointerEvents: 'none' }}>

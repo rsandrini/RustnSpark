@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { cellKey, connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import { directionErrors } from '../../../src/ships/direction.js';
 import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
 
@@ -393,7 +394,7 @@ describe('cellKey', () => {
   });
 });
 
-describe('validateLayout — part direction rules', () => {
+describe('direction rules are not part of validateLayout (free placement) but of flight viability', () => {
   const base: PartCatalog = {
     partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
     pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
@@ -409,9 +410,11 @@ describe('validateLayout — part direction rules', () => {
       { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
     ];
-    expect(validateLayout(behind, catalog).map((e) => e.code)).toEqual(['EXHAUST_BLOCKED']);
+    // saving is never blocked: the geometry check stays clean even with a part behind the engine
+    expect(validateLayout(behind, catalog)).toEqual([]);
+    expect(directionErrors(behind, catalog).map((e) => e.code)).toEqual(['EXHAUST_BLOCKED']);
     expect(
-      validateLayout([behind[0]!, { ...behind[1]!, rot: 180 }], catalog).map((e) => e.code),
+      directionErrors([behind[0]!, { ...behind[1]!, rot: 180 }], catalog).map((e) => e.code),
     ).toEqual([]);
   });
 
@@ -420,10 +423,8 @@ describe('validateLayout — part direction rules', () => {
     const bad = new Map<string, ConnectorLayout | null>([
       ['e', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] }],
     ]);
-    expect(validateLayout(layout, catalog, undefined, bad).map((e) => e.code)).toEqual([
-      'FACING_CONNECTOR',
-    ]);
-    expect(validateLayout(layout, catalog, undefined, new Map([['e', null]]))).toEqual([]);
+    expect(directionErrors(layout, catalog, bad).map((e) => e.code)).toEqual(['FACING_CONNECTOR']);
+    expect(directionErrors(layout, catalog, new Map([['e', null]]))).toEqual([]);
   });
 
   it('treats 180 as a non-swapping rotation for footprints', () => {

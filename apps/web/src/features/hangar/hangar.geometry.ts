@@ -25,8 +25,9 @@ export function footprint(
     : { width: catalog.w, height: catalog.h };
 }
 
-/** Why a placement is refused — the first problem found, in this order. */
-export type PlacementIssue = 'bounds' | 'overlap' | 'exhaust' | 'facing';
+/** Why a placement is refused. Only the hard geometry rules refuse: direction rules (engine
+    exhaust / weapon firing line) are reported as problems instead, so parts can go anywhere. */
+export type PlacementIssue = 'bounds' | 'overlap';
 
 const FACING_VECTOR: Record<Side, { x: number; y: number }> = {
   N: { x: 0, y: -1 },
@@ -100,9 +101,10 @@ export function directionViolations(
 }
 
 /**
- * First reason the part cannot go at (gx, gy, rot), or null. The direction rule counts both ways:
- * the moved part's own facing half-plane, and the moved part standing in another engine's/weapon's.
- * Violations that exist without involving this part (a legacy layout) never block moving it.
+ * First reason the part cannot go at (gx, gy, rot), or null: outside the format, or on top of
+ * another part. The direction rules deliberately do NOT refuse a placement — editing is free so a
+ * refit can pass through any intermediate layout — they show up as problems / a red outline
+ * (`directionViolations`) and keep the ship from flying until fixed.
  */
 export function placementIssue(
   layout: readonly Placement[],
@@ -132,15 +134,6 @@ export function placementIssue(
       gy < placement.gy + otherFoot.height &&
       placement.gy < gy + height;
     if (overlaps) return 'overlap';
-  }
-  const candidate = [
-    ...layout.filter((placement) => placement.partInstanceId !== partInstanceId),
-    { partInstanceId, gx, gy, rot },
-  ];
-  for (const violation of directionViolations(candidate, catalogById)) {
-    if (violation.partInstanceId === partInstanceId || violation.blockers.has(partInstanceId)) {
-      return violation.kind;
-    }
   }
   return null;
 }

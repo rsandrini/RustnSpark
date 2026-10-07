@@ -79,7 +79,7 @@ describe('rotation and placementIssue', () => {
     expect([0, 90, 180, 270].map((r) => nextRot(r as Rot))).toEqual([90, 180, 270, 0]);
   });
 
-  it('reports why: bounds, overlap, exhaust, facing; and blames a part standing behind an engine', () => {
+  it('refuses only bounds and overlap; direction problems never block a placement', () => {
     const engine = partOf({ class: 'ENGINE', w: 1, h: 1 });
     const plain = partOf({ class: 'UTILITY', w: 1, h: 1 });
     const byId = new Map([['e', engine], ['p', plain]]);
@@ -87,12 +87,16 @@ describe('rotation and placementIssue', () => {
     const withEngine: Placement[] = [{ partInstanceId: 'e', gx: 1, gy: 0, rot: 0 }];
     expect(placementIssue(withEngine, byId, 'p', 5, 5, 0, cells)).toBe('bounds');
     expect(placementIssue(withEngine, byId, 'p', 1, 0, 0, cells)).toBe('overlap');
-    // west of an engine facing W: the plain part would block its exhaust
-    expect(placementIssue(withEngine, byId, 'p', 0, 0, 0, cells)).toBe('exhaust');
-    expect(placementIssue(withEngine, byId, 'p', 2, 0, 0, cells)).toBeNull();
-    // the engine itself, turned to face W with a part already west, is refused
+    // west of an engine facing W is a direction PROBLEM, but the drop is allowed...
+    expect(placementIssue(withEngine, byId, 'p', 0, 0, 0, cells)).toBeNull();
+    // ...and shows up as a violation on the engine, blamed on the part standing there
+    const after: Placement[] = [...withEngine, { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 }];
+    const violations = directionViolations(after, byId);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.partInstanceId).toBe('e');
+    expect(violations[0]?.blockers.has('p')).toBe(true);
+    // the engine can be dropped anywhere too, in any facing
     const behind: Placement[] = [{ partInstanceId: 'p', gx: 0, gy: 0, rot: 0 }];
-    expect(placementIssue(behind, byId, 'e', 1, 0, 0, cells)).toBe('exhaust');
-    expect(placementIssue(behind, byId, 'e', 1, 0, 180, cells)).toBeNull();
+    expect(placementIssue(behind, byId, 'e', 1, 0, 0, cells)).toBeNull();
   });
 });
