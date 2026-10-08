@@ -288,7 +288,7 @@ describe('port (S10.9)', () => {
     expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
     expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
-    expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
+    expect(within(scav).getByText(/Only where your ship is docked/)).toBeInTheDocument();
 
     // Starting the job sends the ship out and back to the Ship view, where the travel
     // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
