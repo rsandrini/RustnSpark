@@ -37,7 +37,11 @@ export interface ResolutionContext {
   readonly missionForcesFlee: boolean;
   readonly client: EscortClient | null;
   /** MINING only. */
-  readonly mining?: { readonly materialId: string; readonly materialRarity: string };
+  readonly mining?: {
+    readonly materialId: string;
+    readonly materialRarity: string;
+    readonly minimumYield?: number;
+  };
   readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
   readonly scavenge?: ScavengeContext;
@@ -97,6 +101,8 @@ export interface LiveContextSource {
   readonly destinationIsolation: number;
   /** Rarity of the mined material (lower-case), when the mission mines one. */
   readonly materialRarity?: string | null;
+  /** What the mission pays: a paid mining quest is guaranteed at least one unit of ore. */
+  readonly reward?: number;
   /** SCAVENGE jobs: the place's scavenging context. */
   readonly scavenge?: ScavengeContext | null;
 }
@@ -115,7 +121,13 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
     missionForcesFlee: policy['missionForcesFlee'] === true,
     client: parseClient(cargo['client']),
     ...(source.type === 'MINING' && materialId !== undefined
-      ? { mining: { materialId, materialRarity: source.materialRarity ?? 'common' } }
+      ? {
+          mining: {
+            materialId,
+            materialRarity: source.materialRarity ?? 'common',
+            ...((source.reward ?? 0) > 0 ? { minimumYield: 1 } : {}),
+          },
+        }
       : {}),
     ...(source.scavenge !== undefined && source.scavenge !== null
       ? { scavenge: source.scavenge }
@@ -203,6 +215,9 @@ export function buildResolveInput(args: {
               env: lastLeg?.env.id ?? 'open',
               materialId: context.mining.materialId,
               materialRarity: context.mining.materialRarity,
+              ...(context.mining.minimumYield !== undefined
+                ? { minimumYield: context.mining.minimumYield }
+                : {}),
             },
             miner: { min: sheet.min, condition: sheet.condition },
           },

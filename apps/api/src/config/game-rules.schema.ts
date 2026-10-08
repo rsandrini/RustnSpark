@@ -56,6 +56,7 @@ const wearSchema = z.object({
   // absorbs correspondingly less while at least one is installed.
   defense_wear_bonus: z.number().min(0).max(5),
   other_exposed_wear_factor: z.number().min(0).max(1),
+  mining_wear_factor: z.number().min(0).max(1),
 });
 
 const economySchema = z.object({

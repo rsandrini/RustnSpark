@@ -774,7 +774,7 @@ describe('hangar (S10.4)', () => {
     expect(screen.queryByTestId('rotate-hint')).toBeNull();
   });
 
-  it('a rotation that would overlap a neighbour is refused with a reason instead of moving anything', async () => {
+  it('a long part with no room to swing sideways is turned twice instead, and says so', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     // cargo-a is 2x1 at (2,2); battery sits at (2,1) and the tank at (3,0): turning cargo-a into
@@ -786,10 +786,13 @@ describe('hangar (S10.4)', () => {
 
     const cargoA = block(container, 'part-cargo-a') as SVGRectElement;
     const before = [cargoA.getAttribute('data-gx'), cargoA.getAttribute('data-gy')];
+    const widthBefore = Number(cargoA.getAttribute('width'));
     fireEvent.pointerDown(cargoA);
     fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
-    expect(await screen.findByTestId('rotate-hint')).toBeInTheDocument();
+    expect(await screen.findByTestId('rotate-hint')).toHaveTextContent('turned twice');
+    // A half turn: same footprint, same cell — it did not move and did not fail.
     const after = block(container, 'part-cargo-a') as SVGRectElement;
     expect([after.getAttribute('data-gx'), after.getAttribute('data-gy')]).toEqual(before);
+    expect(Number(after.getAttribute('width'))).toBeCloseTo(widthBefore, 3);
   });
 });

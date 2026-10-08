@@ -384,15 +384,19 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     if (selectedId === null || modifyBlocked) return;
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
     if (existing === undefined || catalogById.get(selectedId) === undefined) return;
-    const turned = nextRot(existing.rot);
-    if (
-      placementIssue(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, turned, yardCellSet) !==
-      null
-    ) {
+    // A quarter turn first; if a long part has no room to swing sideways here, turn it twice
+    // instead (a half turn keeps its footprint, so it always fits where it already sits).
+    const quarter = nextRot(existing.rot);
+    const half = nextRot(quarter);
+    const fits = (rot: Rot) =>
+      placementIssue(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, rot, yardCellSet) ===
+      null;
+    const turned = fits(quarter) ? quarter : fits(half) ? half : null;
+    if (turned === null) {
       setRotateHint(t('hangar.rotate.blocked'));
       return;
     }
-    setRotateHint(null);
+    setRotateHint(turned === quarter ? null : t('hangar.rotate.twice'));
     setLayout(
       effectiveLayout.map((placement) =>
         placement.partInstanceId === selectedId ? { ...placement, rot: turned } : placement,

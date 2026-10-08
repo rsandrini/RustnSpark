@@ -263,7 +263,8 @@
       "condition": "Condition"
     },
     "rotate": {
-      "blocked": "There is no room to rotate this part here: move a neighbour away first."
+      "blocked": "There is no room to rotate this part here: move a neighbour away first.",
+      "twice": "No room to turn it sideways here, so it was turned twice instead."
     },
     "statHelp": {
       "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",

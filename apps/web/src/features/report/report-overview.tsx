@@ -79,7 +79,7 @@ export function ReportOverview({
 
   return (
     <section className="stack report-overview" data-testid="report-overview">
-      {path.length > 1 && <RouteMap path={path} world={world} />}
+      {path.length > 1 && <RouteMap path={path} world={world} compact />}
 
       <div className="damage-split">
         <article className="panel" data-testid="damage-combat">

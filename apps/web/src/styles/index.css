@@ -4744,3 +4744,33 @@ tr.ev-transit td:first-child {
 .race-trouble {
   color: var(--amber);
 }
+
+/* Small maps stay small: a glance at the route, never a banner. */
+.route-map.compact {
+  max-width: 320px;
+}
+.report-overview .route-map.compact,
+.stack > .route-map.compact {
+  margin-inline: auto;
+}
+/* Under way: the route marches and the ship pulses, like the sector map's flight path. */
+.route-map.animated .rm-path {
+  stroke-dasharray: 8 6;
+  animation: flight-dash 1.2s linear infinite;
+}
+.route-map .rm-ship-wrap {
+  transition: transform 1s linear;
+}
+.route-map .rm-ship-pulse {
+  fill: var(--blue);
+  opacity: 0.6;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: here-pulse 1.6s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-map.animated .rm-path,
+  .route-map .rm-ship-pulse {
+    animation: none;
+  }
+}

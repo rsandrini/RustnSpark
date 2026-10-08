@@ -481,6 +481,18 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.mining_wear_factor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.mining_wear_factor),
+    description: {
+      en: 'Share of the ambient wear that parts take on a mining run (1 = same as any other trip, 0.5 = half).',
+      'pt-BR': 'Fração do desgaste ambiente que as peças sofrem numa missão de mineração (1 = igual a qualquer viagem, 0.5 = metade).',
+    },
+  },
+  {
     key: 'economy.fuel_price',
     group: 'economy',
     type: 'number',

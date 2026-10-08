@@ -263,7 +263,8 @@
       "condition": "Condição"
     },
     "rotate": {
-      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro."
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
+      "twice": "Não há espaço para virá-la de lado aqui, então ela foi girada duas vezes."
     },
     "statHelp": {
       "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",

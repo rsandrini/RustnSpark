@@ -360,7 +360,9 @@ export function TransitPage({
         <section>
           {!embedded && <ShipStage mode="idle" placeId={mission.originId} />}
           <p>{t('transit.accepted')}</p>
-          {mission.type !== 'SCAVENGE' && <RouteMap path={plannedNodeIds} world={worldQuery.data} />}
+          {mission.type !== 'SCAVENGE' && (
+            <RouteMap path={plannedNodeIds} world={worldQuery.data} compact />
+          )}
           {plannedRouteIds.length > 1 && (
             <>
               <p className="sub">{t('transit.legPlanTitle')}</p>
@@ -422,7 +424,13 @@ export function TransitPage({
             </p>
           )}
           {mission.type !== 'SCAVENGE' && (
-            <RouteMap path={nodeIds} world={worldQuery.data} progress={progress / 100} />
+            <RouteMap
+              path={nodeIds}
+              world={worldQuery.data}
+              progress={progress / 100}
+              compact
+              animated
+            />
           )}
           <div className="legbar" role="progressbar" aria-valuenow={Math.round(progress)}>
             <div className="legbar-fill" style={{ width: `${progress}%` }} />

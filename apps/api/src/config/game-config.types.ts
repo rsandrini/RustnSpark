@@ -157,6 +157,7 @@ export type ConfigKey =
   | 'wear.defense_wear_bonus'
   | 'wear.env_multiplier'
   | 'wear.other_exposed_wear_factor'
+  | 'wear.mining_wear_factor'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
@@ -238,6 +239,8 @@ export type GameRules = Readonly<{
     // other exposed class absorbs correspondingly less while at least one is installed.
     defense_wear_bonus: number;
     other_exposed_wear_factor: number;
+    /** Share of the ambient wear a MINING mission's parts take (1 = same as any other trip). */
+    mining_wear_factor: number;
   }>;
   economy: Readonly<{
     fuel_price: number;

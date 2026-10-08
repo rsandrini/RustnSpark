@@ -142,6 +142,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'wear.defeat_loss_min',
   'wear.defense_wear_bonus',
   'wear.env_multiplier',
+  'wear.mining_wear_factor',
   'wear.other_exposed_wear_factor',
   'wear.overload_max',
   'wear.overload_min',

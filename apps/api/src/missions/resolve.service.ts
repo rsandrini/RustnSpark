@@ -121,6 +121,7 @@ export class MissionResolveService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      reward: mission.reward,
       scavenge:
         mission.type === 'SCAVENGE'
           ? {

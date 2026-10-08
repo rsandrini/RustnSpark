@@ -12,6 +12,8 @@ export interface MiningStop {
   readonly env: MiningEnvKey;
   readonly materialId: string;
   readonly materialRarity: MaterialRarityKey;
+  /** A paid mining quest never comes back empty: at least this many units, whatever the rolls say. */
+  readonly minimumYield?: number;
 }
 
 export interface MinerRig {
@@ -68,6 +70,7 @@ export function resolveMining(
       quantity += 1;
     }
   }
+  quantity = Math.max(quantity, stop.minimumYield ?? 0);
   if (quantity === 0) {
     return [];
   }

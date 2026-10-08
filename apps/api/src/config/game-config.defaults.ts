@@ -51,6 +51,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // at least one DEFENSE part is installed.
     defense_wear_bonus: 0.8,
     other_exposed_wear_factor: 0.85,
+    // Mining runs sit in hazardous fields for long: their ambient wear is scaled by this.
+    mining_wear_factor: 0.5,
   },
   economy: {
     fuel_price: 1.5,

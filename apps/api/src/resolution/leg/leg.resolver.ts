@@ -332,6 +332,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       input.route.env.level,
       rules,
       wearRng,
+      wearScaleFor(input.context.type, rules),
     );
     const partsBeforeWear = parts;
     parts = mergeConditions(parts, wearMap);
@@ -609,6 +610,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     input.route.env.level,
     rules,
     wearRng,
+    wearScaleFor(input.context.type, rules),
   );
   // The event reports how much condition was lost, so it needs the parts as they were BEFORE
   // the wear (reading them after made every leg say "0 worn" while the parts really wore down).
@@ -664,17 +666,24 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   };
 }
 
+/** How much of the usual ambient wear a mission type's parts take (mining runs are eased). */
+function wearScaleFor(type: MissionType, rules: GameRules): number {
+  return type === 'MINING' ? rules.wear.mining_wear_factor : 1;
+}
+
 function applyPartsWear(
   parts: readonly PartSnapshot[],
   danger: number,
   envNivel: number,
   rules: GameRules,
   rng: Rng,
+  scale = 1,
 ): ReadonlyMap<string, number> {
   const next = new Map<string, number>();
   const defenseCount = countDefenseParts(parts);
   for (const part of parts) {
-    const loss = partAmbientWear(part.partClass, danger, envNivel, defenseCount, rules, rng);
+    const loss =
+      partAmbientWear(part.partClass, danger, envNivel, defenseCount, rules, rng) * scale;
     next.set(part.id, applyWear(part.condition, loss));
   }
   return next;

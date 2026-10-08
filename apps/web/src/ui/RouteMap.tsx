@@ -28,8 +28,10 @@ export interface RouteMapProps {
   path: readonly string[];
   /** 0..1 along the whole path: where the ship is (transit); omit when it is not underway. */
   progress?: number;
-  /** A small map for a card; the default is the larger one for details and reports. */
+  /** A small map (cards, transit, reports). The full-size one is only for places that animate it. */
   compact?: boolean;
+  /** The trip is under way: the route marches and the ship pulses, like on the sector map. */
+  animated?: boolean;
   world?: WorldResponse;
 }
 
@@ -58,7 +60,13 @@ function pointAt(points: readonly { x: number; y: number }[], progress: number) 
 
 // The trip on the sector map: every place and route faint, the route this trip takes drawn over
 // them with where it starts, ends and (underway) where the ship is now.
-export function RouteMap({ path, progress, compact = false, world: given }: RouteMapProps) {
+export function RouteMap({
+  path,
+  progress,
+  compact = false,
+  animated = false,
+  world: given,
+}: RouteMapProps) {
   const { t, i18n } = useTranslation();
   const query = useWorld();
   const world = given ?? query.data;
@@ -88,7 +96,10 @@ export function RouteMap({ path, progress, compact = false, world: given }: Rout
   const ship = progress === undefined || pathPoints.length < 2 ? null : pointAt(pathPoints, progress);
 
   return (
-    <figure className={`route-map${compact ? ' compact' : ''}`} data-testid="route-map">
+    <figure
+      className={`route-map${compact ? ' compact' : ''}${animated ? ' animated' : ''}`}
+      data-testid="route-map"
+    >
       <svg
         viewBox={`0 0 ${WIDTH} ${height}`}
         role="img"
@@ -128,7 +139,12 @@ export function RouteMap({ path, progress, compact = false, world: given }: Rout
             </g>
           );
         })}
-        {ship !== null && <circle className="rm-ship" cx={ship.x} cy={ship.y} r={MARKER - 1} />}
+        {ship !== null && (
+          <g className="rm-ship-wrap" style={{ transform: `translate(${ship.x}px, ${ship.y}px)` }}>
+            {animated && <circle className="rm-ship-pulse" r={MARKER - 1} />}
+            <circle className="rm-ship" r={MARKER - 1} />
+          </g>
+        )}
       </svg>
     </figure>
   );
