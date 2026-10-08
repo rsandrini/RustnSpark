@@ -120,6 +120,7 @@ export const PartCatalogStatsSchema = z.object({
   lifeSupport: z.boolean(),
   /** Shield parts: points of shield recovered per combat round. */
   shieldRegen: z.number().optional(),
+  idlePower: z.number().optional(),
 });
 export type PartCatalogStats = z.infer<typeof PartCatalogStatsSchema>;
 
@@ -314,6 +315,10 @@ export const PreviewResponseSchema = z.object({
     /** Do not block flight; the ship flies weaker (energy shortfalls, blocked engines/weapons). */
     warnings: z.array(ProblemSchema).default([]),
   }),
+  /** Travelling power sharing: what each kind of system gets of its need (0..1). */
+  power: z
+    .object({ supply: z.number(), demand: z.number(), shares: z.record(z.string(), z.number()) })
+    .optional(),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
   disconnectedPartIds: z.array(z.string()),

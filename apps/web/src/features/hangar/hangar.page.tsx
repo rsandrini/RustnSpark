@@ -46,6 +46,7 @@ const FIX_CLASS: Record<string, string> = {
   BATTERY_CHARGE_INSUFFICIENT: 'BATTERY',
   SHIELD_ENERGY_LOW: 'BATTERY',
   NO_LIFE_SUPPORT: 'UTILITY',
+  LIFE_SUPPORT_UNPOWERED: 'REACTOR',
 };
 
 // Problems that do not keep the ship on the ground — it flies weaker (mirrors the API's
@@ -718,6 +719,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   sheet={sheet}
                   problemCount={allProblems.length}
                   warningCount={allWarnings.length}
+                  power={preview?.power}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />

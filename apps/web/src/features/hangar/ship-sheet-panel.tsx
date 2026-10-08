@@ -13,6 +13,8 @@ export interface ShipSheetPanelProps {
   problemCount: number;
   /** Warnings do not ground the ship: it flies, weaker (energy shortfalls, blocked parts). */
   warningCount?: number;
+  /** How the ship's power is shared while travelling: each kind of system's share of its need. */
+  power?: { shares: Record<string, number> } | undefined;
   /** The range read as routes ("covers 14 of 17"); null = the ship burns no fuel. */
   routeCoverage?: RouteCoverage | null;
   /** Every part actually installed right now: the sheet only carries Cruising power's net
@@ -80,6 +82,7 @@ export function ShipSheetPanel({
   sheet,
   problemCount,
   warningCount = 0,
+  power,
   installedCatalogs,
   routeCoverage,
 }: ShipSheetPanelProps) {
@@ -107,6 +110,11 @@ export function ShipSheetPanel({
   );
   // Shields recover their own points per round (the sum over the shield parts installed).
   const shieldRegen = installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
+  // Systems that get less than their whole need while travelling (the bridge and the ones with no
+  // power cost never show up here).
+  const starved = Object.entries(power?.shares ?? {}).filter(
+    ([kind, share]) => share < 1 && kind !== 'other',
+  );
   const combatDraw = Math.abs(sheet.energyCombat);
   // The ship's own surplus powers combat first; the batteries cover only what it cannot.
   const combatSurplus = Math.max(0, sheet.energyCont);
@@ -168,6 +176,19 @@ export function ShipSheetPanel({
               consume: number(energyConsume),
             })}
           </div>
+          {starved.length > 0 && (
+            <div className="substat" data-testid="power-shares">
+              {t('hangar.power.title')}{' '}
+              {starved
+                .map(([kind, share]) =>
+                  t('hangar.power.entry', {
+                    system: t(`hangar.power.kind.${kind}`),
+                    percent: Math.round(share * 100),
+                  }),
+                )
+                .join(' · ')}
+            </div>
+          )}
         </div>
       );
     }

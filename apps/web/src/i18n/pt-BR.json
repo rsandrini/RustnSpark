@@ -225,13 +225,14 @@
       "OVERLAP": "Peças sobrepostas.",
       "DISCONNECTED": "Peças precisam tocar a ponte.",
       "INVALID_LAYOUT": "O layout não é válido.",
-      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera: os motores recebem só a parte da energia que existe, então ela fica mais lenta.",
+      "ENERGY_CRUISE_NEGATIVE": "Os sistemas precisam de mais energia do que a nave gera, então disputam: a ponte e o suporte de vida são servidos primeiro, depois os que importam agora. Sistemas sem energia funcionam só parte do tempo. Os motores não são afetados.",
       "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos puxam mais energia por rodada do que a nave consegue fornecer (a sobra de energia mais as baterias). Numa luta alguns ataques e a recuperação do escudo ficarão sem energia — adicione geração ou uma bateria.",
       "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que a sobra da nave mais as baterias armazenam — lutas longas ficarão sem energia. Adicione geração ou uma bateria.",
       "EXHAUST_BLOCKED": "Um motor tem uma peça logo atrás do escape: ele não dá empuxo. Mova-o, mova a peça ou gire o motor.",
       "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
       "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
-      "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem."
+      "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
+      "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -306,6 +307,20 @@
     "warnings": {
       "title": "Avisos",
       "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total."
+    },
+    "power": {
+      "title": "Falta energia — recebem:",
+      "entry": "{{system}} {{percent}}%",
+      "kind": {
+        "bridge": "Ponte",
+        "life": "Suporte de vida",
+        "pump": "Bomba de combustível",
+        "sensor": "Sensores",
+        "weapon": "Armas (paradas)",
+        "shield": "Escudo (parado)",
+        "rig": "Mineradora (parada)",
+        "other": "Outros"
+      }
     }
   },
   "home": {

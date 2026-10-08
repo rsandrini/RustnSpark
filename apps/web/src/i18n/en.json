@@ -225,13 +225,14 @@
       "OVERLAP": "Parts overlap.",
       "DISCONNECTED": "Parts must touch the bridge.",
       "INVALID_LAYOUT": "The layout is not valid.",
-      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates: its engines only get the share of power that exists, so it is slower.",
+      "ENERGY_CRUISE_NEGATIVE": "The systems need more power than the ship generates, so they compete for it: the bridge and life support are served first, then the ones that matter right now. Starved systems work only part of the time. Engines are not affected.",
       "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than the ship can supply (its spare power plus the batteries). In a fight some attacks and shield recovery will go unpowered — add power generation or a battery.",
       "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than the ship's spare power plus its batteries can store — long fights will run out of power. Add power generation or a battery.",
       "EXHAUST_BLOCKED": "An engine has a part directly behind its exhaust: it gives no thrust. Move it, move the part, or turn the engine.",
       "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
       "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it.",
-      "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent."
+      "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent.",
+      "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -306,6 +307,20 @@
     "warnings": {
       "title": "Warnings",
       "explain": "The ship can fly, but weaker — fix these to get its full performance."
+    },
+    "power": {
+      "title": "Power is short — they get:",
+      "entry": "{{system}} {{percent}}%",
+      "kind": {
+        "bridge": "Bridge",
+        "life": "Life support",
+        "pump": "Fuel pump",
+        "sensor": "Sensors",
+        "weapon": "Weapons (idle)",
+        "shield": "Shield (idle)",
+        "rig": "Mining rig (idle)",
+        "other": "Other"
+      }
     }
   },
   "home": {

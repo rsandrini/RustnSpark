@@ -25,6 +25,7 @@ import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
+import { allocatePower, powerPartOf } from '../resolution/power/power.js';
 import { checkViability, type ViabilityReport } from './viability.js';
 
 // Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
@@ -75,6 +76,8 @@ export interface PreviewResponse {
   sheet: ShipSheet;
   shipClass: ShipClassType;
   viability: ViabilityReport;
+  /** How the ship's power would be shared while travelling: each kind of system's share of its need. */
+  power?: { supply: number; demand: number; shares: Record<string, number> };
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];
@@ -204,10 +207,22 @@ export class ShipsService implements OnModuleInit {
       catalogForConnectivity,
       connectorsByInstance,
     );
+    const powerState = allocatePower(
+      installedConnected.map((part) =>
+        powerPartOf(part.instance.id, part.catalog, rules.power.idle_demand),
+      ),
+      'cruise',
+      rules,
+    );
     return {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
       viability,
+      power: {
+        supply: powerState.supply,
+        demand: powerState.demand,
+        shares: powerState.byKind,
+      },
       layout: effectiveLayout,
       omittedPartInstanceIds,
       routeCoverage: await this.routeCoverageFor(sheet),
