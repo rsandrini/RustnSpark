@@ -40,6 +40,9 @@ export interface PartCompareContext {
       installed, in which case the candidate is only ever a pure addition, nothing to pick
       between. */
   replaceCandidates?: readonly { partInstanceId: string; displayName: LocalizedText }[];
+  /** What the comparison opens on. Buying a part compares as an ADDITION; an upgrade is by
+      nature a replacement of the part it improves. */
+  defaultScenario?: 'add' | 'replace';
 }
 
 // Effect stats worth listing when non-zero, in reading order. Size, mass, structure and hit
@@ -337,13 +340,12 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     .filter((piece): piece is string => piece !== null && piece !== '')
     .join(' ');
 
-  // Owner request: today's compare auto-picks one installed part of the same class to show as a
-  // "replace" scenario, with no way to see "add it instead" or pick a different one when two of
-  // the same class are installed. Default to that same auto-pick (least surprising), but let the
-  // picker below change it — one popup, not a redesign of what it already shows.
+  // The comparison opens on "add it" (what buying it as an extra part does to the ship): an
+  // automatic "replace the best match" was a guess about what the pilot meant to do. The picker
+  // below switches to replacing any of the installed parts of the same class.
   const replaceCandidates = compare?.replaceCandidates ?? [];
   const [replaceInstanceId, setReplaceInstanceId] = useState<string | undefined>(
-    replaceCandidates[0]?.partInstanceId,
+    compare?.defaultScenario === 'replace' ? replaceCandidates[0]?.partInstanceId : undefined,
   );
   const selectedReplace = replaceCandidates.find((c) => c.partInstanceId === replaceInstanceId);
 
@@ -507,12 +509,14 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
-  // Lightweight hover card, no picker of its own (owner request put the Add/Replace choice in
-  // the full popup only) — just today's old default, the best-ranked candidate if there is one.
+  // Lightweight hover card, no picker of its own: it shows what ADDING the part does to the ship
+  // (the full popup can switch to replacing one).
   const { comparePreview, deltaFor, structureDeltaFor } = useCompareQuery(
     part,
     compare,
-    compare?.replaceCandidates?.[0]?.partInstanceId,
+    compare?.defaultScenario === 'replace'
+      ? compare.replaceCandidates?.[0]?.partInstanceId
+      : undefined,
   );
   const viabilityProblems = comparePreview.data?.viability.viable === false
     ? comparePreview.data.viability.problems

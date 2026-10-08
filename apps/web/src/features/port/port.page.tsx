@@ -959,6 +959,7 @@ export function PortPage({
                           shipId: ship.id,
                           installedPartIds: installed.map((part) => part.id),
                           currentSheet: ship.sheet,
+                          defaultScenario: 'replace',
                           replaceCandidates: [
                             { partInstanceId: item.id, displayName: item.displayName },
                           ],
