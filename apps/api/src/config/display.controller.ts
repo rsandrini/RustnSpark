@@ -7,6 +7,8 @@ export interface DisplayResponse {
   readonly statScale: number;
   /** pot / mass x this = unrounded mobility, the number the scale applies to. */
   readonly mobFactor: number;
+  /** Share of the usual chance to find anything kept by a scavenger whose ship cannot fly. */
+  readonly scavengeHandicap: number;
 }
 
 @Controller('display')
@@ -15,7 +17,11 @@ export class DisplayController {
 
   @Get()
   display(): DisplayResponse {
-    const { ship } = this.config.snapshot().rules;
-    return { statScale: ship.stat_display_scale, mobFactor: ship.mob_factor };
+    const { ship, scavenging } = this.config.snapshot().rules;
+    return {
+      statScale: ship.stat_display_scale,
+      mobFactor: ship.mob_factor,
+      scavengeHandicap: scavenging.handicap_factor,
+    };
   }
 }

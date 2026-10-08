@@ -57,6 +57,8 @@ export interface DispatchSnapshot {
   /** Flight warnings the ship left port with (blocked engines/weapons, a cruise power shortfall):
       the parts above are already weakened by them, this is what the report says about it. */
   readonly penalties?: readonly AppliedPenalty[];
+  /** A scavenging job started by a ship that was not flight-ready: it finds less. */
+  readonly handicapped?: boolean;
 }
 
 export interface DispatchJobData {
@@ -276,7 +278,11 @@ export class DispatchService {
               catalogForConnectivity,
               connectorsByInstance,
             );
-      if (!viability.viable) {
+      // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
+      // only finds less when the ship is not flight-ready.
+      const handicapped =
+        mission.type === 'SCAVENGE' && (!viability.viable || viability.warnings.length > 0);
+      if (!viability.viable && mission.type !== 'SCAVENGE') {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
       // Warnings do not ground the ship, they weaken it: the flight is resolved from the parts as
@@ -292,7 +298,7 @@ export class DispatchService {
               rules,
             );
       // GDD §7 balance 3: a chemical engine needs fuel aboard; ion ships skip this.
-      if (sheet.fuelUse > 0 && ship.fuel <= 0) {
+      if (mission.type !== 'SCAVENGE' && sheet.fuelUse > 0 && ship.fuel <= 0) {
         throw new ConflictException({ error: 'FUEL_EMPTY' });
       }
 
@@ -325,6 +331,7 @@ export class DispatchService {
           .filter((part) => part.location === 'INVENTORY')
           .map((part) => ({ id: part.id, partType: part.partType })),
         ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
+        ...(handicapped ? { handicapped: true } : {}),
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({

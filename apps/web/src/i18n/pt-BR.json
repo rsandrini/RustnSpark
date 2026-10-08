@@ -872,7 +872,7 @@
       "time": "Leva cerca de {{minutes}} minutos, e a nave não pode ser usada nesse tempo.",
       "risk": "O risco vem do lugar (zona {{zone}}): piratas podem te encontrar durante a busca, e quanto mais arriscado o lugar, melhores os achados.",
       "quality": "Tudo o que você acha é USADO: cerca de {{min}}–{{max}}% de condição neste lugar. Conserte, instale ou venda.",
-      "finds": "Em {{place}} você pode achar uma ou mais peças; um campo dominado por piratas rende mais.",
+      "finds": "Em {{place}} uma busca pode achar uma ou mais peças, ou nada; um campo dominado por piratas dá mais.",
       "scrap": "Os destroços daqui também têm sucata: restos gastos que vendem por preço fixo em qualquer porto.",
       "field": {
         "common": "um porto comum",
@@ -882,7 +882,9 @@
       "where": "Só funciona onde sua nave está atracada, e cada lugar tem o próprio tempo de espera entre trabalhos.",
       "ready": "Pronto para partir.",
       "nextAttempt": "Próximo trabalho em",
-      "title": "Vasculhar os destroços"
+      "title": "Vasculhar os destroços",
+      "nothing": "Cerca de {{percent}}% das buscas aqui voltam vazias: quanto mais seguro o lugar, mais vezes. Peças raras só aparecem em lugares perigosos.",
+      "handicap": "Sua nave não está pronta para voar, então você busca à mão: só {{percent}}% da chance normal de achar algo."
     },
     "mine": {
       "title": "Minerar o campo",

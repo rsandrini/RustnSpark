@@ -585,7 +585,7 @@ export const handlers = [
       ],
     }),
   ),
-  http.get('/v1/display', () => HttpResponse.json({ statScale: 10, mobFactor: 1.6 })),
+  http.get('/v1/display', () => HttpResponse.json({ statScale: 10, mobFactor: 1.6, scavengeHandicap: 0.5 })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).
@@ -1085,6 +1085,7 @@ export const handlers = [
       attempts: retry > 0 ? 1 : 0,
       qualityMin: 30,
       qualityMax: 70,
+      nothingChance: 0.3,
     });
   }),
   http.post('/v1/locations/:id/scavenge', () => {

@@ -814,6 +814,18 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.market_rarity_by_bridge',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.market_rarity_by_bridge),
+    description: {
+      en: 'What a pilot\'s shelf shows, by the rarity of their bridge: for each bridge rarity, the daily chance (0-1) that a part of each rarity is on sale. A common bridge sees mostly common parts; better bridges see more of the rare ones.',
+      'pt-BR': 'O que a prateleira de um piloto mostra, pela raridade da ponte dele: para cada raridade de ponte, a chance diária (0-1) de uma peça de cada raridade estar à venda. Ponte comum vê quase só peças comuns; pontes melhores veem mais das raras.',
+    },
+  },
+  {
     key: 'economy.market_rarity_chance',
     group: 'economy',
     type: 'json',
@@ -1556,6 +1568,42 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: 'Extra weight of the rarer drop tiers per zone (0 = none): riskier places give rarer finds.',
       'pt-BR':
         'Peso extra das faixas de drop mais raras por zona (0 = nenhum): lugares mais arriscados dão achados mais raros.',
+    },
+  },
+  {
+    key: 'scavenging.nothing_chance',
+    group: 'scavenging',
+    type: 'json',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.nothing_chance),
+    description: {
+      en: 'Chance a scavenging run finds nothing at all, by zone (first number = zone 0, the safest). Higher zones reuse the last number.',
+      'pt-BR': 'Chance de uma busca não achar nada, por zona (primeiro número = zona 0, a mais segura). Zonas maiores usam o último número.',
+    },
+  },
+  {
+    key: 'scavenging.tier_min_zone',
+    group: 'scavenging',
+    type: 'json',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.tier_min_zone),
+    description: {
+      en: 'The lowest zone each drop tier can appear in: rarer finds only turn up in more dangerous places.',
+      'pt-BR': 'A menor zona em que cada faixa de drop pode aparecer: achados mais raros só surgem em lugares mais perigosos.',
+    },
+  },
+  {
+    key: 'scavenging.handicap_factor',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.handicap_factor),
+    description: {
+      en: 'A ship that cannot fly (or flies with warnings) can still scavenge by hand, but only keeps this share of the usual chance to find anything.',
+      'pt-BR': 'Uma nave que não voa (ou voa com avisos) ainda pode fazer buscas à mão, mas só mantém esta fração da chance normal de achar algo.',
     },
   },
   {

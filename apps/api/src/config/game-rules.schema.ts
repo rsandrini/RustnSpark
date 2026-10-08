@@ -87,6 +87,7 @@ const economySchema = z.object({
   mood_max: z.number().min(0).max(2),
   rarity_base_price: z.record(z.string(), z.number().min(0).max(50000)),
   market_rarity_chance: z.record(z.string(), z.number().min(0).max(1)),
+  market_rarity_by_bridge: z.record(z.string(), z.record(z.string(), z.number().min(0).max(1))),
   payout_floor_integrity: z.number().min(0).max(1),
   repair_seconds_per_point: z.record(z.string(), z.number().min(0).max(60)),
 });
@@ -186,6 +187,9 @@ const scavengingSchema = z.object({
   scrap_share: z.number().min(0).max(1),
   zone_quality_bonus: z.number().int().min(0).max(50),
   zone_rarity_bias: z.number().min(0).max(10),
+  nothing_chance: z.array(z.number().min(0).max(1)).min(1),
+  tier_min_zone: z.record(z.string(), z.number().int().min(0).max(10)),
+  handicap_factor: z.number().min(0).max(1),
 });
 
 const partsSchema = z.object({

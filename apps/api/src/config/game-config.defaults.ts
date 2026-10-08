@@ -102,6 +102,17 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // chance a given new-parts catalog listing is actually on a port's shelf, by rarity. High
     // tiers are meant to come from drops or the upgrade mechanic, not a direct buy.
     market_rarity_chance: { COMMON: 1, UNCOMMON: 1, RARE: 0.08, EPIC: 0.01, LEGENDARY: 0 },
+    // The same chance, by the rarity of the pilot's BRIDGE (the heart of the ship): a common bridge
+    // sees a shelf of mostly common parts (about 80% common, 15% uncommon, 5% rare with today's
+    // catalog), and the better the bridge, the more of the rare parts show up. A pilot with no
+    // bridge uses `market_rarity_chance` above.
+    market_rarity_by_bridge: {
+      COMMON: { COMMON: 1, UNCOMMON: 0.14, RARE: 0.045, EPIC: 0, LEGENDARY: 0 },
+      UNCOMMON: { COMMON: 1, UNCOMMON: 0.4, RARE: 0.12, EPIC: 0.01, LEGENDARY: 0 },
+      RARE: { COMMON: 1, UNCOMMON: 0.7, RARE: 0.3, EPIC: 0.06, LEGENDARY: 0 },
+      EPIC: { COMMON: 1, UNCOMMON: 0.9, RARE: 0.5, EPIC: 0.2, LEGENDARY: 0.02 },
+      LEGENDARY: { COMMON: 1, UNCOMMON: 1, RARE: 0.7, EPIC: 0.4, LEGENDARY: 0.1 },
+    },
   },
   encounter: {
     chance_divisor: 20,
@@ -193,6 +204,14 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     scrap_share: 0.5,
     zone_quality_bonus: 5,
     zone_rarity_bias: 0.6,
+    // A run can come back empty: most often at a safe place, rarely in a dangerous one (by zone).
+    nothing_chance: [0.45, 0.3, 0.18, 0.08],
+    // The lowest zone a drop tier can turn up in: a safe place gives common (and some uncommon)
+    // finds; rare ones belong to dangerous places.
+    tier_min_zone: { UNCOMMON: 0, RARE: 2, EPIC: 3, LEGENDARY: 3 },
+    // A ship that cannot fly (or flies with warnings) can still scavenge by hand, but finds less:
+    // this share of the usual chance to find anything.
+    handicap_factor: 0.5,
   },
   parts: {
     starter_condition: 80,

@@ -28,6 +28,8 @@ export interface ScavengeInfo {
   /** Condition range (percent) of a found part at THIS place (zone bonus included). */
   readonly qualityMin: number;
   readonly qualityMax: number;
+  /** Chance (0..1) a run here finds nothing at all (before any handicap for a ship that cannot fly). */
+  readonly nothingChance: number;
 }
 
 const SCRAP_PLACE_TYPES: ReadonlySet<string> = new Set(['scrap_field', 'dead_zone', 'relay']);
@@ -82,6 +84,10 @@ export class ScavengingService {
       cooldownSeconds,
       retryAfterSeconds,
       attempts: counter?.attemptCount ?? 0,
+      nothingChance:
+        rules.scavenging.nothing_chance[
+          Math.min(Math.max(0, location.zone), rules.scavenging.nothing_chance.length - 1)
+        ] ?? 0,
       qualityMin,
       qualityMax: Math.min(
         MAX_CONDITION,

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,7 +13,6 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
-import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { legForRoute, type FillerWorld } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
@@ -81,12 +79,8 @@ export class ScavengeJobService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    // Deliberately NO direction-rule check here: scavenging is manual work at the current location,
-    // not a trip flown with the ship (engine exhaust / weapon facing only matter when it travels).
-    const viability = checkViability(sheet, installedConnected, rules);
-    if (!viability.viable) {
-      throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
-    }
+    // No viability gate: scavenging is manual work at the current location, not a trip flown with
+    // the ship, so even a ship that cannot fly can do it (dispatch marks it handicapped).
 
     const now = this.clock.now();
     const counter = await this.prisma.scavengeCounter.upsert({

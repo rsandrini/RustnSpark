@@ -221,6 +221,7 @@ export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
 export const DisplayResponseSchema = z.object({
   statScale: z.number(),
   mobFactor: z.number(),
+  scavengeHandicap: z.number(),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -844,6 +845,8 @@ export const ScavengeInfoSchema = z.object({
   attempts: z.number(),
   qualityMin: z.number(),
   qualityMax: z.number(),
+  /** Chance (0..1) a run here finds nothing at all. */
+  nothingChance: z.number(),
 });
 export type ScavengeInfo = z.infer<typeof ScavengeInfoSchema>;
 

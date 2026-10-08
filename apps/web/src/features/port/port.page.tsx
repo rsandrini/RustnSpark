@@ -23,6 +23,7 @@ import type {
   SellMaterialResponse,
   ShipResponse,
   WorldResponse,
+  PreviewResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
@@ -37,6 +38,7 @@ import { PortTabs } from '../../ui/PortTabs';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
+import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
 import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
 
@@ -137,6 +139,18 @@ export function PortPage({
     enabled: locationId !== undefined && tab === 'scavenging',
     queryFn: () => client.get<ScavengeInfo>(`/v1/locations/${locationId ?? ''}/scavenge`),
   });
+  // Whether the ship could fly right now: a ship that cannot (or flies with warnings) still
+  // scavenges by hand, but finds less — the Scavenging tab says so up front.
+  const display = useDisplay();
+  const readinessQuery = useQuery({
+    queryKey: ['shipReadiness', ship?.id, ship?.layout],
+    enabled: ship !== undefined && tab === 'scavenging',
+    queryFn: () =>
+      client.post<PreviewResponse>(`/v1/ships/${ship?.id ?? ''}/preview`, { layout: ship?.layout ?? [] }),
+  });
+  const shipHandicapped =
+    readinessQuery.data !== undefined &&
+    (!readinessQuery.data.viability.viable || readinessQuery.data.viability.warnings.length > 0);
   // The repair plan: only parts the pilot moved past their current condition are repaired.
   const damagedInstalled = useMemo(
     () =>
@@ -1005,6 +1019,11 @@ export function PortPage({
               </li>
               <li>{t('port.scav.risk', { zone: scavengeInfoQuery.data.zone })}</li>
               <li>
+                {t('port.scav.nothing', {
+                  percent: Math.round(scavengeInfoQuery.data.nothingChance * 100),
+                })}
+              </li>
+              <li>
                 {t('port.scav.quality', {
                   min: scavengeInfoQuery.data.qualityMin,
                   max: scavengeInfoQuery.data.qualityMax,
@@ -1018,6 +1037,11 @@ export function PortPage({
               {scavengeInfoQuery.data.scrapPlace && <li>{t('port.scav.scrap')}</li>}
               <li>{t('port.scav.where')}</li>
             </ul>
+          )}
+          {shipHandicapped && (
+            <p className="notice warn" data-testid="scavenge-handicap">
+              {t('port.scav.handicap', { percent: Math.round(display.scavengeHandicap * 100) })}
+            </p>
           )}
           {scavengeInfoQuery.data !== undefined && scavengeInfoQuery.data.retryAfterSeconds > 0 ? (
             <p className="notice" role="status">

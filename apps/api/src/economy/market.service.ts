@@ -117,6 +117,17 @@ export class MarketService {
     }
   }
 
+  /** The daily stock chance by part rarity for THIS pilot: set by the rarity of their bridge. */
+  private async shelfChance(playerId: string): Promise<Readonly<Record<string, number>>> {
+    const { market_rarity_by_bridge: byBridge, market_rarity_chance: fallback } =
+      this.config.snapshot().rules.economy;
+    const bridge = await this.prisma.partInstance.findFirst({
+      where: { ownerPlayerId: playerId, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
+      select: { partCatalog: { select: { rarity: true } } },
+    });
+    return byBridge[bridge?.partCatalog.rarity ?? ''] ?? fallback;
+  }
+
   async market(locationId: string, playerId: string): Promise<MarketResponse> {
     await this.assertShipAtLocation(playerId, locationId);
     const context = await this.pricing.contextForLocation(locationId, playerId);
@@ -125,7 +136,7 @@ export class MarketService {
       orderBy: { partType: 'asc' },
     });
     const day = dayKey(this.clock.now());
-    const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+    const rarityChance = await this.shelfChance(playerId);
 
     // Round-5/6 backlog: rare+ parts are meant to be scarce or absent from the market (drops/the
     // upgrade mechanic instead) — each catalog row rolls, once per port per day, whether it's
@@ -240,7 +251,7 @@ export class MarketService {
     // today's stock the same way market() did when it built the list — a client can't buy a
     // rarity that was never actually on the shelf just by knowing its listingId shape.
     if (parsed.kind === 'catalog') {
-      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      const rarityChance = await this.shelfChance(playerId);
       if (!inStockToday(parsed.locationId, dayKey(this.clock.now()), catalog.partType, catalog.rarity, rarityChance)) {
         throw new BadRequestException({ error: 'INVALID_LISTING' });
       }
@@ -262,7 +273,7 @@ export class MarketService {
       // Must match market()'s own pool exactly (same filter, same order) — usedOffer() picks by
       // index into this array, so a different pool size here would resolve a different part
       // than what the board actually showed for the same index.
-      const rarityChance = this.config.snapshot().rules.economy.market_rarity_chance;
+      const rarityChance = await this.shelfChance(playerId);
       const inStockCatalogs = catalogs.filter((row) =>
         inStockToday(parsed.locationId, parsed.day!, row.partType, row.rarity, rarityChance),
       );

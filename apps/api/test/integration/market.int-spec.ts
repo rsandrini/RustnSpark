@@ -200,7 +200,7 @@ describe('market API (S8.2)', () => {
     expect(instance.ownerPlayerId).toBe(player.seeded.player.id);
   });
 
-  it('shows a listing\'s generated connectors before buying and stores exactly those on purchase', async () => {
+  it("shows a listing's generated connectors before buying and stores exactly those on purchase", async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     // The fresh seed gives every part type factory-default rules (fill-if-null seeding).
@@ -222,7 +222,7 @@ describe('market API (S8.2)', () => {
     expect(row.connectors).toEqual({ cells: listing!.connectors });
   });
 
-  it('a used listing\'s connectors are the ones the bought instance stores', async () => {
+  it("a used listing's connectors are the ones the bought instance stores", async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const board = await getMarket(player.token, 'ceres');
@@ -240,7 +240,9 @@ describe('market API (S8.2)', () => {
     const row = await prisma.partInstance.findUniqueOrThrow({
       where: { id: (response.body as { partInstanceId: string }).partInstanceId },
     });
-    expect(row.connectors).toEqual(used!.connectors.length > 0 ? { cells: used!.connectors } : null);
+    expect(row.connectors).toEqual(
+      used!.connectors.length > 0 ? { cells: used!.connectors } : null,
+    );
   });
 
   it('lists empty connectors and stores null (universal fallback) when the type has no rules', async () => {
@@ -461,7 +463,9 @@ describe('market API (S8.2)', () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const board = await getMarket(player.token, 'ceres');
-    const fresh = (board.body as MarketListingBody).listings.find((entry) => entry.kind === 'catalog')!;
+    const fresh = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog',
+    )!;
     await prisma.player.update({
       where: { id: player.seeded.player.id },
       data: { credits: fresh.price * 3 },
@@ -845,6 +849,52 @@ describe('market API (S8.2)', () => {
     } finally {
       at.mockRestore();
     }
+  });
+
+  it('the shelf follows the bridge: a common bridge sees mostly common parts, a better one sees more', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const count = async (rarity: string): Promise<number> => {
+      const board = await getMarket(player.token, 'ceres');
+      return (board.body as MarketListingBody).listings.filter(
+        (entry) => entry.kind === 'catalog' && entry.rarity === rarity,
+      ).length;
+    };
+    const total = async (): Promise<number> => {
+      const board = await getMarket(player.token, 'ceres');
+      return (board.body as MarketListingBody).listings.filter((entry) => entry.kind === 'catalog')
+        .length;
+    };
+
+    const bridge = await prisma.partCatalog.findFirstOrThrow({
+      where: { partClass: 'BRIDGE', active: true },
+    });
+    expect(bridge.rarity).toBe('COMMON');
+    const commonShelf = {
+      common: await count('COMMON'),
+      uncommon: await count('UNCOMMON'),
+      rare: await count('RARE'),
+      all: await total(),
+    };
+    expect(commonShelf.common).toBeGreaterThan(0);
+    // about 80% common with the shipped catalog: far from the old "every uncommon on sale"
+    expect(commonShelf.common / commonShelf.all).toBeGreaterThan(0.6);
+    expect(commonShelf.rare).toBeLessThanOrEqual(3);
+    expect(await count('LEGENDARY')).toBe(0);
+
+    await prisma.partCatalog.update({
+      where: { partType: bridge.partType },
+      data: { rarity: 'LEGENDARY' },
+    });
+    const richShelf = {
+      uncommon: await count('UNCOMMON'),
+      rare: await count('RARE'),
+      all: await total(),
+    };
+    // the same pilot, a legendary bridge: every uncommon and most rares are on sale
+    expect(richShelf.uncommon).toBeGreaterThan(commonShelf.uncommon);
+    expect(richShelf.rare).toBeGreaterThan(commonShelf.rare);
+    expect(richShelf.all).toBeGreaterThan(commonShelf.all);
   });
 
   describe('rarity-gated new-parts shelf (round-5 backlog: scarce rare/epic, no legendary)', () => {

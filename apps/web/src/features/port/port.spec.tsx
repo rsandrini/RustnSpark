@@ -162,6 +162,39 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('3,632 ¢'));
   });
 
+  it('says so up front when the ship cannot fly: scavenging stays open, with a reduced chance', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({
+          sheet: {
+            pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, hp: 10, mass: 4,
+            energyCont: 0, energyCombat: 0, batCharge: 0, batOutput: 0, batInput: 0,
+            fuelCap: 0, fuelUse: 0, structureUsed: 0, structureBudget: 10, autonomy: 0,
+            mob: 1, condition: 100,
+          },
+          shipClass: 'MULTIROLE',
+          viability: { viable: false, problems: [{ code: 'NO_ENGINE', message: 'x' }], warnings: [] },
+          layout: [],
+          omittedPartInstanceIds: [],
+          disconnectedPartIds: [],
+          routeCoverage: null,
+        }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    const notice = await screen.findByTestId('scavenge-handicap');
+    expect(notice).toHaveTextContent('only 50% of the usual chance');
+    expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
+  });
+
+  it('shows no handicap notice for a ship that is ready', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    await screen.findByTestId('scavenging');
+    await waitFor(() => expect(screen.queryByTestId('scavenge-handicap')).not.toBeInTheDocument());
+  });
+
   it('does not report "not enough money" for a repair that was just paid for', async () => {
     // The wallet barely covers the plan; once it is debited, the spent plan must not be compared
     // with the smaller balance (owner report: the warning appeared right after accepting).

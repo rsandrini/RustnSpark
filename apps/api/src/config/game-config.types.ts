@@ -51,6 +51,7 @@ export type ConfigKey =
   | 'economy.payout_floor_integrity'
   | 'economy.rarity_base_price'
   | 'economy.market_rarity_chance'
+  | 'economy.market_rarity_by_bridge'
   | 'economy.repair_factor'
   | 'economy.repair_price'
   | 'economy.repair_price_ref'
@@ -122,6 +123,9 @@ export type ConfigKey =
   | 'scavenging.scrap_share'
   | 'scavenging.zone_quality_bonus'
   | 'scavenging.zone_rarity_bias'
+  | 'scavenging.nothing_chance'
+  | 'scavenging.tier_min_zone'
+  | 'scavenging.handicap_factor'
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
   | 'ship_class.cargo_share'
@@ -263,6 +267,8 @@ export type GameRules = Readonly<{
     rarity_base_price: Readonly<Record<string, number>>;
     /** Daily chance (0-1) a catalog listing of this rarity is actually in a port's new-parts shelf. */
     market_rarity_chance: Readonly<Record<string, number>>;
+    /** The same chance by the rarity of the pilot's bridge (what the player's shelf is built from). */
+    market_rarity_by_bridge: Readonly<Record<string, Readonly<Record<string, number>>>>;
     payout_floor_integrity: number;
     repair_seconds_per_point: Readonly<Record<string, number>>;
   }>;
@@ -363,6 +369,12 @@ export type GameRules = Readonly<{
     zone_quality_bonus: number;
     /** Extra weight of the rarer drop tiers per zone (0 = none). */
     zone_rarity_bias: number;
+    /** Chance a run finds nothing, by zone (index = zone, the last entry covers higher zones). */
+    nothing_chance: readonly number[];
+    /** Lowest zone each drop tier can appear in (a tier not listed has no limit). */
+    tier_min_zone: Readonly<Record<string, number>>;
+    /** Share of the usual chance to find anything kept by a ship that is not flight-ready. */
+    handicap_factor: number;
   }>;
   parts: Readonly<{
     starter_condition: number;

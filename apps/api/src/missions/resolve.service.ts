@@ -123,7 +123,10 @@ export class MissionResolveService {
       materialRarity,
       scavenge:
         mission.type === 'SCAVENGE'
-          ? await loadScavengeContext(this.prisma, mission.destinationId)
+          ? {
+              ...(await loadScavengeContext(this.prisma, mission.destinationId)),
+              ...(snapshot.handicapped === true ? { handicapped: true } : {}),
+            }
           : null,
     });
     const outcome = resolveMission(

@@ -3,7 +3,7 @@ import { client } from '../api/client';
 import type { DisplayResponse, ShipSheet } from '../api/generated';
 
 // What the game ships with; used until (or unless) the server answers, so numbers never flash raw.
-const DEFAULT_DISPLAY: DisplayResponse = { statScale: 10, mobFactor: 1.6 };
+const DEFAULT_DISPLAY: DisplayResponse = { statScale: 10, mobFactor: 1.6, scavengeHandicap: 0.5 };
 
 /** How derived numbers are shown, as tuned in the admin (`ship.stat_display_scale`). */
 export function useDisplay(): DisplayResponse {
