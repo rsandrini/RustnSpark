@@ -5,6 +5,9 @@ import { PlayersModule } from '../players/players.module.js';
 import { ReportsModule } from '../reports/reports.module.js';
 import { AccountStatusCache } from '../common/guards/account-status.cache.js';
 import { AdminController } from './admin.controller.js';
+import { FactionArtAdminController } from './art/faction-art.controller.js';
+import { FactionArtPublicController } from './art/faction-art-public.controller.js';
+import { FactionArtService } from './art/faction-art.service.js';
 import { AdminAuditService } from './audit/admin-audit.service.js';
 import { AdminGuard } from './guards/admin.guard.js';
 import { AnalyticsController } from './analytics/analytics.controller.js';
@@ -34,6 +37,8 @@ import { RevisionService } from './tuning/revision.service.js';
   controllers: [
     AdminController,
     ConfigTuningController,
+    FactionArtAdminController,
+    FactionArtPublicController,
     EntityTuningController,
     SystemAdminController,
     SystemPublicController,
@@ -47,6 +52,7 @@ import { RevisionService } from './tuning/revision.service.js';
     SystemNoticeService,
     ConfigReferenceValidator,
     ConfigTuningService,
+    FactionArtService,
     EntityTuningService,
     RevisionService,
     BundleService,

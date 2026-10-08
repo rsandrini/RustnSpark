@@ -1272,7 +1272,11 @@
     "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
     "NO_ROUTE": "There is no route out of this place, so there is nothing to search around.",
     "NOT_MINABLE": "There is nothing to mine here.",
-    "NO_MINING_RIG": "A mining rig needs to be installed first."
+    "NO_MINING_RIG": "A mining rig needs to be installed first.",
+    "ART_UNKNOWN_SLOT": "That image slot does not exist.",
+    "ART_UNSUPPORTED_TYPE": "Upload a PNG, JPEG, WebP or SVG image.",
+    "ART_BAD_SIZE": "The image is empty or larger than 1.5 MB.",
+    "ART_NOT_AN_IMAGE": "That file is not a valid (or not a safe) image."
   },
   "language": {
     "label": "Language"

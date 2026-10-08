@@ -4478,3 +4478,10 @@ svg .block.dir-blocked {
   max-height: 140px;
   object-fit: contain;
 }
+
+.faction-backdrop {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}

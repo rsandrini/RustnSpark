@@ -96,6 +96,10 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       RESEND_FROM_NAME: ${RESEND_FROM_NAME:-}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
+      # Admin-uploaded images (faction banners/logos/backgrounds) live on a named volume.
+      ART_DIR: /data/art
+    volumes:
+      - art-data:/data/art
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
     depends_on:
@@ -180,6 +184,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      ART_DIR: /data/art
+    volumes:
+      - art-data:/data/art
     ports:
       - 127.0.0.1:${API_PORT:-3000}:3000
     depends_on:
@@ -236,3 +243,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  art-data:

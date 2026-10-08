@@ -55,7 +55,15 @@ export function OnboardingPage() {
   })();
 
   return (
-    <main className="app">
+    <main
+      className="app faction-backdrop"
+      // The chosen faction's uploaded background (admin-set) sits behind the page; none = plain.
+      style={
+        selected !== null && factionArt[selected]?.background
+          ? { backgroundImage: `url(${factionArt[selected]?.background})` }
+          : undefined
+      }
+    >
       <header className="topbar">
         <h1>{t('onboarding.title')}</h1>
       </header>

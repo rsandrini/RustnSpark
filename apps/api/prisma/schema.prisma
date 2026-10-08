@@ -282,6 +282,8 @@ model Faction {
   playable         Boolean           @default(false)
   relations        Json
   starterKitHint   Json?
+  // Uploaded images {banner?, logo?, background?} -> file names in ART_DIR; absent = the built-in default.
+  art              Json?
   locations        Location[]
   missionTemplates MissionTemplate[]
   missionInstances MissionInstance[]

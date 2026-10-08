@@ -11,3 +11,6 @@ __pycache__
 apps/web/test-results
 apps/web/playwright-report
 .worktrees/
+
+# local uploads (faction art)
+apps/api/data/

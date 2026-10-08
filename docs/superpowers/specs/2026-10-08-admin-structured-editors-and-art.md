@@ -1,6 +1,15 @@
 # Admin: structured editors for JSON fields, field help, faction/place art, new mission types
 
-**Status:** PLAN — awaiting owner decisions (bottom). Evidence from the code and the live DB.
+**Status:** IMPLEMENTED (2026-10-08) on `feat/part-direction-rules`. Owner decisions: art is uploaded in the
+admin (stored on the `art-data` volume, current static art kept as defaults until overridden); the new mission
+type is a genuinely new **RACE** type (3-5 generated rival ships, entry speed, prize by finishing place, rivals'
+speeds/times shown on the board offer); every part type may leave sides without a port (min 1 stays).
+
+What shipped: structured editors + per-field help text (`StructuredEditors.tsx`, `tuning.help.*`); faction art
+slots banner/logo/background (`Faction.art`, `/v1/factions/art`, `/v1/art/:file`, admin upload/reset with raw image
+bodies, SVG sandboxed + scanned, hashed immutable files, tuning revision per change); RACE (`race.*` config group,
+`race.resolver.ts`, `cargo.race`, `race_result` event + report templates, board RaceField); connector defaults with
+bare sides. Original plan text follows.
 
 ## Findings
 - **JSON fields edited as raw text** (a textarea): `Location.services`, `Part.specialProp`,

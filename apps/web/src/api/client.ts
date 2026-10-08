@@ -108,6 +108,18 @@ export async function refresh(): Promise<string | null> {
   return refreshPromise;
 }
 
+// Blob.arrayBuffer() is everywhere a real browser is; the FileReader path covers older engines
+// (and jsdom) so an image upload never depends on it.
+function bytesOf(blob: Blob): Promise<ArrayBuffer> {
+  if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = () => reject(reader.error ?? new Error('could not read the file'));
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 async function rawRequest<T>(
   method: HttpMethod,
   path: string,
@@ -121,7 +133,7 @@ async function rawRequest<T>(
   // A Blob (an image upload) goes out as itself with its own type; everything else is JSON.
   const binary = typeof Blob !== 'undefined' && body instanceof Blob;
   const payload: BodyInit | undefined =
-    body === undefined ? undefined : binary ? await body.arrayBuffer() : JSON.stringify(body);
+    body === undefined ? undefined : binary ? await bytesOf(body) : JSON.stringify(body);
   if (binary) {
     headers['Content-Type'] = body.type;
   } else if (body !== undefined) {

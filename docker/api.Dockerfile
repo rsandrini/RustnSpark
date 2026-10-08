@@ -43,6 +43,8 @@ WORKDIR /app
 COPY --from=build --chown=node:node /out/node_modules ./node_modules
 COPY --from=build --chown=node:node /out/package.json ./package.json
 COPY --from=build --chown=node:node /out/dist ./dist
+# Uploaded faction art: a named volume mounted here inherits this owner on first use.
+RUN mkdir -p /data/art && chown node:node /data/art
 USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

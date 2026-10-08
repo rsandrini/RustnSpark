@@ -1272,7 +1272,11 @@
     "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
     "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
     "NOT_MINABLE": "Não há nada para minerar aqui.",
-    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro."
+    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro.",
+    "ART_UNKNOWN_SLOT": "Esse espaço de imagem não existe.",
+    "ART_UNSUPPORTED_TYPE": "Envie uma imagem PNG, JPEG, WebP ou SVG.",
+    "ART_BAD_SIZE": "A imagem está vazia ou tem mais de 1,5 MB.",
+    "ART_NOT_AN_IMAGE": "Esse arquivo não é uma imagem válida (ou segura)."
   },
   "language": {
     "label": "Idioma"
