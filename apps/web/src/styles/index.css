@@ -1358,8 +1358,24 @@ svg .block.floating {
   stroke-dasharray: 0.2 0.12;
 }
 
+/* A part that is not wired to the bridge does nothing: dim its fill and blink a yellow border. */
 svg .block.disconnected {
-  opacity: 0.45;
+  fill-opacity: 0.45;
+  stroke: #ffd400;
+  stroke-width: 0.1;
+  animation: disconnected-blink 1s ease-in-out infinite;
+}
+
+@keyframes disconnected-blink {
+  50% {
+    stroke-opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg .block.disconnected {
+    animation: none;
+  }
 }
 
 .block-label {
