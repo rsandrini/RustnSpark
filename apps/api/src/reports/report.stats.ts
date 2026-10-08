@@ -27,6 +27,8 @@ export interface ReportStats {
    * damage, which only counts fights.
    */
   readonly travelWear: { readonly points: number; readonly parts: number };
+  /** Where the journey's own damage went: soaked by the shield, the armor, the hull (layered runs). */
+  readonly travelLayers: { readonly shield: number; readonly armor: number; readonly hull: number };
   /** Parts that failed (motor, battery, tank, shield, weapon, sensor). */
   readonly partFailures: number;
   readonly fuelLost: number;
@@ -96,6 +98,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let race: ReportStats['race'] = null;
   const damage = { shield: 0, armor: 0, hull: 0 };
   let wearPoints = 0;
+  const travelLayers = { shield: 0, armor: 0, hull: 0 };
   const wornParts = new Set<string>();
   const loot = new Map<string, number>();
   const found: ReportStats['found'][number][] = [];
@@ -123,6 +126,11 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       });
     }
     if (event.type === 'race_result' && event.race !== undefined) race = event.race;
+    if (event.type === 'mission_wear' && event.cascade) {
+      travelLayers.shield += event.cascade.shield;
+      travelLayers.armor += event.cascade.armor;
+      travelLayers.hull += event.cascade.hp;
+    }
     if (event.type === 'pirate_demand') {
       stolenParts += event.stolen?.length ?? 0;
       motive = event.motive ?? motive;
@@ -171,6 +179,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     fights: { won, lost, escaped, drawn, pvp },
     damage,
     travelWear: { points: wearPoints, parts: wornParts.size },
+    travelLayers,
     hasShield: log.hasShield,
     partsDamage,
     partFailures,

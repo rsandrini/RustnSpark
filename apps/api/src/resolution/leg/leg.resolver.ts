@@ -454,6 +454,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   const applyEnvironment = (): void => {
     const layers = layersOf(ship);
     const partsBeforeWear = ship.parts;
+    // Scavenging is manual work at the place: the ship never travels, so no journey damage.
+    if (input.context.type === 'SCAVENGE') return;
     if (layers !== null) {
       const damage = environmentDamage(
         input.route.danger,
@@ -480,6 +482,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           actors,
           partsBeforeWear,
           new Map(settled.parts.map((part) => [part.id, part.condition])),
+          { shield: hit.shield, armor: hit.armor, hp: hit.hull + hit.spill },
         ),
       );
       return;
@@ -915,6 +918,7 @@ function wearEvents(
   actors: MissionActors,
   parts: readonly PartSnapshot[],
   wearMap: ReadonlyMap<string, number>,
+  cascade?: MissionDamageCascade,
 ): MissionEvent[] {
   const condByPart = Object.fromEntries(
     parts.map((part) => [part.id, wearMap.get(part.id) ?? part.condition]),
@@ -931,6 +935,7 @@ function wearEvents(
       actors,
       magnitude,
       condByPart,
+      ...(cascade !== undefined ? { cascade } : {}),
     }),
   ];
 }

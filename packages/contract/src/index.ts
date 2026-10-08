@@ -636,6 +636,10 @@ export const ReportStatsSchema = z.object({
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
   /** Wear from the journey itself: condition points lost across parts, and how many parts. */
   travelWear: z.object({ points: z.number(), parts: z.number() }),
+  /** Where the journey's own damage went: the shield, the armor, the hull. */
+  travelLayers: z
+    .object({ shield: z.number(), armor: z.number(), hull: z.number() })
+    .optional(),
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
   /** Every part that lost condition during the run, dispatch vs final. */

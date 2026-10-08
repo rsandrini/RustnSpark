@@ -1072,7 +1072,7 @@
       "travelTitle": "Wear on the way",
       "noWear": "The journey itself left no marks.",
       "wear": "{{points}} condition points lost across {{parts}} part(s) to the journey itself.",
-      "travelNote": "Space, radiation and debris wear the ship even without a fight.",
+      "travelNote": "The journey hits like a weapon: the shield first (if the ship has one), then the armor, then the hull. What got through is the wear on the parts.",
       "fromTo": "{{before}}% → {{after}}%"
     },
     "story": {

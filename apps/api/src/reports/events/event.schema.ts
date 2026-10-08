@@ -157,6 +157,10 @@ function eventMembers(
             condition: num,
           });
         }
+        if (type === 'mission_wear') {
+          // The journey's own damage, split by the layer that took it (layered model only).
+          extras['cascade'] = object({ shield: num, armor: num, hp: num }).optional();
+        }
         if (type === 'race_result') {
           extras['race'] = object({
             place: num,

@@ -96,7 +96,10 @@ export function settleLosses<P extends WearablePart>(
     layers.hpMax > 0
       ? Math.min(1, (lostHull / layers.hpMax) * rules.wear.hull_to_condition)
       : 0;
-  const armorShare = layers.armorMax > 0 ? Math.min(1, lostArmor / layers.armorMax) : 0;
+  const armorShare =
+    layers.armorMax > 0
+      ? Math.min(1, (lostArmor / layers.armorMax) * rules.wear.hull_to_condition)
+      : 0;
   const spillShare = layers.hpMax > 0 ? Math.min(1, newSpill / layers.hpMax) : 0;
   const next = parts.map((part) => {
     let condition = part.condition * (1 - hullShare) * (1 - spillShare);

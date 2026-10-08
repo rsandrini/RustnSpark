@@ -4823,21 +4823,15 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 /* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
 .report-overview {
   display: grid;
-  grid-template-columns: 460px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
-/* The place scene and the map share one row, the numbers beside it. */
+/* The place scene with the map under it in column one, the numbers beside it. */
 .overview-visual {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  align-items: stretch;
-}
-.overview-visual .route-map {
-  align-self: stretch;
-  display: grid;
-  align-items: center;
+  align-content: start;
 }
 .overview-visual .route-map {
   margin: 0;

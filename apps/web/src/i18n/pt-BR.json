@@ -1072,7 +1072,7 @@
       "travelTitle": "Desgaste no caminho",
       "noWear": "A própria viagem não deixou marcas.",
       "wear": "{{points}} pontos de condição perdidos em {{parts}} peça(s) pela própria viagem.",
-      "travelNote": "Espaço, radiação e detritos desgastam a nave mesmo sem luta.",
+      "travelNote": "A viagem bate como uma arma: primeiro o escudo (se a nave tiver), depois a blindagem, depois o casco. O que passou é o desgaste nas peças.",
       "fromTo": "{{before}}% → {{after}}%"
     },
     "story": {

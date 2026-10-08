@@ -77,6 +77,9 @@ export function ReportOverview({
   const combatMax = Math.max(1, combat.shield, combat.armor, combat.hull);
   const combatTotal = combat.shield + combat.armor + combat.hull;
   const wear = stats.travelWear;
+  const travel = stats.travelLayers ?? { shield: 0, armor: 0, hull: 0 };
+  const travelTotal = travel.shield + travel.armor + travel.hull;
+  const travelMax = Math.max(1, travel.shield, travel.armor, travel.hull);
 
   return (
     <section className="report-overview" data-testid="report-overview">
@@ -116,6 +119,25 @@ export function ReportOverview({
 
           <article className="panel" data-testid="damage-travel">
             <h2>{t('report.overview.travelTitle')}</h2>
+            {travelTotal > 0 && (
+              <ul className="stack">
+                {(['shield', 'armor', 'hull'] as const)
+                  .filter((layer) => layer !== 'shield' || stats.hasShield)
+                  .map((layer) => (
+                    <li key={layer} className="loss-row">
+                      <span>{t(`report.overview.layer.${layer}`)}</span>
+                      <LossBar
+                        before={0}
+                        after={travel[layer]}
+                        max={travelMax}
+                        label={t(`report.overview.layer.${layer}`)}
+                        tone="bad"
+                      />
+                      <b className="error-text">{number(Math.round(travel[layer]))}</b>
+                    </li>
+                  ))}
+              </ul>
+            )}
             {wear.points === 0 ? (
               <p className="sub">{t('report.overview.noWear')}</p>
             ) : (

@@ -74,7 +74,8 @@ describe('settleLosses: damage becomes wear on the parts, evenly', () => {
   it('armor lost wears the armor parts on top', () => {
     const settled = settleLosses(parts, layers({ armor: 10 }), rules);
     expect(settled.parts[0]!.condition).toBe(100);
-    expect(settled.parts[2]!.condition).toBeCloseTo(50);
+    // half the armor pool gone, at the same half share as the hull: a quarter worn
+    expect(settled.parts[2]!.condition).toBeCloseTo(75);
   });
 
   it('a loss is written back once: settling again changes nothing', () => {
@@ -314,6 +315,24 @@ describe('a whole run in the layered model', () => {
     const rough = resolveMission({ seed: 'z', snapshot: snap(), mission: trip(14), rules: quietRules });
     const cond = (out: typeof calm) => out.parts.find((part) => part.id === 'bridge')?.condition ?? 0;
     expect(cond(calm)).toBeGreaterThan(cond(rough));
+  });
+
+  it('scavenging is manual work at the place: the ship takes no journey damage', () => {
+    const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
+    const dig = { ...trip(12), type: 'SCAVENGE' as const };
+    const out = resolveMission({ seed: 'dig', snapshot: snap(), mission: dig, rules: quietRules });
+    expect(out.parts.every((part) => part.condition === 100)).toBe(true);
+    expect(out.events.some((event) => event.type === 'mission_wear')).toBe(false);
+  });
+
+  it('the journey\'s hit is recorded by the layer that took it', () => {
+    const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
+    const out = resolveMission({ seed: 'layers', snapshot: snap(), mission: trip(12), rules: quietRules });
+    const wear = out.events.find((event) => event.type === 'mission_wear');
+    expect(wear?.cascade).toBeDefined();
+    // no shield on this ship: it is the armor that took it first
+    expect(wear?.cascade?.shield).toBe(0);
+    expect(wear?.cascade?.armor).toBeGreaterThan(0);
   });
 
   it('the old model is unchanged for a snapshot without pools', () => {

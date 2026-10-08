@@ -169,4 +169,17 @@ describe('computeReportStats', () => {
       parts: 0,
     });
   });
+
+  it('travelLayers adds up where the journey\'s own damage went', () => {
+    const stats = computeReportStats(
+      log([
+        event({ type: 'mission_wear', category: 'environment', cascade: { shield: 4, armor: 7, hp: 1 } }),
+        event({ type: 'mission_wear', category: 'environment', leg: 1, cascade: { shield: 0, armor: 3, hp: 2 } }),
+        // a fight's own cascade is combat damage, not the journey's
+        event({ type: 'combat_win', cascade: { shield: 9, armor: 9, hp: 9 } }),
+      ]),
+      { parts: {}, materials: {} },
+    );
+    expect(stats.travelLayers).toEqual({ shield: 4, armor: 10, hull: 3 });
+  });
 });
