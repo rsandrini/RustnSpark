@@ -159,6 +159,25 @@ is `Secure`, so other computers need HTTPS: run `scripts/make-dev-cert.sh <lan-i
 `https://<lan-ip>:8443` (`WEB_TLS_PORT`). Trust `certs/ca.crt` on each client computer, otherwise the browser
 shows a certificate warning. Without `certs/server.crt` nginx serves plain HTTP only.
 
+### 5.5 Playtest-round tunables (Tuning → Config unless noted)
+
+- `ship.stat_display_scale` (default 10): mobility and the speeds compared with it (mission
+  requirements, race rivals) are shown multiplied by this; game maths is unchanged.
+- `ship.cruise_deficit_floor`: a ship using more cruising power than it generates still flies; its
+  engines keep generated/used of their thrust, never less than this share.
+- `economy.market_rarity_by_bridge`: which part rarities are on a pilot's shelf, by the rarity of
+  their bridge. Every market listing (new or used) is one item per port per day.
+- `scavenging.nothing_chance` (by zone), `scavenging.tier_min_zone` (rare drops only in dangerous
+  zones), `scavenging.handicap_factor` (a ship that cannot fly still scavenges, at this share of
+  the chance to find anything). The drop *table* itself (Tuning → Drop tables, `scavenging_common`)
+  is admin data: seeds do not overwrite it, so after upgrading edit it (new default 80/17/3).
+- `race.form_spread`, `race.mishap_chance`, `race.mishap_penalty`, `race.overdrive_speed`,
+  `race.overdrive_fuel`, `race.overdrive_risk`: how dynamic a race is, and what pushing the engines
+  (overdrive) costs.
+
+Flight warnings (energy shortfalls, blocked engines/weapons, no life support) no longer ground a
+ship: they weaken it (see the Ship sheet warnings). Only a ship that cannot move at all is refused.
+
 ## 6. Operating the game
 
 | Situation | Action |
