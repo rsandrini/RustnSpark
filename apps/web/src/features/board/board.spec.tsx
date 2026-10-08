@@ -99,6 +99,11 @@ describe('board (S10.6)', () => {
     // Checklist entry, met: the same requirement set also lists what the ship DOES satisfy,
     // not only what blocks it.
     expect(card.getByText('Cargo capacity for this load').closest('li')).toHaveClass('req-met');
+    // The real numbers, the ship against the mission: cargo as it is, mobility on the display
+    // scale (x10) like the ship sheet.
+    expect(card.getByTestId('req-MINER')).toHaveTextContent('Your ship: 0 · needs 1');
+    expect(card.getByTestId('req-CARGO_TYPE')).toHaveTextContent('Your ship: 10 · needs 5');
+    expect(card.getByTestId('req-MIN_MOBILITY')).toHaveTextContent('Your ship: 11 · needs 15');
     // The old failure-only message for MINER must not also appear — it is now fully replaced
     // by the checklist entry for that same code, not duplicated alongside it.
     expect(screen.queryByText('Needs a mining system')).toBeNull();

@@ -1169,7 +1169,8 @@
       "rank": "{{place}}.",
       "entry": "Entrada: velocidade {{mobility}} ou mais. Prêmios:",
       "prize": "{{place}}º {{amount}}"
-    }
+    },
+    "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}"
   },
   "map": {
     "title": "Mapa do setor",
@@ -1485,5 +1486,9 @@
     },
     "docked": "Atracada em {{place}}",
     "repairingAt": "na oficina de {{place}}"
+  },
+  "routeMap": {
+    "label": "Rota de {{from}} para {{to}}",
+    "title": "Rota"
   }
 }

@@ -4531,3 +4531,59 @@ svg .block.dir-blocked {
 .warn-text {
   color: var(--amber);
 }
+
+/* "Your ship: 12 · needs 25" next to a numeric requirement on a mission card. */
+.mcard-requirements .req-numbers {
+  display: block;
+  margin-left: 22px;
+  font-size: 12px;
+  color: var(--mut);
+}
+.mcard-requirements .req-unmet .req-numbers {
+  color: var(--amber);
+}
+
+/* The trip on the sector map (mission cards, transit, report). */
+.route-map {
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.route-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.route-map .rm-route {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.route-map .rm-path {
+  stroke: var(--spark);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.route-map .rm-node {
+  fill: var(--line-strong);
+  stroke: none;
+}
+.route-map .rm-node.on {
+  fill: var(--spark);
+}
+.route-map .rm-node.end {
+  fill: var(--bg);
+  stroke: var(--spark);
+  stroke-width: 2;
+}
+.route-map .rm-label {
+  fill: var(--ink);
+  font-size: 10px;
+}
+.route-map .rm-ship {
+  fill: var(--blue);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}

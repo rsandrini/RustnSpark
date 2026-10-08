@@ -1353,8 +1353,9 @@ const boardState: MissionOffer[] = [
     },
     {
       requirements: [
-        { code: 'MINER', message: 'Needs a mining system', met: false },
-        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true },
+        { code: 'MINER', message: 'Needs a mining system', met: false, needed: 1, actual: 0, unit: 'mining' },
+        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true, needed: 5, actual: 10, unit: 'cargo' },
+        { code: 'MIN_MOBILITY', message: 'Mobility is below the escort minimum.', met: false, needed: 1.5, actual: 1.1, unit: 'mobility' },
       ],
     },
   ),

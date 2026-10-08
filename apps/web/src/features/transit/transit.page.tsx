@@ -19,6 +19,7 @@ import { Countdown } from '../../ui/Countdown';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
 import { ShipStage } from '../../ui/ShipStage';
+import { RouteMap } from '../../ui/RouteMap';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -350,6 +351,7 @@ export function TransitPage({
         <section>
           {!embedded && <ShipStage mode="idle" placeId={mission.originId} />}
           <p>{t('transit.accepted')}</p>
+          {mission.type !== 'SCAVENGE' && <RouteMap path={plannedNodeIds} world={worldQuery.data} />}
           {plannedRouteIds.length > 1 && (
             <>
               <p className="sub">{t('transit.legPlanTitle')}</p>
@@ -409,6 +411,9 @@ export function TransitPage({
                 <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
               )}
             </p>
+          )}
+          {mission.type !== 'SCAVENGE' && (
+            <RouteMap path={nodeIds} world={worldQuery.data} progress={progress / 100} />
           )}
           <div className="legbar" role="progressbar" aria-valuenow={Math.round(progress)}>
             <div className="legbar-fill" style={{ width: `${progress}%` }} />

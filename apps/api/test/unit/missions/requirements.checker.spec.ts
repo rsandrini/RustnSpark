@@ -254,6 +254,15 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
     }
   });
 
+  it('shows thresholds the way the sheet reads: needs 3 means 2.5 unrounded, so a 2.4 ship is refused', () => {
+    const rescue = check('RESCUE', buildInstalled(STARTER));
+    expect(rescue.checklist.find((entry) => entry.code === 'SPEED')).toMatchObject({
+      needed: 2.5,
+      actual: 1.6,
+      met: false,
+    });
+  });
+
   it('lets a template override the speed threshold (velocidade hint)', () => {
     // Starter mob is 2; rescue default gate is reference_mob (3). With speed: 2 it passes.
     expect(check('RESCUE', buildInstalled(STARTER), { speed: 2 }).eligible).toBe(true);
@@ -274,19 +283,20 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
 describe('S6.3 — full requirement checklist (met and unmet), round 10', () => {
   it('DELIVERY checklist reports cargo met or unmet, never omitted on success', () => {
     const ok = check('DELIVERY', buildInstalled(STARTER));
-    expect(ok.checklist).toEqual([{ code: 'CARGO_TYPE', message: expect.any(String), met: true }]);
+    expect(ok.checklist).toMatchObject([{ code: 'CARGO_TYPE', met: true, unit: 'cargo', needed: 1 }]);
 
     const bad = check('DELIVERY', buildInstalled(NO_CARGO));
-    expect(bad.checklist).toEqual([
-      { code: 'CARGO_TYPE', message: expect.any(String), met: false },
+    expect(bad.checklist).toMatchObject([
+      { code: 'CARGO_TYPE', met: false, unit: 'cargo', needed: 1, actual: 0 },
     ]);
   });
 
   it('ESCORT checklist lists weapons and mobility as two independent entries', () => {
     const result = check('ESCORT', buildInstalled(STARTER));
-    expect(result.checklist).toEqual([
-      { code: 'WEAPONS', message: expect.any(String), met: false },
-      { code: 'MIN_MOBILITY', message: expect.any(String), met: true },
+    expect(result.checklist).toMatchObject([
+      { code: 'WEAPONS', met: false },
+      // needs "mobility 2" = 1.5 unrounded; the starter has 1.6
+      { code: 'MIN_MOBILITY', met: true, unit: 'mobility', needed: 1.5, actual: 1.6 },
     ]);
   });
 

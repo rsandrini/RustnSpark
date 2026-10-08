@@ -1,6 +1,7 @@
 import type { MissionType } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart } from '../parts/part.types.js';
+import { rawMobility } from '../ships/sheet.deriver.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
 
 export type RequirementReasonCode =
@@ -52,6 +53,18 @@ const RACE_SPEED: RequirementReason = {
 
 const ESCORT_MOBILITY_MIN = 2;
 
+/**
+ * A mobility threshold as a number the player can compare with the ship sheet. The game rounds a
+ * ship's mobility to a whole number before comparing ("mobility 2" means 1.5 or more), while the
+ * sheet shows the unrounded figure; this is the exact unrounded equivalent, so what the player
+ * reads and what the game decides always agree (needs 2 → shows 1.5 × the display scale).
+ */
+const HALF = 0.5;
+
+export function unroundedThreshold(threshold: number): number {
+  return Math.ceil(threshold) - HALF;
+}
+
 export interface MissionRequirementInput {
   readonly missionType: MissionType;
   readonly requirements?: unknown;
@@ -82,8 +95,15 @@ function parseHints(requirements: unknown): RequirementHints {
   };
 }
 
+/** What a numeric requirement compares: the ship has `actual` of `needed` (mobility in game units,
+    unrounded — the web shows it on the display scale, like the ship sheet). */
+export type RequirementUnit = 'mobility' | 'cargo' | 'mining';
+
 export interface RequirementCheck extends RequirementReason {
   met: boolean;
+  needed?: number;
+  actual?: number;
+  unit?: RequirementUnit;
 }
 
 /**
@@ -103,31 +123,51 @@ export function missionRequirementChecklist(
     parts.some((part) => part.catalog.lifeSupport);
   const hasWeapon = parts.some((part) => part.catalog.partClass === 'WEAPON');
 
+  const mobility = rawMobility(sheet.pot, sheet.mass, rules);
+  const numeric = (
+    base: RequirementReason,
+    unit: RequirementUnit,
+    needed: number,
+    actual: number,
+    metOverride?: boolean,
+  ): RequirementCheck => ({
+    ...base,
+    met: metOverride ?? actual >= needed,
+    needed,
+    actual,
+    unit,
+  });
+
   switch (missionType) {
     case 'DELIVERY':
-      return [{ ...CARGO_TYPE, met: sheet.crg >= cargoNeeded }];
+      return [numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg)];
     case 'TRANSPORT':
       return [{ ...PRESSURIZED_LIFE_SUPPORT, met: hasCabin }];
     case 'ESCORT':
       return [
         { ...WEAPONS, met: hasWeapon },
-        { ...MIN_MOBILITY, met: sheet.mob >= ESCORT_MOBILITY_MIN },
+        numeric(MIN_MOBILITY, 'mobility', unroundedThreshold(ESCORT_MOBILITY_MIN), mobility),
       ];
     case 'MINING':
       return [
-        { ...MINER, met: sheet.min >= 1 },
-        { ...CARGO_TYPE, met: sheet.crg >= cargoNeeded },
+        numeric(MINER, 'mining', 1, sheet.min),
+        numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg),
       ];
     case 'TRAVEL':
     case 'SCAVENGE':
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       return [];
     case 'RACE':
-      return [{ ...RACE_SPEED, met: sheet.mob >= (hints.minMobility ?? rules.race.min_mobility) }];
+      return [numeric(
+          RACE_SPEED,
+          'mobility',
+          unroundedThreshold(hints.minMobility ?? rules.race.min_mobility),
+          mobility,
+        )];
     case 'RESCUE':
       return [
-        { ...CARGO_TYPE, met: sheet.crg >= cargoNeeded || hasCabin },
-        { ...SPEED, met: sheet.mob >= (hints.speed ?? rules.rescue.reference_mob) },
+        numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg, sheet.crg >= cargoNeeded || hasCabin),
+        numeric(SPEED, 'mobility', unroundedThreshold(hints.speed ?? rules.rescue.reference_mob), mobility),
       ];
   }
 }

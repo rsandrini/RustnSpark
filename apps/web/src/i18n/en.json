@@ -1169,7 +1169,8 @@
       "rank": "{{place}}.",
       "entry": "Entry: speed {{mobility}} or more. Prizes:",
       "prize": "{{place}}º {{amount}}"
-    }
+    },
+    "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}"
   },
   "map": {
     "title": "Sector map",
@@ -1485,5 +1486,9 @@
     },
     "docked": "Docked at {{place}}",
     "repairingAt": "in the workshop at {{place}}"
+  },
+  "routeMap": {
+    "label": "Route from {{from}} to {{to}}",
+    "title": "Route"
   }
 }

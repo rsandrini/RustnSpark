@@ -405,6 +405,10 @@ export const RequirementCheckSchema = z.object({
   code: z.string(),
   message: z.string(),
   met: z.boolean(),
+  /** Numeric requirements: what the ship needs and what it has (mobility in game units, shown on the display scale). */
+  needed: z.number().optional(),
+  actual: z.number().optional(),
+  unit: z.enum(['mobility', 'cargo', 'mining']).optional(),
 });
 export type RequirementCheck = z.infer<typeof RequirementCheckSchema>;
 

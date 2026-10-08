@@ -45,6 +45,9 @@ export interface FillerLocation {
   readonly factionId: string;
 }
 
+/** A new pilot's guaranteed first mission picks among this many nearest safe destinations. */
+const STARTER_NEAREST_DESTINATIONS = 3;
+
 export interface FillerRoute {
   readonly id: string;
   readonly nodeAId: string;
@@ -333,13 +336,26 @@ export function fillMission(input: FillMissionInput): MissionDraft {
         (zoneOf.get(route.nodeAId) ?? Number.POSITIVE_INFINITY) <= allowedZone &&
         (zoneOf.get(route.nodeBId) ?? Number.POSITIVE_INFINITY) <= allowedZone,
     );
-  const destinations = world.locations
+  const reachable = world.locations
     .filter((location) => {
       if (location.id === origin.id) return false;
       const candidatePath = shortestPath(origin.id, location.id, adjacency);
       return candidatePath !== null && withinStarterZone(candidatePath);
     })
     .sort(byId);
+  // A first mission is a short one: of everywhere reachable inside the safe zones, only the
+  // few nearest destinations are offered (the usual board keeps the whole map in play).
+  const pathLength = (locationId: string): number =>
+    (shortestPath(origin.id, locationId, adjacency) ?? []).reduce(
+      (sum, route) => sum + route.distance,
+      0,
+    );
+  const destinations =
+    input.starter === undefined
+      ? reachable
+      : [...reachable]
+          .sort((x, y) => pathLength(x.id) - pathLength(y.id) || byId(x, y))
+          .slice(0, STARTER_NEAREST_DESTINATIONS);
   const destination =
     destinations.length > 0 ? rng.child('destination').pick(destinations) : undefined;
   if (destination === undefined) {

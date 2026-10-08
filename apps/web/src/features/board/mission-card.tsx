@@ -1,12 +1,19 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MissionOffer, WorldLocation } from '../../api/generated';
+import type {
+  DisplayResponse,
+  MissionOffer,
+  WorldLocation,
+  WorldResponse,
+} from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { Gauge } from '../../ui/Gauge';
+import { scaleSpeed, useDisplay } from '../../ui/display';
+import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { factionName, useFactions } from '../../ui/factions';
 import { serverNow } from '../../api/client';
 
@@ -22,6 +29,15 @@ export interface MissionCardProps {
   shipMobility?: number;
   mine: boolean;
   actions: ReactNode;
+  /** The sector map, for the route drawing (the card reads it itself when not given). */
+  world?: WorldResponse;
+}
+
+/** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
+    everything else as it is. */
+function requirementNumber(value: number, unit: string | undefined, display: DisplayResponse): string {
+  const shown = unit === 'mobility' ? scaleSpeed(value, display) : value;
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(shown);
 }
 
 // One offer with everything needed to decide: what the job is, where it goes, what it pays, how
@@ -35,10 +51,12 @@ export function MissionCard({
   shipMobility,
   mine,
   actions,
+  world,
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
   const factions = useFactions().byId;
+  const display = useDisplay();
   const title = pickLocalized(info.title, i18n.language);
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
@@ -94,6 +112,8 @@ export function MissionCard({
 
       <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
 
+      <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
+
       {info.material !== null && (
         <p className="mcard-material">
           {info.material.contracted && info.material.quantity !== null
@@ -144,6 +164,14 @@ export function MissionCard({
                   {req.met ? '✓' : '✗'}
                 </span>
                 {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
+                {req.needed !== undefined && req.actual !== undefined && (
+                  <span className="req-numbers" data-testid={`req-${req.code}`}>
+                    {t('board.requirementNumbers', {
+                      actual: requirementNumber(req.actual, req.unit, display),
+                      needed: requirementNumber(req.needed, req.unit, display),
+                    })}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
