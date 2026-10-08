@@ -283,6 +283,9 @@ export function SchemaForm({
         <ConnectorRulesEditor
           value={value as ConnectorRules | null | undefined}
           onChange={(rules) => handleChange(field.name, rules)}
+          w={typeof values.w === 'number' ? values.w : 1}
+          h={typeof values.h === 'number' ? values.h : 1}
+          partClass={typeof values.partClass === 'string' ? values.partClass : undefined}
         />
       );
     }

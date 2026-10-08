@@ -535,6 +535,11 @@ export const handlers = [
 
   http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
+  // Default for the admin connector rules editor's live preview (specs override it per test).
+  http.post('/v1/admin/tuning/connector-rules/preview', () =>
+    ok({ problem: null, combos: [], samples: [] }),
+  ),
+
   http.post('/v1/ships/:id/preview', async ({ request }) => {
     const body = (await request.json()) as { layout?: Placement[] };
     return ok<PreviewResponse>({

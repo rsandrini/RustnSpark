@@ -5,6 +5,12 @@
 Original status: PLAN. Evidence below comes from a live
 Playwright audit of every admin route (1400×900) against a throwaway stack.
 
+## Status (implemented)
+Done on `feat/part-direction-rules`: routed edit/create/clone pages, sectioned part form, list search +
+overflow container, collapsible Config, 1/2/3-dot glyphs, `oneKindPerPart` mixed seed defaults (kits never
+split), connector rules editor v2 (side cards + chips + presets + live server preview), per-player
+fast-missions toggle, Playwright admin audit (`apps/web/e2e/admin.spec.ts`, desktop + phone).
+
 ## Findings
 
 ### Admin screens (items 1 and 4)
