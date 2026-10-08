@@ -154,6 +154,9 @@ export interface MissionEvent {
   /** v2, `race_result` only: the finishing place and everyone's time (fastest first). */
   readonly race?: {
     readonly place: number;
+    /** `missions.time_scale` at the run: displayed time = standing seconds x this (the board's
+        estimates use the same scale). */
+    readonly timeScale: number;
     readonly standings: readonly {
       readonly name: string;
       readonly mobility: number;
@@ -260,6 +263,7 @@ export function missionEvent(input: {
       ? {
           race: {
             place: roundInt(input.race.place),
+            timeScale: input.race.timeScale,
             standings: input.race.standings.map((standing) => ({
               name: standing.name,
               // two decimals are meaningful for a speed, but the stored log must round-trip

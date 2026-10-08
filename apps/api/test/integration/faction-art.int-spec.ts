@@ -27,7 +27,7 @@ function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
 }
 
-describe('faction art (admin upload)', () => {
+describe('art uploads (factions and places)', () => {
   let testApp: TestApp;
   let prisma: PrismaService;
   let passwordService: PasswordService;
@@ -117,6 +117,39 @@ describe('faction art (admin upload)', () => {
     // every change is a tuning revision
     const revisions = await prisma.tuningRevision.findMany({ where: { entityType: 'factions', entityId: 'luna' } });
     expect(revisions.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('places take wide/square/icon images the same way, listed under /v1/places/art', async () => {
+    await seed(prisma);
+    const token = await adminToken();
+    const send = (slot: string, body: Buffer, type: string) =>
+      request(httpServer(testApp.app))
+        .post(`/v1/admin/tuning/locations/ceres/art/${slot}`)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Content-Type', type)
+        .send(body);
+    const wide = await send('wide', PNG, 'image/png');
+    expect(wide.status).toBe(200);
+    const url = (wide.body as { url: string }).url;
+    expect(url).toMatch(/^\/v1\/art\/ceres-wide-[a-f0-9]{12}\.png$/);
+    // a faction slot name is not a place slot
+    expect((await send('banner', PNG, 'image/png')).status).toBe(400);
+
+    const list = await request(httpServer(testApp.app))
+      .get('/v1/places/art')
+      .set('Authorization', `Bearer ${token}`);
+    expect(list.body).toEqual({ places: { ceres: { wide: url, square: null, icon: null } } });
+    expect((await request(httpServer(testApp.app)).get(url)).status).toBe(200);
+
+    const reset = await request(httpServer(testApp.app))
+      .delete('/v1/admin/tuning/locations/ceres/art/wide')
+      .set('Authorization', `Bearer ${token}`);
+    expect(reset.body).toEqual({ slot: 'wide', url: null });
+    expect(
+      (await request(httpServer(testApp.app)).get('/v1/places/art').set('Authorization', `Bearer ${token}`))
+        .body,
+    ).toEqual({ places: {} });
+    expect((await upload(token, 'logo', PNG, 'image/png', 'nowhere')).status).toBe(404);
   });
 
   it('accepts a clean SVG', async () => {

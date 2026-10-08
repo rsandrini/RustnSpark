@@ -103,6 +103,7 @@ export class EntityTuningService {
         description: field.description,
         configKey: field.configKey,
         references: field.references,
+        referenceNone: field.referenceNone,
       })),
     };
   }

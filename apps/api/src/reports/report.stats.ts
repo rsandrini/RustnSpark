@@ -32,6 +32,17 @@ export interface ReportStats {
     readonly condition: number;
   }[];
   readonly pirates: { readonly stolenParts: number; readonly motive: string | null };
+  /** RACE missions: the finishing place and every ship's time (fastest first); null otherwise. */
+  readonly race: {
+    readonly place: number;
+    readonly timeScale: number;
+    readonly standings: readonly {
+      readonly name: string;
+      readonly mobility: number;
+      readonly seconds: number;
+      readonly you: boolean;
+    }[];
+  } | null;
   readonly loot: readonly {
     readonly materialId: string;
     readonly name: string;
@@ -74,6 +85,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let fuelLost = 0;
   let stolenParts = 0;
   let motive: string | null = null;
+  let race: ReportStats['race'] = null;
   const damage = { shield: 0, armor: 0, hull: 0 };
   const loot = new Map<string, number>();
   const found: ReportStats['found'][number][] = [];
@@ -100,6 +112,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
         condition: event.found.condition,
       });
     }
+    if (event.type === 'race_result' && event.race !== undefined) race = event.race;
     if (event.type === 'pirate_demand') {
       stolenParts += event.stolen?.length ?? 0;
       motive = event.motive ?? motive;
@@ -146,6 +159,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     fuelLost,
     found,
     pirates: { stolenParts, motive },
+    race,
     loot: [...loot.entries()]
       .filter(([, quantity]) => quantity > 0)
       .map(([materialId, quantity]) => ({

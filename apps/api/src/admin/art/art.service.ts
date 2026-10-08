@@ -6,8 +6,14 @@ import { Prisma } from '@prisma/client';
 import { EnvService } from '../../common/env/env.module.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
-export const ART_SLOTS = ['banner', 'logo', 'background'] as const;
-export type ArtSlot = (typeof ART_SLOTS)[number];
+/** What can carry uploaded images, and the image slots each has. */
+export const ART_KINDS = {
+  factions: ['banner', 'logo', 'background'],
+  locations: ['wide', 'square', 'icon'],
+} as const;
+export type ArtKind = keyof typeof ART_KINDS;
+export type ArtSlot = (typeof ART_KINDS)[ArtKind][number];
+export const ALL_ART_SLOTS: readonly string[] = [...ART_KINDS.factions, ...ART_KINDS.locations];
 
 const EXTENSION_OF: Readonly<Record<string, string>> = {
   'image/png': 'png',
@@ -23,17 +29,15 @@ const MIME_OF: Readonly<Record<string, string>> = {
 };
 export const ART_MAX_BYTES = 1_500_000;
 const HASH_LENGTH = 12;
-const FILE_PATTERN = /^[a-z0-9_]+-(banner|logo|background)-[a-f0-9]{12}\.(png|jpg|webp|svg)$/;
+const FILE_PATTERN =
+  /^[a-z0-9_]+-(banner|logo|background|wide|square|icon)-[a-f0-9]{12}\.(png|jpg|webp|svg)$/;
 const DEFAULT_ART_DIR = './data/art';
-const FACTION_ID_PATTERN = /^[a-z0-9_]+$/;
+const ID_PATTERN = /^[a-z0-9_]+$/;
 
-type StoredArt = Partial<Record<ArtSlot, string>>;
+type StoredArt = Partial<Record<string, string>>;
 
-export interface ArtUrls {
-  readonly banner: string | null;
-  readonly logo: string | null;
-  readonly background: string | null;
-}
+/** One entity's served image URLs by slot (null = use the built-in default). */
+export type ArtUrls = Readonly<Record<string, string | null>>;
 
 const urlOf = (file: string | undefined): string | null =>
   file === undefined ? null : `/v1/art/${file}`;
@@ -64,11 +68,11 @@ function svgIsSafe(bytes: Buffer): boolean {
   );
 }
 
-// Admin-uploaded faction images. The built-in static files stay the defaults: a slot is only set
+// Admin-uploaded images (faction art, place art). The built-in static files stay the defaults: a slot is only set
 // once something is uploaded, and resetting removes the file and the slot again. Files are named by
 // content hash so a replaced image gets a fresh URL (served immutable), and old files are deleted.
 @Injectable()
-export class FactionArtService {
+export class ArtService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly env: EnvService,
@@ -79,12 +83,14 @@ export class FactionArtService {
   }
 
   async upload(
+    kind: ArtKind,
     factionId: string,
-    slot: ArtSlot,
+    slot: string,
     bytes: Buffer,
     mime: string,
     actor: string,
-  ): Promise<{ slot: ArtSlot; url: string }> {
+  ): Promise<{ slot: string; url: string }> {
+    this.assertSlot(kind, slot);
     const extension = EXTENSION_OF[mime];
     if (extension === undefined) {
       throw new BadRequestException({ error: 'ART_UNSUPPORTED_TYPE' });
@@ -95,7 +101,7 @@ export class FactionArtService {
     if (!looksLike(mime, bytes) || (mime === 'image/svg+xml' && !svgIsSafe(bytes))) {
       throw new BadRequestException({ error: 'ART_NOT_AN_IMAGE' });
     }
-    const faction = await this.requireFaction(factionId);
+    const faction = await this.require(kind, factionId);
     const hash = createHash('sha256').update(bytes).digest('hex').slice(0, HASH_LENGTH);
     const file = `${factionId}-${slot}-${hash}.${extension}`;
     await mkdir(this.dir(), { recursive: true });
@@ -103,33 +109,39 @@ export class FactionArtService {
 
     const before = (faction.art ?? {}) as StoredArt;
     const after: StoredArt = { ...before, [slot]: file };
-    await this.save(factionId, before, after, actor, `upload ${slot}`);
-    await this.removeIfUnused(before[slot], factionId, after);
+    await this.save(kind, factionId, before, after, actor, `upload ${slot}`);
+    await this.removeIfUnused(before[slot], after);
     return { slot, url: `/v1/art/${file}` };
   }
 
-  async reset(factionId: string, slot: ArtSlot, actor: string): Promise<{ slot: ArtSlot; url: null }> {
-    const faction = await this.requireFaction(factionId);
+  async reset(
+    kind: ArtKind,
+    factionId: string,
+    slot: string,
+    actor: string,
+  ): Promise<{ slot: string; url: null }> {
+    this.assertSlot(kind, slot);
+    const faction = await this.require(kind, factionId);
     const before = (faction.art ?? {}) as StoredArt;
     if (before[slot] === undefined) return { slot, url: null };
     const { [slot]: removed, ...rest } = before;
-    await this.save(factionId, before, rest, actor, `reset ${slot}`);
-    await this.removeIfUnused(removed, factionId, rest);
+    await this.save(kind, factionId, before, rest, actor, `reset ${slot}`);
+    await this.removeIfUnused(removed, rest);
     return { slot, url: null };
   }
 
-  /** Every faction with at least one uploaded image (the rest use the built-in defaults). */
-  async listUrls(): Promise<Record<string, ArtUrls>> {
-    const rows = await this.prisma.faction.findMany({ select: { id: true, art: true } });
+  /** Every entity of this kind with at least one uploaded image (the rest use the built-in defaults). */
+  async listUrls(kind: ArtKind): Promise<Record<string, ArtUrls>> {
+    const rows: { id: string; art: unknown }[] =
+      kind === 'factions'
+        ? await this.prisma.faction.findMany({ select: { id: true, art: true } })
+        : await this.prisma.location.findMany({ select: { id: true, art: true } });
     const out: Record<string, ArtUrls> = {};
     for (const row of rows) {
       const art = (row.art ?? {}) as StoredArt;
-      if (ART_SLOTS.every((slot) => art[slot] === undefined)) continue;
-      out[row.id] = {
-        banner: urlOf(art.banner),
-        logo: urlOf(art.logo),
-        background: urlOf(art.background),
-      };
+      const slots = ART_KINDS[kind];
+      if (slots.every((slot) => art[slot] === undefined)) continue;
+      out[row.id] = Object.fromEntries(slots.map((slot) => [slot, urlOf(art[slot])]));
     }
     return out;
   }
@@ -145,35 +157,39 @@ export class FactionArtService {
     }
   }
 
-  private async requireFaction(factionId: string): Promise<{ id: string; art: unknown }> {
-    if (!FACTION_ID_PATTERN.test(factionId)) throw new NotFoundException();
-    const faction = await this.prisma.faction.findUnique({
-      where: { id: factionId },
-      select: { id: true, art: true },
-    });
-    if (faction === null) throw new NotFoundException('faction not found');
-    return faction;
+  private assertSlot(kind: ArtKind, slot: string): void {
+    if (!(ART_KINDS[kind] as readonly string[]).includes(slot)) {
+      throw new BadRequestException({ error: 'ART_UNKNOWN_SLOT' });
+    }
+  }
+
+  private async require(kind: ArtKind, id: string): Promise<{ id: string; art: unknown }> {
+    if (!ID_PATTERN.test(id)) throw new NotFoundException();
+    const found =
+      kind === 'factions'
+        ? await this.prisma.faction.findUnique({ where: { id }, select: { id: true, art: true } })
+        : await this.prisma.location.findUnique({ where: { id }, select: { id: true, art: true } });
+    if (found === null) throw new NotFoundException(`${kind} not found`);
+    return found;
   }
 
   private async save(
-    factionId: string,
+    kind: ArtKind,
+    id: string,
     before: StoredArt,
     after: StoredArt,
     actor: string,
     reason: string,
   ): Promise<void> {
+    const art = Object.keys(after).length === 0 ? Prisma.DbNull : (after as Prisma.InputJsonValue);
     await this.prisma.$transaction(async (tx) => {
-      await tx.faction.update({
-        where: { id: factionId },
-        data: {
-          art: Object.keys(after).length === 0 ? Prisma.DbNull : (after as Prisma.InputJsonValue),
-        },
-      });
+      if (kind === 'factions') await tx.faction.update({ where: { id }, data: { art } });
+      else await tx.location.update({ where: { id }, data: { art } });
       await tx.tuningRevision.create({
         data: {
           actor,
-          entityType: 'factions',
-          entityId: factionId,
+          entityType: kind,
+          entityId: id,
           before: { art: before },
           after: { art: after },
           reason,
@@ -182,9 +198,8 @@ export class FactionArtService {
     });
   }
 
-  private async removeIfUnused(file: string | undefined, factionId: string, kept: StoredArt): Promise<void> {
+  private async removeIfUnused(file: string | undefined, kept: StoredArt): Promise<void> {
     if (file === undefined || Object.values(kept).includes(file)) return;
-    void factionId;
     await rm(join(this.dir(), file), { force: true });
   }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
-import { errorText } from '../../api/errors';
+import { describeError } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import { Popup } from '../../ui/Popup';
 import { adminApi, type SupportResult } from '../admin.api';
@@ -236,7 +236,7 @@ export function SupportActions({
             </label>
             {mutation.isError && (
               <p role="alert" className="error-text">
-                {errorText(t, mutation.error, t('error.unexpected'))}
+                {describeError(t, mutation.error, t('error.unexpected'))}
               </p>
             )}
           </>

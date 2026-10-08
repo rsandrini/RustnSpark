@@ -1,16 +1,21 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
-import { FactionArtService, type ArtUrls } from './faction-art.service.js';
+import { ArtService, type ArtUrls } from './art.service.js';
 
-/** What every signed-in player needs: which factions have uploaded images (the rest keep defaults). */
+/** What every signed-in player needs: which entities have uploaded images (the rest keep defaults). */
 @Controller()
-export class FactionArtPublicController {
-  constructor(private readonly art: FactionArtService) {}
+export class ArtPublicController {
+  constructor(private readonly art: ArtService) {}
 
   @Get('factions/art')
-  async list(): Promise<{ factions: Record<string, ArtUrls> }> {
-    return { factions: await this.art.listUrls() };
+  async factions(): Promise<{ factions: Record<string, ArtUrls> }> {
+    return { factions: await this.art.listUrls('factions') };
+  }
+
+  @Get('places/art')
+  async places(): Promise<{ places: Record<string, ArtUrls> }> {
+    return { places: await this.art.listUrls('locations') };
   }
 
   // Public on purpose: the browser loads these as plain <img>/CSS backgrounds. File names are
@@ -32,4 +37,3 @@ export class FactionArtPublicController {
       .send(bytes);
   }
 }
-

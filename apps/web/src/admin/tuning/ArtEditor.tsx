@@ -1,27 +1,37 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { FactionArtSlot } from '../../api/generated';
 import { defaultFactionBannerUrl, useFactionArt } from '../../ui/factionArt';
+import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { failureText } from '../../api/errors';
 import { tuningApi } from './tuning.api';
 
-const SLOTS: readonly FactionArtSlot[] = ['banner', 'logo', 'background'];
+export type ArtKind = 'factions' | 'locations';
+
+const SLOTS: Record<ArtKind, readonly string[]> = {
+  factions: ['banner', 'logo', 'background'],
+  locations: ['wide', 'square', 'icon'],
+};
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
-// Upload/replace/reset of a faction's images. Until an image is uploaded a slot shows the built-in
-// default (today only the banner has one); "Reset to default" removes the upload again.
-export function FactionArtEditor({ factionId }: { factionId: string }) {
+// Upload/replace/reset of an entity's images (a faction's banner/logo/background, a place's
+// wide/square/icon). Until an image is uploaded a slot shows the built-in default (where there is
+// one); "Reset to default" removes the upload again.
+export function ArtEditor({ kind, id }: { kind: ArtKind; id: string }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const art = useFactionArt()[factionId];
+  const factionArt = useFactionArt();
+  const placeArt = usePlaceArt();
+  const uploaded: Record<string, string | null> | undefined =
+    kind === 'factions' ? factionArt[id] : placeArt[id];
   const [error, setError] = useState<string | null>(null);
-  const inputs = useRef<Partial<Record<FactionArtSlot, HTMLInputElement | null>>>({});
+  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['factionArt'] });
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: [kind === 'factions' ? 'factionArt' : 'placeArt'] });
   const upload = useMutation({
-    mutationFn: (args: { slot: FactionArtSlot; file: File }) =>
-      tuningApi.uploadFactionArt(factionId, args.slot, args.file),
+    mutationFn: (args: { slot: string; file: File }) =>
+      tuningApi.uploadArt(kind, id, args.slot, args.file),
     onSuccess: () => {
       setError(null);
       void refresh();
@@ -29,13 +39,18 @@ export function FactionArtEditor({ factionId }: { factionId: string }) {
     onError: (failure: Error) => setError(failureText(failure)),
   });
   const reset = useMutation({
-    mutationFn: (slot: FactionArtSlot) => tuningApi.resetFactionArt(factionId, slot),
+    mutationFn: (slot: string) => tuningApi.resetArt(kind, id, slot),
     onSuccess: () => {
       setError(null);
       void refresh();
     },
     onError: (failure: Error) => setError(failureText(failure)),
   });
+
+  const defaultOf = (slot: string): string | null => {
+    if (kind === 'locations') return placeArtUrl(id, slot as 'wide' | 'square' | 'icon');
+    return slot === 'banner' ? defaultFactionBannerUrl(id) : null;
+  };
 
   return (
     <section className="faction-art-editor-wrap" aria-label={t('tuning.art.title')}>
@@ -47,9 +62,9 @@ export function FactionArtEditor({ factionId }: { factionId: string }) {
         </p>
       )}
       <div className="faction-art-editor">
-        {SLOTS.map((slot) => {
-          const uploaded = art?.[slot] ?? null;
-          const preview = uploaded ?? (slot === 'banner' ? defaultFactionBannerUrl(factionId) : null);
+        {SLOTS[kind].map((slot) => {
+          const custom = uploaded?.[slot] ?? null;
+          const preview = custom ?? defaultOf(slot);
           return (
             <div key={slot} className="faction-art-slot" data-testid={`art-slot-${slot}`}>
               <b>{t(`tuning.art.slots.${slot}`)}</b>
@@ -61,7 +76,7 @@ export function FactionArtEditor({ factionId }: { factionId: string }) {
                   <img src={preview} alt={t(`tuning.art.slots.${slot}`)} />
                 )}
               </div>
-              <small>{uploaded === null ? t('tuning.art.usingDefault') : t('tuning.art.custom')}</small>
+              <small>{custom === null ? t('tuning.art.usingDefault') : t('tuning.art.custom')}</small>
               <input
                 ref={(node) => {
                   inputs.current[slot] = node;
@@ -80,7 +95,7 @@ export function FactionArtEditor({ factionId }: { factionId: string }) {
                 <button type="button" onClick={() => inputs.current[slot]?.click()}>
                   {t('tuning.art.upload')}
                 </button>
-                {uploaded !== null && (
+                {custom !== null && (
                   <button type="button" onClick={() => reset.mutate(slot)}>
                     {t('tuning.art.reset')}
                   </button>

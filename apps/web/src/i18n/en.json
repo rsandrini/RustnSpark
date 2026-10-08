@@ -457,7 +457,8 @@
     "outcomeValue": "Outcome: {{value}}",
     "fastOps": "Fast missions",
     "fastOpsOn": "on",
-    "fastOpsOff": "off"
+    "fastOpsOff": "off",
+    "actionFailed": "That did not work."
   },
   "tuning": {
     "connectorRules": {
@@ -750,19 +751,26 @@
       "slots": {
         "banner": "Banner",
         "logo": "Logo",
-        "background": "Background"
+        "background": "Background",
+        "wide": "Wide",
+        "square": "Square",
+        "icon": "Icon"
       },
       "slotHelp": {
         "banner": "Wide picture behind the faction's card on the selection screen.",
         "logo": "Small emblem shown next to the faction's name on badges.",
-        "background": "Large backdrop for the faction's pages."
+        "background": "Large backdrop for the faction's pages.",
+        "wide": "Wide banner behind the place on the port, board and report screens.",
+        "square": "Square picture of the place.",
+        "icon": "Small icon of the place."
       },
       "none": "No image",
       "usingDefault": "Using the built-in default",
       "custom": "Custom image",
       "upload": "Upload",
       "reset": "Reset to default"
-    }
+    },
+    "noneOption": "No part"
   },
   "factions": {
     "luna": "Luna Authority",
@@ -1010,7 +1018,8 @@
       "cargoLost": "Took the cargo",
       "found": "Found",
       "foundPart": "{{name}} ({{condition}}%)",
-      "foundScrap": "Scrap: {{name}}"
+      "foundScrap": "Scrap: {{name}}",
+      "raceTitle": "Race result — you finished #{{place}}"
     }
   },
   "transit": {

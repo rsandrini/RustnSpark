@@ -278,7 +278,11 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
         type: 'race_result',
         actors,
         magnitude: result.place,
-        race: { place: result.place, standings: result.standings },
+        race: {
+          place: result.place,
+          timeScale: input.rules.missions.time_scale,
+          standings: result.standings,
+        },
       }),
     );
     if (result.prizeShare > 0) {

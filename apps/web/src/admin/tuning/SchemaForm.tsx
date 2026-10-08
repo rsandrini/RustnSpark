@@ -15,6 +15,39 @@ const AUTO_SAVE_DEBOUNCE_MS = 1200;
 // Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
 const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
 
+/** A colour picker next to the hex code (the stored value stays plain `#rrggbb`). */
+function ColorInput({
+  id,
+  value,
+  label,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  onChange: (value: string) => void;
+}) {
+  const valid = /^#[0-9a-fA-F]{6}$/.test(value);
+  return (
+    <span className="color-input">
+      <input
+        type="color"
+        aria-label={`${label} (picker)`}
+        value={valid ? value : '#808080'}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <input
+        id={id}
+        value={value}
+        aria-label={label}
+        maxLength={7}
+        placeholder="#rrggbb"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </span>
+  );
+}
+
 /** Text input for a place's type, suggesting the kinds that already exist. */
 function LocationTypeInput({
   id,
@@ -57,6 +90,7 @@ function ReferenceSelect({
   value,
   required,
   label,
+  noneValue,
   onChange,
 }: {
   entity: string;
@@ -64,6 +98,8 @@ function ReferenceSelect({
   value: string;
   required: boolean;
   label: string;
+  /** The literal that means "no row" (offered as the first choice). */
+  noneValue?: string;
   onChange: (value: string) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -81,7 +117,7 @@ function ReferenceSelect({
     return { value: rowId, label: text !== '' && text !== rowId ? `${text} (${rowId})` : rowId };
   });
   // A stored value that no longer exists must still show, never silently blank.
-  const known = options.some((option) => option.value === value);
+  const known = options.some((option) => option.value === value) || value === noneValue;
   return (
     <select
       id={id}
@@ -90,7 +126,11 @@ function ReferenceSelect({
       aria-label={label}
       onChange={(event) => onChange(event.target.value)}
     >
-      <option value="">{t('tuning.chooseOne')}</option>
+      {noneValue === undefined ? (
+        <option value="">{t('tuning.chooseOne')}</option>
+      ) : (
+        <option value={noneValue}>{t('tuning.noneOption')}</option>
+      )}
       {!known && value !== '' && <option value={value}>{value}</option>}
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -413,6 +453,19 @@ export function SchemaForm({
           id={field.name}
           value={typeof value === 'string' ? value : ''}
           required={field.required}
+          label={getFieldLabel(field, locale)}
+          noneValue={field.referenceNone}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
+    // A faction colour: a picker plus the hex text, kept in sync.
+    if (entity === 'factions' && field.name === 'color') {
+      return (
+        <ColorInput
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
           label={getFieldLabel(field, locale)}
           onChange={(next) => handleChange(field.name, next)}
         />

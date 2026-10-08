@@ -18,6 +18,7 @@ const STATS = {
   fuelLost: 0,
   found: [],
   pirates: { stolenParts: 0, motive: null },
+  race: null,
   loot: [],
 };
 
@@ -317,6 +318,43 @@ describe('report (S10.8)', () => {
     const debrief = await screen.findByTestId('debrief');
     expect(debrief).toHaveTextContent('Parts stolen');
     expect(debrief).toHaveTextContent('0 won · 1 lost · 1 escaped · 2 drawn');
+  });
+
+  it('a race report shows the standings: place, every ship\'s speed and time, you highlighted', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              race: {
+                place: 2,
+                timeScale: 0.5,
+                standings: [
+                  { name: 'Vega Dart', mobility: 4.1, seconds: 400, you: false },
+                  { name: '', mobility: 3.2, seconds: 600, you: true },
+                  { name: 'Comet Runner', mobility: 2.4, seconds: 900, you: false },
+                ],
+              },
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const race = await screen.findByTestId('debrief-race');
+    expect(race).toHaveTextContent('you finished #2');
+    const rows = Array.from(race.querySelectorAll('tbody tr')).map((row) => row.textContent);
+    expect(rows[0]).toContain('Vega Dart');
+    expect(rows[1]).toContain('You');
+    expect(rows[1]).toContain('3.2');
+    expect(race.querySelector('tr.race-you')).not.toBeNull();
+    expect(rows[2]).toContain('Comet Runner');
   });
 
   it('never says a shield took 0 damage on a ship that never had one', async () => {

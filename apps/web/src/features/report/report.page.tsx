@@ -15,10 +15,11 @@ import type {
   ReportViewName,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { formatDuration } from '../../ui/duration';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { conditionTone, Gauge } from '../../ui/Gauge';
-import { placeArtUrl } from '../../ui/PlaceArt';
+import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
 
 const infoGlyph = 'i';
@@ -424,6 +425,7 @@ interface DebriefProps {
 // The first thing after a flight: how it ended, what it was, what it paid, and what it cost.
 // Everything here is read from the stored run (stats), never worked out on the client.
 function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
+  const placeArt = usePlaceArt();
   const { t, i18n } = useTranslation();
   const tone = outcomeTone(outcome);
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
@@ -452,7 +454,7 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
         <div
           className="debrief-art"
           aria-hidden="true"
-          style={{ backgroundImage: `url(${placeArtUrl(mission.destinationId, 'wide')})` }}
+          style={{ backgroundImage: `url(${placeArtUrl(mission.destinationId, 'wide', placeArt)})` }}
         />
       )}
       <div className="debrief-verdict">
@@ -561,6 +563,33 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
           </div>
         )}
       </dl>
+
+      {stats.race !== null && (
+        <div className="debrief-race" data-testid="debrief-race">
+          <b>{t('report.debrief.raceTitle', { place: stats.race.place })}</b>
+          <table className="mcard-race">
+            <thead>
+              <tr>
+                <th>{t('board.race.pilot')}</th>
+                <th>{t('board.race.speed')}</th>
+                <th>{t('board.race.time')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.race.standings.map((row, index) => (
+                <tr key={`${row.name}-${index}`} className={row.you ? 'race-you' : undefined}>
+                  <td>
+                    {t('board.race.rank', { place: index + 1 })}{' '}
+                    {row.you ? t('board.race.you') : row.name}
+                  </td>
+                  <td>{row.mobility}</td>
+                  <td>{formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {stats.found.length > 0 && (
         <div className="debrief-loot" data-testid="debrief-found">

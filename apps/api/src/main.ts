@@ -46,7 +46,7 @@ export function configureApp(app: INestApplication, env: EnvService): void {
   // Admin image uploads (faction art) arrive as the raw image bytes — image types only, size-capped;
   // every other content type keeps going through the JSON parser below.
   app.use(
-    '/v1/admin/tuning/factions',
+    ['/v1/admin/tuning/factions', '/v1/admin/tuning/locations'],
     raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], limit: ART_UPLOAD_LIMIT }),
   );
   app.use(json({ limit: BODY_SIZE_LIMIT }));

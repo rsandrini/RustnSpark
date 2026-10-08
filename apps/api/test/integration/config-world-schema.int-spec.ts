@@ -29,6 +29,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'isolation',
     'mood',
     'services',
+    'art',
   ],
   Route: ['id', 'nodeAId', 'nodeBId', 'distance', 'danger'],
   RouteEnvironment: ['routeId', 'environmentId', 'order'],

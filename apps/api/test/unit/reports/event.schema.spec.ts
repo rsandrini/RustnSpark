@@ -80,6 +80,7 @@ function v2Event(
   if (type === 'race_result') {
     base['race'] = {
       place: 2,
+      timeScale: 1,
       standings: [
         { name: 'Comet Runner', mobility: 3.4, seconds: 1800, you: false },
         { name: '', mobility: 3.1, seconds: 1950, you: true },

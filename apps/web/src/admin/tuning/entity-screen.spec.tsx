@@ -288,6 +288,50 @@ describe('EntityScreen', () => {
     expect(created!.data).toMatchObject({ id: 'run', factionId: 'sun' });
   });
 
+  it('environment part and a faction colour are real controls: a part select with a "no part" choice, a colour picker', async () => {
+    const envSchema = {
+      entity: 'environments',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Env id', 'pt-BR': 'ID' } },
+        { name: 'subsystemTarget', type: 'enum', enumValues: ['none', 'hull', 'engine'], required: false, description: { en: 'Targeted subsystem', 'pt-BR': 'Alvo' } },
+        { name: 'mitigatingPart', type: 'string', required: false, references: 'parts', referenceNone: 'none', description: { en: 'Part that mitigates the hazard', 'pt-BR': 'Peça' } },
+      ],
+    };
+    const factionSchema = {
+      entity: 'factions',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Faction id', 'pt-BR': 'ID' } },
+        { name: 'color', type: 'string', required: true, description: { en: 'Faction color', 'pt-BR': 'Cor' } },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/environments', () => HttpResponse.json(envSchema)),
+      http.get('/v1/admin/tuning/environments', () =>
+        HttpResponse.json([{ id: 'nebula', subsystemTarget: 'hull', mitigatingPart: 'armor_plate', active: true }]),
+      ),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json([
+          { partType: 'armor_plate', displayName: { en: 'Armor Plate', 'pt-BR': 'Placa' } },
+          { partType: 'hull', displayName: { en: 'Hull Frame', 'pt-BR': 'Casco' } },
+        ]),
+      ),
+      http.get('/v1/admin/tuning/schema/factions', () => HttpResponse.json(factionSchema)),
+      http.get('/v1/admin/tuning/factions', () => HttpResponse.json([{ id: 'luna', color: '#4a90d9', active: true }])),
+    );
+    const first = renderAt('/admin/tuning/entities/environments/nebula');
+    const part = await screen.findByRole('combobox', { name: /part that mitigates/i });
+    expect(await within(part).findByRole('option', { name: 'Armor Plate (armor_plate)' })).toBeInTheDocument();
+    expect(within(part).getByRole('option', { name: 'No part' })).toHaveValue('none');
+    expect(part).toHaveValue('armor_plate');
+    // the target subsystem is a closed list, not free text
+    expect(screen.getByRole('combobox', { name: /targeted subsystem/i })).toHaveValue('hull');
+    first.unmount();
+
+    renderAt('/admin/tuning/entities/factions/luna');
+    expect(await screen.findByLabelText('Faction color (picker)')).toHaveValue('#4a90d9');
+    expect(screen.getByRole('textbox', { name: 'Faction color' })).toHaveValue('#4a90d9');
+  });
+
   it('shows what is wrong: a summary naming each field plus the message under the field itself', async () => {
     const schema = {
       entity: 'materials',

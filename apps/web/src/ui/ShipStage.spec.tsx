@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '../i18n';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '../test/utils';
 import { ShipStage } from './ShipStage';
 
 const renderStage = (props: Parameters<typeof ShipStage>[0]) =>
-  render(
-    <I18nextProvider i18n={i18n}>
-      <ShipStage {...props} />
-    </I18nextProvider>,
-  );
+  renderWithProviders(<ShipStage {...props} />);
 
 // The ship stage shows what the server says the ship is doing: each mode has its own scene, and
 // the caption says the same in words (the scene itself is decoration).

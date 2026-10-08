@@ -209,12 +209,30 @@ export const FactionArtResponseSchema = z.object({
 });
 export type FactionArtResponse = z.infer<typeof FactionArtResponseSchema>;
 
-/** POST/DELETE /v1/admin/tuning/factions/:id/art/:slot */
-export const FactionArtChangeSchema = z.object({
-  slot: FactionArtSlotSchema,
+export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
+export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
+
+/** GET /v1/places/art: only places with at least one uploaded image appear (same rules as factions). */
+export const PlaceArtResponseSchema = z.object({
+  places: z.record(
+    z.string(),
+    z.object({
+      wide: z.string().nullable(),
+      square: z.string().nullable(),
+      icon: z.string().nullable(),
+    }),
+  ),
+});
+export type PlaceArtResponse = z.infer<typeof PlaceArtResponseSchema>;
+
+/** POST/DELETE /v1/admin/tuning/{factions|locations}/:id/art/:slot */
+export const ArtChangeSchema = z.object({
+  slot: z.string(),
   url: z.string().nullable(),
 });
-export type FactionArtChange = z.infer<typeof FactionArtChangeSchema>;
+export type ArtChange = z.infer<typeof ArtChangeSchema>;
+export const FactionArtChangeSchema = ArtChangeSchema;
+export type FactionArtChange = ArtChange;
 
 export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 
@@ -563,6 +581,17 @@ export const ReportStatsSchema = z.object({
     }),
   ),
   pirates: z.object({ stolenParts: z.number(), motive: z.string().nullable() }),
+  /** RACE missions: finishing place and every ship's time (fastest first); null on other types. */
+  race: z
+    .object({
+      place: z.number(),
+      /** displayed time = standing seconds x this (missions.time_scale at the run) */
+      timeScale: z.number(),
+      standings: z.array(
+        z.object({ name: z.string(), mobility: z.number(), seconds: z.number(), you: z.boolean() }),
+      ),
+    })
+    .nullable(),
   loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
 });
 export type ReportStats = z.infer<typeof ReportStatsSchema>;
@@ -924,6 +953,8 @@ export const EntitySchemaFieldSchema = z.object({
   configKey: z.string().optional(),
   /** Admin entity whose ids this field refers to: the form shows a select instead of free text. */
   references: z.string().optional(),
+  /** The literal stored for "no row" (e.g. 'none'): the select offers it as the first choice. */
+  referenceNone: z.string().optional(),
 });
 export type EntitySchemaField = z.infer<typeof EntitySchemaFieldSchema>;
 

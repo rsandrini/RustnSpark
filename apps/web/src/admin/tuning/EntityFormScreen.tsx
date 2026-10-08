@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
 import { cloneOf } from './entity-shared';
-import { FactionArtEditor } from './FactionArtEditor';
+import { ArtEditor } from './ArtEditor';
 import { rowId } from './EntityScreen';
 import { validationIssuesOf } from '../../api/errors';
 import type * as dto from '../../api/generated';
@@ -139,9 +139,9 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
       </nav>
       <h2>{title}</h2>
-      {entityName === 'factions' && mode === 'edit' && id !== undefined && (
-        <FactionArtEditor factionId={id} />
-      )}
+      {(entityName === 'factions' || entityName === 'locations') &&
+        mode === 'edit' &&
+        id !== undefined && <ArtEditor kind={entityName} id={id} />}
       <SchemaForm
         entity={entityName}
         rowId={mode === 'edit' ? id : undefined}

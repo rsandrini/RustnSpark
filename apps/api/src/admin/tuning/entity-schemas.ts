@@ -24,6 +24,8 @@ export interface EntitySchemaField {
   /** The entity (admin entity name) whose ids this string field refers to: the admin form
       renders a select of its rows instead of free text. */
   references?: string;
+  /** The literal stored for "no row" (e.g. 'none' for no mitigating part): the select offers it first. */
+  referenceNone?: string;
 }
 
 export interface EntitySchema {
@@ -599,7 +601,8 @@ const ENVIRONMENT_FIELDS: EntitySchemaField[] = [
   },
   {
     name: 'subsystemTarget',
-    type: 'string',
+    type: 'enum',
+    enumValues: ['none', 'electronics', 'hull', 'engine'],
     required: false,
     description: localeMap('Targeted subsystem', 'Subsistema alvo'),
   },
@@ -607,6 +610,8 @@ const ENVIRONMENT_FIELDS: EntitySchemaField[] = [
     name: 'mitigatingPart',
     type: 'string',
     required: false,
+    references: 'parts',
+    referenceNone: 'none',
     description: localeMap('Part that mitigates the hazard', 'Peça que mitiga o perigo'),
   },
 ];
@@ -685,7 +690,8 @@ const DROP_TABLE_FIELDS: EntitySchemaField[] = [
   },
   {
     name: 'source',
-    type: 'string',
+    type: 'enum',
+    enumValues: ['scavenging', 'npc_common', 'npc_elite'],
     required: true,
     description: localeMap('Drop source tag', 'Tag da fonte de drops'),
   },

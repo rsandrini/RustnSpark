@@ -457,7 +457,8 @@
     "outcomeValue": "Resultado: {{value}}",
     "fastOps": "Missões rápidas",
     "fastOpsOn": "ligadas",
-    "fastOpsOff": "desligadas"
+    "fastOpsOff": "desligadas",
+    "actionFailed": "Isso não funcionou."
   },
   "tuning": {
     "connectorRules": {
@@ -750,19 +751,26 @@
       "slots": {
         "banner": "Banner",
         "logo": "Logo",
-        "background": "Fundo"
+        "background": "Fundo",
+        "wide": "Larga",
+        "square": "Quadrada",
+        "icon": "Ícone"
       },
       "slotHelp": {
         "banner": "Imagem larga atrás do cartão da facção na tela de escolha.",
         "logo": "Emblema pequeno mostrado ao lado do nome da facção nos selos.",
-        "background": "Pano de fundo grande para as páginas da facção."
+        "background": "Pano de fundo grande para as páginas da facção.",
+        "wide": "Faixa larga atrás do lugar nas telas de porto, quadro e relatório.",
+        "square": "Imagem quadrada do lugar.",
+        "icon": "Ícone pequeno do lugar."
       },
       "none": "Sem imagem",
       "usingDefault": "Usando o padrão embutido",
       "custom": "Imagem personalizada",
       "upload": "Enviar",
       "reset": "Voltar ao padrão"
-    }
+    },
+    "noneOption": "Nenhuma peça"
   },
   "factions": {
     "luna": "Autoridade de Luna",
@@ -1010,7 +1018,8 @@
       "cargoLost": "Levaram a carga",
       "found": "Achados",
       "foundPart": "{{name}} ({{condition}}%)",
-      "foundScrap": "Sucata: {{name}}"
+      "foundScrap": "Sucata: {{name}}",
+      "raceTitle": "Resultado da corrida — você terminou em {{place}}º"
     }
   },
   "transit": {

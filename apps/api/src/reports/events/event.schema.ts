@@ -158,6 +158,7 @@ function eventMembers(
         if (type === 'race_result') {
           extras['race'] = object({
             place: num,
+            timeScale: z.number(),
             standings: z.array(
               object({
                 name: z.string(),

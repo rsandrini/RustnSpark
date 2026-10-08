@@ -537,6 +537,7 @@ export const handlers = [
 
   // Uploaded faction images (none by default: every faction shows its built-in art).
   http.get('/v1/factions/art', () => ok({ factions: {} })),
+  http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).
   http.post('/v1/admin/tuning/connector-rules/preview', () =>
@@ -1092,6 +1093,7 @@ const reportExtras = {
     fuelLost: 0,
     found: [],
     pirates: { stolenParts: 0, motive: null },
+    race: null,
     loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
   },
   mission: {

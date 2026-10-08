@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Countdown } from './Countdown';
-import { placeArtUrl } from './PlaceArt';
+import { placeArtUrl, usePlaceArt } from './PlaceArt';
 
 export type StageMode = 'idle' | 'flying' | 'scavenging' | 'repairing';
 
@@ -62,6 +62,7 @@ export function ShipStage({
   collapsed = false,
 }: ShipStageProps) {
   const { t } = useTranslation();
+  const placeArt = usePlaceArt();
 
   if (collapsed) {
     // Idle has nothing this placeholder bar would add: no countdown, and the top bar's own
@@ -93,7 +94,7 @@ export function ShipStage({
   const style =
     parked && placeId !== undefined
       ? {
-          backgroundImage: `linear-gradient(rgba(5,7,11,0.35), rgba(5,7,11,0.55)), url(${placeArtUrl(placeId, 'wide')}), url(${placeArtUrl('_default', 'wide')})`,
+          backgroundImage: `linear-gradient(rgba(5,7,11,0.35), rgba(5,7,11,0.55)), url(${placeArtUrl(placeId, 'wide', placeArt)}), url(${placeArtUrl('_default', 'wide')})`,
         }
       : undefined;
 

@@ -66,16 +66,16 @@ export const tuningApi = {
     });
   },
 
-  async uploadFactionArt(factionId: string, slot: dto.FactionArtSlot, file: Blob): Promise<dto.FactionArtChange> {
-    return client.post<dto.FactionArtChange>(
-      `/v1/admin/tuning/factions/${encodeURIComponent(factionId)}/art/${slot}`,
+  async uploadArt(kind: 'factions' | 'locations', id: string, slot: string, file: Blob): Promise<dto.ArtChange> {
+    return client.post<dto.ArtChange>(
+      `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
       file,
     );
   },
 
-  async resetFactionArt(factionId: string, slot: dto.FactionArtSlot): Promise<dto.FactionArtChange> {
-    return client.delete<dto.FactionArtChange>(
-      `/v1/admin/tuning/factions/${encodeURIComponent(factionId)}/art/${slot}`,
+  async resetArt(kind: 'factions' | 'locations', id: string, slot: string): Promise<dto.ArtChange> {
+    return client.delete<dto.ArtChange>(
+      `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
     );
   },
 

@@ -4,11 +4,11 @@ import { http, HttpResponse } from 'msw';
 import { renderWithProviders } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { FactionBadge } from '../../ui/FactionBadge';
-import { FactionArtEditor } from './FactionArtEditor';
+import { ArtEditor } from './ArtEditor';
 
-describe('FactionArtEditor', () => {
+describe('ArtEditor (factions)', () => {
   it('shows the built-in banner as the default and nothing for logo/background until uploaded', () => {
-    renderWithProviders(<FactionArtEditor factionId="luna" />);
+    renderWithProviders(<ArtEditor kind="factions" id="luna" />);
     const banner = screen.getByTestId('art-slot-banner');
     expect(within(banner).getByRole('img')).toHaveAttribute('src', '/factions/luna.wide.svg');
     expect(within(banner).getByText('Using the built-in default')).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe('FactionArtEditor', () => {
         return HttpResponse.json({ slot: params.slot, url: '/v1/art/luna-logo-abc.png' });
       }),
     );
-    renderWithProviders(<FactionArtEditor factionId="luna" />);
+    renderWithProviders(<ArtEditor kind="factions" id="luna" />);
     const file = new File([new Uint8Array([1, 2, 3, 4])], 'logo.png', { type: 'image/png' });
     expect(file.size).toBe(4);
     fireEvent.change(screen.getByTestId('art-file-logo'), { target: { files: [file] } });
@@ -49,7 +49,7 @@ describe('FactionArtEditor', () => {
         return HttpResponse.json({ slot: params.slot, url: null });
       }),
     );
-    renderWithProviders(<FactionArtEditor factionId="luna" />);
+    renderWithProviders(<ArtEditor kind="factions" id="luna" />);
     const banner = screen.getByTestId('art-slot-banner');
     await within(banner).findByText('Custom image');
     expect(within(banner).getByRole('img')).toHaveAttribute('src', '/v1/art/luna-banner-1.png');
@@ -68,5 +68,27 @@ describe('FactionArtEditor', () => {
     const { container } = renderWithProviders(<FactionBadge factionId="luna" />);
     await waitFor(() => expect(container.querySelector('img.fac-logo')).not.toBeNull());
     expect(container.querySelector('img.fac-logo')).toHaveAttribute('src', '/v1/art/luna-logo-9.png');
+  });
+
+  it('places: wide/square/icon slots default to the built-in place files and upload to the locations endpoint', async () => {
+    let seen: string | null = null;
+    server.use(
+      http.get('/v1/places/art', () =>
+        HttpResponse.json({ places: { ceres: { wide: null, square: '/v1/art/ceres-square-1.png', icon: null } } }),
+      ),
+      http.post('/v1/admin/tuning/locations/ceres/art/:slot', ({ params }) => {
+        seen = String(params.slot);
+        return HttpResponse.json({ slot: params.slot, url: '/v1/art/ceres-icon-2.png' });
+      }),
+    );
+    renderWithProviders(<ArtEditor kind="locations" id="ceres" />);
+    const wide = screen.getByTestId('art-slot-wide');
+    expect(within(wide).getByRole('img')).toHaveAttribute('src', '/places/ceres.wide.svg');
+    const square = screen.getByTestId('art-slot-square');
+    await within(square).findByText('Custom image');
+    expect(within(square).getByRole('img')).toHaveAttribute('src', '/v1/art/ceres-square-1.png');
+    const file = new File([new Uint8Array([1, 2])], 'i.png', { type: 'image/png' });
+    fireEvent.change(screen.getByTestId('art-file-icon'), { target: { files: [file] } });
+    await waitFor(() => expect(seen).toBe('icon'));
   });
 });

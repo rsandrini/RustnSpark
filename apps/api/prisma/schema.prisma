@@ -312,6 +312,8 @@ model Location {
   isolation           Float
   mood                Float
   services            Json
+  // Uploaded images {wide?, square?, icon?} -> file names in ART_DIR; absent = the built-in default.
+  art                 Json?
   faction             Faction           @relation(fields: [factionId], references: [id])
   routesA             Route[]           @relation("RouteA")
   routesB             Route[]           @relation("RouteB")

@@ -79,3 +79,20 @@ export function failureText(error: Error): string {
     ? issues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')
     : error.message;
 }
+
+/**
+ * One readable line for any failed request: the translated message for its machine code, else the
+ * field problems the server named, else the server's own text — the generic fallback only when the
+ * server said nothing useful.
+ */
+export function describeError(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  error: unknown,
+  fallback: string,
+): string {
+  if (!(error instanceof Error)) return fallback;
+  const detail = failureText(error);
+  const code = error instanceof ApiError ? error.code : undefined;
+  const useful = detail !== '' && detail !== code && !/^HTTP \d+$/.test(detail);
+  return errorText(t, error, useful ? detail : fallback);
+}
