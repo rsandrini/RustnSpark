@@ -872,23 +872,23 @@
     "fuelBar": "Fuel tank",
     "refuelHint": "Fuel is bought by the unit; a full tank costs the price shown when you confirm.",
     "scav": {
-      "what": "Send your ship to search the wreckage around {{place}} for parts other pilots left behind. It is a job like a mission: the ship is out of port while it works, and a report tells you what it found.",
-      "time": "It takes about {{minutes}} minutes, and the ship cannot be used meanwhile.",
-      "risk": "The risk comes from the place (zone {{zone}}): pirates may find you while you search, and the riskier the place, the better the finds.",
+      "what": "Search the wreckage around {{place}} for parts other pilots left behind. It is manual work at the place: the ship stays in port but is busy meanwhile, and a report tells you what was found.",
+      "time": "It takes about {{minutes}} minutes; the ship cannot be used meanwhile.",
+      "risk": "The riskier the place (zone {{zone}}), the better and rarer the finds — and pirates may find you while you search. Rare parts only turn up in dangerous places.",
       "quality": "Everything you find is USED: about {{min}}–{{max}}% condition at this place. Repair it, install it or sell it.",
-      "finds": "At {{place}} a run can find one or more parts, or nothing; a pirate-held field gives the most.",
+      "finds": "At {{place}} a search can turn up one or more parts; a pirate-held field gives the most.",
       "scrap": "Wreckage here also holds scrap: worn-out remains that sell at a fixed price at any port.",
       "field": {
         "common": "an ordinary port",
         "mission": "a mission site",
         "pirate": "a pirate-held debris field"
       },
-      "where": "It only works where your ship is docked, and each place has its own waiting time between jobs.",
+      "where": "Only where your ship is docked; each place has its own waiting time between jobs.",
       "ready": "Ready to go.",
       "nextAttempt": "Next job in",
       "title": "Scavenge the wreckage",
-      "nothing": "About {{percent}}% of runs here come back empty: the safer the place, the more often. Rare parts only turn up in dangerous places.",
-      "handicap": "Your ship is not flight-ready, so you search by hand: only {{percent}}% of the usual chance to find anything."
+      "nothing": "About {{percent}}% of searches here find nothing (the safer the place, the more often).",
+      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything."
     },
     "mine": {
       "title": "Mine the field",
