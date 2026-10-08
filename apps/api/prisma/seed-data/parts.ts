@@ -496,6 +496,7 @@ export const PARTS: SeedPart[] = [
     partHp: 20,
     batCharge: 300,
     batOutput: 80,
+    batInput: 40,
   },
   {
     partType: 'battery_small_uncommon',
@@ -517,6 +518,7 @@ export const PARTS: SeedPart[] = [
     partHp: 28,
     batCharge: 400,
     batOutput: 100,
+    batInput: 50,
   },
   {
     partType: 'battery_small_rare',
@@ -538,6 +540,7 @@ export const PARTS: SeedPart[] = [
     partHp: 36,
     batCharge: 500,
     batOutput: 130,
+    batInput: 65,
   },
   {
     partType: 'battery_small_epic',
@@ -559,6 +562,7 @@ export const PARTS: SeedPart[] = [
     partHp: 44,
     batCharge: 600,
     batOutput: 160,
+    batInput: 80,
   },
   {
     partType: 'battery_small_legendary',
@@ -580,6 +584,7 @@ export const PARTS: SeedPart[] = [
     partHp: 52,
     batCharge: 750,
     batOutput: 200,
+    batInput: 100,
   },
   {
     partType: 'battery_large',
@@ -601,7 +606,7 @@ export const PARTS: SeedPart[] = [
     partHp: 35,
     batCharge: 900,
     batOutput: 200,
-    batInput: 10,
+    batInput: 100,
   },
   {
     partType: 'battery_large_rare',
@@ -623,7 +628,7 @@ export const PARTS: SeedPart[] = [
     partHp: 44,
     batCharge: 1150,
     batOutput: 250,
-    batInput: 13,
+    batInput: 125,
   },
   {
     partType: 'battery_large_epic',
@@ -645,7 +650,7 @@ export const PARTS: SeedPart[] = [
     partHp: 56,
     batCharge: 1450,
     batOutput: 320,
-    batInput: 16,
+    batInput: 160,
   },
   {
     partType: 'battery_large_legendary',
@@ -667,7 +672,7 @@ export const PARTS: SeedPart[] = [
     partHp: 70,
     batCharge: 1800,
     batOutput: 400,
-    batInput: 20,
+    batInput: 200,
   },
   {
     partType: 'weapon_ballistic',

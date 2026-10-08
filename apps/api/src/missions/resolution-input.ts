@@ -153,7 +153,15 @@ const FULL_CONDITION = 100;
 function layeredPools(
   snapshot: DispatchSnapshot,
   rules: GameRules,
-): { hp: number; esc: number; armor: number; escRegen: number; escRegenEnergy: number } {
+): {
+  hp: number;
+  esc: number;
+  armor: number;
+  escRegen: number;
+  escRegenEnergy: number;
+  battery: number;
+  batteryRecharge: number;
+} {
   const share = (part: DispatchSnapshot['parts'][number]): number =>
     Math.max(0, part.condition) / FULL_CONDITION;
   let hp = 0;
@@ -161,8 +169,12 @@ function layeredPools(
   let armor = 0;
   let regen = 0;
   let energy = 0;
+  let battery = 0;
+  let recharge = 0;
   for (const part of snapshot.parts) {
     const s = share(part);
+    battery += part.catalog.batCharge * s;
+    recharge += part.catalog.batInput * s;
     hp += part.catalog.partHp * s;
     esc += part.catalog.esc * s;
     armor += part.catalog.bli * rules.combat.armor_pool_factor * s;
@@ -175,6 +187,9 @@ function layeredPools(
     armor,
     escRegen: regen,
     escRegenEnergy: regen > 0 ? energy / regen : 0,
+    // The batteries leave the port full.
+    battery,
+    batteryRecharge: recharge,
   };
 }
 
@@ -216,7 +231,13 @@ export function buildResolveInput(args: {
     weaponEnergyDraw,
     shieldEnergyDraw,
     ...(pools !== null
-      ? { armor: pools.armor, escRegen: pools.escRegen, escRegenEnergy: pools.escRegenEnergy }
+      ? {
+          armor: pools.armor,
+          escRegen: pools.escRegen,
+          escRegenEnergy: pools.escRegenEnergy,
+          battery: pools.battery,
+          batteryRecharge: pools.batteryRecharge,
+        }
       : {}),
     storage: snapshot.storage ?? [],
   };

@@ -24,31 +24,41 @@ export interface CombatOptions {
 interface EnergyState {
   budget: number;
   shieldPaid: boolean;
+  /** What the batteries hold now (undefined = an inexhaustible battery, the legacy behaviour). */
+  stored: number | undefined;
+  /** The budget this round started with, to see how much of it was spent. */
+  roundStart: number;
 }
 
 function energyEnabled(sheet: CombatSheet): boolean {
   return sheet.energyMode !== undefined;
 }
 
-function roundEnergyBudget(sheet: CombatSheet): number {
+/** The ship's own spare power available to combat in its mode (none in batteries-only). */
+function sparePower(sheet: CombatSheet): number {
   const mode = sheet.energyMode ?? 'OVERRIDE';
-  const battery = sheet.batOutput ?? 0;
-  const surplus = Math.max(0, sheet.energyCont ?? 0);
-  switch (mode) {
-    case 'BATTERY':
-      return battery;
-    case 'FULL':
-    case 'OVERRIDE':
-    default:
-      // OVERRIDE currently behaves like FULL because the component-shutdown
-      // mechanic it implies does not exist yet. Once it does, this branch can
-      // draw from continuous systems too.
-      return battery + surplus;
-  }
+  // OVERRIDE currently behaves like FULL because the component-shutdown mechanic it implies does
+  // not exist yet. Once it does, this branch can draw from continuous systems too.
+  return mode === 'BATTERY' ? 0 : Math.max(0, sheet.energyCont ?? 0);
+}
+
+function roundEnergyBudget(sheet: CombatSheet, stored: number | undefined): number {
+  const output = sheet.batOutput ?? 0;
+  const battery = stored === undefined ? output : Math.min(output, stored);
+  return battery + sparePower(sheet);
 }
 
 function freshEnergyState(sheet: CombatSheet): EnergyState {
-  return { budget: roundEnergyBudget(sheet), shieldPaid: false };
+  const budget = roundEnergyBudget(sheet, sheet.battery);
+  return { budget, shieldPaid: false, stored: sheet.battery, roundStart: budget };
+}
+
+/** What a round took out of the batteries: whatever the ship's spare power could not pay. */
+function drainBattery(energy: EnergyState | null, sheet: CombatSheet): void {
+  if (energy === null || energy.stored === undefined) return;
+  const spent = energy.roundStart - energy.budget;
+  const fromBattery = Math.max(0, spent - sparePower(sheet));
+  energy.stored = Math.max(0, energy.stored - fromBattery);
 }
 
 /**
@@ -103,11 +113,13 @@ export function resolveCombat(
 
     // Recompute per-round energy budgets for sides that use the mechanic.
     if (energyA !== null) {
-      energyA.budget = roundEnergyBudget(a);
+      energyA.budget = roundEnergyBudget(a, energyA.stored);
+      energyA.roundStart = energyA.budget;
       energyA.shieldPaid = false;
     }
     if (energyB !== null) {
-      energyB.budget = roundEnergyBudget(b);
+      energyB.budget = roundEnergyBudget(b, energyB.stored);
+      energyB.roundStart = energyB.budget;
       energyB.shieldPaid = false;
     }
 
@@ -235,6 +247,10 @@ export function resolveCombat(
         ...(layered ? { escAfter: isA ? escB : escA, armorAfter: isA ? armB : armA } : {}),
       });
     }
+
+    // End of the round: what the batteries gave comes off their charge.
+    drainBattery(energyA, a);
+    drainBattery(energyB, b);
   }
 
   let outcome: CombatOutcome;
@@ -256,6 +272,8 @@ export function resolveCombat(
       escB,
       ...(layeredA ? { armA } : {}),
       ...(layeredB ? { armB } : {}),
+      ...(energyA?.stored !== undefined ? { batA: energyA.stored } : {}),
+      ...(energyB?.stored !== undefined ? { batB: energyB.stored } : {}),
     },
   };
 }

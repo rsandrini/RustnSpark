@@ -42,6 +42,9 @@ export interface MissionSnapshot {
   readonly armor?: number;
   readonly escRegen?: number;
   readonly escRegenEnergy?: number;
+  /** Layered model: energy in the batteries at departure (full at the port) and their recharge per leg. */
+  readonly battery?: number;
+  readonly batteryRecharge?: number;
   /** Loose parts at dispatch (a frozen copy, D19): the only parts a pirate can take. */
   readonly storage?: readonly StoredPart[];
 }
@@ -129,6 +132,13 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           escMax: input.snapshot.esc,
           escRegen: input.snapshot.escRegen ?? 0,
           escRegenEnergy: input.snapshot.escRegenEnergy ?? 0,
+          ...(input.snapshot.battery !== undefined
+            ? {
+                battery: input.snapshot.battery,
+                batteryMax: input.snapshot.battery,
+                batteryRecharge: input.snapshot.batteryRecharge ?? 0,
+              }
+            : {}),
         }
       : {}),
   };

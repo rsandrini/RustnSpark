@@ -39,6 +39,12 @@ export interface CombatSheet {
   readonly escRegen?: number;
   /** Combat energy paid per shield point recovered (0 = free). */
   readonly escRegenEnergy?: number;
+  /**
+   * Energy stored in the batteries right now. When present the batteries are a real store: every
+   * point a round takes from them (what the ship's spare power could not pay) is gone, and a
+   * round can draw at most `batOutput` of what is left. Absent = an inexhaustible battery.
+   */
+  readonly battery?: number;
 }
 
 /** A single attack attempt (hit or miss) inside a round. */
@@ -80,5 +86,8 @@ export interface CombatResult {
     /** Layered model only: what is left of each side's armor pool. */
     readonly armA?: number;
     readonly armB?: number;
+    /** Energy left in each side's batteries (only when `battery` was given). */
+    readonly batA?: number;
+    readonly batB?: number;
   };
 }

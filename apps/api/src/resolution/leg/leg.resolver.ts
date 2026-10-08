@@ -120,6 +120,10 @@ export interface LegShipState {
   readonly escRegen?: number;
   readonly escRegenEnergy?: number;
   readonly spill?: number;
+  /** Energy in the batteries now, their size, and how much they recharge per leg from spare power. */
+  readonly battery?: number;
+  readonly batteryMax?: number;
+  readonly batteryRecharge?: number;
   readonly settled?: { readonly hp: number; readonly armor: number; readonly spill: number };
 }
 
@@ -217,6 +221,7 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
           escMax: ship.escMax ?? ship.esc,
           escRegen: ship.escRegen ?? 0,
           escRegenEnergy: ship.escRegenEnergy ?? 0,
+          ...(ship.battery !== undefined ? { battery: ship.battery } : {}),
         }
       : {}),
     pdf: ship.sheet.pdf,
@@ -366,8 +371,18 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     ...input.ship,
     parts,
     fuel,
-    // Layered model: a shield fully recovers between legs (energy is free while nobody shoots).
+    // Layered model: a shield fully recovers between legs (energy is free while nobody shoots),
+    // and any spare power the ship generates tops the batteries up a little.
     ...(input.ship.armor !== undefined ? { esc: input.ship.escMax ?? input.ship.esc } : {}),
+    ...(input.ship.battery !== undefined
+      ? {
+          battery: Math.min(
+            input.ship.batteryMax ?? input.ship.battery,
+            input.ship.battery +
+              ((input.ship.sheet.energyCont ?? 0) > 0 ? (input.ship.batteryRecharge ?? 0) : 0),
+          ),
+        }
+      : {}),
   };
   let objectIntegrity = input.objectIntegrity;
   let client = input.context.client;
@@ -570,7 +585,14 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     // fight's own events). Nothing else wears the parts in a fight.
     let combatCondition: Record<string, number> | undefined;
     if (final.armor !== undefined) {
-      ship = { ...ship, hp, esc, armor: final.armor };
+      const batteryLeft = playerIsA ? result.final.batA : result.final.batB;
+      ship = {
+        ...ship,
+        hp,
+        esc,
+        armor: final.armor,
+        ...(batteryLeft !== undefined ? { battery: batteryLeft } : {}),
+      };
       const layers = layersOf(ship);
       if (layers !== null) {
         const settled = settleLosses(ship.parts, layers, rules);
