@@ -40,6 +40,12 @@ import {
 } from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
+import {
+  applyHit,
+  environmentDamage,
+  settleLosses,
+  type DamageLayers,
+} from '../damage/layers.js';
 
 export type LegStatus =
   'completed' | 'motor_abort' | 'adrift' | 'escort_destroyed' | 'defeat_failed';
@@ -49,6 +55,8 @@ export interface PartSnapshot {
   readonly partClass: string;
   readonly providesEsc: boolean;
   readonly condition: number;
+  /** The part adds to the armor pool (so armor lost wears it down). */
+  readonly providesArmor?: boolean;
 }
 
 export interface LegRoute {
@@ -100,6 +108,19 @@ export interface LegShipState {
   readonly energyMode?: 'BATTERY' | 'FULL' | 'OVERRIDE';
   readonly weaponEnergyDraw: number;
   readonly shieldEnergyDraw: number;
+  /**
+   * Layered damage model (absent = legacy per-part wear and flat armor). `hp`/`esc` above are the
+   * hull and shield pools; these complete the picture: the armor pool, the sizes the pools
+   * started at, the shield's regeneration and what has already been written back to the parts.
+   */
+  readonly armor?: number;
+  readonly armorMax?: number;
+  readonly hpMax?: number;
+  readonly escMax?: number;
+  readonly escRegen?: number;
+  readonly escRegenEnergy?: number;
+  readonly spill?: number;
+  readonly settled?: { readonly hp: number; readonly armor: number; readonly spill: number };
 }
 
 export interface LegInput {
@@ -168,8 +189,36 @@ function applyChokeFlags(events: readonly FailureEvent[]): LegChokeFlags {
   return flags;
 }
 
+/** The ship's damage layers, or null when it plays by the legacy model. */
+function layersOf(ship: LegShipState): DamageLayers | null {
+  if (ship.armor === undefined) return null;
+  const hpMax = ship.hpMax ?? ship.hp;
+  const armorMax = ship.armorMax ?? ship.armor;
+  return {
+    hp: ship.hp,
+    esc: ship.esc,
+    armor: ship.armor,
+    spill: ship.spill ?? 0,
+    hpMax,
+    armorMax,
+    settled: ship.settled ?? { hp: hpMax, armor: armorMax, spill: 0 },
+  };
+}
+
+function conditionsOf(parts: readonly PartSnapshot[]): Record<string, number> {
+  return Object.fromEntries(parts.map((part) => [part.id, part.condition]));
+}
+
 function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
   return {
+    ...(ship.armor !== undefined
+      ? {
+          armor: ship.armor,
+          escMax: ship.escMax ?? ship.esc,
+          escRegen: ship.escRegen ?? 0,
+          escRegenEnergy: ship.escRegenEnergy ?? 0,
+        }
+      : {}),
     pdf: ship.sheet.pdf,
     bli: ship.sheet.bli,
     esc: flags.shieldOffline ? 0 : ship.esc,
@@ -317,6 +366,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     ...input.ship,
     parts,
     fuel,
+    // Layered model: a shield fully recovers between legs (energy is free while nobody shoots).
+    ...(input.ship.armor !== undefined ? { esc: input.ship.escMax ?? input.ship.esc } : {}),
   };
   let objectIntegrity = input.objectIntegrity;
   let client = input.context.client;
@@ -324,24 +375,61 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   let combatResult: LegOutcome['combatResult'] = null;
   let combatCredits = 0;
 
-  // Motor abort: fuel burned + wear still apply; no encounter, no pay path.
-  if (motorAbort) {
+  // The journey's own damage for this leg. Layered model: one hit through shield, armor and
+  // hull (written back onto the parts); legacy model: per-part ambient wear.
+  const applyEnvironment = (): void => {
+    const layers = layersOf(ship);
+    const partsBeforeWear = ship.parts;
+    if (layers !== null) {
+      const damage = environmentDamage(
+        input.route.danger,
+        input.route.env.level,
+        rules,
+        wearRng,
+        wearScaleFor(input.context.type, rules),
+      );
+      const hit = applyHit(layers, damage);
+      const settled = settleLosses(ship.parts, hit.layers, rules);
+      ship = {
+        ...ship,
+        hp: hit.layers.hp,
+        esc: hit.layers.esc,
+        armor: hit.layers.armor,
+        spill: hit.layers.spill,
+        parts: settled.parts,
+        settled: settled.settled,
+      };
+      parts = [...settled.parts];
+      events.push(
+        ...wearEvents(
+          input.index,
+          actors,
+          partsBeforeWear,
+          new Map(settled.parts.map((part) => [part.id, part.condition])),
+        ),
+      );
+      return;
+    }
     const wearMap = applyPartsWear(
-      parts,
+      ship.parts,
       input.route.danger,
       input.route.env.level,
       rules,
       wearRng,
       wearScaleFor(input.context.type, rules),
     );
-    const partsBeforeWear = parts;
-    parts = mergeConditions(parts, wearMap);
+    parts = mergeConditions(ship.parts, wearMap);
     ship = { ...ship, parts };
+    events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
+  };
+
+  // Motor abort: fuel burned + wear still apply; no encounter, no pay path.
+  if (motorAbort) {
+    applyEnvironment();
     objectIntegrity = applyIntegrityLoss(
       objectIntegrity,
       environmentIntegrityLoss(input.route.env.level, rules),
     );
-    events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
     return {
       index: input.index,
       status: 'motor_abort',
@@ -395,8 +483,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   if (encounter.combat !== null) {
     const { result, playerIsA, winner } = encounter.combat;
     const final = playerIsA
-      ? { hp: result.final.hpA, esc: result.final.escA }
-      : { hp: result.final.hpB, esc: result.final.escB };
+      ? { hp: result.final.hpA, esc: result.final.escA, armor: result.final.armA }
+      : { hp: result.final.hpB, esc: result.final.escB, armor: result.final.armB };
     const hpLost = Math.max(0, hpBefore - final.hp);
     // S9.0 / GDD §15: how the fight's damage split across the player's layers
     // (shields → armor → hull). One fight-level triple, attached to every
@@ -416,7 +504,15 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       damage: attack.damage,
       armorAbsorbed: attack.armorAbsorbed,
       shieldAbsorbed: attack.shieldAbsorbed,
-      hullDamage: attack.damage - attack.shieldAbsorbed,
+      // Layered model: the armor pool soaks real damage, so the hull only takes what is left.
+      hullDamage:
+        attack.armorAfter !== undefined
+          ? attack.damage - attack.shieldAbsorbed - attack.armorAbsorbed
+          : attack.damage - attack.shieldAbsorbed,
+      // Pools after the hit, in the player's own terms (only defender-side hits move them).
+      ...(attack.armorAfter !== undefined && (attack.attacker === 'A') !== playerIsA
+        ? { shieldAfter: attack.escAfter, armorAfter: attack.armorAfter }
+        : {}),
     }));
     let hp: number;
     let esc: number;
@@ -469,6 +565,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       esc = final.esc;
     }
 
+    // Layered model: what the fight cost in shield, armor and hull is written back onto the
+    // parts right away, so the report attributes it to the fight (their condition rides on the
+    // fight's own events). Nothing else wears the parts in a fight.
+    let combatCondition: Record<string, number> | undefined;
+    if (final.armor !== undefined) {
+      ship = { ...ship, hp, esc, armor: final.armor };
+      const layers = layersOf(ship);
+      if (layers !== null) {
+        const settled = settleLosses(ship.parts, layers, rules);
+        ship = { ...ship, parts: settled.parts, settled: settled.settled };
+        parts = [...settled.parts];
+        combatCondition = conditionsOf(parts);
+      }
+    }
+
     if (winner === 'player') {
       combatResult = 'win';
       combatCredits =
@@ -482,6 +593,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           magnitude: combatCredits,
           hp: hp - hpBefore,
           credits: combatCredits,
+          ...(combatCondition !== undefined ? { condByPart: combatCondition } : {}),
           cascade,
           rounds: combatRounds,
         }),
@@ -493,15 +605,19 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     } else if (winner === 'enemy') {
       combatResult = 'loss';
       combatCredits = -rules.economy.combat_loss_penalty;
-      const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
-      const defenseCount = countDefenseParts(parts);
-      parts = parts.map((part) => ({
-        ...part,
-        condition: applyWear(
-          part.condition,
-          partDefeatWear(part.partClass, defeatLoss, defenseCount, rules),
-        ),
-      }));
+      // Legacy model only: a lost fight wore every part directly. In the layered model the
+      // hull, armor and shield it cost were already written back above.
+      if (final.armor === undefined) {
+        const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
+        const defenseCount = countDefenseParts(parts);
+        parts = parts.map((part) => ({
+          ...part,
+          condition: applyWear(
+            part.condition,
+            partDefeatWear(part.partClass, defeatLoss, defenseCount, rules),
+          ),
+        }));
+      }
       events.push(
         missionEvent({
           leg: input.index,
@@ -566,6 +682,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
             actors: { ...actors, enemy: 'pirate' },
             magnitude: 0,
             hp: hp - hpBefore,
+            ...(combatCondition !== undefined ? { condByPart: combatCondition } : {}),
             cascade,
             rounds: combatRounds,
           }),
@@ -603,25 +720,12 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     combatResult = 'ignore';
   }
 
-  // 4. Environment wear + integrity (production per-part draws).
-  const wearMap = applyPartsWear(
-    ship.parts,
-    input.route.danger,
-    input.route.env.level,
-    rules,
-    wearRng,
-    wearScaleFor(input.context.type, rules),
-  );
-  // The event reports how much condition was lost, so it needs the parts as they were BEFORE
-  // the wear (reading them after made every leg say "0 worn" while the parts really wore down).
-  const partsBeforeWear = ship.parts;
-  parts = mergeConditions(ship.parts, wearMap);
-  ship = { ...ship, parts };
+  // 4. Environment damage + integrity.
+  applyEnvironment();
   objectIntegrity = applyIntegrityLoss(
     objectIntegrity,
     environmentIntegrityLoss(input.route.env.level, rules),
   );
-  events.push(...wearEvents(input.index, actors, partsBeforeWear, wearMap));
 
   // Escort object integrity IS the client HP share (Appendix E identity).
   if (input.context.type === 'ESCORT' && client !== null) {

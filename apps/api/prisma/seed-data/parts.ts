@@ -31,7 +31,7 @@ type SeedPart = {
   batOutput?: number;
   batInput?: number;
   /** Flags read by mission requirements: `pressurized` (passenger space), `lifeSupport`. */
-  specialProp?: { pressurized?: boolean; lifeSupport?: boolean };
+  specialProp?: { pressurized?: boolean; lifeSupport?: boolean; shieldRegen?: number };
 };
 
 export const PARTS: SeedPart[] = [
@@ -994,6 +994,7 @@ export const PARTS: SeedPart[] = [
     partHp: 25,
     esc: 14,
     energyCombat: -6,
+    specialProp: { shieldRegen: 3 },
   },
   {
     partType: 'shield_basic_rare',
@@ -1014,6 +1015,7 @@ export const PARTS: SeedPart[] = [
     partHp: 34,
     esc: 18,
     energyCombat: -5,
+    specialProp: { shieldRegen: 4 },
   },
   {
     partType: 'shield_basic_epic',
@@ -1034,6 +1036,7 @@ export const PARTS: SeedPart[] = [
     partHp: 44,
     esc: 24,
     energyCombat: -5,
+    specialProp: { shieldRegen: 5 },
   },
   {
     partType: 'shield_basic_legendary',
@@ -1054,6 +1057,7 @@ export const PARTS: SeedPart[] = [
     partHp: 56,
     esc: 32,
     energyCombat: -4,
+    specialProp: { shieldRegen: 6 },
   },
   {
     partType: 'sensor_radar',

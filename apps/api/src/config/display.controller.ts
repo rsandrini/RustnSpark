@@ -11,6 +11,8 @@ export interface DisplayResponse {
   readonly scavengeHandicap: number;
   /** Shield points a shield recovers at the start of each combat round. */
   readonly shieldRegen: number;
+  /** Damage each armor point absorbs (armor is a pool). */
+  readonly armorPoolFactor: number;
   /** Race overdrive: speed x, fuel x and the chance of overheating. */
   readonly overdrive: { readonly speed: number; readonly fuel: number; readonly risk: number };
 }
@@ -27,6 +29,7 @@ export class DisplayController {
       mobFactor: ship.mob_factor,
       scavengeHandicap: scavenging.handicap_factor,
       shieldRegen: combat.shield_regen,
+      armorPoolFactor: combat.armor_pool_factor,
       overdrive: {
         speed: race.overdrive_speed,
         fuel: race.overdrive_fuel,

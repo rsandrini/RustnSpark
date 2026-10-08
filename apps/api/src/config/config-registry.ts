@@ -101,6 +101,18 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.armor_pool_factor',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.armor_pool_factor),
+    description: {
+      en: 'Armor is a pool: every armor point is worth this much absorbed damage in a fight, after the shield and before the hull.',
+      'pt-BR': 'A blindagem é uma reserva: cada ponto de blindagem vale esta quantidade de dano absorvido numa luta, depois do escudo e antes do casco.',
+    },
+  },
+  {
     key: 'combat.shield_regen',
     group: 'combat',
     type: 'number',
@@ -478,6 +490,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: "Compensating factor on every non-DEFENSE exposed class's ambient and defeat wear, applied only while at least one DEFENSE part is installed — keeps the ship's average wear roughly where it was before this part absorbed a bigger share.",
       'pt-BR':
         'Fator de compensação no desgaste ambiente e de derrota de toda classe exposta que não seja DEFESA, aplicado só enquanto pelo menos uma peça de DEFESA estiver instalada — mantém o desgaste médio da nave próximo de onde estava antes dessa peça absorver uma fração maior.',
+    },
+  },
+  {
+    key: 'wear.environment_damage_factor',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.environment_damage_factor),
+    description: {
+      en: 'Size of the damage the journey itself deals each leg (space, radiation, debris). It goes through shield, armor and hull like a weapon hit.',
+      'pt-BR': 'Tamanho do dano que a própria viagem causa a cada trecho (espaço, radiação, detritos). Passa por escudo, blindagem e casco como um tiro.',
+    },
+  },
+  {
+    key: 'wear.hull_to_condition',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 2,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.hull_to_condition),
+    description: {
+      en: 'How much of the hull lost in a run becomes wear on every part afterwards (1 = a hull at 80% leaves all parts 20% worn).',
+      'pt-BR': 'Quanto do casco perdido numa missão vira desgaste em todas as peças depois (1 = casco a 80% deixa todas as peças 20% gastas).',
     },
   },
   {

@@ -12,6 +12,7 @@ import { validateGameRules } from '../../../src/config/game-rules.schema.js';
 const EXPECTED_KEYS: readonly string[] = [
   'admin.debug_fast_ops_seconds',
   'combat.armor_cap',
+  'combat.armor_pool_factor',
   'combat.attack_die',
   'combat.damage_die',
   'combat.dc_base',
@@ -142,6 +143,8 @@ const EXPECTED_KEYS: readonly string[] = [
   'wear.defeat_loss_min',
   'wear.defense_wear_bonus',
   'wear.env_multiplier',
+  'wear.environment_damage_factor',
+  'wear.hull_to_condition',
   'wear.mining_wear_factor',
   'wear.other_exposed_wear_factor',
   'wear.overload_max',

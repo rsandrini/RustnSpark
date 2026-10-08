@@ -265,6 +265,7 @@ function sweepCombatRules() {
     armor_cap: CB.bli_teto,
     pierce_ratio: CB.fura,
     shield_regen: CB.esc_regen,
+    armor_pool_factor: 5,
     kite_factor: CB.kite,
     first_strike_bonus: CB.inic,
     max_rounds: CB.max_rounds,

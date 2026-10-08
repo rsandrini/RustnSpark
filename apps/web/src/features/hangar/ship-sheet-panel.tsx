@@ -105,6 +105,8 @@ export function ShipSheetPanel({
     (sum, c) => sum + Math.max(0, -c.energyCont),
     0,
   );
+  // Shields recover their own points per round (the sum over the shield parts installed).
+  const shieldRegen = installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
   const combatDraw = Math.abs(sheet.energyCombat);
   // The ship's own surplus powers combat first; the batteries cover only what it cannot.
   const combatSurplus = Math.max(0, sheet.energyCont);
@@ -127,7 +129,14 @@ export function ShipSheetPanel({
         return mobilityNumber(sheetStat(sheet, 'mob', display));
       case 'esc':
         return sheet.esc > 0
-          ? t('hangar.stats.shieldValue', { pool: number(sheet.esc), regen: number(display.shieldRegen) })
+          ? t('hangar.stats.shieldValue', { pool: number(sheet.esc), regen: number(shieldRegen) })
+          : number(0);
+      case 'bli':
+        return sheet.bli > 0
+          ? t('hangar.stats.armorValue', {
+              rating: number(sheet.bli),
+              pool: number(sheet.bli * display.armorPoolFactor),
+            })
           : number(0);
       case 'structure':
         return t('hangar.stats.structureValue', {
@@ -208,7 +217,10 @@ export function ShipSheetPanel({
         <div className="sheet-headline-tile" title={t('hangar.headline.defenseHelp')}>
           <span>{t('hangar.headline.defense')}</span>
           <b>
-            {t('hangar.headline.defenseValue', { armor: number(sheet.bli), shield: number(sheet.esc) })}
+            {t('hangar.headline.defenseValue', {
+              armor: number(sheet.bli * display.armorPoolFactor),
+              shield: number(sheet.esc),
+            })}
           </b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>

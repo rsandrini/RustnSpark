@@ -24,6 +24,8 @@ export interface PartCatalog {
   batInput: number;
   pressurized: boolean;
   lifeSupport: boolean;
+  /** Shield parts: points of shield recovered per combat round (paid for with combat energy). */
+  shieldRegen?: number;
 }
 
 export interface PartInstance {

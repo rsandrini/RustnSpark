@@ -590,6 +590,7 @@ export const handlers = [
       mobFactor: 1.6,
       scavengeHandicap: 0.5,
       shieldRegen: 2,
+      armorPoolFactor: 5,
       overdrive: { speed: 1.25, fuel: 1.6, risk: 0.15 },
     })),
   http.get('/v1/places/art', () => ok({ places: {} })),

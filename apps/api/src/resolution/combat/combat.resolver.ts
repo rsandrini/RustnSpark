@@ -77,8 +77,14 @@ export function resolveCombat(
   let hpB = b.hp;
   let escA = a.esc;
   let escB = b.esc;
-  const maxEscA = a.esc;
-  const maxEscB = b.esc;
+  const maxEscA = a.escMax ?? a.esc;
+  const maxEscB = b.escMax ?? b.esc;
+  // Layered model (see CombatSheet.armor): armor is a pool, regeneration is the shield's own and
+  // costs combat energy. A side without `armor` plays by the legacy rules.
+  const layeredA = a.armor !== undefined;
+  const layeredB = b.armor !== undefined;
+  let armA = a.armor ?? 0;
+  let armB = b.armor ?? 0;
   const minA = a.hp * rules.retreat_hp_ratio;
   const minB = b.hp * rules.retreat_hp_ratio;
   const dmob = a.mob - b.mob;
@@ -95,9 +101,6 @@ export function resolveCombat(
       break;
     }
 
-    escA = Math.min(maxEscA, escA + rules.shield_regen);
-    escB = Math.min(maxEscB, escB + rules.shield_regen);
-
     // Recompute per-round energy budgets for sides that use the mechanic.
     if (energyA !== null) {
       energyA.budget = roundEnergyBudget(a);
@@ -107,6 +110,16 @@ export function resolveCombat(
       energyB.budget = roundEnergyBudget(b);
       energyB.shieldPaid = false;
     }
+
+    // Shield recovery. Legacy shields recover a flat amount for free; a layered shield recovers its
+    // own regen per round and turns combat energy into shield points to do it (no energy, no
+    // recovery).
+    escA = layeredA
+      ? regenerate(escA, maxEscA, a.escRegen ?? 0, a.escRegenEnergy ?? 0, energyA)
+      : Math.min(maxEscA, escA + rules.shield_regen);
+    escB = layeredB
+      ? regenerate(escB, maxEscB, b.escRegen ?? 0, b.escRegenEnergy ?? 0, energyB)
+      : Math.min(maxEscB, escB + rules.shield_regen);
 
     // Both draws always run (kite p may be 0; tapes still consume them).
     const aKite = Math.max(0, dmob) * rules.kite_factor > rng.float();
@@ -154,7 +167,26 @@ export function resolveCombat(
       let damage = 0;
       let armorAbsorbed = 0;
       let shieldAbsorbed = 0;
-      if (hit) {
+      const layered = isA ? layeredB : layeredA;
+      if (hit && layered) {
+        // Layered: the whole hit goes to the shield first (as much as it can take), what is left
+        // to the armor pool, and only the rest to the hull. Same single die roll as the legacy
+        // model, so the random stream is unchanged.
+        damage = Math.max(1, atk.pdf + rng.int(1, rules.damage_die));
+        if (isA) {
+          shieldAbsorbed = Math.min(escB, damage);
+          escB -= shieldAbsorbed;
+          armorAbsorbed = Math.min(armB, damage - shieldAbsorbed);
+          armB -= armorAbsorbed;
+          hpB -= damage - shieldAbsorbed - armorAbsorbed;
+        } else {
+          shieldAbsorbed = Math.min(escA, damage);
+          escA -= shieldAbsorbed;
+          armorAbsorbed = Math.min(armA, damage - shieldAbsorbed);
+          armA -= armorAbsorbed;
+          hpA -= damage - shieldAbsorbed - armorAbsorbed;
+        }
+      } else if (hit) {
         const base = atk.pdf + rng.int(1, rules.damage_die);
         const fura = atk.pdf >= rules.pierce_min_pdf ? base * rules.pierce_ratio : 0;
         const bli = Math.min(dfd.bli, rules.armor_cap);
@@ -200,6 +232,7 @@ export function resolveCombat(
         armorAbsorbed,
         shieldAbsorbed,
         hp: isA ? hpB : hpA,
+        ...(layered ? { escAfter: isA ? escB : escA, armorAfter: isA ? armB : armA } : {}),
       });
     }
   }
@@ -216,7 +249,14 @@ export function resolveCombat(
   return {
     outcome,
     rounds: events,
-    final: { hpA, hpB, escA, escB },
+    final: {
+      hpA,
+      hpB,
+      escA,
+      escB,
+      ...(layeredA ? { armA } : {}),
+      ...(layeredB ? { armB } : {}),
+    },
   };
 }
 
@@ -247,4 +287,25 @@ function payShieldEnergy(
   energy.budget -= draw;
   energy.shieldPaid = true;
   return true;
+}
+
+/**
+ * One round of layered shield recovery: up to `regen` points, never above `max`, and never more
+ * than the combat energy left can pay for (`energyPerPoint` each). With no energy state in play
+ * the recovery is free.
+ */
+function regenerate(
+  current: number,
+  max: number,
+  regen: number,
+  energyPerPoint: number,
+  energy: EnergyState | null,
+): number {
+  let points = Math.max(0, Math.min(regen, max - current));
+  if (points <= 0) return current;
+  if (energy !== null && energyPerPoint > 0) {
+    points = Math.min(points, Math.floor(energy.budget / energyPerPoint));
+    energy.budget -= points * energyPerPoint;
+  }
+  return current + points;
 }

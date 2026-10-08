@@ -39,10 +39,14 @@ export function generatePirate(
   const mobJitter = rng.pick(e.pirate_mob_jitter);
   const senJitter = rng.pick(e.pirate_sen_jitter);
 
+  const bli = Math.max(0, roundHalfEven(player.bli * strength * e.pirate_bli_ratio));
   return {
+    // Against a ship in the layered damage model the pirate is hit in layers too: its armor is a
+    // pool of the same kind (and it has no shield).
+    ...(player.armor !== undefined ? { armor: bli * rules.combat.armor_pool_factor } : {}),
     mob: Math.max(1, player.mob + mobJitter),
     pdf: Math.max(e.pirate_min_pdf, roundHalfEven(player.pdf * strength)),
-    bli: Math.max(0, roundHalfEven(player.bli * strength * e.pirate_bli_ratio)),
+    bli,
     esc: 0,
     sen: Math.max(0, player.sen + senJitter),
     hp: Math.max(e.pirate_min_hp, roundHalfEven(player.hp * strength)),

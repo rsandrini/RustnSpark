@@ -98,8 +98,12 @@ export interface MissionCombatRound {
   readonly armorAbsorbed: number;
   /** What the shield (ESC) absorbed (0 on a miss, or an empty shield). */
   readonly shieldAbsorbed: number;
-  /** What actually reached the defender's hull: damage minus shieldAbsorbed (0 on a miss). */
+  /** What actually reached the defender's hull (0 on a miss). */
   readonly hullDamage: number;
+  /** Layered model only: the player ship's shield and armor pools after this attack, so the
+      report can show how much each layer has left. */
+  readonly shieldAfter?: number;
+  readonly armorAfter?: number;
 }
 
 /** Who an event touched. `enemy` is the generated pirate (D23 — no NPC table);
@@ -254,6 +258,8 @@ export function missionEvent(input: {
             armorAbsorbed: roundInt(round.armorAbsorbed),
             shieldAbsorbed: roundInt(round.shieldAbsorbed),
             hullDamage: roundInt(round.hullDamage),
+            ...(round.shieldAfter !== undefined ? { shieldAfter: roundInt(round.shieldAfter) } : {}),
+            ...(round.armorAfter !== undefined ? { armorAfter: roundInt(round.armorAfter) } : {}),
           })),
         }
       : {}),

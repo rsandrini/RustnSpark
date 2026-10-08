@@ -243,7 +243,7 @@ describe('refuel API (S8.3)', () => {
     const player = await onboardPlayer();
     const fuelCap = await fuelCapOf(player.shipId);
     await setCredits(player.seeded.player.id, 100000);
-    await setShipFuel(player.shipId, 200);
+    await setShipFuel(player.shipId, 100);
 
     const quote = await request(httpServer(testApp.app))
       .post(`/v1/ships/${player.shipId}/refuel/quote`)
@@ -251,7 +251,7 @@ describe('refuel API (S8.3)', () => {
       .send({ mode: 'partial', amount: 150 });
     expect(quote.status).toBe(200);
     const body = quote.body as { units: number; cost: number; fuel: number; space: number };
-    expect(body).toMatchObject({ units: 150, fuel: 200, fuelCap, space: fuelCap - 200 });
+    expect(body).toMatchObject({ units: 150, fuel: 100, fuelCap, space: fuelCap - 100 });
     expect(await currentCredits(player.seeded.player.id)).toBe(100000);
 
     // More than the tank can hold is capped at the free space.
@@ -259,7 +259,7 @@ describe('refuel API (S8.3)', () => {
       .post(`/v1/ships/${player.shipId}/refuel/quote`)
       .set(auth(player.token))
       .send({ mode: 'partial', amount: fuelCap * 10 });
-    expect((capped.body as { units: number }).units).toBe(fuelCap - 200);
+    expect((capped.body as { units: number }).units).toBe(fuelCap - 100);
 
     const paid = await refuel(player.token, player.shipId, randomUUID(), {
       mode: 'partial',

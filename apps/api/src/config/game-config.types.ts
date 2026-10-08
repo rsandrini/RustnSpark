@@ -37,6 +37,7 @@ export type ConfigKey =
   | 'combat.pierce_ratio'
   | 'combat.retreat_hp_ratio'
   | 'combat.shield_regen'
+  | 'combat.armor_pool_factor'
   | 'detection.ambush_cap'
   | 'detection.ambush_per_sen_point'
   | 'economy.combat_loss_penalty'
@@ -158,6 +159,8 @@ export type ConfigKey =
   | 'wear.env_multiplier'
   | 'wear.other_exposed_wear_factor'
   | 'wear.mining_wear_factor'
+  | 'wear.environment_damage_factor'
+  | 'wear.hull_to_condition'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
@@ -201,7 +204,10 @@ export type GameRules = Readonly<{
     pierce_min_pdf: number;
     pierce_ratio: number;
     retreat_hp_ratio: number;
+    /** Shield points a shield with no regen stat of its own recovers per round (legacy shields). */
     shield_regen: number;
+    /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */
+    armor_pool_factor: number;
   }>;
   ship: Readonly<{
     mob_factor: number;
@@ -241,6 +247,10 @@ export type GameRules = Readonly<{
     other_exposed_wear_factor: number;
     /** Share of the ambient wear a MINING mission's parts take (1 = same as any other trip). */
     mining_wear_factor: number;
+    /** Size of the journey's own damage hit per leg (see `partAmbientWear` history). */
+    environment_damage_factor: number;
+    /** Share of lost hull points that becomes condition lost on every part after a run. */
+    hull_to_condition: number;
   }>;
   economy: Readonly<{
     fuel_price: number;

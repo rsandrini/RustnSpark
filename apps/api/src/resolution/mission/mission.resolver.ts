@@ -38,6 +38,10 @@ export interface MissionSnapshot {
   readonly energyMode?: LegShipState['energyMode'];
   readonly weaponEnergyDraw: LegShipState['weaponEnergyDraw'];
   readonly shieldEnergyDraw: LegShipState['shieldEnergyDraw'];
+  /** Layered damage model (see LegShipState): the armor pool and the shield's regeneration. */
+  readonly armor?: number;
+  readonly escRegen?: number;
+  readonly escRegenEnergy?: number;
   /** Loose parts at dispatch (a frozen copy, D19): the only parts a pirate can take. */
   readonly storage?: readonly StoredPart[];
 }
@@ -117,6 +121,16 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     energyMode: input.snapshot.energyMode,
     weaponEnergyDraw: input.snapshot.weaponEnergyDraw,
     shieldEnergyDraw: input.snapshot.shieldEnergyDraw,
+    ...(input.snapshot.armor !== undefined
+      ? {
+          armor: input.snapshot.armor,
+          armorMax: input.snapshot.armor,
+          hpMax: input.snapshot.hp,
+          escMax: input.snapshot.esc,
+          escRegen: input.snapshot.escRegen ?? 0,
+          escRegenEnergy: input.snapshot.escRegenEnergy ?? 0,
+        }
+      : {}),
   };
   let integrity = 100;
   let client = input.mission.client;

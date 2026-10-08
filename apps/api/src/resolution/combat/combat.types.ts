@@ -25,6 +25,20 @@ export interface CombatSheet {
   readonly weaponEnergyDraw?: number;
   /** Combat energy drawn by shields each round they absorb damage. */
   readonly shieldEnergyDraw?: number;
+  /**
+   * Layered damage model. When `armor` is present the ship is hit in layers: a hit drains the
+   * shield pool first, what is left drains the armor pool, and only what armor cannot take reaches
+   * the hull (`hp`). Absent = the legacy model (flat armor cut, then the shield, then the hull),
+   * which the validation tapes and oracles pin.
+   */
+  /** Armor pool left (damage it can still absorb). */
+  readonly armor?: number;
+  /** The most the shield can hold (regeneration stops there); defaults to the starting shield. */
+  readonly escMax?: number;
+  /** Shield points recovered at the start of each round. */
+  readonly escRegen?: number;
+  /** Combat energy paid per shield point recovered (0 = free). */
+  readonly escRegenEnergy?: number;
 }
 
 /** A single attack attempt (hit or miss) inside a round. */
@@ -50,6 +64,9 @@ export interface CombatAttackEvent {
   readonly shieldAbsorbed: number;
   /** Defender HP after this attack. */
   readonly hp: number;
+  /** Layered model only: the defender's shield and armor pools after this attack. */
+  readonly escAfter?: number;
+  readonly armorAfter?: number;
 }
 
 export interface CombatResult {
@@ -60,5 +77,8 @@ export interface CombatResult {
     readonly hpB: number;
     readonly escA: number;
     readonly escB: number;
+    /** Layered model only: what is left of each side's armor pool. */
+    readonly armA?: number;
+    readonly armB?: number;
   };
 }

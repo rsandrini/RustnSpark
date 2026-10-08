@@ -144,7 +144,8 @@
       "structureValue": "{{used}} / {{budget}}",
       "unlimited": "ilimitado",
       "routesCovered": "cobre {{covered}} de {{total}} rotas",
-      "shieldValue": "{{pool}} (+{{regen}}/rodada)"
+      "shieldValue": "{{pool}} (+{{regen}}/rodada)",
+      "armorValue": "{{rating}} (absorve {{pool}})"
     },
     "groups": {
       "combat": "Combate",
@@ -156,7 +157,7 @@
     "headline": {
       "firepower": "Poder de fogo",
       "defense": "Blindagem · Escudo",
-      "defenseHelp": "A blindagem reduz cada golpe; o escudo é uma reserva que absorve o que sobra. Veja cada atributo para saber como um golpe é dividido.",
+      "defenseHelp": "O que a nave aguenta numa luta: primeiro o escudo, depois a blindagem, depois o casco. Os números são os pontos que cada camada absorve.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
       "autonomy": "Alcance",
@@ -276,8 +277,8 @@
       "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
       "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
       "pdf": "Dano de combate de cada arma instalada.",
-      "bli": "Reduz em tanto cada golpe que acerta (um golpe sempre causa pelo menos 1), antes de o escudo ou o casco o sentirem.",
-      "esc": "Uma reserva de dano absorvido DEPOIS da blindagem e ANTES do casco: enquanto durar, o dano restante de um golpe sai do escudo em vez do casco, e só o que passa da reserva chega ao casco. Recupera alguns pontos a cada rodada de combate. Precisa de energia de combate a cada rodada: se as baterias não puderem pagar, ele não absorve nada e o golpe vai direto ao casco.",
+      "bli": "A blindagem é uma reserva: cada ponto absorve vários pontos de dano (veja o número entre parênteses). Ela pega o que o escudo não pegou, antes do casco, e se desgasta na luta.",
+      "esc": "Uma reserva de dano absorvida PRIMEIRO: pega de cada golpe o máximo que aguenta. Recupera pontos próprios a cada rodada de combate, e cada ponto recuperado custa energia de combate — sem energia, sem recuperação.",
       "sen": "Detecta emboscadas antes, reduzindo a chance de ser surpreendido num encontro.",
       "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
       "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
@@ -974,7 +975,7 @@
       "shield": "Absorvido pelo escudo",
       "armor": "Absorvido pela blindagem",
       "hp": "Dano ao casco",
-      "order": "Como um golpe é dividido: a blindagem o reduz primeiro, o escudo absorve o que sobra (até o que tiver) e só o resto chega ao casco. Escudo sem energia não absorve nada."
+      "order": "Como um golpe é dividido: o escudo pega o máximo que puder, a blindagem pega o que sobrar e só o resto chega ao casco. A própria viagem atinge da mesma forma."
     },
     "combatLog": {
       "title": "Rodada a rodada",
@@ -988,7 +989,8 @@
       "side": {
         "player": "Você",
         "enemy": "Inimigo"
-      }
+      },
+      "left": "({{value}} restantes)"
     },
     "refKind": {
       "loot": "Item",
@@ -1470,6 +1472,10 @@
       "energyCombatUse": {
         "label": "Energia usada (combate)",
         "hint": "Energia consumida por rodada de combate, tirada das baterias."
+      },
+      "shieldRegen": {
+        "label": "Recuperação do escudo",
+        "hint": "Pontos de escudo recuperados a cada rodada de combate. Cada um custa energia de combate."
       }
     },
     "summaryNone": "Peça estrutural",

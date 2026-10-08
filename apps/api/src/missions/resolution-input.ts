@@ -147,6 +147,37 @@ const RELATIONS: Record<string, FactionRelation> = {
   neutral: 'NEUTRAL',
 };
 
+const FULL_CONDITION = 100;
+
+/** Starting shield, armor and hull of a ship at its parts' current condition, and the shield's recovery. */
+function layeredPools(
+  snapshot: DispatchSnapshot,
+  rules: GameRules,
+): { hp: number; esc: number; armor: number; escRegen: number; escRegenEnergy: number } {
+  const share = (part: DispatchSnapshot['parts'][number]): number =>
+    Math.max(0, part.condition) / FULL_CONDITION;
+  let hp = 0;
+  let esc = 0;
+  let armor = 0;
+  let regen = 0;
+  let energy = 0;
+  for (const part of snapshot.parts) {
+    const s = share(part);
+    hp += part.catalog.partHp * s;
+    esc += part.catalog.esc * s;
+    armor += part.catalog.bli * rules.combat.armor_pool_factor * s;
+    regen += (part.catalog.shieldRegen ?? 0) * s;
+    if (part.catalog.esc > 0) energy += Math.abs(part.catalog.energyCombat) * s;
+  }
+  return {
+    hp,
+    esc,
+    armor,
+    escRegen: regen,
+    escRegenEnergy: regen > 0 ? energy / regen : 0,
+  };
+}
+
 export function buildResolveInput(args: {
   readonly missionId: string;
   readonly missionType: string;
@@ -167,18 +198,26 @@ export function buildResolveInput(args: {
     partClass: part.catalog.partClass,
     providesEsc: part.catalog.esc > 0,
     condition: part.condition,
+    ...(snapshot.layered === true ? { providesArmor: part.catalog.bli > 0 } : {}),
   }));
+  // Layered damage model: every pool starts at what the parts can give at their CURRENT condition
+  // (a worn ship soaks less), the shield recovers per round at its own pace and each point costs
+  // combat energy. Older stored runs (no `layered` flag) replay with the model they were run on.
+  const pools = snapshot.layered === true ? layeredPools(snapshot, rules) : null;
   const energyMode = isEnergyMode(snapshot.energyMode) ? snapshot.energyMode : undefined;
   const missionSnapshot: MissionSnapshot = {
     shipId: snapshot.shipId,
     parts: partSnaps,
     sheet,
     fuel: snapshot.fuel,
-    hp: sheet.hp,
-    esc: sheet.esc,
+    hp: pools?.hp ?? sheet.hp,
+    esc: pools?.esc ?? sheet.esc,
     energyMode,
     weaponEnergyDraw,
     shieldEnergyDraw,
+    ...(pools !== null
+      ? { armor: pools.armor, escRegen: pools.escRegen, escRegenEnergy: pools.escRegenEnergy }
+      : {}),
     storage: snapshot.storage ?? [],
   };
 

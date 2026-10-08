@@ -363,9 +363,15 @@ function CascadeDetail({
                   </td>
                   <td className={round.hit ? 'dmg-shield' : undefined}>
                     {round.hit ? round.shieldAbsorbed : '—'}
+                    {round.hit && round.shieldAfter !== undefined && (
+                      <small className="sub"> {t('report.combatLog.left', { value: round.shieldAfter })}</small>
+                    )}
                   </td>
                   <td className={round.hit ? 'dmg-armor' : undefined}>
                     {round.hit ? round.armorAbsorbed : '—'}
+                    {round.hit && round.armorAfter !== undefined && (
+                      <small className="sub"> {t('report.combatLog.left', { value: round.armorAfter })}</small>
+                    )}
                   </td>
                   <td className={round.hit ? 'dmg-hull' : undefined}>
                     {round.hit ? round.hullDamage : '—'}

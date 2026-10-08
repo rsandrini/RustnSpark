@@ -178,6 +178,25 @@ shows a certificate warning. Without `certs/server.crt` nginx serves plain HTTP 
 Flight warnings (energy shortfalls, blocked engines/weapons, no life support) no longer ground a
 ship: they weaken it (see the Ship sheet warnings). Only a ship that cannot move at all is refused.
 
+### 5.6 Damage and energy model
+
+- **Layers.** Every hit — a weapon's or the journey's own (space, radiation, debris) — goes through
+  the same layers in order: shield, armor, hull, and only then the parts. Armor is a pool
+  (`combat.armor_pool_factor` points of absorbed damage per armor point). Parts are otherwise hurt
+  only by a failed roll or an overload. After a run the losses are written back as condition lost
+  (`wear.hull_to_condition` for the hull, armor parts for armor), so damage persists until repaired.
+  `wear.environment_damage_factor` sizes the journey's hit; `wear.mining_wear_factor` eases mining.
+  Runs stored before this model (no `layered` flag) replay with the old per-part wear.
+- **Shield.** A shield part has a `shieldRegen` (in its special properties): points recovered each
+  combat round. Each recovered point is paid from combat energy (the part's `energyCombat`, spread
+  over its regen); no energy, no recovery.
+- **Energy.** The ship's own spare power (cruising power above zero) pays for combat first; batteries
+  cover only the rest, so a ship with enough generation needs no battery. The batteries-only mode
+  keeps the spare power out of combat. Solar panels give a tenth of what they used to, and most
+  parts now draw cruising power.
+- **Tanks.** Small 1×1 holds 300, medium 2×1 600, large 3×1 900 (epic/legendary tiers 1200/1500);
+  fuel never exceeds what the working tanks hold.
+
 ## 6. Operating the game
 
 | Situation | Action |

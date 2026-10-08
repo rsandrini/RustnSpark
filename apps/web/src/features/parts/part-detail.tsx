@@ -128,7 +128,7 @@ export interface StatRow {
  * ("Power generated 5" / "Power used in flight 3" / "Power used in combat 4").
  */
 export function effectRowsOf(catalog: PartCatalogStats, format: (value: number) => string): StatRow[] {
-  return EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => {
+  const rows: StatRow[] = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => {
     if (key === 'energyCont') {
       return {
         key: catalog.energyCont > 0 ? 'energyGen' : 'energyUse',
@@ -141,6 +141,10 @@ export function effectRowsOf(catalog: PartCatalogStats, format: (value: number) 
     }
     return { key, sheetKey: key, value: format(catalog[key]) };
   });
+  if ((catalog.shieldRegen ?? 0) > 0) {
+    rows.push({ key: 'shieldRegen', sheetKey: 'esc', value: format(catalog.shieldRegen ?? 0) });
+  }
+  return rows;
 }
 
 /** One line for a card: the two or three stats that define the part ("Thrust 8 · Mass 4"). */

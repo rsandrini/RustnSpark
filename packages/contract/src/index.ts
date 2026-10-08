@@ -118,6 +118,8 @@ export const PartCatalogStatsSchema = z.object({
   batInput: z.number(),
   pressurized: z.boolean(),
   lifeSupport: z.boolean(),
+  /** Shield parts: points of shield recovered per combat round. */
+  shieldRegen: z.number().optional(),
 });
 export type PartCatalogStats = z.infer<typeof PartCatalogStatsSchema>;
 
@@ -223,6 +225,7 @@ export const DisplayResponseSchema = z.object({
   mobFactor: z.number(),
   scavengeHandicap: z.number(),
   shieldRegen: z.number(),
+  armorPoolFactor: z.number(),
   overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
@@ -576,6 +579,9 @@ export const MissionCombatRoundSchema = z.object({
   armorAbsorbed: z.number(),
   shieldAbsorbed: z.number(),
   hullDamage: z.number(),
+  /** Layered model: the player ship's shield and armor left after this attack. */
+  shieldAfter: z.number().optional(),
+  armorAfter: z.number().optional(),
 });
 export type MissionCombatRound = z.infer<typeof MissionCombatRoundSchema>;
 

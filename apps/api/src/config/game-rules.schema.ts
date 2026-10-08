@@ -16,6 +16,7 @@ const combatSchema = z.object({
   pierce_ratio: z.number().min(0).max(1),
   pierce_min_pdf: z.number().int().min(0).max(50),
   shield_regen: z.number().min(0).max(20),
+  armor_pool_factor: z.number().min(0).max(50),
   kite_factor: z.number().min(0).max(1),
   first_strike_bonus: z.number().int().min(0).max(10),
   max_rounds: z.number().int().min(1).max(200),
@@ -57,6 +58,8 @@ const wearSchema = z.object({
   defense_wear_bonus: z.number().min(0).max(5),
   other_exposed_wear_factor: z.number().min(0).max(1),
   mining_wear_factor: z.number().min(0).max(1),
+  environment_damage_factor: z.number().min(0).max(50),
+  hull_to_condition: z.number().min(0).max(2),
 });
 
 const economySchema = z.object({

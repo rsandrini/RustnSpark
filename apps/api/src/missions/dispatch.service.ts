@@ -61,6 +61,8 @@ export interface DispatchSnapshot {
   readonly handicapped?: boolean;
   /** A race run with the engines pushed (more speed and fuel, a risk of overheating). */
   readonly overdrive?: boolean;
+  /** Resolved with the layered damage model (shield → armor → hull → parts). Older runs lack it. */
+  readonly layered?: boolean;
 }
 
 export interface DispatchJobData {
@@ -351,6 +353,7 @@ export class DispatchService {
         ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
         ...(handicapped ? { handicapped: true } : {}),
         ...(overdrive ? { overdrive: true } : {}),
+        layered: true,
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({

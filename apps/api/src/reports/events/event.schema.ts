@@ -144,6 +144,8 @@ function eventMembers(
                 armorAbsorbed: num,
                 shieldAbsorbed: num,
                 hullDamage: num,
+                shieldAfter: num.optional(),
+                armorAfter: num.optional(),
               }),
             )
             .optional();

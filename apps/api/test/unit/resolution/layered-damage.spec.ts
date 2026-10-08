@@ -1,0 +1,243 @@
+import { describe, expect, it } from '@jest/globals';
+import { createRng } from '../../../src/common/rng/rng.js';
+import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import type { GameRules } from '../../../src/config/game-config.types.js';
+import {
+  resolveMission,
+  type MissionInput,
+  type MissionSnapshot,
+} from '../../../src/resolution/mission/mission.resolver.js';
+import { resolveCombat } from '../../../src/resolution/combat/combat.resolver.js';
+import type { CombatSheet } from '../../../src/resolution/combat/combat.types.js';
+import {
+  applyHit,
+  environmentDamage,
+  settleLosses,
+  type DamageLayers,
+} from '../../../src/resolution/damage/layers.js';
+
+const rules: GameRules = GAME_CONFIG_DEFAULTS;
+
+const layers = (over: Partial<DamageLayers> = {}): DamageLayers => ({
+  hp: 100,
+  esc: 14,
+  armor: 20,
+  spill: 0,
+  hpMax: 100,
+  armorMax: 20,
+  settled: { hp: 100, armor: 20, spill: 0 },
+  ...over,
+});
+
+describe('applyHit: shield, then armor, then hull, then the parts', () => {
+  it('the shield takes everything it can', () => {
+    const hit = applyHit(layers(), 9);
+    expect(hit).toMatchObject({ shield: 9, armor: 0, hull: 0, spill: 0 });
+    expect(hit.layers).toMatchObject({ esc: 5, armor: 20, hp: 100 });
+  });
+
+  it('what the shield cannot take goes to armor, then to the hull', () => {
+    const hit = applyHit(layers(), 40);
+    // 14 shield + 20 armor, 6 left for the hull
+    expect(hit).toMatchObject({ shield: 14, armor: 20, hull: 6, spill: 0 });
+    expect(hit.layers).toMatchObject({ esc: 0, armor: 0, hp: 94 });
+  });
+
+  it('with no shield and no armor the hull takes it all', () => {
+    const hit = applyHit(layers({ esc: 0, armor: 0 }), 7);
+    expect(hit).toMatchObject({ shield: 0, armor: 0, hull: 7 });
+  });
+
+  it('only what the hull cannot take spills onto the parts', () => {
+    const hit = applyHit(layers({ esc: 0, armor: 0, hp: 5 }), 12);
+    expect(hit).toMatchObject({ hull: 5, spill: 7 });
+    expect(hit.layers.spill).toBe(7);
+  });
+});
+
+describe('settleLosses: damage becomes wear on the parts, evenly', () => {
+  const parts = [
+    { id: 'bridge', condition: 100 },
+    { id: 'engine', condition: 100 },
+    { id: 'plate', condition: 100, providesArmor: true },
+  ];
+
+  it('hull lost wears every part alike (nothing is spared, nothing singled out)', () => {
+    const settled = settleLosses(parts, layers({ hp: 80 }), rules);
+    const conditions = settled.parts.map((part) => part.condition);
+    // 20 of 100 hull lost, at the default half share: 10% worn, on all of them
+    expect(conditions[0]).toBeCloseTo(90);
+    expect(conditions[1]).toBeCloseTo(90);
+    expect(conditions[2]).toBeCloseTo(90);
+  });
+
+  it('armor lost wears the armor parts on top', () => {
+    const settled = settleLosses(parts, layers({ armor: 10 }), rules);
+    expect(settled.parts[0]!.condition).toBe(100);
+    expect(settled.parts[2]!.condition).toBeCloseTo(50);
+  });
+
+  it('a loss is written back once: settling again changes nothing', () => {
+    const once = settleLosses(parts, layers({ hp: 80 }), rules);
+    const twice = settleLosses(once.parts, layers({ hp: 80, settled: once.settled }), rules);
+    expect(twice.parts.map((part) => part.condition)).toEqual(
+      once.parts.map((part) => part.condition),
+    );
+  });
+
+  it('what spilled past the hull wears every part on top', () => {
+    const settled = settleLosses(parts, layers({ hp: 0, spill: 10 }), rules);
+    // 100 hull lost at half share (50%) and 10% spilled over that
+    expect(settled.parts[0]!.condition).toBeCloseTo(100 * 0.5 * 0.9);
+  });
+});
+
+describe('environmentDamage', () => {
+  it('grows with the route danger and the environment, and is eased for mining', () => {
+    const roll = (danger: number, env: number, scale = 1) =>
+      environmentDamage(danger, env, rules, createRng('env'), scale);
+    expect(roll(10, 2)).toBeGreaterThan(roll(2, 2));
+    expect(roll(6, 3)).toBeGreaterThan(roll(6, 1));
+    expect(roll(6, 2, 0.5)).toBeCloseTo(roll(6, 2) * 0.5);
+  });
+});
+
+const ship = (over: Partial<CombatSheet> = {}): CombatSheet => ({
+  pdf: 6,
+  bli: 0,
+  esc: 14,
+  sen: 4,
+  hp: 100,
+  mob: 1,
+  armor: 20,
+  escMax: 14,
+  escRegen: 3,
+  escRegenEnergy: 2,
+  ...over,
+});
+const striker: CombatSheet = { pdf: 12, bli: 0, esc: 0, sen: 9, hp: 100, mob: 1, armor: 0 };
+const quiet: GameRules['combat'] = { ...rules.combat, kite_factor: 0, retreat_hp_ratio: 0.05 };
+
+describe('layered combat', () => {
+  it('shield, then armor, then hull — and the log says how much each took', () => {
+    const result = resolveCombat(striker, ship(), quiet, createRng('layers'));
+    const hits = result.rounds.filter((round) => round.attacker === 'A' && round.damage > 0);
+    expect(hits.length).toBeGreaterThan(2);
+    for (const hit of hits) {
+      const hull = hit.damage - hit.shieldAbsorbed - hit.armorAbsorbed;
+      expect(hull).toBeGreaterThanOrEqual(0);
+      // armor only takes what the shield could not
+      if (hit.armorAbsorbed > 0) expect(hit.shieldAbsorbed).toBeLessThanOrEqual(14);
+      // the hull is only touched once armor is gone
+      if (hull > 0) expect(hit.armorAfter).toBe(0);
+    }
+    expect(result.final.armB).toBeLessThanOrEqual(20);
+  });
+
+  it('a shield recovers its own regen per round and nothing more', () => {
+    const result = resolveCombat(striker, ship({ esc: 0, escRegen: 3, escRegenEnergy: 0 }), quiet, createRng('regen'));
+    const firstHit = result.rounds.find((round) => round.attacker === 'A' && round.hit);
+    // starts empty; one round of recovery = 3 points to soak with
+    expect(firstHit?.shieldAbsorbed).toBeLessThanOrEqual(3);
+  });
+
+  it('recovery is paid in combat energy: with none to spend, the shield stays down', () => {
+    const noEnergy = ship({
+      esc: 0,
+      escRegen: 3,
+      escRegenEnergy: 2,
+      energyMode: 'BATTERY',
+      batOutput: 0,
+      energyCont: 0,
+    });
+    const result = resolveCombat(striker, noEnergy, quiet, createRng('no-energy'));
+    expect(result.final.escB).toBe(0);
+    const powered = resolveCombat(
+      striker,
+      { ...noEnergy, batOutput: 6 },
+      quiet,
+      createRng('no-energy'),
+    );
+    // 6 energy a round at 2 per point: the full 3 points come back every round
+    expect(powered.rounds.some((round) => round.shieldAbsorbed > 0)).toBe(true);
+  });
+
+  it('the old model is untouched for a ship without an armor pool', () => {
+    const legacy: CombatSheet = { pdf: 6, bli: 2, esc: 14, sen: 4, hp: 100, mob: 1 };
+    const oldStriker: CombatSheet = { pdf: 12, bli: 0, esc: 0, sen: 9, hp: 100, mob: 1 };
+    const result = resolveCombat(oldStriker, legacy, quiet, createRng('legacy'));
+    expect(result.rounds.every((round) => round.armorAfter === undefined)).toBe(true);
+  });
+});
+
+describe('a whole run in the layered model', () => {
+  const PARTS = [
+    { id: 'bridge', partClass: 'BRIDGE', providesEsc: false, condition: 100 },
+    { id: 'engine', partClass: 'ENGINE', providesEsc: false, condition: 100 },
+    { id: 'cargo', partClass: 'CARGO', providesEsc: false, condition: 100 },
+    { id: 'plate', partClass: 'DEFENSE', providesEsc: false, providesArmor: true, condition: 100 },
+  ];
+  const snap = (over: Partial<MissionSnapshot> = {}): MissionSnapshot => ({
+    shipId: 's',
+    parts: PARTS,
+    sheet: {
+      pot: 40, pdf: 0, bli: 4, esc: 0, sen: 4, crg: 10, min: 0, hp: 100, mass: 20,
+      energyCont: 0, energyCombat: 0, batCharge: 0, batOutput: 0, batInput: 0,
+      fuelCap: 1000, fuelUse: 1, structureUsed: 5, structureBudget: 60, autonomy: 0, mob: 2,
+      condition: 100,
+    },
+    fuel: 1000,
+    hp: 100,
+    esc: 0,
+    energyMode: 'FULL',
+    weaponEnergyDraw: 0,
+    shieldEnergyDraw: 0,
+    armor: 20,
+    escRegen: 0,
+    escRegenEnergy: 0,
+    ...over,
+  });
+  const trip = (danger: number): MissionInput => ({
+    id: 'm',
+    type: 'DELIVERY',
+    legs: [{ distance: 400, danger, zone: 0, env: { id: 'open', level: 2, fuelMult: 1 } }],
+    tier: 1,
+    isolation: 1,
+    factionRelation: 'neutral',
+    relation: 'NEUTRAL',
+    stance: null,
+    preset: 'CRUISE',
+    missionOwner: 'player',
+    missionForcesFlee: false,
+    objectCarried: false,
+    client: null,
+  });
+
+  it('the journey hurts every part alike: the cargo hold is not spared, the engine not singled out', () => {
+    // a route with no pirates: only the journey's own damage
+    const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
+    const out = resolveMission({ seed: 'quiet', snapshot: snap(), mission: trip(12), rules: quietRules });
+    const byId = new Map(out.parts.map((part) => [part.id, part.condition]));
+    expect(byId.get('bridge')).toBeLessThan(100);
+    // every part that is not armor loses the same share
+    expect(byId.get('engine')).toBeCloseTo(byId.get('bridge') ?? 0, 5);
+    expect(byId.get('cargo')).toBeCloseTo(byId.get('bridge') ?? 0, 5);
+    // the armor plate paid for what the armor pool took, on top
+    expect(byId.get('plate')).toBeLessThan(byId.get('bridge') ?? 0);
+  });
+
+  it('a calmer route hurts less than a dangerous one', () => {
+    const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
+    const calm = resolveMission({ seed: 'z', snapshot: snap(), mission: trip(1), rules: quietRules });
+    const rough = resolveMission({ seed: 'z', snapshot: snap(), mission: trip(14), rules: quietRules });
+    const cond = (out: typeof calm) => out.parts.find((part) => part.id === 'bridge')?.condition ?? 0;
+    expect(cond(calm)).toBeGreaterThan(cond(rough));
+  });
+
+  it('the old model is unchanged for a snapshot without pools', () => {
+    const legacy = snap();
+    const { armor: _a, escRegen: _r, escRegenEnergy: _e, ...rest } = legacy;
+    const out = resolveMission({ seed: 'old', snapshot: rest, mission: trip(6), rules });
+    expect(out.parts.length).toBe(4);
+  });
+});

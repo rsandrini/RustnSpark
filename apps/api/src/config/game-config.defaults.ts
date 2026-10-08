@@ -13,6 +13,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     pierce_ratio: 0.35,
     pierce_min_pdf: 8,
     shield_regen: 2,
+    // Armor is a pool too: each armor point is worth this much absorbed damage per fight.
+    armor_pool_factor: 5,
     kite_factor: 0.2,
     first_strike_bonus: 2,
     max_rounds: 40,
@@ -53,6 +55,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     other_exposed_wear_factor: 0.85,
     // Mining runs sit in hazardous fields for long: their ambient wear is scaled by this.
     mining_wear_factor: 0.5,
+    // The journey's own damage (space, radiation, debris) is a hit that goes through the same
+    // layers as a weapon: shield, armor, hull, then parts. This scales its size.
+    environment_damage_factor: 3,
+    // Hull points a run lost become condition lost on every part, at this share (1 = a hull at
+    // 80% leaves every part 20% worn).
+    hull_to_condition: 0.5,
   },
   economy: {
     fuel_price: 1.5,
