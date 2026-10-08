@@ -118,7 +118,13 @@ async function rawRequest<T>(
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
-  if (body !== undefined) {
+  // A Blob (an image upload) goes out as itself with its own type; everything else is JSON.
+  const binary = typeof Blob !== 'undefined' && body instanceof Blob;
+  const payload: BodyInit | undefined =
+    body === undefined ? undefined : binary ? await body.arrayBuffer() : JSON.stringify(body);
+  if (binary) {
+    headers['Content-Type'] = body.type;
+  } else if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
   }
   if (accessToken) {
@@ -131,7 +137,7 @@ async function rawRequest<T>(
   const res = await fetch(path, {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: payload,
     credentials: 'same-origin',
   });
 

@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
-import { RelationsMatrix, cloneOf, type FactionRow } from './entity-shared';
+import { cloneOf } from './entity-shared';
+import { FactionArtEditor } from './FactionArtEditor';
 import { rowId } from './EntityScreen';
 import { validationIssuesOf } from '../../api/errors';
 import type * as dto from '../../api/generated';
@@ -46,7 +47,6 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     setIssues(found);
     setFormErrors(found.length > 0 ? [] : [error.message]);
   };
-  const [relations, setRelations] = useState<Record<string, string> | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,12 +60,6 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     queryFn: () => tuningApi.listEntities(entityName),
     enabled: !!entityName,
   });
-  const { data: factions } = useQuery<FactionRow[]>({
-    queryKey: ['tuning', 'entities', 'factions'],
-    queryFn: () => tuningApi.listEntities<FactionRow>('factions'),
-    enabled: entityName === 'factions' && mode === 'edit',
-  });
-
   const createMutation = useMutation({
     mutationFn: (body: dto.CreateEntityRequest) => tuningApi.createEntity(entityName, body),
     onSuccess: () => {
@@ -145,15 +139,12 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
       </nav>
       <h2>{title}</h2>
-      {entityName === 'factions' && mode === 'edit' && source !== undefined && factions && (
-        <RelationsMatrix
-          factions={factions}
-          currentId={String(source.id)}
-          relations={relations ?? (source.relations as Record<string, string>) ?? {}}
-          onChange={setRelations}
-        />
+      {entityName === 'factions' && mode === 'edit' && id !== undefined && (
+        <FactionArtEditor factionId={id} />
       )}
       <SchemaForm
+        entity={entityName}
+        rowId={mode === 'edit' ? id : undefined}
         key={`${mode}-${id ?? 'new'}`}
         fields={visibleFields}
         sections={SECTIONS[entityName]}

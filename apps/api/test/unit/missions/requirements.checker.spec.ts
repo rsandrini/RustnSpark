@@ -305,4 +305,12 @@ describe('S6.3 — full requirement checklist (met and unmet), round 10', () => 
       }
     }
   });
+
+  it('RACE needs the entry mobility: the starter ship (mob 2) is below the 2.5 default, a fast one is in', () => {
+    expect(codes(check('RACE', buildInstalled(STARTER)))).toEqual(['RACE_SPEED']);
+    expect(check('RACE', buildInstalled(RESCUE_OK)).eligible).toBe(true);
+    // a template can raise (or lower) its own entry minimum
+    expect(check('RACE', buildInstalled(RESCUE_OK), { minMobility: 99 }).eligible).toBe(false);
+    expect(check('RACE', buildInstalled(STARTER), { minMobility: 1 }).eligible).toBe(true);
+  });
 });

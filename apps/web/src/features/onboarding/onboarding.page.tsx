@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
-import { factionCardStyle } from '../../ui/factionArt';
+import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 
@@ -35,6 +35,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const { refresh } = useAuthContext();
   const [selected, setSelected] = useState<PlayableFaction | null>(null);
+  const factionArt = useFactionArt();
 
   const onboarding = useMutation({
     mutationFn: (faction: PlayableFaction) => client.post('/v1/players/me/onboarding', { faction }),
@@ -67,7 +68,7 @@ export function OnboardingPage() {
           <label
             key={faction}
             className={`faction-card${selected === faction ? ' on' : ''}`}
-            style={factionCardStyle(faction)}
+            style={factionCardStyle(faction, factionArt)}
           >
             <input
               type="radio"

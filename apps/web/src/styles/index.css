@@ -4364,3 +4364,117 @@ svg .block.dir-blocked {
 .admin-shell td.col-center {
   text-align: center;
 }
+
+/* Race offers: the rival field table. */
+.mcard-race table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.mcard-race th,
+.mcard-race td {
+  padding: 3px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.mcard-race .race-you td {
+  color: var(--spark);
+  font-weight: 700;
+}
+
+/* Structured editors for what used to be raw JSON. */
+.field-help {
+  display: block;
+  margin: 2px 0 6px;
+  color: var(--mut);
+}
+.structured-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.flags-editor,
+.structured-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.flag-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.flag-row small {
+  display: block;
+  color: var(--mut);
+}
+.admin-shell .flag-row input[type='checkbox'],
+.admin-shell .choice-options input[type='checkbox'] {
+  width: auto;
+}
+.choice-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px 10px;
+}
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.structured-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kv-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.advanced-json summary {
+  cursor: pointer;
+  color: var(--mut);
+}
+.advanced-json textarea {
+  width: 100%;
+  font-family: monospace;
+}
+
+.fac-logo {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  vertical-align: -3px;
+  object-fit: contain;
+}
+.faction-art-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 10px 0 18px;
+}
+.faction-art-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.faction-art-preview {
+  min-height: 90px;
+  max-height: 140px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--panel2) center / cover no-repeat;
+}
+.faction-art-preview img {
+  max-width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+}

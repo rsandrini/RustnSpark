@@ -14,6 +14,7 @@ export type ConfigGroup =
   | 'missions'
   | 'onboarding'
   | 'parts'
+  | 'race'
   | 'rescue'
   | 'scavenging'
   | 'ship'
@@ -103,6 +104,15 @@ export type ConfigKey =
   | 'onboarding.starter_parts'
   | 'parts.restart_condition_max'
   | 'parts.starter_condition'
+  | 'race.competitors_max'
+  | 'race.competitors_min'
+  | 'race.min_mobility'
+  | 'race.prize_share_1'
+  | 'race.prize_share_2'
+  | 'race.prize_share_3'
+  | 'race.reference_mob'
+  | 'race.speed_spread'
+  | 'race.time_jitter'
   | 'rescue.deadline_factor_max'
   | 'rescue.deadline_factor_min'
   | 'rescue.reference_mob'
@@ -294,6 +304,23 @@ export type GameRules = Readonly<{
     /** An independent mining job at a minable location (round 10): like a scavenging job,
         fixed duration scaled by `missions.time_scale`, same place in and out. */
     job_duration_seconds: number;
+  }>;
+  /** RACE missions: rival ships and how the finishing place pays. */
+  race: Readonly<{
+    competitors_min: number;
+    competitors_max: number;
+    /** Entry minimum: the ship must be at least this fast to line up on the grid. */
+    min_mobility: number;
+    /** The rivals' average speed (mobility) the field is drawn around. */
+    reference_mob: number;
+    /** How far a rival's speed strays from the reference (0.35 = ±35%). */
+    speed_spread: number;
+    /** Per-ship luck on the day: finish time varies ±this share. */
+    time_jitter: number;
+    /** Share of the base reward for 1st, 2nd and 3rd place (4th and below: nothing). */
+    prize_share_1: number;
+    prize_share_2: number;
+    prize_share_3: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;

@@ -188,6 +188,34 @@ export type ShipClassType = z.infer<typeof ShipClassTypeSchema>;
 export const ShipStatusSchema = z.enum(['IN_PORT', 'ON_MISSION', 'ADRIFT']);
 export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 
+// ---------------------------------------------------------------------------------------------
+// Faction art (admin-uploadable images; the static files are the defaults)
+// ---------------------------------------------------------------------------------------------
+
+export const FactionArtSlotSchema = z.enum(['banner', 'logo', 'background']);
+export type FactionArtSlot = z.infer<typeof FactionArtSlotSchema>;
+
+/** GET /v1/factions/art: only factions with at least one uploaded image appear; a null slot (or an
+    absent faction) means "use the built-in default". Values are served URLs (`/v1/art/<file>`). */
+export const FactionArtResponseSchema = z.object({
+  factions: z.record(
+    z.string(),
+    z.object({
+      banner: z.string().nullable(),
+      logo: z.string().nullable(),
+      background: z.string().nullable(),
+    }),
+  ),
+});
+export type FactionArtResponse = z.infer<typeof FactionArtResponseSchema>;
+
+/** POST/DELETE /v1/admin/tuning/factions/:id/art/:slot */
+export const FactionArtChangeSchema = z.object({
+  slot: FactionArtSlotSchema,
+  url: z.string().nullable(),
+});
+export type FactionArtChange = z.infer<typeof FactionArtChangeSchema>;
+
 export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 
 export const EnergyModeSchema = z.enum(['BATTERY', 'FULL', 'OVERRIDE']);
@@ -270,6 +298,7 @@ export const MissionTypeSchema = z.enum([
   'RESCUE',
   'TRAVEL',
   'SCAVENGE',
+  'RACE',
 ]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
@@ -379,6 +408,17 @@ export const OfferInfoSchema = z.object({
     .nullable(),
   /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
   requirements: z.array(RequirementCheckSchema),
+  /** Race offers: the rival ships (speed + time over this route), the entry minimum and the prize
+      shares for 1st/2nd/3rd (of the winner's board figure's base). null on every other type. */
+  race: z
+    .object({
+      rivals: z.array(
+        z.object({ name: z.string(), mobility: z.number(), durationSeconds: z.number() }),
+      ),
+      minMobility: z.number(),
+      prizeShares: z.array(z.number()),
+    })
+    .nullable(),
 });
 export type OfferInfo = z.infer<typeof OfferInfoSchema>;
 

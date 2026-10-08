@@ -168,6 +168,8 @@ enum MissionType {
   // A timed search of the wreckage around a port: starts and ends in the same place, no reward,
   // finds used parts or scrap when it resolves (never on a board).
   SCAVENGE
+  // A race against generated rival ships (3-5): needs a fast ship, pays by finishing place.
+  RACE
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union

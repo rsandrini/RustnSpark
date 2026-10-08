@@ -66,6 +66,19 @@ export const tuningApi = {
     });
   },
 
+  async uploadFactionArt(factionId: string, slot: dto.FactionArtSlot, file: Blob): Promise<dto.FactionArtChange> {
+    return client.post<dto.FactionArtChange>(
+      `/v1/admin/tuning/factions/${encodeURIComponent(factionId)}/art/${slot}`,
+      file,
+    );
+  },
+
+  async resetFactionArt(factionId: string, slot: dto.FactionArtSlot): Promise<dto.FactionArtChange> {
+    return client.delete<dto.FactionArtChange>(
+      `/v1/admin/tuning/factions/${encodeURIComponent(factionId)}/art/${slot}`,
+    );
+  },
+
   /** The server's own enumeration + sample generations for a connector rules payload. */
   async previewConnectorRules(body: {
     rules: unknown;

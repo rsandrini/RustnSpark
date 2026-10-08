@@ -3,6 +3,7 @@ import type { EscapePreset } from '../resolution/encounter/escape.resolver.js';
 import type { FactionRelation, Stance } from '../resolution/encounter/encounter-policy.js';
 import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
 import type { ScavengeContext } from '../resolution/scavenge/scavenge.resolver.js';
+import type { RaceCompetitor } from '../resolution/race/race.resolver.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
@@ -40,6 +41,24 @@ export interface ResolutionContext {
   readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
   readonly scavenge?: ScavengeContext;
+  /** RACE only: the rivals generated with the offer, frozen with the run. */
+  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
+}
+
+/** The rival ships of a RACE offer, as stored in its cargo (`cargo.race.competitors`). */
+export function parseCompetitors(cargo: Record<string, unknown>): RaceCompetitor[] {
+  const race = cargo['race'];
+  const raw =
+    typeof race === 'object' && race !== null ? (race as { competitors?: unknown }).competitors : [];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (rival): rival is RaceCompetitor =>
+      typeof rival === 'object' &&
+      rival !== null &&
+      typeof (rival as RaceCompetitor).id === 'string' &&
+      typeof (rival as RaceCompetitor).name === 'string' &&
+      typeof (rival as RaceCompetitor).mobility === 'number',
+  );
 }
 
 export function relationOf(
@@ -101,6 +120,7 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
     ...(source.scavenge !== undefined && source.scavenge !== null
       ? { scavenge: source.scavenge }
       : {}),
+    ...(source.type === 'RACE' ? { race: { competitors: parseCompetitors(cargo) } } : {}),
     ...(cargo['contracted'] === true &&
     materialId !== undefined &&
     typeof cargo['quantity'] === 'number'
@@ -190,6 +210,7 @@ export function buildResolveInput(args: {
       : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
+    ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }

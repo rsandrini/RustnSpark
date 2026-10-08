@@ -17,6 +17,8 @@ export interface MissionCardProps {
   fuelHave?: number;
   /** Tank size, to draw the fuel-aboard bar the trip's cost is carved out of. */
   fuelCap?: number;
+  /** The viewer's ship speed, to rank it against a race's rivals. */
+  shipMobility?: number;
   mine: boolean;
   actions: ReactNode;
 }
@@ -29,6 +31,7 @@ export function MissionCard({
   destination,
   fuelHave,
   fuelCap,
+  shipMobility,
   mine,
   actions,
 }: MissionCardProps) {
@@ -98,6 +101,16 @@ export function MissionCard({
                 material: pickLocalized(info.material.name, i18n.language),
               })}
         </p>
+      )}
+
+      {info.race !== null && (
+        <RaceField
+          race={info.race}
+          reward={offer.reward}
+          shipMobility={shipMobility}
+          yourSeconds={info.estimate?.durationSeconds ?? null}
+          money={money}
+        />
       )}
 
       <dl className="mcard-facts">
@@ -206,5 +219,73 @@ export function MissionCard({
 
       <footer className="mcard-actions">{actions}</footer>
     </article>
+  );
+}
+
+// A race offer's grid: every rival's speed and time over this route, with the viewer's own ship
+// ranked among them (same speed -> time formula the server resolves with), plus the prize per place.
+function RaceField({
+  race,
+  reward,
+  shipMobility,
+  yourSeconds,
+  money,
+}: {
+  race: NonNullable<MissionOffer['info']['race']>;
+  reward: number;
+  shipMobility: number | undefined;
+  yourSeconds: number | null;
+  money: (value: number) => string;
+}) {
+  const { t } = useTranslation();
+  const rows = [
+    ...race.rivals.map((rival) => ({
+      key: rival.name,
+      name: rival.name,
+      mobility: rival.mobility,
+      seconds: rival.durationSeconds,
+      you: false,
+    })),
+    {
+      key: 'you',
+      name: t('board.race.you'),
+      mobility: shipMobility ?? null,
+      seconds: yourSeconds,
+      you: true,
+    },
+  ].sort((a, b) => (a.seconds ?? Infinity) - (b.seconds ?? Infinity));
+  const topShare = race.prizeShares[0] ?? 1;
+  return (
+    <section className="mcard-race" aria-label={t('board.race.title')} data-testid="race-field">
+      <b>{t('board.race.title')}</b>
+      <table>
+        <thead>
+          <tr>
+            <th>{t('board.race.pilot')}</th>
+            <th>{t('board.race.speed')}</th>
+            <th>{t('board.race.time')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={row.key} className={row.you ? 'race-you' : undefined}>
+              <td>
+                {t('board.race.rank', { place: index + 1 })} {row.name}
+              </td>
+              <td>{row.mobility === null ? '—' : row.mobility}</td>
+              <td>{row.seconds === null ? '—' : formatDuration(row.seconds, t)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <small className="sub">
+        {t('board.race.entry', { mobility: race.minMobility })}{' '}
+        {race.prizeShares
+          .map((share, index) =>
+            t('board.race.prize', { place: index + 1, amount: money(Math.round((reward * share) / topShare)) }),
+          )
+          .join(' · ')}
+      </small>
+    </section>
   );
 }

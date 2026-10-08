@@ -140,6 +140,17 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     attempts_per_stop: 10,
     job_duration_seconds: 300,
   },
+  race: {
+    competitors_min: 3,
+    competitors_max: 5,
+    min_mobility: 2.5,
+    reference_mob: 3,
+    speed_spread: 0.35,
+    time_jitter: 0.08,
+    prize_share_1: 1.6,
+    prize_share_2: 0.8,
+    prize_share_3: 0.4,
+  },
   rescue: {
     reference_mob: 3,
     deadline_factor_min: 1.25,

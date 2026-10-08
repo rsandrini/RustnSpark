@@ -591,7 +591,178 @@
       "fixThese_other": "Fix {{count}} problems before saving:",
       "separator": ": "
     },
-    "chooseOne": "Choose…"
+    "chooseOne": "Choose…",
+    "help": {
+      "parts": {
+        "partType": "The part's permanent code (used by saves and the catalog). Lowercase with underscores; it cannot be changed after creation.",
+        "displayName": "What players see in menus, the market and reports, in both languages.",
+        "description": "The short blurb on the part's card and popup, in both languages.",
+        "partClass": "What the part does for the ship. Bridge is required, engines move it, weapons/defense fight, cargo carries, and so on. Engines and weapons also have a facing (see connector rules).",
+        "rarity": "How rare the part is: sets its colour, how often it appears in shops and drops, and which ship formats it can unlock.",
+        "w": "Width in grid cells.",
+        "h": "Height in grid cells.",
+        "mass": "Weight in tonnes. Heavier ships are slower (mobility = thrust ÷ mass).",
+        "structureCost": "How much of the ship's structure budget this part uses. Bridges use a negative number: they PROVIDE the budget.",
+        "basePrice": "The shop price of a brand-new part in credits, before location and condition adjustments.",
+        "scrapValue": "What the part is worth as scrap when it is broken beyond use.",
+        "partHp": "Hit points of this part itself, used when parts take damage.",
+        "pot": "Potential output: engine thrust. Divided by the ship's total mass it gives mobility.",
+        "pdf": "Point defense fire: the part's firepower in combat.",
+        "bli": "Build integrity: armor that cuts damage taken.",
+        "esc": "Escape/shield rating: absorbs damage before it reaches the armor and hull.",
+        "sen": "Sensor rating: how well the ship detects ambushes and enemies.",
+        "crg": "Cargo capacity this part adds.",
+        "min": "Mining output: needed for mining missions and jobs.",
+        "energyCont": "Continuous energy: positive generates power, negative draws it all the time. The ship's total must stay at or above zero to fly.",
+        "energyCombat": "Energy drawn per combat round by this part (negative) — batteries must cover it.",
+        "fuelCap": "Fuel tank capacity this part adds.",
+        "fuelUse": "Fuel an engine burns per 100 distance (empty for parts that do not burn fuel; ion engines use 0).",
+        "batCharge": "How much energy this battery stores for combat.",
+        "batOutput": "How much energy this battery can deliver each combat round.",
+        "batInput": "How fast this battery recharges.",
+        "specialProp": "Special abilities the part grants (passenger space, life support).",
+        "connectorRules": "How the ports of a NEW part of this type are generated. The result is fixed on the part forever; changing the rules only affects parts made afterwards."
+      },
+      "materials": {
+        "id": "The material's permanent code.",
+        "displayName": "Name shown to players, both languages.",
+        "description": "Short description, both languages.",
+        "rarity": "How rare the ore is: drives how hard it is to find when mining.",
+        "basePrice": "What the material sells for at a typical port (before location and mood)."
+      },
+      "factions": {
+        "id": "The faction's permanent code. Art files and missions are tied to it.",
+        "displayName": "Name shown to players, both languages.",
+        "description": "The faction's pitch on the selection screen, both languages.",
+        "color": "The faction colour (hex, like #4a90d9) used on badges and the map.",
+        "playable": "Whether new players can choose this faction at the start. Off for NPC factions such as pirates.",
+        "relations": "How this faction treats each other faction. Hostile ones attack on sight; allies leave you alone; it also changes prices there.",
+        "starterKitHint": "Optional starter-kit suggestion for the faction (leave empty unless you know the format)."
+      },
+      "locations": {
+        "id": "The place's permanent code. Art files are tied to it.",
+        "displayName": "Name shown to players, both languages.",
+        "description": "Short description of the place, both languages.",
+        "type": "What kind of place it is (port, shipyard, outpost…). Mission templates use it to decide where they can be offered.",
+        "x": "Map position, horizontal.",
+        "y": "Map position, vertical.",
+        "zone": "Danger zone of the place (0 = safe core, higher = more dangerous). Routes take the riskier end.",
+        "factionId": "The faction that controls the place: sets prices and how you are treated.",
+        "isolation": "Price multiplier for being remote (fuel, repairs, parts): 1 = normal, above 1 = more expensive.",
+        "mood": "Local price mood: below 1 is cheaper, above 1 is dearer.",
+        "services": "What the player can do here: buy parts, sell, repair, take missions, passengers."
+      },
+      "routes": {
+        "id": "The route's permanent code.",
+        "nodeAId": "One end of the route.",
+        "nodeBId": "The other end (the pair must be unique and ordered).",
+        "distance": "Length of the route: sets travel time and fuel burned.",
+        "danger": "How dangerous the route is: raises encounter chances and rewards."
+      },
+      "environments": {
+        "id": "The environment's permanent code.",
+        "displayName": "Name shown to players, both languages.",
+        "description": "What this environment is like, both languages.",
+        "level": "Hazard level: how much wear the environment causes on a leg.",
+        "fuelMult": "Multiplier on fuel burned while flying through it.",
+        "subsystemTarget": "Which ship subsystem this environment strains.",
+        "mitigatingPart": "A part type that protects against it."
+      },
+      "mission-templates": {
+        "id": "The template's permanent code.",
+        "displayName": "Mission title shown on the board, both languages.",
+        "description": "The brief shown on the board, both languages.",
+        "type": "What kind of mission it is. Each type has its own rules for requirements, encounters and pay (Race: compete against rival ships for a prize by finishing place).",
+        "factionId": "The faction that offers this mission.",
+        "requirements": "Where the mission can be offered: allowed location types and factions, plus optional ship needs.",
+        "rewardCalc": "Extra reward parameters (leave empty for the standard formula).",
+        "deadlineCalc": "Extra deadline parameters (leave empty for the standard rules).",
+        "encounterPolicy": "How encounters during this mission behave."
+      },
+      "drop-tables": {
+        "id": "The table's permanent code.",
+        "source": "What activity rolls on this table (for example scavenging).",
+        "tiers": "The chance of each rarity tier turning up. Chances must add up to 100%."
+      },
+      "ship-formats": {
+        "id": "The format's permanent code.",
+        "displayName": "Name shown to players, both languages.",
+        "description": "Short description, both languages.",
+        "cells": "The buildable cells of the ship's yard. The bridge sits at the starred cell.",
+        "cellTarget": "A soft target for the number of cells: shown while drawing, never enforced.",
+        "minRarity": "The lowest bridge rarity that unlocks this format."
+      }
+    },
+    "structured": {
+      "advanced": "Advanced (raw JSON)",
+      "default": "default",
+      "anyOk": "None chosen = anywhere allowed",
+      "noParams": "No extra parameters — the standard formula is used.",
+      "paramName": "Parameter name",
+      "addParam": "Add parameter",
+      "tier": "Tier",
+      "chancePercent": "Chance in percent",
+      "percentSign": "%",
+      "addTier": "Add tier",
+      "tierTotal": "Total: {{total}}% (must be 100%)",
+      "services": {
+        "buy": "Buy parts",
+        "buyHelp": "Players can buy parts here.",
+        "sell": "Sell parts",
+        "sellHelp": "Players can sell parts and materials here.",
+        "repair": "Repair",
+        "repairHelp": "The repair shop is open here.",
+        "missions": "Missions",
+        "missionsHelp": "The mission board lists offers from here.",
+        "passengers": "Passengers",
+        "passengersHelp": "Transport and passenger jobs start here."
+      },
+      "special": {
+        "pressurized": "Pressurized cabin",
+        "pressurizedHelp": "Counts as passenger space (needed for transport missions).",
+        "lifeSupport": "Life support",
+        "lifeSupportHelp": "Keeps passengers alive (needed together with a cabin)."
+      },
+      "policy": {
+        "missionForcesFlee": "Always flee",
+        "missionForcesFleeHelp": "The ship runs from every encounter on this mission instead of fighting.",
+        "preset": "Escape preset",
+        "missionOwner": "Mission owner",
+        "owner": {
+          "player": "The player",
+          "enemy": "An enemy"
+        }
+      },
+      "requirements": {
+        "originTypes": "Offered at these kinds of places",
+        "originFactions": "Offered by places of these factions",
+        "cargo": "Cargo needed",
+        "cargoHelp": "Minimum cargo capacity the ship needs.",
+        "speed": "Speed needed",
+        "speedHelp": "Minimum mobility (rescue missions).",
+        "minMobility": "Race entry speed",
+        "minMobilityHelp": "Minimum mobility to enter a race (default: the Race config)."
+      }
+    },
+    "art": {
+      "title": "Images",
+      "help": "PNG, JPEG, WebP or SVG up to 1.5 MB. Until you upload one, the built-in default is used.",
+      "slots": {
+        "banner": "Banner",
+        "logo": "Logo",
+        "background": "Background"
+      },
+      "slotHelp": {
+        "banner": "Wide picture behind the faction's card on the selection screen.",
+        "logo": "Small emblem shown next to the faction's name on badges.",
+        "background": "Large backdrop for the faction's pages."
+      },
+      "none": "No image",
+      "usingDefault": "Using the built-in default",
+      "custom": "Custom image",
+      "upload": "Upload",
+      "reset": "Reset to default"
+    }
   },
   "factions": {
     "luna": "Luna Authority",
@@ -905,7 +1076,8 @@
       "MINING": "Mining",
       "RESCUE": "Rescue",
       "TRAVEL": "Travel",
-      "SCAVENGE": "Scavenging"
+      "SCAVENGE": "Scavenging",
+      "RACE": "Race"
     },
     "status": {
       "AVAILABLE": "Open",
@@ -939,7 +1111,8 @@
       "WEAPONS": "At least one installed weapon",
       "MIN_MOBILITY": "Mobility above the escort minimum",
       "MINER": "A mining rig installed",
-      "SPEED": "Mobility above the rescue reference speed"
+      "SPEED": "Mobility above the rescue reference speed",
+      "RACE_SPEED": "Ship speed (mobility) is below this race's entry minimum."
     },
     "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",
@@ -960,11 +1133,22 @@
       "ESCORT": "at least one weapon and good mobility to keep up.",
       "MINING": "a Mining Rig and cargo space for the ore.",
       "RESCUE": "a fast ship (mobility) and room for the survivors.",
-      "TRAVEL": "nothing special: fuel for the trip."
+      "TRAVEL": "nothing special: fuel for the trip.",
+      "RACE": "a fast ship: it must beat the entry speed, and the faster the better."
     },
     "mining": {
       "contracted": "Contract: mine {{quantity}} × {{material}}. It pays only if you bring the full amount.",
       "free": "Mine {{material}}: you keep what you dig up and sell it at a port."
+    },
+    "race": {
+      "title": "The field",
+      "pilot": "Pilot",
+      "speed": "Speed",
+      "time": "Time",
+      "you": "You",
+      "rank": "{{place}}.",
+      "entry": "Entry: speed {{mobility}} or more. Prizes:",
+      "prize": "{{place}}º {{amount}}"
     }
   },
   "map": {

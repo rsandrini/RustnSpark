@@ -20,7 +20,10 @@ export function missionReward(
     (peak, leg) => ((leg.danger ?? 0) > peak ? (leg.danger ?? 0) : peak),
     0,
   );
+  // A race's board figure is the winner's prize (place 1); the real payout follows the place.
+  const topPrize = row.type === 'RACE' ? rules.race.prize_share_1 : 1;
   return Math.round(
-    rewardBase({ tier, danger: maxDanger, distance: totalDistance, missionType: row.type }, rules),
+    rewardBase({ tier, danger: maxDanger, distance: totalDistance, missionType: row.type }, rules) *
+      topPrize,
   );
 }

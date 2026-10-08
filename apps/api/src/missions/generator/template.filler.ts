@@ -4,6 +4,7 @@ import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
+import { generateCompetitors } from '../../resolution/race/race.resolver.js';
 
 // Board offer lifetime: the prototype board shows offers expiring in 6–40 minutes
 // (prototypes/quadro-missoes-esboco.html); TTL is drawn per mission inside that window.
@@ -355,7 +356,14 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const legs: LegRoute[] =
     template.type === 'RESCUE' ? [...outbound, ...[...outbound].reverse()] : outbound;
 
-  const cargo = template.type === 'MINING' ? miningCargo(rng, world.materials, rules) : {};
+  // A race's rivals are drawn with the offer and frozen in its cargo: the board shows who you would
+  // race, and the resolution plays against exactly those ships.
+  const cargo =
+    template.type === 'MINING'
+      ? miningCargo(rng, world.materials, rules)
+      : template.type === 'RACE'
+        ? { race: { competitors: generateCompetitors(rng.child('race'), rules) } }
+        : {};
 
   let deadlineAt: Date | null = null;
   if (template.type === 'RESCUE') {
@@ -384,7 +392,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
         missionType: template.type,
       },
       rules,
-    ),
+    ) * (template.type === 'RACE' ? rules.race.prize_share_1 : 1),
   );
 
   return {

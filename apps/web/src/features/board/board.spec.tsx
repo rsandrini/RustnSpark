@@ -255,6 +255,7 @@ describe('board (S10.6)', () => {
                 estimate: { durationSeconds: 100, fuelNeeded: 8 },
                 material: null,
                 requirements: [],
+                race: null,
               },
             },
           ],
@@ -275,6 +276,77 @@ describe('board (S10.6)', () => {
     const fuelRow = document.querySelector<HTMLElement>('.mcard-fuel')!;
     expect(fuelRow).not.toBeNull();
     expect(within(fuelRow).getByText('Fuel needed')).toBeInTheDocument();
+  });
+
+  it('shows a race offer\'s field: every rival\'s speed and time, you ranked among them, and the prizes', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'race-1',
+              templateId: 'race_luna',
+              type: 'RACE',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'gate',
+              legs: [],
+              cargo: {},
+              reward: 1600,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-race',
+              version: 1,
+              rewardEstimate: 1600,
+              eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'Luna Grand Prix', 'pt-BR': 'Grande Prêmio da Luna' },
+                description: { en: 'Race the field.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 600,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 300, fuelNeeded: 8 },
+                material: null,
+                requirements: [{ code: 'RACE_SPEED', message: 'too slow', met: true }],
+                race: {
+                  rivals: [
+                    { name: 'Comet Runner', mobility: 2.4, durationSeconds: 700 },
+                    { name: 'Vega Dart', mobility: 4.1, durationSeconds: 410 },
+                    { name: 'Halo Sprint', mobility: 3.1, durationSeconds: 540 },
+                  ],
+                  minMobility: 2.5,
+                  prizeShares: [1.6, 0.8, 0.4],
+                },
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    const field = await screen.findByTestId('race-field');
+    const rows = within(field).getAllByRole('row').slice(1);
+    // fastest first; "You" (mobility 2, 300s via the estimate) slots in by its own time
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('You'),
+      expect.stringContaining('Vega Dart'),
+      expect.stringContaining('Halo Sprint'),
+      expect.stringContaining('Comet Runner'),
+    ]);
+    expect(within(field).getByText('4.1')).toBeInTheDocument();
+    expect(within(field).getByText(/Entry: speed 2\.5 or more/)).toBeInTheDocument();
+    expect(within(field).getByText(/1º 1,600 ¢/)).toBeInTheDocument();
+    expect(within(field).getByText(/2º 800 ¢/)).toBeInTheDocument();
+    expect(document.querySelector('.mcard-type')).toHaveTextContent('Race');
+    expect(screen.getByRole('button', { name: 'Race' })).toBeInTheDocument(); // the type filter chip
   });
 
   it("labels the player's private start-safe mission (D43) and no shared offer", async () => {
@@ -314,6 +386,7 @@ describe('board (S10.6)', () => {
                 estimate: { durationSeconds: 120, fuelNeeded: 4 },
                 material: null,
                 requirements: [],
+                race: null,
               },
             },
           ],

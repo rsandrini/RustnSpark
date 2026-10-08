@@ -535,6 +535,9 @@ export const handlers = [
 
   http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
+  // Uploaded faction images (none by default: every faction shows its built-in art).
+  http.get('/v1/factions/art', () => ok({ factions: {} })),
+
   // Default for the admin connector rules editor's live preview (specs override it per test).
   http.post('/v1/admin/tuning/connector-rules/preview', () =>
     ok({ problem: null, combos: [], samples: [] }),
@@ -1266,6 +1269,7 @@ const boardOffer = (
     estimate: { durationSeconds: 300, fuelNeeded: 8 },
     material: null,
     requirements: [],
+    race: null,
     ...infoOverride,
   },
   ...over,

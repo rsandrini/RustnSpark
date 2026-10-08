@@ -43,6 +43,42 @@ const TEMPLATES: {
     requirements: { originFactions: ['explorers'], originTypes: ['outpost', 'frontier'] },
   },
   {
+    id: 'race_luna',
+    displayName: { en: 'Luna Grand Prix', 'pt-BR': 'Grande Prêmio da Luna' },
+    description: {
+      en: 'Race a field of rival ships to a Luna-controlled port. Fast ships only; the prize follows your finishing place.',
+      'pt-BR':
+        'Dispute uma corrida contra naves rivais até um porto controlado pela Luna. Só naves rápidas; o prêmio segue a sua colocação.',
+    },
+    type: 'RACE',
+    factionId: 'luna',
+    requirements: { originFactions: ['luna'], originTypes: ['port', 'shipyard'] },
+  },
+  {
+    id: 'race_sun',
+    displayName: { en: 'Sun Sprint', 'pt-BR': 'Corrida Solar' },
+    description: {
+      en: 'A sprint across Sun space against rival pilots. Place in the top three to get paid.',
+      'pt-BR':
+        'Uma corrida pelo espaço do Sol contra pilotos rivais. Chegue entre os três primeiros para receber.',
+    },
+    type: 'RACE',
+    factionId: 'sun',
+    requirements: { originFactions: ['sun'], originTypes: ['port', 'garrison'] },
+  },
+  {
+    id: 'race_explorers',
+    displayName: { en: 'Deep Run', 'pt-BR': 'Corrida do Abismo' },
+    description: {
+      en: 'A long, dangerous run through the deep against the Explorers best racers.',
+      'pt-BR':
+        'Uma corrida longa e perigosa pelo abismo contra os melhores pilotos dos Exploradores.',
+    },
+    type: 'RACE',
+    factionId: 'explorers',
+    requirements: { originFactions: ['explorers'], originTypes: ['outpost', 'frontier'] },
+  },
+  {
     id: 'transport_luna',
     displayName: { en: 'Luna Transport', 'pt-BR': 'Transporte da Luna' },
     description: {

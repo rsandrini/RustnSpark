@@ -124,6 +124,7 @@ const MISSION_TYPE_VALUES = [
   'MINING',
   'RESCUE',
   'TRAVEL',
+  'RACE',
   'SCAVENGE',
 ];
 

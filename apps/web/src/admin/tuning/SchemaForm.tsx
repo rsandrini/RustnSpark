@@ -5,6 +5,7 @@ import type * as dto from '../../api/generated';
 import { ConnectorRulesEditor, type ConnectorRules } from './ConnectorRulesEditor';
 import { GridCellsEditor } from './GridCellsEditor';
 import { tuningApi } from './tuning.api';
+import { STRUCTURED_EDITORS } from './StructuredEditors';
 import { pickLocalized } from '../../i18n/localized';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
@@ -13,6 +14,41 @@ const AUTO_SAVE_DEBOUNCE_MS = 1200;
 
 // Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
 const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
+
+/** Text input for a place's type, suggesting the kinds that already exist. */
+function LocationTypeInput({
+  id,
+  value,
+  label,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  onChange: (value: string) => void;
+}) {
+  const { data: rows } = useQuery<Record<string, unknown>[]>({
+    queryKey: ['tuning', 'entities', 'locations'],
+    queryFn: () => tuningApi.listEntities('locations'),
+  });
+  const known = [...new Set((rows ?? []).map((row) => String(row.type)))].sort();
+  return (
+    <>
+      <input
+        id={id}
+        list={`${id}-types`}
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <datalist id={`${id}-types`}>
+        {known.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
+    </>
+  );
+}
 
 /** A select of another entity's rows (a foreign key), labelled by their localized name. */
 function ReferenceSelect({
@@ -78,6 +114,10 @@ export interface FormSection {
 }
 
 interface SchemaFormProps {
+  /** The admin entity being edited (picks structured editors and help text per field). */
+  entity?: string;
+  /** The row's own id, for editors that must leave it out (a faction's relations). */
+  rowId?: string;
   fields: dto.EntitySchemaField[];
   sections?: readonly FormSection[];
   initialData?: Record<string, unknown>;
@@ -150,6 +190,8 @@ function stringifyForInput(value: unknown): string {
 }
 
 export function SchemaForm({
+  entity,
+  rowId,
   fields,
   sections,
   initialData = {},
@@ -314,6 +356,30 @@ export function SchemaForm({
       );
     }
 
+    const Structured =
+      entity === undefined ? undefined : STRUCTURED_EDITORS[`${entity}.${field.name}`];
+    if (Structured !== undefined) {
+      return (
+        <Structured
+          value={value}
+          rowId={rowId}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
+    // A place type is free text with the known types suggested (a new kind of place is allowed).
+    if (entity === 'locations' && field.name === 'type') {
+      return (
+        <LocationTypeInput
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
+          label={getFieldLabel(field, locale)}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
     if (field.type === 'json') {
       return (
         <textarea
@@ -409,6 +475,12 @@ export function SchemaForm({
     issuesByField.set(name, [...(issuesByField.get(name) ?? []), readable(issue.message)]);
   }
 
+  // What the field means, in plain words (tuning.help.<entity>.<field>); empty when none is written.
+  const helpFor = (field: dto.EntitySchemaField): string =>
+    entity === undefined
+      ? ''
+      : t(`tuning.help.${entity}.${field.name}`, { defaultValue: '' });
+
   const renderField = (field: dto.EntitySchemaField) => {
     const wide =
       field.type === 'locale-map' ||
@@ -425,6 +497,7 @@ export function SchemaForm({
             </span>
           )}
         </label>
+        {helpFor(field) !== '' && <small className="field-help">{helpFor(field)}</small>}
         {renderInput(field)}
         {(issuesByField.get(field.name) ?? []).map((message) => (
           <small key={message} className="field-error" role="alert">

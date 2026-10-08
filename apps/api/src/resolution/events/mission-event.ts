@@ -30,6 +30,7 @@ export const MISSION_EVENT_TYPES = [
   'mission_payout',
   'pirate_demand',
   'scavenge_find',
+  'race_result',
   'pvp_encounter',
   'mining',
   'mining_paid',
@@ -150,6 +151,16 @@ export interface MissionEvent {
   readonly motive?: 'cargo' | 'parts' | 'territory';
   /** v2, `pirate_demand` only: instance ids of the storage parts taken. */
   readonly stolen?: readonly string[];
+  /** v2, `race_result` only: the finishing place and everyone's time (fastest first). */
+  readonly race?: {
+    readonly place: number;
+    readonly standings: readonly {
+      readonly name: string;
+      readonly mobility: number;
+      readonly seconds: number;
+      readonly you: boolean;
+    }[];
+  };
   /** v2, `scavenge_find` only: what the search turned up. */
   readonly found?: {
     readonly kind: 'part' | 'scrap';
@@ -198,6 +209,7 @@ export function missionEvent(input: {
   motive?: 'cargo' | 'parts' | 'territory';
   stolen?: readonly string[];
   found?: { kind: 'part' | 'scrap'; partType: string; condition: number };
+  race?: MissionEvent['race'];
 }): MissionEvent {
   return {
     leg: input.leg,
@@ -244,6 +256,22 @@ export function missionEvent(input: {
     ...(input.fuelLost !== undefined ? { fuelLost: roundInt(input.fuelLost) } : {}),
     ...(input.motive !== undefined ? { motive: input.motive } : {}),
     ...(input.stolen !== undefined ? { stolen: [...input.stolen] } : {}),
+    ...(input.race !== undefined
+      ? {
+          race: {
+            place: roundInt(input.race.place),
+            standings: input.race.standings.map((standing) => ({
+              name: standing.name,
+              // two decimals are meaningful for a speed, but the stored log must round-trip
+              // exactly through jsonb, so speeds are kept in hundredths as integers elsewhere;
+              // here they are plain numbers rounded to 2 places (exactly representable on read)
+              mobility: Math.round(standing.mobility * 100) / 100,
+              seconds: roundInt(standing.seconds),
+              you: standing.you,
+            })),
+          },
+        }
+      : {}),
     ...(input.found !== undefined
       ? {
           found: {
