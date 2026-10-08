@@ -9,6 +9,7 @@ import type { MissionInput, MissionSnapshot } from '../resolution/mission/missio
 import type { InstalledPart } from '../parts/part.types.js';
 import { combatEnergyDraw } from '../ships/combat-energy.js';
 import { isEnergyMode } from '../ships/energy-mode.types.js';
+import { powerPartOf } from '../resolution/power/power.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { shipTier } from '../ships/ship-tier.js';
 import type { DispatchSnapshot } from './dispatch.service.js';
@@ -213,7 +214,12 @@ export function buildResolveInput(args: {
     partClass: part.catalog.partClass,
     providesEsc: part.catalog.esc > 0,
     condition: part.condition,
-    ...(snapshot.layered === true ? { providesArmor: part.catalog.bli > 0 } : {}),
+    ...(snapshot.layered === true
+      ? {
+          providesArmor: part.catalog.bli > 0,
+          power: powerPartOf(part.id, part.catalog, rules.power.idle_demand),
+        }
+      : {}),
   }));
   // Layered damage model: every pool starts at what the parts can give at their CURRENT condition
   // (a worn ship soaks less), the shield recovers per round at its own pace and each point costs

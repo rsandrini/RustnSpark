@@ -74,6 +74,7 @@ describe('hashGameRules', () => {
       failure: GAME_CONFIG_DEFAULTS.failure,
       integrity: GAME_CONFIG_DEFAULTS.integrity,
       mining: GAME_CONFIG_DEFAULTS.mining,
+      power: GAME_CONFIG_DEFAULTS.power,
       race: GAME_CONFIG_DEFAULTS.race,
       rescue: GAME_CONFIG_DEFAULTS.rescue,
       escort: GAME_CONFIG_DEFAULTS.escort,

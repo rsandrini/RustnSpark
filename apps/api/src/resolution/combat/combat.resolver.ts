@@ -126,11 +126,20 @@ export function resolveCombat(
     // Shield recovery. Legacy shields recover a flat amount for free; a layered shield recovers its
     // own regen per round and turns combat energy into shield points to do it (no energy, no
     // recovery).
+    // A shield starved of power may not recover at all this round.
+    const aShieldUp =
+      a.shieldPower === undefined || a.shieldPower >= 1 || rng.float() < a.shieldPower;
+    const bShieldUp =
+      b.shieldPower === undefined || b.shieldPower >= 1 || rng.float() < b.shieldPower;
     escA = layeredA
-      ? regenerate(escA, maxEscA, a.escRegen ?? 0, a.escRegenEnergy ?? 0, energyA)
+      ? aShieldUp
+        ? regenerate(escA, maxEscA, a.escRegen ?? 0, a.escRegenEnergy ?? 0, energyA)
+        : escA
       : Math.min(maxEscA, escA + rules.shield_regen);
     escB = layeredB
-      ? regenerate(escB, maxEscB, b.escRegen ?? 0, b.escRegenEnergy ?? 0, energyB)
+      ? bShieldUp
+        ? regenerate(escB, maxEscB, b.escRegen ?? 0, b.escRegenEnergy ?? 0, energyB)
+        : escB
       : Math.min(maxEscB, escB + rules.shield_regen);
 
     // Both draws always run (kite p may be 0; tapes still consume them).
@@ -153,6 +162,11 @@ export function resolveCombat(
       const atk = isA ? a : b;
       const dfd = isA ? b : a;
       const atkEnergy = isA ? energyA : energyB;
+
+      // A weapon starved of power may fail to fire: the shot simply does not happen.
+      if (atk.weaponPower !== undefined && atk.weaponPower < 1 && rng.float() >= atk.weaponPower) {
+        continue;
+      }
 
       // Energy-gated weapons: no budget means the attack simply does not happen.
       if (atkEnergy !== null) {

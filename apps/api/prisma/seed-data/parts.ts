@@ -31,7 +31,13 @@ type SeedPart = {
   batOutput?: number;
   batInput?: number;
   /** Flags read by mission requirements: `pressurized` (passenger space), `lifeSupport`. */
-  specialProp?: { pressurized?: boolean; lifeSupport?: boolean; shieldRegen?: number };
+  specialProp?: {
+    pressurized?: boolean;
+    lifeSupport?: boolean;
+    shieldRegen?: number;
+    /** Power a context system (weapon, shield, mining rig) keeps drawing while idle (default 1). */
+    idlePower?: number;
+  };
 };
 
 export const PARTS: SeedPart[] = [
@@ -485,7 +491,7 @@ export const PARTS: SeedPart[] = [
         'Guarda energia para o combate. Escudos e lasers consomem dela durante a luta, e se ela não cobre a demanda a nave não pode voar. Pequena e barata.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'COMMON',
     w: 1,
     h: 1,
@@ -507,7 +513,7 @@ export const PARTS: SeedPart[] = [
         'Um armazenamento de energia de combate mais eficiente. Cabe no mesmo espaço 1×1 de uma bateria pequena, mas guarda mais carga e saída custando menos estrutura.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'UNCOMMON',
     w: 1,
     h: 1,
@@ -529,7 +535,7 @@ export const PARTS: SeedPart[] = [
         'Empacotamento avançado de células dobra a densidade de carga de uma bateria pequena básica. Mais leve e mais barata em estrutura que modelos de tiers inferiores.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'RARE',
     w: 1,
     h: 1,
@@ -551,7 +557,7 @@ export const PARTS: SeedPart[] = [
         'Um minúsculo banco de capacitores que guarda o dobro da carga de uma bateria pequena básica. Cabe num quadro ultraleve e custa pouca estrutura.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'EPIC',
     w: 1,
     h: 1,
@@ -573,7 +579,7 @@ export const PARTS: SeedPart[] = [
         'Uma célula de energia quase mítica. Sua carcaça 1×1 supera a maioria das baterias grandes e custa quase nada em estrutura ou massa.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'LEGENDARY',
     w: 1,
     h: 1,
@@ -595,7 +601,7 @@ export const PARTS: SeedPart[] = [
         'Um grande estoque de energia para construções famintas por energia (lasers mais escudo). Muito mais carga e saída que a bateria pequena, mas pesada e ocupa um bloco 1×2.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'UNCOMMON',
     w: 1,
     h: 2,
@@ -617,7 +623,7 @@ export const PARTS: SeedPart[] = [
         'Uma bateria grande reforçada com células mais densas. Guarda mais carga e recarrega mais rápido enquanto reduz massa e custo de estrutura.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'RARE',
     w: 1,
     h: 2,
@@ -639,7 +645,7 @@ export const PARTS: SeedPart[] = [
         'Uma bateria grande de alta qualidade para armas de energia e escudos de classe capital. Dobra a carga de uma bateria grande básica com um quadro mais leve.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'EPIC',
     w: 1,
     h: 2,
@@ -661,7 +667,7 @@ export const PARTS: SeedPart[] = [
         'Um reservatório de energia lendário. Seu quadro 1×2 guarda carga suficiente para alimentar uma nave de guerra, mas pesa e custa estrutura como uma peça de tier médio.',
     },
     partClass: 'BATTERY',
-    energyCont: -1,
+    energyCont: 0,
     rarity: 'LEGENDARY',
     w: 1,
     h: 2,
@@ -790,6 +796,7 @@ export const PARTS: SeedPart[] = [
     partHp: 22,
     pdf: 4,
     energyCombat: -5,
+    specialProp: { idlePower: 2 },
   },
   {
     partType: 'weapon_missile',

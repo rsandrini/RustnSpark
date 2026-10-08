@@ -39,6 +39,7 @@ import {
   defeatWear,
 } from '../wear/wear.calculator.js';
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
+import { allocatePower, successChance, type PowerPart } from '../power/power.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
 import {
   applyHit,
@@ -57,6 +58,8 @@ export interface PartSnapshot {
   readonly condition: number;
   /** The part adds to the armor pool (so armor lost wears it down). */
   readonly providesArmor?: boolean;
+  /** What the part gives to or takes from the ship's power (layered model). */
+  readonly power?: PowerPart;
 }
 
 export interface LegRoute {
@@ -120,6 +123,8 @@ export interface LegShipState {
   readonly escRegen?: number;
   readonly escRegenEnergy?: number;
   readonly spill?: number;
+  /** Engines generate this share of their power this leg (a failed tank pump makes them struggle). */
+  readonly engineFactor?: number;
   /** Energy in the batteries now, their size, and how much they recharge per leg from spare power. */
   readonly battery?: number;
   readonly batteryMax?: number;
@@ -213,8 +218,27 @@ function conditionsOf(parts: readonly PartSnapshot[]): Record<string, number> {
   return Object.fromEntries(parts.map((part) => [part.id, part.condition]));
 }
 
-function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
+/** How the ship's power sharing shows up in a fight: sensors, weapons and shield by what they get. */
+function combatPowerFor(
+  ship: LegShipState,
+  rules: GameRules,
+): { sen: number; weaponPower?: number; shieldPower?: number } {
+  const powerParts = ship.parts.flatMap((part) => (part.power ? [part.power] : []));
+  if (ship.armor === undefined || powerParts.length === 0) return { sen: ship.sheet.sen };
+  const state = allocatePower(powerParts, 'combat', rules, ship.engineFactor ?? 1);
   return {
+    sen: ship.sheet.sen * successChance(state.byKind.sensor, rules),
+    weaponPower: successChance(state.byKind.weapon, rules),
+    shieldPower: successChance(state.byKind.shield, rules),
+  };
+}
+
+function combatSheetFor(ship: LegShipState, flags: LegChokeFlags, rules: GameRules): CombatSheet {
+  const power = combatPowerFor(ship, rules);
+  return {
+    ...(power.weaponPower !== undefined
+      ? { weaponPower: power.weaponPower, shieldPower: power.shieldPower ?? 1 }
+      : {}),
     ...(ship.armor !== undefined
       ? {
           armor: ship.armor,
@@ -227,7 +251,7 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags): CombatSheet {
     pdf: ship.sheet.pdf,
     bli: ship.sheet.bli,
     esc: flags.shieldOffline ? 0 : ship.esc,
-    sen: ship.sheet.sen,
+    sen: power.sen,
     hp: ship.hp,
     mob: ship.sheet.mob,
     energyMode: ship.energyMode,
@@ -262,11 +286,31 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   // Tank burns raw units (sim fuel_gasto), not the credit-denominated fuelCost —
   // charging the priced figure to the tank drained it fuel_price× too fast and
   // double-spent the same units against the wallet.
-  const fuelBurned = fuelUnits({
+  const baseBurn = fuelUnits({
     fuelUse: input.ship.sheet.fuelUse,
     distance: input.route.distance,
     envFuelMult: input.route.env.fuelMult,
   });
+
+  // Power sharing (layered model). The tank pump rolls to push fuel this leg: if it fails, the
+  // engines struggle (they generate less, which starves the rest further) and the leg wastes fuel.
+  // Resolved once per leg, so a bad leg can only get a bounded amount worse.
+  const powerRng = rng.child('power');
+  const powerParts = input.ship.parts.flatMap((part) => (part.power ? [part.power] : []));
+  const layeredPower = input.ship.armor !== undefined && powerParts.length > 0;
+  const powerSituation = input.context.mining !== null ? 'mining' : 'cruise';
+  let engineFactor = 1;
+  let wastedFuel = 0;
+  let cruisePower = layeredPower ? allocatePower(powerParts, powerSituation, rules) : null;
+  if (cruisePower !== null && powerParts.some((part) => part.kind === 'pump')) {
+    const chance = successChance(cruisePower.byKind.pump, rules);
+    if (chance < 1 && powerRng.float() >= chance) {
+      engineFactor = rules.power.pump_engine_factor;
+      cruisePower = allocatePower(powerParts, powerSituation, rules, engineFactor);
+      wastedFuel = baseBurn * (rules.power.pump_fuel_factor - 1);
+    }
+  }
+  const fuelBurned = baseBurn + wastedFuel;
 
   // 1. Fuel gate — exhausted before the leg starts → adrift, not death.
   if (fuelBurned > input.ship.fuel) {
@@ -367,10 +411,25 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   );
 
   const chokeFlags = applyChokeFlags(chokeEvents);
+  if (wastedFuel > 0) {
+    events.push(
+      missionEvent({
+        leg: input.index,
+        category: 'failure',
+        type: 'tank',
+        actors,
+        magnitude: 0,
+        consequence: 'fuel_leak',
+        fuelLost: wastedFuel,
+      }),
+    );
+  }
+
   let ship: LegShipState = {
     ...input.ship,
     parts,
     fuel,
+    ...(engineFactor < 1 ? { engineFactor } : {}),
     // Layered model: a shield fully recovers between legs (energy is free while nobody shoots),
     // and any spare power the ship generates tops the batteries up a little.
     ...(input.ship.armor !== undefined ? { esc: input.ship.escMax ?? input.ship.esc } : {}),
@@ -462,7 +521,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   // 3. Encounter (D17: per leg).
   const pirate = generatePirate(
-    combatSheetFor(ship, chokeFlags),
+    combatSheetFor(ship, chokeFlags, rules),
     rules,
     encounterRng,
     rules.encounter.pirate_zone_strength[String(input.route.zone)],
@@ -474,7 +533,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       escortLeg: input.context.type === 'ESCORT',
       isPvp: false,
       player: {
-        sheet: combatSheetFor(ship, chokeFlags),
+        sheet: combatSheetFor(ship, chokeFlags, rules),
         preset: input.context.preset,
         sensorAlive: chokeFlags.sensorAlive,
       },
@@ -756,9 +815,11 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
 
   // 5. Mining (purpose stream) — free or contracted stops.
   if (input.context.mining !== null) {
+    // A rig that gets only part of its power digs less (or nothing).
+    const rigPower = cruisePower === null ? 1 : successChance(cruisePower.byKind.rig, rules);
     const yields = resolveMining(
       input.context.mining.stop,
-      input.context.mining.miner,
+      { ...input.context.mining.miner, min: input.context.mining.miner.min * rigPower },
       rules,
       miningRng,
     );

@@ -163,6 +163,27 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     attempts_per_stop: 10,
     job_duration_seconds: 300,
   },
+  power: {
+    success_curve: [
+      [1, 1],
+      [0.95, 0.9],
+      [0.8, 0.7],
+      [0.7, 0.6],
+      [0.5, 0],
+    ],
+    idle_demand: 1,
+    combat_demand_factor: 2,
+    life_support_min: 0.5,
+    pump_engine_factor: 0.5,
+    pump_fuel_factor: 1.5,
+    // In a given situation these systems are primary, in this order; any other system that draws
+    // power is secondary and gets what is left (an idle one keeps drawing its minimum).
+    tiers: {
+      cruise: ['pump', 'sensor'],
+      combat: ['pump', 'weapon', 'shield'],
+      mining: ['pump', 'rig', 'sensor'],
+    },
+  },
   race: {
     competitors_min: 3,
     competitors_max: 5,

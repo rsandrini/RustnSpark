@@ -1,5 +1,6 @@
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart } from '../parts/part.types.js';
+import { allocatePower, powerPartOf } from '../resolution/power/power.js';
 import { rawMobility } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
 
@@ -13,6 +14,7 @@ export type ViabilityProblemCode =
   | 'BATTERY_CHARGE_INSUFFICIENT'
   | 'SHIELD_ENERGY_LOW'
   | 'NO_LIFE_SUPPORT'
+  | 'LIFE_SUPPORT_UNPOWERED'
   | 'STRUCTURE_EXCEEDED'
   // Part direction rules (ships/direction.ts): reported like any other flight problem — saving a
   // layout is never blocked by them (a refit needs free placement), flying with them is.
@@ -67,7 +69,7 @@ const NO_FUEL_CAPACITY: ViabilityProblem = {
 };
 const ENERGY_CRUISE_NEGATIVE: ViabilityProblem = {
   code: 'ENERGY_CRUISE_NEGATIVE',
-  message: 'Continuous energy consumption exceeds generation.',
+  message: 'The systems need more power than the ship generates: they will compete for it.',
 };
 const BATTERY_OUTPUT_INSUFFICIENT: ViabilityProblem = {
   code: 'BATTERY_OUTPUT_INSUFFICIENT',
@@ -85,6 +87,10 @@ const SHIELD_ENERGY_LOW: ViabilityProblem = {
 const NO_LIFE_SUPPORT: ViabilityProblem = {
   code: 'NO_LIFE_SUPPORT',
   message: 'Pressurized modules require an active life support part.',
+};
+const LIFE_SUPPORT_UNPOWERED: ViabilityProblem = {
+  code: 'LIFE_SUPPORT_UNPOWERED',
+  message: 'Life support does not get enough power: passengers would not survive the trip.',
 };
 const STRUCTURE_EXCEEDED: ViabilityProblem = {
   code: 'STRUCTURE_EXCEEDED',
@@ -147,6 +153,18 @@ export function checkViability(
     Math.max(0, totalDraw - surplus) > sheet.batOutput
   ) {
     problems.push(SHIELD_ENERGY_LOW);
+  }
+
+  // Life support has priority right after the bridge; if even that cannot be powered to the
+  // minimum, the quest it serves would fail, so the ship stays in port.
+  const powerParts = parts.map((part) =>
+    powerPartOf(part.instance.id, part.catalog, rules.power.idle_demand),
+  );
+  if (
+    powerParts.some((part) => part.kind === 'life') &&
+    allocatePower(powerParts, 'cruise', rules).byKind.life < rules.power.life_support_min
+  ) {
+    problems.push(LIFE_SUPPORT_UNPOWERED);
   }
 
   const hasPressurized = parts.some((part) => part.catalog.pressurized);

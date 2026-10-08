@@ -14,6 +14,7 @@ export type ConfigGroup =
   | 'missions'
   | 'onboarding'
   | 'parts'
+  | 'power'
   | 'race'
   | 'rescue'
   | 'scavenging'
@@ -106,6 +107,13 @@ export type ConfigKey =
   | 'onboarding.starter_parts'
   | 'parts.restart_condition_max'
   | 'parts.starter_condition'
+  | 'power.life_support_min'
+  | 'power.pump_engine_factor'
+  | 'power.pump_fuel_factor'
+  | 'power.combat_demand_factor'
+  | 'power.idle_demand'
+  | 'power.success_curve'
+  | 'power.tiers'
   | 'race.competitors_max'
   | 'race.competitors_min'
   | 'race.min_mobility'
@@ -333,6 +341,24 @@ export type GameRules = Readonly<{
     /** An independent mining job at a minable location (round 10): like a scavenging job,
         fixed duration scaled by `missions.time_scale`, same place in and out. */
     job_duration_seconds: number;
+  }>;
+  /** Power sharing: who gets electricity when there is not enough, and what that does. */
+  power: Readonly<{
+    /** Success chance of a system by the share of its own need it receives: [share, chance] points,
+        interpolated; below the last point the system does not work. */
+    success_curve: readonly (readonly [number, number])[];
+    /** Power a context system (weapon, shield, mining rig) keeps drawing while idle. */
+    idle_demand: number;
+    /** A weapon or shield in a fight draws this many times its listed power. */
+    combat_demand_factor: number;
+    /** Life support (and the cabin) needs at least this share of its power or the quest fails. */
+    life_support_min: number;
+    /** A tank pump that fails makes the engines generate this share of their power for the leg. */
+    pump_engine_factor: number;
+    /** ... and burns this much more fuel that leg. */
+    pump_fuel_factor: number;
+    /** Priority order of the context-dependent systems per situation; the rest are secondary. */
+    tiers: Readonly<Record<string, readonly string[]>>;
   }>;
   /** RACE missions: rival ships and how the finishing place pays. */
   race: Readonly<{

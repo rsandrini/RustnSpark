@@ -142,6 +142,18 @@ const miningSchema = z.object({
   job_duration_seconds: z.number().int().min(1).max(86400),
 });
 
+const powerSchema = z.object({
+  success_curve: z
+    .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
+    .min(2),
+  idle_demand: z.number().min(0).max(10),
+  combat_demand_factor: z.number().min(1).max(10),
+  life_support_min: z.number().min(0).max(1),
+  pump_engine_factor: z.number().min(0).max(1),
+  pump_fuel_factor: z.number().min(1).max(5),
+  tiers: z.record(z.string(), z.array(z.string())),
+});
+
 const raceSchema = z.object({
   competitors_min: z.number().int().min(2).max(8),
   competitors_max: z.number().int().min(2).max(8),
@@ -229,6 +241,7 @@ const gameRulesSchema = z.object({
   failure: failureSchema,
   integrity: integritySchema,
   mining: miningSchema,
+  power: powerSchema,
   race: raceSchema,
   rescue: rescueSchema,
   escort: escortSchema,

@@ -91,6 +91,7 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     pressurized: readFlag(row.specialProp, 'pressurized'),
     lifeSupport: readFlag(row.specialProp, 'lifeSupport'),
     shieldRegen: readNumber(row.specialProp, 'shieldRegen'),
+    idlePower: readNumber(row.specialProp, 'idlePower'),
   };
 }
 

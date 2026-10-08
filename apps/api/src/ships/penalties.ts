@@ -11,12 +11,12 @@ import type { ShipSheet } from './sheet.types.js';
 //
 //  - EXHAUST_BLOCKED: a blocked engine gives no thrust.
 //  - FACING_BLOCKED / FACING_CONNECTOR: a blocked weapon does not fire.
-//  - ENERGY_CRUISE_NEGATIVE: engines get only the share of power that is generated (never below
-//    `ship.cruise_deficit_floor`).
+//  - A power deficit no longer slows the engines: engines run at full thrust and the systems that
+//    draw power fight for what there is (resolution/power/power.ts).
 //  - Battery shortfalls are not applied here: combat already runs on an energy budget and skips
 //    the attacks and shield regeneration it cannot pay for.
 
-export type PenaltyCode = 'EXHAUST_BLOCKED' | 'FACING_BLOCKED' | 'FACING_CONNECTOR' | 'ENERGY_CRUISE_NEGATIVE';
+export type PenaltyCode = 'EXHAUST_BLOCKED' | 'FACING_BLOCKED' | 'FACING_CONNECTOR';
 
 export interface AppliedPenalty {
   readonly code: PenaltyCode;
@@ -45,22 +45,12 @@ export function applyPenalties(
     if (ids.length > 0) penalties.push({ code, partInstanceIds: ids, kept: 0 });
   }
 
-  const generated = parts.reduce((sum, part) => sum + Math.max(0, part.catalog.energyCont), 0);
-  const consumed = parts.reduce((sum, part) => sum + Math.max(0, -part.catalog.energyCont), 0);
-  let cruiseKept = 1;
-  if (consumed > generated && consumed > 0) {
-    cruiseKept = Math.max(rules.ship.cruise_deficit_floor, generated / consumed);
-    penalties.push({ code: 'ENERGY_CRUISE_NEGATIVE', partInstanceIds: [], kept: cruiseKept });
-  }
-
   if (penalties.length === 0) return { parts: [...parts], penalties };
   const adjusted = parts.map((part) => {
     const stat = zeroed.get(part.instance.id);
-    const isEngine = part.catalog.partClass === 'ENGINE';
-    if (stat === undefined && !(isEngine && cruiseKept < 1)) return part;
+    if (stat === undefined) return part;
     const catalog = { ...part.catalog };
-    if (stat !== undefined) catalog[stat] = 0;
-    else catalog.pot = catalog.pot * cruiseKept;
+    catalog[stat] = 0;
     return { ...part, catalog };
   });
   return { parts: adjusted, penalties };

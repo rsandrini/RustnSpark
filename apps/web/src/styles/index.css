@@ -606,7 +606,7 @@ a {
   background: rgba(3, 6, 10, 0.66);
   display: grid;
   place-items: center;
-  z-index: 30;
+  z-index: 100;
 }
 
 .modal {
@@ -4779,4 +4779,10 @@ tr.ev-transit td:first-child {
 .low-note {
   color: var(--mut);
   font-size: 12px;
+}
+
+/* An open details popup is always on top, and the hover cards step aside while it is open. */
+body:has(.modal-backdrop) .compare-hover-card,
+body:has(.modal-backdrop) .part-hover-card {
+  display: none;
 }

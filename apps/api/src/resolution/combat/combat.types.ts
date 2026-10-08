@@ -45,6 +45,9 @@ export interface CombatSheet {
    * round can draw at most `batOutput` of what is left. Absent = an inexhaustible battery.
    */
   readonly battery?: number;
+  /** Power sharing: the chance a shot fires / the shield recovers this round (absent = always). */
+  readonly weaponPower?: number;
+  readonly shieldPower?: number;
 }
 
 /** A single attack attempt (hit or miss) inside a round. */

@@ -217,6 +217,41 @@ describe('batteries are a real store', () => {
   });
 });
 
+describe('power-starved systems', () => {
+  const target: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 0, hp: 400, mob: 1, armor: 0 };
+  const long: GameRules['combat'] = { ...rules.combat, kite_factor: 0, retreat_hp_ratio: 0.01 };
+  const gunner = (over: Partial<CombatSheet> = {}): CombatSheet => ({
+    pdf: 6, bli: 0, esc: 10, sen: 9, hp: 400, mob: 1, armor: 0, escMax: 10, escRegen: 3, ...over,
+  });
+
+  it('a weapon with no power never fires; with full power it always does', () => {
+    const dark = resolveCombat(gunner({ weaponPower: 0 }), target, long, createRng('w0'));
+    expect(dark.rounds.filter((round) => round.attacker === 'A')).toHaveLength(0);
+    const lit = resolveCombat(gunner({ weaponPower: 1 }), target, long, createRng('w1'));
+    expect(lit.rounds.filter((round) => round.attacker === 'A').length).toBeGreaterThan(5);
+  });
+
+  it('a weapon with partial power fires only part of the time', () => {
+    const shots = (power: number) =>
+      resolveCombat(gunner({ weaponPower: power }), target, long, createRng('w-half')).rounds.filter(
+        (round) => round.attacker === 'A',
+      ).length;
+    expect(shots(0.5)).toBeLessThan(shots(1));
+    expect(shots(0.5)).toBeGreaterThan(0);
+  });
+
+  it('a shield with no power does not recover', () => {
+    const striker: CombatSheet = { pdf: 12, bli: 0, esc: 0, sen: 1, hp: 400, mob: 1, armor: 0 };
+    const result = resolveCombat(
+      striker,
+      { ...gunner({ esc: 0, shieldPower: 0 }), esc: 0 },
+      long,
+      createRng('s0'),
+    );
+    expect(result.final.escB).toBe(0);
+  });
+});
+
 describe('a whole run in the layered model', () => {
   const PARTS = [
     { id: 'bridge', partClass: 'BRIDGE', providesEsc: false, condition: 100 },

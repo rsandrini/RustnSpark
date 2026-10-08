@@ -260,4 +260,28 @@ describe('checkViability', () => {
     expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
     expect(result.viable).toBe(true);
   });
+
+  it('life support that cannot be powered to its minimum keeps the ship in port', () => {
+    const parts = buildInstalled(['bridge', 'cargo', 'sensor_radar']).map((part) =>
+      part.catalog.partType === 'cargo'
+        ? { ...part, catalog: { ...part.catalog, pressurized: true, energyCont: -2 } }
+        : part,
+    );
+    const sheet = deriveSheet(parts, rules);
+    // nothing generates power: the bridge takes all there is (none), life support gets nothing
+    expect(checkViability(sheet, parts, rules).problems.map((p) => p.code)).toContain(
+      'LIFE_SUPPORT_UNPOWERED',
+    );
+    const powered = [
+      ...parts,
+      ...buildInstalled(['reactor_solar']).map((part) => ({
+        ...part,
+        instance: { ...part.instance, id: 'gen' },
+        catalog: { ...part.catalog, energyCont: 10 },
+      })),
+    ];
+    expect(
+      checkViability(deriveSheet(powered, rules), powered, rules).problems.map((p) => p.code),
+    ).not.toContain('LIFE_SUPPORT_UNPOWERED');
+  });
 });

@@ -41,25 +41,15 @@ describe('applyPenalties', () => {
     expect(deriveSheet(parts, rules).pdf).toBeGreaterThan(0);
   });
 
-  it('a cruise power shortfall keeps the generated share of thrust, never below the floor', () => {
+  it('a power deficit no longer slows the engines: systems compete for power instead', () => {
     const base = buildInstalled(['bridge', 'engine_chem_small', 'tank_small']);
-    // 3 power generated against 12 used: 25% — exactly the floor.
-    const parts = base.map((part, index) =>
-      index === 0
-        ? { ...part, catalog: { ...part.catalog, energyCont: 3 } }
-        : part.catalog.partClass === 'ENGINE'
-          ? { ...part, catalog: { ...part.catalog, energyCont: -12 } }
-          : part,
+    const parts = base.map((part) =>
+      part.catalog.partClass === 'ENGINE'
+        ? { ...part, catalog: { ...part.catalog, energyCont: -12 } }
+        : part,
     );
-    const full = deriveSheet(parts, rules).pot;
     const result = applyPenalties(parts, [], rules);
-    expect(result.penalties).toEqual([{ code: 'ENERGY_CRUISE_NEGATIVE', partInstanceIds: [], kept: 0.25 }]);
-    expect(deriveSheet(result.parts, rules).pot).toBeCloseTo(full * 0.25);
-    const lopsided = applyPenalties(
-      parts.map((part, index) => (index === 0 ? { ...part, catalog: { ...part.catalog, energyCont: 0 } } : part)),
-      [],
-      rules,
-    );
-    expect(lopsided.penalties[0]?.kept).toBe(rules.ship.cruise_deficit_floor);
+    expect(result.penalties).toEqual([]);
+    expect(deriveSheet(result.parts, rules).pot).toBe(deriveSheet(parts, rules).pot);
   });
 });
