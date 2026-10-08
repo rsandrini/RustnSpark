@@ -207,21 +207,24 @@ function useCompareQuery(
   });
   const afterSheet = comparePreview.data?.sheet;
 
-  const deltaFor = (sheetKey: keyof ShipSheet): { text: string; tone: DeltaTone } | null => {
+  const deltaFor = (sheetKey: keyof ShipSheet): CompareCells | null => {
     if (compare === undefined || afterSheet === undefined) return null;
     const after = afterSheet[sheetKey];
     const delta = after - compare.currentSheet[sheetKey];
     const tone = deltaTone(sheetKey, delta);
-    const text =
-      tone === 'same' ? format(after) : `${format(after)} (${delta > 0 ? '+' : ''}${format(delta)})`;
-    return { text, tone };
+    return {
+      now: format(compare.currentSheet[sheetKey]),
+      after: format(after),
+      change: tone === 'same' ? '' : signed(delta, format),
+      tone,
+    };
   };
 
   // Owner request (round 6): a plain delta doesn't say whether the part actually *fits* —
   // structure has a hard cap (the bridge's budget), so this shows used/budget together
   // ("62/40!") and forces red whenever installing would push it over, regardless of whether
   // structureUsed's own higher-is-worse delta direction would otherwise read as merely "bad".
-  const structureDeltaFor = (): { text: string; tone: DeltaTone } | null => {
+  const structureDeltaFor = (): CompareCells | null => {
     if (compare === undefined || afterSheet === undefined) return null;
     const after = afterSheet.structureUsed;
     const budget = afterSheet.structureBudget;
@@ -229,13 +232,48 @@ function useCompareQuery(
     const delta = after - before;
     const over = after > budget;
     const tone = over ? 'bad' : deltaTone('structureUsed', delta);
-    const ratio = `${format(after)}/${format(budget)}`;
-    const text =
-      tone === 'same' ? ratio : `${ratio}${over ? '!' : ''} (${delta > 0 ? '+' : ''}${format(delta)})`;
-    return { text, tone };
+    return {
+      now: `${format(before)}/${format(compare.currentSheet.structureBudget)}`,
+      after: `${format(after)}/${format(budget)}${over ? '!' : ''}`,
+      change: tone === 'same' ? '' : signed(delta, format),
+      tone,
+    };
   };
 
   return { comparePreview, deltaFor, structureDeltaFor };
+}
+
+/** One stat's comparison, split so the screen can label each part of it: what the ship has now,
+    what it would have with the part, and the change between them. */
+interface CompareCells {
+  now: string;
+  after: string;
+  /** Signed difference ("+15"); empty when nothing moved. */
+  change: string;
+  tone: DeltaTone;
+}
+
+const NONE = '—';
+const ARROW = '→';
+
+function signed(delta: number, format: (value: number) => string): string {
+  return `${delta > 0 ? '+' : ''}${format(delta)}`;
+}
+
+/** What the ship would have with the part: "46 (+6)", or just "46" when nothing moves. */
+function afterText(cells: CompareCells): string {
+  return cells.change === '' ? cells.after : `${cells.after} (${cells.change})`;
+}
+
+/** "now → with part (+change)" for the compact hover card. */
+function CompareInline({ cells }: { cells: CompareCells | null }) {
+  if (cells === null) return <span className="delta delta-same">{NONE}</span>;
+  return (
+    <span className="compare-inline">
+      <span className="compare-now">{cells.now} {ARROW}</span>
+      <span className={`delta delta-${cells.tone}`}>{afterText(cells)}</span>
+    </span>
+  );
 }
 
 export interface PartDetailProps {
@@ -376,6 +414,7 @@ export function PartDetail({ part, compare }: PartDetailProps) {
           <tr>
             <th>{t('parts.compare.stat')}</th>
             <th>{t('parts.compare.value')}</th>
+            {compare !== undefined && <th>{t('parts.compare.shipNow')}</th>}
             {compare !== undefined && <th>{t('parts.compare.ifInstalled')}</th>}
           </tr>
         </thead>
@@ -393,8 +432,11 @@ export function PartDetail({ part, compare }: PartDetailProps) {
                 <td>
                   <b>{row.value}</b>
                 </td>
+                {compare !== undefined && <td>{delta?.now ?? '—'}</td>}
                 {compare !== undefined && (
-                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</td>
+                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>
+                    {delta === null ? '—' : afterText(delta)}
+                  </td>
                 )}
               </tr>
             );
@@ -405,10 +447,11 @@ export function PartDetail({ part, compare }: PartDetailProps) {
               return (
                 <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
                   <td>{t(`hangar.stats.${sheetKey}`)}</td>
-                  <td>
-                    <b>{format(compare.currentSheet[sheetKey])}</b>
+                  <td>{NONE}</td>
+                  <td>{delta?.now ?? NONE}</td>
+                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>
+                    {delta === null ? '—' : afterText(delta)}
                   </td>
-                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</td>
                 </tr>
               );
             })}
@@ -497,11 +540,7 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
               <dt>{t(`parts.stat.${row.key}.label`)}</dt>
               <dd>
                 <b>{row.value}</b>
-                {compare !== undefined && (
-                  <span className={`delta delta-${delta?.tone ?? 'same'}`}>
-                    {delta?.text ?? '—'}
-                  </span>
-                )}
+                {compare !== undefined && <CompareInline cells={delta} />}
               </dd>
             </div>
           );
@@ -513,8 +552,7 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
               <div key={sheetKey} className="statrow">
                 <dt>{t(`hangar.stats.${sheetKey}`)}</dt>
                 <dd>
-                  <b>{format(compare.currentSheet[sheetKey])}</b>
-                  <span className={`delta delta-${delta?.tone ?? 'same'}`}>{delta?.text ?? '—'}</span>
+                  <CompareInline cells={delta} />
                 </dd>
               </div>
             );

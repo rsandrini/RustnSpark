@@ -1414,7 +1414,8 @@
       "error": "Couldn't check what this would do to the ship.",
       "stat": "Stat",
       "value": "This part",
-      "ifInstalled": "Ship, if installed",
+      "shipNow": "Ship now",
+      "ifInstalled": "With this part",
       "scenarioLabel": "Compare as",
       "addOption": "Add it",
       "replaceOption": "Replace {{name}}"

@@ -162,6 +162,36 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('3,632 ¢'));
   });
 
+  it('does not report "not enough money" for a repair that was just paid for', async () => {
+    // The wallet barely covers the plan; once it is debited, the spent plan must not be compared
+    // with the smaller balance (owner report: the warning appeared right after accepting).
+    setWallet(1300);
+    // The repair is a timed job: the parts stay damaged on screen until it completes.
+    server.use(
+      http.post('/v1/ships/:id/repair', ({ params }) => {
+        setWallet(112);
+        return HttpResponse.json({
+          repairJobId: 'job-1',
+          shipId: String(params.id),
+          cost: 1188,
+          durationSeconds: 30,
+          completesAt: new Date(Date.now() + 30_000).toISOString(),
+          targets: [],
+        });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    const summary = screen.getByTestId('repair-summary');
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
+    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('112 ¢'));
+    expect(screen.queryByText(/not enough credits|insufficient credits/i)).not.toBeInTheDocument();
+  });
+
   it('never lets "Start repair" open on a stale (pre-refetch) quote for a bigger plan', async () => {
     // A slow quote for the "set all to 100%" plan: while it is loading, `keepPreviousData` would
     // otherwise show the smaller, single-part quote already on screen. The trigger must not
@@ -516,15 +546,17 @@ describe('port (S10.9)', () => {
 
     const hullRow = (await screen.findByText('Plated Hull')).closest('article');
     expect(hullRow).not.toBeNull();
-    // The upgrade-target info button opens the diff popup for "Reinforced Hull" (the next
-    // tier), not another popup for "Plated Hull" itself (that one already exists separately).
-    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Reinforced Hull' }));
+    // One info button per card: it opens the part itself AND, under it, the next tier's diff.
+    expect(within(hullRow!).getAllByRole('button', { name: /^Details:/ })).toHaveLength(1);
+    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Plated Hull' }));
 
-    const popup = await screen.findByRole('dialog', { name: 'Reinforced Hull' });
+    const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
+    await within(popup).findByRole('heading', { name: 'Upgrades to Reinforced Hull' });
+    const next = within(popup).getByRole('region', { name: 'Upgrades to Reinforced Hull' });
     // Replacing Plated Hull, not adding a second hull — the comparison's own wording says so.
-    await within(popup).findByText('If you swap this in for Plated Hull');
+    await within(next).findByText('If you swap this in for Plated Hull');
     // The next tier's own higher hp (60 vs the ship's current 40) shows as a positive delta.
-    const hpRow = within(popup).getByRole('row', { name: /^Hit points/ });
+    const hpRow = within(next).getByRole('row', { name: /^Hit points/ });
     await waitFor(() => expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument());
   });
 

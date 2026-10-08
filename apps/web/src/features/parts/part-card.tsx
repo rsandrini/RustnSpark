@@ -12,7 +12,7 @@ import {
 } from './part-detail';
 import { ConnectorGrid } from './connector-grid';
 import { PartInfoButton } from './part-info-button';
-import { useClampedPosition } from './use-hover-card-position';
+import { hoverAnchor, useClampedPosition, type HoverAnchor } from './use-hover-card-position';
 
 export interface PartCardProps {
   part: PartInfoData;
@@ -28,6 +28,8 @@ export interface PartCardProps {
   actions?: ReactNode;
   /** Market/Store only: what buying this would do to the ship, shown in its detail popup. */
   compare?: PartCompareContext;
+  /** Extra content for the card's single info popup, under the part's own details. */
+  infoExtra?: ReactNode;
 }
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
@@ -40,6 +42,7 @@ export function PartCard({
   used = false,
   actions,
   compare,
+  infoExtra,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
@@ -54,13 +57,13 @@ export function PartCard({
 
   // Owner request: Market/Store gets the same hover-only compare card the Hangar tray already
   // has, not just the (i) button's full popup — cursor-anchored, viewport-clamped the same way.
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [anchor, setAnchor] = useState<HoverAnchor | null>(null);
   const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
 
   return (
     <article
       className={`pcard rarity-${part.rarity.toLowerCase()}${part.broken === true ? ' broken' : ''}`}
-      onPointerEnter={(event) => setAnchor({ x: event.clientX, y: event.clientY })}
+      onPointerEnter={(event) => setAnchor(hoverAnchor(event, event.currentTarget))}
       onPointerLeave={() => setAnchor(null)}
     >
       <header className="pcard-head">
@@ -102,7 +105,7 @@ export function PartCard({
       <div className="pcard-summary">{partSummary(part.catalog, t, format)}</div>
       <p className="pcard-desc part-desc-short">{pickLocalized(part.description, i18n.language)}</p>
       <footer className="pcard-actions">
-        <PartInfoButton part={part} compare={compare} />
+        <PartInfoButton part={part} compare={compare} extra={infoExtra} />
         {actions}
       </footer>
       {anchor !== null && (

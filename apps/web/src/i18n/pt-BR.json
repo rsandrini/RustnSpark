@@ -1414,7 +1414,8 @@
       "error": "Não foi possível verificar o efeito disso na nave.",
       "stat": "Estatística",
       "value": "Esta peça",
-      "ifInstalled": "Nave, se instalada",
+      "shipNow": "Nave agora",
+      "ifInstalled": "Com esta peça",
       "scenarioLabel": "Comparar como",
       "addOption": "Adicionar",
       "replaceOption": "Trocar por {{name}}"

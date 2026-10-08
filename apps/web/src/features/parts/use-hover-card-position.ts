@@ -15,8 +15,32 @@ const HOVER_OFFSET = 16;
  * Shared by the Hangar tray's row (`TrayPartRow`) and Market/Store's card (`PartCard`) — same
  * cursor-anchored, viewport-clamped hover card in both places.
  */
+export interface HoverAnchor {
+  x: number;
+  y: number;
+  /** Horizontal extent of the list the hovered row lives in: the card opens beside it, never over
+      it (owner report: the card sat on the very items being scrolled). */
+  avoid?: { left: number; right: number };
+}
+
+/** The anchor for a pointer event on `row`: the cursor, plus the nearest scrolling ancestor (the
+    part list) as the area the card must stay out of. */
+export function hoverAnchor(
+  event: { clientX: number; clientY: number },
+  row: HTMLElement,
+): HoverAnchor {
+  let list: HTMLElement | null = row.parentElement;
+  while (list !== null) {
+    const overflowY = window.getComputedStyle(list).overflowY;
+    if (overflowY === 'auto' || overflowY === 'scroll') break;
+    list = list.parentElement;
+  }
+  const rect = (list ?? row).getBoundingClientRect();
+  return { x: event.clientX, y: event.clientY, avoid: { left: rect.left, right: rect.right } };
+}
+
 export function useClampedPosition(
-  anchor: { x: number; y: number } | null,
+  anchor: HoverAnchor | null,
 ): { ref: React.RefObject<HTMLDivElement>; style: CSSProperties } {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -52,7 +76,14 @@ export function useClampedPosition(
         return;
       }
       let left = anchor.x + HOVER_OFFSET;
-      if (left + width > viewportWidth - HOVER_MARGIN) {
+      if (anchor.avoid !== undefined) {
+        // Beside the list: to its right when there is room, else to its left; only a list that
+        // fills the screen (phone) falls back to the cursor placement below.
+        const right = anchor.avoid.right + HOVER_OFFSET;
+        const leftSide = anchor.avoid.left - HOVER_OFFSET - width;
+        if (right + width <= viewportWidth - HOVER_MARGIN) left = right;
+        else if (leftSide >= HOVER_MARGIN) left = leftSide;
+      } else if (left + width > viewportWidth - HOVER_MARGIN) {
         left = anchor.x - HOVER_OFFSET - width;
       }
       left = Math.max(HOVER_MARGIN, Math.min(left, viewportWidth - width - HOVER_MARGIN));

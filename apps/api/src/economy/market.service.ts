@@ -175,9 +175,8 @@ export class MarketService {
       });
     }
 
-    const usedIds = listings.filter((l) => l.kind === 'used').map((l) => l.listingId);
-    const sold = await this.soldListingIds(usedIds);
-    const shelf = listings.filter((l) => l.kind !== 'used' || !sold.has(l.listingId));
+    const sold = await this.soldListingIds(listings.map((l) => l.listingId));
+    const shelf = listings.filter((l) => !sold.has(l.listingId));
 
     const owned = await this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId, location: 'INVENTORY' },
@@ -196,15 +195,19 @@ export class MarketService {
     return { locationId, listings: shelf, sellOffers, sellMinCondition };
   }
 
-  /** Which of these used listings already have a purchase on record (any player). */
+  /** Which of these listings already have a purchase on record today (any player). Every listing
+      is one physical item per port per day: a "catalog" id carries no day, so only purchases since
+      the start of the current UTC day count — the shelf restocks at the day roll. */
   private async soldListingIds(
     listingIds: readonly string[],
     tx: Prisma.TransactionClient | PrismaService = this.prisma,
   ): Promise<Set<string>> {
     if (listingIds.length === 0) return new Set();
+    const since = new Date(`${dayKey(this.clock.now())}T00:00:00.000Z`);
     const rows = await tx.playerEvent.findMany({
       where: {
         type: MARKET_BUY_EVENT,
+        at: { gte: since },
         OR: listingIds.map((id) => ({ payload: { path: ['listingId'], equals: id } })),
       },
       select: { payload: true },
@@ -277,13 +280,11 @@ export class MarketService {
 
     try {
       const part = await this.prisma.$transaction(async (tx) => {
-        if (parsed.kind === 'used') {
-          // A used part is one physical item: the first buyer takes it off the shelf for the
-          // day. The lock serializes two buyers of the same listing; the second sees the sale.
-          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${listingId}::text))::text`;
-          if ((await this.soldListingIds([listingId], tx)).size > 0) {
-            throw new ConflictException({ error: 'LISTING_SOLD' });
-          }
+        // A listing is one physical item (new or used): the first buyer takes it off the shelf
+        // for the day. The lock serializes two buyers of the same listing; the second sees the sale.
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${listingId}::text))::text`;
+        if ((await this.soldListingIds([listingId], tx)).size > 0) {
+          throw new ConflictException({ error: 'LISTING_SOLD' });
         }
         const player = await tx.player.findUnique({
           where: { id: playerId },

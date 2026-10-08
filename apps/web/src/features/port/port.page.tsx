@@ -37,7 +37,7 @@ import { PortTabs } from '../../ui/PortTabs';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
-import { PartInfoButton } from '../parts/part-info-button';
+import { PartDetail } from '../parts/part-detail';
 import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
 
 const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging', 'mining'] as const;
@@ -315,6 +315,9 @@ export function PortPage({
     onSuccess: (response) => {
       repairKey.clear();
       setRepairPlan(null);
+      // The paid plan is spent: leaving it selected would compare its (old) total with the wallet
+      // that was just debited and report "not enough money" for a repair that already went through.
+      setRepairTargets({});
       setActionError(null);
       setNotice(
         t('port.repairStarted', {
@@ -861,7 +864,9 @@ export function PortPage({
                   {money(refuelCost)}
                 </b>
               </div>
-              {refuelCost > wallet && <p className="error-text">{t('port.insufficient')}</p>}
+              {!refuel.isPending && refuelCost > wallet && (
+                <p className="error-text">{t('port.insufficient')}</p>
+              )}
               <div className="row-between">
                 <button
                   type="button"
@@ -950,14 +955,17 @@ export function PortPage({
                       part={item}
                       price={quote.cost}
                       priceCaption={t('port.upgradeCost')}
+                      infoExtra={
+                        nextPartInfo !== undefined && (
+                          <section className="upgrade-next" aria-label={t('port.upgradesTo', { name: nextName })}>
+                            <h4>{t('port.upgradesTo', { name: nextName })}</h4>
+                            <PartDetail part={nextPartInfo} compare={nextCompare} />
+                          </section>
+                        )
+                      }
                       actions={
                         <>
-                          <span className="sub">
-                            {t('port.upgradesTo', { name: nextName })}
-                            {nextPartInfo !== undefined && (
-                              <PartInfoButton part={nextPartInfo} compare={nextCompare} />
-                            )}
-                          </span>
+                          <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
                           <button
                             type="button"
                             className="btn primary"
@@ -1075,7 +1083,9 @@ export function PortPage({
                 time: formatDuration(repairPlan.seconds, t),
               })}
             </p>
-            {wallet < repairPlan.cost && <p className="error-text">{t('port.insufficient')}</p>}
+            {!repair.isPending && wallet < repairPlan.cost && (
+              <p className="error-text">{t('port.insufficient')}</p>
+            )}
             <button
               type="button"
               className="btn primary"
@@ -1106,7 +1116,9 @@ export function PortPage({
                 cost: upgradeConfirm.cost,
               })}
             </p>
-            {wallet < upgradeConfirm.cost && <p className="error-text">{t('port.insufficient')}</p>}
+            {!upgradePart.isPending && wallet < upgradeConfirm.cost && (
+              <p className="error-text">{t('port.insufficient')}</p>
+            )}
             <button
               type="button"
               className="btn primary"

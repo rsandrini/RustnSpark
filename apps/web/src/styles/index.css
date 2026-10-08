@@ -4496,3 +4496,29 @@ svg .block.dir-blocked {
   height: 32px;
   padding: 0;
 }
+
+/* Comparison in the part hover card: what the ship has now, then what it would have. */
+.compare-inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.compare-inline .compare-now {
+  color: var(--mut);
+}
+
+/* The wallet stays in view while the part list scrolls under it. */
+.market-panel > .balance {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 15px;
+}
+.market-panel > .balance b {
+  color: var(--spark);
+}

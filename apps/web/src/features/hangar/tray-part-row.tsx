@@ -12,7 +12,7 @@ import {
 } from '../parts/part-detail';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
-import { useClampedPosition } from '../parts/use-hover-card-position';
+import { hoverAnchor, useClampedPosition, type HoverAnchor } from '../parts/use-hover-card-position';
 
 export interface TrayPartRowProps {
   part: InventoryItem;
@@ -28,7 +28,7 @@ export interface TrayPartRowProps {
 export function TrayPartRow({ part, name, disabled, selected, onSelect, compare }: TrayPartRowProps) {
   const { t } = useTranslation();
   const format = useNumberFormat();
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [anchor, setAnchor] = useState<HoverAnchor | null>(null);
   const { ref: cardRef, style: cardStyle } = useClampedPosition(anchor);
 
   return (
@@ -38,7 +38,7 @@ export function TrayPartRow({ part, name, disabled, selected, onSelect, compare 
         className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${selected ? ' on' : ''}`}
         disabled={disabled}
         onClick={onSelect}
-        onPointerEnter={(event) => setAnchor({ x: event.clientX, y: event.clientY })}
+        onPointerEnter={(event) => setAnchor(hoverAnchor(event, event.currentTarget))}
         onPointerLeave={() => setAnchor(null)}
       >
         <span className="part-line">
