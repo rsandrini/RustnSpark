@@ -176,8 +176,8 @@
       "deficit": "Déficit {{value}}",
       "breakdown": "Gera {{generate}} · Consome {{consume}}",
       "draw": "Consome {{value}}/rodada",
-      "covered": "A bateria cobre ({{output}}/rodada)",
-      "insufficient": "Excede a saída da bateria ({{output}}/rodada)"
+      "covered": "Coberto: sobra da nave + bateria ({{output}}/rodada)",
+      "insufficient": "Excede a sobra da nave + bateria ({{output}}/rodada)"
     },
     "classes": {
       "HAULER": "Cargueiro",
@@ -223,8 +223,8 @@
       "DISCONNECTED": "Peças precisam tocar a ponte.",
       "INVALID_LAYOUT": "O layout não é válido.",
       "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera: os motores recebem só a parte da energia que existe, então ela fica mais lenta.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos puxam mais energia por rodada do que as baterias entregam — numa luta alguns ataques e recargas de escudo ficarão sem energia. Instale uma bateria, ou uma maior.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que as baterias armazenam — lutas longas ficarão sem energia. Instale uma bateria, ou uma maior.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos puxam mais energia por rodada do que a nave consegue fornecer (a sobra de energia mais as baterias). Numa luta alguns ataques e a recuperação do escudo ficarão sem energia — adicione geração ou uma bateria.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que a sobra da nave mais as baterias armazenam — lutas longas ficarão sem energia. Adicione geração ou uma bateria.",
       "EXHAUST_BLOCKED": "Um motor tem uma peça logo atrás do escape: ele não dá empuxo. Mova-o, mova a peça ou gire o motor.",
       "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
       "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o."
@@ -283,9 +283,9 @@
       "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
       "fuelUse": "Quanto combustível é consumido por unidade de viagem.",
       "energyCont": "Balanço de energia de cruzeiro: o que os geradores produzem menos o que sempre consome (sensores, suporte de vida, plataformas de mineração...). Abaixo de zero a nave ainda voa, mas os motores recebem só a parte da energia que existe. Separado da energia de combate, que vem das baterias.",
-      "energyCombat": "Consumo total de energia só de combate, de cada arma e escudo instalado (sempre zero ou negativo). Coberto pela carga e pela saída da bateria, nunca pela Potência de cruzeiro ou pelo reator — veja Capacidade da bateria / Saída da bateria.",
-      "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
-      "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
+      "energyCombat": "Energia que armas e escudos puxam a cada rodada de combate (sempre zero ou negativa). A sobra de energia da própria nave (potência de cruzeiro acima de zero) paga primeiro; as baterias cobrem só o que ela não cobre. Escolha o modo só-baterias para tirar a sobra da nave do combate.",
+      "batCharge": "Energia total que as baterias guardam para o combate. Só precisa cobrir o que a sobra da própria nave não cobre — com geração suficiente você não precisa de bateria.",
+      "batOutput": "O máximo de energia que as baterias entregam numa rodada. Só precisa cobrir o que a sobra da própria nave não paga a cada rodada.",
       "batInput": "Quão rápido a bateria recarrega entre lutas.",
       "autonomy": "Até onde um tanque cheio leva a nave, em unidades de distância de rota (as mesmas unidades do comprimento das rotas). Abaixo: quantas rotas do mundo isso cobre.",
       "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",

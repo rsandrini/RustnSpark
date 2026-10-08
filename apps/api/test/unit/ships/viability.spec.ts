@@ -230,4 +230,25 @@ describe('checkViability', () => {
     const result = checkViability(sheet, parts, rules);
     expect(result.problems.map((p) => p.code)).not.toContain('NO_FUEL_CAPACITY');
   });
+
+  it('the ship\'s own spare power pays for combat: no battery needed when generation is enough', () => {
+    const parts = buildInstalled([
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'reactor_solar',
+      'reactor_solar',
+      'weapon_laser',
+    ]);
+    const generous = parts.map((part) =>
+      part.catalog.partType === 'reactor_solar'
+        ? { ...part, catalog: { ...part.catalog, energyCont: 40 } }
+        : part,
+    );
+    const sheet = deriveSheet(generous, rules);
+    expect(sheet.energyCont).toBeGreaterThan(Math.abs(sheet.energyCombat));
+    const result = checkViability(sheet, generous, rules);
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_CHARGE_INSUFFICIENT');
+  });
 });

@@ -176,8 +176,8 @@
       "deficit": "Deficit {{value}}",
       "breakdown": "Generates {{generate}} · Consumes {{consume}}",
       "draw": "Draws {{value}}/round",
-      "covered": "Battery covers it ({{output}}/round)",
-      "insufficient": "Exceeds battery output ({{output}}/round)"
+      "covered": "Covered: ship surplus + battery ({{output}}/round)",
+      "insufficient": "Exceeds ship surplus + battery ({{output}}/round)"
     },
     "classes": {
       "HAULER": "Hauler",
@@ -223,8 +223,8 @@
       "DISCONNECTED": "Parts must touch the bridge.",
       "INVALID_LAYOUT": "The layout is not valid.",
       "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates: its engines only get the share of power that exists, so it is slower.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — in a fight some attacks and shield recharges will not be powered. Install a battery, or a bigger one.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — long fights will run out of power. Install a battery, or a bigger one.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than the ship can supply (its spare power plus the batteries). In a fight some attacks and shield recovery will go unpowered — add power generation or a battery.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than the ship's spare power plus its batteries can store — long fights will run out of power. Add power generation or a battery.",
       "EXHAUST_BLOCKED": "An engine has a part directly behind its exhaust: it gives no thrust. Move it, move the part, or turn the engine.",
       "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
       "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it."
@@ -283,9 +283,9 @@
       "fuelCap": "How much fuel the ship can hold, from every installed tank.",
       "fuelUse": "How much fuel is burned per unit of travel.",
       "energyCont": "Cruising power balance: what generators produce minus what always draws power (sensors, life support, mining rigs...). Below zero the ship still flies, but its engines only get the share of power that exists. Separate from combat power, which comes from the batteries.",
-      "energyCombat": "Total combat-only power draw from every installed weapon and shield (always zero or negative). Covered by the battery's charge and output, never by Cruising power or the reactor — see Battery capacity / Battery output.",
-      "batCharge": "Total energy the battery can store for combat. Must cover the ship's whole Combat power draw, or weapons/shields can't be installed.",
-      "batOutput": "The most energy the battery can deliver in a single round. Must cover the ship's whole Combat power draw per round, or weapons/shields can't be installed.",
+      "energyCombat": "Energy that weapons and shields draw each combat round (always zero or negative). The ship's own spare power (cruising power above zero) pays for it first; the batteries cover only what that cannot. Pick the batteries-only mode to keep the ship's spare power out of combat.",
+      "batCharge": "Total energy the batteries can hold for combat. It only needs to cover what the ship's own spare power cannot — with enough generation you need no battery at all.",
+      "batOutput": "The most energy the batteries can deliver in one round. It only needs to cover what the ship's own spare power cannot pay for each round.",
       "batInput": "How fast the battery recharges between fights.",
       "autonomy": "How far a full tank takes the ship, in route-distance units (the same units as route lengths). Below it: how many of the world's routes that covers.",
       "condition": "Average wear across every installed part, from 100% (new) down.",

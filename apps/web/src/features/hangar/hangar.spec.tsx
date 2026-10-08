@@ -278,7 +278,7 @@ describe('hangar (S10.4)', () => {
       .getByText('Combat power')
       .closest('.statrow');
     expect(combatPowerRow).toHaveTextContent('Draws 0/round');
-    expect(combatPowerRow).toHaveTextContent('Battery covers it (10/round)');
+    expect(combatPowerRow).toHaveTextContent('Covered: ship surplus + battery (18/round)');
   });
 
   it('shows the rarity in the hover popup for a placed block, not printed on the block itself (owner request, round 8 follow-up)', async () => {

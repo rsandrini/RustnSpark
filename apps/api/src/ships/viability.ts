@@ -69,11 +69,11 @@ const ENERGY_CRUISE_NEGATIVE: ViabilityProblem = {
 };
 const BATTERY_OUTPUT_INSUFFICIENT: ViabilityProblem = {
   code: 'BATTERY_OUTPUT_INSUFFICIENT',
-  message: 'Combat energy demand exceeds battery output.',
+  message: 'Combat energy demand exceeds what the ship generates plus its battery output.',
 };
 const BATTERY_CHARGE_INSUFFICIENT: ViabilityProblem = {
   code: 'BATTERY_CHARGE_INSUFFICIENT',
-  message: 'Combat energy demand exceeds battery charge.',
+  message: 'Combat energy demand exceeds what the ship generates plus its battery charge.',
 };
 const NO_LIFE_SUPPORT: ViabilityProblem = {
   code: 'NO_LIFE_SUPPORT',
@@ -116,11 +116,16 @@ export function checkViability(
     problems.push(ENERGY_CRUISE_NEGATIVE);
   }
 
-  if (sheet.energyCombat < 0 && Math.abs(sheet.energyCombat) > sheet.batOutput) {
+  // Combat is powered first by what the rest of the ship generates beyond its own needs (the
+  // surplus of cruising power); the batteries only have to cover what that cannot. A pilot who
+  // picks the batteries-only mode takes that choice at their own risk (see the combat energy mode).
+  const surplus = Math.max(0, sheet.energyCont);
+  const shortfall = Math.max(0, Math.abs(Math.min(0, sheet.energyCombat)) - surplus);
+  if (shortfall > sheet.batOutput) {
     problems.push(BATTERY_OUTPUT_INSUFFICIENT);
   }
 
-  if (sheet.energyCombat < 0 && Math.abs(sheet.energyCombat) > sheet.batCharge) {
+  if (shortfall > sheet.batCharge) {
     problems.push(BATTERY_CHARGE_INSUFFICIENT);
   }
 

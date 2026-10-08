@@ -106,7 +106,9 @@ export function ShipSheetPanel({
     0,
   );
   const combatDraw = Math.abs(sheet.energyCombat);
-  const combatCovered = sheet.batOutput >= combatDraw;
+  // The ship's own surplus powers combat first; the batteries cover only what it cannot.
+  const combatSurplus = Math.max(0, sheet.energyCont);
+  const combatCovered = sheet.batOutput + combatSurplus >= combatDraw;
   const unlimitedRange = sheet.fuelUse <= 0;
   const autonomyBand = rangeTone(unlimitedRange ? null : routeCoverage);
   const conditionBand = conditionTone(sheet.condition);
@@ -169,8 +171,12 @@ export function ShipSheetPanel({
           </span>
           <div className="substat">
             {combatCovered
-              ? t('hangar.energyStatus.covered', { output: number(sheet.batOutput) })
-              : t('hangar.energyStatus.insufficient', { output: number(sheet.batOutput) })}
+              ? t('hangar.energyStatus.covered', {
+                  output: number(sheet.batOutput + combatSurplus),
+                })
+              : t('hangar.energyStatus.insufficient', {
+                  output: number(sheet.batOutput + combatSurplus),
+                })}
           </div>
         </div>
       );
