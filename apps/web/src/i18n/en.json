@@ -393,7 +393,9 @@
       "password": "Change password",
       "unstick": "Unstick ship",
       "ban": "Ban",
-      "reset": "Reset"
+      "reset": "Reset",
+      "fastOps": "Fast missions: turn on",
+      "fastOpsOff": "Fast missions: turn off"
     },
     "warnings": {
       "grant": "Adds credits to the player's wallet. Recorded in the audit log.",
@@ -402,7 +404,8 @@
       "password": "Sets a new password for this account and signs it out everywhere. The password itself is never recorded in the audit log.",
       "unstick": "Expires the ship's active mission and parks the ship in port. Its future route presence is deleted.",
       "ban": "Suspends the account at once and ends all sessions. Admin accounts cannot be banned.",
-      "reset": "Wipes parts, materials, repairs, missions and sessions, returns the ship to the home port and re-applies the starter kit and credits. History is kept. This cannot be undone."
+      "reset": "Wipes parts, materials, repairs, missions and sessions, returns the ship to the home port and re-applies the starter kit and credits. History is kept. This cannot be undone.",
+      "fastOps": "Per player: this player's missions, trips, scavenging, mining and repairs finish in a few seconds (admin.debug_fast_ops_seconds) while the UI still shows the real durations. Takes effect on the next job started."
     },
     "amount": "Amount",
     "newPassword": "New password",
@@ -451,7 +454,10 @@
     "successValue": "{{success}} / {{total}} ({{percent}}%)",
     "winrateValue": "{{percent}}% ({{wins}}W / {{losses}}L, {{encounters}} encounters)",
     "percentValue": "{{percent}}%",
-    "outcomeValue": "Outcome: {{value}}"
+    "outcomeValue": "Outcome: {{value}}",
+    "fastOps": "Fast missions",
+    "fastOpsOn": "on",
+    "fastOpsOff": "off"
   },
   "tuning": {
     "connectorRules": {
@@ -552,7 +558,18 @@
     },
     "clone": "Clone",
     "cloneEntity": "Clone",
-    "cloneSuffix": "(copy)"
+    "cloneSuffix": "(copy)",
+    "rowCount": "{{shown}} of {{total}}",
+    "notFound": "Nothing with id \"{{id}}\" here.",
+    "backToList": "Back to the list",
+    "breadcrumb": "Breadcrumb",
+    "sections": {
+      "identity": "Identity",
+      "sizeCost": "Size & cost",
+      "performance": "Performance",
+      "energyFuel": "Energy & fuel",
+      "special": "Special"
+    }
   },
   "factions": {
     "luna": "Luna Authority",

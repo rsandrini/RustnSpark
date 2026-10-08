@@ -138,6 +138,7 @@ export class InspectorService {
         credits: player.credits,
         locale: player.locale,
         factionId: player.factionId,
+        debugFastOps: player.debugFastOps,
         createdAt: player.createdAt.toISOString(),
       },
       ships,

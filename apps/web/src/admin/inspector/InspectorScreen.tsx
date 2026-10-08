@@ -125,6 +125,10 @@ export function InspectorDetailScreen() {
               <td>{data.player.credits}</td>
             </tr>
             <tr>
+              <th scope="row">{t('admin.fastOps')}</th>
+              <td>{data.player.debugFastOps ? t('admin.fastOpsOn') : t('admin.fastOpsOff')}</td>
+            </tr>
+            <tr>
               <th scope="row">{t('admin.faction')}</th>
               <td>{data.player.factionId ?? t('admin.noFaction')}</td>
             </tr>
@@ -214,7 +218,12 @@ export function InspectorDetailScreen() {
         )}
       </section>
 
-      <SupportActions playerId={playerId} ships={data.ships} onChanged={refreshAll} />
+      <SupportActions
+        playerId={playerId}
+        ships={data.ships}
+        fastOpsOn={data.player.debugFastOps}
+        onChanged={refreshAll}
+      />
 
       <section aria-label={t('admin.timeline')}>
         <h3>{t('admin.timeline')}</h3>

@@ -18,7 +18,8 @@ export type SupportActionKey =
   | 'password'
   | 'unstick'
   | 'ban'
-  | 'reset';
+  | 'reset'
+  | 'fastOps';
 
 interface PendingAction {
   readonly key: SupportActionKey;
@@ -43,10 +44,13 @@ interface ActionContext {
 export function SupportActions({
   playerId,
   ships,
+  fastOpsOn,
   onChanged,
 }: {
   playerId: string;
   ships: ShipOption[];
+  /** The player's current fast-missions switch (what the button will flip). */
+  fastOpsOn: boolean;
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
@@ -76,6 +80,8 @@ export function SupportActions({
           return adminApi.banPlayer(playerId, why, key);
         case 'reset':
           return adminApi.resetPlayer(playerId, why, key);
+        case 'fastOps':
+          return adminApi.setDebugFastOps(playerId, !fastOpsOn, why, key);
         default:
           throw new Error('no support action selected');
       }
@@ -120,7 +126,8 @@ export function SupportActions({
   };
 
   const destructive = pending?.key === 'ban' || pending?.key === 'reset';
-  const label = (key: SupportActionKey): string => t(`admin.actions.${key}`);
+  const label = (key: SupportActionKey): string =>
+    key === 'fastOps' && fastOpsOn ? t('admin.actions.fastOpsOff') : t(`admin.actions.${key}`);
 
   return (
     <div>
@@ -146,6 +153,9 @@ export function SupportActions({
         </button>
         <button type="button" onClick={() => open('reset')}>
           {label('reset')}
+        </button>
+        <button type="button" onClick={() => open('fastOps')} aria-pressed={fastOpsOn}>
+          {fastOpsOn ? t('admin.actions.fastOpsOff') : t('admin.actions.fastOps')}
         </button>
       </div>
 

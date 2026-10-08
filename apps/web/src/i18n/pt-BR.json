@@ -393,7 +393,9 @@
       "password": "Alterar senha",
       "unstick": "Destravar nave",
       "ban": "Banir",
-      "reset": "Resetar"
+      "reset": "Resetar",
+      "fastOps": "Missões rápidas: ligar",
+      "fastOpsOff": "Missões rápidas: desligar"
     },
     "warnings": {
       "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
@@ -402,7 +404,8 @@
       "password": "Define uma nova senha para esta conta e encerra a sessão em todos os lugares. A senha em si nunca é registrada no log de auditoria.",
       "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",
       "ban": "Suspende a conta imediatamente e encerra todas as sessões. Contas de admin não podem ser banidas.",
-      "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito."
+      "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito.",
+      "fastOps": "Por jogador: as missões, viagens, coletas, mineração e reparos deste jogador terminam em poucos segundos (admin.debug_fast_ops_seconds), mas a interface continua mostrando as durações reais. Vale a partir do próximo trabalho iniciado."
     },
     "amount": "Quantidade",
     "newPassword": "Nova senha",
@@ -451,7 +454,10 @@
     "successValue": "{{success}} / {{total}} ({{percent}}%)",
     "winrateValue": "{{percent}}% ({{wins}}V / {{losses}}D, {{encounters}} encontros)",
     "percentValue": "{{percent}}%",
-    "outcomeValue": "Resultado: {{value}}"
+    "outcomeValue": "Resultado: {{value}}",
+    "fastOps": "Missões rápidas",
+    "fastOpsOn": "ligadas",
+    "fastOpsOff": "desligadas"
   },
   "tuning": {
     "connectorRules": {
@@ -552,7 +558,18 @@
     },
     "clone": "Clonar",
     "cloneEntity": "Clonar",
-    "cloneSuffix": "(cópia)"
+    "cloneSuffix": "(cópia)",
+    "rowCount": "{{shown}} de {{total}}",
+    "notFound": "Nada com o id \"{{id}}\" aqui.",
+    "backToList": "Voltar à lista",
+    "breadcrumb": "Trilha",
+    "sections": {
+      "identity": "Identidade",
+      "sizeCost": "Tamanho e custo",
+      "performance": "Desempenho",
+      "energyFuel": "Energia e combustível",
+      "special": "Especial"
+    }
   },
   "factions": {
     "luna": "Autoridade de Luna",

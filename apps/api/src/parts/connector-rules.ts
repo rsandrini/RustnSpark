@@ -186,3 +186,44 @@ export function defaultConnectorRules(partClass: string): ConnectorRules {
     oneKindPerPart: true,
   };
 }
+
+export interface ConnectorRulesPreview {
+  /** null when the rules are valid; otherwise why nothing can be generated. */
+  problem: string | null;
+  /** Every combination the generator can roll, with its chance (sums to 1). */
+  combos: { sides: SideCombo; probability: number }[];
+  /** A few real generations, drawn the same way a part is generated. */
+  samples: ConnectorLayout[];
+}
+
+/** What the admin editor shows live: the exact distribution and sample rolls for a rules payload,
+    computed by the same enumeration/generation the server uses so the two can never disagree. */
+export function previewConnectorRules(
+  rulesJson: unknown,
+  w: number,
+  h: number,
+  partClass: string,
+  samples: number,
+  seedBase: string,
+): ConnectorRulesPreview {
+  const rules = parseConnectorRules(rulesJson);
+  if (rules === null) {
+    return { problem: 'the rules are not in a valid shape', combos: [], samples: [] };
+  }
+  const problem = validateConnectorRules(rules, partClass);
+  if (problem !== null) return { problem, combos: [], samples: [] };
+  const combos = enumerateCombos(rules);
+  const total = combos.reduce((sum, entry) => sum + entry.weight, 0);
+  const layouts: ConnectorLayout[] = [];
+  for (let index = 0; index < samples; index += 1) {
+    const layout = generateConnectors(rules, w, h, `${seedBase}:${index}`);
+    if (layout !== null) layouts.push(layout);
+  }
+  return {
+    problem: null,
+    combos: combos
+      .map((entry) => ({ sides: entry.combo, probability: entry.weight / total }))
+      .sort((a, b) => b.probability - a.probability),
+    samples: layouts,
+  };
+}

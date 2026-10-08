@@ -8,6 +8,7 @@ import { WorldScreen } from './analytics/WorldScreen';
 import { InspectorDetailScreen, InspectorListScreen } from './inspector/InspectorScreen';
 import { SystemScreen } from './system/SystemScreen';
 import { ConfigScreen } from './tuning/ConfigScreen';
+import { EntityFormScreen } from './tuning/EntityFormScreen';
 import { EntityScreen } from './tuning/EntityScreen';
 import { RevisionHistory } from './tuning/RevisionHistory';
 
@@ -29,6 +30,9 @@ export default function AdminRoutes() {
           <Route path="system" element={<SystemScreen />} />
           <Route path="tuning/config" element={<ConfigScreen />} />
           <Route path="tuning/entities/:entity" element={<EntityScreen />} />
+          <Route path="tuning/entities/:entity/new" element={<EntityFormScreen mode="new" />} />
+          <Route path="tuning/entities/:entity/:id" element={<EntityFormScreen mode="edit" />} />
+          <Route path="tuning/entities/:entity/:id/clone" element={<EntityFormScreen mode="clone" />} />
           <Route path="tuning/revisions" element={<RevisionHistory />} />
         </Route>
       </Routes>

@@ -142,8 +142,12 @@ export function ConfigScreen() {
         </button>
       </div>
       {Array.from(grouped.entries()).map(([group, entries]) => (
-        <section key={group}>
-          <h3>{group}</h3>
+        <details key={group} className="config-group" open={search.trim() !== ''}>
+          <summary>
+            <h3>{group}</h3>
+            <span className="muted">{entries.length}</span>
+          </summary>
+          <div className="tuning-table-wrap">
           <table>
             <thead>
               <tr>
@@ -239,7 +243,8 @@ export function ConfigScreen() {
               })}
             </tbody>
           </table>
-        </section>
+          </div>
+        </details>
       ))}
       {confirmReset && (
         <div role="dialog" aria-modal="true">

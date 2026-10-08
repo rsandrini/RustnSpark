@@ -222,6 +222,7 @@ describe('admin player inspector (S11.4)', () => {
         credits: startCredits,
         locale: 'en',
         factionId: 'luna',
+        debugFastOps: false,
         createdAt: dbPlayer.createdAt.toISOString(),
       },
       ships: [

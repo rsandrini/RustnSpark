@@ -1026,6 +1026,8 @@ export const PlayerSheetSchema = z.object({
     credits: z.number(),
     locale: z.string(),
     factionId: z.string().nullable(),
+    /** Owner debug switch: this player's jobs finish in seconds (see admin.debug_fast_ops_seconds). */
+    debugFastOps: z.boolean(),
     createdAt: z.string(),
   }),
   ships: z.array(

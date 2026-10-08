@@ -612,6 +612,29 @@ describe('entity tuning (S3.8)', () => {
       expect(response.status).toBe(400);
     });
 
+    it('previews rules for the editor: exact chances and sample layouts, from the server\'s own generator', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const response = await request(server)
+        .post('/v1/admin/tuning/connector-rules/preview')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rules: { sides: sides('central'), oneKindPerPart: true }, w: 2, h: 1, partClass: 'CARGO', samples: 3 });
+      expect(response.status).toBe(200);
+      const body = response.body as {
+        problem: string | null;
+        combos: { probability: number }[];
+        samples: { cells: unknown[] }[];
+      };
+      expect(body.problem).toBeNull();
+      expect(body.combos).toHaveLength(1);
+      expect(body.combos[0]!.probability).toBe(1);
+      expect(body.samples).toHaveLength(3);
+      expect(body.samples[0]!.cells.length).toBe(6); // 2x1 perimeter, 4 sides
+    });
+
     it('rejects malformed rules (unknown kind, extra keys)', async () => {
       await seed(prisma);
       const server = httpServer(testApp.app);

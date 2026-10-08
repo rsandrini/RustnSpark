@@ -123,3 +123,20 @@ export function ConnectorGrid({
     </svg>
   );
 }
+
+/** A kind as the dots it puts on an edge (none = an empty slot) — for chips, legends and tables. */
+export function KindIcon({ kind, className }: { kind: Kind; className?: string }) {
+  return (
+    <svg
+      className={`kind-icon conn-kind-${kind}${className === undefined ? '' : ` ${className}`}`}
+      viewBox="-0.5 -0.2 1 0.4"
+      aria-hidden="true"
+    >
+      {kind === 'none' ? (
+        <line x1={-0.3} y1={0} x2={0.3} y2={0} className="kind-icon-none" />
+      ) : (
+        DOTS[kind].map((dot) => <circle key={dot.offset} cx={dot.offset} cy={0} r={dot.radius} />)
+      )}
+    </svg>
+  );
+}

@@ -6,6 +6,25 @@ import { MemoryRouter, Routes, Route } from 'react-router';
 import { renderWithProviders } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { EntityScreen } from './EntityScreen';
+import { EntityFormScreen } from './EntityFormScreen';
+
+// The entity list plus its create / edit / clone pages, as the admin shell routes them.
+function renderAt(path: string) {
+  return renderWithProviders(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
+        <Route path="/admin/tuning/entities/:entity/new" element={<EntityFormScreen mode="new" />} />
+        <Route path="/admin/tuning/entities/:entity/:id" element={<EntityFormScreen mode="edit" />} />
+        <Route
+          path="/admin/tuning/entities/:entity/:id/clone"
+          element={<EntityFormScreen mode="clone" />}
+        />
+      </Routes>
+    </MemoryRouter>,
+    { withRouter: false },
+  );
+}
 
 const materialsSchema = {
   entity: 'materials',
@@ -95,14 +114,7 @@ describe('EntityScreen', () => {
       ),
     );
 
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
     expect(await screen.findByText('iron')).toBeInTheDocument();
     expect(screen.getByText('COMMON')).toBeInTheDocument();
@@ -150,14 +162,7 @@ describe('EntityScreen', () => {
       ),
     );
 
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/ship-formats');
 
     expect(await screen.findByText('scout')).toBeInTheDocument();
     const preview = screen.getByRole('img', { name: /3 cells/i });
@@ -187,16 +192,9 @@ describe('EntityScreen', () => {
       }),
     );
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/ship-formats');
 
-    await user.click(await screen.findByRole('button', { name: 'Clone scout' }));
+    await user.click(await screen.findByRole('link', { name: 'Clone scout' }));
     // pre-filled: a fresh id (the original is untouched) and tagged names
     expect(await screen.findByDisplayValue('scout_copy')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Scout (copy)')).toBeInTheDocument();
@@ -220,15 +218,8 @@ describe('EntityScreen', () => {
       http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json([], { status: 200 })),
     );
     const user = userEvent.setup();
-    const { container } = renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
-    await user.click(await screen.findByRole('button', { name: 'Create' }));
+    const { container } = renderAt('/admin/tuning/entities/ship-formats');
+    await user.click(await screen.findByRole('link', { name: 'Create' }));
     const side = document.body.querySelector('.schema-form-split .schema-form-side');
     const main = document.body.querySelector('.schema-form-split .schema-form-main');
     expect(side).not.toBeNull();
@@ -250,14 +241,7 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
     expect(await screen.findByText('iron')).toBeInTheDocument();
     expect(screen.getByText('diamond')).toBeInTheDocument();
@@ -280,16 +264,9 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
-    await user.click(await screen.findByRole('button', { name: /create/i }));
+    await user.click(await screen.findByRole('link', { name: /create/i }));
 
     expect(screen.getByRole('textbox', { name: /id/i })).toBeInTheDocument();
     expect(
@@ -334,16 +311,9 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
-    await user.click(await screen.findByRole('button', { name: /create/i }));
+    await user.click(await screen.findByRole('link', { name: /create/i }));
 
     await user.type(screen.getByRole('textbox', { name: /id/i }), 'copper');
     await user.type(
@@ -376,7 +346,7 @@ describe('EntityScreen', () => {
     expect(typeof body.reason).toBe('string');
   });
 
-  it('auto-saves an edited field on blur, without clicking Save, and keeps the popup open', async () => {
+  it('auto-saves an edited field on blur, without clicking Save, and stays on the edit page', async () => {
     const savedBodies: unknown[] = [];
     server.use(
       http.get('/v1/admin/tuning/schema/materials', () =>
@@ -408,17 +378,10 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
     await screen.findByText('iron');
-    await user.click(screen.getByRole('button', { name: /edit iron/i }));
+    await user.click(screen.getByRole('link', { name: /edit iron/i }));
 
     const price = await screen.findByRole('spinbutton', { name: /base price/i });
     await user.clear(price);
@@ -428,8 +391,8 @@ describe('EntityScreen', () => {
 
     await waitFor(() => expect(savedBodies.length).toBeGreaterThan(0));
     expect(savedBodies[0]).toMatchObject({ data: { basePrice: 20 } });
-    // Auto-save never closes the popup — only Save or Cancel/Close do.
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    // Auto-save never leaves the page — only Save or Cancel do.
+    expect(screen.getByRole('heading', { name: 'Edit entity' })).toBeInTheDocument();
     expect(await screen.findByText('Saved')).toBeInTheDocument();
   });
 
@@ -447,16 +410,9 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
-    await user.click(await screen.findByRole('button', { name: /create/i }));
+    await user.click(await screen.findByRole('link', { name: /create/i }));
     await user.type(screen.getByRole('textbox', { name: /id/i }), 'copper');
     await user.tab();
     await user.tab();
@@ -495,14 +451,7 @@ describe('EntityScreen', () => {
     );
 
     const user = userEvent.setup();
-    renderWithProviders(
-      <MemoryRouter initialEntries={['/admin/tuning/entities/materials']}>
-        <Routes>
-          <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        </Routes>
-      </MemoryRouter>,
-      { withRouter: false },
-    );
+    renderAt('/admin/tuning/entities/materials');
 
     await screen.findByText('iron');
     await user.click(screen.getByRole('button', { name: /retire iron/i }));

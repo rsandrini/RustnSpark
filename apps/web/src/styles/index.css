@@ -4115,3 +4115,108 @@ svg .block.dir-blocked {
 .schema-form-split .schema-form-main .lbl {
   text-align: center;
 }
+
+/* Admin entity pages: list toolbar, scroll container and the edit/create page chrome. */
+.tuning-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.tuning-search {
+  min-width: 220px;
+  max-width: 100%;
+}
+.tuning-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.tuning-table-wrap th .th-label {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-actions {
+  white-space: nowrap;
+}
+.row-actions > * {
+  margin-right: 6px;
+}
+/* A link that looks like the admin's buttons (navigation, not an action). */
+.admin-shell a.btn-link,
+.btn-link {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel2);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+.admin-shell a.btn-link:hover {
+  border-color: var(--spark);
+}
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+  color: var(--mut);
+  font-size: 13px;
+}
+.entity-form-page .schema-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  margin-top: 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+.entity-form-page .schema-form-split {
+  min-height: 0;
+}
+
+.schema-form-section {
+  margin-bottom: 18px;
+}
+.schema-form-section h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--spark);
+}
+.schema-form-split .schema-form-side .schema-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Config groups: collapsed by default (the screen is hundreds of keys); a search opens them all. */
+.config-group {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+}
+.config-group > summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  list-style: none;
+}
+.config-group > summary h3 {
+  margin: 0;
+}
+.config-group[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}

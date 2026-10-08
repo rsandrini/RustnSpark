@@ -5,6 +5,7 @@ import {
   expandCombo,
   generateConnectors,
   parseConnectorRules,
+  previewConnectorRules,
   validateConnectorRules,
   type ConnectorRules,
 } from '../../../src/parts/connector-rules.js';
@@ -144,5 +145,22 @@ describe('connector rules generation', () => {
     }
     const splitOnly: ConnectorRules = { sides: { N: fixed('split'), E: fixed('split'), S: fixed('split'), W: fixed('split') } };
     expect(generateConnectors(splitOnly, 1, 1, 'x', ['central'])!.cells[0]!.kind).toBe('split');
+  });
+
+  it('previewConnectorRules: exact chances that sum to 1, samples drawn by the real generator, problems reported', () => {
+    const preview = previewConnectorRules(defaultConnectorRules('TANK'), 1, 1, 'TANK', 4, 'p');
+    expect(preview.problem).toBeNull();
+    expect(preview.combos).toHaveLength(3); // all-central / all-split / all-universal
+    expect(preview.combos.reduce((sum, c) => sum + c.probability, 0)).toBeCloseTo(1, 10);
+    for (const entry of preview.combos) expect(entry.probability).toBeCloseTo(1 / 3, 10);
+    expect(preview.samples).toHaveLength(4);
+
+    const engineBad = previewConnectorRules(
+      { sides: { N: fixed('central'), E: fixed('central'), S: fixed('central'), W: fixed('central') } },
+      1, 1, 'ENGINE', 3, 'p',
+    );
+    expect(engineBad.problem).toMatch(/W side/);
+    expect(engineBad.samples).toEqual([]);
+    expect(previewConnectorRules({ nope: true }, 1, 1, 'TANK', 3, 'p').problem).toMatch(/shape/);
   });
 });

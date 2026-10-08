@@ -11,8 +11,16 @@ const AUTO_SAVE_DEBOUNCE_MS = 1200;
 // Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
 const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
 
+/** A titled group of fields in the details column (field names; any field not listed lands in a
+    trailing untitled group so nothing is ever hidden). */
+export interface FormSection {
+  titleKey: string;
+  fields: readonly string[];
+}
+
 interface SchemaFormProps {
   fields: dto.EntitySchemaField[];
+  sections?: readonly FormSection[];
   initialData?: Record<string, unknown>;
   onSubmit: (data: Record<string, unknown>, reason: string) => void | Promise<void>;
   onCancel?: () => void;
@@ -82,6 +90,7 @@ function stringifyForInput(value: unknown): string {
 
 export function SchemaForm({
   fields,
+  sections,
   initialData = {},
   onSubmit,
   onCancel,
@@ -293,6 +302,20 @@ export function SchemaForm({
     );
   };
 
+  // Fields with a drawing/visual editor take the main pane beside the details column.
+  const isMain = (field: dto.EntitySchemaField) =>
+    field.type === 'grid-cells' || field.type === 'connector-rules';
+  const mainFields = fields.filter(isMain);
+  const sideFields = fields.filter((field) => !isMain(field));
+  const listed = new Set((sections ?? []).flatMap((section) => section.fields));
+  const sectionGroups: { titleKey: string | null; fields: dto.EntitySchemaField[] }[] = [
+    ...(sections ?? []).map((section) => ({
+      titleKey: section.titleKey,
+      fields: sideFields.filter((field) => section.fields.includes(field.name)),
+    })),
+    { titleKey: null, fields: sideFields.filter((field) => !listed.has(field.name)) },
+  ].filter((group) => group.fields.length > 0);
+
   const renderField = (field: dto.EntitySchemaField) => {
     const wide =
       field.type === 'locale-map' ||
@@ -336,31 +359,34 @@ export function SchemaForm({
       {/* A form with a cell-drawing field (ship formats) is laid out as a left column of details and
           the drawing area centered beside it, instead of a left-aligned grid with every detail
           stacked underneath (owner request). Other forms keep the single paired-field grid. */}
-      <div className={fields.some((f) => f.type === 'grid-cells') ? 'schema-form-split' : undefined}>
-        <div className="schema-form-grid schema-form-side">
-          {fields
-            .filter((field) => field.type !== 'grid-cells')
-            .map((field) => renderField(field))}
-          <div className="field">
-            <label className="lbl" htmlFor="reason">
-              {t('tuning.versionLabel')}
-            </label>
-            <input
-              id="reason"
-              type="text"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              required
-            />
+      <div className={mainFields.length > 0 ? 'schema-form-split' : undefined}>
+        <div className="schema-form-side">
+          {sectionGroups.map((group) => (
+            <section key={group.titleKey ?? 'rest'} className="schema-form-section">
+              {group.titleKey !== null && <h3>{t(group.titleKey)}</h3>}
+              <div className="schema-form-grid">{group.fields.map((field) => renderField(field))}</div>
+            </section>
+          ))}
+          <div className="schema-form-grid">
+            <div className="field">
+              <label className="lbl" htmlFor="reason">
+                {t('tuning.versionLabel')}
+              </label>
+              <input
+                id="reason"
+                type="text"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                required
+              />
+            </div>
           </div>
         </div>
-        {fields.some((f) => f.type === 'grid-cells') && (
-          <div className="schema-form-main">
-            {fields.filter((field) => field.type === 'grid-cells').map((field) => renderField(field))}
-          </div>
+        {mainFields.length > 0 && (
+          <div className="schema-form-main">{mainFields.map((field) => renderField(field))}</div>
         )}
       </div>
-      <div>
+      <div className="schema-form-actions">
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>
         {onCancel && (
           <button type="button" onClick={onCancel}>
