@@ -548,6 +548,28 @@ describe('port (S10.9)', () => {
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
   // part" — the same before/after popup Market already has, built from a virtual part at the
   // next tier (which doesn't exist as an owned instance yet).
+  it('the upgrade tab starts on "only what I can afford", which still lists what is within reach', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Only what I can afford' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('with too few credits the list says so, and turning the filter off shows everything upgradable', async () => {
+    setWallet(1);
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    expect(
+      await screen.findByText(/Nothing you can upgrade with your credits/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Plated Hull')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Only what I can afford' }));
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+  });
   it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
     server.use(
       http.post('/v1/ships/:id/preview', async ({ request }) => {

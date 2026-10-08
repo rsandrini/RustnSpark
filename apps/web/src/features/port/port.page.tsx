@@ -42,7 +42,15 @@ import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
 import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
 
-const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging', 'mining'] as const;
+const PORT_TABS = [
+  'market',
+  'goods',
+  'repair',
+  'refuel',
+  'upgrade',
+  'scavenging',
+  'mining',
+] as const;
 type PortTabId = (typeof PORT_TABS)[number];
 
 interface UpgradeConfirm {
@@ -146,7 +154,9 @@ export function PortPage({
     queryKey: ['shipReadiness', ship?.id, ship?.layout],
     enabled: ship !== undefined && tab === 'scavenging',
     queryFn: () =>
-      client.post<PreviewResponse>(`/v1/ships/${ship?.id ?? ''}/preview`, { layout: ship?.layout ?? [] }),
+      client.post<PreviewResponse>(`/v1/ships/${ship?.id ?? ''}/preview`, {
+        layout: ship?.layout ?? [],
+      }),
   });
   const shipHandicapped =
     readinessQuery.data !== undefined &&
@@ -221,6 +231,8 @@ export function PortPage({
   const partName = (item: InventoryItem) => pickLocalized(item.displayName, i18n.language);
 
   const wallet = user?.credits ?? 0;
+  // Upgrade tab: by default only what the pilot can pay for right now.
+  const [onlyAffordable, setOnlyAffordable] = useState(true);
   const broke = wallet < 0;
   const afterTrade = () => {
     // Profile only (wallet): a session refresh per trade would rotate the refresh token.
@@ -917,91 +929,121 @@ export function PortPage({
           <p className="sub">{t('port.upgradeHelp')}</p>
           {(() => {
             const quotes = upgradeQuotesQuery.data;
-            const eligible = upgradeCandidates.filter(
+            const upgradable = upgradeCandidates.filter(
               (item) => quotes?.get(item.id)?.eligible === true,
             );
+            const eligible = onlyAffordable
+              ? upgradable.filter((item) => (quotes?.get(item.id)?.cost ?? 0) <= wallet)
+              : upgradable;
             if (quotes === undefined && upgradeCandidates.length > 0) {
               return <p className="sub">{t('loading')}</p>;
             }
+            const filterChips = upgradable.length > 0 && (
+              <div className="chips" role="group" aria-label={t('port.upgradeFilter')}>
+                <button
+                  type="button"
+                  className={`chip${onlyAffordable ? ' on' : ''}`}
+                  aria-pressed={onlyAffordable}
+                  onClick={() => setOnlyAffordable((current) => !current)}
+                >
+                  {t('port.upgradeOnlyAffordable')}
+                </button>
+              </div>
+            );
             if (eligible.length === 0) {
-              return <p className="sub">{t('port.upgradeNone')}</p>;
+              return (
+                <>
+                  {filterChips}
+                  <p className="sub">
+                    {upgradable.length > 0
+                      ? t('port.upgradeNoneAffordable')
+                      : t('port.upgradeNone')}
+                  </p>
+                </>
+              );
             }
             return (
-              <div className="pcard-grid">
-                {eligible.map((item) => {
-                  const quote = quotes?.get(item.id);
-                  if (quote === undefined || !quote.eligible) return null;
-                  const name = partName(item);
-                  const nextName =
-                    quote.nextDisplayName !== undefined
-                      ? pickLocalized(quote.nextDisplayName, i18n.language)
-                      : '';
-                  // Round-10 owner request: "Upgrade UI should show diff between current
-                  // part and upgraded part" — the next tier doesn't exist as an owned
-                  // instance yet, so it's a virtual PartInfoData (same trick Market uses
-                  // for a catalog listing), replacing this exact instance.
-                  const nextPartInfo: PartInfoData | undefined =
-                    quote.nextCatalog !== undefined &&
-                    quote.nextRarity !== undefined &&
-                    quote.nextDisplayName !== undefined
-                      ? {
-                          displayName: quote.nextDisplayName,
-                          description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
-                          rarity: quote.nextRarity,
-                          catalog: quote.nextCatalog,
-                          condition: 100,
+              <>
+                {filterChips}
+                <div className="pcard-grid">
+                  {eligible.map((item) => {
+                    const quote = quotes?.get(item.id);
+                    if (quote === undefined || !quote.eligible) return null;
+                    const name = partName(item);
+                    const nextName =
+                      quote.nextDisplayName !== undefined
+                        ? pickLocalized(quote.nextDisplayName, i18n.language)
+                        : '';
+                    // Round-10 owner request: "Upgrade UI should show diff between current
+                    // part and upgraded part" — the next tier doesn't exist as an owned
+                    // instance yet, so it's a virtual PartInfoData (same trick Market uses
+                    // for a catalog listing), replacing this exact instance.
+                    const nextPartInfo: PartInfoData | undefined =
+                      quote.nextCatalog !== undefined &&
+                      quote.nextRarity !== undefined &&
+                      quote.nextDisplayName !== undefined
+                        ? {
+                            displayName: quote.nextDisplayName,
+                            description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
+                            rarity: quote.nextRarity,
+                            catalog: quote.nextCatalog,
+                            condition: 100,
+                          }
+                        : undefined;
+                    const nextCompare: PartCompareContext | undefined =
+                      nextPartInfo === undefined
+                        ? undefined
+                        : {
+                            shipId: ship.id,
+                            installedPartIds: installed.map((part) => part.id),
+                            currentSheet: ship.sheet,
+                            defaultScenario: 'replace',
+                            replaceCandidates: [
+                              { partInstanceId: item.id, displayName: item.displayName },
+                            ],
+                          };
+                    return (
+                      <PartCard
+                        key={item.id}
+                        part={item}
+                        price={quote.cost}
+                        priceCaption={t('port.upgradeCost')}
+                        infoExtra={
+                          nextPartInfo !== undefined && (
+                            <section
+                              className="upgrade-next"
+                              aria-label={t('port.upgradesTo', { name: nextName })}
+                            >
+                              <h4>{t('port.upgradesTo', { name: nextName })}</h4>
+                              <PartDetail part={nextPartInfo} compare={nextCompare} />
+                            </section>
+                          )
                         }
-                      : undefined;
-                  const nextCompare: PartCompareContext | undefined =
-                    nextPartInfo === undefined
-                      ? undefined
-                      : {
-                          shipId: ship.id,
-                          installedPartIds: installed.map((part) => part.id),
-                          currentSheet: ship.sheet,
-                          defaultScenario: 'replace',
-                          replaceCandidates: [
-                            { partInstanceId: item.id, displayName: item.displayName },
-                          ],
-                        };
-                  return (
-                    <PartCard
-                      key={item.id}
-                      part={item}
-                      price={quote.cost}
-                      priceCaption={t('port.upgradeCost')}
-                      infoExtra={
-                        nextPartInfo !== undefined && (
-                          <section className="upgrade-next" aria-label={t('port.upgradesTo', { name: nextName })}>
-                            <h4>{t('port.upgradesTo', { name: nextName })}</h4>
-                            <PartDetail part={nextPartInfo} compare={nextCompare} />
-                          </section>
-                        )
-                      }
-                      actions={
-                        <>
-                          <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
-                          <button
-                            type="button"
-                            className="btn primary"
-                            disabled={upgradePart.isPending || (quote.cost ?? 0) > wallet}
-                            onClick={() =>
-                              setUpgradeConfirm({
-                                partInstanceId: item.id,
-                                name,
-                                nextName,
-                                cost: quote.cost ?? 0,
-                              })
-                            }
-                          >
-                            {t('port.upgrade')}
-                          </button>
-                        </>
-                      }
-                    />
-                  );
-                })}
-              </div>
+                        actions={
+                          <>
+                            <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
+                            <button
+                              type="button"
+                              className="btn primary"
+                              disabled={upgradePart.isPending || (quote.cost ?? 0) > wallet}
+                              onClick={() =>
+                                setUpgradeConfirm({
+                                  partInstanceId: item.id,
+                                  name,
+                                  nextName,
+                                  cost: quote.cost ?? 0,
+                                })
+                              }
+                            >
+                              {t('port.upgrade')}
+                            </button>
+                          </>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </>
             );
           })()}
         </section>

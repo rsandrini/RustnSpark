@@ -940,7 +940,10 @@
     "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
     "upgradeQuote": "Melhorar {{name}} para {{nextName}} por {{cost}} ¢?",
     "upgradeConfirm": "Melhorar",
-    "upgraded": "Melhorado para {{name}}."
+    "upgraded": "Melhorado para {{name}}.",
+    "upgradeFilter": "Filtro de melhorias",
+    "upgradeOnlyAffordable": "Só o que eu posso pagar",
+    "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado."
   },
   "inventory": {
     "title": "Inventário",
