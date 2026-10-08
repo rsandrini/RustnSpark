@@ -945,10 +945,9 @@
   "report": {
     "title": "Mission report",
     "tabs": {
-      "summary": "Summary",
+      "overview": "Overview",
       "narrative": "The story",
-      "log": "Log",
-      "detail": "Details"
+      "log": "Log"
     },
     "detail": {
       "partsDamage": "Parts that took damage",
@@ -1030,7 +1029,41 @@
       "trouble": {
         "mishap": "had trouble",
         "overheat": "engines overheated"
+      },
+      "damageCombat": "Fight damage",
+      "travelWear": "Wear on the way",
+      "wearValue": "{{points}} points · {{parts}} part(s)"
+    },
+    "overview": {
+      "combatTitle": "Damage in fights",
+      "noCombatDamage": "No damage from fights.",
+      "layer": {
+        "shield": "Shield",
+        "armor": "Armor",
+        "hull": "Hull"
+      },
+      "travelTitle": "Wear on the way",
+      "noWear": "The journey itself left no marks.",
+      "wear": "{{points}} condition points lost across {{parts}} part(s) to the journey itself.",
+      "travelNote": "Space, radiation and debris wear the ship even without a fight.",
+      "fromTo": "{{before}}% → {{after}}%"
+    },
+    "story": {
+      "leg": "Leg {{index}} · {{from}} → {{to}}",
+      "categories": {
+        "combat": "Fight",
+        "transit": "Flight",
+        "failure": "Trouble",
+        "environment": "Space",
+        "loot": "Find",
+        "payment": "Pay"
       }
+    },
+    "logTable": {
+      "leg": "Leg",
+      "kind": "Kind",
+      "what": "What happened",
+      "effect": "Effect"
     }
   },
   "transit": {

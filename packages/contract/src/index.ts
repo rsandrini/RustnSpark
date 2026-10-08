@@ -579,6 +579,9 @@ export const MissionCombatRoundSchema = z.object({
 export type MissionCombatRound = z.infer<typeof MissionCombatRoundSchema>;
 
 export const NarrativeLineSchema = ReportLineSchema.extend({
+  /** What kind of event: combat, transit, failure, environment, loot, payment. */
+  category: z.string().optional(),
+  type: z.string().optional(),
   detail: z
     .object({
       cascade: MissionDamageCascadeSchema,
@@ -587,6 +590,17 @@ export const NarrativeLineSchema = ReportLineSchema.extend({
     .optional(),
 });
 export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
+
+/** One row of the log view: the line plus its parts, to be laid out as a table. */
+export const LogLineSchema = ReportLineSchema.extend({
+  leg: z.number().optional(),
+  category: z.string().optional(),
+  categoryLabel: z.string().optional(),
+  type: z.string().optional(),
+  description: ReportLineSchema.optional(),
+  effect: ReportLineSchema.optional(),
+});
+export type LogLine = z.infer<typeof LogLineSchema>;
 
 export const NarrativeChapterSchema = z.object({
   leg: z.number(),
@@ -608,6 +622,8 @@ export const ReportStatsSchema = z.object({
     pvp: z.number(),
   }),
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+  /** Wear from the journey itself: condition points lost across parts, and how many parts. */
+  travelWear: z.object({ points: z.number(), parts: z.number() }),
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
   /** Every part that lost condition during the run, dispatch vs final. */
@@ -657,6 +673,8 @@ export const ReportMissionSchema = z.object({
   originId: z.string(),
   destinationId: z.string(),
   reward: z.number(),
+  /** The routes the trip follows, one per leg (for the map). */
+  routeIds: z.array(z.string()).optional(),
   title: LocalizedTextSchema,
 });
 export type ReportMission = z.infer<typeof ReportMissionSchema>;
@@ -669,7 +687,7 @@ const reportBase = {
 };
 export const ReportResponseSchema = z.discriminatedUnion('view', [
   z.object({ ...reportBase, view: z.literal('summary'), lines: z.array(ReportLineSchema) }),
-  z.object({ ...reportBase, view: z.literal('log'), lines: z.array(ReportLineSchema) }),
+  z.object({ ...reportBase, view: z.literal('log'), lines: z.array(LogLineSchema) }),
   z.object({
     ...reportBase,
     view: z.literal('narrative'),

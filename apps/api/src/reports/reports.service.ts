@@ -57,6 +57,16 @@ export interface ReportMission {
   readonly destinationId: string;
   readonly title: { readonly en: string; readonly 'pt-BR': string };
   readonly reward: number;
+  /** The routes the trip follows, in order (for the map): one per leg. */
+  readonly routeIds: readonly string[];
+}
+
+/** The route of each stored leg (a leg without one is skipped). */
+function routeIdsOf(legs: unknown): string[] {
+  if (!Array.isArray(legs)) return [];
+  return (legs as Array<{ routeId?: unknown }>).flatMap((leg) =>
+    typeof leg?.routeId === 'string' ? [leg.routeId] : [],
+  );
 }
 
 interface StoredLogJson {
@@ -257,6 +267,7 @@ export class ReportsService {
         originId: true,
         destinationId: true,
         reward: true,
+        legs: true,
         template: { select: { displayName: true } },
       },
     });
@@ -272,6 +283,7 @@ export class ReportsService {
               originId: mission.originId,
               destinationId: mission.destinationId,
               reward: mission.reward,
+              routeIds: routeIdsOf(mission.legs),
               title: bilingual(mission.template.displayName),
             },
           }),

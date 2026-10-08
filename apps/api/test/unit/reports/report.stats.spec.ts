@@ -131,4 +131,42 @@ describe('computeReportStats', () => {
       { partId: 'bridge-1', partType: 'bridge', name: 'bridge', before: 100, after: 99 },
     ]);
   });
+
+  it('travelWear counts the journey\'s own wear apart from combat, per part', () => {
+    const withParts: ReportLog = {
+      ...log([
+        event({
+          type: 'mission_wear',
+          category: 'environment',
+          effects: { hp: 0, condByPart: { 'engine-1': 70, 'bridge-1': 99 }, credits: 0, loot: [] },
+        }),
+        // a fight damages the engine further: that is combat damage, not travel wear
+        event({
+          type: 'combat_loss',
+          cascade: { shield: 0, armor: 0, hp: 0 },
+          effects: { hp: 0, condByPart: { 'engine-1': 55 }, credits: 0, loot: [] },
+        }),
+        event({
+          type: 'mission_wear',
+          category: 'environment',
+          leg: 1,
+          effects: { hp: 0, condByPart: { 'engine-1': 52 }, credits: 0, loot: [] },
+        }),
+      ]),
+      partsBefore: [
+        { id: 'engine-1', partType: 'engine_chem_small', condition: 80 },
+        { id: 'bridge-1', partType: 'bridge', condition: 100 },
+      ],
+    };
+    const stats = computeReportStats(withParts, { parts: {}, materials: {} });
+    // engine: 80 -> 70 (10) in the first wear, then 55 -> 52 (3) in the second; bridge 100 -> 99 (1)
+    expect(stats.travelWear).toEqual({ points: 14, parts: 2 });
+  });
+
+  it('a run with no wear events has no travel wear', () => {
+    expect(computeReportStats(log([]), { parts: {}, materials: {} }).travelWear).toEqual({
+      points: 0,
+      parts: 0,
+    });
+  });
 });

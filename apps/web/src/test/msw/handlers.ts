@@ -1134,6 +1134,7 @@ const reportExtras = {
     distance: 820,
     fights: { won: 1, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
     damage: { shield: 4, armor: 3, hull: 2 },
+    travelWear: { points: 12, parts: 2 },
     hasShield: true,
     partsDamage: [
       {

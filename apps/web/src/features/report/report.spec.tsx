@@ -12,6 +12,7 @@ const STATS = {
   distance: 0,
   fights: { won: 0, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
   damage: { shield: 0, armor: 0, hull: 0 },
+  travelWear: { points: 0, parts: 0 },
   hasShield: true,
   partsDamage: [],
   partFailures: 0,
@@ -42,7 +43,7 @@ describe('report (S10.8)', () => {
     server.use(onboarded());
   });
 
-  it('shows the summary view with the outcome verdict and back links', async () => {
+  it('opens on the overview: verdict, the damage split, the parts that paid for it, and back links', async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
 
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
@@ -53,20 +54,27 @@ describe('report (S10.8)', () => {
     expect(debrief).toHaveTextContent('+1,400 ¢');
     expect(debrief).toHaveTextContent('Shield 4 · armor 3 · hull 2');
     expect(debrief).toHaveTextContent('6 × Iron');
-    fireEvent.click(await screen.findByRole('tab', { name: 'Summary' }));
-    expect(await screen.findByText('Mission accomplished — balance 1400 ¢')).toBeInTheDocument();
-    expect(screen.getByText('Payment +1400 ¢')).toBeInTheDocument();
+    // Fight damage and the wear of the journey itself are two separate things.
+    expect(debrief).toHaveTextContent('Wear on the way');
+    expect(debrief).toHaveTextContent('12 points · 2 part(s)');
+    const overview = await screen.findByTestId('report-overview');
+    expect(within(overview).getByTestId('damage-combat')).toHaveTextContent('Hull');
+    expect(within(overview).getByTestId('damage-travel')).toHaveTextContent(
+      '12 condition points lost across 2 part(s)',
+    );
+    expect(within(overview).getByTestId('parts-damage')).toHaveTextContent('Small Chem Engine');
 
     expect(screen.getByRole('link', { name: 'Back to the map' })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('link', { name: 'Back to the board' })).toHaveAttribute(
       'href',
       '/board',
     );
-    expect(screen.getByRole('tab', { name: 'Summary' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('renders the narrative chapters and opens the event popup', async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
 
     expect(await screen.findByText('Leg 1 — completed')).toBeInTheDocument();
     expect(screen.getByText('Departed Porto Ceres on schedule.')).toBeInTheDocument();
@@ -153,6 +161,7 @@ describe('report (S10.8)', () => {
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Log' }));
 
+    expect(await screen.findByTestId('log-table')).toBeInTheDocument();
     expect(await screen.findByText('[00:42] combat pirate')).toBeInTheDocument();
     expect(screen.getByText('[00:00] depart ceres')).toBeInTheDocument();
   });
@@ -221,11 +230,12 @@ describe('report (S10.8)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
     await screen.findByText('Story line');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Log' }));
     // Mid-load: still the previous view, still the tabs — no full-page "Loading".
-    expect(screen.getByRole('tab', { name: 'Summary' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByText('Story line')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: 'Log' })).toHaveAttribute('aria-selected', 'true'),
@@ -240,13 +250,20 @@ describe('report (S10.8)', () => {
             locale: 'en',
             outcome: 'success',
             stats: STATS,
-            view: 'summary',
-            lines: [
+            view: 'narrative',
+            chapters: [
               {
-                text: 'Hauled Iron',
-                segments: [
-                  { t: 'text', value: 'Hauled ' },
-                  { t: 'ref', kind: 'loot', id: 'iron', value: 'Iron' },
+                leg: 0,
+                header: { text: 'Leg 1', segments: [{ t: 'text', value: 'Leg 1' }] },
+                lines: [
+                  {
+                    text: 'Hauled Iron',
+                    category: 'loot',
+                    segments: [
+                      { t: 'text', value: 'Hauled ' },
+                      { t: 'ref', kind: 'loot', id: 'iron', value: 'Iron' },
+                    ],
+                  },
                 ],
               },
             ],
@@ -256,6 +273,7 @@ describe('report (S10.8)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Iron' }));
     const popup = await screen.findByRole('dialog', { name: 'Iron' });
     expect(popup).toHaveTextContent('Item');
@@ -272,13 +290,20 @@ describe('report (S10.8)', () => {
             locale: 'en',
             outcome: 'success',
             stats: STATS,
-            view: 'summary',
-            lines: [
+            view: 'narrative',
+            chapters: [
               {
-                text: 'Lost a Ghost Part',
-                segments: [
-                  { t: 'text', value: 'Lost a ' },
-                  { t: 'ref', kind: 'part', id: 'retired_part', value: 'Ghost Part' },
+                leg: 0,
+                header: { text: 'Leg 1', segments: [{ t: 'text', value: 'Leg 1' }] },
+                lines: [
+                  {
+                    text: 'Lost a Ghost Part',
+                    category: 'failure',
+                    segments: [
+                      { t: 'text', value: 'Lost a ' },
+                      { t: 'ref', kind: 'part', id: 'retired_part', value: 'Ghost Part' },
+                    ],
+                  },
                 ],
               },
             ],
@@ -288,6 +313,7 @@ describe('report (S10.8)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Ghost Part' }));
     const popup = await screen.findByRole('dialog', { name: 'Ghost Part' });
     expect(popup).toHaveTextContent('Part');
@@ -382,25 +408,20 @@ describe('report (S10.8)', () => {
     expect(debrief).not.toHaveTextContent('Shield');
   });
 
-  it('the Details tab shows the parts-damage table (before/after bars), and nothing for a quiet run', async () => {
+  it('the overview shows the parts-damage bars (before → after), and nothing for a quiet run', async () => {
+    const withDamage = {
+      ...STATS,
+      partsDamage: [
+        { partId: 'p1', partType: 'engine_chem_small', name: 'Small Chem Engine', before: 80, after: 55 },
+      ],
+    };
     server.use(
       http.get('/v1/reports/:missionId', () =>
         HttpResponse.json(
           {
             locale: 'en',
             outcome: 'success',
-            stats: {
-              ...STATS,
-              partsDamage: [
-                {
-                  partId: 'p1',
-                  partType: 'engine_chem_small',
-                  name: 'Small Chem Engine',
-                  before: 80,
-                  after: 55,
-                },
-              ],
-            },
+            stats: withDamage,
             view: 'summary',
             lines: [{ text: 'Summary', segments: [{ t: 'text', value: 'Summary' }] }],
           },
@@ -409,13 +430,37 @@ describe('report (S10.8)', () => {
       ),
     );
     renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
-    fireEvent.click(await screen.findByRole('tab', { name: 'Details' }));
     const table = await screen.findByTestId('parts-damage');
     expect(table).toHaveTextContent('Small Chem Engine');
     expect(table).toHaveTextContent('80% → 55%');
     expect(table).toHaveTextContent('−25');
-    // Switching back to Summary hides the damage table (it only shows on its own tab).
-    fireEvent.click(screen.getByRole('tab', { name: 'Summary' }));
-    await waitFor(() => expect(screen.queryByTestId('parts-damage')).not.toBeInTheDocument());
+    // The bar plays the loss: it ends at the level now, with the lost part showing behind it.
+    const bar = within(table).getByRole('meter', { name: 'Small Chem Engine' });
+    await waitFor(() =>
+      expect(bar.querySelector('.lossbar-fill')).toHaveStyle({ width: '55%' }),
+    );
+    expect(bar.querySelector('.lossbar-lost')).toHaveStyle({ width: '80%' });
+  });
+
+  it('a quiet run says so instead of listing parts', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: { ...STATS, partsDamage: [], travelWear: { points: 0, parts: 0 } },
+            view: 'summary',
+            lines: [{ text: 'Summary', segments: [{ t: 'text', value: 'Summary' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    expect(await screen.findByTestId('damage-travel')).toHaveTextContent(
+      'The journey itself left no marks.',
+    );
+    expect(screen.getByTestId('parts-damage')).toHaveTextContent('Nothing took damage on this run.');
   });
 });

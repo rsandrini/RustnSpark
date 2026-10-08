@@ -945,10 +945,9 @@
   "report": {
     "title": "Relatório da missão",
     "tabs": {
-      "summary": "Resumo",
+      "overview": "Visão geral",
       "narrative": "A história",
-      "log": "Registro",
-      "detail": "Detalhes"
+      "log": "Registro"
     },
     "detail": {
       "partsDamage": "Peças que sofreram dano",
@@ -1030,7 +1029,41 @@
       "trouble": {
         "mishap": "teve problemas",
         "overheat": "motores superaqueceram"
+      },
+      "damageCombat": "Dano em lutas",
+      "travelWear": "Desgaste no caminho",
+      "wearValue": "{{points}} pontos · {{parts}} peça(s)"
+    },
+    "overview": {
+      "combatTitle": "Dano em combates",
+      "noCombatDamage": "Nenhum dano de combates.",
+      "layer": {
+        "shield": "Escudo",
+        "armor": "Blindagem",
+        "hull": "Casco"
+      },
+      "travelTitle": "Desgaste no caminho",
+      "noWear": "A própria viagem não deixou marcas.",
+      "wear": "{{points}} pontos de condição perdidos em {{parts}} peça(s) pela própria viagem.",
+      "travelNote": "Espaço, radiação e detritos desgastam a nave mesmo sem luta.",
+      "fromTo": "{{before}}% → {{after}}%"
+    },
+    "story": {
+      "leg": "Trecho {{index}} · {{from}} → {{to}}",
+      "categories": {
+        "combat": "Luta",
+        "transit": "Voo",
+        "failure": "Problema",
+        "environment": "Espaço",
+        "loot": "Achado",
+        "payment": "Pagamento"
       }
+    },
+    "logTable": {
+      "leg": "Trecho",
+      "kind": "Tipo",
+      "what": "O que aconteceu",
+      "effect": "Efeito"
     }
   },
   "transit": {

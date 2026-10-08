@@ -19,7 +19,14 @@ export interface ReportStats {
     readonly drawn: number;
     readonly pvp: number;
   };
+  /** Damage taken in fights: through the shield, the armor and the hull. */
   readonly damage: { readonly shield: number; readonly armor: number; readonly hull: number };
+  /**
+   * Wear from the journey itself (space, radiation, debris...): condition points lost across the
+   * ship's parts by the run's wear events, and how many parts were touched — separate from combat
+   * damage, which only counts fights.
+   */
+  readonly travelWear: { readonly points: number; readonly parts: number };
   /** Parts that failed (motor, battery, tank, shield, weapon, sensor). */
   readonly partFailures: number;
   readonly fuelLost: number;
@@ -88,6 +95,8 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
   const damage = { shield: 0, armor: 0, hull: 0 };
+  let wearPoints = 0;
+  const wornParts = new Set<string>();
   const loot = new Map<string, number>();
   const found: ReportStats['found'][number][] = [];
   // Seeded with the dispatch condition, then overwritten by each event's condByPart entries in
@@ -132,6 +141,13 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       loot.set(entry.materialId, (loot.get(entry.materialId) ?? 0) + entry.quantity);
     }
     for (const [partId, condition] of Object.entries(event.effects.condByPart)) {
+      if (event.type === 'mission_wear') {
+        const lost = (finalCondition.get(partId) ?? condition) - condition;
+        if (lost > 0) {
+          wearPoints += lost;
+          wornParts.add(partId);
+        }
+      }
       finalCondition.set(partId, condition);
     }
   }
@@ -154,6 +170,7 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     distance,
     fights: { won, lost, escaped, drawn, pvp },
     damage,
+    travelWear: { points: wearPoints, parts: wornParts.size },
     hasShield: log.hasShield,
     partsDamage,
     partFailures,

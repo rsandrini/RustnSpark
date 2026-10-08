@@ -59,7 +59,17 @@ function effectFor(
   return { key: 'none', values: {} };
 }
 
-export function renderLog(log: ReportLog, locale: Locale, names: EntityNames): ReportLine[] {
+/** One row of the log: the line as before plus its parts, so a screen can lay it out as a table. */
+export interface LogLine extends ReportLine {
+  readonly leg: number;
+  readonly category: string;
+  readonly categoryLabel: string;
+  readonly type: string;
+  readonly description: ReportLine;
+  readonly effect: ReportLine;
+}
+
+export function renderLog(log: ReportLog, locale: Locale, names: EntityNames): LogLine[] {
   const chrome = viewChrome(locale);
 
   const ranked = log.events
@@ -77,6 +87,14 @@ export function renderLog(log: ReportLog, locale: Locale, names: EntityNames): R
     const description = renderEventLine(event, storedIndex, log.seed, locale, names);
     const { key, values } = effectFor(event, locale, names);
     const effect = substituteTokens(chrome.effects[key], values);
-    return concatLine(prefix, description, ' — ', effect);
+    return {
+      ...concatLine(prefix, description, ' — ', effect),
+      leg: event.leg,
+      category: event.category,
+      categoryLabel: category,
+      type: event.type,
+      description,
+      effect,
+    };
   });
 }

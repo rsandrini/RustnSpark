@@ -4587,3 +4587,145 @@ svg .block.dir-blocked {
   stroke: var(--bg);
   stroke-width: 1.5;
 }
+
+/* Report overview: the loss is played, bars sink from what they were to what they are. */
+.damage-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.loss-row,
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(120px, 2fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.lossbar {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--panel2);
+  overflow: hidden;
+}
+.lossbar-lost,
+.lossbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+.lossbar-lost {
+  background: rgba(248, 81, 73, 0.45);
+}
+.lossbar-fill {
+  background: var(--ok);
+  transition: width 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+.lossbar.warn .lossbar-fill {
+  background: var(--amber);
+}
+.lossbar.bad .lossbar-fill {
+  background: var(--bad);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lossbar-fill {
+    transition: none;
+  }
+}
+
+/* The story: a timeline per leg, each event tagged by what kind it is. */
+.report-story .story-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+.report-story li.ev {
+  border-left: 3px solid var(--line-strong);
+  padding: 4px 0 4px 10px;
+}
+.ev-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--panel2);
+  color: var(--mut);
+}
+li.ev-combat,
+tr.ev-combat td:first-child {
+  border-left-color: var(--bad);
+}
+li.ev-failure,
+tr.ev-failure td:first-child {
+  border-left-color: var(--rust);
+}
+li.ev-environment,
+tr.ev-environment td:first-child {
+  border-left-color: var(--amber);
+}
+li.ev-loot,
+li.ev-payment,
+tr.ev-loot td:first-child,
+tr.ev-payment td:first-child {
+  border-left-color: var(--ok);
+}
+li.ev-transit,
+tr.ev-transit td:first-child {
+  border-left-color: var(--blue);
+}
+.ev-tag.ev-combat {
+  color: var(--bad);
+}
+.ev-tag.ev-failure {
+  color: var(--rust);
+}
+.ev-tag.ev-environment {
+  color: var(--amber);
+}
+.ev-tag.ev-loot,
+.ev-tag.ev-payment {
+  color: var(--ok);
+}
+.ev-tag.ev-transit {
+  color: var(--blue);
+}
+
+/* The log as a table. */
+.log-table-wrap {
+  overflow-x: auto;
+}
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.log-table th {
+  text-align: left;
+  color: var(--mut);
+  font-weight: 600;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.log-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.log-table td:first-child {
+  border-left: 3px solid var(--line-strong);
+  width: 1%;
+  white-space: nowrap;
+}
+.log-table .log-effect {
+  white-space: nowrap;
+  color: var(--ink);
+  font-weight: 600;
+}
+.race-trouble {
+  color: var(--amber);
+}
