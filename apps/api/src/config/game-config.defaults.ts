@@ -163,6 +163,14 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prize_share_1: 1.6,
     prize_share_2: 0.8,
     prize_share_3: 0.4,
+    // Each rival has a form on the day (speed varies ±this), a small chance of trouble that costs
+    // them time, and the player can push the engines (overdrive) for speed at a price.
+    form_spread: 0.1,
+    mishap_chance: 0.08,
+    mishap_penalty: 0.3,
+    overdrive_speed: 1.25,
+    overdrive_fuel: 1.6,
+    overdrive_risk: 0.15,
   },
   rescue: {
     reference_mob: 3,

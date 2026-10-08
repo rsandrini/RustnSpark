@@ -436,7 +436,11 @@ describe('RACE missions', () => {
   ];
   const raceMission = (competitors = field) =>
     mission({ type: 'RACE', objectCarried: false, race: { competitors } });
-  const withMobility = (mob: number) => snapshot({ sheet: { ...snapshot().sheet, mob } });
+  // The race reads the unrounded speed (pot / mass x mob_factor): shape the sheet to give `mob`.
+  const withMobility = (mob: number) =>
+    snapshot({
+      sheet: { ...snapshot().sheet, mob, mass: 10, pot: (mob * 10) / rules.ship.mob_factor },
+    });
 
   it('a ship faster than the whole field wins: a race_result event and the top prize', () => {
     const out = resolve('race-1', withMobility(8), raceMission());
@@ -461,7 +465,10 @@ describe('RACE missions', () => {
     expect(resolve('race-3', withMobility(5), raceMission())).toEqual(
       resolve('race-3', withMobility(5), raceMission()),
     );
-    const calm: GameRules = { ...rules, race: { ...rules.race, time_jitter: 0 } };
+    const calm: GameRules = {
+      ...rules,
+      race: { ...rules.race, time_jitter: 0, form_spread: 0, mishap_chance: 0 },
+    };
     const prize = (mob: number): number =>
       resolveMission({ seed: 'prizes', snapshot: withMobility(mob), mission: raceMission(), rules: calm }).events.find(
         (event) => event.type === 'mission_payout',

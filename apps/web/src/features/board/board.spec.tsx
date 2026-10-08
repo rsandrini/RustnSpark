@@ -322,10 +322,17 @@ describe('board (S10.6)', () => {
                 requirements: [{ code: 'RACE_SPEED', message: 'too slow', met: true }],
                 race: {
                   rivals: [
-                    { name: 'Comet Runner', mobility: 2.4, durationSeconds: 700 },
-                    { name: 'Vega Dart', mobility: 4.1, durationSeconds: 410 },
-                    { name: 'Halo Sprint', mobility: 3.1, durationSeconds: 540 },
+                    { name: 'Comet Runner', mobility: 2.4, durationSeconds: 700, bestSeconds: 600, worstSeconds: 900 },
+                    { name: 'Vega Dart', mobility: 4.1, durationSeconds: 410, bestSeconds: 350, worstSeconds: 520 },
+                    { name: 'Halo Sprint', mobility: 3.1, durationSeconds: 540, bestSeconds: 470, worstSeconds: 700 },
                   ],
+                  you: {
+                    durationSeconds: 300,
+                    bestSeconds: 280,
+                    worstSeconds: 330,
+                    overdrive: { durationSeconds: 240, bestSeconds: 220, worstSeconds: 400 },
+                  },
+                  overdrive: { speed: 1.25, fuel: 1.6, risk: 0.15 },
                   minMobility: 2.5,
                   prizeShares: [1.6, 0.8, 0.4],
                 },
@@ -346,8 +353,14 @@ describe('board (S10.6)', () => {
       expect.stringContaining('Halo Sprint'),
       expect.stringContaining('Comet Runner'),
     ]);
-    expect(within(field).getByText('4.1')).toBeInTheDocument();
-    expect(within(field).getByText(/Entry: speed 2\.5 or more/)).toBeInTheDocument();
+    // speeds on the display scale (x10), and the expected time next to the best day
+    expect(within(field).getByText('41')).toBeInTheDocument();
+    expect(within(field).getByText(/Entry: speed 25 or more/)).toBeInTheDocument();
+    expect(within(field).getByRole('columnheader', { name: 'Expected' })).toBeInTheDocument();
+    expect(within(field).getByRole('columnheader', { name: 'Best day' })).toBeInTheDocument();
+    const vega = within(field).getByText(/Vega Dart/).closest('tr')!;
+    expect(vega).toHaveTextContent('6m 50s'); // expected 410 s
+    expect(vega).toHaveTextContent('5m 50s'); // best day 350 s
     expect(within(field).getByText(/1º 1,600 ¢/)).toBeInTheDocument();
     expect(within(field).getByText(/2º 800 ¢/)).toBeInTheDocument();
     expect(document.querySelector('.mcard-type')).toHaveTextContent('Race');

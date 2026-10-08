@@ -222,6 +222,7 @@ export const DisplayResponseSchema = z.object({
   statScale: z.number(),
   mobFactor: z.number(),
   scavengeHandicap: z.number(),
+  overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -457,8 +458,31 @@ export const OfferInfoSchema = z.object({
   race: z
     .object({
       rivals: z.array(
-        z.object({ name: z.string(), mobility: z.number(), durationSeconds: z.number() }),
+        z.object({
+          name: z.string(),
+          mobility: z.number(),
+          /** Where the rival usually finishes (listed speed, no luck). */
+          durationSeconds: z.number(),
+          /** Its best and worst day. */
+          bestSeconds: z.number(),
+          worstSeconds: z.number(),
+        }),
       ),
+      /** The viewer's own ship over this route (and in overdrive); null without a flyable ship. */
+      you: z
+        .object({
+          durationSeconds: z.number(),
+          bestSeconds: z.number(),
+          worstSeconds: z.number(),
+          overdrive: z.object({
+            durationSeconds: z.number(),
+            bestSeconds: z.number(),
+            worstSeconds: z.number(),
+          }),
+        })
+        .nullable(),
+      /** What pushing the engines costs and risks: speed x, fuel x, chance of overheating. */
+      overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
       minMobility: z.number(),
       prizeShares: z.array(z.number()),
     })
@@ -614,7 +638,13 @@ export const ReportStatsSchema = z.object({
       /** displayed time = standing seconds x this (missions.time_scale at the run) */
       timeScale: z.number(),
       standings: z.array(
-        z.object({ name: z.string(), mobility: z.number(), seconds: z.number(), you: z.boolean() }),
+        z.object({
+          name: z.string(),
+          mobility: z.number(),
+          seconds: z.number(),
+          you: z.boolean(),
+          trouble: z.enum(['mishap', 'overheat']).optional(),
+        }),
       ),
     })
     .nullable(),

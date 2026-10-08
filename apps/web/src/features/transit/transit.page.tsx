@@ -20,6 +20,7 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
 import { ShipStage } from '../../ui/ShipStage';
 import { RouteMap } from '../../ui/RouteMap';
+import { scaleSpeed, useDisplay } from '../../ui/display';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -42,6 +43,8 @@ export function TransitPage({
   const queryClient = useQueryClient();
   const legSeparator = ' · ';
   const [dispatchServerTime, setDispatchServerTime] = useState<string | undefined>(undefined);
+  // RACE only: run with the engines pushed (more speed, more fuel, a risk of overheating).
+  const [overdrive, setOverdrive] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const activeQuery = useQuery({
@@ -112,6 +115,7 @@ export function TransitPage({
     mutationFn: () =>
       client.post<DispatchResponse>(`/v1/ships/${ship?.id ?? ''}/dispatch`, {
         missionId: mission?.id ?? '',
+        ...(mission?.type === 'RACE' && overdrive ? { overdrive: true } : {}),
       }),
     onSuccess: (response) => {
       setDispatchServerTime(response.serverTime);
@@ -312,7 +316,12 @@ export function TransitPage({
         )}
       </div>
 
-      {mission.type === 'RACE' && <RaceRivals cargo={mission.cargo} />}
+      {mission.type === 'RACE' && (
+        <RaceRivals
+          cargo={mission.cargo}
+          overdrive={mission.status === 'ACCEPTED' ? { on: overdrive, set: setOverdrive } : undefined}
+        />
+      )}
 
       {actionError !== null && (
         <p className="error-text" role="alert">
@@ -466,23 +475,54 @@ interface Rival {
 }
 
 /** The rivals of an accepted race, fastest first — frozen in the mission when the offer was made. */
-function RaceRivals({ cargo }: { cargo: unknown }) {
-  const { t } = useTranslation();
+function RaceRivals({
+  cargo,
+  overdrive,
+}: {
+  cargo: unknown;
+  /** Before dispatch the pilot can choose to push the engines; null/undefined once under way. */
+  overdrive?: { on: boolean; set: (value: boolean) => void };
+}) {
+  const { t, i18n } = useTranslation();
+  const display = useDisplay();
   const race = (cargo as { race?: { competitors?: unknown } } | null)?.race;
   const rivals = (Array.isArray(race?.competitors) ? (race.competitors as Rival[]) : [])
     .filter((rival) => typeof rival?.name === 'string' && typeof rival.mobility === 'number')
     .sort((a, b) => b.mobility - a.mobility);
   if (rivals.length === 0) return null;
+  const percent = (factor: number) => Math.round((factor - 1) * 100);
   return (
     <section className="mcard-race" data-testid="race-rivals" aria-label={t('transit.race.title')}>
       <b>{t('transit.race.title')}</b>
       <ul>
         {rivals.map((rival) => (
           <li key={rival.name}>
-            {t('transit.race.rival', { name: rival.name, mobility: rival.mobility })}
+            {t('transit.race.rival', {
+              name: rival.name,
+              mobility: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                scaleSpeed(rival.mobility, display),
+              ),
+            })}
           </li>
         ))}
       </ul>
+      {overdrive !== undefined && (
+        <label className="race-overdrive" data-testid="race-overdrive">
+          <input
+            type="checkbox"
+            checked={overdrive.on}
+            onChange={(event) => overdrive.set(event.target.checked)}
+          />{' '}
+          <b>{t('transit.race.overdrive')}</b>
+          <small className="sub">
+            {t('transit.race.overdriveHelp', {
+              speed: percent(display.overdrive.speed),
+              fuel: percent(display.overdrive.fuel),
+              risk: Math.round(display.overdrive.risk * 100),
+            })}
+          </small>
+        </label>
+      )}
     </section>
   );
 }

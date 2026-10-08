@@ -76,6 +76,8 @@ export class MissionsController {
     @Param('id') shipId: string,
     @Body() dto: DispatchMissionDto,
   ) {
-    return this.dispatchService.dispatch(shipId, dto.missionId, user.playerId);
+    return this.dispatchService.dispatch(shipId, dto.missionId, user.playerId, {
+      overdrive: dto.overdrive,
+    });
   }
 }

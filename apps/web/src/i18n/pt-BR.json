@@ -1026,7 +1026,11 @@
       "found": "Achados",
       "foundPart": "{{name}} ({{condition}}%)",
       "foundScrap": "Sucata: {{name}}",
-      "raceTitle": "Resultado da corrida — você terminou em {{place}}º"
+      "raceTitle": "Resultado da corrida — você terminou em {{place}}º",
+      "trouble": {
+        "mishap": "teve problemas",
+        "overheat": "motores superaqueceram"
+      }
     }
   },
   "transit": {
@@ -1071,7 +1075,9 @@
     "scavengeTitle": "Saque de destroços",
     "race": {
       "title": "Seus rivais",
-      "rival": "{{name}} — velocidade {{mobility}}"
+      "rival": "{{name}} — velocidade {{mobility}}",
+      "overdrive": "Forçar os motores (overdrive)",
+      "overdriveHelp": "+{{speed}}% de velocidade, +{{fuel}}% de combustível gasto, {{risk}}% de risco de superaquecer (perde tempo)."
     }
   },
   "board": {
@@ -1164,11 +1170,17 @@
       "title": "O grid",
       "pilot": "Piloto",
       "speed": "Velocidade",
-      "time": "Tempo",
       "you": "Você",
       "rank": "{{place}}.",
       "entry": "Entrada: velocidade {{mobility}} ou mais. Prêmios:",
-      "prize": "{{place}}º {{amount}}"
+      "prize": "{{place}}º {{amount}}",
+      "expected": "Esperado",
+      "expectedHint": "Onde esta nave costuma terminar. O resultado real depende da forma, da sorte e de problemas no dia.",
+      "best": "Melhor dia",
+      "bestHint": "Um grande dia: melhor forma e sorte.",
+      "none": "—",
+      "dynamic": "Cada corrida é diferente: forma, sorte e problemas movem os tempos em torno destes valores.",
+      "finish": "Chegada"
     },
     "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}"
   },

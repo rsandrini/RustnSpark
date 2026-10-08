@@ -206,7 +206,6 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               )}
               fuelHave={ship?.fuel}
               fuelCap={ship?.sheet.fuelCap}
-              shipMobility={ship?.sheet.mob}
               world={worldQuery.data}
               mine={mine}
               actions={

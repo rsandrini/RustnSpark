@@ -162,6 +162,8 @@ export interface MissionEvent {
       readonly mobility: number;
       readonly seconds: number;
       readonly you: boolean;
+      /** What went wrong for this ship on the day, if anything. */
+      readonly trouble?: 'mishap' | 'overheat';
     }[];
   };
   /** v2, `scavenge_find` only: what the search turned up. */
@@ -272,6 +274,7 @@ export function missionEvent(input: {
               mobility: Math.round(standing.mobility * 100) / 100,
               seconds: roundInt(standing.seconds),
               you: standing.you,
+              ...(standing.trouble !== undefined ? { trouble: standing.trouble } : {}),
             })),
           },
         }

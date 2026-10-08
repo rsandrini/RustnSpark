@@ -111,6 +111,12 @@ export type ConfigKey =
   | 'race.prize_share_1'
   | 'race.prize_share_2'
   | 'race.prize_share_3'
+  | 'race.overdrive_risk'
+  | 'race.overdrive_fuel'
+  | 'race.overdrive_speed'
+  | 'race.mishap_penalty'
+  | 'race.mishap_chance'
+  | 'race.form_spread'
   | 'race.reference_mob'
   | 'race.speed_spread'
   | 'race.time_jitter'
@@ -331,6 +337,18 @@ export type GameRules = Readonly<{
     prize_share_1: number;
     prize_share_2: number;
     prize_share_3: number;
+    /** A rival's form on the day: its speed varies ±this share around its listed speed. */
+    form_spread: number;
+    /** Chance a ship (rival, or the player in overdrive) has trouble in the race and loses time. */
+    mishap_chance: number;
+    /** Time lost to trouble, as a share of the finishing time. */
+    mishap_penalty: number;
+    /** Overdrive: the player's engines push this much harder (speed x). */
+    overdrive_speed: number;
+    /** Overdrive: fuel burned x. */
+    overdrive_fuel: number;
+    /** Overdrive: chance the engines overheat and the run loses `mishap_penalty` of time. */
+    overdrive_risk: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;

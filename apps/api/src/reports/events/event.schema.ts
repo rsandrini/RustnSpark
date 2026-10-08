@@ -166,6 +166,7 @@ function eventMembers(
                 mobility: z.number(),
                 seconds: num,
                 you: z.boolean(),
+                trouble: z.enum(['mishap', 'overheat']).optional(),
               }),
             ),
           });

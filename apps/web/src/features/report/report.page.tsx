@@ -16,6 +16,7 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
+import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { conditionTone, Gauge } from '../../ui/Gauge';
@@ -427,6 +428,7 @@ interface DebriefProps {
 function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
   const placeArt = usePlaceArt();
   const { t, i18n } = useTranslation();
+  const display = useDisplay();
   const tone = outcomeTone(outcome);
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
   const place = (id: string) => {
@@ -572,7 +574,7 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
               <tr>
                 <th>{t('board.race.pilot')}</th>
                 <th>{t('board.race.speed')}</th>
-                <th>{t('board.race.time')}</th>
+                <th>{t('board.race.finish')}</th>
               </tr>
             </thead>
             <tbody>
@@ -582,8 +584,17 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                     {t('board.race.rank', { place: index + 1 })}{' '}
                     {row.you ? t('board.race.you') : row.name}
                   </td>
-                  <td>{row.mobility}</td>
-                  <td>{formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}</td>
+                  <td>
+                    {new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                      scaleSpeed(row.mobility, display),
+                    )}
+                  </td>
+                  <td>
+                    {formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}
+                    {row.trouble !== undefined && (
+                      <small className="race-trouble"> {t(`report.debrief.trouble.${row.trouble}`)}</small>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

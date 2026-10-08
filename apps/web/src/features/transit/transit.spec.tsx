@@ -119,7 +119,59 @@ describe('transit (S10.7)', () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     const rivals = await screen.findByTestId('race-rivals');
     const items = within(rivals).getAllByRole('listitem').map((item) => item.textContent);
-    expect(items).toEqual(['Vega Dart — speed 4.1', 'Comet Runner — speed 2.4']);
+    expect(items).toEqual(['Vega Dart — speed 41', 'Comet Runner — speed 24']);
+  });
+
+  it('a race can be run in overdrive: the choice is sent with the dispatch, with its price shown', async () => {
+    let body: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'RACE',
+              cargo: { race: { competitors: [{ id: 'r1', name: 'Comet Runner', mobility: 2.4 }] } },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.post('/v1/ships/:id/dispatch', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(60_000), serverTime: iso(0) });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const option = await screen.findByTestId('race-overdrive');
+    expect(option).toHaveTextContent('+25% speed, +60% fuel burned, 15% risk of overheating');
+    fireEvent.click(within(option).getByRole('checkbox'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await waitFor(() => expect(body).toMatchObject({ missionId: 'm-1', overdrive: true }));
+  });
+
+  it('a race flown without the choice sends no overdrive', async () => {
+    let body: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'RACE',
+              cargo: { race: { competitors: [{ id: 'r1', name: 'Comet Runner', mobility: 2.4 }] } },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.post('/v1/ships/:id/dispatch', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(60_000), serverTime: iso(0) });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body).not.toHaveProperty('overdrive');
   });
 
   it('dispatches the accepted mission and flips to the in-transit view', async () => {

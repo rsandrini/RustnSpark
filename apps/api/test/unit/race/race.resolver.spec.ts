@@ -4,6 +4,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import {
   generateCompetitors,
   raceSeconds,
+  raceWindow,
   resolveRace,
 } from '../../../src/resolution/race/race.resolver.js';
 
@@ -37,7 +38,7 @@ describe('resolveRace', () => {
     { id: 'rival-2', name: 'Mid', mobility: 3 },
     { id: 'rival-3', name: 'Quick', mobility: 4 },
   ];
-  const calm = { ...rules, race: { ...rules.race, time_jitter: 0 } };
+  const calm = { ...rules, race: { ...rules.race, time_jitter: 0, form_spread: 0, mishap_chance: 0 } };
 
   it('ranks by speed: a ship faster than everyone wins and takes the biggest share', () => {
     const result = resolveRace({ competitors: field, playerMobility: 6, totalDistance: 800, rules: calm, rng: createRng('r') });
@@ -62,6 +63,38 @@ describe('resolveRace', () => {
     expect(tie.place).toBe(2);
     const again = resolveRace({ competitors: field, playerMobility: 4, totalDistance: 800, rules, rng: createRng('same') });
     expect(resolveRace({ competitors: field, playerMobility: 4, totalDistance: 800, rules, rng: createRng('same') })).toEqual(again);
+  });
+
+  it('days differ: with form, luck and trouble on, different seeds give different fields', () => {
+    const close = [
+      { id: 'rival-1', name: 'A', mobility: 3 },
+      { id: 'rival-2', name: 'B', mobility: 3.1 },
+      { id: 'rival-3', name: 'C', mobility: 3.2 },
+    ];
+    const run = (seed: string) =>
+      resolveRace({ competitors: close, playerMobility: 3, totalDistance: 800, rules, rng: createRng(seed) });
+    const outcomes = new Set(Array.from({ length: 30 }, (_, i) => run(`day-${i}`).standings.map((s) => s.name).join('>')));
+    expect(outcomes.size).toBeGreaterThan(5);
+  });
+
+  it('rivals sometimes have trouble that costs them time; the player only in overdrive', () => {
+    const noisy = { ...rules, race: { ...rules.race, mishap_chance: 1, overdrive_risk: 1, time_jitter: 0, form_spread: 0 } };
+    const base = resolveRace({ competitors: field, playerMobility: 3, totalDistance: 800, rules: noisy, rng: createRng('t') });
+    expect(base.standings.filter((s) => !s.you).every((s) => s.trouble === 'mishap')).toBe(true);
+    expect(base.standings.find((s) => s.you)?.trouble).toBeUndefined();
+    const pushed = resolveRace({ competitors: field, playerMobility: 3, totalDistance: 800, rules: noisy, rng: createRng('t'), overdrive: true });
+    const you = pushed.standings.find((s) => s.you)!;
+    expect(you.trouble).toBe('overheat');
+    expect(you.seconds).toBe(Math.round(raceSeconds(800, 3, noisy) * (1 + noisy.race.mishap_penalty)));
+  });
+
+  it('the board window brackets the expected time with a best and a worst day', () => {
+    const w = raceWindow({ distance: 800, mobility: 3, rules, form: rules.race.form_spread, canHaveTrouble: true });
+    expect(w.expected).toBe(raceSeconds(800, 3, rules));
+    expect(w.best).toBeLessThan(w.expected);
+    expect(w.worst).toBeGreaterThan(w.expected);
+    const sure = raceWindow({ distance: 800, mobility: 3, rules, form: 0, canHaveTrouble: false });
+    expect(sure.worst).toBeLessThan(w.worst);
   });
 
   it('uses the same distance / mobility formula as the mission duration', () => {

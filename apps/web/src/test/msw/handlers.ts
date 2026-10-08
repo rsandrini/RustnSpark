@@ -585,7 +585,12 @@ export const handlers = [
       ],
     }),
   ),
-  http.get('/v1/display', () => HttpResponse.json({ statScale: 10, mobFactor: 1.6, scavengeHandicap: 0.5 })),
+  http.get('/v1/display', () => HttpResponse.json({
+      statScale: 10,
+      mobFactor: 1.6,
+      scavengeHandicap: 0.5,
+      overdrive: { speed: 1.25, fuel: 1.6, risk: 0.15 },
+    })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).

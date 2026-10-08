@@ -41,6 +41,7 @@ export interface ReportStats {
       readonly mobility: number;
       readonly seconds: number;
       readonly you: boolean;
+      readonly trouble?: 'mishap' | 'overheat';
     }[];
   } | null;
   readonly loot: readonly {

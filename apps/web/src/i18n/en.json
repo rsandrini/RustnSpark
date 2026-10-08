@@ -1026,7 +1026,11 @@
       "found": "Found",
       "foundPart": "{{name}} ({{condition}}%)",
       "foundScrap": "Scrap: {{name}}",
-      "raceTitle": "Race result — you finished #{{place}}"
+      "raceTitle": "Race result — you finished #{{place}}",
+      "trouble": {
+        "mishap": "had trouble",
+        "overheat": "engines overheated"
+      }
     }
   },
   "transit": {
@@ -1071,7 +1075,9 @@
     "scavengeTitle": "Scavenging",
     "race": {
       "title": "Your rivals",
-      "rival": "{{name}} — speed {{mobility}}"
+      "rival": "{{name}} — speed {{mobility}}",
+      "overdrive": "Push the engines (overdrive)",
+      "overdriveHelp": "+{{speed}}% speed, +{{fuel}}% fuel burned, {{risk}}% risk of overheating (loses time)."
     }
   },
   "board": {
@@ -1164,11 +1170,17 @@
       "title": "The field",
       "pilot": "Pilot",
       "speed": "Speed",
-      "time": "Time",
       "you": "You",
       "rank": "{{place}}.",
       "entry": "Entry: speed {{mobility}} or more. Prizes:",
-      "prize": "{{place}}º {{amount}}"
+      "prize": "{{place}}º {{amount}}",
+      "expected": "Expected",
+      "expectedHint": "Where this ship usually finishes. The real result depends on form, luck and trouble on the day.",
+      "best": "Best day",
+      "bestHint": "A great day: best form and luck.",
+      "none": "—",
+      "dynamic": "Every race is different: form, luck and trouble move the times around these figures.",
+      "finish": "Finish"
     },
     "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}"
   },

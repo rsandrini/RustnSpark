@@ -148,6 +148,12 @@ const raceSchema = z.object({
   prize_share_1: z.number().min(0).max(10),
   prize_share_2: z.number().min(0).max(10),
   prize_share_3: z.number().min(0).max(10),
+  form_spread: z.number().min(0).max(0.5),
+  mishap_chance: z.number().min(0).max(1),
+  mishap_penalty: z.number().min(0).max(2),
+  overdrive_speed: z.number().min(1).max(3),
+  overdrive_fuel: z.number().min(1).max(5),
+  overdrive_risk: z.number().min(0).max(1),
 });
 
 const rescueSchema = z.object({

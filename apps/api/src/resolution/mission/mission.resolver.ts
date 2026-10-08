@@ -23,6 +23,7 @@ import type { FactionRelation, MissionType, Stance } from '../encounter/encounte
 import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
 import type { StoredPart } from '../encounter/pirate-motive.js';
 import { rollScavengeFinds, type ScavengeContext } from '../scavenge/scavenge.resolver.js';
+import { rawMobility } from '../../ships/sheet.deriver.js';
 import { resolveRace, type RaceCompetitor } from '../race/race.resolver.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
@@ -64,7 +65,7 @@ export interface MissionInput {
   /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
   readonly scavenge?: ScavengeContext;
   /** RACE missions: the rival ships generated with the offer (frozen in its cargo). */
-  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
+  readonly race?: { readonly competitors: readonly RaceCompetitor[]; readonly overdrive?: boolean };
 }
 
 export interface ResolveMissionInput {
@@ -266,7 +267,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     const totalDistance = input.mission.legs.reduce((sum, leg) => sum + leg.distance, 0);
     const result = resolveRace({
       competitors: input.mission.race.competitors,
-      playerMobility: input.snapshot.sheet.mob,
+      // The unrounded speed: a rival's 2.6 must not be beaten or tied by a ship rounded up to 3.
+      playerMobility: rawMobility(input.snapshot.sheet.pot, input.snapshot.sheet.mass, input.rules),
+      overdrive: input.mission.race.overdrive === true,
       totalDistance,
       rules: input.rules,
       rng: root.child('race'),

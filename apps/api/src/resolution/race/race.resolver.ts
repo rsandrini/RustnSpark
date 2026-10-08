@@ -15,6 +15,8 @@ export interface RaceStanding {
   /** Finish time in seconds (before the mission time scale). */
   readonly seconds: number;
   readonly you: boolean;
+  /** What went wrong for this ship on the day, if anything (it cost time). */
+  readonly trouble?: 'mishap' | 'overheat';
 }
 
 export interface RaceResult {
@@ -79,10 +81,45 @@ export function raceSeconds(distance: number, mobility: number, rules: GameRules
   return Math.round((distance / Math.max(mobility, MIN_MOBILITY)) * rules.missions.duration_k);
 }
 
+export interface RaceWindow {
+  /** Where the ship usually finishes: its listed speed, no luck, no trouble. */
+  readonly expected: number;
+  /** A great day: best form and best luck. */
+  readonly best: number;
+  /** A bad day: worst form, worst luck and (when it can happen) trouble. */
+  readonly worst: number;
+}
+
 /**
- * Settles a race the player's ship finished. Everyone — the player included — gets the same
- * seeded luck on the day (`time_jitter`); a tie goes to the rival. Pure and deterministic: same
- * seed, field and ship give the same standings (the report replays from the stored log).
+ * What a ship's time can be over `distance`, for the board: the expected time and the range the
+ * day's form, luck and trouble can move it through. `form` is a rival's form spread (the player's
+ * own speed is known, so 0); `canHaveTrouble` is true for rivals and for the player in overdrive.
+ */
+export function raceWindow(input: {
+  readonly distance: number;
+  readonly mobility: number;
+  readonly rules: GameRules;
+  readonly form: number;
+  readonly canHaveTrouble: boolean;
+}): RaceWindow {
+  const { distance, mobility, rules, form, canHaveTrouble } = input;
+  const { time_jitter, mishap_penalty } = rules.race;
+  const expected = raceSeconds(distance, mobility, rules);
+  const best = Math.round(raceSeconds(distance, mobility * (1 + form), rules) * (1 - time_jitter));
+  const slowest = raceSeconds(distance, mobility * (1 - form), rules) * (1 + time_jitter);
+  return {
+    expected,
+    best,
+    worst: Math.round(slowest * (canHaveTrouble ? 1 + mishap_penalty : 1)),
+  };
+}
+
+/**
+ * Settles a race the player's ship finished. Every ship has its day: a rival's speed varies with
+ * its form (`form_spread`), everyone's time with luck (`time_jitter`), a rival may have trouble
+ * (`mishap_chance`) and the player's engines may overheat if pushed in overdrive (`overdrive_risk`);
+ * trouble costs `mishap_penalty` of the time. A tie goes to the rival. Pure and deterministic:
+ * same seed, field and ship give the same standings (the report replays from the stored log).
  */
 export function resolveRace(input: {
   readonly competitors: readonly RaceCompetitor[];
@@ -90,24 +127,43 @@ export function resolveRace(input: {
   readonly totalDistance: number;
   readonly rules: GameRules;
   readonly rng: Rng;
+  /** The player ran with the engines pushed: it risks overheating. */
+  readonly overdrive?: boolean;
 }): RaceResult {
-  const { competitors, playerMobility, totalDistance, rules, rng } = input;
-  const jitter = rules.race.time_jitter;
-  const luck = (label: string): number => 1 + rng.child(label).uniform(-jitter, jitter);
-  const standings: RaceStanding[] = [
-    ...competitors.map((rival) => ({
+  const { competitors, playerMobility, totalDistance, rules, rng, overdrive = false } = input;
+  const { time_jitter, form_spread, mishap_chance, mishap_penalty, overdrive_risk } = rules.race;
+  const luck = (label: string): number => 1 + rng.child(label).uniform(-time_jitter, time_jitter);
+  const form = (label: string): number =>
+    1 + rng.child(`${label}-form`).uniform(-form_spread, form_spread);
+  const trouble = (label: string, chance: number): boolean =>
+    rng.child(`${label}-trouble`).float() < chance;
+
+  const rivals: RaceStanding[] = competitors.map((rival) => {
+    const hadTrouble = trouble(rival.id, mishap_chance);
+    const base = raceSeconds(totalDistance, rival.mobility * form(rival.id), rules);
+    return {
       name: rival.name,
       mobility: rival.mobility,
-      seconds: Math.round(raceSeconds(totalDistance, rival.mobility, rules) * luck(rival.id)),
+      seconds: Math.round(base * luck(rival.id) * (hadTrouble ? 1 + mishap_penalty : 1)),
       you: false,
-    })),
-    {
-      name: '',
-      mobility: playerMobility,
-      seconds: Math.round(raceSeconds(totalDistance, playerMobility, rules) * luck('player')),
-      you: true,
-    },
-  ].sort((a, b) => a.seconds - b.seconds || Number(a.you) - Number(b.you));
+      ...(hadTrouble ? { trouble: 'mishap' as const } : {}),
+    };
+  });
+  const overheated = overdrive && trouble('player', overdrive_risk);
+  const you: RaceStanding = {
+    name: '',
+    mobility: playerMobility,
+    seconds: Math.round(
+      raceSeconds(totalDistance, playerMobility, rules) *
+        luck('player') *
+        (overheated ? 1 + mishap_penalty : 1),
+    ),
+    you: true,
+    ...(overheated ? { trouble: 'overheat' as const } : {}),
+  };
+  const standings = [...rivals, you].sort(
+    (a, b) => a.seconds - b.seconds || Number(a.you) - Number(b.you),
+  );
   const place = standings.findIndex((standing) => standing.you) + 1;
   const { prize_share_1, prize_share_2, prize_share_3 } = rules.race;
   const prizeShare =

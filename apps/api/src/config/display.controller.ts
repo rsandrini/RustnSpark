@@ -9,6 +9,8 @@ export interface DisplayResponse {
   readonly mobFactor: number;
   /** Share of the usual chance to find anything kept by a scavenger whose ship cannot fly. */
   readonly scavengeHandicap: number;
+  /** Race overdrive: speed x, fuel x and the chance of overheating. */
+  readonly overdrive: { readonly speed: number; readonly fuel: number; readonly risk: number };
 }
 
 @Controller('display')
@@ -17,11 +19,16 @@ export class DisplayController {
 
   @Get()
   display(): DisplayResponse {
-    const { ship, scavenging } = this.config.snapshot().rules;
+    const { ship, scavenging, race } = this.config.snapshot().rules;
     return {
       statScale: ship.stat_display_scale,
       mobFactor: ship.mob_factor,
       scavengeHandicap: scavenging.handicap_factor,
+      overdrive: {
+        speed: race.overdrive_speed,
+        fuel: race.overdrive_fuel,
+        risk: race.overdrive_risk,
+      },
     };
   }
 }

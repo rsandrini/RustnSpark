@@ -159,4 +159,43 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(log.outcome).toBe('partial_failure');
     expect(credits).toBe(before);
   }, 30_000);
+
+  it('overdrive pushes the engines: a faster flight for more fuel, recorded with the run', async () => {
+    const dispatchWith = async (overdrive: boolean) => {
+      const setup = await raceWith(0.5);
+      await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${setup.shipId}/dispatch`)
+        .set('Authorization', `Bearer ${setup.token}`)
+        .send({ missionId: setup.mission.id, ...(overdrive ? { overdrive: true } : {}) });
+      expect(response.status).toBe(200);
+      const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
+      const snapshot = (job.data as unknown as { snapshot: { overdrive?: boolean; parts: { catalog: { fuelUse: number } }[] } })
+        .snapshot;
+      return {
+        seconds: (response.body as { durationSeconds: number }).durationSeconds,
+        overdrive: snapshot.overdrive,
+        fuelUse: snapshot.parts.reduce((sum, part) => sum + part.catalog.fuelUse, 0),
+      };
+    };
+    const calm = await dispatchWith(false);
+    const pushed = await dispatchWith(true);
+    expect(calm.overdrive).toBeUndefined();
+    expect(pushed.overdrive).toBe(true);
+    expect(pushed.seconds).toBeLessThan(calm.seconds);
+    expect(pushed.fuelUse).toBeGreaterThan(calm.fuelUse);
+  }, 30_000);
+
+  it('overdrive is for races only: another mission type ignores it', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+    const response = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/dispatch`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id, overdrive: true });
+    expect(response.status).toBe(200);
+    const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
+    expect((job.data as unknown as { snapshot: { overdrive?: boolean } }).snapshot.overdrive).toBeUndefined();
+  }, 30_000);
 });

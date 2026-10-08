@@ -59,6 +59,8 @@ export interface DispatchSnapshot {
   readonly penalties?: readonly AppliedPenalty[];
   /** A scavenging job started by a ship that was not flight-ready: it finds less. */
   readonly handicapped?: boolean;
+  /** A race run with the engines pushed (more speed and fuel, a risk of overheating). */
+  readonly overdrive?: boolean;
 }
 
 export interface DispatchJobData {
@@ -180,7 +182,12 @@ export class DispatchService {
     private readonly producer: MissionProducer,
   ) {}
 
-  async dispatch(shipId: string, missionId: string, playerId: string): Promise<DispatchResponse> {
+  async dispatch(
+    shipId: string,
+    missionId: string,
+    playerId: string,
+    options: { overdrive?: boolean } = {},
+  ): Promise<DispatchResponse> {
     const probe = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!probe) {
       throw new NotFoundException('mission not found');
@@ -297,6 +304,17 @@ export class DispatchService {
               connectorsByInstance,
               rules,
             );
+      // A race can be run with the engines pushed: more speed, more fuel, a risk of overheating.
+      const overdrive = mission.type === 'RACE' && options.overdrive === true;
+      if (overdrive) {
+        const { overdrive_speed: push, overdrive_fuel: burn } = rules.race;
+        flight.parts = flight.parts.map((part) =>
+          part.catalog.partClass === 'ENGINE'
+            ? { ...part, catalog: { ...part.catalog, pot: part.catalog.pot * push, fuelUse: part.catalog.fuelUse * burn } }
+            : part,
+        );
+        flight.sheet = deriveSheet(flight.parts, rules);
+      }
       // GDD §7 balance 3: a chemical engine needs fuel aboard; ion ships skip this.
       if (mission.type !== 'SCAVENGE' && sheet.fuelUse > 0 && ship.fuel <= 0) {
         throw new ConflictException({ error: 'FUEL_EMPTY' });
@@ -332,6 +350,7 @@ export class DispatchService {
           .map((part) => ({ id: part.id, partType: part.partType })),
         ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
         ...(handicapped ? { handicapped: true } : {}),
+        ...(overdrive ? { overdrive: true } : {}),
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({

@@ -22,6 +22,8 @@ import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { rawMobility } from '../ships/sheet.deriver.js';
+import { raceWindow } from '../resolution/race/race.resolver.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
@@ -94,8 +96,24 @@ export interface OfferInfo {
     readonly rivals: readonly {
       readonly name: string;
       readonly mobility: number;
+      /** Where the rival usually finishes (its listed speed, no luck): the board shows this. */
       readonly durationSeconds: number;
+      /** Its best and worst day (form, luck, trouble). */
+      readonly bestSeconds: number;
+      readonly worstSeconds: number;
     }[];
+    /** The viewer's own ship over this route; null without a flyable ship. */
+    readonly you: {
+      readonly durationSeconds: number;
+      readonly bestSeconds: number;
+      readonly worstSeconds: number;
+      readonly overdrive: {
+        readonly durationSeconds: number;
+        readonly bestSeconds: number;
+        readonly worstSeconds: number;
+      };
+    } | null;
+    readonly overdrive: { readonly speed: number; readonly fuel: number; readonly risk: number };
     readonly minMobility: number;
     readonly prizeShares: readonly number[];
   } | null;
@@ -790,20 +808,31 @@ function offerInfo(
         );
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.
+  const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);
+  const windowOf = (mobility: number, form: number, trouble: boolean) => {
+    const window = raceWindow({ distance: totalDistance, mobility, rules, form, canHaveTrouble: trouble });
+    return {
+      durationSeconds: scaled(window.expected),
+      bestSeconds: scaled(window.best),
+      worstSeconds: scaled(window.worst),
+    };
+  };
   const rivals =
     row.type === 'RACE'
       ? parseCompetitors((row.cargo ?? {}) as Record<string, unknown>).map((rival) => ({
           name: rival.name,
           mobility: rival.mobility,
-          durationSeconds: missionDuration({
-            totalDistance,
-            mobility: rival.mobility,
-            durationK: rules.missions.duration_k,
-            timeScale: rules.missions.time_scale,
-            classCutoffs: rules.missions.duration_class_cutoffs,
-          }).durationSeconds,
+          ...windowOf(rival.mobility, rules.race.form_spread, true),
         }))
       : [];
+  const yourMobility = sheet === null ? null : rawMobility(sheet.pot, sheet.mass, rules);
+  const you =
+    row.type === 'RACE' && yourMobility !== null && yourMobility > 0
+      ? {
+          ...windowOf(yourMobility, 0, false),
+          overdrive: windowOf(yourMobility * rules.race.overdrive_speed, 0, true),
+        }
+      : null;
   return {
     title: bilingual(template?.displayName),
     description: bilingual(template?.description),
@@ -825,6 +854,12 @@ function offerInfo(
       row.type === 'RACE'
         ? {
             rivals,
+            you,
+            overdrive: {
+              speed: rules.race.overdrive_speed,
+              fuel: rules.race.overdrive_fuel,
+              risk: rules.race.overdrive_risk,
+            },
             minMobility: rules.race.min_mobility,
             prizeShares: [
               rules.race.prize_share_1,

@@ -352,7 +352,7 @@ describe('report (S10.8)', () => {
     const rows = Array.from(race.querySelectorAll('tbody tr')).map((row) => row.textContent);
     expect(rows[0]).toContain('Vega Dart');
     expect(rows[1]).toContain('You');
-    expect(rows[1]).toContain('3.2');
+    expect(rows[1]).toContain('32'); // speed on the display scale (x10)
     expect(race.querySelector('tr.race-you')).not.toBeNull();
     expect(rows[2]).toContain('Comet Runner');
   });

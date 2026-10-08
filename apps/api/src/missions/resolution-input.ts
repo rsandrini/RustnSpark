@@ -42,7 +42,7 @@ export interface ResolutionContext {
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
   readonly scavenge?: ScavengeContext;
   /** RACE only: the rivals generated with the offer, frozen with the run. */
-  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
+  readonly race?: { readonly competitors: readonly RaceCompetitor[]; readonly overdrive?: boolean };
 }
 
 /** The rival ships of a RACE offer, as stored in its cargo (`cargo.race.competitors`). */
@@ -210,7 +210,9 @@ export function buildResolveInput(args: {
       : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
-    ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),
+    ...(context.race && context.race.competitors.length > 0
+      ? { race: { ...context.race, ...(snapshot.overdrive === true ? { overdrive: true } : {}) } }
+      : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }
