@@ -143,7 +143,7 @@ describe('checkViability', () => {
     expect(result.problems.map((p) => p.code)).toContain('NO_FUEL_CAPACITY');
   });
 
-  it('fails with ENERGY_CRUISE_NEGATIVE when continuous draw exceeds generation', () => {
+  it('warns (does not block) ENERGY_CRUISE_NEGATIVE when continuous draw exceeds generation', () => {
     const parts = buildInstalled([
       'bridge',
       'sensor_radar',
@@ -154,18 +154,19 @@ describe('checkViability', () => {
     ]);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.viable).toBe(false);
-    expect(result.problems.map((p) => p.code)).toContain('ENERGY_CRUISE_NEGATIVE');
+    expect(result.warnings.map((p) => p.code)).toContain('ENERGY_CRUISE_NEGATIVE');
+    expect(result.problems.map((p) => p.code)).not.toContain('ENERGY_CRUISE_NEGATIVE');
   });
 
-  it('fails with BATTERY_OUTPUT_INSUFFICIENT when combat drain exceeds battery output', () => {
+  it('warns BATTERY_OUTPUT_INSUFFICIENT when combat drain exceeds battery output', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'weapon_laser']);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.problems.map((p) => p.code)).toEqual([
+    expect(result.warnings.map((p) => p.code)).toEqual([
       'BATTERY_OUTPUT_INSUFFICIENT',
       'BATTERY_CHARGE_INSUFFICIENT',
     ]);
+    expect(result.problems.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
   });
 
   it('fails with STRUCTURE_EXCEEDED when parts exceed the structure budget', () => {
@@ -185,7 +186,7 @@ describe('checkViability', () => {
     expect(result.problems.map((p) => p.code)).toContain('STRUCTURE_EXCEEDED');
   });
 
-  it('fails with BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
+  it('warns BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
     const base = buildInstalled(['bridge', 'battery_small', 'weapon_laser']);
     const battery = { ...CATALOG_BY_TYPE.get('battery_small')!, batCharge: 1, batOutput: 1000 };
     const parts = base.map((part) =>
@@ -193,11 +194,11 @@ describe('checkViability', () => {
     );
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.problems.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
-    expect(result.problems.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
   });
 
-  it('fails with NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
+  it('warns NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
     const base = buildInstalled(['bridge', 'cargo']);
     const pressurized = base.map((part) =>
       part.catalog.partType === 'cargo'
@@ -206,7 +207,7 @@ describe('checkViability', () => {
     );
     const sheet = deriveSheet(pressurized, rules);
     const result = checkViability(sheet, pressurized, rules);
-    expect(result.problems.map((p) => p.code)).toContain('NO_LIFE_SUPPORT');
+    expect(result.warnings.map((p) => p.code)).toContain('NO_LIFE_SUPPORT');
   });
 
   it('does not report NO_LIFE_SUPPORT when a life support part is installed', () => {

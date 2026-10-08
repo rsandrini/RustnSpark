@@ -83,7 +83,7 @@ describe('withDirectionProblems', () => {
     ['p', BASE],
     ['f', { ...BASE, partClass: 'ENGINE' }],
   ]);
-  const ok = { viable: true, problems: [] };
+  const ok = { viable: true, problems: [], warnings: [] };
 
   it('leaves a clean layout viable and untouched', () => {
     const layout: Placement[] = [
@@ -93,14 +93,26 @@ describe('withDirectionProblems', () => {
     expect(withDirectionProblems(ok, layout, catalog, new Map())).toBe(ok);
   });
 
-  it('makes a blocked engine a flight problem, once per code however many engines are blocked', () => {
+  it('makes a blocked engine a flight warning, once per code however many engines are blocked', () => {
     const layout: Placement[] = [
       { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
       { partInstanceId: 'f', gx: 1, gy: 1, rot: 0 },
     ];
     const result = withDirectionProblems(ok, layout, catalog, new Map());
+    expect(result.viable).toBe(true);
+    expect(result.problems).toEqual([]);
+    expect(result.warnings.map((problem) => problem.code)).toEqual(['EXHAUST_BLOCKED']);
+  });
+
+  it('blocks flight on them only when asked to be strict (mining)', () => {
+    const layout: Placement[] = [
+      { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
+    ];
+    const result = withDirectionProblems(ok, layout, catalog, new Map(), { strict: true });
     expect(result.viable).toBe(false);
     expect(result.problems.map((problem) => problem.code)).toEqual(['EXHAUST_BLOCKED']);
+    expect(result.warnings).toEqual([]);
   });
 });

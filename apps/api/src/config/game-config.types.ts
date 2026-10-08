@@ -129,6 +129,8 @@ export type ConfigKey =
   | 'ship_class.pressurized_share'
   | 'ship.fuel_mass_per_unit'
   | 'ship.mob_factor'
+  | 'ship.stat_display_scale'
+  | 'ship.cruise_deficit_floor'
   | 'stance.neutral_attack_ratio'
   | 'stance.rating_armor_weight'
   | 'wear.base_max'
@@ -192,6 +194,8 @@ export type GameRules = Readonly<{
   }>;
   ship: Readonly<{
     mob_factor: number;
+    stat_display_scale: number;
+    cruise_deficit_floor: number;
     fuel_mass_per_unit: number;
   }>;
   wear: Readonly<{

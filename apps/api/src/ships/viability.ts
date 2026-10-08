@@ -24,6 +24,38 @@ export interface ViabilityProblem {
   message: string;
 }
 
+/** What a viability check reports: `problems` keep the ship on the ground; `warnings` do not — the
+    ship flies, but underpowered or misaligned (see ships/penalties.ts for what that costs). */
+export interface ViabilityReport {
+  viable: boolean;
+  problems: ViabilityProblem[];
+  warnings: ViabilityProblem[];
+}
+
+/** Everything that is a warning, not a block: energy shortfalls, missing life support and the
+    direction rules. A ship that cannot move at all (no bridge/engine/fuel, structure over budget)
+    is still refused. */
+const SOFT_CODES: ReadonlySet<ViabilityProblemCode> = new Set<ViabilityProblemCode>([
+  'ENERGY_CRUISE_NEGATIVE',
+  'BATTERY_OUTPUT_INSUFFICIENT',
+  'BATTERY_CHARGE_INSUFFICIENT',
+  'NO_LIFE_SUPPORT',
+  'EXHAUST_BLOCKED',
+  'FACING_BLOCKED',
+  'FACING_CONNECTOR',
+]);
+
+export function isSoftProblem(code: ViabilityProblemCode): boolean {
+  return SOFT_CODES.has(code);
+}
+
+/** Splits a list of problems into the blocking ones and the warnings. */
+export function classifyProblems(all: readonly ViabilityProblem[]): ViabilityReport {
+  const problems = all.filter((problem) => !isSoftProblem(problem.code));
+  const warnings = all.filter((problem) => isSoftProblem(problem.code));
+  return { viable: problems.length === 0, problems, warnings };
+}
+
 const NO_BRIDGE: ViabilityProblem = { code: 'NO_BRIDGE', message: 'Ship has no bridge installed.' };
 const NO_ENGINE: ViabilityProblem = { code: 'NO_ENGINE', message: 'Ship has no engine installed.' };
 const MOB_TOO_LOW: ViabilityProblem = { code: 'MOB_TOO_LOW', message: 'Mobility is below 1.' };
@@ -56,7 +88,7 @@ export function checkViability(
   sheet: ShipSheet,
   parts: InstalledPart[],
   rules: GameRules,
-): { viable: boolean; problems: ViabilityProblem[] } {
+): ViabilityReport {
   const problems: ViabilityProblem[] = [];
 
   const hasBridge = parts.some((part) => part.catalog.partClass === 'BRIDGE');
@@ -102,5 +134,5 @@ export function checkViability(
     problems.push(STRUCTURE_EXCEEDED);
   }
 
-  return { viable: problems.length === 0, problems };
+  return classifyProblems(problems);
 }

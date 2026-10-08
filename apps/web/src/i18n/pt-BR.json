@@ -166,7 +166,8 @@
     "summary": {
       "ready": "Pronta para voar",
       "problemCount": "{{count}} problema(s)",
-      "showAllStats": "Ver todas as estatísticas"
+      "showAllStats": "Ver todas as estatísticas",
+      "readyWithWarnings": "Pronta para voar, com {{count}} aviso(s)"
     },
     "energyStatus": {
       "surplus": "Excedente +{{value}}",
@@ -213,18 +214,18 @@
       "NO_ENGINE": "Nenhum motor instalado.",
       "MOB_TOO_LOW": "Mobilidade abaixo de 1.",
       "NO_FUEL_CAPACITY": "Motor químico precisa de tanque.",
-      "NO_LIFE_SUPPORT": "Nenhum suporte de vida instalado.",
+      "NO_LIFE_SUPPORT": "Há módulos pressurizados, mas nenhum suporte de vida instalado.",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido.",
       "OUT_OF_BOUNDS": "Peça fora da grade.",
       "OVERLAP": "Peças sobrepostas.",
       "DISCONNECTED": "Peças precisam tocar a ponte.",
       "INVALID_LAYOUT": "O layout não é válido.",
-      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior.",
-      "EXHAUST_BLOCKED": "Um motor tem peças atrás do escapamento — mova-o para a borda traseira da nave ou gire-o.",
-      "FACING_BLOCKED": "Uma arma tem peças na linha de tiro — mova-a para a borda da nave ou gire-a.",
-      "FACING_CONNECTOR": "Um motor ou arma tem conector no lado voltado para fora."
+      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera: os motores recebem só a parte da energia que existe, então ela fica mais lenta.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos puxam mais energia por rodada do que as baterias entregam — numa luta alguns ataques e recargas de escudo ficarão sem energia. Instale uma bateria, ou uma maior.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que as baterias armazenam — lutas longas ficarão sem energia. Instale uma bateria, ou uma maior.",
+      "EXHAUST_BLOCKED": "Um motor tem uma peça logo atrás do escape: ele não dá empuxo. Mova-o, mova a peça ou gire o motor.",
+      "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
+      "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -278,7 +279,7 @@
       "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
       "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
       "fuelUse": "Quanto combustível é consumido por unidade de viagem.",
-      "energyCont": "Balanço de energia contínua: geração do reator/painel solar menos tudo que sempre consome (sensores, suporte de vida, plataformas de mineração...). Precisa ficar em zero ou mais, ou a nave não voa — é separado da Potência de combate abaixo, e nunca é tirado da bateria.",
+      "energyCont": "Balanço de energia de cruzeiro: o que os geradores produzem menos o que sempre consome (sensores, suporte de vida, plataformas de mineração...). Abaixo de zero a nave ainda voa, mas os motores recebem só a parte da energia que existe. Separado da energia de combate, que vem das baterias.",
       "energyCombat": "Consumo total de energia só de combate, de cada arma e escudo instalado (sempre zero ou negativo). Coberto pela carga e pela saída da bateria, nunca pela Potência de cruzeiro ou pelo reator — veja Capacidade da bateria / Saída da bateria.",
       "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
       "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
@@ -294,6 +295,10 @@
     "facing": {
       "exhaust": "Lado do escapamento",
       "weapon": "Lado do disparo"
+    },
+    "warnings": {
+      "title": "Avisos",
+      "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total."
     }
   },
   "home": {
@@ -1401,6 +1406,18 @@
       "partHp": {
         "label": "Pontos de casco",
         "hint": "Dano que esta peça aguenta antes de quebrar."
+      },
+      "energyGen": {
+        "label": "Energia gerada",
+        "hint": "Energia que esta peça produz em voo. Um gerador não consome ao mesmo tempo."
+      },
+      "energyUse": {
+        "label": "Energia usada (voo)",
+        "hint": "Energia que esta peça consome o tempo todo. Geradores na nave precisam cobrir, ou os motores recebem só a parte da energia que existe."
+      },
+      "energyCombatUse": {
+        "label": "Energia usada (combate)",
+        "hint": "Energia consumida por rodada de combate, tirada das baterias."
       }
     },
     "summaryNone": "Peça estrutural",

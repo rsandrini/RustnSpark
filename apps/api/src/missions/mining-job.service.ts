@@ -111,6 +111,7 @@ export class MiningJobService {
       (ship.layout as unknown as Placement[]) ?? [],
       catalogForConnectivity,
       connectorsByInstance,
+      { strict: true },
     );
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

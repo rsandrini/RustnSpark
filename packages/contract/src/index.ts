@@ -217,6 +217,13 @@ export type PublicFaction = z.infer<typeof PublicFactionSchema>;
 export const FactionsResponseSchema = z.object({ factions: z.array(PublicFactionSchema) });
 export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
 
+/** GET /v1/display: how derived numbers are shown (admin-tuned, see `ship.stat_display_scale`). */
+export const DisplayResponseSchema = z.object({
+  statScale: z.number(),
+  mobFactor: z.number(),
+});
+export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
+
 export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
 export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
 
@@ -294,7 +301,13 @@ export type Problem = z.infer<typeof ProblemSchema>;
 export const PreviewResponseSchema = z.object({
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
-  viability: z.object({ viable: z.boolean(), problems: z.array(ProblemSchema) }),
+  viability: z.object({
+    viable: z.boolean(),
+    /** Block flight. */
+    problems: z.array(ProblemSchema),
+    /** Do not block flight; the ship flies weaker (energy shortfalls, blocked engines/weapons). */
+    warnings: z.array(ProblemSchema).default([]),
+  }),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
   disconnectedPartIds: z.array(z.string()),

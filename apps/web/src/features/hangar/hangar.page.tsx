@@ -47,6 +47,18 @@ const FIX_CLASS: Record<string, string> = {
   NO_LIFE_SUPPORT: 'UTILITY',
 };
 
+// Problems that do not keep the ship on the ground — it flies weaker (mirrors the API's
+// ships/viability.ts SOFT_CODES): shown as warnings, not as "problems".
+const SOFT_CODES: ReadonlySet<string> = new Set([
+  'ENERGY_CRUISE_NEGATIVE',
+  'BATTERY_OUTPUT_INSUFFICIENT',
+  'BATTERY_CHARGE_INSUFFICIENT',
+  'NO_LIFE_SUPPORT',
+  'EXHAUST_BLOCKED',
+  'FACING_BLOCKED',
+  'FACING_CONNECTOR',
+]);
+
 const PREVIEW_DEBOUNCE_MS = 400;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
 
@@ -399,8 +411,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const sheet = preview?.sheet ?? ship?.sheet;
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
-
-  const allProblems = [...viabilityProblems, ...previewProblems];
+  const everyProblem = [
+    ...viabilityProblems,
+    ...(preview?.viability.warnings ?? []),
+    ...previewProblems,
+  ];
+  // One entry per code (the API and the local direction check can both report the same one).
+  const uniqueProblems = everyProblem.filter(
+    (problem, index) => everyProblem.findIndex((other) => other.code === problem.code) === index,
+  );
+  const allProblems = uniqueProblems.filter((problem) => !SOFT_CODES.has(problem.code));
+  const allWarnings = uniqueProblems.filter((problem) => SOFT_CODES.has(problem.code));
 
   // Cruising power's generate/consume split (owner example: "generate"/"consume", not a bare
   // signed number) needs each installed part's own catalog value — the sheet only carries the
@@ -690,6 +711,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   shipClass={shipClass}
                   sheet={sheet}
                   problemCount={allProblems.length}
+                  warningCount={allWarnings.length}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />
@@ -698,6 +720,34 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   <p className="muted">{t('hangar.state.noPreview')}</p>
                 )}
               </div>
+
+              {allWarnings.length > 0 && (
+                <div className="panel" data-testid="flight-warnings">
+                  <h2>{t('hangar.warnings.title')}</h2>
+                  <p className="sub">{t('hangar.warnings.explain')}</p>
+                  <ul>
+                    {allWarnings.map((problem) => (
+                      <li key={problem.code} className="warn-text">
+                        {t(`hangar.problems.${problem.code}`, {
+                          defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
+                        })}
+                        {FIX_CLASS[problem.code] !== undefined && ship.status === 'IN_PORT' && (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => {
+                              setStoreClass(FIX_CLASS[problem.code] ?? null);
+                              setSideTab('store');
+                            }}
+                          >
+                            {t('hangar.fix.findInStore')}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {allProblems.length > 0 && (
                 <div className="panel">

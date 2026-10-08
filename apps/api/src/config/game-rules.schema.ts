@@ -24,6 +24,8 @@ const combatSchema = z.object({
 
 const shipSchema = z.object({
   mob_factor: z.number().min(0.1).max(5.0),
+  stat_display_scale: z.number().min(1).max(100),
+  cruise_deficit_floor: z.number().min(0).max(1),
   fuel_mass_per_unit: z.number().min(0).max(1),
 });
 

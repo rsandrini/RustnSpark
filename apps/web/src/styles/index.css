@@ -4522,3 +4522,12 @@ svg .block.dir-blocked {
 .market-panel > .balance b {
   color: var(--spark);
 }
+
+/* Flight warnings: the ship flies, weaker — amber, not the red of a problem. */
+.sheet-status.warning {
+  background: rgba(224, 161, 60, 0.16);
+  color: var(--amber);
+}
+.warn-text {
+  color: var(--amber);
+}

@@ -528,7 +528,7 @@ describe('parts and ships API (S4.3)', () => {
   });
 
   describe('assemble', () => {
-    it('saves a layout with a part behind the engine (free placement) and reports it as a flight problem', async () => {
+    it('saves a layout with a part behind the engine (free placement) and reports it as a flight warning', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
       const onboarded = await onboard(token, 'luna');
@@ -557,10 +557,14 @@ describe('parts and ships API (S4.3)', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ layout });
       expect(preview.status).toBe(200);
-      const viability = (preview.body as { viability: { viable: boolean; problems: { code: string }[] } })
-        .viability;
-      expect(viability.viable).toBe(false);
-      expect(viability.problems.map((p) => p.code)).toContain('EXHAUST_BLOCKED');
+      const viability = (
+        preview.body as {
+          viability: { viable: boolean; problems: { code: string }[]; warnings: { code: string }[] };
+        }
+      ).viability;
+      // a warning, not a block: the ship flies, with that engine giving no thrust
+      expect(viability.problems.map((p) => p.code)).not.toContain('EXHAUST_BLOCKED');
+      expect(viability.warnings.map((p) => p.code)).toContain('EXHAUST_BLOCKED');
 
       // turned to face away, the same parts are fine
       const turned = [layout[0]!, { ...layout[1]!, rot: 180 }];
@@ -568,7 +572,7 @@ describe('parts and ships API (S4.3)', () => {
         .post(`/v1/ships/${shipId}/preview`)
         .set('Authorization', `Bearer ${token}`)
         .send({ layout: turned });
-      const codes = (ok.body as { viability: { problems: { code: string }[] } }).viability.problems.map(
+      const codes = (ok.body as { viability: { warnings: { code: string }[] } }).viability.warnings.map(
         (p) => p.code,
       );
       expect(codes).not.toContain('EXHAUST_BLOCKED');

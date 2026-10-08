@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { ConnectorCell, LocalizedText, PartCatalogStats, PreviewResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { sheetStat, useDisplay } from '../../ui/display';
 import { ConnectorGrid } from './connector-grid';
 
 // What every screen that shows a part (market, hangar tray, ship grid) needs to explain it.
@@ -113,15 +114,45 @@ export function useNumberFormat(): (value: number) => string {
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
 }
 
+export interface StatRow {
+  /** i18n key under `parts.stat.<key>`. */
+  key: string;
+  /** The ship-sheet field this part stat feeds (what the comparison columns show). */
+  sheetKey: keyof ShipSheet;
+  value: string;
+}
+
+/**
+ * The part's own effect stats as rows. Power is split by what it does: a part either GENERATES
+ * power or USES it (never both), so the row says which instead of showing a bare signed number
+ * ("Power generated 5" / "Power used in flight 3" / "Power used in combat 4").
+ */
+export function effectRowsOf(catalog: PartCatalogStats, format: (value: number) => string): StatRow[] {
+  return EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => {
+    if (key === 'energyCont') {
+      return {
+        key: catalog.energyCont > 0 ? 'energyGen' : 'energyUse',
+        sheetKey: key,
+        value: format(Math.abs(catalog.energyCont)),
+      };
+    }
+    if (key === 'energyCombat') {
+      return { key: 'energyCombatUse', sheetKey: key, value: format(Math.abs(catalog.energyCombat)) };
+    }
+    return { key, sheetKey: key, value: format(catalog[key]) };
+  });
+}
+
 /** One line for a card: the two or three stats that define the part ("Thrust 8 · Mass 4"). */
 export function partSummary(
   catalog: PartCatalogStats,
   t: (key: string) => string,
   format: (value: number) => string,
 ): string {
-  const parts = SUMMARY_STATS.filter((key) => catalog[key] !== 0)
+  const parts = effectRowsOf(catalog, format)
+    .filter((row) => SUMMARY_STATS.includes(row.sheetKey as EffectStat))
     .slice(0, 3)
-    .map((key) => `${t(`parts.stat.${key}.label`)} ${format(catalog[key])}`);
+    .map((row) => `${t(`parts.stat.${row.key}.label`)} ${row.value}`);
   return parts.length > 0 ? parts.join(' · ') : t('parts.summaryNone');
 }
 
@@ -181,6 +212,7 @@ function useCompareQuery(
   replaceInstanceId?: string,
 ) {
   const format = useNumberFormat();
+  const display = useDisplay();
   const { catalog } = part;
   const comparePreview = useQuery({
     queryKey: [
@@ -209,11 +241,12 @@ function useCompareQuery(
 
   const deltaFor = (sheetKey: keyof ShipSheet): CompareCells | null => {
     if (compare === undefined || afterSheet === undefined) return null;
-    const after = afterSheet[sheetKey];
-    const delta = after - compare.currentSheet[sheetKey];
+    const after = sheetStat(afterSheet, sheetKey, display);
+    const before = sheetStat(compare.currentSheet, sheetKey, display);
+    const delta = after - before;
     const tone = deltaTone(sheetKey, delta);
     return {
-      now: format(compare.currentSheet[sheetKey]),
+      now: format(before),
       after: format(after),
       change: tone === 'same' ? '' : signed(delta, format),
       tone,
@@ -320,11 +353,7 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     : [];
 
   const rows = [
-    ...EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
-      key,
-      sheetKey: key,
-      value: format(catalog[key]),
-    })),
+    ...effectRowsOf(catalog, format),
     ...BASE_STATS.map((stat) => ({ key: stat.key, sheetKey: stat.sheetKey, value: format(stat.read(catalog)) })),
   ];
 
@@ -484,11 +513,7 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
   const viabilityProblems = comparePreview.data?.viability.viable === false
     ? comparePreview.data.viability.problems
     : [];
-  const effectRows = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => ({
-    key,
-    sheetKey: key,
-    value: format(catalog[key]),
-  }));
+  const effectRows = effectRowsOf(catalog, format);
   const baseRows = BASE_STATS.map((stat) => ({
     key: stat.key,
     sheetKey: stat.sheetKey,

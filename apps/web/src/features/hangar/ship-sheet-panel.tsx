@@ -1,3 +1,4 @@
+import { sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
@@ -10,6 +11,8 @@ export interface ShipSheetPanelProps {
       its fix actions still renders separately, lower on the page — this is a pointer to it, not
       a replacement for it. */
   problemCount: number;
+  /** Warnings do not ground the ship: it flies, weaker (energy shortfalls, blocked parts). */
+  warningCount?: number;
   /** The range read as routes ("covers 14 of 17"); null = the ship burns no fuel. */
   routeCoverage?: RouteCoverage | null;
   /** Every part actually installed right now: the sheet only carries Cruising power's net
@@ -76,16 +79,17 @@ export function ShipSheetPanel({
   shipClass,
   sheet,
   problemCount,
+  warningCount = 0,
   installedCatalogs,
   routeCoverage,
 }: ShipSheetPanelProps) {
   const { t, i18n } = useTranslation();
+  const display = useDisplay();
   const number = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
-  // Mobility has a hard threshold (MOB_TOO_LOW fires below 1): one decimal can round e.g. 0.96
-  // up to a displayed "1", which then looks wrong next to "Mobility is below 1."
+  // Mobility is shown on the admin's display scale (default x10), one decimal at most.
   const mobilityNumber = (value: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(value);
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
 
   const classRow = (
     <div className="statrow" title={t('hangar.statHelp.class')}>
@@ -119,7 +123,7 @@ export function ShipSheetPanel({
   const valueFor = (key: string): string => {
     switch (key) {
       case 'mob':
-        return mobilityNumber(sheet.mob);
+        return mobilityNumber(sheetStat(sheet, 'mob', display));
       case 'structure':
         return t('hangar.stats.structureValue', {
           used: number(sheet.structureUsed),
@@ -178,8 +182,14 @@ export function ShipSheetPanel({
   return (
     <>
       {classRow}
-      <div className={`sheet-status ${problemCount === 0 ? 'ready' : 'problem'}`}>
-        {problemCount === 0 ? t('hangar.summary.ready') : t('hangar.summary.problemCount', { count: problemCount })}
+      <div
+        className={`sheet-status ${problemCount > 0 ? 'problem' : warningCount > 0 ? 'warning' : 'ready'}`}
+      >
+        {problemCount > 0
+          ? t('hangar.summary.problemCount', { count: problemCount })
+          : warningCount > 0
+            ? t('hangar.summary.readyWithWarnings', { count: warningCount })
+            : t('hangar.summary.ready')}
       </div>
       <div className="sheet-headline" data-testid="sheet-headline">
         <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
@@ -196,7 +206,7 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
           <span>{t('hangar.headline.mobility')}</span>
-          <b>{mobilityNumber(sheet.mob)}</b>
+          <b>{mobilityNumber(sheetStat(sheet, 'mob', display))}</b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.autonomy')}>
           <span>{t('hangar.headline.autonomy')}</span>

@@ -187,10 +187,11 @@ describe('independent mining job (round 10)', () => {
         .post(`/v1/ships/${player.shipId}/preview`)
         .set(auth(player.token))
         .send({ layout: candidate });
-      const codes = (
-        (preview.body as { viability?: { problems: { code: string }[] } }).viability?.problems ?? []
-      ).map((problem) => problem.code);
-      if (codes.length === 1 && codes[0] === 'EXHAUST_BLOCKED') {
+      const viability = (
+        preview.body as { viability?: { problems: { code: string }[]; warnings: { code: string }[] } }
+      ).viability;
+      const warned = (viability?.warnings ?? []).map((problem) => problem.code);
+      if ((viability?.problems.length ?? 1) === 0 && warned.length === 1 && warned[0] === 'EXHAUST_BLOCKED') {
         chosen = rot;
         await prisma.ship.update({
           where: { id: player.shipId },

@@ -1,12 +1,13 @@
 import type { ConnectorLayout, ConnectorSide } from '../parts/connectors.js';
 import { authoredSideAt, rotateSide, worldToAuthoredCell } from '../parts/connectors.js';
 import type { LayoutError, PartCatalog, Placement } from '../parts/part.types.js';
-import type { ViabilityProblem } from './viability.js';
+import type { ViabilityProblem, ViabilityReport } from './viability.js';
 
 // Part direction rules: ENGINEs have an exhaust and WEAPONs a firing line, both facing W at rot 0
-// and turning clockwise with the placement's `rot`. The half-plane rule is literal — no other
-// part's cell may lie beyond the part's facing edge, anywhere across the ship — so an engine can
-// only sit on the back edge and a weapon only on the border of the side it points to.
+// and turning clockwise with the placement's `rot`. The rule is about the part's own lane: no
+// other part's cell may lie beyond the part's facing edge in the rows (or columns) the part
+// itself occupies. Parts elsewhere on the ship do not matter, so an engine can sit in the second
+// column as long as nothing is directly behind it.
 // Mirrored by apps/web/src/features/hangar/hangar.geometry.ts (directionViolations); both are
 // pinned by packages/contract/fixtures/direction-vectors.json.
 
@@ -55,13 +56,19 @@ export function directionErrors(
     const facing = facingSide(placement.rot);
     const f = VECTOR[facing];
     const project = (cell: { x: number; y: number }): number => cell.x * f.x + cell.y * f.y;
+    // The lane: the coordinate across the facing direction (rows for W/E, columns for N/S).
+    const across = (cell: { x: number; y: number }): number => (f.x !== 0 ? cell.y : cell.x);
     const own = worldCells(placement, part);
     const limit = Math.max(...own.map(project));
+    const lane = new Set(own.map(across));
 
     const blocked = placements.some((other) => {
       if (other.partInstanceId === placement.partInstanceId) return false;
       const otherPart = catalog.get(other.partInstanceId);
-      return otherPart !== undefined && worldCells(other, otherPart).some((cell) => project(cell) > limit);
+      return (
+        otherPart !== undefined &&
+        worldCells(other, otherPart).some((cell) => project(cell) > limit && lane.has(across(cell)))
+      );
     });
     if (blocked) {
       const exhaust = part.partClass === 'ENGINE';
@@ -69,8 +76,8 @@ export function directionErrors(
         code: exhaust ? 'EXHAUST_BLOCKED' : 'FACING_BLOCKED',
         partInstanceId: placement.partInstanceId,
         message: exhaust
-          ? `Engine ${placement.partInstanceId} has parts behind its exhaust.`
-          : `Weapon ${placement.partInstanceId} has parts in its line of fire.`,
+          ? `Engine ${placement.partInstanceId} has a part directly behind its exhaust.`
+          : `Weapon ${placement.partInstanceId} has a part in its line of fire.`,
       });
     }
 
@@ -97,14 +104,16 @@ export function directionErrors(
   return errors;
 }
 
-/** Direction rules as flight-viability problems: layout editing stays free, but a ship with an
-    engine/weapon that has parts behind its facing edge (or a connector on it) cannot fly. */
+/** Direction rules folded into a viability report. They are warnings (the ship still flies, with
+    the blocked engines/weapons not pulling their weight — ships/penalties.ts), except where the
+    caller passes `strict` (mining, which needs a clean exhaust and firing line to work). */
 export function withDirectionProblems(
-  viability: { viable: boolean; problems: ViabilityProblem[] },
+  viability: ViabilityReport,
   placements: readonly Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null>,
-): { viable: boolean; problems: ViabilityProblem[] } {
+  options: { strict?: boolean } = {},
+): ViabilityReport {
   const extra = directionErrors(placements, catalog, connectorsByInstance).map(
     (error): ViabilityProblem => ({
       code: error.code as ViabilityProblem['code'],
@@ -113,7 +122,10 @@ export function withDirectionProblems(
   );
   if (extra.length === 0) return viability;
   // one entry per code (several engines blocked is still one problem for the pilot to read)
-  const seen = new Set(viability.problems.map((problem) => problem.code));
+  const seen = new Set([...viability.problems, ...viability.warnings].map((problem) => problem.code));
   const unique = extra.filter((problem) => !seen.has(problem.code) && seen.add(problem.code));
-  return { viable: false, problems: [...viability.problems, ...unique] };
+  if (options.strict === true) {
+    return { viable: false, problems: [...viability.problems, ...unique], warnings: viability.warnings };
+  }
+  return { ...viability, warnings: [...viability.warnings, ...unique] };
 }

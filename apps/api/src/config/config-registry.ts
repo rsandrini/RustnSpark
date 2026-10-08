@@ -173,6 +173,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'ship.stat_display_scale',
+    group: 'ship',
+    type: 'number',
+    min: 1,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship.stat_display_scale),
+    description: {
+      en: 'Display multiplier for mobility (and the speeds compared with it: mission requirements, race rivals). Only what the player reads changes, not the game maths.',
+      'pt-BR': 'Multiplicador de exibição da mobilidade (e das velocidades comparadas com ela: requisitos de missão, rivais de corrida). Só muda o que o jogador lê, não a matemática do jogo.',
+    },
+  },
+  {
+    key: 'ship.cruise_deficit_floor',
+    group: 'ship',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship.cruise_deficit_floor),
+    description: {
+      en: 'A ship that uses more cruising power than it generates still flies: its engines keep generated/used of their thrust, but never less than this share.',
+      'pt-BR': 'Uma nave que gasta mais energia de cruzeiro do que gera ainda voa: os motores mantêm gerada/usada do empuxo, mas nunca menos que esta fração.',
+    },
+  },
+  {
     key: 'ship.fuel_mass_per_unit',
     group: 'ship',
     type: 'number',

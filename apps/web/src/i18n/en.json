@@ -165,6 +165,7 @@
     },
     "summary": {
       "ready": "Ready to fly",
+      "readyWithWarnings": "Ready to fly, with {{count}} warning(s)",
       "problemCount": "{{count}} problem(s)",
       "showAllStats": "Show all stats"
     },
@@ -213,18 +214,18 @@
       "NO_ENGINE": "No engine installed.",
       "MOB_TOO_LOW": "Mobility is below 1.",
       "NO_FUEL_CAPACITY": "Chemical engine needs a fuel tank.",
-      "NO_LIFE_SUPPORT": "No life support installed.",
+      "NO_LIFE_SUPPORT": "Pressurized modules but no life support installed.",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded.",
       "OUT_OF_BOUNDS": "Part is outside the grid.",
       "OVERLAP": "Parts overlap.",
       "DISCONNECTED": "Parts must touch the bridge.",
       "INVALID_LAYOUT": "The layout is not valid.",
-      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — install a battery, or a bigger one.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one.",
-      "EXHAUST_BLOCKED": "An engine has parts behind its exhaust — move it to the back edge of the ship or turn it.",
-      "FACING_BLOCKED": "A weapon has parts in its line of fire — move it to the edge of the ship or turn it.",
-      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side."
+      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates: its engines only get the share of power that exists, so it is slower.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — in a fight some attacks and shield recharges will not be powered. Install a battery, or a bigger one.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — long fights will run out of power. Install a battery, or a bigger one.",
+      "EXHAUST_BLOCKED": "An engine has a part directly behind its exhaust: it gives no thrust. Move it, move the part, or turn the engine.",
+      "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
+      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -278,7 +279,7 @@
       "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
       "fuelCap": "How much fuel the ship can hold, from every installed tank.",
       "fuelUse": "How much fuel is burned per unit of travel.",
-      "energyCont": "Continuous power balance: reactor/solar generation minus everything that always draws power (sensors, life support, mining rigs...). Must stay at zero or above, or the ship can't fly — separate from Combat power below, and never drawn from the battery.",
+      "energyCont": "Cruising power balance: what generators produce minus what always draws power (sensors, life support, mining rigs...). Below zero the ship still flies, but its engines only get the share of power that exists. Separate from combat power, which comes from the batteries.",
       "energyCombat": "Total combat-only power draw from every installed weapon and shield (always zero or negative). Covered by the battery's charge and output, never by Cruising power or the reactor — see Battery capacity / Battery output.",
       "batCharge": "Total energy the battery can store for combat. Must cover the ship's whole Combat power draw, or weapons/shields can't be installed.",
       "batOutput": "The most energy the battery can deliver in a single round. Must cover the ship's whole Combat power draw per round, or weapons/shields can't be installed.",
@@ -294,6 +295,10 @@
     "facing": {
       "exhaust": "Exhaust side",
       "weapon": "Firing side"
+    },
+    "warnings": {
+      "title": "Warnings",
+      "explain": "The ship can fly, but weaker — fix these to get its full performance."
     }
   },
   "home": {
@@ -1401,6 +1406,18 @@
       "partHp": {
         "label": "Hit points",
         "hint": "Damage this part can take before it breaks."
+      },
+      "energyGen": {
+        "label": "Power generated",
+        "hint": "Power this part produces while flying. A generator does not also consume."
+      },
+      "energyUse": {
+        "label": "Power used (flight)",
+        "hint": "Power this part draws all the time. Generators elsewhere on the ship must cover it, or the engines get only the share of power that exists."
+      },
+      "energyCombatUse": {
+        "label": "Power used (combat)",
+        "hint": "Power drawn per combat round, taken from the batteries."
       }
     },
     "summaryNone": "Structural part",

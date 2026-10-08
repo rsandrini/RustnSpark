@@ -25,7 +25,7 @@ import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
-import { checkViability, type ViabilityProblem } from './viability.js';
+import { checkViability, type ViabilityReport } from './viability.js';
 
 // Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
 // apps/web's part-detail.tsx lowestRarity — a local copy, not a shared import, since
@@ -74,7 +74,7 @@ export interface ShipActivity {
 export interface PreviewResponse {
   sheet: ShipSheet;
   shipClass: ShipClassType;
-  viability: { viable: boolean; problems: ViabilityProblem[] };
+  viability: ViabilityReport;
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];

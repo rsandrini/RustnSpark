@@ -15,6 +15,7 @@ import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { checkViability } from '../ships/viability.js';
+import { flightShip } from '../ships/penalties.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { missionDuration } from './duration.calculator.js';
@@ -253,11 +254,19 @@ export class TravelService {
     );
     if (viability.viable && fuelNeeded > ship.fuel) blockers.push('NOT_ENOUGH_FUEL');
 
+    // Warnings weaken the ship instead of grounding it (blocked engines give no thrust, ...).
+    const flightSheet = flightShip(
+      installedConnected,
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+      rules,
+    ).sheet;
     const durationSeconds =
-      sheet.mob > 0
+      flightSheet.mob > 0
         ? missionDuration({
             totalDistance,
-            mobility: sheet.mob,
+            mobility: flightSheet.mob,
             durationK: rules.missions.duration_k,
             timeScale: rules.missions.time_scale,
             classCutoffs: rules.missions.duration_class_cutoffs,

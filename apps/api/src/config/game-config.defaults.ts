@@ -20,6 +20,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   ship: {
     mob_factor: 1.6,
+    stat_display_scale: 10,
+    cruise_deficit_floor: 0.25,
     fuel_mass_per_unit: 0,
   },
   wear: {

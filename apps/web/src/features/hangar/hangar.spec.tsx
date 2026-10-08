@@ -324,7 +324,7 @@ describe('hangar (S10.4)', () => {
     expect(badge).toHaveClass('rarity-badge', 'rarity-common');
   });
 
-  it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {
+  it('mobility reads 0 without an engine, and 10x the pot/mass figure with one (display scale)', async () => {
     server.use(
       onboarded(),
       http.get('/v1/ships', () =>
@@ -338,7 +338,7 @@ describe('hangar (S10.4)', () => {
             currentLocationId: 'ceres',
             stance: 'NEUTRAL',
             layout: [],
-            sheet: { ...testSheet, mob: 0.958 },
+            sheet: { ...testSheet, pot: 0, mass: 20, mob: 1 },
             shipClass: 'MULTIROLE',
             yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null },
@@ -349,12 +349,12 @@ describe('hangar (S10.4)', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    // One decimal would round 0.958 up to a displayed "1", which then contradicts a
-    // MOB_TOO_LOW ("Mobility is below 1.") problem shown right next to it. Mobility is a
-    // headline tile (always visible), so scope to it — the same number also appears in the
-    // collapsed "Show all stats" detail below.
+    // The game floors mobility at 1 internally; the player reads the unrounded figure, so a ship
+    // without an engine is 0, not a misleading 1. It is a headline tile (always visible).
     const headline = await screen.findByTestId('sheet-headline');
-    expect(within(headline).getByText('0.96')).toBeInTheDocument();
+    const tile = within(headline).getByText('Mobility').closest('.sheet-headline-tile');
+    expect(tile).toHaveTextContent('0');
+    expect(tile).not.toHaveTextContent('1');
   });
 
   it('opens a part popup only from its (i) button — clicking the row itself never opens one', async () => {
@@ -410,7 +410,7 @@ describe('hangar (S10.4)', () => {
     // delta cell specifically by its own class, not by (ambiguous) text.
     const mobRow = within(dialog).getByRole('row', { name: /^Mobility/ });
     const mobDelta = mobRow.querySelector('.delta');
-    expect(mobDelta).toHaveTextContent('2');
+    expect(mobDelta).toHaveTextContent('16.7');
     expect(mobDelta).toHaveClass('delta-same');
   });
 

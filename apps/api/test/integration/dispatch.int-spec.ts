@@ -407,6 +407,52 @@ describe('ship dispatch API (S7.2)', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('a blocked engine does not ground the ship: it flies, with no thrust from that engine (slower)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [30, 10]);
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
+    const engine = await prisma.partInstance.findFirstOrThrow({
+      where: { id: { in: layout.map((placement) => placement.partInstanceId) }, partCatalog: { partClass: 'ENGINE' } },
+    });
+    const healthy = await request(httpServer(testApp.app))
+      .get(`/v1/ships/${player.shipId}`)
+      .set(auth(player.token));
+    const { rules } = configService.snapshot();
+    const secondsAt = (mob: number): number =>
+      Math.round((40 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
+    const healthySeconds = secondsAt((healthy.body as { sheet: { mob: number } }).sheet.mob);
+
+    // turn the engine until it is the only thing wrong: a warning, not a problem
+    let blocked = false;
+    for (const rot of [0, 90, 180, 270]) {
+      const candidate = layout.map((placement) =>
+        placement.partInstanceId === engine.id ? { ...placement, rot } : placement,
+      );
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/preview`)
+        .set(auth(player.token))
+        .send({ layout: candidate });
+      const viability = (
+        preview.body as { viability: { viable: boolean; warnings: { code: string }[] } }
+      ).viability;
+      if (viability.viable && viability.warnings.some((w) => w.code === 'EXHAUST_BLOCKED')) {
+        await prisma.ship.update({ where: { id: player.shipId }, data: { layout: candidate } });
+        blocked = true;
+        break;
+      }
+    }
+    expect(blocked).toBe(true);
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(200);
+    const seconds = (response.body as { durationSeconds: number }).durationSeconds;
+    expect(seconds).toBeGreaterThan(healthySeconds);
+    // thrust 0 leaves mobility at its floor of 1
+    expect(seconds).toBe(secondsAt(1));
+  });
+
   it('rejects a mission that is not accepted and another player’s mission', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

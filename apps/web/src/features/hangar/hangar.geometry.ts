@@ -79,13 +79,18 @@ export function directionViolations(
     if (catalog.partClass !== 'ENGINE' && catalog.partClass !== 'WEAPON') continue;
     const f = FACING_VECTOR[facingOf(placement.rot)];
     const project = (cell: { x: number; y: number }) => cell.x * f.x + cell.y * f.y;
-    const limit = Math.max(...cellsOf(placement, catalog).map(project));
+    const across = (cell: { x: number; y: number }) => (f.x !== 0 ? cell.y : cell.x);
+    const ownCells = cellsOf(placement, catalog);
+    const limit = Math.max(...ownCells.map(project));
+    // Only the part's own lane counts (rows for W/E, columns for N/S): a part elsewhere on the
+    // ship is not in the way of its exhaust or line of fire.
+    const lane = new Set(ownCells.map(across));
     const blockers = new Set<string>();
     for (const other of layout) {
       if (other.partInstanceId === placement.partInstanceId) continue;
       const otherCatalog = catalogById.get(other.partInstanceId);
       if (otherCatalog === undefined) continue;
-      if (cellsOf(other, otherCatalog).some((cell) => project(cell) > limit)) {
+      if (cellsOf(other, otherCatalog).some((cell) => project(cell) > limit && lane.has(across(cell)))) {
         blockers.add(other.partInstanceId);
       }
     }

@@ -585,6 +585,7 @@ export const handlers = [
       ],
     }),
   ),
+  http.get('/v1/display', () => HttpResponse.json({ statScale: 10, mobFactor: 1.6 })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).
@@ -597,7 +598,7 @@ export const handlers = [
     return ok<PreviewResponse>({
       sheet: sheet(),
       shipClass: 'MULTIROLE',
-      viability: { viable: true, problems: [] },
+      viability: { viable: true, problems: [], warnings: [] },
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],

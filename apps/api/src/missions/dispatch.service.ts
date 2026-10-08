@@ -18,6 +18,7 @@ import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
@@ -53,6 +54,9 @@ export interface DispatchSnapshot {
   readonly legs: readonly DispatchLeg[];
   /** Loose parts when the ship left port: the only parts a pirate can take (frozen, D19). */
   readonly storage?: ReadonlyArray<{ readonly id: string; readonly partType: string }>;
+  /** Flight warnings the ship left port with (blocked engines/weapons, a cruise power shortfall):
+      the parts above are already weakened by them, this is what the report says about it. */
+  readonly penalties?: readonly AppliedPenalty[];
 }
 
 export interface DispatchJobData {
@@ -275,6 +279,18 @@ export class DispatchService {
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
+      // Warnings do not ground the ship, they weaken it: the flight is resolved from the parts as
+      // they would actually perform (a scavenging job never flies, so nothing is weakened).
+      const flight =
+        mission.type === 'SCAVENGE'
+          ? { parts: installedConnected, sheet, penalties: [] as AppliedPenalty[] }
+          : flightShip(
+              installedConnected,
+              (ship.layout as unknown as Placement[]) ?? [],
+              catalogForConnectivity,
+              connectorsByInstance,
+              rules,
+            );
       // GDD §7 balance 3: a chemical engine needs fuel aboard; ion ships skip this.
       if (sheet.fuelUse > 0 && ship.fuel <= 0) {
         throw new ConflictException({ error: 'FUEL_EMPTY' });
@@ -284,7 +300,7 @@ export class DispatchService {
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
       const { durationSeconds, durationClass } = missionDuration({
         totalDistance,
-        mobility: sheet.mob,
+        mobility: flight.sheet.mob,
         durationK: rules.missions.duration_k,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
@@ -297,7 +313,7 @@ export class DispatchService {
         currentLocationId: ship.currentLocationId,
         stance: ship.stance,
         energyMode: ship.energyMode,
-        parts: installedConnected.map((part) => ({
+        parts: flight.parts.map((part) => ({
           id: part.instance.id,
           partType: part.instance.partType,
           condition: part.instance.condition,
@@ -308,6 +324,7 @@ export class DispatchService {
         storage: rows
           .filter((part) => part.location === 'INVENTORY')
           .map((part) => ({ id: part.id, partType: part.partType })),
+        ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({
