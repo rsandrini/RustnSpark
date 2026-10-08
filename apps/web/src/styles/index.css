@@ -1128,6 +1128,21 @@ a {
   .top-bar .top-bar-right {
     justify-self: center;
   }
+
+  /* The ship's name, energy mode and status must wrap on a phone: on one line they are wider than
+     the screen, and the whole page then scrolls sideways. */
+  .ship-identity {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .ship-identity-name,
+  .ship-identity-status {
+    max-width: 100%;
+  }
+  .ship-identity-status::before {
+    content: none;
+  }
 }
 
 .top-bar-right {

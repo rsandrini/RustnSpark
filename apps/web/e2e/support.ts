@@ -12,11 +12,17 @@ export async function assertClean(page: Page, screen: string): Promise<void> {
   expect(text, `${screen}: raw catalog code visible`).not.toMatch(RAW_CODE);
   expect(text, `${screen}: untranslated i18n key visible`).not.toMatch(LEAKED_KEY);
   const overflow = await page.evaluate(() => {
-    const extra = document.documentElement.scrollWidth - window.innerWidth;
+    // On a phone, content wider than the screen makes the browser widen its layout viewport
+    // instead of scrolling — so measure against the screen itself (the visual viewport).
+    const screenWidth = Math.min(window.innerWidth, window.visualViewport?.width ?? window.innerWidth);
+    const extra = Math.max(
+      document.documentElement.scrollWidth - screenWidth,
+      window.innerWidth - screenWidth,
+    );
     if (extra <= 1) return { extra, culprits: [] as string[] };
     // Name the elements that stick out, so a failure says what to fix, not just "916px".
     const culprits = Array.from(document.body.querySelectorAll('*'))
-      .filter((el) => el.getBoundingClientRect().right > window.innerWidth + 1)
+      .filter((el) => el.getBoundingClientRect().right > screenWidth + 1)
       .slice(0, 5)
       .map((el) => `${el.tagName.toLowerCase()}.${String(el.getAttribute('class'))}`);
     return { extra, culprits };
