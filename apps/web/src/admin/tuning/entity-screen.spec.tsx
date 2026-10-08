@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Routes, Route } from 'react-router';
@@ -170,7 +170,7 @@ describe('EntityScreen', () => {
     expect(screen.queryByText(/\[\[0,0\]/)).not.toBeInTheDocument();
   });
 
-  it('clones a ship format: opens the create form pre-filled with a new id and the same cells, then creates a copy', async () => {
+  it('duplicates a ship format: opens the create form pre-filled with a new id and the same cells, then creates a copy', async () => {
     const schema = {
       entity: 'ship-formats',
       fields: [
@@ -194,7 +194,7 @@ describe('EntityScreen', () => {
     const user = userEvent.setup();
     renderAt('/admin/tuning/entities/ship-formats');
 
-    await user.click(await screen.findByRole('link', { name: 'Clone scout' }));
+    await user.click(await screen.findByRole('link', { name: 'Duplicate scout' }));
     // pre-filled: a fresh id (the original is untouched) and tagged names
     expect(await screen.findByDisplayValue('scout_copy')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Scout (copy)')).toBeInTheDocument();
@@ -228,6 +228,105 @@ describe('EntityScreen', () => {
     expect(main!.querySelector('#id')).toBeNull();
     expect(main!.textContent).toMatch(/format cells/i); // ...drawing area in the main column
     void container;
+  });
+
+  it('duplicates any entity, not just ship formats: a part gets a fresh partType and its stats copied', async () => {
+    const schema = {
+      entity: 'parts',
+      fields: [
+        { name: 'partType', type: 'string', required: true, description: { en: 'Part code', 'pt-BR': 'Código' } },
+        { name: 'mass', type: 'integer', required: true, min: 0, max: 1000, description: { en: 'Mass', 'pt-BR': 'Massa' } },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json([{ partType: 'tank_small', mass: 7, active: true }], { status: 200 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/parts');
+    await user.click(await screen.findByRole('link', { name: 'Duplicate tank_small' }));
+    expect(await screen.findByDisplayValue('tank_small_copy')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('7')).toBeInTheDocument();
+  });
+
+  it('renders a foreign-key field as a select of the other entity\'s rows, not free text', async () => {
+    const schema = {
+      entity: 'mission-templates',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Template id', 'pt-BR': 'ID' } },
+        { name: 'factionId', type: 'string', required: true, references: 'factions', description: { en: 'Owning faction', 'pt-BR': 'Facção dona' } },
+      ],
+    };
+    let created: { data: Record<string, unknown> } | null = null;
+    server.use(
+      http.get('/v1/admin/tuning/schema/mission-templates', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/mission-templates', () => HttpResponse.json([], { status: 200 })),
+      http.get('/v1/admin/tuning/factions', () =>
+        HttpResponse.json(
+          [
+            { id: 'luna', displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade Luna' } },
+            { id: 'sun', displayName: { en: 'Sun Syndicate', 'pt-BR': 'Sindicato Sol' } },
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.post('/v1/admin/tuning/mission-templates', async ({ request }) => {
+        created = (await request.json()) as { data: Record<string, unknown> };
+        return HttpResponse.json({ row: created.data, revision: { id: '1' } }, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/mission-templates/new');
+    const select = await screen.findByRole('combobox', { name: /owning faction/i });
+    expect(await within(select).findByRole('option', { name: 'Luna Authority (luna)' })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: /template id/i }), 'run');
+    await user.selectOptions(select, 'sun');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(created).not.toBeNull());
+    expect(created!.data).toMatchObject({ id: 'run', factionId: 'sun' });
+  });
+
+  it('shows what is wrong: a summary naming each field plus the message under the field itself', async () => {
+    const schema = {
+      entity: 'materials',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Material id', 'pt-BR': 'ID' } },
+        { name: 'basePrice', type: 'integer', required: true, min: 1, max: 1000, description: { en: 'Base price', 'pt-BR': 'Preço' } },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
+      http.post('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(
+          {
+            error: 'VALIDATION_ERROR',
+            issues: [
+              { key: 'basePrice', message: 'Too small: expected number to be >=1' },
+              { key: 'id', message: 'Invalid input: expected string, received undefined' },
+            ],
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/materials/new');
+    await user.type(await screen.findByRole('textbox', { name: /material id/i }), 'x');
+    await user.type(screen.getByRole('spinbutton', { name: /base price/i }), '5');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    const summary = await screen.findByText(/fix 2 problems/i);
+    const box = summary.closest('.form-error-summary') as HTMLElement;
+    expect(within(box).getByText('Base price')).toBeInTheDocument();
+    expect(within(box).getByText(/too small/i)).toBeInTheDocument();
+    expect(within(box).getAllByText(/required/i).length).toBeGreaterThan(0); // humanised, not zod jargon
+    expect(box.textContent).not.toMatch(/received undefined/);
+    // and the same message sits under the field it belongs to
+    const field = screen.getByLabelText(/base price/i).closest('.field') as HTMLElement;
+    expect(within(field).getByText(/too small/i)).toBeInTheDocument();
   });
 
   it('filters the list by an enum field, driven by the schema alone (round 5)', async () => {

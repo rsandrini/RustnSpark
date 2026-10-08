@@ -56,3 +56,26 @@ export function errorText(
     price: priceChangedActualOf(error),
   });
 }
+
+/** The field-level problems of a rejected admin tuning write (`{ error: 'VALIDATION_ERROR', issues }`). */
+export function validationIssuesOf(error: unknown): { key: string; message: string }[] {
+  if (!(error instanceof ApiError)) return [];
+  const payload = error.payload as { issues?: unknown } | null | undefined;
+  if (!Array.isArray(payload?.issues)) return [];
+  return (payload.issues as unknown[]).filter(
+    (issue): issue is { key: string; message: string } =>
+      typeof issue === 'object' &&
+      issue !== null &&
+      typeof (issue as { key?: unknown }).key === 'string' &&
+      typeof (issue as { message?: unknown }).message === 'string',
+  );
+}
+
+/** A rejected tuning write as one readable line: each named problem ("key: message"), else the
+    plain message — never the bare machine code `VALIDATION_ERROR`. */
+export function failureText(error: Error): string {
+  const issues = validationIssuesOf(error);
+  return issues.length > 0
+    ? issues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')
+    : error.message;
+}

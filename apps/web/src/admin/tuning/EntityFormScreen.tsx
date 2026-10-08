@@ -6,6 +6,7 @@ import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
 import { RelationsMatrix, cloneOf, type FactionRow } from './entity-shared';
 import { rowId } from './EntityScreen';
+import { validationIssuesOf } from '../../api/errors';
 import type * as dto from '../../api/generated';
 
 const BREADCRUMB_SEPARATOR = '›';
@@ -38,6 +39,13 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
   const id = rawId === undefined ? undefined : decodeURIComponent(rawId);
   const listPath = `/admin/tuning/entities/${entityName}`;
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [issues, setIssues] = useState<{ key: string; message: string }[]>([]);
+  // A rejected write: field-level problems when the server named them, else its plain message.
+  const showFailure = (error: Error) => {
+    const found = validationIssuesOf(error);
+    setIssues(found);
+    setFormErrors(found.length > 0 ? [] : [error.message]);
+  };
   const [relations, setRelations] = useState<Record<string, string> | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,7 +72,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       void navigate(listPath);
     },
-    onError: (error: Error) => setFormErrors([error.message]),
+    onError: showFailure,
   });
   const updateMutation = useMutation({
     mutationFn: (params: { id: string; body: dto.UpdateEntityRequest }) =>
@@ -72,8 +80,9 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       setFormErrors([]);
+      setIssues([]);
     },
-    onError: (error: Error) => setFormErrors([error.message]),
+    onError: showFailure,
   });
 
   if (isSchemaLoading || isRowsLoading) return <p>{t('loading')}</p>;
@@ -92,7 +101,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
 
   const visibleFields = schemaResponse.fields.filter((field) => field.name !== 'active');
   const initialData =
-    mode === 'clone' && source !== undefined ? cloneOf(source, t('tuning.cloneSuffix')) : source;
+    mode === 'clone' && source !== undefined ? cloneOf(source, t('tuning.cloneSuffix'), entityName === 'parts' ? 'partType' : 'id') : source;
   const entityLabel = t(`tuning.entityNames.${entityName}`, { defaultValue: entityName });
   const title =
     mode === 'new'
@@ -152,6 +161,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         onSubmit={handleSubmit}
         onCancel={() => void navigate(listPath)}
         errors={formErrors}
+        issues={issues}
         autoSave={mode === 'edit'}
         onAutoSave={handleAutoSave}
         autoSaveStatus={autoSaveStatus}

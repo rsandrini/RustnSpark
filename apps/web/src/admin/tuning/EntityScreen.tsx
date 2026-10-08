@@ -4,7 +4,6 @@ import { Link, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { GridCellsPreview } from './GridCellsPreview';
-import { CLONEABLE_ENTITIES } from './entity-shared';
 import { Popup } from '../../ui/Popup';
 import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
@@ -180,15 +179,13 @@ export function EntityScreen() {
                     >
                       {t('tuning.edit')}
                     </Link>
-                    {CLONEABLE_ENTITIES.includes(entityName) && (
-                      <Link
-                        className="btn-link"
-                        to={`${basePath}/${encodeURIComponent(id)}/clone`}
-                        aria-label={`${t('tuning.clone')} ${id}`}
-                      >
-                        {t('tuning.clone')}
-                      </Link>
-                    )}
+                    <Link
+                      className="btn-link"
+                      to={`${basePath}/${encodeURIComponent(id)}/clone`}
+                      aria-label={`${t('tuning.clone')} ${id}`}
+                    >
+                      {t('tuning.clone')}
+                    </Link>
                     {RETIREABLE_ENTITIES.includes(entityName) && (
                       <button
                         type="button"

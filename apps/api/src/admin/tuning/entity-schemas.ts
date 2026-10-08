@@ -21,6 +21,9 @@ export interface EntitySchemaField {
   max?: number;
   description?: { en: string; 'pt-BR': string };
   configKey?: string;
+  /** The entity (admin entity name) whose ids this string field refers to: the admin form
+      renders a select of its rows instead of free text. */
+  references?: string;
 }
 
 export interface EntitySchema {
@@ -486,6 +489,7 @@ const LOCATION_FIELDS: EntitySchemaField[] = [
     name: 'factionId',
     type: 'string',
     required: true,
+    references: 'factions',
     description: localeMap('Controlling faction', 'Facção controladora'),
   },
   {
@@ -523,6 +527,7 @@ const ROUTE_FIELDS: EntitySchemaField[] = [
     name: 'nodeAId',
     type: 'string',
     required: true,
+    references: 'locations',
     description: localeMap(
       'First location id (lexicographically smaller)',
       'ID do primeiro local (menor lexicograficamente)',
@@ -532,6 +537,7 @@ const ROUTE_FIELDS: EntitySchemaField[] = [
     name: 'nodeBId',
     type: 'string',
     required: true,
+    references: 'locations',
     description: localeMap(
       'Second location id (lexicographically larger)',
       'ID do segundo local (maior lexicograficamente)',
@@ -634,6 +640,7 @@ const MISSION_TEMPLATE_FIELDS: EntitySchemaField[] = [
     name: 'factionId',
     type: 'string',
     required: true,
+    references: 'factions',
     description: localeMap('Owning faction', 'Facção dona'),
   },
   {

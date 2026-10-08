@@ -571,8 +571,8 @@
       "clear": "Limpar",
       "previewLabel": "Prévia do formato da nave ({{count}} células)"
     },
-    "clone": "Clonar",
-    "cloneEntity": "Clonar",
+    "clone": "Duplicar",
+    "cloneEntity": "Duplicar",
     "cloneSuffix": "(cópia)",
     "rowCount": "{{shown}} de {{total}}",
     "notFound": "Nada com o id \"{{id}}\" aqui.",
@@ -584,7 +584,14 @@
       "performance": "Desempenho",
       "energyFuel": "Energia e combustível",
       "special": "Especial"
-    }
+    },
+    "errors": {
+      "required": "Obrigatório",
+      "fixThese": "Corrija {{count}} problema antes de salvar:",
+      "fixThese_other": "Corrija {{count}} problemas antes de salvar:",
+      "separator": ": "
+    },
+    "chooseOne": "Escolha…"
   },
   "factions": {
     "luna": "Autoridade de Luna",

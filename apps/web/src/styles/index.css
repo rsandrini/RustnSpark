@@ -4341,3 +4341,26 @@ svg .block.dir-blocked {
   color: var(--mut);
   font-size: 11px;
 }
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--bad);
+}
+.form-error-summary {
+  margin: 8px 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.08);
+}
+.form-error-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+/* A column whose values read better centered (Config > factory default). */
+.admin-shell th.col-center,
+.admin-shell td.col-center {
+  text-align: center;
+}

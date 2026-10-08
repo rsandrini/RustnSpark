@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { BundleDialog } from './BundleDialog';
+import { failureText } from '../../api/errors';
 import type * as dto from '../../api/generated';
 
 function serializeValue(value: unknown): string {
@@ -71,7 +72,7 @@ export function ConfigScreen() {
     onError: (error: Error, variables) => {
       setErrors((prev) => ({
         ...prev,
-        [variables.key]: error.message,
+        [variables.key]: failureText(error),
       }));
     },
   });
@@ -154,7 +155,7 @@ export function ConfigScreen() {
                 <th>{t('tuning.key')}</th>
                 <th>{t('tuning.description')}</th>
                 <th>{t('tuning.currentValue')}</th>
-                <th>{t('tuning.factoryDefault')}</th>
+                <th className="col-center">{t('tuning.factoryDefault')}</th>
                 <th>{t('tuning.actions')}</th>
               </tr>
             </thead>
@@ -208,7 +209,7 @@ export function ConfigScreen() {
                       )}
                       {errors[entry.key] && <span role="alert">{errors[entry.key]}</span>}
                     </td>
-                    <td>{serializeValue(entry.factoryDefault)}</td>
+                    <td className="col-center">{serializeValue(entry.factoryDefault)}</td>
                     <td>
                       <button
                         type="button"

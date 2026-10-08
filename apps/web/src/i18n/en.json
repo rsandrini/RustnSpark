@@ -571,8 +571,8 @@
       "clear": "Clear",
       "previewLabel": "Ship format preview ({{count}} cells)"
     },
-    "clone": "Clone",
-    "cloneEntity": "Clone",
+    "clone": "Duplicate",
+    "cloneEntity": "Duplicate",
     "cloneSuffix": "(copy)",
     "rowCount": "{{shown}} of {{total}}",
     "notFound": "Nothing with id \"{{id}}\" here.",
@@ -584,7 +584,14 @@
       "performance": "Performance",
       "energyFuel": "Energy & fuel",
       "special": "Special"
-    }
+    },
+    "errors": {
+      "required": "Required",
+      "fixThese": "Fix {{count}} problem before saving:",
+      "fixThese_other": "Fix {{count}} problems before saving:",
+      "separator": ": "
+    },
+    "chooseOne": "Choose…"
   },
   "factions": {
     "luna": "Luna Authority",

@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type * as dto from '../../api/generated';
 import { ConnectorRulesEditor, type ConnectorRules } from './ConnectorRulesEditor';
 import { GridCellsEditor } from './GridCellsEditor';
+import { tuningApi } from './tuning.api';
+import { pickLocalized } from '../../i18n/localized';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
 // while typing, flushed immediately on blur (moving to another field, or closing).
@@ -11,8 +14,64 @@ const AUTO_SAVE_DEBOUNCE_MS = 1200;
 // Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
 const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
 
+/** A select of another entity's rows (a foreign key), labelled by their localized name. */
+function ReferenceSelect({
+  entity,
+  id,
+  value,
+  required,
+  label,
+  onChange,
+}: {
+  entity: string;
+  id: string;
+  value: string;
+  required: boolean;
+  label: string;
+  onChange: (value: string) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const { data: rows } = useQuery<Record<string, unknown>[]>({
+    queryKey: ['tuning', 'entities', entity],
+    queryFn: () => tuningApi.listEntities(entity),
+  });
+  const options = (rows ?? []).map((row) => {
+    const rowId = String(row.id ?? row.partType);
+    const name = row.displayName;
+    const text =
+      typeof name === 'object' && name !== null
+        ? pickLocalized(name as { en: string; 'pt-BR': string }, i18n.language)
+        : '';
+    return { value: rowId, label: text !== '' && text !== rowId ? `${text} (${rowId})` : rowId };
+  });
+  // A stored value that no longer exists must still show, never silently blank.
+  const known = options.some((option) => option.value === value);
+  return (
+    <select
+      id={id}
+      value={value}
+      required={required}
+      aria-label={label}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      <option value="">{t('tuning.chooseOne')}</option>
+      {!known && value !== '' && <option value={value}>{value}</option>}
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /** A titled group of fields in the details column (field names; any field not listed lands in a
     trailing untitled group so nothing is ever hidden). */
+export interface FormIssue {
+  key: string;
+  message: string;
+}
+
 export interface FormSection {
   titleKey: string;
   fields: readonly string[];
@@ -26,6 +85,8 @@ interface SchemaFormProps {
   onCancel?: () => void;
   submitLabel?: string;
   errors?: string[];
+  /** Server validation problems: shown as a summary and under the field each one names. */
+  issues?: readonly FormIssue[];
   /** Only while editing an existing row — never while creating one: auto-saving a brand-new,
       still-incomplete entity on every field blur would create partial/duplicate rows, not just
       save a keystroke. */
@@ -96,6 +157,7 @@ export function SchemaForm({
   onCancel,
   submitLabel,
   errors,
+  issues = [],
   autoSave = false,
   onAutoSave,
   autoSaveStatus = 'idle',
@@ -278,6 +340,19 @@ export function SchemaForm({
       );
     }
 
+    if (field.references !== undefined && field.type === 'string') {
+      return (
+        <ReferenceSelect
+          entity={field.references}
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
+          required={field.required}
+          label={getFieldLabel(field, locale)}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
     if (field.type === 'connector-rules') {
       return (
         <ConnectorRulesEditor
@@ -319,6 +394,21 @@ export function SchemaForm({
     { titleKey: null, fields: sideFields.filter((field) => !listed.has(field.name)) },
   ].filter((group) => group.fields.length > 0);
 
+  // Validation messages come straight from the server's zod rules: a missing value reads as
+  // "Required" instead of "Invalid input: expected string, received undefined".
+  const readable = (message: string): string =>
+    /expected .* received undefined/.test(message) ? t('tuning.errors.required') : message;
+  const fieldOf = (key: string): string => key.split('.')[0] ?? key;
+  const labelFor = (key: string): string => {
+    const field = fields.find((candidate) => candidate.name === fieldOf(key));
+    return field === undefined ? key : getFieldLabel(field, locale);
+  };
+  const issuesByField = new Map<string, string[]>();
+  for (const issue of issues) {
+    const name = fieldOf(issue.key);
+    issuesByField.set(name, [...(issuesByField.get(name) ?? []), readable(issue.message)]);
+  }
+
   const renderField = (field: dto.EntitySchemaField) => {
     const wide =
       field.type === 'locale-map' ||
@@ -336,6 +426,11 @@ export function SchemaForm({
           )}
         </label>
         {renderInput(field)}
+        {(issuesByField.get(field.name) ?? []).map((message) => (
+          <small key={message} className="field-error" role="alert">
+            {message}
+          </small>
+        ))}
         {field.min !== undefined || field.max !== undefined ? (
           <small className="field-hint">
             {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
@@ -352,6 +447,20 @@ export function SchemaForm({
       // auto-save right away instead of waiting out the full debounce.
       onBlur={autoSave ? () => flushAutoSave() : undefined}
     >
+      {issues.length > 0 && (
+        <div className="form-error-summary" role="alert">
+          <b>{t('tuning.errors.fixThese', { count: issues.length })}</b>
+          <ul>
+            {issues.map((issue, index) => (
+              <li key={`${issue.key}-${index}`}>
+                <b>{labelFor(issue.key)}</b>
+                {t('tuning.errors.separator')}
+                {readable(issue.message)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {errors && errors.length > 0 && (
         <ul role="alert">
           {errors.map((error, index) => (

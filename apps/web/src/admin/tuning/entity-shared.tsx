@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 
-// A clone opens the create form pre-filled from an existing row (new id required): worth having
-// where a row is expensive to redraw from scratch (a ship format's cell grid).
-export const CLONEABLE_ENTITIES = ['ship-formats'];
-
-/** The pre-filled form data for cloning `row`: a fresh id and "(copy)"-tagged names, the rest
-    (cells, rarity gate, target) copied as is. */
-export function cloneOf(row: Record<string, unknown>, suffix: string): Record<string, unknown> {
-  const copy: Record<string, unknown> = { ...row, id: `${String(row.id)}_copy` };
+/** The pre-filled form data for duplicating `row`: a fresh id (`<id>_copy`, to be edited) and
+    "(copy)"-tagged names; everything else — stats, cells, rules, JSON blocks — is copied as is.
+    Works for every entity: `idField` is the row's id column (`partType` for parts, else `id`). */
+export function cloneOf(
+  row: Record<string, unknown>,
+  suffix: string,
+  idField = 'id',
+): Record<string, unknown> {
+  const copy: Record<string, unknown> = { ...row, [idField]: `${String(row[idField])}_copy` };
   const name = row.displayName;
   if (typeof name === 'object' && name !== null) {
     copy.displayName = Object.fromEntries(

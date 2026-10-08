@@ -108,6 +108,13 @@ export function InspectorDetailScreen() {
       </p>
       <h2>{data.player.name}</h2>
 
+      <SupportActions
+        playerId={playerId}
+        ships={data.ships}
+        fastOpsOn={data.player.debugFastOps}
+        onChanged={refreshAll}
+      />
+
       <section aria-label={t('admin.account')}>
         <h3>{t('admin.account')}</h3>
         <table>
@@ -218,12 +225,6 @@ export function InspectorDetailScreen() {
         )}
       </section>
 
-      <SupportActions
-        playerId={playerId}
-        ships={data.ships}
-        fastOpsOn={data.player.debugFastOps}
-        onChanged={refreshAll}
-      />
 
       <section aria-label={t('admin.timeline')}>
         <h3>{t('admin.timeline')}</h3>

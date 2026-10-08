@@ -882,6 +882,8 @@ export const EntitySchemaFieldSchema = z.object({
   max: z.number().optional(),
   description: LocalizedTextSchema.optional(),
   configKey: z.string().optional(),
+  /** Admin entity whose ids this field refers to: the form shows a select instead of free text. */
+  references: z.string().optional(),
 });
 export type EntitySchemaField = z.infer<typeof EntitySchemaFieldSchema>;
 

@@ -102,6 +102,7 @@ export class EntityTuningService {
         max: field.max,
         description: field.description,
         configKey: field.configKey,
+        references: field.references,
       })),
     };
   }
