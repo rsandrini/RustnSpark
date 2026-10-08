@@ -106,4 +106,27 @@ describe('importTuningSnapshot', () => {
     expect(report.entities['parts']?.failed).toEqual([{ id: 'N', error: 'boom' }]);
     expect(report.entities['parts']?.create).toEqual([]);
   });
+
+  it('restores uploaded art references after the rows, skipping what is already there', async () => {
+    const { deps, writes } = setup({});
+    deps.listArt = (kind) =>
+      Promise.resolve(kind === 'factions' ? { luna: { logo: 'same.png' } } : {});
+    deps.setArt = (kind, id) => {
+      writes.push(`art ${kind}:${id}`);
+      return Promise.resolve();
+    };
+    const withArt: TuningSnapshot = {
+      ...snapshot({ parts: [{ id: 'N', name: 'n' }] }),
+      art: {
+        factions: { luna: { logo: 'same.png' }, sun: { banner: 'b.png' } },
+        locations: { ceres: { wide: 'w.png' } },
+      },
+    };
+    const dry = await importTuningSnapshot(deps, withArt, { apply: false });
+    expect(dry.art).toEqual({ factions: ['sun'], locations: ['ceres'] });
+    expect(writes).toEqual([]);
+    await importTuningSnapshot(deps, withArt, { apply: true });
+    expect(writes.slice(-2)).toEqual(['art factions:sun', 'art locations:ceres']);
+    expect(writes.indexOf('create parts:N')).toBeLessThan(writes.indexOf('art factions:sun'));
+  });
 });

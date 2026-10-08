@@ -10,9 +10,15 @@ export interface TuningSnapshot {
   /** Every admin-editable entity table: entity name -> all rows (retired ones included),
       each row restricted to its admin-editable fields. */
   entities: Record<string, Record<string, unknown>[]>;
+  /** Uploaded art references (faction / location id -> slot -> file name). The image files live on
+      the art volume, not here: restoring the references only makes sense with that volume kept. */
+  art?: Record<ArtSnapshotKind, Record<string, unknown>>;
 }
 
+export type ArtSnapshotKind = 'factions' | 'locations';
+
 export interface TuningSnapshotSource {
+  listArt?(kind: ArtSnapshotKind): Promise<Record<string, unknown>>;
   entityNames(): string[];
   listEntity(entity: string): Promise<Record<string, unknown>[]>;
   exportConfig(): Promise<BundleExport>;
@@ -26,12 +32,19 @@ export async function buildTuningSnapshot(source: TuningSnapshotSource): Promise
   for (const entity of source.entityNames()) {
     entities[entity] = await source.listEntity(entity);
   }
-  return {
+  const snapshot: TuningSnapshot = {
     format: TUNING_SNAPSHOT_FORMAT,
     exportedAt: source.now().toISOString(),
     config: await source.exportConfig(),
     entities,
   };
+  if (source.listArt) {
+    snapshot.art = {
+      factions: await source.listArt('factions'),
+      locations: await source.listArt('locations'),
+    };
+  }
+  return snapshot;
 }
 
 /** Foreign-key-ish order (routes need locations, templates need factions, ...). Rows that still
@@ -61,6 +74,9 @@ export interface TuningImportDeps {
   configKeys(): string[];
   currentConfig(): Promise<Record<string, unknown>>;
   importConfig(entries: { key: string; value: unknown }[]): Promise<unknown>;
+  /** Current art references, and a writer for one row (only the art column is touched). */
+  listArt?(kind: ArtSnapshotKind): Promise<Record<string, unknown>>;
+  setArt?(kind: ArtSnapshotKind, id: string, art: unknown): Promise<void>;
 }
 
 export interface TuningImportReport {
@@ -72,6 +88,8 @@ export interface TuningImportReport {
   >;
   skippedFields: { entity: string; field: string }[];
   unknownEntities: string[];
+  /** Art references that would be (or were) restored, per kind. */
+  art: Record<ArtSnapshotKind, string[]>;
 }
 
 function sameJson(a: unknown, b: unknown): boolean {
@@ -115,6 +133,7 @@ export async function importTuningSnapshot(
     entities: {},
     skippedFields: [],
     unknownEntities: [],
+    art: { factions: [], locations: [] },
   };
 
   const known = new Set(deps.configKeys());
@@ -178,6 +197,18 @@ export async function importTuningSnapshot(
     for (const field of skipped) report.skippedFields.push({ entity, field });
   }
 
+  const pendingArt: { kind: ArtSnapshotKind; id: string; art: unknown }[] = [];
+  if (snapshot.art && deps.listArt) {
+    for (const kind of ['factions', 'locations'] as const) {
+      const current = await deps.listArt(kind);
+      for (const [id, art] of Object.entries(snapshot.art[kind] ?? {})) {
+        if (art === null || art === undefined || sameJson(art, current[id])) continue;
+        report.art[kind].push(id);
+        pendingArt.push({ kind, id, art });
+      }
+    }
+  }
+
   if (!options.apply) return report;
 
   if (configEntries.length > 0) await deps.importConfig(configEntries);
@@ -202,6 +233,14 @@ export async function importTuningSnapshot(
       break;
     }
     queue = failed.map((f) => f.op);
+  }
+  // Art goes last: the faction / location rows exist by now.
+  for (const { kind, id, art } of pendingArt) {
+    try {
+      await deps.setArt?.(kind, id, art);
+    } catch {
+      report.art[kind] = report.art[kind].filter((done) => done !== id);
+    }
   }
   return report;
 }

@@ -2,6 +2,8 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service.js';
 import { AppModule } from '../../app.module.js';
 import { BundleService } from '../tuning/bundle.service.js';
 import { CONFIG_REGISTRY } from '../../config/config-registry.js';
@@ -47,6 +49,14 @@ async function main(): Promise<void> {
   try {
     const entities = app.get(EntityTuningService);
     const bundle = app.get(BundleService);
+    const prisma = app.get(PrismaService);
+    const listArt = async (kind: 'factions' | 'locations'): Promise<Record<string, unknown>> => {
+      const rows =
+        kind === 'factions'
+          ? await prisma.faction.findMany({ select: { id: true, art: true } })
+          : await prisma.location.findMany({ select: { id: true, art: true } });
+      return Object.fromEntries(rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]));
+    };
     if (values.import) {
       const snapshot = JSON.parse(await readFile(values.import, 'utf8')) as TuningSnapshot;
       const report = await importTuningSnapshot(
@@ -70,6 +80,12 @@ async function main(): Promise<void> {
           currentConfig: async () =>
             Object.fromEntries((await bundle.export()).entries.map((e) => [e.key, e.value])),
           importConfig: (entries) => bundle.import(entries, ACTOR),
+          listArt,
+          setArt: async (kind, id, art) => {
+            const data = { art: art as Prisma.InputJsonValue };
+            if (kind === 'factions') await prisma.faction.update({ where: { id }, data });
+            else await prisma.location.update({ where: { id }, data });
+          },
         },
         snapshot,
         { apply: values.apply },
@@ -85,6 +101,7 @@ async function main(): Promise<void> {
       entityNames: getEntityNames,
       listEntity: (entity) => entities.list(entity),
       exportConfig: () => bundle.export(),
+      listArt,
       now: () => new Date(),
     });
     await writeFile(exportPath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
