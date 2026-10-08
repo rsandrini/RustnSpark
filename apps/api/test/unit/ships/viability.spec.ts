@@ -251,4 +251,13 @@ describe('checkViability', () => {
     expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
     expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_CHARGE_INSUFFICIENT');
   });
+
+  it('a shield that may run short of energy is only a low note, not a weapons warning', () => {
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'shield_basic']);
+    const sheet = deriveSheet(parts, rules);
+    const result = checkViability(sheet, parts, rules);
+    expect(result.warnings.map((p) => p.code)).toContain('SHIELD_ENERGY_LOW');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.viable).toBe(true);
+  });
 });

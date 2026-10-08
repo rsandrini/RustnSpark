@@ -178,6 +178,15 @@ export function ShipSheetPanel({
           <span className={`pill pill-${tone}`}>
             {t('hangar.energyStatus.draw', { value: number(combatDraw) })}
           </span>
+          {combatDraw > 0 && (
+            <div className="substat" data-testid="battery-lasts">
+              {combatDraw - combatSurplus <= 0
+                ? t('hangar.energyStatus.noDrain')
+                : t('hangar.energyStatus.lasts', {
+                    rounds: Math.floor(sheet.batCharge / (combatDraw - combatSurplus)),
+                  })}
+            </div>
+          )}
           <div className="substat">
             {combatCovered
               ? t('hangar.energyStatus.covered', {

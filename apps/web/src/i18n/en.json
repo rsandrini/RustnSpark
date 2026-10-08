@@ -178,7 +178,9 @@
       "breakdown": "Generates {{generate}} · Consumes {{consume}}",
       "draw": "Draws {{value}}/round",
       "covered": "Covered: ship surplus + battery ({{output}}/round)",
-      "insufficient": "Exceeds ship surplus + battery ({{output}}/round)"
+      "insufficient": "Exceeds ship surplus + battery ({{output}}/round)",
+      "noDrain": "The ship's spare power covers it: the battery is not drained.",
+      "lasts": "The battery lasts about {{rounds}} round(s) of this."
     },
     "classes": {
       "HAULER": "Hauler",
@@ -228,7 +230,8 @@
       "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than the ship's spare power plus its batteries can store — long fights will run out of power. Add power generation or a battery.",
       "EXHAUST_BLOCKED": "An engine has a part directly behind its exhaust: it gives no thrust. Move it, move the part, or turn the engine.",
       "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
-      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it."
+      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it.",
+      "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",

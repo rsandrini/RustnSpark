@@ -178,7 +178,9 @@
       "breakdown": "Gera {{generate}} · Consome {{consume}}",
       "draw": "Consome {{value}}/rodada",
       "covered": "Coberto: sobra da nave + bateria ({{output}}/rodada)",
-      "insufficient": "Excede a sobra da nave + bateria ({{output}}/rodada)"
+      "insufficient": "Excede a sobra da nave + bateria ({{output}}/rodada)",
+      "noDrain": "A sobra de energia da nave cobre: a bateria não é consumida.",
+      "lasts": "A bateria dura cerca de {{rounds}} rodada(s) assim."
     },
     "classes": {
       "HAULER": "Cargueiro",
@@ -228,7 +230,8 @@
       "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que a sobra da nave mais as baterias armazenam — lutas longas ficarão sem energia. Adicione geração ou uma bateria.",
       "EXHAUST_BLOCKED": "Um motor tem uma peça logo atrás do escape: ele não dá empuxo. Mova-o, mova a peça ou gire o motor.",
       "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
-      "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o."
+      "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
+      "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",

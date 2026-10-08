@@ -44,6 +44,7 @@ const FIX_CLASS: Record<string, string> = {
   ENERGY_CRUISE_NEGATIVE: 'REACTOR',
   BATTERY_OUTPUT_INSUFFICIENT: 'BATTERY',
   BATTERY_CHARGE_INSUFFICIENT: 'BATTERY',
+  SHIELD_ENERGY_LOW: 'BATTERY',
   NO_LIFE_SUPPORT: 'UTILITY',
 };
 
@@ -53,6 +54,7 @@ const SOFT_CODES: ReadonlySet<string> = new Set([
   'ENERGY_CRUISE_NEGATIVE',
   'BATTERY_OUTPUT_INSUFFICIENT',
   'BATTERY_CHARGE_INSUFFICIENT',
+  'SHIELD_ENERGY_LOW',
   'NO_LIFE_SUPPORT',
   'EXHAUST_BLOCKED',
   'FACING_BLOCKED',
@@ -731,7 +733,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   <p className="sub">{t('hangar.warnings.explain')}</p>
                   <ul>
                     {allWarnings.map((problem) => (
-                      <li key={problem.code} className="warn-text">
+                      <li
+                        key={problem.code}
+                        className={problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'}
+                      >
                         {t(`hangar.problems.${problem.code}`, {
                           defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
                         })}

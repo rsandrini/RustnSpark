@@ -170,6 +170,53 @@ describe('layered combat', () => {
   });
 });
 
+describe('batteries are a real store', () => {
+  const gunner = (over: Partial<CombatSheet> = {}): CombatSheet => ({
+    pdf: 6,
+    bli: 0,
+    esc: 0,
+    sen: 9,
+    hp: 400,
+    mob: 1,
+    armor: 0,
+    energyMode: 'BATTERY',
+    batOutput: 10,
+    energyCont: 0,
+    weaponEnergyDraw: 5,
+    battery: 20,
+    ...over,
+  });
+  const target: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 0, hp: 400, mob: 1, armor: 0 };
+  const long: GameRules['combat'] = { ...rules.combat, kite_factor: 0, retreat_hp_ratio: 0.01 };
+
+  it('every shot takes energy out of the battery until it is empty, then the weapon goes quiet', () => {
+    const result = resolveCombat(gunner(), target, long, createRng('drain'));
+    // 20 stored at 5 a shot: four shots in all, then nothing
+    const shots = result.rounds.filter((round) => round.attacker === 'A');
+    expect(shots).toHaveLength(4);
+    expect(result.final.batA).toBe(0);
+  });
+
+  it('the ship\'s spare power pays first, so the battery lasts longer', () => {
+    const solo = resolveCombat(gunner(), target, long, createRng('spare'));
+    const helped = resolveCombat(
+      gunner({ energyMode: 'FULL', energyCont: 3 }),
+      target,
+      long,
+      createRng('spare'),
+    );
+    expect(helped.rounds.filter((round) => round.attacker === 'A').length).toBeGreaterThan(
+      solo.rounds.filter((round) => round.attacker === 'A').length,
+    );
+  });
+
+  it('with no stored figure the battery is inexhaustible, as before', () => {
+    const { battery: _stored, ...legacy } = gunner();
+    const result = resolveCombat(legacy, target, long, createRng('legacy'));
+    expect(result.rounds.filter((round) => round.attacker === 'A').length).toBeGreaterThan(10);
+  });
+});
+
 describe('a whole run in the layered model', () => {
   const PARTS = [
     { id: 'bridge', partClass: 'BRIDGE', providesEsc: false, condition: 100 },

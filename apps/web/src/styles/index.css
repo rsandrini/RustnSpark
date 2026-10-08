@@ -4774,3 +4774,9 @@ tr.ev-transit td:first-child {
     animation: none;
   }
 }
+
+/* A low-level note (not a warning): quiet, never red or amber. */
+.low-note {
+  color: var(--mut);
+  font-size: 12px;
+}

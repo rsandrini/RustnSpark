@@ -11,6 +11,7 @@ export type ViabilityProblemCode =
   | 'ENERGY_CRUISE_NEGATIVE'
   | 'BATTERY_OUTPUT_INSUFFICIENT'
   | 'BATTERY_CHARGE_INSUFFICIENT'
+  | 'SHIELD_ENERGY_LOW'
   | 'NO_LIFE_SUPPORT'
   | 'STRUCTURE_EXCEEDED'
   // Part direction rules (ships/direction.ts): reported like any other flight problem — saving a
@@ -39,6 +40,7 @@ const SOFT_CODES: ReadonlySet<ViabilityProblemCode> = new Set<ViabilityProblemCo
   'ENERGY_CRUISE_NEGATIVE',
   'BATTERY_OUTPUT_INSUFFICIENT',
   'BATTERY_CHARGE_INSUFFICIENT',
+  'SHIELD_ENERGY_LOW',
   'NO_LIFE_SUPPORT',
   'EXHAUST_BLOCKED',
   'FACING_BLOCKED',
@@ -74,6 +76,11 @@ const BATTERY_OUTPUT_INSUFFICIENT: ViabilityProblem = {
 const BATTERY_CHARGE_INSUFFICIENT: ViabilityProblem = {
   code: 'BATTERY_CHARGE_INSUFFICIENT',
   message: 'Combat energy demand exceeds what the ship generates plus its battery charge.',
+};
+const SHIELD_ENERGY_LOW: ViabilityProblem = {
+  code: 'SHIELD_ENERGY_LOW',
+  message:
+    'If the shield is in use it may run short of energy once the battery and the ship\'s spare power are spent.',
 };
 const NO_LIFE_SUPPORT: ViabilityProblem = {
   code: 'NO_LIFE_SUPPORT',
@@ -119,14 +126,27 @@ export function checkViability(
   // Combat is powered first by what the rest of the ship generates beyond its own needs (the
   // surplus of cruising power); the batteries only have to cover what that cannot. A pilot who
   // picks the batteries-only mode takes that choice at their own risk (see the combat energy mode).
+  // The shield only spends energy while it recovers, so it is judged apart from the weapons: a
+  // weapons shortfall is a real warning, a shield that might run short is only a low note.
   const surplus = Math.max(0, sheet.energyCont);
-  const shortfall = Math.max(0, Math.abs(Math.min(0, sheet.energyCombat)) - surplus);
-  if (shortfall > sheet.batOutput) {
+  const totalDraw = Math.abs(Math.min(0, sheet.energyCombat));
+  const shieldDraw = parts
+    .filter((part) => part.catalog.esc > 0)
+    .reduce((sum, part) => sum + Math.abs(Math.min(0, part.catalog.energyCombat)), 0);
+  const weaponShortfall = Math.max(0, totalDraw - shieldDraw - surplus);
+  if (weaponShortfall > sheet.batOutput) {
     problems.push(BATTERY_OUTPUT_INSUFFICIENT);
   }
 
-  if (shortfall > sheet.batCharge) {
+  if (weaponShortfall > sheet.batCharge) {
     problems.push(BATTERY_CHARGE_INSUFFICIENT);
+  }
+
+  if (
+    weaponShortfall <= sheet.batOutput &&
+    Math.max(0, totalDraw - surplus) > sheet.batOutput
+  ) {
+    problems.push(SHIELD_ENERGY_LOW);
   }
 
   const hasPressurized = parts.some((part) => part.catalog.pressurized);
