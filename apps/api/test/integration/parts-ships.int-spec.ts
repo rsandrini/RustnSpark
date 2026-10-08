@@ -578,6 +578,29 @@ describe('parts and ships API (S4.3)', () => {
       expect(codes).not.toContain('EXHAUST_BLOCKED');
     });
 
+    it('taking the tank off the ship empties it: the fuel never exceeds what the tanks can hold', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
+      await prisma.ship.update({ where: { id: shipId }, data: { fuel: 25 } });
+      const tank = await prisma.partInstance.findFirstOrThrow({
+        where: { ownerPlayerId: seeded.player.id, partCatalog: { partClass: 'TANK' } },
+      });
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
+      const layout = (ship.layout as unknown as { partInstanceId: string }[]).filter(
+        (placement) => placement.partInstanceId !== tank.id,
+      );
+
+      const saved = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(saved.status).toBe(200);
+      expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(0);
+    });
+
     it('POST /v1/ships/:id/assemble with a valid layout updates the ship and parts', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();

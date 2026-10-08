@@ -444,4 +444,13 @@ describe('sheet.deriver', () => {
     expect(heavier.mass).toBeCloseTo(base.mass + base.fuelCap * 0.1);
     expect(heavier.mob).toBeLessThanOrEqual(base.mob);
   });
+
+  it('a dead tank holds no fuel: its capacity leaves with it', () => {
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small']);
+    expect(deriveSheet(parts, rules).fuelCap).toBeGreaterThan(0);
+    const dead = parts.map((part) =>
+      part.catalog.partType === 'tank_small' ? { ...part, instance: { ...part.instance, condition: 0 } } : part,
+    );
+    expect(deriveSheet(dead, rules).fuelCap).toBe(0);
+  });
 });

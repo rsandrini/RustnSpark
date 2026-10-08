@@ -9,6 +9,7 @@ import { loadScavengeContext } from './scavenge-context.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
+import { isDead } from '../parts/condition.js';
 import { buildResolveInput, contextFromLive } from './resolution-input.js';
 import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
@@ -220,6 +221,11 @@ export class MissionResolveService {
           }
         }
       }
+      const finalCondition = new Map(outcome.parts.map((part) => [part.id, part.condition]));
+      const fuelCapAfter = snapshot.parts
+        .filter((part) => part.connected)
+        .filter((part) => !isDead(Math.round(finalCondition.get(part.id) ?? part.condition), rules))
+        .reduce((sum, part) => sum + part.catalog.fuelCap, 0);
       for (const part of outcome.parts) {
         await tx.partInstance.updateMany({
           where: { id: part.id },
@@ -231,7 +237,8 @@ export class MissionResolveService {
       await tx.ship.update({
         where: { id: snapshot.shipId },
         data: {
-          fuel: Math.max(0, outcome.fuel),
+          // A tank that ended the run dead (or one that is simply gone) takes its fuel with it.
+          fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
           status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
           ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
         },

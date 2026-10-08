@@ -129,7 +129,7 @@ export class ShipsService implements OnModuleInit {
     // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
     // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
-    await this.persistLayout(shipId, layout, playerParts);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -153,7 +153,7 @@ export class ShipsService implements OnModuleInit {
     this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
-    await this.persistLayout(shipId, layout, playerParts);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -462,6 +462,8 @@ export class ShipsService implements OnModuleInit {
     shipId: string,
     layout: Placement[],
     playerParts: PartInstanceWithCatalog[],
+    currentFuel: number,
+    rules: GameRules,
   ): Promise<void> {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     const previouslyInstalled = playerParts.filter(
@@ -484,9 +486,31 @@ export class ShipsService implements OnModuleInit {
       }
       await tx.ship.update({
         where: { id: shipId },
-        data: { layout: toJsonInput(layout) },
+        // The fuel aboard can never exceed what the tanks that stay on the ship can hold: take
+        // the tank off and its fuel goes with it (no tank left = an empty ship).
+        data: {
+          layout: toJsonInput(layout),
+          fuel: Math.min(currentFuel, this.fuelCapOf(layout, playerParts, rules)),
+        },
       });
     });
+  }
+
+  /** What the tanks of this layout can hold (connected, working tanks only). */
+  private fuelCapOf(
+    layout: Placement[],
+    playerParts: PartInstanceWithCatalog[],
+    rules: GameRules,
+  ): number {
+    const ids = new Set(layout.map((placement) => placement.partInstanceId));
+    const rows = playerParts.filter((part) => ids.has(part.id));
+    const installed = rows.map(toInstalledPart);
+    const catalog = new Map(installed.map((part) => [part.instance.id, part.catalog]));
+    const connectors = new Map(
+      rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connected = connectedPartIds(layout, catalog, connectors);
+    return deriveSheet(applyConnectivity(installed, connected), rules).fuelCap;
   }
 
   private async toResponse(ship: ShipWithFormat, rules: GameRules): Promise<ShipResponse> {
