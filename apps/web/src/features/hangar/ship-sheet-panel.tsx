@@ -111,7 +111,6 @@ export function ShipSheetPanel({
   const autonomyBand = rangeTone(unlimitedRange ? null : routeCoverage);
   const conditionBand = conditionTone(sheet.condition);
   const structureBand = structureTone(sheet.structureUsed, sheet.structureBudget);
-  const defense = sheet.bli + sheet.esc;
   const autonomyText = unlimitedRange ? t('hangar.stats.unlimited') : number(sheet.autonomy);
   const coverageText =
     !unlimitedRange && routeCoverage !== null && routeCoverage !== undefined
@@ -124,6 +123,10 @@ export function ShipSheetPanel({
     switch (key) {
       case 'mob':
         return mobilityNumber(sheetStat(sheet, 'mob', display));
+      case 'esc':
+        return sheet.esc > 0
+          ? t('hangar.stats.shieldValue', { pool: number(sheet.esc), regen: number(display.shieldRegen) })
+          : number(0);
       case 'structure':
         return t('hangar.stats.structureValue', {
           used: number(sheet.structureUsed),
@@ -198,7 +201,9 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.headline.defenseHelp')}>
           <span>{t('hangar.headline.defense')}</span>
-          <b>{number(defense)}</b>
+          <b>
+            {t('hangar.headline.defenseValue', { armor: number(sheet.bli), shield: number(sheet.esc) })}
+          </b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
           <span>{t('hangar.headline.cargo')}</span>

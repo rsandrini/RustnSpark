@@ -523,7 +523,7 @@
    "expected": []
   },
   {
-   "name": "a part far behind the engine in the same row still blocks it",
+   "name": "a part far behind the engine in the same row does not block it (only the cell right behind counts)",
    "parts": {
     "e": {
      "class": "ENGINE",
@@ -550,12 +550,7 @@
      "rot": 0
     }
    ],
-   "expected": [
-    {
-     "id": "e",
-     "code": "EXHAUST_BLOCKED"
-    }
-   ]
+   "expected": []
   },
   {
    "name": "engine facing N: only its own column counts",
@@ -588,7 +583,7 @@
    "expected": []
   },
   {
-   "name": "a 1x2 weapon facing W is blocked by a part in either of its rows",
+   "name": "a 1x2 weapon facing W is blocked by a part right behind either of its rows",
    "parts": {
     "w": {
      "class": "WEAPON",
@@ -604,7 +599,7 @@
    "layout": [
     {
      "id": "b",
-     "gx": 0,
+     "gx": 1,
      "gy": 1,
      "rot": 0
     },
@@ -621,6 +616,71 @@
      "code": "FACING_BLOCKED"
     }
    ]
+  },
+  {
+   "name": "a part right behind the engine blocks it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 2,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 2,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "e",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "a part diagonal to the exhaust does not block it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 1,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 2,
+     "rot": 0
+    }
+   ],
+   "expected": []
   }
  ]
 }

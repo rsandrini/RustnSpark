@@ -143,7 +143,8 @@
       "mob": "Mobility",
       "structureValue": "{{used}} / {{budget}}",
       "unlimited": "unlimited",
-      "routesCovered": "covers {{covered}} of {{total}} routes"
+      "routesCovered": "covers {{covered}} of {{total}} routes",
+      "shieldValue": "{{pool}} (+{{regen}}/round)"
     },
     "groups": {
       "combat": "Combat",
@@ -154,14 +155,15 @@
     },
     "headline": {
       "firepower": "Firepower",
-      "defense": "Defense",
-      "defenseHelp": "Armor plus Shield: the ship's two defenses against incoming hits, combined.",
+      "defense": "Armor · Shield",
+      "defenseHelp": "Armor cuts every hit; the shield is a pool that soaks what is left. See each stat for how a hit is split.",
       "cargo": "Cargo",
       "mobility": "Mobility",
       "autonomy": "Range",
       "condition": "Condition",
       "energy": "Energy",
-      "structure": "Structure"
+      "structure": "Structure",
+      "defenseValue": "{{armor}} · {{shield}}"
     },
     "summary": {
       "ready": "Ready to fly",
@@ -274,8 +276,8 @@
       "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
       "pot": "Total thrust from every installed engine. Feeds mobility.",
       "pdf": "Combat damage output from every installed weapon.",
-      "bli": "Reduces the damage of each hit that gets through the shield.",
-      "esc": "Absorbs damage first in a fight, before armor or the hull take any. Regenerates a little each combat round. Draws Combat power from the battery — with no battery to power it, it can't be installed.",
+      "bli": "Cuts every hit that lands by this much (a hit always does at least 1), before the shield or the hull see it.",
+      "esc": "A pool of damage soaked AFTER armor and BEFORE the hull: while it lasts, a hit's remaining damage comes off the shield instead of the hull, and only what exceeds the pool reaches the hull. It recovers a few points every combat round. It needs combat power each round: if the batteries cannot pay for it, it soaks nothing and the hit goes straight to the hull.",
       "sen": "Spots ambushes early, lowering the chance of being surprised in an encounter.",
       "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
       "fuelCap": "How much fuel the ship can hold, from every installed tank.",
@@ -971,7 +973,8 @@
     "cascade": {
       "shield": "Shield absorbed",
       "armor": "Armor absorbed",
-      "hp": "Hull damage"
+      "hp": "Hull damage",
+      "order": "How a hit is split: armor cuts it first, the shield soaks what is left (up to what it has), and only the rest reaches the hull. A shield with no power soaks nothing."
     },
     "combatLog": {
       "title": "Round by round",

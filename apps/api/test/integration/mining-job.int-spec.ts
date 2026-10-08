@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
@@ -175,8 +176,10 @@ describe('independent mining job (round 10)', () => {
       select: { id: true },
     });
     const engineId = engines[0]!.id;
+    await prisma.partInstance.update({ where: { id: engineId }, data: { connectors: Prisma.DbNull } });
 
-    // turn the engine through its four facings until the ship is flight-viable apart from the
+    // universal ports on the engine (turning it never disconnects it), then turn it through its
+    // four facings until the ship is flight-viable apart from the
     // direction rule: that one problem, EXHAUST_BLOCKED, is what this test is about
     let chosen: number | null = null;
     for (const rot of [0, 90, 180, 270]) {

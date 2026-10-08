@@ -4,10 +4,10 @@ import type { LayoutError, PartCatalog, Placement } from '../parts/part.types.js
 import type { ViabilityProblem, ViabilityReport } from './viability.js';
 
 // Part direction rules: ENGINEs have an exhaust and WEAPONs a firing line, both facing W at rot 0
-// and turning clockwise with the placement's `rot`. The rule is about the part's own lane: no
-// other part's cell may lie beyond the part's facing edge in the rows (or columns) the part
-// itself occupies. Parts elsewhere on the ship do not matter, so an engine can sit in the second
-// column as long as nothing is directly behind it.
+// and turning clockwise with the placement's `rot`. A part is blocked only when another part
+// sits in the cell RIGHT BEHIND its facing edge (in the rows or columns it occupies): that is the
+// only thing that physically plugs an exhaust or a muzzle. Anything farther away, or in another
+// row, does not matter.
 // Mirrored by apps/web/src/features/hangar/hangar.geometry.ts (directionViolations); both are
 // pinned by packages/contract/fixtures/direction-vectors.json.
 
@@ -42,7 +42,7 @@ function worldCells(placement: Placement, part: PartCatalog): Array<{ x: number;
 }
 
 /** EXHAUST_BLOCKED / FACING_BLOCKED for every engine/weapon with another part beyond its facing
-    edge, plus FACING_CONNECTOR for one whose facing side carries a connector. The connector check
+    edge (one cell out), plus FACING_CONNECTOR for one whose facing side carries a connector. The connector check
     is skipped for a part with no stored layout (legacy / universal fallback). */
 export function directionErrors(
   placements: readonly Placement[],
@@ -55,19 +55,23 @@ export function directionErrors(
     if (part === undefined || !isDirectional(part.partClass)) continue;
     const facing = facingSide(placement.rot);
     const f = VECTOR[facing];
-    const project = (cell: { x: number; y: number }): number => cell.x * f.x + cell.y * f.y;
-    // The lane: the coordinate across the facing direction (rows for W/E, columns for N/S).
-    const across = (cell: { x: number; y: number }): number => (f.x !== 0 ? cell.y : cell.x);
     const own = worldCells(placement, part);
-    const limit = Math.max(...own.map(project));
-    const lane = new Set(own.map(across));
+    const ownKeys = new Set(own.map((cell) => `${cell.x},${cell.y}`));
+    // The cells just beyond the facing edge: one step out from each cell that has no own cell
+    // that way.
+    const muzzle = new Set(
+      own
+        .map((cell) => ({ x: cell.x + f.x, y: cell.y + f.y }))
+        .filter((cell) => !ownKeys.has(`${cell.x},${cell.y}`))
+        .map((cell) => `${cell.x},${cell.y}`),
+    );
 
     const blocked = placements.some((other) => {
       if (other.partInstanceId === placement.partInstanceId) return false;
       const otherPart = catalog.get(other.partInstanceId);
       return (
         otherPart !== undefined &&
-        worldCells(other, otherPart).some((cell) => project(cell) > limit && lane.has(across(cell)))
+        worldCells(other, otherPart).some((cell) => muzzle.has(`${cell.x},${cell.y}`))
       );
     });
     if (blocked) {

@@ -222,6 +222,7 @@ export const DisplayResponseSchema = z.object({
   statScale: z.number(),
   mobFactor: z.number(),
   scavengeHandicap: z.number(),
+  shieldRegen: z.number(),
   overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;

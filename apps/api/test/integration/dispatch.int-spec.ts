@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
@@ -424,7 +425,9 @@ describe('ship dispatch API (S7.2)', () => {
       Math.round((40 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
     const healthySeconds = secondsAt((healthy.body as { sheet: { mob: number } }).sheet.mob);
 
-    // turn the engine until it is the only thing wrong: a warning, not a problem
+    // Universal ports on the engine (so turning it never disconnects it), then turn it until the
+    // part next to it plugs its exhaust: that is the only thing wrong — a warning, not a problem.
+    await prisma.partInstance.update({ where: { id: engine.id }, data: { connectors: Prisma.DbNull } });
     let blocked = false;
     for (const rot of [0, 90, 180, 270]) {
       const candidate = layout.map((placement) =>

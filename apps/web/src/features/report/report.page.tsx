@@ -308,6 +308,7 @@ function CascadeDetail({
   const rounds = line?.detail?.rounds;
   return (
     <div className="stack">
+      <p className="sub">{t('report.cascade.order')}</p>
       {Object.entries(cascade).map(([field, value]) => (
         <div className="statrow" key={field}>
           <span>{t(`report.cascade.${field}`, { defaultValue: field })}</span>

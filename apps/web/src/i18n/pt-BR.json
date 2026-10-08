@@ -143,7 +143,8 @@
       "mob": "Mobilidade",
       "structureValue": "{{used}} / {{budget}}",
       "unlimited": "ilimitado",
-      "routesCovered": "cobre {{covered}} de {{total}} rotas"
+      "routesCovered": "cobre {{covered}} de {{total}} rotas",
+      "shieldValue": "{{pool}} (+{{regen}}/rodada)"
     },
     "groups": {
       "combat": "Combate",
@@ -154,14 +155,15 @@
     },
     "headline": {
       "firepower": "Poder de fogo",
-      "defense": "Defesa",
-      "defenseHelp": "Blindagem mais Escudo: as duas defesas da nave contra acertos, somadas.",
+      "defense": "Blindagem · Escudo",
+      "defenseHelp": "A blindagem reduz cada golpe; o escudo é uma reserva que absorve o que sobra. Veja cada atributo para saber como um golpe é dividido.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
       "autonomy": "Alcance",
       "condition": "Condição",
       "energy": "Energia",
-      "structure": "Estrutura"
+      "structure": "Estrutura",
+      "defenseValue": "{{armor}} · {{shield}}"
     },
     "summary": {
       "ready": "Pronta para voar",
@@ -274,8 +276,8 @@
       "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
       "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
       "pdf": "Dano de combate de cada arma instalada.",
-      "bli": "Reduz o dano de cada acerto que passa pelo escudo.",
-      "esc": "Absorve o dano primeiro numa luta, antes da blindagem ou do casco. Regenera um pouco a cada rodada de combate. Consome Potência de combate da bateria — sem bateria para alimentá-lo, não pode ser instalado.",
+      "bli": "Reduz em tanto cada golpe que acerta (um golpe sempre causa pelo menos 1), antes de o escudo ou o casco o sentirem.",
+      "esc": "Uma reserva de dano absorvido DEPOIS da blindagem e ANTES do casco: enquanto durar, o dano restante de um golpe sai do escudo em vez do casco, e só o que passa da reserva chega ao casco. Recupera alguns pontos a cada rodada de combate. Precisa de energia de combate a cada rodada: se as baterias não puderem pagar, ele não absorve nada e o golpe vai direto ao casco.",
       "sen": "Detecta emboscadas antes, reduzindo a chance de ser surpreendido num encontro.",
       "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
       "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
@@ -971,7 +973,8 @@
     "cascade": {
       "shield": "Absorvido pelo escudo",
       "armor": "Absorvido pela blindagem",
-      "hp": "Dano ao casco"
+      "hp": "Dano ao casco",
+      "order": "Como um golpe é dividido: a blindagem o reduz primeiro, o escudo absorve o que sobra (até o que tiver) e só o resto chega ao casco. Escudo sem energia não absorve nada."
     },
     "combatLog": {
       "title": "Rodada a rodada",

@@ -230,7 +230,7 @@ describe('hangar (S10.4)', () => {
     );
     for (const label of [
       'Firepower',
-      'Defense',
+      'Armor · Shield',
       'Mobility',
       'Range',
       'Condition',
@@ -646,8 +646,18 @@ describe('hangar (S10.4)', () => {
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     const trayButton = await screen.findByRole('button', { name: /^cargo/i });
 
+    // the engine faces E: the cell right beside it, to the east, plugs its exhaust
+    const engine = await waitFor(() => {
+      const element = block(container, 'part-engine');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const behindX = Number(engine.getAttribute('data-gx')) + 1;
+    const behindY = Number(engine.getAttribute('data-gy'));
+    expect(container.querySelector('rect.block.dir-blocked')).toBeNull();
+
     fireEvent.click(trayButton);
-    fireEvent.click(cell(container, 8, 0)); // east of the engine, which faces E
+    fireEvent.click(cell(container, behindX, behindY));
     expect(block(container, 'part-cargo-b')).not.toBeNull();
     await waitFor(() =>
       expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull(),
