@@ -147,12 +147,13 @@ export const InventoryItemSchema = z.object({
 });
 export type InventoryItem = z.infer<typeof InventoryItemSchema>;
 
-/** Grid placement: integer cells on the [-10, 10) yard, rotation at right angles only. */
+/** Grid placement: integer cells on the yard, rotation clockwise in quarter turns. At rot 0 an
+    engine/weapon faces W; its facing side turns with `rot` (part direction rules). */
 export const PlacementSchema = z.object({
   partInstanceId: z.string(),
   gx: z.number(),
   gy: z.number(),
-  rot: z.union([z.literal(0), z.literal(90)]),
+  rot: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
 });
 export type Placement = z.infer<typeof PlacementSchema>;
 
@@ -187,10 +188,68 @@ export type ShipClassType = z.infer<typeof ShipClassTypeSchema>;
 export const ShipStatusSchema = z.enum(['IN_PORT', 'ON_MISSION', 'ADRIFT']);
 export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 
+// ---------------------------------------------------------------------------------------------
+// Faction art (admin-uploadable images; the static files are the defaults)
+// ---------------------------------------------------------------------------------------------
+
+export const FactionArtSlotSchema = z.enum(['banner', 'logo', 'background']);
+export type FactionArtSlot = z.infer<typeof FactionArtSlotSchema>;
+
+/** One faction as players see it. Names, pitch, colour and images are admin-owned data. */
+export const PublicFactionSchema = z.object({
+  id: z.string(),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  color: z.string(),
+  playable: z.boolean(),
+  /** Uploaded images by slot (null = use the built-in default); null when nothing was uploaded. */
+  art: z
+    .object({
+      banner: z.string().nullable(),
+      logo: z.string().nullable(),
+      background: z.string().nullable(),
+    })
+    .nullable(),
+});
+export type PublicFaction = z.infer<typeof PublicFactionSchema>;
+
+/** GET /v1/factions */
+export const FactionsResponseSchema = z.object({ factions: z.array(PublicFactionSchema) });
+export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
+
+export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
+export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
+
+/** GET /v1/places/art: only places with at least one uploaded image appear (same rules as factions). */
+export const PlaceArtResponseSchema = z.object({
+  places: z.record(
+    z.string(),
+    z.object({
+      wide: z.string().nullable(),
+      square: z.string().nullable(),
+      icon: z.string().nullable(),
+    }),
+  ),
+});
+export type PlaceArtResponse = z.infer<typeof PlaceArtResponseSchema>;
+
+/** POST/DELETE /v1/admin/tuning/{factions|locations}/:id/art/:slot */
+export const ArtChangeSchema = z.object({
+  slot: z.string(),
+  url: z.string().nullable(),
+});
+export type ArtChange = z.infer<typeof ArtChangeSchema>;
+export const FactionArtChangeSchema = ArtChangeSchema;
+export type FactionArtChange = ArtChange;
+
 export const ShipStanceSchema = z.enum(['DEFENSIVE', 'NEUTRAL', 'AGGRESSIVE']);
 
 export const EnergyModeSchema = z.enum(['BATTERY', 'FULL', 'OVERRIDE']);
 export type EnergyMode = z.infer<typeof EnergyModeSchema>;
+
+/** The sheet's range read as routes: how many a full tank crosses. null = the ship burns no fuel. */
+export const RouteCoverageSchema = z.object({ covered: z.number(), total: z.number() });
+export type RouteCoverage = z.infer<typeof RouteCoverageSchema>;
 
 export const ShipResponseSchema = z.object({
   id: z.string(),
@@ -216,6 +275,7 @@ export const ShipResponseSchema = z.object({
     until: IsoDate.nullable(),
     missionId: z.string().nullable(),
   }),
+  routeCoverage: RouteCoverageSchema.nullable(),
 });
 export type ShipResponse = z.infer<typeof ShipResponseSchema>;
 
@@ -238,6 +298,7 @@ export const PreviewResponseSchema = z.object({
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
   disconnectedPartIds: z.array(z.string()),
+  routeCoverage: RouteCoverageSchema.nullable(),
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
 
@@ -263,6 +324,7 @@ export const MissionTypeSchema = z.enum([
   'RESCUE',
   'TRAVEL',
   'SCAVENGE',
+  'RACE',
 ]);
 export type MissionType = z.infer<typeof MissionTypeSchema>;
 
@@ -372,6 +434,17 @@ export const OfferInfoSchema = z.object({
     .nullable(),
   /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
   requirements: z.array(RequirementCheckSchema),
+  /** Race offers: the rival ships (speed + time over this route), the entry minimum and the prize
+      shares for 1st/2nd/3rd (of the winner's board figure's base). null on every other type. */
+  race: z
+    .object({
+      rivals: z.array(
+        z.object({ name: z.string(), mobility: z.number(), durationSeconds: z.number() }),
+      ),
+      minMobility: z.number(),
+      prizeShares: z.array(z.number()),
+    })
+    .nullable(),
 });
 export type OfferInfo = z.infer<typeof OfferInfoSchema>;
 
@@ -516,6 +589,17 @@ export const ReportStatsSchema = z.object({
     }),
   ),
   pirates: z.object({ stolenParts: z.number(), motive: z.string().nullable() }),
+  /** RACE missions: finishing place and every ship's time (fastest first); null on other types. */
+  race: z
+    .object({
+      place: z.number(),
+      /** displayed time = standing seconds x this (missions.time_scale at the run) */
+      timeScale: z.number(),
+      standings: z.array(
+        z.object({ name: z.string(), mobility: z.number(), seconds: z.number(), you: z.boolean() }),
+      ),
+    })
+    .nullable(),
   loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),
 });
 export type ReportStats = z.infer<typeof ReportStatsSchema>;
@@ -592,6 +676,8 @@ export const MarketListingSchema = z.object({
   catalog: PartCatalogStatsSchema,
   condition: z.number(),
   price: z.number(),
+  /** The part's generated connector cells — what a buyer receives; empty = no layout. */
+  connectors: z.array(ConnectorCellSchema),
 });
 export type MarketListing = z.infer<typeof MarketListingSchema>;
 
@@ -860,7 +946,7 @@ export const EntityFieldTypeSchema = z.enum([
   'enum',
   'locale-map',
   'grid-cells',
-  'connector-layout',
+  'connector-rules',
 ]);
 export type EntityFieldType = z.infer<typeof EntityFieldTypeSchema>;
 
@@ -873,6 +959,10 @@ export const EntitySchemaFieldSchema = z.object({
   max: z.number().optional(),
   description: LocalizedTextSchema.optional(),
   configKey: z.string().optional(),
+  /** Admin entity whose ids this field refers to: the form shows a select instead of free text. */
+  references: z.string().optional(),
+  /** The literal stored for "no row" (e.g. 'none'): the select offers it as the first choice. */
+  referenceNone: z.string().optional(),
 });
 export type EntitySchemaField = z.infer<typeof EntitySchemaFieldSchema>;
 
@@ -1017,6 +1107,8 @@ export const PlayerSheetSchema = z.object({
     credits: z.number(),
     locale: z.string(),
     factionId: z.string().nullable(),
+    /** Owner debug switch: this player's jobs finish in seconds (see admin.debug_fast_ops_seconds). */
+    debugFastOps: z.boolean(),
     createdAt: z.string(),
   }),
   ships: z.array(

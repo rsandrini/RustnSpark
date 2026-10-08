@@ -20,6 +20,7 @@ const MISSION_TYPES: readonly MissionType[] = [
   'ESCORT',
   'MINING',
   'RESCUE',
+  'RACE',
 ];
 
 export interface BoardPageProps {
@@ -205,6 +206,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               )}
               fuelHave={ship?.fuel}
               fuelCap={ship?.sheet.fuelCap}
+              shipMobility={ship?.sheet.mob}
               mine={mine}
               actions={
                 <>

@@ -123,4 +123,32 @@ describe('system screen (S11.5 screen E)', () => {
     await waitFor(() => expect(dismissedId).toBe('notice-1'));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
+
+  it('says why a flag flip, a notice or a dismissal failed, instead of failing silently', async () => {
+    mockFlags();
+    server.use(
+      http.get('/v1/admin/system/notices', () => HttpResponse.json(notices)),
+      http.put('/v1/admin/system/flags/:key', () =>
+        HttpResponse.json({ statusCode: 403, message: 'admin only (test)' }, { status: 403 }),
+      ),
+      http.post('/v1/admin/system/notices', () =>
+        HttpResponse.json(
+          { statusCode: 400, message: ['message.en must be shorter than or equal to 500 characters'] },
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<SystemScreen />);
+
+    await user.type(await screen.findByLabelText('Notice (en)'), 'x');
+    await user.type(screen.getByLabelText('Notice (pt-BR)'), 'y');
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    expect(await screen.findByText(/message\.en must be shorter/)).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: 'Toggle Maintenance mode' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Toggle' });
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }));
+    expect(await within(dialog).findByText(/admin only \(test\)/)).toBeInTheDocument();
+  });
 });

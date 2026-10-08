@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { describeError } from '../../api/errors';
 import { adminApi, type LocalizedMessage } from '../admin.api';
 
 // Screen E's flag/broadcast/maintenance controls (GDD §17; tuning lives in S3.10).
@@ -104,6 +105,11 @@ export function SystemScreen() {
         {confirmFlag !== null && (
           <div role="dialog" aria-modal="true" aria-label={t('admin.toggleFlag')}>
             <p>{t('admin.flagConfirm', { flag: flagLabel(confirmFlag) })}</p>
+            {flagMutation.isError && (
+              <p role="alert" className="error-text">
+                {describeError(t, flagMutation.error, t('admin.actionFailed'))}
+              </p>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -134,7 +140,11 @@ export function SystemScreen() {
           >
             {t('admin.publish')}
           </button>
-          {createMutation.isError && <p role="alert">{t('admin.loadError')}</p>}
+          {createMutation.isError && (
+            <p role="alert" className="error-text">
+              {describeError(t, createMutation.error, t('admin.actionFailed'))}
+            </p>
+          )}
         </form>
 
         {notices.isError && <p role="alert">{t('admin.loadError')}</p>}
@@ -161,6 +171,11 @@ export function SystemScreen() {
         {confirmDismiss !== null && (
           <div role="dialog" aria-modal="true" aria-label={t('admin.dismiss')}>
             <p>{t('admin.dismissConfirm')}</p>
+            {dismissMutation.isError && (
+              <p role="alert" className="error-text">
+                {describeError(t, dismissMutation.error, t('admin.actionFailed'))}
+              </p>
+            )}
             <button
               type="button"
               onClick={() => dismissMutation.mutate(confirmDismiss)}

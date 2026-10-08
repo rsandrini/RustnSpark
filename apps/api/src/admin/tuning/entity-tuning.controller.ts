@@ -17,6 +17,7 @@ import { ConfigTuningApiError, ConfigTuningApiErrorFilter } from './config-tunin
 import { RevisionMismatchError } from './config-tuning.service.js';
 import {
   CreateEntityDto,
+  PreviewConnectorRulesDto,
   RetireEntityDto,
   RevertRevisionDto,
   UpdateEntityDto,
@@ -27,6 +28,11 @@ import {
   type CurrentUserPayload,
 } from '../../common/decorators/current-user.decorator.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
+import { randomUUID } from 'node:crypto';
+import {
+  previewConnectorRules,
+  type ConnectorRulesPreview,
+} from '../../parts/connector-rules.js';
 
 function serializeRevision(revision: TuningRevision): Record<string, unknown> {
   return {
@@ -44,6 +50,14 @@ export class EntityTuningController {
   @Get('schema/:entity')
   getSchema(@Param('entity') entity: string): Record<string, unknown> {
     return this.entityTuningService.getSchema(entity);
+  }
+
+  // Live preview for the connector rules editor: the exact combinations (with chances) and a few
+  // sample generations for a rules payload, from the same code that generates real parts.
+  @Post('connector-rules/preview')
+  @HttpCode(200)
+  previewConnectorRules(@Body() dto: PreviewConnectorRulesDto): ConnectorRulesPreview {
+    return previewConnectorRules(dto.rules, dto.w, dto.h, dto.partClass, dto.samples ?? 6, randomUUID());
   }
 
   @Get(':entity')

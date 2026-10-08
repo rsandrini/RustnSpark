@@ -5,7 +5,7 @@ export type PolicyDecision = 'IGNORE' | 'FLEE' | 'ATTACK';
 export type FactionRelation = 'ALLY' | 'HOSTILE' | 'NEUTRAL';
 export type Stance = 'DEFENSIVE' | 'NEUTRAL' | 'AGGRESSIVE';
 export type MissionType =
-  'DELIVERY' | 'TRANSPORT' | 'ESCORT' | 'MINING' | 'RESCUE' | 'TRAVEL' | 'SCAVENGE' | 'HUNT' | null;
+  'DELIVERY' | 'TRANSPORT' | 'ESCORT' | 'MINING' | 'RESCUE' | 'TRAVEL' | 'SCAVENGE' | 'RACE' | 'HUNT' | null;
 
 /**
  * GDD §8 policy tree, top-down; `decidePolicy` stops at the first applicable

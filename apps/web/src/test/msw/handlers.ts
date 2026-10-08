@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type {
   ActiveMission,
+  FactionsResponse,
   BuyResponse,
   DispatchResponse,
   InventoryItem,
@@ -243,7 +244,7 @@ export function classicSquareCells(): [number, number][] {
 
 const starterLayout = (): Placement[] => [
   { partInstanceId: 'part-bridge', gx: 0, gy: 0, rot: 0 },
-  { partInstanceId: 'part-engine', gx: 2, gy: 0, rot: 0 },
+  { partInstanceId: 'part-engine', gx: 6, gy: 0, rot: 180 }, // on the back edge, exhaust facing E
   { partInstanceId: 'part-tank', gx: 3, gy: 0, rot: 0 },
   { partInstanceId: 'part-battery', gx: 2, gy: 1, rot: 0 },
   { partInstanceId: 'part-hull', gx: 0, gy: 2, rot: 0 },
@@ -264,6 +265,7 @@ const ship = (): ShipResponse => ({
   shipClass: 'MULTIROLE',
   yard: { cells: classicSquareCells() },
   disconnectedPartIds: [],
+  routeCoverage: { covered: 14, total: 17 },
   // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
   // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
   activity:
@@ -278,6 +280,10 @@ const ship = (): ShipResponse => ({
 
 let inventoryState: InventoryItem[] = starterInventory();
 
+// A generated 1x1 layout as the API would list it: central on all four sides.
+const centralPorts = (): MarketListing['connectors'] =>
+  (['N', 'E', 'S', 'W'] as const).map((side) => ({ dx: 0, dy: 0, side, kind: 'central' as const }));
+
 const marketListings: MarketListing[] = [
   {
     listingId: 'catalog:ceres:hull',
@@ -290,6 +296,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('hull', 'DEFENSE'),
     condition: 100,
     price: 300,
+    connectors: centralPorts(),
   },
   {
     listingId: 'catalog:ceres:cargo',
@@ -302,6 +309,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('cargo', 'CARGO'),
     condition: 100,
     price: 120,
+    connectors: centralPorts(),
   },
   {
     listingId: 'used:ceres:2026-09-25:0:cargo',
@@ -314,6 +322,7 @@ const marketListings: MarketListing[] = [
     catalog: catalog('cargo', 'CARGO'),
     condition: 60,
     price: 80,
+    connectors: [],
   },
 ];
 
@@ -516,6 +525,7 @@ export const handlers = [
       shipClass: 'MULTIROLE',
       yard: { cells: classicSquareCells() },
       disconnectedPartIds: [],
+      routeCoverage: null,
       activity: { kind: 'idle', until: null, missionId: null },
     }),
   ),
@@ -526,6 +536,62 @@ export const handlers = [
 
   http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
+  // Uploaded faction images (none by default: every faction shows its built-in art).
+  // The factions as the admin has them (the same texts the language files used to carry).
+  http.get('/v1/factions', () =>
+    ok<FactionsResponse>({
+      factions: [
+        {
+          id: 'explorers',
+          displayName: { en: 'Explorers', 'pt-BR': 'Exploradores' },
+          description: {
+            en: 'Frontier prospectors pushing past the charted belt for ore nobody has priced yet.',
+            'pt-BR': 'Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou.',
+          },
+          color: '#3fa66a',
+          playable: true,
+          art: null,
+        },
+        {
+          id: 'luna',
+          displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade de Luna' },
+          description: {
+            en: 'Port clerks, steady freight and the weight of official seals behind every contract.',
+            'pt-BR': 'Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato.',
+          },
+          color: '#4a90d9',
+          playable: true,
+          art: null,
+        },
+        {
+          id: 'pirates',
+          displayName: { en: 'Pirates', 'pt-BR': 'Piratas' },
+          description: { en: 'Loose clans.', 'pt-BR': 'Clãs dispersos.' },
+          color: '#c23b3b',
+          playable: false,
+          art: null,
+        },
+        {
+          id: 'sun',
+          displayName: { en: 'Sun Traders', 'pt-BR': 'Comerciantes do Sol' },
+          description: {
+            en: 'Free merchants who answer to no port authority and always know a buyer.',
+            'pt-BR': 'Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador.',
+          },
+          color: '#e3b341',
+          playable: true,
+          art: null,
+        },
+      ],
+    }),
+  ),
+  http.get('/v1/places/art', () => ok({ places: {} })),
+
+  // Default for the admin connector rules editor's live preview (specs override it per test).
+  http.post('/v1/admin/tuning/connector-rules/preview', () =>
+    ok({ problem: null, combos: [], samples: [] }),
+  ),
+
   http.post('/v1/ships/:id/preview', async ({ request }) => {
     const body = (await request.json()) as { layout?: Placement[] };
     return ok<PreviewResponse>({
@@ -535,6 +601,7 @@ export const handlers = [
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],
+      routeCoverage: { covered: 14, total: 17 },
     });
   }),
 
@@ -1074,6 +1141,7 @@ const reportExtras = {
     fuelLost: 0,
     found: [],
     pirates: { stolenParts: 0, motive: null },
+    race: null,
     loot: [{ materialId: 'iron', name: 'Iron', quantity: 6 }],
   },
   mission: {
@@ -1251,6 +1319,7 @@ const boardOffer = (
     estimate: { durationSeconds: 300, fuelNeeded: 8 },
     material: null,
     requirements: [],
+    race: null,
     ...infoOverride,
   },
   ...over,

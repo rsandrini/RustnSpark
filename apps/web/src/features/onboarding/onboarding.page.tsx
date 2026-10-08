@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
-import { factionCardStyle } from '../../ui/factionArt';
+import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
+import { factionBlurb, factionName, useFactions } from '../../ui/factions';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 
@@ -31,13 +32,20 @@ export function OnboardingRoute() {
 }
 
 export function OnboardingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { list, byId } = useFactions();
   const navigate = useNavigate();
   const { refresh } = useAuthContext();
-  const [selected, setSelected] = useState<PlayableFaction | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const factionArt = useFactionArt();
+  // The picker lists the factions the admin marks playable (database); the built-in three only
+  // stand in while that loads or if the server lists none.
+  const playable: string[] = list.some((faction) => faction.playable)
+    ? list.filter((faction) => faction.playable).map((faction) => faction.id)
+    : [...PLAYABLE_FACTIONS];
 
   const onboarding = useMutation({
-    mutationFn: (faction: PlayableFaction) => client.post('/v1/players/me/onboarding', { faction }),
+    mutationFn: (faction: string) => client.post('/v1/players/me/onboarding', { faction }),
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
@@ -54,7 +62,15 @@ export function OnboardingPage() {
   })();
 
   return (
-    <main className="app">
+    <main
+      className="app faction-backdrop"
+      // The chosen faction's uploaded background (admin-set) sits behind the page; none = plain.
+      style={
+        selected !== null && factionArt[selected]?.background
+          ? { backgroundImage: `url(${factionArt[selected]?.background})` }
+          : undefined
+      }
+    >
       <header className="topbar">
         <h1>{t('onboarding.title')}</h1>
       </header>
@@ -63,11 +79,11 @@ export function OnboardingPage() {
 
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
         <legend className="sr-only">{t('onboarding.title')}</legend>
-        {PLAYABLE_FACTIONS.map((faction) => (
+        {playable.map((faction) => (
           <label
             key={faction}
             className={`faction-card${selected === faction ? ' on' : ''}`}
-            style={factionCardStyle(faction)}
+            style={factionCardStyle(faction, factionArt)}
           >
             <input
               type="radio"
@@ -76,8 +92,8 @@ export function OnboardingPage() {
               checked={selected === faction}
               onChange={() => setSelected(faction)}
             />
-            <span className={`fac ${faction}`}>{t(`onboarding.factions.${faction}.name`)}</span>
-            <span className="desc">{t(`onboarding.factions.${faction}.blurb`)}</span>
+            <span className={`fac ${faction}`}>{factionName(byId[faction], i18n.language) ?? t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}</span>
+            <span className="desc">{factionBlurb(byId[faction], i18n.language) ?? t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}</span>
           </label>
         ))}
       </fieldset>

@@ -3825,49 +3825,148 @@ svg .block.broken {
   word-break: break-all;
 }
 
-.connector-layout-editor {
+.connector-rules-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rules-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* The part in the middle, its four sides around it: N top, W left, E right, S bottom. */
+.rules-diagram {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) minmax(70px, auto) minmax(230px, 1fr);
+  grid-template-areas:
+    '. n .'
+    'w part e'
+    '. s .';
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+}
+.rules-side-N { grid-area: n; }
+.rules-side-W { grid-area: w; }
+.rules-side-E { grid-area: e; }
+.rules-side-S { grid-area: s; }
+.rules-part {
+  grid-area: part;
+  display: grid;
+  place-items: center;
+  min-width: 70px;
+  min-height: 70px;
+  border: 2px solid var(--steel-lt);
+  border-radius: 8px;
+  background: var(--panel2);
+  font-weight: 700;
+}
+.rules-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.rules-side.locked {
+  opacity: 0.8;
+  border-style: dashed;
+}
+.rules-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  justify-content: center;
+}
+.rules-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.admin-shell .rules-chip > button {
+  width: 46px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--panel2);
+}
+.rules-chip.on > button {
+  border-color: var(--spark);
+  background: rgba(240, 165, 0, 0.14);
+}
+.rules-weight {
+  width: 46px;
+  text-align: center;
+}
+.kind-icon {
+  width: 100%;
+  height: 100%;
+  fill: var(--ink);
+}
+.kind-icon-none {
+  stroke: var(--mut);
+  stroke-width: 0.03;
+}
+.rules-preview {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.rules-combos {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.rules-combos li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.rules-combos b {
+  min-width: 52px;
+}
+.rules-combo-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.rules-combo-side .kind-icon {
+  width: 34px;
+  height: 14px;
+}
+.rules-samples {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
-
-.connector-candidate {
-  display: inline-block;
-  border: 1px solid var(--line);
-  padding: 4px;
+.rules-samples .connector-grid {
+  height: 56px;
 }
 
-.connector-cell-row {
+.connector-rules-limits,
+.connector-rules-forbidden-row {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
 }
 
-.connector-cell {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line);
+.connector-rules-forbidden {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
 }
-
-.connector-side {
-  padding: 0;
-  font-size: 9px;
-  line-height: 1;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--ink-dim);
-}
-
-.connector-side-N { grid-column: 1 / 3; grid-row: 1; }
-.connector-side-S { grid-column: 1 / 3; grid-row: 2; }
-.connector-side-W { grid-column: 1; grid-row: 1 / 3; }
-.connector-side-E { grid-column: 2; grid-row: 1 / 3; }
-
-.connector-kind-central { color: var(--spark); font-weight: 700; }
-.connector-kind-split { color: var(--amber); font-weight: 700; }
-.connector-kind-universal { color: var(--ok); font-weight: 700; }
 
 /* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
    otherwise flatten these back into square admin buttons — round-5 owner request (filters),
@@ -4008,4 +4107,392 @@ svg .block.broken {
 .parts-damage-lost {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+}
+
+/* Connector ports (connector ports spec): shape = connection kind, colour = state. */
+.conn-mark {
+  --conn-color: var(--blue);
+  fill: var(--conn-color);
+  /* Dots and bars are filled only: an SVG stroke defaults to 1 user unit = a whole yard cell. */
+  stroke: none;
+}
+.conn-mark.conn-connected {
+  --conn-color: var(--ok);
+}
+.conn-mark.conn-incorrect {
+  --conn-color: var(--bad);
+}
+.conn-mark.conn-available {
+  --conn-color: var(--blue);
+}
+
+.conn-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+.conn-swatch::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--conn-color);
+}
+.conn-swatch.conn-connected {
+  --conn-color: var(--ok);
+}
+.conn-swatch.conn-incorrect {
+  --conn-color: var(--bad);
+}
+.conn-swatch.conn-available {
+  --conn-color: var(--blue);
+}
+.connector-grid {
+  display: block;
+}
+.connector-grid-cell {
+  fill: var(--panel2);
+  stroke: var(--line-strong);
+  stroke-width: 0.03;
+}
+.connector-grid-mini {
+  height: 22px;
+  width: auto;
+  max-width: 44px;
+  margin-top: 4px;
+}
+.connector-grid-full {
+  height: 72px;
+  width: auto;
+  max-width: 160px;
+}
+.part-ports {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+}
+
+/* Engine exhaust / weapon muzzle marker on the facing edge (part direction rules). */
+.facing-arrow {
+  fill: var(--amber);
+  stroke: var(--bg);
+  stroke-width: 0.02;
+  opacity: 0.9;
+}
+
+svg .block.dir-blocked {
+  stroke: var(--bad);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.16 0.1;
+}
+
+/* Ship-format (cell drawing) form: details in a left column, the drawing area centered beside it. */
+.schema-form-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 24px;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+.schema-form-split .schema-form-side {
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.schema-form-split .schema-form-main {
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  max-height: 100%;
+}
+
+.schema-form-split .schema-form-main .field {
+  width: auto;
+  max-width: 100%;
+}
+
+.schema-form-split .schema-form-main .lbl {
+  text-align: center;
+}
+
+/* Admin entity pages: list toolbar, scroll container and the edit/create page chrome. */
+.tuning-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.tuning-search {
+  min-width: 220px;
+  max-width: 100%;
+}
+.tuning-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.tuning-table-wrap th .th-label {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-actions {
+  white-space: nowrap;
+}
+.row-actions > * {
+  margin-right: 6px;
+}
+/* A link that looks like the admin's buttons (navigation, not an action). */
+.admin-shell a.btn-link,
+.btn-link {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel2);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+.admin-shell a.btn-link:hover {
+  border-color: var(--spark);
+}
+.breadcrumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+  color: var(--mut);
+  font-size: 13px;
+}
+.entity-form-page .schema-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  margin-top: 16px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+.entity-form-page .schema-form-split {
+  min-height: 0;
+}
+
+.schema-form-section {
+  margin-bottom: 18px;
+}
+.schema-form-section h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--spark);
+}
+.schema-form-split .schema-form-side .schema-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* Config groups: collapsed by default (the screen is hundreds of keys); a search opens them all. */
+.config-group {
+  margin: 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+}
+.config-group > summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  list-style: none;
+}
+.config-group > summary h3 {
+  margin: 0;
+}
+.config-group[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+/* The admin's blanket input rule makes a checkbox full-width; keep it inline with its label. */
+.connector-rules-one-kind {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.admin-shell .connector-rules-one-kind input[type='checkbox'] {
+  width: auto;
+}
+
+.rules-share {
+  color: var(--mut);
+  font-size: 11px;
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--bad);
+}
+.form-error-summary {
+  margin: 8px 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  background: rgba(248, 81, 73, 0.08);
+}
+.form-error-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+/* A column whose values read better centered (Config > factory default). */
+.admin-shell th.col-center,
+.admin-shell td.col-center {
+  text-align: center;
+}
+
+/* Race offers: the rival field table. */
+.mcard-race table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.mcard-race th,
+.mcard-race td {
+  padding: 3px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.mcard-race .race-you td {
+  color: var(--spark);
+  font-weight: 700;
+}
+
+/* Structured editors for what used to be raw JSON. */
+.field-help {
+  display: block;
+  margin: 2px 0 6px;
+  color: var(--mut);
+}
+.structured-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.flags-editor,
+.structured-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.flag-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.flag-row small {
+  display: block;
+  color: var(--mut);
+}
+.admin-shell .flag-row input[type='checkbox'],
+.admin-shell .choice-options input[type='checkbox'] {
+  width: auto;
+}
+.choice-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px 10px;
+}
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.structured-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.kv-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.advanced-json summary {
+  cursor: pointer;
+  color: var(--mut);
+}
+.advanced-json textarea {
+  width: 100%;
+  font-family: monospace;
+}
+
+.fac-logo {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  vertical-align: -3px;
+  object-fit: contain;
+}
+.faction-art-editor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 10px 0 18px;
+}
+.faction-art-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.faction-art-preview {
+  min-height: 90px;
+  max-height: 140px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--panel2) center / cover no-repeat;
+}
+.faction-art-preview img {
+  max-width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.faction-backdrop {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.color-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.admin-shell .color-input input[type='color'] {
+  width: 44px;
+  height: 32px;
+  padding: 0;
 }

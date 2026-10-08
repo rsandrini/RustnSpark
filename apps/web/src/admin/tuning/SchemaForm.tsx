@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import type * as dto from '../../api/generated';
-import { ConnectorLayoutEditor, type ConnectorLayout } from './ConnectorLayoutEditor';
+import { ConnectorRulesEditor, type ConnectorRules } from './ConnectorRulesEditor';
 import { GridCellsEditor } from './GridCellsEditor';
+import { tuningApi } from './tuning.api';
+import { STRUCTURED_EDITORS } from './StructuredEditors';
+import { pickLocalized } from '../../i18n/localized';
 
 // Owner request (round 5): "can we automatically save without clicking the button" — debounced
 // while typing, flushed immediately on blur (moving to another field, or closing).
@@ -11,13 +15,158 @@ const AUTO_SAVE_DEBOUNCE_MS = 1200;
 // Locale codes as field sub-labels — codes, not translated words, so no i18n keys.
 const LOCALE_CODES: Record<string, string> = { en: 'EN', 'pt-BR': 'PT-BR' };
 
+/** A colour picker next to the hex code (the stored value stays plain `#rrggbb`). */
+function ColorInput({
+  id,
+  value,
+  label,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  onChange: (value: string) => void;
+}) {
+  const valid = /^#[0-9a-fA-F]{6}$/.test(value);
+  return (
+    <span className="color-input">
+      <input
+        type="color"
+        aria-label={`${label} (picker)`}
+        value={valid ? value : '#808080'}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <input
+        id={id}
+        value={value}
+        aria-label={label}
+        maxLength={7}
+        placeholder="#rrggbb"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </span>
+  );
+}
+
+/** Text input for a place's type, suggesting the kinds that already exist. */
+function LocationTypeInput({
+  id,
+  value,
+  label,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  label: string;
+  onChange: (value: string) => void;
+}) {
+  const { data: rows } = useQuery<Record<string, unknown>[]>({
+    queryKey: ['tuning', 'entities', 'locations'],
+    queryFn: () => tuningApi.listEntities('locations'),
+  });
+  const known = [...new Set((rows ?? []).map((row) => String(row.type)))].sort();
+  return (
+    <>
+      <input
+        id={id}
+        list={`${id}-types`}
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <datalist id={`${id}-types`}>
+        {known.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
+    </>
+  );
+}
+
+/** A select of another entity's rows (a foreign key), labelled by their localized name. */
+function ReferenceSelect({
+  entity,
+  id,
+  value,
+  required,
+  label,
+  noneValue,
+  onChange,
+}: {
+  entity: string;
+  id: string;
+  value: string;
+  required: boolean;
+  label: string;
+  /** The literal that means "no row" (offered as the first choice). */
+  noneValue?: string;
+  onChange: (value: string) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const { data: rows } = useQuery<Record<string, unknown>[]>({
+    queryKey: ['tuning', 'entities', entity],
+    queryFn: () => tuningApi.listEntities(entity),
+  });
+  const options = (rows ?? []).map((row) => {
+    const rowId = String(row.id ?? row.partType);
+    const name = row.displayName;
+    const text =
+      typeof name === 'object' && name !== null
+        ? pickLocalized(name as { en: string; 'pt-BR': string }, i18n.language)
+        : '';
+    return { value: rowId, label: text !== '' && text !== rowId ? `${text} (${rowId})` : rowId };
+  });
+  // A stored value that no longer exists must still show, never silently blank.
+  const known = options.some((option) => option.value === value) || value === noneValue;
+  return (
+    <select
+      id={id}
+      value={value}
+      required={required}
+      aria-label={label}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {noneValue === undefined ? (
+        <option value="">{t('tuning.chooseOne')}</option>
+      ) : (
+        <option value={noneValue}>{t('tuning.noneOption')}</option>
+      )}
+      {!known && value !== '' && <option value={value}>{value}</option>}
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/** A titled group of fields in the details column (field names; any field not listed lands in a
+    trailing untitled group so nothing is ever hidden). */
+export interface FormIssue {
+  key: string;
+  message: string;
+}
+
+export interface FormSection {
+  titleKey: string;
+  fields: readonly string[];
+}
+
 interface SchemaFormProps {
+  /** The admin entity being edited (picks structured editors and help text per field). */
+  entity?: string;
+  /** The row's own id, for editors that must leave it out (a faction's relations). */
+  rowId?: string;
   fields: dto.EntitySchemaField[];
+  sections?: readonly FormSection[];
   initialData?: Record<string, unknown>;
   onSubmit: (data: Record<string, unknown>, reason: string) => void | Promise<void>;
   onCancel?: () => void;
   submitLabel?: string;
   errors?: string[];
+  /** Server validation problems: shown as a summary and under the field each one names. */
+  issues?: readonly FormIssue[];
   /** Only while editing an existing row — never while creating one: auto-saving a brand-new,
       still-incomplete entity on every field blur would create partial/duplicate rows, not just
       save a keystroke. */
@@ -81,12 +230,16 @@ function stringifyForInput(value: unknown): string {
 }
 
 export function SchemaForm({
+  entity,
+  rowId,
   fields,
+  sections,
   initialData = {},
   onSubmit,
   onCancel,
   submitLabel,
   errors,
+  issues = [],
   autoSave = false,
   onAutoSave,
   autoSaveStatus = 'idle',
@@ -101,7 +254,7 @@ export function SchemaForm({
         initial[field.name] = { en: existing.en ?? '', 'pt-BR': existing['pt-BR'] ?? '' };
       } else if (field.type === 'boolean') {
         initial[field.name] = initialData[field.name] ?? false;
-      } else if (field.type === 'connector-layout' || field.type === 'grid-cells') {
+      } else if (field.type === 'connector-rules' || field.type === 'grid-cells') {
         initial[field.name] = initialData[field.name] ?? undefined;
       } else {
         initial[field.name] = initialData[field.name] ?? '';
@@ -243,6 +396,30 @@ export function SchemaForm({
       );
     }
 
+    const Structured =
+      entity === undefined ? undefined : STRUCTURED_EDITORS[`${entity}.${field.name}`];
+    if (Structured !== undefined) {
+      return (
+        <Structured
+          value={value}
+          rowId={rowId}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
+    // A place type is free text with the known types suggested (a new kind of place is allowed).
+    if (entity === 'locations' && field.name === 'type') {
+      return (
+        <LocationTypeInput
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
+          label={getFieldLabel(field, locale)}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
     if (field.type === 'json') {
       return (
         <textarea
@@ -269,13 +446,40 @@ export function SchemaForm({
       );
     }
 
-    if (field.type === 'connector-layout') {
+    if (field.references !== undefined && field.type === 'string') {
       return (
-        <ConnectorLayoutEditor
-          value={value as ConnectorLayout[] | undefined}
+        <ReferenceSelect
+          entity={field.references}
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
+          required={field.required}
+          label={getFieldLabel(field, locale)}
+          noneValue={field.referenceNone}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
+    // A faction colour: a picker plus the hex text, kept in sync.
+    if (entity === 'factions' && field.name === 'color') {
+      return (
+        <ColorInput
+          id={field.name}
+          value={typeof value === 'string' ? value : ''}
+          label={getFieldLabel(field, locale)}
+          onChange={(next) => handleChange(field.name, next)}
+        />
+      );
+    }
+
+    if (field.type === 'connector-rules') {
+      return (
+        <ConnectorRulesEditor
+          value={value as ConnectorRules | null | undefined}
+          onChange={(rules) => handleChange(field.name, rules)}
           w={typeof values.w === 'number' ? values.w : 1}
           h={typeof values.h === 'number' ? values.h : 1}
-          onChange={(layouts) => handleChange(field.name, layouts)}
+          partClass={typeof values.partClass === 'string' ? values.partClass : undefined}
         />
       );
     }
@@ -295,6 +499,73 @@ export function SchemaForm({
     );
   };
 
+  // Fields with a drawing/visual editor take the main pane beside the details column.
+  const isMain = (field: dto.EntitySchemaField) =>
+    field.type === 'grid-cells' || field.type === 'connector-rules';
+  const mainFields = fields.filter(isMain);
+  const sideFields = fields.filter((field) => !isMain(field));
+  const listed = new Set((sections ?? []).flatMap((section) => section.fields));
+  const sectionGroups: { titleKey: string | null; fields: dto.EntitySchemaField[] }[] = [
+    ...(sections ?? []).map((section) => ({
+      titleKey: section.titleKey,
+      fields: sideFields.filter((field) => section.fields.includes(field.name)),
+    })),
+    { titleKey: null, fields: sideFields.filter((field) => !listed.has(field.name)) },
+  ].filter((group) => group.fields.length > 0);
+
+  // Validation messages come straight from the server's zod rules: a missing value reads as
+  // "Required" instead of "Invalid input: expected string, received undefined".
+  const readable = (message: string): string =>
+    /expected .* received undefined/.test(message) ? t('tuning.errors.required') : message;
+  const fieldOf = (key: string): string => key.split('.')[0] ?? key;
+  const labelFor = (key: string): string => {
+    const field = fields.find((candidate) => candidate.name === fieldOf(key));
+    return field === undefined ? key : getFieldLabel(field, locale);
+  };
+  const issuesByField = new Map<string, string[]>();
+  for (const issue of issues) {
+    const name = fieldOf(issue.key);
+    issuesByField.set(name, [...(issuesByField.get(name) ?? []), readable(issue.message)]);
+  }
+
+  // What the field means, in plain words (tuning.help.<entity>.<field>); empty when none is written.
+  const helpFor = (field: dto.EntitySchemaField): string =>
+    entity === undefined
+      ? ''
+      : t(`tuning.help.${entity}.${field.name}`, { defaultValue: '' });
+
+  const renderField = (field: dto.EntitySchemaField) => {
+    const wide =
+      field.type === 'locale-map' ||
+      field.type === 'json' ||
+      field.type === 'grid-cells' ||
+      field.type === 'connector-rules';
+    return (
+      <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
+        <label className="lbl" htmlFor={field.name}>
+          {getFieldLabel(field, locale)}
+          {field.required && (
+            <span className="field-required" aria-label={t('tuning.required')}>
+              {t('tuning.required')}
+            </span>
+          )}
+        </label>
+        {helpFor(field) !== '' && <small className="field-help">{helpFor(field)}</small>}
+        {renderInput(field)}
+        {(issuesByField.get(field.name) ?? []).map((message) => (
+          <small key={message} className="field-error" role="alert">
+            {message}
+          </small>
+        ))}
+        {field.min !== undefined || field.max !== undefined ? (
+          <small className="field-hint">
+            {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
+          </small>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -302,6 +573,20 @@ export function SchemaForm({
       // auto-save right away instead of waiting out the full debounce.
       onBlur={autoSave ? () => flushAutoSave() : undefined}
     >
+      {issues.length > 0 && (
+        <div className="form-error-summary" role="alert">
+          <b>{t('tuning.errors.fixThese', { count: issues.length })}</b>
+          <ul>
+            {issues.map((issue, index) => (
+              <li key={`${issue.key}-${index}`}>
+                <b>{labelFor(issue.key)}</b>
+                {t('tuning.errors.separator')}
+                {readable(issue.message)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {errors && errors.length > 0 && (
         <ul role="alert">
           {errors.map((error, index) => (
@@ -309,46 +594,37 @@ export function SchemaForm({
           ))}
         </ul>
       )}
-      <div className="schema-form-grid">
-        {fields.map((field) => {
-          const wide =
-            field.type === 'locale-map' ||
-            field.type === 'json' ||
-            field.type === 'grid-cells' ||
-            field.type === 'connector-layout';
-          return (
-            <div key={field.name} className={`field${wide ? ' field-wide' : ''}`}>
-              <label className="lbl" htmlFor={field.name}>
-                {getFieldLabel(field, locale)}
-                {field.required && (
-                  <span className="field-required" aria-label={t('tuning.required')}>
-                    {t('tuning.required')}
-                  </span>
-                )}
+      {/* A form with a cell-drawing field (ship formats) is laid out as a left column of details and
+          the drawing area centered beside it, instead of a left-aligned grid with every detail
+          stacked underneath (owner request). Other forms keep the single paired-field grid. */}
+      <div className={mainFields.length > 0 ? 'schema-form-split' : undefined}>
+        <div className="schema-form-side">
+          {sectionGroups.map((group) => (
+            <section key={group.titleKey ?? 'rest'} className="schema-form-section">
+              {group.titleKey !== null && <h3>{t(group.titleKey)}</h3>}
+              <div className="schema-form-grid">{group.fields.map((field) => renderField(field))}</div>
+            </section>
+          ))}
+          <div className="schema-form-grid">
+            <div className="field">
+              <label className="lbl" htmlFor="reason">
+                {t('tuning.versionLabel')}
               </label>
-              {renderInput(field)}
-              {field.min !== undefined || field.max !== undefined ? (
-                <small className="field-hint">
-                  {t('tuning.bounds', { min: field.min ?? '', max: field.max ?? '' })}
-                </small>
-              ) : null}
+              <input
+                id="reason"
+                type="text"
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                required
+              />
             </div>
-          );
-        })}
-        <div className="field">
-          <label className="lbl" htmlFor="reason">
-            {t('tuning.versionLabel')}
-          </label>
-          <input
-            id="reason"
-            type="text"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            required
-          />
+          </div>
         </div>
+        {mainFields.length > 0 && (
+          <div className="schema-form-main">{mainFields.map((field) => renderField(field))}</div>
+        )}
       </div>
-      <div>
+      <div className="schema-form-actions">
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>
         {onCancel && (
           <button type="button" onClick={onCancel}>

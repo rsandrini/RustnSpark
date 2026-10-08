@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Corrida encerrada: você cruzou a linha em {magnitude}º lugar.",
+    "Todo o grid chegou — você terminou em {magnitude}º."
+  ]
+}

@@ -135,6 +135,18 @@ const miningSchema = z.object({
   job_duration_seconds: z.number().int().min(1).max(86400),
 });
 
+const raceSchema = z.object({
+  competitors_min: z.number().int().min(2).max(8),
+  competitors_max: z.number().int().min(2).max(8),
+  min_mobility: z.number().min(0.5).max(20),
+  reference_mob: z.number().min(0.5).max(20),
+  speed_spread: z.number().min(0.05).max(0.9),
+  time_jitter: z.number().min(0).max(0.5),
+  prize_share_1: z.number().min(0).max(10),
+  prize_share_2: z.number().min(0).max(10),
+  prize_share_3: z.number().min(0).max(10),
+});
+
 const rescueSchema = z.object({
   reference_mob: z.number().int().min(1).max(10),
   deadline_factor_min: z.number().min(1).max(3),
@@ -201,6 +213,7 @@ const gameRulesSchema = z.object({
   failure: failureSchema,
   integrity: integritySchema,
   mining: miningSchema,
+  race: raceSchema,
   rescue: rescueSchema,
   escort: escortSchema,
   ship_class: shipClassSchema,

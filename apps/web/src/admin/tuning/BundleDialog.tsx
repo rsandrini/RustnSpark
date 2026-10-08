@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
+import { failureText } from '../../api/errors';
 import type * as dto from '../../api/generated';
 
 interface BundleDialogProps {
@@ -22,7 +23,7 @@ export function BundleDialog({ onClose, onApplied }: BundleDialogProps) {
       setError(null);
     },
     onError: (err: Error) => {
-      setError(err.message);
+      setError(failureText(err));
       setDiffs(null);
     },
   });
@@ -32,7 +33,7 @@ export function BundleDialog({ onClose, onApplied }: BundleDialogProps) {
     onSuccess: () => {
       onApplied();
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => setError(failureText(err)),
   });
 
   const parseEntries = (): dto.BundleExportEntry[] => {

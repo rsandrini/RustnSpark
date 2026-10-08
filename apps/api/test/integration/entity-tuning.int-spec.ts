@@ -557,38 +557,41 @@ describe('entity tuning (S3.8)', () => {
     });
   });
 
-  describe('connectorLayouts field on the parts entity (Connectors v0.1)', () => {
-    it('creates a part with connectorLayouts candidates', async () => {
+  describe('connectorRules field on the parts entity (connector generation rules)', () => {
+    const sides = (kind: string) => ({
+      N: [{ kind, weight: 1 }],
+      E: [{ kind, weight: 1 }],
+      S: [{ kind, weight: 1 }],
+      W: [{ kind, weight: 1 }],
+    });
+
+    it('creates a part with connector generation rules', async () => {
       await seed(prisma);
       const server = httpServer(testApp.app);
       const admin = await createAdmin(prisma, passwordService);
       const token = await loginAdmin(server, admin);
 
       const payload = validPartPayload('connector_test_part');
-      payload.connectorLayouts = [
-        { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
-      ];
+      payload.partClass = 'CARGO';
+      payload.connectorRules = { sides: sides('central'), maxSplit: 0 };
       const response = await request(server)
         .post('/v1/admin/tuning/parts')
         .set('Authorization', `Bearer ${token}`)
         .send({ data: payload, reason: 'test' });
       expect(response.status).toBe(201);
-      const body = response.body as { row: { connectorLayouts: unknown } };
-      expect(body.row.connectorLayouts).toEqual([
-        { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
-      ]);
+      const body = response.body as { row: { connectorRules: unknown } };
+      expect(body.row.connectorRules).toEqual({ sides: sides('central'), maxSplit: 0 });
     });
 
-    it("rejects a connector cell outside the part's own w x h footprint", async () => {
+    it('rejects rules that cannot generate any combination', async () => {
       await seed(prisma);
       const server = httpServer(testApp.app);
       const admin = await createAdmin(prisma, passwordService);
       const token = await loginAdmin(server, admin);
 
-      const payload = validPartPayload('connector_oob_part');
-      payload.w = 1;
-      payload.h = 1;
-      payload.connectorLayouts = [{ cells: [{ dx: 5, dy: 0, side: 'S', kind: 'central' }] }];
+      const payload = validPartPayload('connector_impossible_part');
+      payload.partClass = 'CARGO';
+      payload.connectorRules = { sides: sides('split'), maxSplit: 1 };
       const response = await request(server)
         .post('/v1/admin/tuning/parts')
         .set('Authorization', `Bearer ${token}`)
@@ -596,8 +599,60 @@ describe('entity tuning (S3.8)', () => {
       expect(response.status).toBe(400);
     });
 
-    it('reverting a part revision with connectorLayouts: null (a part that never had any authored) does not 500', async () => {
-      // Regression: validateEntityRules first checked `data.connectorLayouts !== undefined`,
+    it('rejects a connector on the facing side W of an ENGINE', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const response = await request(server)
+        .patch('/v1/admin/tuning/parts/engine_chem_small')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: { connectorRules: { sides: sides('central') } }, reason: 'test' });
+      expect(response.status).toBe(400);
+    });
+
+    it('previews rules for the editor: exact chances and sample layouts, from the server\'s own generator', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const response = await request(server)
+        .post('/v1/admin/tuning/connector-rules/preview')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rules: { sides: sides('central'), oneKindPerPart: true }, w: 2, h: 1, partClass: 'CARGO', samples: 3 });
+      expect(response.status).toBe(200);
+      const body = response.body as {
+        problem: string | null;
+        combos: { probability: number }[];
+        samples: { cells: unknown[] }[];
+      };
+      expect(body.problem).toBeNull();
+      expect(body.combos).toHaveLength(1);
+      expect(body.combos[0]!.probability).toBe(1);
+      expect(body.samples).toHaveLength(3);
+      expect(body.samples[0]!.cells.length).toBe(6); // 2x1 perimeter, 4 sides
+    });
+
+    it('rejects malformed rules (unknown kind, extra keys)', async () => {
+      await seed(prisma);
+      const server = httpServer(testApp.app);
+      const admin = await createAdmin(prisma, passwordService);
+      const token = await loginAdmin(server, admin);
+
+      const payload = validPartPayload('connector_bad_shape_part');
+      payload.partClass = 'CARGO';
+      payload.connectorRules = { sides: sides('bogus') };
+      const response = await request(server)
+        .post('/v1/admin/tuning/parts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ data: payload, reason: 'test' });
+      expect(response.status).toBe(400);
+    });
+
+    it('reverting a part revision with connectorRules: null (a part that never had any configured) does not 500', async () => {
+      // Regression: validateEntityRules first checked `data.connectorRules !== undefined`,
       // but a revert replays the FULL stored "before" snapshot including nullable columns as
       // literal `null` (not absent) — `null !== undefined` is true, so the footprint validator
       // ran on `null` and threw. Every part created before this feature, or with no candidates

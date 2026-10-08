@@ -54,6 +54,7 @@ const CATEGORY_OF = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -152,6 +153,21 @@ function eventMembers(
             kind: z.enum(['part', 'scrap']),
             partType: z.string().min(1),
             condition: num,
+          });
+        }
+        if (type === 'race_result') {
+          extras['race'] = object({
+            place: num,
+            timeScale: z.number(),
+            standings: z.array(
+              object({
+                name: z.string(),
+                // a speed has two decimals, so this is the one non-integer number a v2 event stores
+                mobility: z.number(),
+                seconds: num,
+                you: z.boolean(),
+              }),
+            ),
           });
         }
         if (type === 'pirate_demand') {

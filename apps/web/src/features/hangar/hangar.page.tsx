@@ -14,7 +14,7 @@ import type {
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
-import { canPlace, footprint } from './hangar.geometry';
+import { directionViolations, footprint, nextRot, placementIssue, type Rot } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
@@ -153,6 +153,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const catalogById = useMemo(() => {
     const map = new Map<string, InventoryItem['catalog']>();
     for (const part of parts) map.set(part.id, part.catalog);
+    return map;
+  }, [parts]);
+
+  // Each owned part's generated connector cells (INSTALLED items included) for the yard's port marks.
+  const connectorsById = useMemo(() => {
+    const map = new Map<string, InventoryItem['connectors']>();
+    for (const part of parts) map.set(part.id, part.connectors);
     return map;
   }, [parts]);
 
@@ -314,13 +321,29 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     const existing = effectiveLayout.find(
       (placement) => placement.partInstanceId === partInstanceId,
     );
-    const rot = existing?.rot ?? 0;
-    if (!canPlace(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet)) return;
+    const rot: Rot = existing?.rot ?? 0;
+    if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet) !== null) {
+      return;
+    }
+    // A NEW engine/weapon is dropped facing a way that has nothing behind it when one exists;
+    // moving or placing anywhere is never refused for direction (that is a problem, not a block).
+    let startRot: Rot = rot;
+    if (existing === undefined) {
+      const clean = ([0, 90, 180, 270] as const).find((candidate) => {
+        if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, candidate, yardCellSet) !== null) {
+          return false;
+        }
+        const trial = [...effectiveLayout, { partInstanceId, gx, gy, rot: candidate }];
+        return directionViolations(trial, catalogById).length === 0;
+      });
+      startRot = clean ?? 0;
+    }
     const next = existing
       ? effectiveLayout.map((placement) =>
           placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
         )
-      : [...effectiveLayout, { partInstanceId, gx, gy, rot: 0 as const }];
+      : [...effectiveLayout, { partInstanceId, gx, gy, rot: startRot }];
+    setRotateHint(null);
     setLayout(next);
     setSaved(false);
     setSaveError(null);
@@ -342,41 +365,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     if (draggingId !== null) placePart(draggingId, gx, gy);
   };
 
-  // Rotate: a 1×1 part looks the same rotated (say so); a rotation that would overlap a neighbour
-  // is tried on nearby cells before giving up, and the pilot is told when nothing fits.
+  // Rotate turns the part IN PLACE (clockwise quarter turn, same top-left cell) — its ports turn
+  // with it, so even a 1×1 part changes which sides face which neighbours. It never moves the
+  // part: if the turned footprint would overlap a neighbour or leave the format, say so.
   const rotateSelected = () => {
     if (selectedId === null || modifyBlocked) return;
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
-    const catalog = catalogById.get(selectedId);
-    if (existing === undefined || catalog === undefined) return;
-    if (catalog.w === catalog.h) {
-      setRotateHint(t('hangar.rotate.square'));
-      return;
-    }
-    const nextRot: 0 | 90 = existing.rot === 0 ? 90 : 0;
-    const offsets = [0, 1, -1, 2, -2].flatMap((dx) => [0, 1, -1, 2, -2].map((dy) => [dx, dy]));
-    offsets.sort((a, b) => Math.abs(a[0]!) + Math.abs(a[1]!) - (Math.abs(b[0]!) + Math.abs(b[1]!)));
-    const spot = offsets.find(([dx, dy]) =>
-      canPlace(
-        effectiveLayout,
-        catalogById,
-        selectedId,
-        existing.gx + dx!,
-        existing.gy + dy!,
-        nextRot,
-        yardCellSet,
-      ),
-    );
-    if (spot === undefined) {
+    if (existing === undefined || catalogById.get(selectedId) === undefined) return;
+    const turned = nextRot(existing.rot);
+    if (
+      placementIssue(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, turned, yardCellSet) !==
+      null
+    ) {
       setRotateHint(t('hangar.rotate.blocked'));
       return;
     }
-    setRotateHint(spot[0] === 0 && spot[1] === 0 ? null : t('hangar.rotate.nudged'));
+    setRotateHint(null);
     setLayout(
       effectiveLayout.map((placement) =>
-        placement.partInstanceId === selectedId
-          ? { ...placement, gx: existing.gx + spot[0]!, gy: existing.gy + spot[1]!, rot: nextRot }
-          : placement,
+        placement.partInstanceId === selectedId ? { ...placement, rot: turned } : placement,
       ),
     );
     setSaved(false);
@@ -553,6 +560,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 disconnectedPartIds={disconnectedPartIds}
                 layout={effectiveLayout}
                 catalogById={catalogById}
+                connectorsById={connectorsById}
                 nameById={nameById}
                 selectedId={selectedId}
                 draggingId={draggingId}
@@ -672,10 +680,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
                   </p>
                 )}
+                <p className="sub conn-legend" data-testid="port-legend" title={t('connectors.legend.shapes')}>
+                  <span>{t('connectors.legend.title')}</span>
+                  <span className="conn-swatch conn-connected">{t('connectors.legend.connected')}</span>
+                  <span className="conn-swatch conn-incorrect">{t('connectors.legend.incorrect')}</span>
+                  <span className="conn-swatch conn-available">{t('connectors.legend.available')}</span>
+                </p>
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}
                   problemCount={allProblems.length}
+                  routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}

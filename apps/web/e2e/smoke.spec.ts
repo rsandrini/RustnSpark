@@ -15,7 +15,7 @@ for (const faction of FACTIONS) {
 
     // --- hangar: the starter ship, named parts ---------------------------------------------
     await page.goto('/hangar');
-    await expect(page.getByRole('heading', { name: 'Hangar' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'My Ship' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Assembly yard' })).toBeVisible();
     await assertClean(page, 'hangar');
 
@@ -27,7 +27,7 @@ for (const faction of FACTIONS) {
 
     // --- board: a real starter ship must be able to take at least one mission ------------------
     await page.goto('/board');
-    await expect(page.getByRole('heading', { name: 'Mission board' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Mission board' })).toBeVisible();
     // The board itself must work: offers are listed, each with its description and trip facts.
     await expect(page.locator('.mcard').first()).toBeVisible();
     // D43: on default settings a freshly onboarded player must always have a mission they can
@@ -41,7 +41,7 @@ for (const faction of FACTIONS) {
     await accept.click();
 
     // --- transit: dispatch, then the worker resolves it --------------------------------------
-    await expect(page).toHaveURL(/\/transit/);
+    await expect(page).toHaveURL(/\/hangar/);
     await page.getByRole('button', { name: 'Dispatch' }).click();
     await expect(page.getByTestId('in-transit')).toBeVisible();
     await assertClean(page, 'transit');
@@ -61,8 +61,8 @@ for (const faction of FACTIONS) {
 
     // --- port ----------------------------------------------------------------------------------
     await page.goto('/port');
-    await expect(page.getByRole('heading', { name: 'Port', exact: true })).toBeVisible();
-    await expect(page.getByTestId('wallet')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Market' })).toBeVisible();
+    await expect(page.getByTestId('topbar-wallet')).toBeVisible();
     await expect(page.locator('.pcard').first()).toBeVisible();
     await assertClean(page, 'port market');
     await page.getByRole('tab', { name: 'Refuel' }).click();

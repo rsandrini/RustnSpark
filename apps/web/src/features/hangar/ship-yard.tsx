@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import type { PartCatalogStats, Placement } from '../../api/generated';
+import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
-import { footprint } from './hangar.geometry';
+import { PortGlyph } from '../parts/connector-grid';
+import { computePortMarks } from './connectors';
+import { directionViolations, facingOf, footprint } from './hangar.geometry';
 
 const MIN_SPAN = 4;
 const FIT_MARGIN = 2;
@@ -94,6 +96,46 @@ export function labelLines(
   return shown;
 }
 
+const ARROW_HALF = 0.14;
+const ARROW_DEPTH = 0.16;
+const ARROW_EDGE_INSET = 0.04;
+
+/** A small triangle on the facing edge of an engine (exhaust) or weapon (muzzle). */
+function FacingArrow({
+  gx,
+  gy,
+  width,
+  height,
+  facing,
+  label,
+}: {
+  gx: number;
+  gy: number;
+  width: number;
+  height: number;
+  facing: 'N' | 'E' | 'S' | 'W';
+  label: string;
+}) {
+  const midX = gx + width / 2;
+  const midY = gy + height / 2;
+  const points: Record<typeof facing, string> = {
+    N: `${midX - ARROW_HALF},${gy + ARROW_EDGE_INSET + ARROW_DEPTH} ${midX + ARROW_HALF},${gy + ARROW_EDGE_INSET + ARROW_DEPTH} ${midX},${gy + ARROW_EDGE_INSET}`,
+    S: `${midX - ARROW_HALF},${gy + height - ARROW_EDGE_INSET - ARROW_DEPTH} ${midX + ARROW_HALF},${gy + height - ARROW_EDGE_INSET - ARROW_DEPTH} ${midX},${gy + height - ARROW_EDGE_INSET}`,
+    W: `${gx + ARROW_EDGE_INSET + ARROW_DEPTH},${midY - ARROW_HALF} ${gx + ARROW_EDGE_INSET + ARROW_DEPTH},${midY + ARROW_HALF} ${gx + ARROW_EDGE_INSET},${midY}`,
+    E: `${gx + width - ARROW_EDGE_INSET - ARROW_DEPTH},${midY - ARROW_HALF} ${gx + width - ARROW_EDGE_INSET - ARROW_DEPTH},${midY + ARROW_HALF} ${gx + width - ARROW_EDGE_INSET},${midY}`,
+  };
+  return (
+    <polygon
+      className="facing-arrow"
+      data-facing={facing}
+      points={points[facing]}
+      style={{ pointerEvents: 'none' }}
+    >
+      <title>{label}</title>
+    </polygon>
+  );
+}
+
 export interface PartLook {
   readonly rarity: string;
   /** Condition in percent (0..100). */
@@ -111,6 +153,8 @@ export interface ShipYardProps {
   /** Instance ids with no compatible connector chain back to the bridge right now. */
   disconnectedPartIds?: ReadonlySet<string>;
   catalogById: ReadonlyMap<string, PartCatalogStats>;
+  /** Generated connector cells by instance id; parts without an entry (legacy) draw no ports. */
+  connectorsById?: ReadonlyMap<string, readonly ConnectorCell[]>;
   /** Localized part names by instance id. */
   nameById: ReadonlyMap<string, string>;
   selectedId: string | null;
@@ -134,6 +178,7 @@ export function ShipYard({
   cells,
   disconnectedPartIds,
   catalogById,
+  connectorsById,
   nameById,
   selectedId,
   draggingId,
@@ -146,6 +191,19 @@ export function ShipYard({
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  // Ports are always on (spec decision 3); the dragged block is already live in `layout` while it
+  // hovers, so its marks double as the placement preview.
+  // Engines/weapons with parts behind their facing edge: outlined red (direction rules are
+  // problems, never placement refusals).
+  const directionBlocked = useMemo(
+    () => new Map(directionViolations(layout, catalogById).map((v) => [v.partInstanceId, v.kind])),
+    [layout, catalogById],
+  );
+  const portMarks = useMemo(
+    () =>
+      connectorsById === undefined ? [] : computePortMarks(layout, catalogById, connectorsById),
+    [layout, catalogById, connectorsById],
+  );
 
   const bounds = (() => {
     let minX = 0;
@@ -431,6 +489,7 @@ export function ShipYard({
                   'block',
                   look?.broken === true ? 'broken' : '',
                   disconnectedPartIds?.has(placement.partInstanceId) === true ? 'disconnected' : '',
+                  directionBlocked.has(placement.partInstanceId) ? 'dir-blocked' : '',
                   look === undefined
                     ? ''
                     : colorBy === 'rarity'
@@ -454,9 +513,16 @@ export function ShipYard({
                 onPointerLeave={() => onHoverPart?.(null)}
               />
               <title>
-                {look === undefined
-                  ? name
-                  : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`}
+                {[
+                  look === undefined
+                    ? name
+                    : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`,
+                  directionBlocked.has(placement.partInstanceId)
+                    ? t(`hangar.placement.${directionBlocked.get(placement.partInstanceId)}`)
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join('\n')}
               </title>
               {look !== undefined && (
                 <g style={{ pointerEvents: 'none' }}>
@@ -486,6 +552,31 @@ export function ShipYard({
                   </text>
                 </g>
               )}
+              {(catalog.partClass === 'ENGINE' || catalog.partClass === 'WEAPON') && (
+                <FacingArrow
+                  gx={placement.gx}
+                  gy={placement.gy}
+                  width={width}
+                  height={height}
+                  facing={facingOf(placement.rot)}
+                  label={t(
+                    catalog.partClass === 'ENGINE' ? 'hangar.facing.exhaust' : 'hangar.facing.weapon',
+                  )}
+                />
+              )}
+              {portMarks
+                .filter((mark) => mark.partInstanceId === placement.partInstanceId)
+                .map((mark) => (
+                  <PortGlyph
+                    key={`${mark.x},${mark.y},${mark.side}`}
+                    x={mark.x}
+                    y={mark.y}
+                    side={mark.side}
+                    kind={mark.kind}
+                    state={mark.state}
+                    title={`${t(`connectors.kinds.${mark.kind}`)} — ${t(`connectors.states.${mark.state}`)}`}
+                  />
+                ))}
               <text
                 className="block-label"
                 x={placement.gx + width / 2}

@@ -47,6 +47,8 @@ export const envSchema = z.object({
   // Browser-facing origin for links the API generates in emails (password reset).
   // Default matches the AuthService fallback used when compose/vite never set it.
   WEB_URL: z.url().default('http://localhost:3000'),
+  // Where admin-uploaded images (faction banners/logos/backgrounds) are stored: a mounted volume.
+  ART_DIR: z.string().min(1).optional(),
   // Resend email (password reset). Optional by design: EmailService boots with a
   // null client when RESEND_API_KEY is absent (CI, tests, local shells).
   RESEND_API_KEY: z.string().optional(),

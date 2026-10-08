@@ -38,6 +38,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_paid: 'payment',
@@ -75,6 +76,16 @@ function v2Event(
   }
   if (type === 'scavenge_find') {
     base['found'] = { kind: 'part', partType: 'cargo', condition: 55 };
+  }
+  if (type === 'race_result') {
+    base['race'] = {
+      place: 2,
+      timeScale: 1,
+      standings: [
+        { name: 'Comet Runner', mobility: 3.4, seconds: 1800, you: false },
+        { name: '', mobility: 3.1, seconds: 1950, you: true },
+      ],
+    };
   }
   if (type === 'pirate_demand') {
     base['motive'] = 'parts';

@@ -4,6 +4,9 @@ import { performance } from '../parts/condition.js';
 import { roundHalfEven } from '../resolution/numeric/round-half-even.js';
 import type { ShipSheet } from './sheet.types.js';
 
+// `autonomy` is the ship's RANGE: how much route distance a full tank covers (fuelCap ÷ fuelUse per
+// 100 distance, ×100) — the field keeps its historical name because the resolution oracles pin
+// it; the UI shows it as "Range" in distance units (see ships/route-coverage.ts for the routes).
 const NO_AUTONOMY = 0;
 const MIN_MOB = 1;
 // Autonomy is reported as a percentage of one full tank's worth of fuel use.

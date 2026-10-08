@@ -367,4 +367,32 @@ describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => 
   it('ignores templates of other types even if they match the origin', () => {
     expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, type: 'DELIVERY' }])).toBe(false);
   });
+
+  it('a RACE offer carries 3-5 rival ships frozen in its cargo, and its board reward is the winner\'s prize', () => {
+    const RACE_LUNA: FillerTemplate = {
+      id: 'race_luna',
+      type: 'RACE',
+      factionId: 'luna',
+      active: true,
+      requirements: { originFactions: ['luna'], originTypes: ['port'] },
+    };
+    const counts = new Set<number>();
+    for (let n = 0; n < 40; n += 1) {
+      const draft = fill(`alpha|race|${n}`, LOC_ALPHA, [RACE_LUNA]);
+      const cargo = draft.cargo as { race?: { competitors: { id: string; name: string; mobility: number }[] } };
+      expect(draft.type).toBe('RACE');
+      const rivals = cargo.race?.competitors ?? [];
+      counts.add(rivals.length);
+      expect(rivals.length).toBeGreaterThanOrEqual(3);
+      expect(rivals.length).toBeLessThanOrEqual(5);
+      expect(rivals.every((rival) => rival.mobility > 0 && rival.name !== '')).toBe(true);
+    }
+    expect([...counts].sort()).toEqual([3, 4, 5]);
+    const a = fill('alpha|race|same', LOC_ALPHA, [RACE_LUNA]);
+    expect(fill('alpha|race|same', LOC_ALPHA, [RACE_LUNA])).toEqual(a);
+    // same route as a delivery of the same seed pays the winner share on top of the base
+    const plain: FillerTemplate = { ...RACE_LUNA, id: 'd', type: 'DELIVERY' };
+    const delivery = fill('alpha|race|same', LOC_ALPHA, [plain]);
+    expect(a.reward).toBeGreaterThan(delivery.reward);
+  });
 });

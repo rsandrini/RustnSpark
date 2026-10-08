@@ -1,7 +1,9 @@
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
-import { CLASSIC_SQUARE_CELLS, validateLayout } from './geometry.js';
+import { ROTATIONS, type ConnectorLayout } from '../parts/connectors.js';
+import { directionErrors } from './direction.js';
+import { CLASSIC_SQUARE_CELLS, connectedPartIds, validateLayout } from './geometry.js';
 
-const RIGHT_ANGLE = 90;
+// All four facings: an engine/weapon may need turning so nothing is behind its exhaust/muzzle.
 
 export function autoLayout(
   parts: InstalledPart[],
@@ -13,9 +15,17 @@ export function autoLayout(
   });
 
   const placements: Placement[] = [];
+  // Parts that carry their stored connectors are only placed where they actually connect back to
+  // the bridge — plain adjacency is no longer enough once real (non-universal) layouts exist,
+  // e.g. an engine with its exhaust side (none) facing the only neighbour.
+  const connectors = new Map<string, ConnectorLayout | null>(
+    parts
+      .filter((part) => part.instance.connectors !== undefined)
+      .map((part) => [part.instance.id, part.instance.connectors as ConnectorLayout | null]),
+  );
 
   for (const part of ordered) {
-    const placement = findPlacement(part, placements, catalog, formatCells);
+    const placement = findPlacement(part, placements, catalog, formatCells, connectors);
     if (placement !== null) {
       placements.push(placement);
     }
@@ -29,22 +39,32 @@ function findPlacement(
   existing: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   formatCells: ReadonlySet<string>,
+  connectors: ReadonlyMap<string, ConnectorLayout | null>,
 ): Placement | null {
   if (part.catalog.partClass === 'BRIDGE') {
     return { partInstanceId: part.instance.id, gx: 0, gy: 0, rot: 0 };
   }
 
-  const rotations = [0, RIGHT_ANGLE];
+  const rotations = ROTATIONS;
   const candidates = candidatePositions(existing);
 
   for (const { gx, gy } of candidates) {
     for (const rot of rotations) {
       const placement: Placement = { partInstanceId: part.instance.id, gx, gy, rot };
-      const errors = validateLayout([...existing, placement], catalog, formatCells);
+      const errors = validateLayout([...existing, placement], catalog, formatCells, connectors);
       const relevant = errors.filter((error) => error.partInstanceId === part.instance.id);
-      if (relevant.length === 0) {
-        return placement;
+      if (relevant.length > 0) continue;
+      // Direction errors land on the engine/weapon, not on the part that blocks it, so a newly
+      // placed part is rejected for any (the layout so far is clean, so any is new). Auto-layout
+      // always produces a layout that satisfies them; manual editing is allowed to break them.
+      if (directionErrors([...existing, placement], catalog, connectors).length > 0) continue;
+      if (
+        connectors.size > 0 &&
+        !connectedPartIds([...existing, placement], catalog, connectors).has(part.instance.id)
+      ) {
+        continue;
       }
+      return placement;
     }
   }
 

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { fileURLToPath } from 'node:url';
-import { json, urlencoded } from 'express';
+import { json, raw, urlencoded } from 'express';
 import helmet from 'helmet';
 import pinoHttpImport from 'pino-http';
 import type { HttpLogger, Options } from 'pino-http';
@@ -16,6 +16,7 @@ import { validationPipeOptions } from './common/pipes/validation.config.js';
 
 const GLOBAL_PREFIX = 'v1';
 const BODY_SIZE_LIMIT = '100kb';
+const ART_UPLOAD_LIMIT = '1600kb';
 
 type CorsOriginCallback = (err: Error | null, allow?: boolean) => void;
 
@@ -42,6 +43,12 @@ export function configureApp(app: INestApplication, env: EnvService): void {
 
   app.setGlobalPrefix(GLOBAL_PREFIX);
   app.use(helmet());
+  // Admin image uploads (faction art) arrive as the raw image bytes — image types only, size-capped;
+  // every other content type keeps going through the JSON parser below.
+  app.use(
+    ['/v1/admin/tuning/factions', '/v1/admin/tuning/locations'],
+    raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], limit: ART_UPLOAD_LIMIT }),
+  );
   app.use(json({ limit: BODY_SIZE_LIMIT }));
   app.use(urlencoded({ extended: true, limit: BODY_SIZE_LIMIT }));
   app.enableCors({

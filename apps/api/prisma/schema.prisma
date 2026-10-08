@@ -168,6 +168,8 @@ enum MissionType {
   // A timed search of the wreckage around a port: starts and ends in the same place, no reward,
   // finds used parts or scrap when it resolves (never on a board).
   SCAVENGE
+  // A race against generated rival ships (3-5): needs a fast ship, pays by finishing place.
+  RACE
 }
 
 // Board/instance lifecycle (plan S6.1). Distinct from the resolution outcome union
@@ -280,6 +282,8 @@ model Faction {
   playable         Boolean           @default(false)
   relations        Json
   starterKitHint   Json?
+  // Uploaded images {banner?, logo?, background?} -> file names in ART_DIR; absent = the built-in default.
+  art              Json?
   locations        Location[]
   missionTemplates MissionTemplate[]
   missionInstances MissionInstance[]
@@ -308,6 +312,8 @@ model Location {
   isolation           Float
   mood                Float
   services            Json
+  // Uploaded images {wide?, square?, icon?} -> file names in ART_DIR; absent = the built-in default.
+  art                 Json?
   faction             Faction           @relation(fields: [factionId], references: [id])
   routesA             Route[]           @relation("RouteA")
   routesB             Route[]           @relation("RouteB")
@@ -375,6 +381,7 @@ model PartCatalog {
   batInput      Float?
   specialProp      Json?
   connectorLayouts Json?
+  connectorRules   Json?
   active           Boolean        @default(true)
   instances        PartInstance[]
 }

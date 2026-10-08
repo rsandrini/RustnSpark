@@ -1,6 +1,12 @@
 import { client } from '../../api/client';
 import type * as dto from '../../api/generated';
 
+export interface ConnectorRulesPreview {
+  problem: string | null;
+  combos: { sides: Record<'N' | 'E' | 'S' | 'W', 'none' | 'central' | 'split' | 'universal'>; probability: number }[];
+  samples: { cells: dto.ConnectorCell[] }[];
+}
+
 export const tuningApi = {
   async listConfig(): Promise<dto.ConfigEntryResponse[]> {
     return client.get<dto.ConfigEntryResponse[]>('/v1/admin/tuning/config');
@@ -58,6 +64,30 @@ export const tuningApi = {
     return client.post<{ revisions: dto.TuningRevisionResponse[] }>('/v1/admin/tuning/bundle', {
       entries,
     });
+  },
+
+  async uploadArt(kind: 'factions' | 'locations', id: string, slot: string, file: Blob): Promise<dto.ArtChange> {
+    return client.post<dto.ArtChange>(
+      `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
+      file,
+    );
+  },
+
+  async resetArt(kind: 'factions' | 'locations', id: string, slot: string): Promise<dto.ArtChange> {
+    return client.delete<dto.ArtChange>(
+      `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
+    );
+  },
+
+  /** The server's own enumeration + sample generations for a connector rules payload. */
+  async previewConnectorRules(body: {
+    rules: unknown;
+    w: number;
+    h: number;
+    partClass: string;
+    samples?: number;
+  }): Promise<ConnectorRulesPreview> {
+    return client.post<ConnectorRulesPreview>('/v1/admin/tuning/connector-rules/preview', body);
   },
 
   async getEntitySchema(entity: string): Promise<dto.EntitySchemaResponse> {

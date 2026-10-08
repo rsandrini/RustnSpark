@@ -13,12 +13,14 @@ import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 
 import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
-import { RIGHT_ANGLE, type ConnectorLayout } from '../parts/connectors.js';
+import type { ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout } from './auto-layout.js';
 import { applyConnectivity } from './connectivity.js';
+import { withDirectionProblems } from './direction.js';
+import { routeCoverage, type RouteCoverage } from './route-coverage.js';
 import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
@@ -57,6 +59,8 @@ export interface ShipResponse {
   disconnectedPartIds: string[];
   /** What the ship is doing now: drives the animated ship stage. */
   activity: ShipActivity;
+  /** The sheet's range read as routes: how many a full tank crosses; null = no fuel burn. */
+  routeCoverage: RouteCoverage | null;
 }
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
@@ -74,6 +78,7 @@ export interface PreviewResponse {
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];
+  routeCoverage: RouteCoverage | null;
 }
 
 @Injectable()
@@ -193,13 +198,19 @@ export class ShipsService implements OnModuleInit {
     const connectedIds = connectedPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance);
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    const viability = checkViability(sheet, installedConnected, rules);
+    const viability = withDirectionProblems(
+      checkViability(sheet, installedConnected, rules),
+      effectiveLayout,
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
     return {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
       viability,
       layout: effectiveLayout,
       omittedPartInstanceIds,
+      routeCoverage: await this.routeCoverageFor(sheet),
       disconnectedPartIds: installed
         .filter((p) => !connectedIds.has(p.instance.id))
         .map((p) => p.instance.id),
@@ -248,6 +259,7 @@ export class ShipsService implements OnModuleInit {
       layout: (ship.layout as unknown as Placement[]) ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],
+      routeCoverage: await this.routeCoverageFor(sheet),
     };
   }
 
@@ -318,8 +330,9 @@ export class ShipsService implements OnModuleInit {
     const fits = (placement: Placement): boolean => {
       const part = catalogMap.get(placement.partInstanceId);
       if (part === undefined) return false;
-      const width = placement.rot === RIGHT_ANGLE ? part.h : part.w;
-      const height = placement.rot === RIGHT_ANGLE ? part.w : part.h;
+      const swapped = placement.rot % HALF_TURN !== 0;
+      const width = swapped ? part.h : part.w;
+      const height = swapped ? part.w : part.h;
       for (let dx = 0; dx < width; dx += 1) {
         for (let dy = 0; dy < height; dy += 1) {
           if (!newCells.has(cellKey(placement.gx + dx, placement.gy + dy))) return false;
@@ -401,7 +414,15 @@ export class ShipsService implements OnModuleInit {
     }
 
     const catalogMap = buildCatalogMapFromPrisma(playerParts);
-    const geometryErrors = validateLayout(layout, catalogMap, formatCellsFromJson(ship.format.cells));
+    const connectorsByInstance = new Map(
+      playerParts.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
+    );
+    const geometryErrors = validateLayout(
+      layout,
+      catalogMap,
+      formatCellsFromJson(ship.format.cells),
+      connectorsByInstance,
+    );
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
         error: 'INVALID_LAYOUT',
@@ -500,7 +521,27 @@ export class ShipsService implements OnModuleInit {
         .map((row) => row.id),
       yard: { cells: ship.format.cells as [number, number][] },
       activity,
+      routeCoverage: await this.routeCoverageFor(sheet),
     };
+  }
+
+  // The sheet's range as "covers N of M routes": every route's distance with its harshest
+  // environment's fuel multiplier, so it follows whatever the Admin tunes on routes/environments.
+  private async routeCoverageFor(sheet: ShipSheet): Promise<RouteCoverage | null> {
+    if (sheet.fuelUse <= 0) return null;
+    const routes = await this.prisma.route.findMany({
+      select: {
+        distance: true,
+        routeEnvironments: { select: { environment: { select: { fuelMult: true } } } },
+      },
+    });
+    return routeCoverage(
+      sheet,
+      routes.map((route) => ({
+        distance: route.distance,
+        envFuelMult: Math.max(1, ...route.routeEnvironments.map((link) => link.environment.fuelMult)),
+      })),
+    );
   }
 
   /**
@@ -538,6 +579,8 @@ type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog }
 type ShipWithFormat = Prisma.ShipGetPayload<{
   include: { format: { select: { cells: true } } };
 }>;
+
+const HALF_TURN = 180;
 
 function toInstalledPart(part: PartInstanceWithCatalog): InstalledPart {
   return { instance: part, catalog: pickCatalogStats(part.partCatalog) };

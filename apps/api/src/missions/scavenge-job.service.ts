@@ -81,6 +81,8 @@ export class ScavengeJobService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
+    // Deliberately NO direction-rule check here: scavenging is manual work at the current location,
+    // not a trip flown with the ship (engine exhaust / weapon facing only matter when it travels).
     const viability = checkViability(sheet, installedConnected, rules);
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

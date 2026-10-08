@@ -427,3 +427,46 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
     expect(engineLoss).toBeGreaterThan(cargoLoss * 5);
   });
 });
+
+describe('RACE missions', () => {
+  const field = [
+    { id: 'rival-1', name: 'Comet Runner', mobility: 2 },
+    { id: 'rival-2', name: 'Vega Dart', mobility: 2.5 },
+    { id: 'rival-3', name: 'Halo Sprint', mobility: 3 },
+  ];
+  const raceMission = (competitors = field) =>
+    mission({ type: 'RACE', objectCarried: false, race: { competitors } });
+  const withMobility = (mob: number) => snapshot({ sheet: { ...snapshot().sheet, mob } });
+
+  it('a ship faster than the whole field wins: a race_result event and the top prize', () => {
+    const out = resolve('race-1', withMobility(8), raceMission());
+    const result = out.events.find((event) => event.type === 'race_result');
+    expect(result?.race?.place).toBe(1);
+    expect(result?.race?.standings).toHaveLength(4);
+    expect(out.status).toBe('success');
+    const payout = out.events.find((event) => event.type === 'mission_payout');
+    expect(payout?.effects.credits).toBeGreaterThan(0);
+    expect(out.creditsDelta).toBeGreaterThanOrEqual(payout?.effects.credits ?? 0);
+  });
+
+  it('a slow ship finishes off the podium: no prize and a partial result', () => {
+    const slowField = [1, 2, 3, 4].map((n) => ({ id: `r${n}`, name: `R${n}`, mobility: 6 }));
+    const out = resolve('race-2', withMobility(1), raceMission(slowField));
+    expect(out.events.find((event) => event.type === 'race_result')?.race?.place).toBe(5);
+    expect(out.events.some((event) => event.type === 'mission_payout')).toBe(false);
+    expect(out.status).toBe('partial_failure');
+  });
+
+  it('is deterministic, and pays 1st more than 2nd more than 3rd', () => {
+    expect(resolve('race-3', withMobility(5), raceMission())).toEqual(
+      resolve('race-3', withMobility(5), raceMission()),
+    );
+    const calm: GameRules = { ...rules, race: { ...rules.race, time_jitter: 0 } };
+    const prize = (mob: number): number =>
+      resolveMission({ seed: 'prizes', snapshot: withMobility(mob), mission: raceMission(), rules: calm }).events.find(
+        (event) => event.type === 'mission_payout',
+      )?.effects.credits ?? 0;
+    expect(prize(8)).toBeGreaterThan(prize(2.8));
+    expect(prize(2.8)).toBeGreaterThan(prize(2.2));
+  });
+});

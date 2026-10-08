@@ -11,7 +11,7 @@ import { assertClean, flyOneMission, registerAndLaunch, walletOf } from './suppo
 test('buy a part, see it in your goods, sell it back for less than you paid', async ({ page }) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/port');
-  await expect(page.getByRole('heading', { name: 'Port', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Market' })).toBeVisible();
   const before = await walletOf(page);
 
   // Cheapest thing the player can afford.
@@ -76,11 +76,9 @@ test('repair: worn parts are quoted, confirmed and charged; a clean ship says so
     return;
   }
   const before = await walletOf(page);
-  // Nothing is selected until the pilot moves a slider; "Set all to 100%" selects the whole ship,
-  // the screen shows the server's price and time per part and in total, and "Start repair"
+  // The whole ship is preselected; the screen shows the server's price and time per part and in
+  // total, and "Start repair"
   // opens the confirmation dialog.
-  await expect(page.getByTestId('repair-summary')).toContainText('Nothing selected yet');
-  await page.getByRole('button', { name: 'Set all to 100%' }).click();
   await expect(page.getByTestId('repair-total')).toContainText('¢');
   await page.getByTestId('repair-summary').getByRole('button', { name: 'Start repair' }).click();
   const dialog = page.getByRole('dialog');

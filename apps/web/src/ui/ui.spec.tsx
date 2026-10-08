@@ -38,10 +38,11 @@ describe('RiskBadge', () => {
 
 describe('FactionBadge', () => {
   it('maps known factions to their color and falls back to independent', () => {
-    const { rerender } = renderWithProviders(<FactionBadge factionId="luna" />);
+    const first = renderWithProviders(<FactionBadge factionId="luna" />);
     expect(screen.getByText('Luna Authority')).toHaveClass('fac', 'luna');
+    first.unmount();
 
-    rerender(<FactionBadge factionId="some-corporation" />);
+    renderWithProviders(<FactionBadge factionId="some-corporation" />);
     expect(screen.getByText('Independent')).toHaveClass('fac', 'neutro');
   });
 });

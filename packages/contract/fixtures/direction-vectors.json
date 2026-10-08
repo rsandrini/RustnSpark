@@ -1,0 +1,501 @@
+{
+ "facingOf": {
+  "0": "W",
+  "90": "N",
+  "180": "E",
+  "270": "S"
+ },
+ "scenarios": [
+  {
+   "name": "engine alone",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "bridge east of an engine facing W is fine",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "b",
+     "gx": 1,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "part west of an engine facing W blocks it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 1,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "e",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "same layout, engine turned to face E is fine",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 1,
+     "gy": 0,
+     "rot": 180
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "engine facing N with a part above is blocked",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 0,
+     "gy": 1,
+     "rot": 90
+    }
+   ],
+   "expected": [
+    {
+     "id": "e",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "engine facing N with a part below is fine",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 0,
+     "gy": 0,
+     "rot": 90
+    },
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "2x1 engine: part further west diagonally is blocked",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 2,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 2,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "e",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "2x1 engine: parts under the engine are fine",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 2,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    },
+    "c": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 2,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 1,
+     "rot": 0
+    },
+    {
+     "id": "c",
+     "gx": 3,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "2x1 engine rotated 90 faces N: its far end is its own",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 2,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 2,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 0,
+     "gy": 0,
+     "rot": 90
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "weapon facing S with a part below is blocked",
+   "parts": {
+    "w": {
+     "class": "WEAPON",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "w",
+     "gx": 0,
+     "gy": 0,
+     "rot": 270
+    },
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "w",
+     "code": "FACING_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "weapon facing S with a part beside is fine",
+   "parts": {
+    "w": {
+     "class": "WEAPON",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "w",
+     "gx": 0,
+     "gy": 0,
+     "rot": 270
+    },
+    {
+     "id": "b",
+     "gx": 1,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "weapon facing W in the middle of a row is blocked",
+   "parts": {
+    "w": {
+     "class": "WEAPON",
+     "w": 1,
+     "h": 1
+    },
+    "a": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "a",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "w",
+     "gx": 1,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "w",
+     "code": "FACING_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "non-directional parts are never flagged",
+   "parts": {
+    "a": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "a",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "b",
+     "gx": 1,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "two engines in a column share the same rear edge",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "f": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "f",
+     "gx": 3,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "the engine in front of another blocks it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "f": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "f",
+     "gx": 4,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "f",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  }
+ ]
+}

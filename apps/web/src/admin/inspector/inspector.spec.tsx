@@ -22,6 +22,7 @@ const sheet = {
     credits: 1200,
     locale: 'en',
     factionId: 'luna',
+    debugFastOps: false,
     createdAt: '2026-09-01T00:00:00.000Z',
   },
   ships: [
@@ -199,6 +200,35 @@ describe('support actions (S11.5, S11.4 acceptance)', () => {
 
     await waitFor(() => expect(banBody).toEqual({ reason: 'repeat offender' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('turns the player\'s fast-missions switch on with a reason, from the player sheet', async () => {
+    mockReads();
+    let body: unknown = null;
+    server.use(
+      http.post(`/v1/admin/players/${playerId}/debug-fast-ops`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({
+          action: 'SUPPORT_DEBUG_FAST_OPS',
+          target: playerId,
+          before: { debugFastOps: false },
+          after: { debugFastOps: true },
+        });
+      }),
+    );
+    const user = userEvent.setup();
+    renderDetail();
+
+    // the current state is visible on the sheet, and the button offers the opposite
+    expect(await screen.findByText('Fast missions')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Fast missions: turn on' }));
+    const dialog = await screen.findByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: 'Confirm' });
+    expect(confirm).toBeDisabled();
+    await user.type(within(dialog).getByLabelText('Reason'), 'playtest');
+    await user.click(confirm);
+
+    await waitFor(() => expect(body).toEqual({ enabled: true, reason: 'playtest' }));
   });
 
   it('sends grant amounts with the reason and surfaces API rejections', async () => {

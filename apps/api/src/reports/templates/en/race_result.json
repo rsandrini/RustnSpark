@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Race over: you crossed the line in place {magnitude}.",
+    "The field is in — you finished #{magnitude}."
+  ]
+}

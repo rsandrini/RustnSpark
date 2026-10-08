@@ -122,6 +122,12 @@ export const adminApi = {
       { reason },
       { idempotencyKey: key },
     ),
+  setDebugFastOps: (playerId: string, enabled: boolean, reason: string, key: string) =>
+    client.post<SupportResult>(
+      `/v1/admin/players/${playerId}/debug-fast-ops`,
+      { enabled, reason },
+      { idempotencyKey: key },
+    ),
   resetPlayer: (playerId: string, reason: string, key: string) =>
     client.post<SupportResult>(
       `/v1/admin/players/${playerId}/reset`,

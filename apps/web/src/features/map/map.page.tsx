@@ -22,6 +22,7 @@ import { Popup } from '../../ui/Popup';
 import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
 import { RiskBadge } from '../../ui/RiskBadge';
+import { useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
@@ -29,6 +30,7 @@ import { transitPollInterval } from '../transit/poll';
 const NODE_RADIUS = 9;
 const VIEW_PADDING = 70;
 
+// Built-in fallback colours; the admin-edited faction colour (database) wins when the server lists it.
 const FACTION_VAR: Record<string, string> = {
   luna: '--luna',
   sun: '--sun',
@@ -44,6 +46,7 @@ export interface MapPageProps {
 export function MapPage({ guided = false }: MapPageProps) {
   const { t, i18n } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const factions = useFactions().byId;
 
   const worldQuery = useQuery({
     queryKey: ['world'],
@@ -156,6 +159,7 @@ export function MapPage({ guided = false }: MapPageProps) {
               ? `${nameOf(location)} — ${t('map.youAreHere')}`
               : nameOf(location);
             const factionVar = FACTION_VAR[location.factionId] ?? '--neutro';
+            const factionColor = factions[location.factionId]?.color;
             return (
               <g
                 key={location.id}
@@ -188,7 +192,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                   cx={location.x}
                   cy={location.y}
                   r={NODE_RADIUS + 3}
-                  style={{ stroke: `var(${factionVar})` }}
+                  style={{ stroke: factionColor ?? `var(${factionVar})` }}
                 />
                 {isHere && (
                   <>

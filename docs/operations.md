@@ -106,6 +106,51 @@ an untested backup is a hope. Because mission resolution is deterministic (D19) 
 `MissionLog` stores its seed, rules hash and dispatch snapshot, any mission can be replayed from a
 restored database (Admin → Players → report → Replay).
 
+### 5.1 Keeping Admin-tuned values across a DB reset
+
+A reset (drop/recreate DB) loses everything tuned in the Admin. Save it first, re-apply after:
+
+```sh
+# 1. BEFORE the reset: export GameConfig + every entity table (read-only)
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --export /tmp/tuning.json
+docker compose cp api:/tmp/tuning.json ./backups/tuning-snapshot-$(date +%F).json
+
+# 2. reset the DB, then migrate + seed as usual (seed fills defaults only)
+
+# 3. AFTER: dry run (default) — shows creates/updates/unchanged and rows that fail validation
+docker compose cp ./backups/tuning-snapshot-<date>.json api:/tmp/tuning.json
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json
+# 4. apply (snapshot values win over seed defaults; exits 1 if any row failed)
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json --apply
+```
+
+Notes: fields the running build no longer has (e.g. a retired column) are skipped and listed
+under `skippedFields`; `null` values in the snapshot ("never set") are left at whatever the seed
+filled. Every applied row writes an audited tuning revision (actor `tuning-snapshot-cli`).
+
+The snapshot also carries the faction and location **art references** (file names). The image
+files themselves are not in it: they live on the `art-data` volume (section 5.2), so keep that
+volume across a reset — or re-upload from the Admin — or the references point at nothing.
+
+### 5.2 Uploaded art (`art-data` volume)
+
+Faction art (banner, logo, background) and place art (wide, square, icon) are uploaded in the
+Admin (Tuning → Factions / Locations). Files are stored by content hash under `ART_DIR`
+(`/data/art` in the containers, named volume `art-data`; `./data/art` for local runs, see
+`.env.example`) and served publicly and immutably at `GET /v1/art/:file`. SVGs are scanned and
+sandboxed on upload. Back the volume up with the database; `docker compose down -v` deletes it.
+Public lists for the web client: `GET /v1/factions` (authenticated: names, descriptions, colours,
+art) and `GET /v1/places/art`.
+
+### 5.3 RACE missions
+
+A RACE is a competition against 3–5 generated rival ships; the pilot needs a fast ship (entry
+speed). Everything is tunable under the `race.*` config keys (Tuning → Config): `competitors_min`
+/ `competitors_max`, `min_mobility` (entry speed), `reference_mob`, `speed_spread`,
+`time_jitter` and `prize_share_1..3` (prize multipliers for places 1–3). An offer keeps the entry
+speed it was generated with, so a change applies to offers generated afterwards. The board and
+transit screens show the rivals' speeds and times; the mission report shows the standings.
+
 ## 6. Operating the game
 
 | Situation | Action |

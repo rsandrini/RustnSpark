@@ -4,7 +4,13 @@ import type { InstalledPart } from '../parts/part.types.js';
 import type { ShipSheet } from '../ships/sheet.types.js';
 
 export type RequirementReasonCode =
-  'CARGO_TYPE' | 'PRESSURIZED_LIFE_SUPPORT' | 'WEAPONS' | 'MIN_MOBILITY' | 'MINER' | 'SPEED';
+  | 'CARGO_TYPE'
+  | 'PRESSURIZED_LIFE_SUPPORT'
+  | 'WEAPONS'
+  | 'MIN_MOBILITY'
+  | 'MINER'
+  | 'SPEED'
+  | 'RACE_SPEED';
 
 export interface RequirementReason {
   code: RequirementReasonCode;
@@ -39,6 +45,11 @@ const SPEED: RequirementReason = {
   message: 'Mobility is below the rescue reference speed.',
 };
 
+const RACE_SPEED: RequirementReason = {
+  code: 'RACE_SPEED',
+  message: 'Mobility is below the race entry minimum.',
+};
+
 const ESCORT_MOBILITY_MIN = 2;
 
 export interface MissionRequirementInput {
@@ -51,6 +62,8 @@ export interface MissionRequirementInput {
 interface RequirementHints {
   readonly cargo?: number;
   readonly speed?: number;
+  /** RACE: the entry minimum for this template (else `race.min_mobility`). */
+  readonly minMobility?: number;
 }
 
 function threshold(value: unknown): number | undefined {
@@ -62,7 +75,11 @@ function parseHints(requirements: unknown): RequirementHints {
     return {};
   }
   const record = requirements as Record<string, unknown>;
-  return { cargo: threshold(record.cargo), speed: threshold(record.speed) };
+  return {
+    cargo: threshold(record.cargo),
+    speed: threshold(record.speed),
+    minMobility: threshold(record.minMobility),
+  };
 }
 
 export interface RequirementCheck extends RequirementReason {
@@ -105,6 +122,8 @@ export function missionRequirementChecklist(
     case 'SCAVENGE':
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       return [];
+    case 'RACE':
+      return [{ ...RACE_SPEED, met: sheet.mob >= (hints.minMobility ?? rules.race.min_mobility) }];
     case 'RESCUE':
       return [
         { ...CARGO_TYPE, met: sheet.crg >= cargoNeeded || hasCabin },

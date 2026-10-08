@@ -10,6 +10,7 @@ import {
   useNumberFormat,
   type PartCompareContext,
 } from '../parts/part-detail';
+import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
 import { useClampedPosition } from '../parts/use-hover-card-position';
 
@@ -51,6 +52,14 @@ export function TrayPartRow({ part, name, disabled, selected, onSelect, compare 
           )}
         </span>
         <span className="meta">{partSummary(part.catalog, t, format)}</span>
+        {part.connectors.length > 0 && (
+          <ConnectorGrid
+            w={part.catalog.w}
+            h={part.catalog.h}
+            connectors={part.connectors}
+            size="mini"
+          />
+        )}
         <Gauge
           value={Math.round(part.condition)}
           max={100}

@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import request from 'supertest';
+import { Prisma } from '@prisma/client';
 import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
@@ -36,6 +37,7 @@ interface MarketListingBody {
     price: number;
     condition: number;
     rarity: string;
+    connectors: Array<{ dx: number; dy: number; side: string; kind: string }>;
   }>;
   sellOffers: Array<{ partInstanceId: string; price: number }>;
 }
@@ -198,21 +200,16 @@ describe('market API (S8.2)', () => {
     expect(instance.ownerPlayerId).toBe(player.seeded.player.id);
   });
 
-  it('rolls connectors once at purchase, from the catalog\'s own candidates (round 11, Connectors v0.1)', async () => {
+  it('shows a listing\'s generated connectors before buying and stores exactly those on purchase', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    await prisma.partCatalog.update({
-      where: { partType: 'cargo' },
-      data: {
-        connectorLayouts: [{ cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] }],
-      },
-    });
-
+    // The fresh seed gives every part type factory-default rules (fill-if-null seeding).
     const board = await getMarket(player.token, 'ceres');
     const listing = (board.body as MarketListingBody).listings.find(
       (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
     );
     expect(listing).toBeDefined();
+    expect(listing!.connectors.length).toBeGreaterThan(0);
 
     const response = await buy(player.token, randomUUID(), {
       listingId: listing!.listingId,
@@ -222,19 +219,43 @@ describe('market API (S8.2)', () => {
     const instanceId = (response.body as { partInstanceId: string }).partInstanceId;
 
     const row = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
-    expect(row.connectors).toEqual({ cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] });
+    expect(row.connectors).toEqual({ cells: listing!.connectors });
   });
 
-  it('rolls null (the universal fallback) when the catalog has no connectorLayouts', async () => {
+  it('a used listing\'s connectors are the ones the bought instance stores', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    // 'cargo' has no connectorLayouts in the fresh seed — this is the default state of every
-    // part type today.
+    const board = await getMarket(player.token, 'ceres');
+    const used = (board.body as MarketListingBody).listings.find((entry) => entry.kind === 'used');
+    expect(used).toBeDefined();
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: used!.price },
+    });
+    const response = await buy(player.token, randomUUID(), {
+      listingId: used!.listingId,
+      expectedPrice: used!.price,
+    });
+    expect(response.status).toBe(200);
+    const row = await prisma.partInstance.findUniqueOrThrow({
+      where: { id: (response.body as { partInstanceId: string }).partInstanceId },
+    });
+    expect(row.connectors).toEqual(used!.connectors.length > 0 ? { cells: used!.connectors } : null);
+  });
+
+  it('lists empty connectors and stores null (universal fallback) when the type has no rules', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await prisma.partCatalog.update({
+      where: { partType: 'cargo' },
+      data: { connectorRules: Prisma.DbNull },
+    });
     const board = await getMarket(player.token, 'ceres');
     const listing = (board.body as MarketListingBody).listings.find(
       (entry) => entry.kind === 'catalog' && entry.partType === 'cargo',
     );
     expect(listing).toBeDefined();
+    expect(listing!.connectors).toEqual([]);
 
     const response = await buy(player.token, randomUUID(), {
       listingId: listing!.listingId,
@@ -245,7 +266,7 @@ describe('market API (S8.2)', () => {
     expect(row.connectors).toBeNull();
   });
 
-  it('does not retroactively reroll an existing instance when its catalog later gains connectorLayouts (no backfill, ever)', async () => {
+  it('does not retroactively change an existing instance when admin later edits the rules (generated is final)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const board = await getMarket(player.token, 'ceres');
@@ -260,15 +281,24 @@ describe('market API (S8.2)', () => {
     });
     const instanceId = (response.body as { partInstanceId: string }).partInstanceId;
     const before = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
-    expect(before.connectors).toBeNull(); // bought before the catalog had any candidates
+    expect(before.connectors).not.toBeNull();
 
     await prisma.partCatalog.update({
       where: { partType: 'cargo' },
-      data: { connectorLayouts: [{ cells: [{ dx: 0, dy: 0, side: 'N', kind: 'universal' }] }] },
+      data: {
+        connectorRules: {
+          sides: {
+            N: [{ kind: 'universal', weight: 1 }],
+            E: [{ kind: 'universal', weight: 1 }],
+            S: [{ kind: 'universal', weight: 1 }],
+            W: [{ kind: 'universal', weight: 1 }],
+          },
+        },
+      },
     });
 
     const after = await prisma.partInstance.findUniqueOrThrow({ where: { id: instanceId } });
-    expect(after.connectors).toBeNull(); // unchanged — no backfill job touched it
+    expect(after.connectors).toEqual(before.connectors);
   });
 
   it('buy is idempotent: missing key 400, same key+body replays once', async () => {

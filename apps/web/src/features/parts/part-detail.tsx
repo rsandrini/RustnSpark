@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import type { LocalizedText, PartCatalogStats, PreviewResponse, ShipSheet } from '../../api/generated';
+import type { ConnectorCell, LocalizedText, PartCatalogStats, PreviewResponse, ShipSheet } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
+import { ConnectorGrid } from './connector-grid';
 
 // What every screen that shows a part (market, hangar tray, ship grid) needs to explain it.
 // Inventory items and market listings both satisfy this shape.
@@ -16,6 +17,9 @@ export interface PartInfoData {
   rarity: string;
   catalog: PartCatalogStats;
   condition?: number;
+  /** The part's generated connector cells (market listing / owned instance); empty or absent =
+      no stored layout. */
+  connectors?: readonly ConnectorCell[];
   /** Dead: counts for nothing until repaired. */
   broken?: boolean;
   price?: number;
@@ -311,6 +315,16 @@ export function PartDetail({ part, compare }: PartDetailProps) {
         )}
       </p>
       {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
+      {part.connectors !== undefined && part.connectors.length > 0 && (
+        <div className="part-ports">
+          <ConnectorGrid w={catalog.w} h={catalog.h} connectors={part.connectors} />
+          <small>
+            <b>{t('connectors.title')}</b>
+            <br />
+            {t('connectors.fixed')}
+          </small>
+        </div>
+      )}
       {compare !== undefined && (
         <>
           {replaceCandidates.length > 0 && (
@@ -453,6 +467,12 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
           .filter((piece) => piece !== null)
           .join(' · ')}
       </p>
+      {part.connectors !== undefined && part.connectors.length > 0 && (
+        <div className="part-ports">
+          <ConnectorGrid w={catalog.w} h={catalog.h} connectors={part.connectors} />
+          <small>{t('connectors.title')}</small>
+        </div>
+      )}
       {viabilityProblems.length > 0 && (
         <ul className="compare-viability-warning">
           {viabilityProblems.map((problem) => (

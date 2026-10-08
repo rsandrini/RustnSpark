@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { cellKey, connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import { directionErrors } from '../../../src/ships/direction.js';
 import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
 
@@ -250,6 +251,39 @@ describe('connectedPartIds', () => {
     expect(result).toEqual(new Set(['p-bridge'])); // the bridge is always connected to itself
   });
 
+  it('follows a rotated multi-cell part: the authored cell/side maps to the right world cell', () => {
+    // 2x1 "wide" authored left->right, placed rot 90 (clockwise) below the bridge, so it runs
+    // top->bottom: authored cell (0,0) is the top world cell, (1,0) the bottom one, and the
+    // authored E edge of (1,0) faces world SOUTH. A tank sits below it.
+    const WIDE: PartCatalog = { ...POD, partType: 'wide', w: 2, h: 1 };
+    const catalog = new Map([
+      ['p-bridge', BRIDGE],
+      ['p-wide', WIDE],
+      ['p-tank', POD],
+    ]);
+    const layout: Placement[] = [
+      { partInstanceId: 'p-bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'p-wide', gx: 0, gy: 1, rot: 90 },
+      { partInstanceId: 'p-tank', gx: 0, gy: 3, rot: 0 },
+    ];
+    const connectors = new Map<string, ConnectorLayout | null>([
+      ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] }],
+      [
+        'p-wide',
+        {
+          cells: [
+            { dx: 0, dy: 0, side: 'W', kind: 'central' }, // -> world N of the top cell
+            { dx: 1, dy: 0, side: 'E', kind: 'central' }, // -> world S of the bottom cell
+          ],
+        },
+      ],
+      ['p-tank', { cells: [{ dx: 0, dy: 0, side: 'N', kind: 'central' }] }],
+    ]);
+    expect(connectedPartIds(layout, catalog, connectors)).toEqual(
+      new Set(['p-bridge', 'p-wide', 'p-tank']),
+    );
+  });
+
   it('does not connect central to split', () => {
     const connectors = new Map<string, ConnectorLayout | null>([
       ['p-bridge', { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'central' }] }],
@@ -357,5 +391,48 @@ describe('validateLayout — no more DISCONNECTED', () => {
 describe('cellKey', () => {
   it('matches the key format used to build a format cell set', () => {
     expect(cellKey(3, -2)).toBe('3,-2');
+  });
+});
+
+describe('direction rules are not part of validateLayout (free placement) but of flight viability', () => {
+  const base: PartCatalog = {
+    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
+    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
+    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+  };
+  const catalog = new Map<string, PartCatalog>([
+    ['e', { ...base, partClass: 'ENGINE' }],
+    ['p', base],
+  ]);
+
+  it('reports EXHAUST_BLOCKED when a part is behind the engine, and clears it once the engine is turned', () => {
+    const behind: Placement[] = [
+      { partInstanceId: 'p', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'e', gx: 1, gy: 0, rot: 0 },
+    ];
+    // saving is never blocked: the geometry check stays clean even with a part behind the engine
+    expect(validateLayout(behind, catalog)).toEqual([]);
+    expect(directionErrors(behind, catalog).map((e) => e.code)).toEqual(['EXHAUST_BLOCKED']);
+    expect(
+      directionErrors([behind[0]!, { ...behind[1]!, rot: 180 }], catalog).map((e) => e.code),
+    ).toEqual([]);
+  });
+
+  it('reports FACING_CONNECTOR for a connector on the facing side but not for a legacy part', () => {
+    const layout: Placement[] = [{ partInstanceId: 'e', gx: 0, gy: 0, rot: 0 }];
+    const bad = new Map<string, ConnectorLayout | null>([
+      ['e', { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] }],
+    ]);
+    expect(directionErrors(layout, catalog, bad).map((e) => e.code)).toEqual(['FACING_CONNECTOR']);
+    expect(directionErrors(layout, catalog, new Map([['e', null]]))).toEqual([]);
+  });
+
+  it('treats 180 as a non-swapping rotation for footprints', () => {
+    const wide = new Map<string, PartCatalog>([['w', { ...base, w: 2, h: 1 }]]);
+    const cells = new Set(['0,0', '1,0']);
+    expect(validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 180 }], wide, cells)).toEqual([]);
+    expect(
+      validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 90 }], wide, cells).map((e) => e.code),
+    ).toEqual(['OUT_OF_BOUNDS']);
   });
 });

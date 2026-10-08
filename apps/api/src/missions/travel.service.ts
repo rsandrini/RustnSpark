@@ -12,6 +12,7 @@ import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity } from '../ships/connectivity.js';
+import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { checkViability } from '../ships/viability.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -221,7 +222,12 @@ export class TravelService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    const viability = checkViability(sheet, installedConnected, rules);
+    const viability = withDirectionProblems(
+      checkViability(sheet, installedConnected, rules),
+      (ship.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+    );
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({

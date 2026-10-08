@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { connectorRulesSchema } from '../../parts/connector-rules.js';
 
 export type EntityFieldType =
   | 'string'
@@ -9,7 +10,7 @@ export type EntityFieldType =
   | 'enum'
   | 'locale-map'
   | 'grid-cells'
-  | 'connector-layout';
+  | 'connector-rules';
 
 export interface EntitySchemaField {
   name: string;
@@ -20,6 +21,11 @@ export interface EntitySchemaField {
   max?: number;
   description?: { en: string; 'pt-BR': string };
   configKey?: string;
+  /** The entity (admin entity name) whose ids this string field refers to: the admin form
+      renders a select of its rows instead of free text. */
+  references?: string;
+  /** The literal stored for "no row" (e.g. 'none' for no mitigating part): the select offers it first. */
+  referenceNone?: string;
 }
 
 export interface EntitySchema {
@@ -48,23 +54,6 @@ const gridCellsSchema = z
     { message: 'cells must stay within the +/-15 drawing ceiling' },
   );
 
-// Connectors v0.1 (2026-10-02-connectors-v1-design.md): shape-only validation here (dx/dy
-// integers, side/kind enums) — the cross-field "cells stay within this part's own w x h"
-// check needs the sibling w/h fields on the same payload, which a single-field validator
-// can't see, so that lives in entity-tuning.service.ts's validateEntityRules hook instead.
-const connectorLayoutSchema = z.array(
-  z.object({
-    cells: z.array(
-      z.object({
-        dx: z.number().int(),
-        dy: z.number().int(),
-        side: z.enum(['N', 'E', 'S', 'W']),
-        kind: z.enum(['none', 'central', 'split', 'universal']),
-      }),
-    ),
-  }),
-);
-
 function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
   switch (field.type) {
     case 'string':
@@ -83,8 +72,8 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
       return localeMapSchema;
     case 'grid-cells':
       return gridCellsSchema;
-    case 'connector-layout':
-      return connectorLayoutSchema;
+    case 'connector-rules':
+      return connectorRulesSchema;
     default:
       return z.never();
   }
@@ -137,6 +126,7 @@ const MISSION_TYPE_VALUES = [
   'MINING',
   'RESCUE',
   'TRAVEL',
+  'RACE',
   'SCAVENGE',
 ];
 
@@ -201,7 +191,9 @@ const PART_FIELDS: EntitySchemaField[] = [
     name: 'structureCost',
     type: 'integer',
     required: true,
-    min: 0,
+    // Negative for bridges: they PROVIDE the structure budget (seeded -60 .. -150), so a 0 floor
+    // made every bridge un-saveable (and un-restorable) through the admin.
+    min: -1000,
     max: 1000,
     description: localeMap('Structure points consumed', 'Pontos de estrutura consumidos'),
   },
@@ -348,12 +340,12 @@ const PART_FIELDS: EntitySchemaField[] = [
     description: localeMap('Special properties', 'Propriedades especiais'),
   },
   {
-    name: 'connectorLayouts',
-    type: 'connector-layout',
+    name: 'connectorRules',
+    type: 'connector-rules',
     required: false,
     description: localeMap(
-      'Candidate connector layouts (one picked at random per instance)',
-      'Layouts de conectores candidatos (um sorteado por instância)',
+      'Connector generation rules (weights per side, caps, blacklist) — used only when a part is generated',
+      'Regras de geração de conectores (pesos por lado, limites, lista negra) — usadas só quando a peça é gerada',
     ),
   },
   {
@@ -500,6 +492,7 @@ const LOCATION_FIELDS: EntitySchemaField[] = [
     name: 'factionId',
     type: 'string',
     required: true,
+    references: 'factions',
     description: localeMap('Controlling faction', 'Facção controladora'),
   },
   {
@@ -537,6 +530,7 @@ const ROUTE_FIELDS: EntitySchemaField[] = [
     name: 'nodeAId',
     type: 'string',
     required: true,
+    references: 'locations',
     description: localeMap(
       'First location id (lexicographically smaller)',
       'ID do primeiro local (menor lexicograficamente)',
@@ -546,6 +540,7 @@ const ROUTE_FIELDS: EntitySchemaField[] = [
     name: 'nodeBId',
     type: 'string',
     required: true,
+    references: 'locations',
     description: localeMap(
       'Second location id (lexicographically larger)',
       'ID do segundo local (maior lexicograficamente)',
@@ -606,7 +601,8 @@ const ENVIRONMENT_FIELDS: EntitySchemaField[] = [
   },
   {
     name: 'subsystemTarget',
-    type: 'string',
+    type: 'enum',
+    enumValues: ['none', 'electronics', 'hull', 'engine'],
     required: false,
     description: localeMap('Targeted subsystem', 'Subsistema alvo'),
   },
@@ -614,6 +610,8 @@ const ENVIRONMENT_FIELDS: EntitySchemaField[] = [
     name: 'mitigatingPart',
     type: 'string',
     required: false,
+    references: 'parts',
+    referenceNone: 'none',
     description: localeMap('Part that mitigates the hazard', 'Peça que mitiga o perigo'),
   },
 ];
@@ -648,6 +646,7 @@ const MISSION_TEMPLATE_FIELDS: EntitySchemaField[] = [
     name: 'factionId',
     type: 'string',
     required: true,
+    references: 'factions',
     description: localeMap('Owning faction', 'Facção dona'),
   },
   {
@@ -691,7 +690,8 @@ const DROP_TABLE_FIELDS: EntitySchemaField[] = [
   },
   {
     name: 'source',
-    type: 'string',
+    type: 'enum',
+    enumValues: ['scavenging', 'npc_common', 'npc_elite'],
     required: true,
     description: localeMap('Drop source tag', 'Tag da fonte de drops'),
   },

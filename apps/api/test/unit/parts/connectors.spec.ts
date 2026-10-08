@@ -1,10 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from '@jest/globals';
+import { defaultConnectorRules } from '../../../src/parts/connector-rules.js';
 import {
+  authoredSideAt,
   compatible,
   rollConnectors,
   rotateSide,
   sideKindAt,
+  worldToAuthoredCell,
+  type ConnectorKind,
   type ConnectorLayout,
+  type ConnectorSide,
 } from '../../../src/parts/connectors.js';
 
 describe('compatible', () => {
@@ -66,26 +73,54 @@ describe('rotateSide', () => {
 });
 
 describe('rollConnectors', () => {
-  it('returns null (the universal fallback) when connectorLayouts is empty, absent, or malformed', () => {
-    expect(rollConnectors(null)).toBeNull();
-    expect(rollConnectors(undefined)).toBeNull();
-    expect(rollConnectors([])).toBeNull();
-    expect(rollConnectors('not an array')).toBeNull();
+  const tank = { w: 1, h: 1 };
+
+  it('returns null (the universal fallback) when the part type has no rules', () => {
+    expect(rollConnectors({ ...tank, connectorRules: null })).toBeNull();
+    expect(rollConnectors({ ...tank, connectorRules: { sides: {} } })).toBeNull();
   });
 
-  it('picks one of the candidates when connectorLayouts has entries', () => {
-    const candidates = [
-      { cells: [{ dx: 0, dy: 0, side: 'S', kind: 'central' }] },
-      { cells: [{ dx: 0, dy: 0, side: 'W', kind: 'central' }] },
-    ];
-    const seen = new Set<string>();
-    for (let i = 0; i < 50; i += 1) {
-      const result = rollConnectors(candidates);
-      expect(result).not.toBeNull();
-      seen.add(JSON.stringify(result));
+  it('generates from the rules, deterministically for a given seed', () => {
+    const rules = defaultConnectorRules('TANK');
+    const first = rollConnectors({ ...tank, connectorRules: rules }, 'listing-1');
+    expect(first?.cells.length).toBeGreaterThanOrEqual(1);
+    expect(rollConnectors({ ...tank, connectorRules: rules }, 'listing-1')).toEqual(first);
+  });
+});
+
+// Shared with the web mirror (apps/web/src/features/hangar/connectors.spec.ts): the same vectors
+// pin both implementations, so client marks and server connectivity cannot drift apart.
+describe('shared connector vectors', () => {
+  const vectors = JSON.parse(
+    readFileSync(
+      fileURLToPath(
+        new URL('../../../../../packages/contract/fixtures/connector-vectors.json', import.meta.url),
+      ),
+      'utf8',
+    ),
+  ) as {
+    compatible: [ConnectorKind, ConnectorKind, boolean][];
+    rotateSide: { side: ConnectorSide; rot: number; world: ConnectorSide }[];
+    cells: { w: number; h: number; rot: number; authored: [number, number]; world: [number, number] }[];
+  };
+
+  it('compatible matches every pair', () => {
+    for (const [a, b, expected] of vectors.compatible) expect(compatible(a, b)).toBe(expected);
+  });
+
+  it('rotateSide / authoredSideAt match at all four angles', () => {
+    for (const v of vectors.rotateSide) {
+      expect(rotateSide(v.side, v.rot)).toBe(v.world);
+      expect(authoredSideAt(v.world, v.rot)).toBe(v.side);
     }
-    // Over 50 rolls both candidates should show up — this is a randomness smoke test, not a
-    // strict distribution check (astronomically unlikely to false-fail at 50 draws from 2).
-    expect(seen.size).toBe(2);
+  });
+
+  it('worldToAuthoredCell inverts the placement for every footprint and angle', () => {
+    for (const v of vectors.cells) {
+      expect(worldToAuthoredCell(v.world[0], v.world[1], v.w, v.h, v.rot)).toEqual({
+        dx: v.authored[0],
+        dy: v.authored[1],
+      });
+    }
   });
 });

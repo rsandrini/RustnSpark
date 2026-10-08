@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createRng } from '../common/rng/rng.js';
+import { generateConnectors } from './connector-rules.js';
 
 export type ConnectorKind = 'none' | 'central' | 'split' | 'universal';
 export type ConnectorSide = 'N' | 'E' | 'S' | 'W';
@@ -15,15 +15,60 @@ export interface ConnectorLayout {
   readonly cells: readonly ConnectorCell[];
 }
 
-const ROTATE_CW: Record<ConnectorSide, ConnectorSide> = { N: 'E', E: 'S', S: 'W', W: 'N' };
+const SIDE_ORDER: readonly ConnectorSide[] = ['N', 'E', 'S', 'W'];
+const QUARTERS_PER_TURN = 4;
+const HALF_TURN_QUARTERS = 2;
 
 export const RIGHT_ANGLE = 90;
 
-/** A placement's `rot` (0 or 90) rotates connector sides the same way it already rotates
-    width/height in canPlace/validateLayout — the catalog/instance data is always stored
-    unrotated; this applies the transform where placements are evaluated. */
+/** Every legal placement rotation: clockwise quarter turns (0, 90, 180, 270). */
+export const ROTATIONS: readonly number[] = Array.from(
+  { length: QUARTERS_PER_TURN },
+  (_, quarter) => quarter * RIGHT_ANGLE,
+);
+
+function quarterTurns(rot: number): number {
+  return Math.round(rot / RIGHT_ANGLE);
+}
+
+/** The world-facing side an unrotated-AUTHORED side ends up on after `rot` degrees clockwise
+    (any multiple of 90 — placements are 0|90 today, 4-way once part-direction rules land). The
+    catalog/instance data is always stored unrotated; this applies the transform where
+    placements are evaluated. Pinned by packages/contract/fixtures/connector-vectors.json,
+    which the web mirror (hangar/connectors.ts) also tests against. */
 export function rotateSide(side: ConnectorSide, rot: number): ConnectorSide {
-  return rot === RIGHT_ANGLE ? ROTATE_CW[side] : side;
+  const index = SIDE_ORDER.indexOf(side) + quarterTurns(rot);
+  return SIDE_ORDER[((index % QUARTERS_PER_TURN) + QUARTERS_PER_TURN) % QUARTERS_PER_TURN]!;
+}
+
+/** Inverse of `rotateSide`: the authored side that faces `side` in the world at `rot`. */
+export function authoredSideAt(side: ConnectorSide, rot: number): ConnectorSide {
+  return rotateSide(side, -rot);
+}
+
+/** Which authored cell of a w x h part occupies world-footprint offset (wx, wy) once placed at
+    `rot` (clockwise). Rotation moves cells, not just sides: authored (dx, dy) of a w x h part
+    lands at (h-1-dy, dx) after one quarter turn, so a lookup into the authored layout must
+    undo that — indexing it with the rotated footprint's offsets directly is wrong for any
+    non-square part. */
+export function worldToAuthoredCell(
+  wx: number,
+  wy: number,
+  w: number,
+  h: number,
+  rot: number,
+): { dx: number; dy: number } {
+  const turns = ((quarterTurns(rot) % QUARTERS_PER_TURN) + QUARTERS_PER_TURN) % QUARTERS_PER_TURN;
+  // world footprint dims after `turns` quarter turns of a w x h part
+  const swapped = turns % HALF_TURN_QUARTERS !== 0;
+  let width = swapped ? h : w;
+  let height = swapped ? w : h;
+  let x = wx;
+  let y = wy;
+  for (let turn = 0; turn < turns; turn += 1) {
+    [x, y, width, height] = [y, width - 1 - x, height, width];
+  }
+  return { dx: x, dy: y };
 }
 
 /** central<->central, split<->split, universal<->anything-but-none. central and split never
@@ -49,16 +94,21 @@ export function sideKindAt(
   return match?.kind ?? 'none';
 }
 
-/** Picks one candidate layout uniformly at random, called once at instance-creation time —
-    never re-rolled. Returns null (the universal fallback) when there is nothing to pick from,
-    which is both "this part type has no authored candidates yet" and, by the same rule,
-    exactly what an instance created before this feature existed already has. No mission-seed
-    context exists at part-creation time (this is structural, not combat/economy-deterministic
-    per the spec), so this uses a fresh seed per roll — the same Rng.pick() shape every other
-    random choice in this codebase already goes through, just not a replay-chained one. */
-export function rollConnectors(connectorLayouts: unknown): ConnectorLayout | null {
-  if (!Array.isArray(connectorLayouts) || connectorLayouts.length === 0) return null;
-  const candidates = connectorLayouts as ConnectorLayout[];
-  const rng = createRng(randomUUID());
-  return rng.pick(candidates);
+/** Generates a part's concrete connector layout from its catalog row's admin-defined rules
+    (connector-rules.ts), called once at instance-creation time — never re-rolled. Returns null
+    (the universal fallback) when the part type has no rules configured, which is also exactly
+    what an instance created before this feature existed already has. `seed` defaults to a fresh
+    UUID (kits, scavenge finds); the market passes a listing-derived seed so the layout shown
+    before buying is the one the buyer gets. */
+export function rollConnectors(
+  row: { connectorRules: unknown; w: number; h: number },
+  seed: string = randomUUID(),
+  allowedKinds?: readonly ConnectorKind[],
+  fullPorts = false,
+): ConnectorLayout | null {
+  return generateConnectors(row.connectorRules, row.w, row.h, seed, allowedKinds, fullPorts);
 }
+
+/** Kit parts (starter / restart) never roll `split` and never leave a side bare: central and universal
+    join each other and themselves, so any kit can always be assembled into one connected ship. */
+export const KIT_KINDS: readonly ConnectorKind[] = ['central', 'universal'];

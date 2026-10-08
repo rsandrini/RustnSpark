@@ -1,7 +1,11 @@
 import {
   Allow,
   IsArray,
+  IsInt,
   IsNumber,
+  IsOptional,
+  Max,
+  Min,
   IsObject,
   IsString,
   MinLength,
@@ -86,4 +90,28 @@ export class RetireEntityDto {
   @IsString()
   @MinLength(3)
   reason!: string;
+}
+
+export class PreviewConnectorRulesDto {
+  @IsObject()
+  rules!: Record<string, unknown>;
+
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  w!: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  h!: number;
+
+  @IsString()
+  partClass!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(12)
+  samples?: number;
 }

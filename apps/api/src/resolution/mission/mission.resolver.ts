@@ -23,6 +23,7 @@ import type { FactionRelation, MissionType, Stance } from '../encounter/encounte
 import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
 import type { StoredPart } from '../encounter/pirate-motive.js';
 import { rollScavengeFinds, type ScavengeContext } from '../scavenge/scavenge.resolver.js';
+import { resolveRace, type RaceCompetitor } from '../race/race.resolver.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
 
@@ -62,6 +63,8 @@ export interface MissionInput {
   };
   /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
   readonly scavenge?: ScavengeContext;
+  /** RACE missions: the rival ships generated with the offer (frozen in its cargo). */
+  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
 }
 
 export interface ResolveMissionInput {
@@ -201,7 +204,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
   // Payment only when every leg completed. Trips and scavenging jobs pay nothing, so they write
   // no payment line either.
   const paysNothing = input.mission.type === 'TRAVEL' || input.mission.type === 'SCAVENGE';
-  if (status === 'success' && !paysNothing) {
+  // A race pays by finishing place, not by integrity: settled below.
+  const isRace = input.mission.type === 'RACE' && input.mission.race !== undefined;
+  if (status === 'success' && !paysNothing && !isRace) {
     const totalDistance = input.mission.legs.reduce((sum, leg) => sum + leg.distance, 0);
     const maxDanger = input.mission.legs.reduce(
       (peak, leg) => (leg.danger > peak ? leg.danger : peak),
@@ -253,6 +258,62 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           credits: payout,
         }),
       );
+    }
+  }
+
+  // A race the ship finished: everyone's time, the player's place, and the place's prize.
+  if (status === 'success' && isRace && input.mission.race !== undefined) {
+    const totalDistance = input.mission.legs.reduce((sum, leg) => sum + leg.distance, 0);
+    const result = resolveRace({
+      competitors: input.mission.race.competitors,
+      playerMobility: input.snapshot.sheet.mob,
+      totalDistance,
+      rules: input.rules,
+      rng: root.child('race'),
+    });
+    events.push(
+      missionEvent({
+        leg: lastLeg,
+        category: 'transit',
+        type: 'race_result',
+        actors,
+        magnitude: result.place,
+        race: {
+          place: result.place,
+          timeScale: input.rules.missions.time_scale,
+          standings: result.standings,
+        },
+      }),
+    );
+    if (result.prizeShare > 0) {
+      const maxDanger = input.mission.legs.reduce(
+        (peak, leg) => (leg.danger > peak ? leg.danger : peak),
+        0,
+      );
+      const base = rewardBase(
+        {
+          tier: input.mission.tier,
+          danger: maxDanger,
+          distance: totalDistance,
+          missionType: 'race',
+        },
+        input.rules,
+      );
+      const payout = base * result.prizeShare;
+      creditsDelta += payout;
+      events.push(
+        missionEvent({
+          leg: lastLeg,
+          category: 'payment',
+          type: 'mission_payout',
+          actors,
+          magnitude: payout,
+          credits: payout,
+        }),
+      );
+    } else {
+      // Finished, but off the podium: nothing to collect.
+      status = 'partial_failure';
     }
   }
 

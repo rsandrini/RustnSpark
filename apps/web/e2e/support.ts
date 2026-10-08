@@ -68,7 +68,7 @@ export async function registerAndLaunch(
 
 /** Credits shown in the port header, as a number. */
 export async function walletOf(page: Page): Promise<number> {
-  const text = await page.getByTestId('wallet').innerText();
+  const text = await page.getByTestId('topbar-wallet').innerText();
   return Number(text.replace(/[^\d-]/g, ''));
 }
 
@@ -76,7 +76,7 @@ export async function walletOf(page: Page): Promise<number> {
 export async function flyOneMission(page: Page): Promise<void> {
   await page.goto('/board');
   await page.locator('button:has-text("Accept"):not([disabled])').first().click();
-  await expect(page).toHaveURL(/\/transit/);
+  await expect(page).toHaveURL(/\/hangar/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
   // The transit screen sends the pilot to the report when the flight ends.
   await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });

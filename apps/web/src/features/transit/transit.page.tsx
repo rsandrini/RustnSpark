@@ -311,6 +311,8 @@ export function TransitPage({
         )}
       </div>
 
+      {mission.type === 'RACE' && <RaceRivals cargo={mission.cargo} />}
+
       {actionError !== null && (
         <p className="error-text" role="alert">
           {actionError}
@@ -450,5 +452,32 @@ export function TransitPage({
     <main className="app" data-guided={guided ? '' : undefined}>
       {body}
     </main>
+  );
+}
+
+interface Rival {
+  name: string;
+  mobility: number;
+}
+
+/** The rivals of an accepted race, fastest first — frozen in the mission when the offer was made. */
+function RaceRivals({ cargo }: { cargo: unknown }) {
+  const { t } = useTranslation();
+  const race = (cargo as { race?: { competitors?: unknown } } | null)?.race;
+  const rivals = (Array.isArray(race?.competitors) ? (race.competitors as Rival[]) : [])
+    .filter((rival) => typeof rival?.name === 'string' && typeof rival.mobility === 'number')
+    .sort((a, b) => b.mobility - a.mobility);
+  if (rivals.length === 0) return null;
+  return (
+    <section className="mcard-race" data-testid="race-rivals" aria-label={t('transit.race.title')}>
+      <b>{t('transit.race.title')}</b>
+      <ul>
+        {rivals.map((rival) => (
+          <li key={rival.name}>
+            {t('transit.race.rival', { name: rival.name, mobility: rival.mobility })}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

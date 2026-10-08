@@ -73,6 +73,29 @@
       }
     }
   },
+  "connectors": {
+    "title": "Portas de conexão",
+    "gridLabel": "Portas de conexão desta peça",
+    "fixed": "Geradas junto com a peça — é exatamente isto que você recebe.",
+    "kinds": {
+      "none": "Sem conector",
+      "central": "Conector central",
+      "split": "Conector dividido",
+      "universal": "Conector universal"
+    },
+    "states": {
+      "connected": "conectada",
+      "incorrect": "vizinha incompatível",
+      "available": "porta livre"
+    },
+    "legend": {
+      "title": "Portas",
+      "connected": "Conectada",
+      "incorrect": "Incorreta",
+      "available": "Disponível",
+      "shapes": "Ponto = central · dois pontos pequenos = dividido · três = universal"
+    }
+  },
   "hangar": {
     "title": "Minha Nave",
     "tray": "Peças",
@@ -114,11 +137,13 @@
       "batCharge": "Capacidade da bateria",
       "batOutput": "Saída da bateria",
       "batInput": "Taxa de recarga",
-      "autonomy": "Autonomia",
+      "autonomy": "Alcance",
       "condition": "Condição",
       "structure": "Orçamento de estrutura",
       "mob": "Mobilidade",
-      "structureValue": "{{used}} / {{budget}}"
+      "structureValue": "{{used}} / {{budget}}",
+      "unlimited": "ilimitado",
+      "routesCovered": "cobre {{covered}} de {{total}} rotas"
     },
     "groups": {
       "combat": "Combate",
@@ -133,7 +158,7 @@
       "defenseHelp": "Blindagem mais Escudo: as duas defesas da nave contra acertos, somadas.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
-      "autonomy": "Autonomia",
+      "autonomy": "Alcance",
       "condition": "Condição",
       "energy": "Energia",
       "structure": "Estrutura"
@@ -196,7 +221,10 @@
       "INVALID_LAYOUT": "O layout não é válido.",
       "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
       "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior."
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior.",
+      "EXHAUST_BLOCKED": "Um motor tem peças atrás do escapamento — mova-o para a borda traseira da nave ou gire-o.",
+      "FACING_BLOCKED": "Uma arma tem peças na linha de tiro — mova-a para a borda da nave ou gire-a.",
+      "FACING_CONNECTOR": "Um motor ou arma tem conector no lado voltado para fora."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -234,9 +262,7 @@
       "condition": "Condição"
     },
     "rotate": {
-      "square": "Esta peça é 1×1: ela fica igual girada. A rotação só muda peças que não são quadradas.",
-      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
-      "nudged": "Girada (movida uma ou duas casas para abrir espaço)."
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro."
     },
     "statHelp": {
       "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
@@ -257,9 +283,17 @@
       "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
       "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
       "batInput": "Quão rápido a bateria recarrega entre lutas.",
-      "autonomy": "Quantos tanques cheios de combustível o consumo da nave aguenta, em porcentagem.",
+      "autonomy": "Até onde um tanque cheio leva a nave, em unidades de distância de rota (as mesmas unidades do comprimento das rotas). Abaixo: quantas rotas do mundo isso cobre.",
       "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
       "structure": "Quanto do orçamento de estrutura definido pela ponte é usado pelo resto instalado."
+    },
+    "placement": {
+      "exhaust": "Há peças atrás do escapamento deste motor — gire-o ou mova-o para a borda traseira da nave.",
+      "facing": "Há peças na linha de tiro desta arma — gire-a ou mova-a para a borda da nave."
+    },
+    "facing": {
+      "exhaust": "Lado do escapamento",
+      "weapon": "Lado do disparo"
     }
   },
   "home": {
@@ -359,7 +393,9 @@
       "password": "Alterar senha",
       "unstick": "Destravar nave",
       "ban": "Banir",
-      "reset": "Resetar"
+      "reset": "Resetar",
+      "fastOps": "Missões rápidas: ligar",
+      "fastOpsOff": "Missões rápidas: desligar"
     },
     "warnings": {
       "grant": "Adiciona créditos à carteira do jogador. Registrado no log de auditoria.",
@@ -368,7 +404,8 @@
       "password": "Define uma nova senha para esta conta e encerra a sessão em todos os lugares. A senha em si nunca é registrada no log de auditoria.",
       "unstick": "Expira a missão ativa da nave e a estaciona no porto. A presença futura na rota é removida.",
       "ban": "Suspende a conta imediatamente e encerra todas as sessões. Contas de admin não podem ser banidas.",
-      "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito."
+      "reset": "Apaga peças, materiais, reparos, missões e sessões, devolve a nave ao porto de origem e reaplica o kit inicial e os créditos. O histórico é mantido. Não pode ser desfeito.",
+      "fastOps": "Por jogador: as missões, viagens, coletas, mineração e reparos deste jogador terminam em poucos segundos (admin.debug_fast_ops_seconds), mas a interface continua mostrando as durações reais. Vale a partir do próximo trabalho iniciado."
     },
     "amount": "Quantidade",
     "newPassword": "Nova senha",
@@ -417,9 +454,41 @@
     "successValue": "{{success}} / {{total}} ({{percent}}%)",
     "winrateValue": "{{percent}}% ({{wins}}V / {{losses}}D, {{encounters}} encontros)",
     "percentValue": "{{percent}}%",
-    "outcomeValue": "Resultado: {{value}}"
+    "outcomeValue": "Resultado: {{value}}",
+    "fastOps": "Missões rápidas",
+    "fastOpsOn": "ligadas",
+    "fastOpsOff": "desligadas",
+    "actionFailed": "Isso não funcionou."
   },
   "tuning": {
+    "connectorRules": {
+      "side": "Lado",
+      "notConfigured": "Não configurado: peças deste tipo recebem conectores universais até haver regras.",
+      "weightHelp": "Pesos relativos por lado (0 = nunca). Um tipo é sorteado por lado quando a peça é gerada; o resultado nunca muda depois. Motores/armas: o lado W deve ser nenhum.",
+      "maxConnected": "Máx. de lados conectados",
+      "maxSplit": "Máx. de lados divididos",
+      "unlimited": "sem limite",
+      "forbidden": "Combinações proibidas (um sorteio que bata com todos os lados escolhidos é rejeitado)",
+      "any": "qualquer",
+      "addForbidden": "Adicionar combinação proibida",
+      "removeForbidden": "Remover",
+      "oneKindPerPart": "Um tipo por peça (todos os lados conectados usam o mesmo tipo, portas no mesmo lugar em cada lado)",
+      "presets": "Modelos",
+      "presetCentral": "Tudo central",
+      "presetMixed": "Misto (um tipo por peça)",
+      "presetUniversal": "Tudo universal",
+      "diagram": "Tipos de conector permitidos em cada lado",
+      "weight": "peso",
+      "facingLocked": "Lado voltado para fora: sempre nenhum",
+      "previewTitle": "O que será gerado",
+      "previewUnavailable": "Prévia indisponível no momento.",
+      "moreCombos": "+{{count}} combinações",
+      "size": "{{w}}×{{h}}",
+      "percent": "{{value}}%",
+      "minConnected": "Mín. de lados com porta",
+      "defaultOne": "1 (padrão)",
+      "noPortHelp": "Para um lado ficar às vezes sem porta, permita o traço (nenhum) nele e dê um peso: 1 contra 3 de central é 25% de chance de não ter porta nesse lado. Sempre sobra ao menos o mínimo de lados com porta."
+    },
     "configTitle": "Ajustes",
     "entities": "Entidades",
     "revisionHistoryTitle": "Histórico de revisões",
@@ -502,7 +571,206 @@
       "invert": "Inverter",
       "clear": "Limpar",
       "previewLabel": "Prévia do formato da nave ({{count}} células)"
-    }
+    },
+    "clone": "Duplicar",
+    "cloneEntity": "Duplicar",
+    "cloneSuffix": "(cópia)",
+    "rowCount": "{{shown}} de {{total}}",
+    "notFound": "Nada com o id \"{{id}}\" aqui.",
+    "backToList": "Voltar à lista",
+    "breadcrumb": "Trilha",
+    "sections": {
+      "identity": "Identidade",
+      "sizeCost": "Tamanho e custo",
+      "performance": "Desempenho",
+      "energyFuel": "Energia e combustível",
+      "special": "Especial"
+    },
+    "errors": {
+      "required": "Obrigatório",
+      "fixThese": "Corrija {{count}} problema antes de salvar:",
+      "fixThese_other": "Corrija {{count}} problemas antes de salvar:",
+      "separator": ": "
+    },
+    "chooseOne": "Escolha…",
+    "help": {
+      "parts": {
+        "partType": "O código permanente da peça (usado em saves e no catálogo). Minúsculas com sublinhado; não muda depois de criada.",
+        "displayName": "O que os jogadores veem em menus, mercado e relatórios, nos dois idiomas.",
+        "description": "O texto curto do cartão e do popup da peça, nos dois idiomas.",
+        "partClass": "O que a peça faz pela nave. A ponte é obrigatória, motores movem, armas/defesa lutam, carga transporta etc. Motores e armas também têm uma direção (veja as regras de conectores).",
+        "rarity": "Quão rara é a peça: define a cor, a frequência em lojas e drops e quais formatos de nave ela desbloqueia.",
+        "w": "Largura em células da grade.",
+        "h": "Altura em células da grade.",
+        "mass": "Peso em toneladas. Naves mais pesadas são mais lentas (mobilidade = empuxo ÷ massa).",
+        "structureCost": "Quanto do orçamento de estrutura da nave esta peça usa. Pontes usam número negativo: elas FORNECEM o orçamento.",
+        "basePrice": "O preço de uma peça nova na loja, em créditos, antes dos ajustes de local e condição.",
+        "scrapValue": "Quanto a peça vale como sucata quando está destruída.",
+        "partHp": "Pontos de vida da própria peça, usados quando ela sofre dano.",
+        "pot": "Potência: empuxo do motor. Dividido pela massa total da nave dá a mobilidade.",
+        "pdf": "Poder de fogo da peça em combate.",
+        "bli": "Integridade de construção: blindagem que reduz o dano sofrido.",
+        "esc": "Escudo/escape: absorve dano antes de chegar à blindagem e ao casco.",
+        "sen": "Sensor: quão bem a nave detecta emboscadas e inimigos.",
+        "crg": "Capacidade de carga que a peça adiciona.",
+        "min": "Capacidade de mineração: necessária para missões e trabalhos de mineração.",
+        "energyCont": "Energia contínua: positivo gera energia, negativo consome o tempo todo. O total da nave precisa ficar em zero ou mais para voar.",
+        "energyCombat": "Energia consumida por rodada de combate por esta peça (negativo) — as baterias precisam cobrir.",
+        "fuelCap": "Capacidade de combustível que a peça adiciona.",
+        "fuelUse": "Combustível que um motor queima a cada 100 de distância (vazio para peças que não queimam; motores de íon usam 0).",
+        "batCharge": "Quanta energia esta bateria guarda para o combate.",
+        "batOutput": "Quanta energia esta bateria entrega a cada rodada de combate.",
+        "batInput": "Com que velocidade esta bateria recarrega.",
+        "specialProp": "Habilidades especiais da peça (espaço para passageiros, suporte de vida).",
+        "connectorRules": "Como as portas de uma peça NOVA deste tipo são geradas. O resultado fica fixo na peça para sempre; mudar as regras só afeta peças geradas depois."
+      },
+      "materials": {
+        "id": "O código permanente do material.",
+        "displayName": "Nome mostrado aos jogadores, nos dois idiomas.",
+        "description": "Descrição curta, nos dois idiomas.",
+        "rarity": "Quão raro é o minério: define a dificuldade de encontrá-lo na mineração.",
+        "basePrice": "Por quanto o material vende num porto típico (antes de local e humor)."
+      },
+      "factions": {
+        "id": "O código permanente da facção. Arte e missões são ligadas a ele.",
+        "displayName": "Nome mostrado aos jogadores, nos dois idiomas.",
+        "description": "A apresentação da facção na tela de escolha, nos dois idiomas.",
+        "color": "A cor da facção (hex, como #4a90d9) usada em selos e no mapa.",
+        "playable": "Se novos jogadores podem escolher esta facção no início. Desligado para facções NPC como piratas.",
+        "relations": "Como esta facção trata cada outra facção. Hostis atacam à vista; aliadas deixam você em paz; também muda os preços lá.",
+        "starterKitHint": "Sugestão opcional de kit inicial da facção (deixe vazio se não souber o formato)."
+      },
+      "locations": {
+        "id": "O código permanente do lugar. A arte é ligada a ele.",
+        "displayName": "Nome mostrado aos jogadores, nos dois idiomas.",
+        "description": "Descrição curta do lugar, nos dois idiomas.",
+        "type": "Que tipo de lugar é (porto, estaleiro, posto…). Os modelos de missão usam isso para decidir onde podem ser oferecidos.",
+        "x": "Posição no mapa, horizontal.",
+        "y": "Posição no mapa, vertical.",
+        "zone": "Zona de perigo do lugar (0 = núcleo seguro, maior = mais perigoso). Rotas assumem a ponta mais arriscada.",
+        "factionId": "A facção que controla o lugar: define preços e como você é tratado.",
+        "isolation": "Multiplicador de preço por ser remoto (combustível, reparo, peças): 1 = normal, acima de 1 = mais caro.",
+        "mood": "Humor local dos preços: abaixo de 1 é mais barato, acima de 1 mais caro.",
+        "services": "O que o jogador pode fazer aqui: comprar peças, vender, reparar, pegar missões, passageiros."
+      },
+      "routes": {
+        "id": "O código permanente da rota.",
+        "nodeAId": "Uma ponta da rota.",
+        "nodeBId": "A outra ponta (o par precisa ser único e ordenado).",
+        "distance": "Comprimento da rota: define tempo de viagem e combustível gasto.",
+        "danger": "Quão perigosa é a rota: aumenta a chance de encontros e as recompensas."
+      },
+      "environments": {
+        "id": "O código permanente do ambiente.",
+        "displayName": "Nome mostrado aos jogadores, nos dois idiomas.",
+        "description": "Como é este ambiente, nos dois idiomas.",
+        "level": "Nível de perigo: quanto desgaste o ambiente causa em um trecho.",
+        "fuelMult": "Multiplicador do combustível queimado ao atravessá-lo.",
+        "subsystemTarget": "Qual subsistema da nave este ambiente exige.",
+        "mitigatingPart": "Um tipo de peça que protege contra ele."
+      },
+      "mission-templates": {
+        "id": "O código permanente do modelo.",
+        "displayName": "Título da missão no quadro, nos dois idiomas.",
+        "description": "O briefing mostrado no quadro, nos dois idiomas.",
+        "type": "Que tipo de missão é. Cada tipo tem suas regras de requisitos, encontros e pagamento (Corrida: compete contra naves rivais por um prêmio pela colocação).",
+        "factionId": "A facção que oferece esta missão.",
+        "requirements": "Onde a missão pode ser oferecida: tipos de lugar e facções permitidos, mais necessidades opcionais da nave.",
+        "rewardCalc": "Parâmetros extras de recompensa (deixe vazio para a fórmula padrão).",
+        "deadlineCalc": "Parâmetros extras de prazo (deixe vazio para as regras padrão).",
+        "encounterPolicy": "Como os encontros durante esta missão se comportam."
+      },
+      "drop-tables": {
+        "id": "O código permanente da tabela.",
+        "source": "Qual atividade sorteia nesta tabela (por exemplo, saque).",
+        "tiers": "A chance de cada nível de raridade aparecer. As chances precisam somar 100%."
+      },
+      "ship-formats": {
+        "id": "O código permanente do formato.",
+        "displayName": "Nome mostrado aos jogadores, nos dois idiomas.",
+        "description": "Descrição curta, nos dois idiomas.",
+        "cells": "As células construíveis do estaleiro da nave. A ponte fica na célula marcada.",
+        "cellTarget": "Uma meta suave do número de células: mostrada ao desenhar, nunca imposta.",
+        "minRarity": "A menor raridade de ponte que desbloqueia este formato."
+      }
+    },
+    "structured": {
+      "advanced": "Avançado (JSON bruto)",
+      "default": "padrão",
+      "anyOk": "Nenhum marcado = qualquer lugar vale",
+      "noParams": "Sem parâmetros extras — vale a fórmula padrão.",
+      "paramName": "Nome do parâmetro",
+      "addParam": "Adicionar parâmetro",
+      "tier": "Nível",
+      "chancePercent": "Chance em porcentagem",
+      "percentSign": "%",
+      "addTier": "Adicionar nível",
+      "tierTotal": "Total: {{total}}% (precisa ser 100%)",
+      "services": {
+        "buy": "Comprar peças",
+        "buyHelp": "Jogadores podem comprar peças aqui.",
+        "sell": "Vender peças",
+        "sellHelp": "Jogadores podem vender peças e materiais aqui.",
+        "repair": "Reparo",
+        "repairHelp": "A oficina de reparo funciona aqui.",
+        "missions": "Missões",
+        "missionsHelp": "O quadro de missões lista ofertas daqui.",
+        "passengers": "Passageiros",
+        "passengersHelp": "Trabalhos de transporte e de passageiros começam aqui."
+      },
+      "special": {
+        "pressurized": "Cabine pressurizada",
+        "pressurizedHelp": "Conta como espaço para passageiros (necessário para missões de transporte).",
+        "lifeSupport": "Suporte de vida",
+        "lifeSupportHelp": "Mantém os passageiros vivos (necessário junto com a cabine)."
+      },
+      "policy": {
+        "missionForcesFlee": "Sempre fugir",
+        "missionForcesFleeHelp": "A nave foge de todo encontro nesta missão em vez de lutar.",
+        "preset": "Modelo de fuga",
+        "missionOwner": "Dono da missão",
+        "owner": {
+          "player": "O jogador",
+          "enemy": "Um inimigo"
+        }
+      },
+      "requirements": {
+        "originTypes": "Oferecida nestes tipos de lugar",
+        "originFactions": "Oferecida em lugares destas facções",
+        "cargo": "Carga necessária",
+        "cargoHelp": "Capacidade mínima de carga que a nave precisa.",
+        "speed": "Velocidade necessária",
+        "speedHelp": "Mobilidade mínima (missões de resgate).",
+        "minMobility": "Velocidade de entrada da corrida",
+        "minMobilityHelp": "Mobilidade mínima para entrar numa corrida (padrão: a configuração de Corrida)."
+      }
+    },
+    "art": {
+      "title": "Imagens",
+      "help": "PNG, JPEG, WebP ou SVG de até 1,5 MB. Enquanto você não enviar uma, vale o padrão embutido.",
+      "slots": {
+        "banner": "Banner",
+        "logo": "Logo",
+        "background": "Fundo",
+        "wide": "Larga",
+        "square": "Quadrada",
+        "icon": "Ícone"
+      },
+      "slotHelp": {
+        "banner": "Imagem larga atrás do cartão da facção na tela de escolha.",
+        "logo": "Emblema pequeno mostrado ao lado do nome da facção nos selos.",
+        "background": "Pano de fundo grande para as páginas da facção.",
+        "wide": "Faixa larga atrás do lugar nas telas de porto, quadro e relatório.",
+        "square": "Imagem quadrada do lugar.",
+        "icon": "Ícone pequeno do lugar."
+      },
+      "none": "Sem imagem",
+      "usingDefault": "Usando o padrão embutido",
+      "custom": "Imagem personalizada",
+      "upload": "Enviar",
+      "reset": "Voltar ao padrão"
+    },
+    "noneOption": "Nenhuma peça"
   },
   "factions": {
     "luna": "Autoridade de Luna",
@@ -750,7 +1018,8 @@
       "cargoLost": "Levaram a carga",
       "found": "Achados",
       "foundPart": "{{name}} ({{condition}}%)",
-      "foundScrap": "Sucata: {{name}}"
+      "foundScrap": "Sucata: {{name}}",
+      "raceTitle": "Resultado da corrida — você terminou em {{place}}º"
     }
   },
   "transit": {
@@ -792,7 +1061,11 @@
     },
     "legPlanTitle": "Rota planejada",
     "cancelMission": "Cancelar missão",
-    "scavengeTitle": "Saque de destroços"
+    "scavengeTitle": "Saque de destroços",
+    "race": {
+      "title": "Seus rivais",
+      "rival": "{{name}} — velocidade {{mobility}}"
+    }
   },
   "board": {
     "title": "Quadro de missões",
@@ -816,7 +1089,8 @@
       "MINING": "Mineração",
       "RESCUE": "Resgate",
       "TRAVEL": "Viagem",
-      "SCAVENGE": "Saque"
+      "SCAVENGE": "Saque",
+      "RACE": "Corrida"
     },
     "status": {
       "AVAILABLE": "Aberta",
@@ -850,7 +1124,8 @@
       "WEAPONS": "Pelo menos uma arma instalada",
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
       "MINER": "Uma plataforma de mineração instalada",
-      "SPEED": "Mobilidade acima da velocidade de referência de resgate"
+      "SPEED": "Mobilidade acima da velocidade de referência de resgate",
+      "RACE_SPEED": "A velocidade (mobilidade) da nave está abaixo do mínimo de entrada desta corrida."
     },
     "controlledBy": "Controlado por {{faction}}",
     "expiredLabel": "Expirada",
@@ -871,11 +1146,22 @@
       "ESCORT": "pelo menos uma arma e boa mobilidade para acompanhar.",
       "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
       "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
-      "TRAVEL": "nada especial: combustível para a viagem."
+      "TRAVEL": "nada especial: combustível para a viagem.",
+      "RACE": "uma nave rápida: precisa superar a velocidade de entrada, e quanto mais rápida melhor."
     },
     "mining": {
       "contracted": "Contrato: minere {{quantity}} × {{material}}. Só paga se trouxer a quantidade completa.",
       "free": "Minere {{material}}: você fica com o que extrair e vende num porto."
+    },
+    "race": {
+      "title": "O grid",
+      "pilot": "Piloto",
+      "speed": "Velocidade",
+      "time": "Tempo",
+      "you": "Você",
+      "rank": "{{place}}.",
+      "entry": "Entrada: velocidade {{mobility}} ou mais. Prêmios:",
+      "prize": "{{place}}º {{amount}}"
     }
   },
   "map": {
@@ -999,7 +1285,11 @@
     "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
     "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
     "NOT_MINABLE": "Não há nada para minerar aqui.",
-    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro."
+    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro.",
+    "ART_UNKNOWN_SLOT": "Esse espaço de imagem não existe.",
+    "ART_UNSUPPORTED_TYPE": "Envie uma imagem PNG, JPEG, WebP ou SVG.",
+    "ART_BAD_SIZE": "A imagem está vazia ou tem mais de 1,5 MB.",
+    "ART_NOT_AN_IMAGE": "Esse arquivo não é uma imagem válida (ou segura)."
   },
   "language": {
     "label": "Idioma"

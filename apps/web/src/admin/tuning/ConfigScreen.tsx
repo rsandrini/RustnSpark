@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { BundleDialog } from './BundleDialog';
+import { failureText } from '../../api/errors';
 import type * as dto from '../../api/generated';
 
 function serializeValue(value: unknown): string {
@@ -71,7 +72,7 @@ export function ConfigScreen() {
     onError: (error: Error, variables) => {
       setErrors((prev) => ({
         ...prev,
-        [variables.key]: error.message,
+        [variables.key]: failureText(error),
       }));
     },
   });
@@ -142,15 +143,19 @@ export function ConfigScreen() {
         </button>
       </div>
       {Array.from(grouped.entries()).map(([group, entries]) => (
-        <section key={group}>
-          <h3>{group}</h3>
+        <details key={group} className="config-group" open={search.trim() !== ''}>
+          <summary>
+            <h3>{group}</h3>
+            <span className="muted">{entries.length}</span>
+          </summary>
+          <div className="tuning-table-wrap">
           <table>
             <thead>
               <tr>
                 <th>{t('tuning.key')}</th>
                 <th>{t('tuning.description')}</th>
                 <th>{t('tuning.currentValue')}</th>
-                <th>{t('tuning.factoryDefault')}</th>
+                <th className="col-center">{t('tuning.factoryDefault')}</th>
                 <th>{t('tuning.actions')}</th>
               </tr>
             </thead>
@@ -204,7 +209,7 @@ export function ConfigScreen() {
                       )}
                       {errors[entry.key] && <span role="alert">{errors[entry.key]}</span>}
                     </td>
-                    <td>{serializeValue(entry.factoryDefault)}</td>
+                    <td className="col-center">{serializeValue(entry.factoryDefault)}</td>
                     <td>
                       <button
                         type="button"
@@ -239,7 +244,8 @@ export function ConfigScreen() {
               })}
             </tbody>
           </table>
-        </section>
+          </div>
+        </details>
       ))}
       {confirmReset && (
         <div role="dialog" aria-modal="true">

@@ -232,13 +232,19 @@ describe('hangar (S10.4)', () => {
       'Firepower',
       'Defense',
       'Mobility',
-      'Autonomy',
+      'Range',
       'Condition',
       'Energy',
       'Structure',
     ]) {
       expect(within(headline).getByText(label)).toBeInTheDocument();
     }
+
+    // Range replaces the old "autonomy %": a plain distance plus how many routes it covers.
+    const rangeTile = within(headline).getByText('Range').closest('.sheet-headline-tile');
+    expect(rangeTile).toHaveTextContent('40');
+    expect(rangeTile).toHaveTextContent('covers 14 of 17 routes');
+    expect(rangeTile).not.toHaveTextContent('%');
 
     // The full 20-row breakdown is behind a closed-by-default disclosure, grouped into sections.
     const details = container.querySelector('details.sheet-details');
@@ -635,6 +641,44 @@ describe('hangar (S10.4)', () => {
     expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
   });
 
+  it('lets a part go anywhere, even behind the engine, and outlines the engine as a problem', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 8, 0)); // east of the engine, which faces E
+    expect(block(container, 'part-cargo-b')).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull(),
+    );
+  });
+
+  it('rotate cycles four quarter turns: the footprint swaps, swaps back, and ends where it began', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const width = Number(cargo.getAttribute('width'));
+    const height = Number(cargo.getAttribute('height'));
+    fireEvent.pointerDown(cargo);
+
+    const dims: Array<[number, number]> = [];
+    for (let turn = 0; turn < 4; turn += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
+      const current = block(container, 'part-cargo-a');
+      dims.push([Number(current?.getAttribute('width')), Number(current?.getAttribute('height'))]);
+    }
+    expect(dims[0]![0]).toBeCloseTo(height, 3); // 90: swapped
+    expect(dims[1]![0]).toBeCloseTo(width, 3); // 180: back
+    expect(dims[2]![0]).toBeCloseTo(height, 3); // 270: swapped
+    expect(dims[3]![0]).toBeCloseTo(width, 3); // 360: where it started
+    expect(dims[3]![1]).toBeCloseTo(height, 3);
+  });
+
   it('saves the edited layout through assemble', async () => {
     server.use(onboarded());
     const assembled: Array<{ layout: Placement[] }> = [];
@@ -712,18 +756,40 @@ describe('hangar (S10.4)', () => {
     expect(sentIds).toHaveLength(6);
   });
 
-  it('rotate: a 1×1 part explains itself, a blocked rotation says why', async () => {
+  it('rotate turns the part in place: same cell, no nudging, even for a 1×1 part (its ports turn)', async () => {
     server.use(onboarded());
-    renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    await screen.findByRole('heading', { name: 'My Ship' });
-    const block = await waitFor(() => {
-      const found = document.querySelector('rect.block');
-      if (found === null) throw new Error('no block yet');
-      return found;
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const bridge = await waitFor(() => {
+      const element = block(container, 'part-bridge');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
     });
-    fireEvent.pointerDown(block);
+    const gx = bridge.getAttribute('data-gx');
+    const gy = bridge.getAttribute('data-gy');
+    fireEvent.pointerDown(bridge);
     fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
-    // Whatever part that is, the pilot gets an answer instead of a silent click.
+    const after = block(container, 'part-bridge');
+    expect(after?.getAttribute('data-gx')).toBe(gx);
+    expect(after?.getAttribute('data-gy')).toBe(gy);
+    expect(screen.queryByTestId('rotate-hint')).toBeNull();
+  });
+
+  it('a rotation that would overlap a neighbour is refused with a reason instead of moving anything', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    // cargo-a is 2x1 at (2,2); battery sits at (2,1) and the tank at (3,0): turning cargo-a into
+    // a 1x2 stays clear, so drop the loose cargo right below it first to make (2,3) occupied
+    const trayButton = await screen.findByRole('button', { name: /^cargo/i });
+    fireEvent.click(trayButton);
+    fireEvent.click(cell(container, 2, 3));
+    expect(block(container, 'part-cargo-b')).not.toBeNull();
+
+    const cargoA = block(container, 'part-cargo-a') as SVGRectElement;
+    const before = [cargoA.getAttribute('data-gx'), cargoA.getAttribute('data-gy')];
+    fireEvent.pointerDown(cargoA);
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
     expect(await screen.findByTestId('rotate-hint')).toBeInTheDocument();
+    const after = block(container, 'part-cargo-a') as SVGRectElement;
+    expect([after.getAttribute('data-gx'), after.getAttribute('data-gy')]).toEqual(before);
   });
 });

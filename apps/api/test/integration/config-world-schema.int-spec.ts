@@ -7,7 +7,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   GameConfig: ['key', 'value', 'type', 'description', 'updatedAt', 'updatedBy'],
   TuningRevision: ['id', 'at', 'actor', 'entityType', 'entityId', 'before', 'after', 'reason'],
   RulesSnapshot: ['hash', 'rules', 'createdAt'],
-  Faction: ['id', 'displayName', 'description', 'color', 'playable', 'relations', 'starterKitHint'],
+  Faction: ['id', 'displayName', 'description', 'color', 'playable', 'relations', 'starterKitHint', 'art'],
   Environment: [
     'id',
     'displayName',
@@ -29,6 +29,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'isolation',
     'mood',
     'services',
+    'art',
   ],
   Route: ['id', 'nodeAId', 'nodeBId', 'distance', 'danger'],
   RouteEnvironment: ['routeId', 'environmentId', 'order'],
@@ -62,6 +63,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'specialProp',
     'active',
     'connectorLayouts',
+    'connectorRules',
   ],
   MissionTemplate: [
     'id',

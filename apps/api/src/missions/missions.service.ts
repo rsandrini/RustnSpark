@@ -27,6 +27,7 @@ import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
+import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
@@ -88,6 +89,16 @@ export interface OfferInfo {
       failure reasons — so the board can show what a mission demands even when the viewer's
       ship already clears it. Empty when there is no ship to check against. */
   readonly requirements: readonly RequirementCheck[];
+  /** Race offers: the rival field, the entry minimum and the 1st/2nd/3rd prize shares. */
+  readonly race: {
+    readonly rivals: readonly {
+      readonly name: string;
+      readonly mobility: number;
+      readonly durationSeconds: number;
+    }[];
+    readonly minMobility: number;
+    readonly prizeShares: readonly number[];
+  } | null;
 }
 
 export type BoardOffer = BoardMission & {
@@ -777,6 +788,22 @@ function offerInfo(
           { missionType: row.type, requirements: requirementsJson, sheet, parts },
           rules,
         );
+  // A race offer lists its rivals (their speed and how long they would take over this route) so
+  // the pilot can judge the field before entering.
+  const rivals =
+    row.type === 'RACE'
+      ? parseCompetitors((row.cargo ?? {}) as Record<string, unknown>).map((rival) => ({
+          name: rival.name,
+          mobility: rival.mobility,
+          durationSeconds: missionDuration({
+            totalDistance,
+            mobility: rival.mobility,
+            durationK: rules.missions.duration_k,
+            timeScale: rules.missions.time_scale,
+            classCutoffs: rules.missions.duration_class_cutoffs,
+          }).durationSeconds,
+        }))
+      : [];
   return {
     title: bilingual(template?.displayName),
     description: bilingual(template?.description),
@@ -794,5 +821,17 @@ function offerInfo(
             quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
           },
     requirements,
+    race:
+      row.type === 'RACE'
+        ? {
+            rivals,
+            minMobility: rules.race.min_mobility,
+            prizeShares: [
+              rules.race.prize_share_1,
+              rules.race.prize_share_2,
+              rules.race.prize_share_3,
+            ],
+          }
+        : null,
   };
 }
