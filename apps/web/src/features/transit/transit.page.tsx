@@ -18,7 +18,7 @@ import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
-import { ShipStage } from '../../ui/ShipStage';
+import { ActiveShipStage } from '../ship/active-ship-stage';
 import { RouteMap } from '../../ui/RouteMap';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 
@@ -34,11 +34,7 @@ export interface TransitPageProps {
   onGoToBoard?: () => void;
 }
 
-export function TransitPage({
-  guided = false,
-  embedded = false,
-  onGoToBoard,
-}: TransitPageProps) {
+export function TransitPage({ guided = false, embedded = false, onGoToBoard }: TransitPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const legSeparator = ' · ';
@@ -260,6 +256,23 @@ export function TransitPage({
   const briefTitle = pickLocalized(mission.brief.title, i18n.language);
   const briefText = pickLocalized(mission.brief.description, i18n.language);
 
+  // Beside the briefing, not under it: the ship scene and the trip's map share a narrow column.
+  const inTransit = mission.status !== 'ACCEPTED';
+  const aside =
+    mission.status === 'HELD' || mission.status === 'RESOLVING' ? null : (
+      <aside className="transit-aside" data-testid="transit-aside">
+        <ActiveShipStage size="compact" />
+        {mission.type !== 'SCAVENGE' && (
+          <RouteMap
+            path={inTransit ? nodeIds : plannedNodeIds}
+            world={worldQuery.data}
+            {...(inTransit ? { progress: progress / 100, animated: true } : {})}
+            compact
+          />
+        )}
+      </aside>
+    );
+
   const body = (
     <>
       {!embedded && (
@@ -268,204 +281,198 @@ export function TransitPage({
           <span className="sub">{routeLabel}</span>
         </header>
       )}
-      {briefTitle !== '' && (
-        <p className="mission-brief-line">
-          <b>{briefTitle}</b>
-          {briefText !== '' && (
-            <button
-              type="button"
-              className="btn info-btn mission-why-tag"
-              aria-label={`${t('transit.briefLabel')}: ${briefTitle}`}
-              title={briefText}
-            >
-              {t('parts.infoGlyph')}
-            </button>
-          )}
-        </p>
-      )}
-      <div className="briefing" data-testid="briefing">
-        <div className="fact fact-route">
-          <div className="k">{t('transit.facts.route')}</div>
-          <div className="v">{routeLabel}</div>
-        </div>
-        {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
-          <div className="fact">
-            <div className="k">{t('transit.facts.reward')}</div>
-            <div className="v spark">{rewardText}</div>
-          </div>
-        )}
-        {mission.type !== 'SCAVENGE' && (
-          <>
-            <div className="fact">
-              <div className="k">{t('transit.facts.distance')}</div>
-              <div className="v">{summary.totalDistance}</div>
-            </div>
-            <div className="fact">
-              <div className="k">{t('transit.facts.legs')}</div>
-              <div className="v">{summary.legCount}</div>
-            </div>
-          </>
-        )}
-        {destinationRisk !== undefined && (
-          <div className="fact">
-            <div className="k">{t('transit.facts.danger')}</div>
-            <div className="v">
-              <RiskBadge band={destinationRisk} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {mission.type === 'RACE' && (
-        <RaceRivals
-          cargo={mission.cargo}
-          overdrive={mission.status === 'ACCEPTED' ? { on: overdrive, set: setOverdrive } : undefined}
-        />
-      )}
-
-      {actionError !== null && (
-        <p className="error-text" role="alert">
-          {actionError}
-        </p>
-      )}
-
-      <RescueBanner />
-
-      {mission.status === 'HELD' ? (
-        <section data-testid="held">
-          <p>{t('transit.held')}</p>
-          <div className="actions">
-            {embedded && onGoToBoard !== undefined ? (
-              <button type="button" className="btn primary" onClick={onGoToBoard}>
-                {t('board.title')}
-              </button>
-            ) : (
-              <Link className="btn primary" to="/board">
-                {t('board.title')}
-              </Link>
-            )}
-            <button
-              type="button"
-              className="btn"
-              disabled={backOut.isPending}
-              onClick={() => backOut.mutate()}
-            >
-              {t('board.release')}
-            </button>
-          </div>
-        </section>
-      ) : mission.status === 'RESOLVING' ? (
-        <p data-testid="resolving">{t('transit.resolving')}</p>
-      ) : mission.status === 'ACCEPTED' ? (
-        <section>
-          {!embedded && <ShipStage mode="idle" placeId={mission.originId} />}
-          <p>{t('transit.accepted')}</p>
-          {mission.type !== 'SCAVENGE' && (
-            <RouteMap path={plannedNodeIds} world={worldQuery.data} compact />
-          )}
-          {plannedRouteIds.length > 1 && (
-            <>
-              <p className="sub">{t('transit.legPlanTitle')}</p>
-              <ol className="mission-leg-plan" data-testid="leg-plan">
-                {plannedRouteIds.map((routeId, index) => (
-                  <li key={`${routeId}-${index}`}>{plannedLegLabel(routeId, index)}</li>
-                ))}
-              </ol>
-            </>
-          )}
-          {mission.deadlineAt !== null && (
-            <p className="sub">
-              {t('transit.startDeadline')} <Countdown until={mission.deadlineAt} />
+      <div className="transit-layout">
+        <div className="transit-main">
+          {briefTitle !== '' && (
+            <p className="mission-brief-line">
+              <b>{briefTitle}</b>
+              {briefText !== '' && (
+                <button
+                  type="button"
+                  className="btn info-btn mission-why-tag"
+                  aria-label={`${t('transit.briefLabel')}: ${briefTitle}`}
+                  title={briefText}
+                >
+                  {t('parts.infoGlyph')}
+                </button>
+              )}
             </p>
           )}
-          <button
-            type="button"
-            className="btn primary"
-            disabled={dispatch.isPending || ship === undefined}
-            onClick={() => dispatch.mutate()}
-          >
-            {t('transit.dispatch')}
-          </button>{' '}
-          <button
-            type="button"
-            className="btn"
-            disabled={backOut.isPending}
-            onClick={() => backOut.mutate()}
-          >
-            {t('transit.cancelMission')}
-          </button>
-          {ship === undefined && <p className="sub">{t('board.noShip')}</p>}
-        </section>
-      ) : (
-        <section data-testid="in-transit">
-          {!embedded && <ShipStage mode={mission.type === 'SCAVENGE' ? 'scavenging' : 'flying'} />}
-          {/* Round-10 owner follow-up ("too big... don't show enough information"): a
+          <div className="briefing" data-testid="briefing">
+            <div className="fact fact-route">
+              <div className="k">{t('transit.facts.route')}</div>
+              <div className="v">{routeLabel}</div>
+            </div>
+            {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
+              <div className="fact">
+                <div className="k">{t('transit.facts.reward')}</div>
+                <div className="v spark">{rewardText}</div>
+              </div>
+            )}
+            {mission.type !== 'SCAVENGE' && (
+              <>
+                <div className="fact">
+                  <div className="k">{t('transit.facts.distance')}</div>
+                  <div className="v">{summary.totalDistance}</div>
+                </div>
+                <div className="fact">
+                  <div className="k">{t('transit.facts.legs')}</div>
+                  <div className="v">{summary.legCount}</div>
+                </div>
+              </>
+            )}
+            {destinationRisk !== undefined && (
+              <div className="fact">
+                <div className="k">{t('transit.facts.danger')}</div>
+                <div className="v">
+                  <RiskBadge band={destinationRisk} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {mission.type === 'RACE' && (
+            <RaceRivals
+              cargo={mission.cargo}
+              overdrive={
+                mission.status === 'ACCEPTED' ? { on: overdrive, set: setOverdrive } : undefined
+              }
+            />
+          )}
+
+          {actionError !== null && (
+            <p className="error-text" role="alert">
+              {actionError}
+            </p>
+          )}
+
+          <RescueBanner />
+
+          {mission.status === 'HELD' ? (
+            <section data-testid="held">
+              <p>{t('transit.held')}</p>
+              <div className="actions">
+                {embedded && onGoToBoard !== undefined ? (
+                  <button type="button" className="btn primary" onClick={onGoToBoard}>
+                    {t('board.title')}
+                  </button>
+                ) : (
+                  <Link className="btn primary" to="/board">
+                    {t('board.title')}
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={backOut.isPending}
+                  onClick={() => backOut.mutate()}
+                >
+                  {t('board.release')}
+                </button>
+              </div>
+            </section>
+          ) : mission.status === 'RESOLVING' ? (
+            <p data-testid="resolving">{t('transit.resolving')}</p>
+          ) : mission.status === 'ACCEPTED' ? (
+            <section>
+              <p>{t('transit.accepted')}</p>
+              {plannedRouteIds.length > 1 && (
+                <>
+                  <p className="sub">{t('transit.legPlanTitle')}</p>
+                  <ol className="mission-leg-plan" data-testid="leg-plan">
+                    {plannedRouteIds.map((routeId, index) => (
+                      <li key={`${routeId}-${index}`}>{plannedLegLabel(routeId, index)}</li>
+                    ))}
+                  </ol>
+                </>
+              )}
+              {mission.deadlineAt !== null && (
+                <p className="sub">
+                  {t('transit.startDeadline')} <Countdown until={mission.deadlineAt} />
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn primary"
+                disabled={dispatch.isPending || ship === undefined}
+                onClick={() => dispatch.mutate()}
+              >
+                {t('transit.dispatch')}
+              </button>{' '}
+              <button
+                type="button"
+                className="btn"
+                disabled={backOut.isPending}
+                onClick={() => backOut.mutate()}
+              >
+                {t('transit.cancelMission')}
+              </button>
+              {ship === undefined && <p className="sub">{t('board.noShip')}</p>}
+            </section>
+          ) : (
+            <section data-testid="in-transit">
+              {/* Round-10 owner follow-up ("too big... don't show enough information"): a
               single-leg trip has nothing an itinerary box would add over one compact line
               (route + overall arrival together); a multi-leg trip gets the fuller itinerary
               instead, each leg with its own arrival, so the overview line above it would
               only restate the current leg's own row. */}
-          {windows.length > 1 ? (
-            <p className="sub">
-              {t('transit.arrivesIn')}{' '}
-              {(mission.arrivalAt ?? '') !== '' && (
-                <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+              {windows.length > 1 ? (
+                <p className="sub">
+                  {t('transit.arrivesIn')}{' '}
+                  {(mission.arrivalAt ?? '') !== '' && (
+                    <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+                  )}
+                </p>
+              ) : (
+                <p className="sub">
+                  {currentIndex !== -1 && windows[0] !== undefined
+                    ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
+                    : t('transit.waitingLeg')}
+                  {legSeparator}
+                  {t('transit.arrivesIn')}{' '}
+                  {(mission.arrivalAt ?? '') !== '' && (
+                    <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+                  )}
+                </p>
               )}
-            </p>
-          ) : (
-            <p className="sub">
-              {currentIndex !== -1 && windows[0] !== undefined
-                ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
-                : t('transit.waitingLeg')}
-              {legSeparator}
-              {t('transit.arrivesIn')}{' '}
-              {(mission.arrivalAt ?? '') !== '' && (
-                <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+              <div className="legbar" role="progressbar" aria-valuenow={Math.round(progress)}>
+                <div className="legbar-fill" style={{ width: `${progress}%` }} />
+              </div>
+              {windows.length > 1 && (
+                <ol className="stack legs">
+                  {windows.map((window, index) => {
+                    const state =
+                      currentIndex === -1 || index < currentIndex
+                        ? 'done'
+                        : index === currentIndex
+                          ? 'current'
+                          : 'waiting';
+                    return (
+                      <li key={window.legIndex} className={`leg ${state}`}>
+                        <b>{t('transit.leg', { index: index + 1, total: windows.length })}</b>
+                        <span>{legLabel(window.routeId, index)}</span>
+                        <span className="sub">
+                          {state === 'done' ? (
+                            t('transit.legDone')
+                          ) : state === 'waiting' ? (
+                            t('transit.waitingLeg')
+                          ) : (
+                            <>
+                              {t('transit.arrivesIn')}{' '}
+                              <Countdown until={window.to} serverTime={dispatchServerTime} />
+                            </>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
               )}
-            </p>
+            </section>
           )}
-          {mission.type !== 'SCAVENGE' && (
-            <RouteMap
-              path={nodeIds}
-              world={worldQuery.data}
-              progress={progress / 100}
-              compact
-              animated
-            />
-          )}
-          <div className="legbar" role="progressbar" aria-valuenow={Math.round(progress)}>
-            <div className="legbar-fill" style={{ width: `${progress}%` }} />
-          </div>
-          {windows.length > 1 && (
-            <ol className="stack legs">
-              {windows.map((window, index) => {
-                const state =
-                  currentIndex === -1 || index < currentIndex
-                    ? 'done'
-                    : index === currentIndex
-                      ? 'current'
-                      : 'waiting';
-                return (
-                  <li key={window.legIndex} className={`leg ${state}`}>
-                    <b>{t('transit.leg', { index: index + 1, total: windows.length })}</b>
-                    <span>{legLabel(window.routeId, index)}</span>
-                    <span className="sub">
-                      {state === 'done' ? (
-                        t('transit.legDone')
-                      ) : state === 'waiting' ? (
-                        t('transit.waitingLeg')
-                      ) : (
-                        <>
-                          {t('transit.arrivesIn')} <Countdown until={window.to} serverTime={dispatchServerTime} />
-                        </>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
-      )}
+        </div>
+        {aside}
+      </div>
     </>
   );
 

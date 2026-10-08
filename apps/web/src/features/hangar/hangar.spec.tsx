@@ -148,16 +148,20 @@ describe('hangar (S10.4)', () => {
     expect(toggle).toHaveClass('stage-toggle-overlay');
 
     fireEvent.click(toggle);
-    expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    expect(
+      container.querySelector('.ship-stage-overlay-host [data-testid="transit-scene"]'),
+    ).toBeNull();
     // Docked and ready has nothing left to say that the top bar's own ship status doesn't
     // already say on every screen (owner request, round 10) — no placeholder caption at all.
-    expect(screen.queryByTestId('stage-caption')).toBeNull();
+    expect(container.querySelector('.ship-stage-overlay-host [data-testid="stage-caption"]')).toBeNull();
     expect(window.localStorage.getItem('rs.hangar.stageCollapsed')).toBe('1');
 
     unmount();
     const second = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
-    expect(second.container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    expect(
+      second.container.querySelector('.ship-stage-overlay-host [data-testid="transit-scene"]'),
+    ).toBeNull();
     expect(screen.getByRole('button', { name: 'Show animation' })).toBeInTheDocument();
   });
 

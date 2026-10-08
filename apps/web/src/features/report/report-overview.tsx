@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ReportMission, ReportStats, WorldResponse } from '../../api/generated';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
+import { ShipStage } from '../../ui/ShipStage';
 
 const ANIMATION_DELAY_MS = 350;
 const FULL = 100;
@@ -78,74 +79,81 @@ export function ReportOverview({
   const wear = stats.travelWear;
 
   return (
-    <section className="stack report-overview" data-testid="report-overview">
-      {path.length > 1 && <RouteMap path={path} world={world} compact />}
+    <section className="report-overview" data-testid="report-overview">
+      {/* The place scene and the trip's map share one narrow column beside the numbers. */}
+      <aside className="overview-visual" data-testid="overview-visual">
+        {mission !== undefined && (
+          <ShipStage mode="idle" size="compact" placeId={mission.destinationId} />
+        )}
+        {path.length > 1 && <RouteMap path={path} world={world} compact />}
+      </aside>
+      <div className="stack overview-body">
+        <div className="damage-split">
+          <article className="panel" data-testid="damage-combat">
+            <h2>{t('report.overview.combatTitle')}</h2>
+            {combatTotal === 0 ? (
+              <p className="sub">{t('report.overview.noCombatDamage')}</p>
+            ) : (
+              <ul className="stack">
+                {(['shield', 'armor', 'hull'] as const)
+                  .filter((layer) => layer !== 'shield' || stats.hasShield)
+                  .map((layer) => (
+                    <li key={layer} className="loss-row">
+                      <span>{t(`report.overview.layer.${layer}`)}</span>
+                      <LossBar
+                        before={0}
+                        after={combat[layer]}
+                        max={combatMax}
+                        label={t(`report.overview.layer.${layer}`)}
+                        tone="bad"
+                      />
+                      <b className="error-text">{number(combat[layer])}</b>
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </article>
 
-      <div className="damage-split">
-        <article className="panel" data-testid="damage-combat">
-          <h2>{t('report.overview.combatTitle')}</h2>
-          {combatTotal === 0 ? (
-            <p className="sub">{t('report.overview.noCombatDamage')}</p>
+          <article className="panel" data-testid="damage-travel">
+            <h2>{t('report.overview.travelTitle')}</h2>
+            {wear.points === 0 ? (
+              <p className="sub">{t('report.overview.noWear')}</p>
+            ) : (
+              <p>{t('report.overview.wear', { points: number(wear.points), parts: wear.parts })}</p>
+            )}
+            <p className="sub">{t('report.overview.travelNote')}</p>
+          </article>
+        </div>
+
+        <article className="panel" data-testid="parts-damage">
+          <h2>{t('report.detail.partsDamage')}</h2>
+          <p className="sub">{t('report.detail.partsDamageIntro')}</p>
+          {stats.partsDamage.length === 0 ? (
+            <p className="sub">{t('report.detail.noDamage')}</p>
           ) : (
-            <ul className="stack">
-              {(['shield', 'armor', 'hull'] as const)
-                .filter((layer) => layer !== 'shield' || stats.hasShield)
-                .map((layer) => (
-                  <li key={layer} className="loss-row">
-                    <span>{t(`report.overview.layer.${layer}`)}</span>
-                    <LossBar
-                      before={0}
-                      after={combat[layer]}
-                      max={combatMax}
-                      label={t(`report.overview.layer.${layer}`)}
-                      tone="bad"
-                    />
-                    <b className="error-text">{number(combat[layer])}</b>
-                  </li>
-                ))}
+            <ul className="stack parts-damage-list">
+              {stats.partsDamage.map((row) => (
+                <li key={row.partId} className="parts-damage-row">
+                  <span className="parts-damage-name">{row.name}</span>
+                  <LossBar
+                    before={row.before}
+                    after={row.after}
+                    max={FULL}
+                    label={row.name}
+                    tone={conditionTone(row.after)}
+                  />
+                  <span className="parts-damage-lost">
+                    {t('report.overview.fromTo', { before: row.before, after: row.after })}{' '}
+                    <b className="error-text">
+                      {t('report.detail.lost', { amount: row.before - row.after })}
+                    </b>
+                  </span>
+                </li>
+              ))}
             </ul>
           )}
         </article>
-
-        <article className="panel" data-testid="damage-travel">
-          <h2>{t('report.overview.travelTitle')}</h2>
-          {wear.points === 0 ? (
-            <p className="sub">{t('report.overview.noWear')}</p>
-          ) : (
-            <p>
-              {t('report.overview.wear', { points: number(wear.points), parts: wear.parts })}
-            </p>
-          )}
-          <p className="sub">{t('report.overview.travelNote')}</p>
-        </article>
       </div>
-
-      <article className="panel" data-testid="parts-damage">
-        <h2>{t('report.detail.partsDamage')}</h2>
-        <p className="sub">{t('report.detail.partsDamageIntro')}</p>
-        {stats.partsDamage.length === 0 ? (
-          <p className="sub">{t('report.detail.noDamage')}</p>
-        ) : (
-          <ul className="stack parts-damage-list">
-            {stats.partsDamage.map((row) => (
-              <li key={row.partId} className="parts-damage-row">
-                <span className="parts-damage-name">{row.name}</span>
-                <LossBar
-                  before={row.before}
-                  after={row.after}
-                  max={FULL}
-                  label={row.name}
-                  tone={conditionTone(row.after)}
-                />
-                <span className="parts-damage-lost">
-                  {t('report.overview.fromTo', { before: row.before, after: row.after })}{' '}
-                  <b className="error-text">{t('report.detail.lost', { amount: row.before - row.after })}</b>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </article>
     </section>
   );
 }

@@ -182,7 +182,8 @@ describe('transit (S10.7)', () => {
 
     const view = await screen.findByTestId('in-transit');
     expect(view).toBeInTheDocument();
-    expect(screen.getByTestId('transit-scene')).toHaveClass('moving');
+    // the trip column carries the scene: it moves while the ship is under way
+    expect(within(screen.getByTestId('transit-aside')).getByTestId('transit-scene')).toHaveClass('moving');
     expect(screen.getByTestId('briefing')).toBeInTheDocument();
     expect(screen.getAllByRole('timer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Leg 1 of 2')).toBeInTheDocument();

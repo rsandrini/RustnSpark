@@ -4786,3 +4786,64 @@ body:has(.modal-backdrop) .compare-hover-card,
 body:has(.modal-backdrop) .part-hover-card {
   display: none;
 }
+
+/* Quest details and trip scene side by side: the text on the left, the ship scene and the map in
+   a narrow column on the right (stacked on a phone). */
+.transit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 16px;
+  align-items: start;
+}
+/* The ship scene and the map side by side, so the pair takes one row of height. */
+.transit-aside {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.transit-aside .route-map {
+  align-self: stretch;
+  display: grid;
+  align-items: center;
+}
+.transit-aside .route-map {
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .transit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/* The wide scene above the screen steps aside when the trip column carries its own. */
+main:has(.transit-aside) .ship-stage-overlay-host {
+  display: none;
+}
+
+/* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
+.report-overview {
+  display: grid;
+  grid-template-columns: 460px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+/* The place scene and the map share one row, the numbers beside it. */
+.overview-visual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.overview-visual .route-map {
+  align-self: stretch;
+  display: grid;
+  align-items: center;
+}
+.overview-visual .route-map {
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .report-overview {
+    grid-template-columns: 1fr;
+  }
+}
