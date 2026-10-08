@@ -17,3 +17,6 @@ apps/api/data/
 
 # local backups (db dumps, tuning snapshots)
 backups/
+
+# local TLS certificates
+certs/

@@ -221,6 +221,9 @@ services:
       API_UPSTREAM: api:3000
     ports:
       - ${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80
+      - ${WEB_BIND:-127.0.0.1}:${WEB_TLS_PORT:-8443}:443
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       api:
         condition: service_healthy
@@ -236,6 +239,9 @@ services:
       API_UPSTREAM: api-prod:3000
     ports:
       - ${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80
+      - ${WEB_BIND:-127.0.0.1}:${WEB_TLS_PORT:-8443}:443
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       api-prod:
         condition: service_healthy
