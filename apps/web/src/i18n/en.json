@@ -1052,7 +1052,11 @@
     },
     "legPlanTitle": "Planned route",
     "cancelMission": "Cancel mission",
-    "scavengeTitle": "Scavenging"
+    "scavengeTitle": "Scavenging",
+    "race": {
+      "title": "Your rivals",
+      "rival": "{{name}} — speed {{mobility}}"
+    }
   },
   "board": {
     "title": "Mission board",

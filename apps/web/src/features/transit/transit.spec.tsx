@@ -95,6 +95,33 @@ describe('transit (S10.7)', () => {
     expect(screen.getByText('Portão Kessler → Base Hedus')).toBeInTheDocument();
   });
 
+  it('a race mission lists its rivals (fastest first) before dispatch', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'RACE',
+              cargo: {
+                race: {
+                  competitors: [
+                    { id: 'r1', name: 'Comet Runner', mobility: 2.4 },
+                    { id: 'r2', name: 'Vega Dart', mobility: 4.1 },
+                  ],
+                },
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const rivals = await screen.findByTestId('race-rivals');
+    const items = within(rivals).getAllByRole('listitem').map((item) => item.textContent);
+    expect(items).toEqual(['Vega Dart — speed 4.1', 'Comet Runner — speed 2.4']);
+  });
+
   it('dispatches the accepted mission and flips to the in-transit view', async () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
 

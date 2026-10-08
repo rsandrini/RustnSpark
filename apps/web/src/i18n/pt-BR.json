@@ -1052,7 +1052,11 @@
     },
     "legPlanTitle": "Rota planejada",
     "cancelMission": "Cancelar missão",
-    "scavengeTitle": "Saque de destroços"
+    "scavengeTitle": "Saque de destroços",
+    "race": {
+      "title": "Seus rivais",
+      "rival": "{{name}} — velocidade {{mobility}}"
+    }
   },
   "board": {
     "title": "Quadro de missões",
