@@ -106,9 +106,11 @@ describe('connector rules generation', () => {
 
   it('a 1x1 part gets its sides on its single cell; defaults give an engine no W cell', () => {
     const engine = generateConnectors(defaultConnectorRules('ENGINE'), 1, 1, 'x')!;
-    expect(engine.cells.map((c) => c.side).sort()).toEqual(['E', 'N', 'S']);
+    expect(engine.cells.every((c) => ['E', 'N', 'S'].includes(c.side))).toBe(true);
+    expect(engine.cells.length).toBeGreaterThanOrEqual(1);
     const tank = generateConnectors(defaultConnectorRules('TANK'), 1, 1, 'x')!;
-    expect(tank.cells).toHaveLength(4);
+    expect(tank.cells.length).toBeGreaterThanOrEqual(1);
+    expect(tank.cells.length).toBeLessThanOrEqual(4);
   });
 
   it('oneKindPerPart: every connected side of a part shares one kind, and each kind occurs about equally', () => {
@@ -150,9 +152,16 @@ describe('connector rules generation', () => {
   it('previewConnectorRules: exact chances that sum to 1, samples drawn by the real generator, problems reported', () => {
     const preview = previewConnectorRules(defaultConnectorRules('TANK'), 1, 1, 'TANK', 4, 'p');
     expect(preview.problem).toBeNull();
-    expect(preview.combos).toHaveLength(3); // all-central / all-split / all-universal
+    // every non-empty subset of sides x {central, split, universal}: 3 * (2^4 - 1)
+    expect(preview.combos).toHaveLength(45);
     expect(preview.combos.reduce((sum, c) => sum + c.probability, 0)).toBeCloseTo(1, 10);
-    for (const entry of preview.combos) expect(entry.probability).toBeCloseTo(1 / 3, 10);
+    // the three kinds are equally likely overall
+    const share = (kind: string) =>
+      preview.combos
+        .filter((c) => Object.values(c.sides).includes(kind as never))
+        .reduce((sum, c) => sum + c.probability, 0);
+    expect(share('central')).toBeCloseTo(1 / 3, 10);
+    expect(share('split')).toBeCloseTo(1 / 3, 10);
     expect(preview.samples).toHaveLength(4);
 
     const engineBad = previewConnectorRules(
@@ -198,5 +207,15 @@ describe('connector rules generation', () => {
       minConnected: 3,
     };
     expect(validateConnectorRules(impossible)).toMatch(/no side combination/);
+  });
+
+  it('kit generation (fullPorts) never leaves a bare side, never rolls split, for any seed', () => {
+    for (let i = 0; i < 300; i += 1) {
+      const tank = generateConnectors(defaultConnectorRules('TANK'), 1, 1, `kit-${i}`, ['central', 'universal'], true)!;
+      expect(tank.cells.map((c) => c.side).sort()).toEqual(['E', 'N', 'S', 'W']);
+      expect(tank.cells.every((c) => c.kind !== 'split')).toBe(true);
+      const engine = generateConnectors(defaultConnectorRules('ENGINE'), 1, 1, `kit-${i}`, ['central', 'universal'], true)!;
+      expect(engine.cells.map((c) => c.side).sort()).toEqual(['E', 'N', 'S']); // facing side stays bare
+    }
   });
 });

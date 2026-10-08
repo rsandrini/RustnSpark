@@ -52,7 +52,8 @@ describe('autoLayout', () => {
             part.catalog.w,
             part.catalog.h,
             `s${seed}-${index}`,
-            KIT_KINDS, // a kit: central/universal only, so every part can join the bridge
+            KIT_KINDS, // a kit: central/universal only, every side ported: every part can join
+            true,
           ),
         },
       }));

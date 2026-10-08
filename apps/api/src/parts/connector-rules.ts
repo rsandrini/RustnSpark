@@ -157,11 +157,18 @@ export function generateConnectors(
   h: number,
   seed: string,
   allowedKinds?: readonly ConnectorKind[],
+  /** Kits: only the combinations with the most ports the rules allow (no bare sides). */
+  fullPorts = false,
 ): ConnectorLayout | null {
   const rules = parseConnectorRules(rulesJson);
   if (rules === null) return null;
   // A restriction that leaves nothing to roll falls back to the rules as authored.
-  const restricted = allowedKinds === undefined ? [] : enumerateCombos(rules, allowedKinds);
+  let restricted = allowedKinds === undefined ? [] : enumerateCombos(rules, allowedKinds);
+  if (fullPorts && restricted.length > 0) {
+    const ports = (combo: SideCombo): number => SIDES.filter((side) => combo[side] !== 'none').length;
+    const most = Math.max(...restricted.map((entry) => ports(entry.combo)));
+    restricted = restricted.filter((entry) => ports(entry.combo) === most);
+  }
   const combos = restricted.length > 0 ? restricted : enumerateCombos(rules);
   if (combos.length === 0) return null;
   const total = combos.reduce((sum, entry) => sum + entry.weight, 0);
@@ -173,12 +180,15 @@ export function generateConnectors(
   return expandCombo(combos[combos.length - 1]!.combo, w, h);
 }
 
-/** Factory default (seed): every connected side may be central, split or universal with equal
-    chance, but one kind per part (`oneKindPerPart`) — so a generated part is all-central,
-    all-split or all-universal, ports at the same place on every side. ENGINE/WEAPON get `none`
-    on the facing side W. Admin edits the rules per part type; the seed only fills missing ones. */
+/** Factory default (seed): each side may be bare ("none") or carry a port — central, split or
+    universal with equal chance — but one kind per part (`oneKindPerPart`): a generated part is
+    all-central, all-split or all-universal, ports at the same place on every side, and some sides
+    are simply left without one (at least one side always keeps its port: `minConnected`).
+    ENGINE/WEAPON get `none` on the facing side W. Admin edits the rules per part type; the seed
+    only fills missing ones. */
 export function defaultConnectorRules(partClass: string): ConnectorRules {
   const mixed = [
+    { kind: 'none' as const, weight: 1 },
     { kind: 'central' as const, weight: 1 },
     { kind: 'split' as const, weight: 1 },
     { kind: 'universal' as const, weight: 1 },

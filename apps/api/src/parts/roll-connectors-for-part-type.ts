@@ -16,5 +16,5 @@ export async function rollConnectorsForPartType(
     where: { partType },
     select: { connectorRules: true, w: true, h: true },
   });
-  return rollConnectors(row, undefined, kit ? KIT_KINDS : undefined);
+  return rollConnectors(row, undefined, kit ? KIT_KINDS : undefined, kit);
 }
