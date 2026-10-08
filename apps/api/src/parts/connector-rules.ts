@@ -14,6 +14,7 @@ import type { ConnectorCell, ConnectorKind, ConnectorLayout, ConnectorSide } fro
 export const SIDES: readonly ConnectorSide[] = ['N', 'E', 'S', 'W'];
 const MAX_WEIGHT = 1_000_000;
 const MAX_SIDES = 4;
+const DEFAULT_MIN_CONNECTED = 1;
 const KINDS = ['none', 'central', 'split', 'universal'] as const;
 
 const sideKindSchema = z.enum(KINDS);
@@ -32,6 +33,9 @@ export const connectorRulesSchema = z
     /** Every connected side of a generated part carries the SAME kind (all central, all split or
         all universal) — the "real" mix: types vary between parts, never within one. */
     oneKindPerPart: z.boolean().optional(),
+    /** At least this many sides carry a port. Defaults to 1: a part with no port at all could
+        never join a ship. */
+    minConnected: z.number().int().min(0).max(MAX_SIDES).optional(),
     maxConnected: z.number().int().min(0).max(MAX_SIDES).optional(),
     maxSplit: z.number().int().min(0).max(MAX_SIDES).optional(),
     forbidden: z
@@ -95,9 +99,9 @@ function isAllowed(rules: ConnectorRules, combo: SideCombo): boolean {
   if (rules.oneKindPerPart === true && new Set(kinds.filter((kind) => kind !== 'none')).size > 1) {
     return false;
   }
-  if (rules.maxConnected !== undefined && kinds.filter((k) => k !== 'none').length > rules.maxConnected) {
-    return false;
-  }
+  const connected = kinds.filter((k) => k !== 'none').length;
+  if (connected < (rules.minConnected ?? DEFAULT_MIN_CONNECTED)) return false;
+  if (rules.maxConnected !== undefined && connected > rules.maxConnected) return false;
   if (rules.maxSplit !== undefined && kinds.filter((k) => k === 'split').length > rules.maxSplit) {
     return false;
   }

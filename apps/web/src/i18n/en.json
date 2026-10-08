@@ -483,7 +483,10 @@
       "previewUnavailable": "Preview unavailable right now.",
       "moreCombos": "+{{count}} more combinations",
       "size": "{{w}}×{{h}}",
-      "percent": "{{value}}%"
+      "percent": "{{value}}%",
+      "minConnected": "Min sides with a port",
+      "defaultOne": "1 (default)",
+      "noPortHelp": "To make a side sometimes bare, allow the dash (none) on it and give it a weight: 1 against 3 for central means a 25% chance of no port on that side. At least the minimum number of sides always keeps a port."
     },
     "configTitle": "Tuning",
     "entities": "Entities",

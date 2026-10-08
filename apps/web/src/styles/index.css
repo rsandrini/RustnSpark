@@ -4336,3 +4336,8 @@ svg .block.dir-blocked {
 .admin-shell .connector-rules-one-kind input[type='checkbox'] {
   width: auto;
 }
+
+.rules-share {
+  color: var(--mut);
+  font-size: 11px;
+}

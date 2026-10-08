@@ -483,7 +483,10 @@
       "previewUnavailable": "Prévia indisponível no momento.",
       "moreCombos": "+{{count}} combinações",
       "size": "{{w}}×{{h}}",
-      "percent": "{{value}}%"
+      "percent": "{{value}}%",
+      "minConnected": "Mín. de lados com porta",
+      "defaultOne": "1 (padrão)",
+      "noPortHelp": "Para um lado ficar às vezes sem porta, permita o traço (nenhum) nele e dê um peso: 1 contra 3 de central é 25% de chance de não ter porta nesse lado. Sempre sobra ao menos o mínimo de lados com porta."
     },
     "configTitle": "Ajustes",
     "entities": "Entidades",

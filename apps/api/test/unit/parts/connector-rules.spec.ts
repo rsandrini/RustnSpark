@@ -163,4 +163,40 @@ describe('connector rules generation', () => {
     expect(engineBad.samples).toEqual([]);
     expect(previewConnectorRules({ nope: true }, 1, 1, 'TANK', 3, 'p').problem).toMatch(/shape/);
   });
+
+  it('a side can be "no port" with a chance, but at least one side always has a port (default min 1)', () => {
+    const maybe = kinds([
+      ['none', 1],
+      ['central', 3],
+    ]);
+    const rules: ConnectorRules = { sides: { N: maybe, E: maybe, S: maybe, W: maybe } };
+    const combos = enumerateCombos(rules);
+    expect(combos.some(({ combo }) => Object.values(combo).every((k) => k === 'none'))).toBe(false);
+    expect(combos.some(({ combo }) => Object.values(combo).includes('none'))).toBe(true);
+    expect(combos.reduce((sum, c) => sum + c.weight, 0)).toBeGreaterThan(0);
+    // every roll has >= 1 port, and some rolls leave a side bare
+    let bare = 0;
+    for (let i = 0; i < 400; i += 1) {
+      const layout = generateConnectors(rules, 1, 1, `m-${i}`)!;
+      expect(layout.cells.length).toBeGreaterThanOrEqual(1);
+      if (layout.cells.length < 4) bare += 1;
+    }
+    expect(bare).toBeGreaterThan(100);
+  });
+
+  it('minConnected raises the floor, and rules that cannot meet it are rejected', () => {
+    const maybe = kinds([
+      ['none', 1],
+      ['central', 1],
+    ]);
+    const base: ConnectorRules = { sides: { N: maybe, E: maybe, S: maybe, W: maybe }, minConnected: 3 };
+    for (const { combo } of enumerateCombos(base)) {
+      expect(Object.values(combo).filter((k) => k !== 'none').length).toBeGreaterThanOrEqual(3);
+    }
+    const impossible: ConnectorRules = {
+      sides: { N: fixed('none'), E: fixed('none'), S: maybe, W: maybe },
+      minConnected: 3,
+    };
+    expect(validateConnectorRules(impossible)).toMatch(/no side combination/);
+  });
 });

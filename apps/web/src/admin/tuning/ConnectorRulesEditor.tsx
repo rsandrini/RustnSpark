@@ -18,6 +18,8 @@ export interface ConnectorRules {
   sides: Record<Side, { kind: Kind; weight: number }[]>;
   /** Every connected side of a generated part carries the same kind. */
   oneKindPerPart?: boolean;
+  /** At least this many sides carry a port (the server defaults to 1). */
+  minConnected?: number;
   maxConnected?: number;
   maxSplit?: number;
   forbidden?: Partial<Record<Side, Kind>>[];
@@ -47,7 +49,7 @@ function withWeight(rules: ConnectorRules, side: Side, kind: Kind, weight: numbe
 
 function withLimit(
   rules: ConnectorRules,
-  key: 'maxConnected' | 'maxSplit',
+  key: 'minConnected' | 'maxConnected' | 'maxSplit',
   raw: string,
 ): ConnectorRules {
   const { [key]: _removed, ...rest } = rules;
@@ -147,6 +149,8 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                 {KINDS.map((kind) => {
                   const weight = weightOf(rules, side, kind);
                   const active = weight > 0;
+                  const sideTotal = rules.sides[side].reduce((sum, entry) => sum + entry.weight, 0);
+                  const share = sideTotal > 0 ? Math.round((weight / sideTotal) * PERCENT) : 0;
                   const disabled = locked && kind !== 'none';
                   return (
                     <div key={kind} className={`rules-chip${active ? ' on' : ''}`}>
@@ -175,6 +179,11 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                           }
                         />
                       )}
+                      {active && (
+                        <small className="rules-share" data-testid={`rules-share-${side}-${kind}`}>
+                          {t('tuning.connectorRules.percent', { value: share })}
+                        </small>
+                      )}
                     </div>
                   );
                 })}
@@ -188,6 +197,7 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
         </div>
       </div>
       <small className="field-hint">{t('tuning.connectorRules.weightHelp')}</small>
+      <small className="field-hint">{t('tuning.connectorRules.noPortHelp')}</small>
 
       <label className="connector-rules-one-kind">
         <input
@@ -204,14 +214,14 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
       </label>
 
       <div className="connector-rules-limits">
-        {(['maxConnected', 'maxSplit'] as const).map((key) => (
+        {(['minConnected', 'maxConnected', 'maxSplit'] as const).map((key) => (
           <label key={key}>
             {t(`tuning.connectorRules.${key}`)}
             <input
               type="number"
               min={0}
               max={MAX_SIDES}
-              placeholder={t('tuning.connectorRules.unlimited')}
+              placeholder={t(key === 'minConnected' ? 'tuning.connectorRules.defaultOne' : 'tuning.connectorRules.unlimited')}
               data-testid={`rules-${key}`}
               value={rules[key] ?? ''}
               onChange={(event) => onChange(withLimit(rules, key, event.target.value))}

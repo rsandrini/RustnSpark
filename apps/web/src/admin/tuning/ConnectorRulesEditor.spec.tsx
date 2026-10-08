@@ -48,6 +48,24 @@ describe('ConnectorRulesEditor', () => {
     expect((onChange.mock.calls[1]![0] as ConnectorRules).sides.N).toEqual([]);
   });
 
+  it('shows each allowed kind\'s share of its side, so a side can be given a chance of having no port', () => {
+    const maybeBare: ConnectorRules = {
+      sides: {
+        ...central.sides,
+        N: [
+          { kind: 'none', weight: 1 },
+          { kind: 'central', weight: 3 },
+        ],
+      },
+    };
+    const onChange = vi.fn();
+    renderWithProviders(<ConnectorRulesEditor value={maybeBare} onChange={onChange} />);
+    expect(screen.getByTestId('rules-share-N-none')).toHaveTextContent('25%');
+    expect(screen.getByTestId('rules-share-N-central')).toHaveTextContent('75%');
+    fireEvent.change(screen.getByTestId('rules-minConnected'), { target: { value: '2' } });
+    expect((onChange.mock.calls[0]![0] as ConnectorRules).minConnected).toBe(2);
+  });
+
   it('edits a weight', () => {
     const onChange = vi.fn();
     renderWithProviders(<ConnectorRulesEditor value={central} onChange={onChange} />);
