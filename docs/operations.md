@@ -151,6 +151,14 @@ speed). Everything is tunable under the `race.*` config keys (Tuning → Config)
 speed it was generated with, so a change applies to offers generated afterwards. The board and
 transit screens show the rivals' speeds and times; the mission report shows the standings.
 
+### 5.4 Reaching the game from other computers (HTTPS)
+
+Set `WEB_BIND=0.0.0.0` in `.env` to publish the web port on the network. The refresh-token cookie
+is `Secure`, so other computers need HTTPS: run `scripts/make-dev-cert.sh <lan-ip> localhost` (creates
+`certs/`: a local CA plus a server certificate, git-ignored), recreate the web container, and open
+`https://<lan-ip>:8443` (`WEB_TLS_PORT`). Trust `certs/ca.crt` on each client computer, otherwise the browser
+shows a certificate warning. Without `certs/server.crt` nginx serves plain HTTP only.
+
 ## 6. Operating the game
 
 | Situation | Action |
