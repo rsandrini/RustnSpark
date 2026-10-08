@@ -3,10 +3,11 @@ import type { PrismaClient } from '@prisma/client';
 const FACTIONS = [
   {
     id: 'luna',
-    displayName: { en: 'Luna Corporation', 'pt-BR': 'Luna Corp' },
+    displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade de Luna' },
     description: {
-      en: 'A disciplined corporate consortium that controls the central trade hubs.',
-      'pt-BR': 'Um consórcio corporativo disciplinado que controla os hubs comerciais centrais.',
+      en: 'Port clerks, steady freight and the weight of official seals behind every contract.',
+      'pt-BR':
+        'Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato.',
     },
     color: '#4a90d9',
     playable: true,
@@ -14,10 +15,11 @@ const FACTIONS = [
   },
   {
     id: 'sun',
-    displayName: { en: 'Sun Alliance', 'pt-BR': 'Aliança Solar' },
+    displayName: { en: 'Sun Traders', 'pt-BR': 'Comerciantes do Sol' },
     description: {
-      en: 'A militarized alliance guarding the solar approaches and garrison outposts.',
-      'pt-BR': 'Uma aliança militarizada que protege as rotas solares e postos de guarnição.',
+      en: 'Free merchants who answer to no port authority and always know a buyer.',
+      'pt-BR':
+        'Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador.',
     },
     color: '#e3b341',
     playable: true,
@@ -25,10 +27,11 @@ const FACTIONS = [
   },
   {
     id: 'explorers',
-    displayName: { en: 'Deep Explorers', 'pt-BR': 'Exploradores do Abismo' },
+    displayName: { en: 'Explorers', 'pt-BR': 'Exploradores' },
     description: {
-      en: 'Independent pioneers operating on the sector fringe and mining fields.',
-      'pt-BR': 'Pioneiros independentes que atuam na fronteira do setor e campos de mineração.',
+      en: 'Frontier prospectors pushing past the charted belt for ore nobody has priced yet.',
+      'pt-BR':
+        'Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou.',
     },
     color: '#3fa66a',
     playable: true,
@@ -36,7 +39,7 @@ const FACTIONS = [
   },
   {
     id: 'pirates',
-    displayName: { en: 'Pirate Clans', 'pt-BR': 'Clãs Piratas' },
+    displayName: { en: 'Pirates', 'pt-BR': 'Piratas' },
     description: {
       en: 'Loose clans that prey on shipping in debris fields and dead zones.',
       'pt-BR': 'Clãs dispersos que atacam rotas comerciais em campos de detritos e zonas mortas.',

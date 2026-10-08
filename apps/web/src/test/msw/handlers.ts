@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type {
   ActiveMission,
+  FactionsResponse,
   BuyResponse,
   DispatchResponse,
   InventoryItem,
@@ -536,7 +537,54 @@ export const handlers = [
   http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
   // Uploaded faction images (none by default: every faction shows its built-in art).
-  http.get('/v1/factions/art', () => ok({ factions: {} })),
+  // The factions as the admin has them (the same texts the language files used to carry).
+  http.get('/v1/factions', () =>
+    ok<FactionsResponse>({
+      factions: [
+        {
+          id: 'explorers',
+          displayName: { en: 'Explorers', 'pt-BR': 'Exploradores' },
+          description: {
+            en: 'Frontier prospectors pushing past the charted belt for ore nobody has priced yet.',
+            'pt-BR': 'Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou.',
+          },
+          color: '#3fa66a',
+          playable: true,
+          art: null,
+        },
+        {
+          id: 'luna',
+          displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade de Luna' },
+          description: {
+            en: 'Port clerks, steady freight and the weight of official seals behind every contract.',
+            'pt-BR': 'Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato.',
+          },
+          color: '#4a90d9',
+          playable: true,
+          art: null,
+        },
+        {
+          id: 'pirates',
+          displayName: { en: 'Pirates', 'pt-BR': 'Piratas' },
+          description: { en: 'Loose clans.', 'pt-BR': 'Clãs dispersos.' },
+          color: '#c23b3b',
+          playable: false,
+          art: null,
+        },
+        {
+          id: 'sun',
+          displayName: { en: 'Sun Traders', 'pt-BR': 'Comerciantes do Sol' },
+          description: {
+            en: 'Free merchants who answer to no port authority and always know a buyer.',
+            'pt-BR': 'Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador.',
+          },
+          color: '#e3b341',
+          playable: true,
+          art: null,
+        },
+      ],
+    }),
+  ),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).

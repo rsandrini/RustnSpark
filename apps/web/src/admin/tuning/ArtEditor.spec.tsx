@@ -39,9 +39,18 @@ describe('ArtEditor (factions)', () => {
   it('a custom image can be reset to the default', async () => {
     let deleted: string | null = null;
     server.use(
-      http.get('/v1/factions/art', () =>
+      http.get('/v1/factions', () =>
         HttpResponse.json({
-          factions: { luna: { banner: '/v1/art/luna-banner-1.png', logo: null, background: null } },
+          factions: [
+            {
+              id: 'luna',
+              displayName: { en: 'Luna', 'pt-BR': 'Luna' },
+              description: { en: '', 'pt-BR': '' },
+              color: '#4a90d9',
+              playable: true,
+              art: { banner: '/v1/art/luna-banner-1.png', logo: null, background: null },
+            },
+          ],
         }),
       ),
       http.delete('/v1/admin/tuning/factions/luna/art/:slot', ({ params }) => {
@@ -59,9 +68,18 @@ describe('ArtEditor (factions)', () => {
 
   it('a faction badge shows its uploaded logo in front of its name', async () => {
     server.use(
-      http.get('/v1/factions/art', () =>
+      http.get('/v1/factions', () =>
         HttpResponse.json({
-          factions: { luna: { banner: null, logo: '/v1/art/luna-logo-9.png', background: null } },
+          factions: [
+            {
+              id: 'luna',
+              displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade de Luna' },
+              description: { en: '', 'pt-BR': '' },
+              color: '#4a90d9',
+              playable: true,
+              art: { banner: null, logo: '/v1/art/luna-logo-9.png', background: null },
+            },
+          ],
         }),
       ),
     );
@@ -90,5 +108,28 @@ describe('ArtEditor (factions)', () => {
     const file = new File([new Uint8Array([1, 2])], 'i.png', { type: 'image/png' });
     fireEvent.change(screen.getByTestId('art-file-icon'), { target: { files: [file] } });
     await waitFor(() => expect(seen).toBe('icon'));
+  });
+
+  it('a faction badge shows the admin\'s name and colour, not the language file\'s', async () => {
+    server.use(
+      http.get('/v1/factions', () =>
+        HttpResponse.json({
+          factions: [
+            {
+              id: 'luna',
+              displayName: { en: 'Moon Combine', 'pt-BR': 'Consórcio Lunar' },
+              description: { en: '', 'pt-BR': '' },
+              color: '#12ab34',
+              playable: true,
+              art: null,
+            },
+          ],
+        }),
+      ),
+    );
+    renderWithProviders(<FactionBadge factionId="luna" />);
+    const badge = await screen.findByText('Moon Combine');
+    expect(badge).toHaveStyle({ color: '#12ab34' });
+    expect(screen.queryByText('Luna Authority')).toBeNull();
   });
 });

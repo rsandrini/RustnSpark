@@ -1,20 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { client } from '../api/client';
-import type { FactionArtResponse } from '../api/generated';
+import { useFactions } from './factions';
 
 const DEFAULT_FACTION = '_default';
 
-export type FactionArtMap = FactionArtResponse['factions'];
+export type FactionArtMap = Record<
+  string,
+  { banner: string | null; logo: string | null; background: string | null }
+>;
 
 /** The uploaded images by faction (admin-set); empty until loaded or when nothing was uploaded. */
 export function useFactionArt(): FactionArtMap {
-  const query = useQuery({
-    queryKey: ['factionArt'],
-    queryFn: () => client.get<FactionArtResponse>('/v1/factions/art'),
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-  return query.data?.factions ?? {};
+  const { list } = useFactions();
+  const art: FactionArtMap = {};
+  for (const faction of list) if (faction.art !== null) art[faction.id] = faction.art;
+  return art;
 }
 
 /** The built-in banner (a generated placeholder SVG) a faction shows until an admin uploads one. */

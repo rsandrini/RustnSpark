@@ -1,16 +1,46 @@
 import { Controller, Get, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 import { ArtService, type ArtUrls } from './art.service.js';
+
+/** A faction as players see it: names, pitch, colour and any uploaded images — all admin-owned. */
+export interface PublicFaction {
+  readonly id: string;
+  readonly displayName: { readonly en: string; readonly 'pt-BR': string };
+  readonly description: { readonly en: string; readonly 'pt-BR': string };
+  readonly color: string;
+  readonly playable: boolean;
+  /** Uploaded banner/logo/background URLs; null = no uploads (built-in defaults apply). */
+  readonly art: ArtUrls | null;
+}
 
 /** What every signed-in player needs: which entities have uploaded images (the rest keep defaults). */
 @Controller()
 export class ArtPublicController {
-  constructor(private readonly art: ArtService) {}
+  constructor(
+    private readonly art: ArtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  @Get('factions/art')
-  async factions(): Promise<{ factions: Record<string, ArtUrls> }> {
-    return { factions: await this.art.listUrls('factions') };
+  // The faction list the player UI reads names, blurbs and colours from (not the language files):
+  // what the admin edits is what players see.
+  @Get('factions')
+  async factions(): Promise<{ factions: PublicFaction[] }> {
+    const [rows, art] = await Promise.all([
+      this.prisma.faction.findMany({ orderBy: { id: 'asc' } }),
+      this.art.listUrls('factions'),
+    ]);
+    return {
+      factions: rows.map((row) => ({
+        id: row.id,
+        displayName: row.displayName as PublicFaction['displayName'],
+        description: row.description as PublicFaction['description'],
+        color: row.color,
+        playable: row.playable,
+        art: art[row.id] ?? null,
+      })),
+    };
   }
 
   @Get('places/art')

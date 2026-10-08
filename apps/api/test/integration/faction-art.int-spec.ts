@@ -75,10 +75,15 @@ describe('art uploads (factions and places)', () => {
     await seed(prisma);
     const token = await adminToken();
 
-    const before = await request(httpServer(testApp.app))
-      .get('/v1/factions/art')
-      .set('Authorization', `Bearer ${token}`);
-    expect(before.body).toEqual({ factions: {} }); // nothing uploaded: every faction uses its default
+    const art = async (): Promise<Record<string, unknown>> => {
+      const listed = await request(httpServer(testApp.app))
+        .get('/v1/factions')
+        .set('Authorization', `Bearer ${token}`);
+      expect(listed.status).toBe(200);
+      const rows = (listed.body as { factions: { id: string; art: unknown }[] }).factions;
+      return Object.fromEntries(rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]));
+    };
+    expect(await art()).toEqual({}); // nothing uploaded: every faction uses its default
 
     const response = await upload(token, 'logo', PNG, 'image/png');
     expect(response.status).toBe(200);
@@ -86,10 +91,7 @@ describe('art uploads (factions and places)', () => {
     expect(slot).toBe('logo');
     expect(url).toMatch(/^\/v1\/art\/luna-logo-[a-f0-9]{12}\.png$/);
 
-    const list = await request(httpServer(testApp.app))
-      .get('/v1/factions/art')
-      .set('Authorization', `Bearer ${token}`);
-    expect(list.body).toEqual({ factions: { luna: { banner: null, logo: url, background: null } } });
+    expect(await art()).toEqual({ luna: { banner: null, logo: url, background: null } });
 
     // the file is public (no token) and cacheable forever
     const served = await request(httpServer(testApp.app)).get(url);
@@ -109,10 +111,7 @@ describe('art uploads (factions and places)', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(reset.body).toEqual({ slot: 'logo', url: null });
     expect(readdirSync(ART_DIR)).toHaveLength(0);
-    const after = await request(httpServer(testApp.app))
-      .get('/v1/factions/art')
-      .set('Authorization', `Bearer ${token}`);
-    expect(after.body).toEqual({ factions: {} });
+    expect(await art()).toEqual({});
 
     // every change is a tuning revision
     const revisions = await prisma.tuningRevision.findMany({ where: { entityType: 'factions', entityId: 'luna' } });
@@ -188,5 +187,27 @@ describe('art uploads (factions and places)', () => {
     expect((await request(httpServer(testApp.app)).get('/v1/art/..%2F..%2Fetc%2Fpasswd')).status).toBe(404);
     expect((await request(httpServer(testApp.app)).get('/v1/art/luna-logo-zzzz.png')).status).toBe(404);
     expect((await request(httpServer(testApp.app)).post('/v1/admin/tuning/factions/luna/art/logo')).status).toBe(401);
+  });
+
+  it('lists the factions as the admin has them: names, pitch, colour, playable — what players should see', async () => {
+    await seed(prisma);
+    await prisma.faction.update({
+      where: { id: 'luna' },
+      data: { displayName: { en: 'Moon Combine', 'pt-BR': 'Consórcio Lunar' }, color: '#12ab34' },
+    });
+    const token = await adminToken();
+    const response = await request(httpServer(testApp.app))
+      .get('/v1/factions')
+      .set('Authorization', `Bearer ${token}`);
+    const factions = (response.body as {
+      factions: { id: string; displayName: { en: string }; color: string; playable: boolean }[];
+    }).factions;
+    expect(factions.map((faction) => faction.id)).toEqual(['explorers', 'luna', 'pirates', 'sun']);
+    const luna = factions.find((faction) => faction.id === 'luna');
+    expect(luna?.displayName.en).toBe('Moon Combine');
+    expect(luna?.color).toBe('#12ab34');
+    expect(factions.find((faction) => faction.id === 'pirates')?.playable).toBe(false);
+    // signed-in only
+    expect((await request(httpServer(testApp.app)).get('/v1/factions')).status).toBe(401);
   });
 });

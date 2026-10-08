@@ -21,14 +21,16 @@ export default async function globalTeardown(config: FullConfig): Promise<void> 
   const { accessToken } = (await login.json()) as { accessToken: string };
   const headers = { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` };
 
-  const revisions = await fetch(`${baseURL}/v1/admin/tuning/revisions?limit=1`, { headers });
-  const latest = revisions.ok ? ((await revisions.json()) as Array<{ id: string }>)[0] : undefined;
-  await fetch(`${baseURL}/v1/admin/tuning/config/missions.time_scale/reset`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      expectedRevision: Number(latest?.id ?? 0),
-      reason: 'browser smoke teardown',
-    }),
-  });
+  for (const key of ['missions.time_scale', 'race.min_mobility', 'race.reference_mob', 'race.speed_spread']) {
+    const revisions = await fetch(`${baseURL}/v1/admin/tuning/revisions?limit=1`, { headers });
+    const latest = revisions.ok ? ((await revisions.json()) as Array<{ id: string }>)[0] : undefined;
+    await fetch(`${baseURL}/v1/admin/tuning/config/${key}/reset`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        expectedRevision: Number(latest?.id ?? 0),
+        reason: 'browser smoke teardown',
+      }),
+    });
+  }
 }

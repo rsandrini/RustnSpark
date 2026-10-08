@@ -35,6 +35,40 @@ describe('onboarding (S10.2)', () => {
     expect(screen.getByRole('button', { name: /launch/i })).toBeDisabled();
   });
 
+  it('the picker is the admin\'s data: which factions are playable, their names and pitch, from the database', async () => {
+    server.use(
+      http.get('/v1/factions', () =>
+        HttpResponse.json({
+          factions: [
+            {
+              id: 'luna',
+              displayName: { en: 'Moon Combine', 'pt-BR': 'Consórcio Lunar' },
+              description: { en: 'Edited in the admin, not in a language file.', 'pt-BR': '' },
+              color: '#4a90d9',
+              playable: true,
+              art: null,
+            },
+            {
+              id: 'sun',
+              displayName: { en: 'Sun Traders', 'pt-BR': 'Comerciantes do Sol' },
+              description: { en: 'Hidden for now.', 'pt-BR': '' },
+              color: '#e3b341',
+              playable: false,
+              art: null,
+            },
+          ],
+        }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+
+    expect(await screen.findByLabelText(/moon combine/i)).toBeInTheDocument();
+    expect(screen.getByText('Edited in the admin, not in a language file.')).toBeInTheDocument();
+    // a faction the admin marked not playable is not offered, and the old name is gone
+    expect(screen.queryByLabelText(/sun traders/i)).toBeNull();
+    expect(screen.queryByLabelText(/luna authority/i)).toBeNull();
+  });
+
   it('posts the chosen faction, reloads the profile and leaves the screen', async () => {
     let faction: string | null = null;
     const requests: unknown[] = [];

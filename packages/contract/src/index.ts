@@ -195,19 +195,27 @@ export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 export const FactionArtSlotSchema = z.enum(['banner', 'logo', 'background']);
 export type FactionArtSlot = z.infer<typeof FactionArtSlotSchema>;
 
-/** GET /v1/factions/art: only factions with at least one uploaded image appear; a null slot (or an
-    absent faction) means "use the built-in default". Values are served URLs (`/v1/art/<file>`). */
-export const FactionArtResponseSchema = z.object({
-  factions: z.record(
-    z.string(),
-    z.object({
+/** One faction as players see it. Names, pitch, colour and images are admin-owned data. */
+export const PublicFactionSchema = z.object({
+  id: z.string(),
+  displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
+  color: z.string(),
+  playable: z.boolean(),
+  /** Uploaded images by slot (null = use the built-in default); null when nothing was uploaded. */
+  art: z
+    .object({
       banner: z.string().nullable(),
       logo: z.string().nullable(),
       background: z.string().nullable(),
-    }),
-  ),
+    })
+    .nullable(),
 });
-export type FactionArtResponse = z.infer<typeof FactionArtResponseSchema>;
+export type PublicFaction = z.infer<typeof PublicFactionSchema>;
+
+/** GET /v1/factions */
+export const FactionsResponseSchema = z.object({ factions: z.array(PublicFactionSchema) });
+export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
 
 export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
 export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;

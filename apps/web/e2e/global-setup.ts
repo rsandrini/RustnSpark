@@ -25,7 +25,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   // (`time_scale` 1). Only that is changed. The board is deliberately left at its default (ONE
   // public offer per port): a new player's first mission must come from the private start-safe
   // mission (D43), and this suite is what proves it on the real stack.
-  const tuning: Array<[string, number]> = [['missions.time_scale', 0.001]];
+  // The race keys make a starter ship a winner of a race (e2e/race.spec.ts); an offer keeps the
+  // entry speed it was generated with, so they are set before any player plays.
+  const tuning: Array<[string, number]> = [
+    ['missions.time_scale', 0.001],
+    ['race.min_mobility', 1],
+    ['race.reference_mob', 0.6],
+    ['race.speed_spread', 0.05],
+  ];
   for (const [key, value] of tuning) {
     const revisions = await fetch(`${baseURL}/v1/admin/tuning/revisions?limit=1`, { headers });
     const latest = revisions.ok

@@ -7,6 +7,7 @@ import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { Gauge } from '../../ui/Gauge';
+import { factionName, useFactions } from '../../ui/factions';
 import { serverNow } from '../../api/client';
 
 export interface MissionCardProps {
@@ -37,6 +38,7 @@ export function MissionCard({
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
+  const factions = useFactions().byId;
   const title = pickLocalized(info.title, i18n.language);
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
@@ -47,7 +49,9 @@ export function MissionCard({
     location === undefined
       ? undefined
       : t('board.controlledBy', {
-          faction: t(`factions.${location.factionId}`, { defaultValue: t('factions.independent') }),
+          faction:
+            factionName(factions[location.factionId], i18n.language) ??
+            t(`factions.${location.factionId}`, { defaultValue: t('factions.independent') }),
         });
   const expired = Date.parse(offer.expiresAt) <= serverNow();
   // info.requirements is the full checklist (met + unmet); eligibility.reasons also carries

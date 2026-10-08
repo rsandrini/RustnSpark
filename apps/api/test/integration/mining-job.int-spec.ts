@@ -159,4 +159,58 @@ describe('independent mining job (round 10)', () => {
     // One flight at a time.
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });
+
+  // Part direction rules: mining flies the ship out, so an engine with a part behind its exhaust
+  // keeps it in port; scavenging is manual work at the place (the ship never travels) and is not
+  // held by the rule.
+  it('mining is refused while an engine has a part behind its exhaust; scavenging at the same layout is not', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
+    const engines = await prisma.partInstance.findMany({
+      where: { id: { in: layout.map((placement) => placement.partInstanceId) }, partCatalog: { partClass: 'ENGINE' } },
+      select: { id: true },
+    });
+    const engineId = engines[0]!.id;
+
+    // turn the engine through its four facings until the ship is flight-viable apart from the
+    // direction rule: that one problem, EXHAUST_BLOCKED, is what this test is about
+    let chosen: number | null = null;
+    for (const rot of [0, 90, 180, 270]) {
+      const candidate = layout.map((placement) =>
+        placement.partInstanceId === engineId ? { ...placement, rot } : placement,
+      );
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/preview`)
+        .set(auth(player.token))
+        .send({ layout: candidate });
+      const codes = (
+        (preview.body as { viability?: { problems: { code: string }[] } }).viability?.problems ?? []
+      ).map((problem) => problem.code);
+      if (codes.length === 1 && codes[0] === 'EXHAUST_BLOCKED') {
+        chosen = rot;
+        await prisma.ship.update({
+          where: { id: player.shipId },
+          data: { layout: candidate },
+        });
+        break;
+      }
+    }
+    expect(chosen).not.toBeNull();
+
+    const refused = await start(player.token, 'ceres');
+    expect(refused.status).toBe(400);
+    const problems = (
+      (refused.body as { message?: { error?: string; problems?: { code: string }[] } }).message ?? {}
+    ).problems;
+    expect(problems?.map((problem) => problem.code)).toContain('EXHAUST_BLOCKED');
+
+    const scavenging = await request(httpServer(testApp.app))
+      .post('/v1/locations/ceres/scavenge')
+      .set(auth(player.token));
+    expect(scavenging.status).toBe(200);
+  });
 });

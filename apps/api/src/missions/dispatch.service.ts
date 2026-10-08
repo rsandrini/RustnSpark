@@ -260,12 +260,18 @@ export class DispatchService {
       );
       const installedConnected = applyConnectivity(installed, connectedIds);
       const sheet = deriveSheet(installedConnected, rules);
-      const viability = withDirectionProblems(
-        checkViability(sheet, installedConnected, rules),
-        (ship.layout as unknown as Placement[]) ?? [],
-        catalogForConnectivity,
-        connectorsByInstance,
-      );
+      // Part direction rules apply to every dispatch that flies the ship — except a scavenging job,
+      // which is manual work at the current place: the ship never travels, so nothing points anywhere.
+      const flightViability = checkViability(sheet, installedConnected, rules);
+      const viability =
+        mission.type === 'SCAVENGE'
+          ? flightViability
+          : withDirectionProblems(
+              flightViability,
+              (ship.layout as unknown as Placement[]) ?? [],
+              catalogForConnectivity,
+              connectorsByInstance,
+            );
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
