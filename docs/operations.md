@@ -128,6 +128,29 @@ Notes: fields the running build no longer has (e.g. a retired column) are skippe
 under `skippedFields`; `null` values in the snapshot ("never set") are left at whatever the seed
 filled. Every applied row writes an audited tuning revision (actor `tuning-snapshot-cli`).
 
+The snapshot also carries the faction and location **art references** (file names). The image
+files themselves are not in it: they live on the `art-data` volume (section 5.2), so keep that
+volume across a reset — or re-upload from the Admin — or the references point at nothing.
+
+### 5.2 Uploaded art (`art-data` volume)
+
+Faction art (banner, logo, background) and place art (wide, square, icon) are uploaded in the
+Admin (Tuning → Factions / Locations). Files are stored by content hash under `ART_DIR`
+(`/data/art` in the containers, named volume `art-data`; `./data/art` for local runs, see
+`.env.example`) and served publicly and immutably at `GET /v1/art/:file`. SVGs are scanned and
+sandboxed on upload. Back the volume up with the database; `docker compose down -v` deletes it.
+Public lists for the web client: `GET /v1/factions` (authenticated: names, descriptions, colours,
+art) and `GET /v1/places/art`.
+
+### 5.3 RACE missions
+
+A RACE is a competition against 3–5 generated rival ships; the pilot needs a fast ship (entry
+speed). Everything is tunable under the `race.*` config keys (Tuning → Config): `competitors_min`
+/ `competitors_max`, `min_mobility` (entry speed), `reference_mob`, `speed_spread`,
+`time_jitter` and `prize_share_1..3` (prize multipliers for places 1–3). An offer keeps the entry
+speed it was generated with, so a change applies to offers generated afterwards. The board and
+transit screens show the rivals' speeds and times; the mission report shows the standings.
+
 ## 6. Operating the game
 
 | Situation | Action |

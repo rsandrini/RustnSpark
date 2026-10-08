@@ -46,6 +46,11 @@ pnpm test:int                  # Jest (integration, API — requires the compose
 pnpm --filter web e2e          # Playwright, against the real `dev` stack (no mocks)
 ```
 
+The browser tests need an admin (`E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`): global setup tunes
+`missions.time_scale` and the `race.*` keys for a fast run and global teardown resets them.
+`e2e/a-race.spec.ts` plays a real race and is named to run first — it needs a board whose luna
+offers were generated after the tuning (use a fresh stack, or let old offers expire).
+
 ## Where to start
 
 1. **[GDD-rust-and-spark-v0.1.md](./GDD-rust-and-spark-v0.1.md)** — the Game Design
