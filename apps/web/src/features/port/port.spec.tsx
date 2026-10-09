@@ -285,10 +285,18 @@ describe('port (S10.9)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
     // The tab explains itself: time, risk, what you find, and where it works.
     const scav = await screen.findByTestId('scavenging');
-    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(await within(scav).findByText(/about 10 minutes/)).toBeInTheDocument();
     expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/Only where your ship is docked/)).toBeInTheDocument();
+
+    // On foot is a choice of its own: its own time, its own warning, its own button.
+    fireEvent.click(within(scav).getByRole('radio', { name: /On foot/ }));
+    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(within(scav).getByTestId('scavenge-foot')).toHaveTextContent('50%');
+    expect(within(scav).queryByTestId('scavenge-handicap')).not.toBeInTheDocument();
+    expect(within(scav).getByRole('button', { name: 'Go scavenging on foot' })).toBeInTheDocument();
+    fireEvent.click(within(scav).getByRole('radio', { name: /With the ship/ }));
 
     // Starting the job sends the ship out and back to the Ship view, where the travel
     // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
@@ -608,11 +616,13 @@ describe('port (S10.9)', () => {
     const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
     await within(popup).findByRole('heading', { name: 'Upgrades to Reinforced Hull' });
     const next = within(popup).getByRole('region', { name: 'Upgrades to Reinforced Hull' });
-    // Replacing Plated Hull, not adding a second hull — the comparison's own wording says so.
-    await within(next).findByText('If you swap this in for Plated Hull');
-    // The next tier's own higher hp (60 vs the ship's current 40) shows as a positive delta.
-    const hpRow = within(next).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument());
+    // The diff sets the upgraded part against the one the pilot owns (not "add it to the ship").
+    const diff = within(next).getByTestId('upgrade-diff');
+    expect(within(diff).getByText('This part today')).toBeInTheDocument();
+    // The next tier's own higher hp (40 today, 60 upgraded) shows as a positive delta.
+    const hpRow = within(diff).getByRole('row', { name: /^Hit points/ });
+    expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument();
+    expect(within(hpRow).getByText('40')).toBeInTheDocument();
   });
 
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {

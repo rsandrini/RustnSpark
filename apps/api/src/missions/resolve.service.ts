@@ -128,6 +128,7 @@ export class MissionResolveService {
           ? {
               ...(await loadScavengeContext(this.prisma, mission.destinationId)),
               ...(snapshot.handicapped === true ? { handicapped: true } : {}),
+              ...(snapshot.onFoot === true ? { onFoot: true } : {}),
             }
           : null,
     });

@@ -25,6 +25,7 @@ import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
+import { startingPools } from '../missions/resolution-input.js';
 import { allocatePower, powerPartOf } from '../resolution/power/power.js';
 import { checkViability, type ViabilityReport } from './viability.js';
 
@@ -78,6 +79,9 @@ export interface PreviewResponse {
   viability: ViabilityReport;
   /** How the ship's power would be shared while travelling: each kind of system's share of its need. */
   power?: { supply: number; demand: number; shares: Record<string, number> };
+  /** What a fight would start with (shield, armor and hull pools, shield recovery per round) at
+      the parts' current condition: worn or unconnected parts give less than the sheet's totals. */
+  layers?: { shield: number; armor: number; hull: number; shieldRegen: number };
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];
@@ -214,10 +218,20 @@ export class ShipsService implements OnModuleInit {
       'cruise',
       rules,
     );
+    const pools = startingPools(
+      installedConnected.map((part) => ({ condition: part.instance.condition, catalog: part.catalog })),
+      rules,
+    );
     return {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
       viability,
+      layers: {
+        shield: pools.esc,
+        armor: pools.armor,
+        hull: pools.hp,
+        shieldRegen: pools.escRegen,
+      },
       power: {
         supply: powerState.supply,
         demand: powerState.demand,

@@ -21,6 +21,8 @@ export interface ScavengeInfo {
   readonly scrapPlace: boolean;
   /** How long a job takes (mission time). */
   readonly durationSeconds: number;
+  /** How long the same job takes on foot (without the ship). */
+  readonly footDurationSeconds: number;
   readonly cooldownSeconds: number;
   /** Seconds until the next job may start here; 0 when ready. */
   readonly retryAfterSeconds: number;
@@ -81,6 +83,7 @@ export class ScavengingService {
       zone: location.zone,
       scrapPlace: SCRAP_PLACE_TYPES.has(location.type),
       durationSeconds: rules.scavenging.duration_seconds,
+      footDurationSeconds: rules.scavenging.foot_duration_seconds,
       cooldownSeconds,
       retryAfterSeconds,
       attempts: counter?.attemptCount ?? 0,

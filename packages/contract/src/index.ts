@@ -225,6 +225,7 @@ export const DisplayResponseSchema = z.object({
   statScale: z.number(),
   mobFactor: z.number(),
   scavengeHandicap: z.number(),
+  scavengeFootFactor: z.number(),
   shieldRegen: z.number(),
   armorPoolFactor: z.number(),
   overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
@@ -318,6 +319,15 @@ export const PreviewResponseSchema = z.object({
   /** Travelling power sharing: what each kind of system gets of its need (0..1). */
   power: z
     .object({ supply: z.number(), demand: z.number(), shares: z.record(z.string(), z.number()) })
+    .optional(),
+  /** What a fight starts with, at the parts' current condition (unconnected parts give nothing). */
+  layers: z
+    .object({
+      shield: z.number(),
+      armor: z.number(),
+      hull: z.number(),
+      shieldRegen: z.number(),
+    })
     .optional(),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
@@ -908,6 +918,8 @@ export const ScavengeInfoSchema = z.object({
   scrapPlace: z.boolean(),
   /** How long a job takes (mission time). */
   durationSeconds: z.number(),
+  /** How long the same job takes on foot, without the ship. */
+  footDurationSeconds: z.number(),
   cooldownSeconds: z.number(),
   retryAfterSeconds: z.number(),
   attempts: z.number(),

@@ -409,6 +409,30 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
     }
   });
 
+  it('scavenging on foot: no encounter, no wear, no fuel, even on a deadly route', () => {
+    const deadly = mission({
+      type: 'SCAVENGE',
+      objectCarried: false,
+      legs: [{ distance: 400, danger: 10, zone: 3, env: { id: 'open', level: 3, fuelMult: 0 } }],
+      scavenge: {
+        zone: 3,
+        fieldType: 'pirate',
+        scrapPlace: false,
+        tiers: [{ tier: 'COMMON', chance: 1 }],
+        catalog: [{ partType: 'cargo', rarity: 'COMMON' }],
+        onFoot: true,
+      },
+    });
+    for (const seed of ['foot-a', 'foot-b', 'foot-c', 'foot-d']) {
+      const out = resolve(seed, snapshot(), deadly);
+      const leg = out.legs.at(-1)!;
+      expect(out.events.some((event) => event.category === 'combat')).toBe(false);
+      expect(out.events.some((event) => event.type === 'mission_wear')).toBe(false);
+      for (const part of PARTS) expect(conditionOf(part.id, leg.ship.parts)).toBe(80);
+      expect(leg.ship.fuel).toBe(1000);
+    }
+  });
+
   it('over many dangerous legs, an exposed part (engine) wears far more than a passive one (cargo)', () => {
     const dangerousLeg = mission({
       legs: [{ distance: 400, danger: 8, zone: 3, env: { id: 'open', level: 1, fuelMult: 1 } }],

@@ -9,6 +9,8 @@ export interface DisplayResponse {
   readonly mobFactor: number;
   /** Share of the usual chance to find anything kept by a scavenger whose ship cannot fly. */
   readonly scavengeHandicap: number;
+  /** Share of the usual chance to find anything kept when scavenging on foot (no ship). */
+  readonly scavengeFootFactor: number;
   /** Shield points a shield recovers at the start of each combat round. */
   readonly shieldRegen: number;
   /** Damage each armor point absorbs (armor is a pool). */
@@ -28,6 +30,7 @@ export class DisplayController {
       statScale: ship.stat_display_scale,
       mobFactor: ship.mob_factor,
       scavengeHandicap: scavenging.handicap_factor,
+      scavengeFootFactor: scavenging.foot_factor,
       shieldRegen: combat.shield_regen,
       armorPoolFactor: combat.armor_pool_factor,
       overdrive: {

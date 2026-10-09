@@ -29,6 +29,8 @@ export interface ScavengeContext {
   /** The ship was not flight-ready (problems or warnings): the run keeps only a share of the
       usual chance to find anything (`scavenging.handicap_factor`). */
   readonly handicapped?: boolean;
+  /** Done on foot, without the ship: keeps only `scavenging.foot_factor` of the usual chance. */
+  readonly onFoot?: boolean;
   readonly catalog: readonly ScavengeCatalogEntry[];
 }
 
@@ -56,8 +58,14 @@ export function rollScavengeFinds(
   // often when the ship is not flight-ready (the pilot searches by hand).
   const zoneIndex = Math.min(Math.max(0, context.zone), Math.max(0, cfg.nothing_chance.length - 1));
   const baseNothing = cfg.nothing_chance[zoneIndex] ?? 0;
-  const nothing =
-    context.handicapped === true ? 1 - (1 - baseNothing) * cfg.handicap_factor : baseNothing;
+  // On foot there is no ship to judge, so the foot share replaces the handicap, never stacks.
+  const share =
+    context.onFoot === true
+      ? cfg.foot_factor
+      : context.handicapped === true
+        ? cfg.handicap_factor
+        : 1;
+  const nothing = 1 - (1 - baseNothing) * share;
   if (rng.float() < nothing) return [];
 
   // Finds: always one, plus an extra roll per slot at the place's own chance (pirate-held debris

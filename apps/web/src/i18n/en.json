@@ -906,7 +906,20 @@
       "nextAttempt": "Next job in",
       "title": "Scavenge the wreckage",
       "nothing": "About {{percent}}% of searches here find nothing (the safer the place, the more often).",
-      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything."
+      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything.",
+      "riskFoot": "The riskier the place (zone {{zone}}), the better and rarer the finds. On foot nothing can attack you. Rare parts only turn up in dangerous places.",
+      "modeTitle": "How to search",
+      "mode": {
+        "ship": {
+          "name": "With the ship",
+          "hint": "The ship searches the place: the full chance to find things, but pirates may find you. Uses no fuel."
+        },
+        "foot": {
+          "name": "On foot",
+          "hint": "You search without the ship: only {{percent}}% of the usual chance, but no attacks, no wear and no fuel."
+        }
+      },
+      "footNotice": "On foot you only get {{percent}}% of the usual chance to find anything. In return, nothing attacks you and the ship takes no damage."
     },
     "mine": {
       "title": "Mine the field",
@@ -943,7 +956,8 @@
     "upgraded": "Upgraded to {{name}}.",
     "upgradeFilter": "Upgrade filter",
     "upgradeOnlyAffordable": "Only what I can afford",
-    "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded."
+    "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
+    "scavengeFoot": "Go scavenging on foot"
   },
   "inventory": {
     "title": "Inventory",
@@ -1514,7 +1528,9 @@
       "ifInstalled": "With this part",
       "scenarioLabel": "Compare as",
       "addOption": "Add it",
-      "replaceOption": "Replace {{name}}"
+      "replaceOption": "Replace {{name}}",
+      "partNow": "This part today",
+      "partUpgraded": "Upgraded"
     }
   },
   "market": {

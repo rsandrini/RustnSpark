@@ -135,6 +135,8 @@ export type ConfigKey =
   | 'scavenging.chance'
   | 'scavenging.cooldown_seconds'
   | 'scavenging.duration_seconds'
+  | 'scavenging.foot_duration_seconds'
+  | 'scavenging.foot_factor'
   | 'scavenging.scrap_share'
   | 'scavenging.zone_quality_bonus'
   | 'scavenging.zone_rarity_bias'
@@ -420,6 +422,8 @@ export type GameRules = Readonly<{
     cooldown_seconds: number;
     /** How long a scavenging job takes (like a mission: scaled by `missions.time_scale`). */
     duration_seconds: number;
+    /** How long a scavenging job on foot takes (same scale as `duration_seconds`). */
+    foot_duration_seconds: number;
     /** In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap. */
     scrap_share: number;
     /** Condition points added to the quality range per zone: riskier places, better finds. */
@@ -432,6 +436,8 @@ export type GameRules = Readonly<{
     tier_min_zone: Readonly<Record<string, number>>;
     /** Share of the usual chance to find anything kept by a ship that is not flight-ready. */
     handicap_factor: number;
+    /** Share of the usual chance to find anything kept when scavenging on foot (no ship). */
+    foot_factor: number;
   }>;
   parts: Readonly<{
     starter_condition: number;

@@ -143,6 +143,23 @@ describe('scavenging job (W8)', () => {
     expect(ship.status).toBe('ON_MISSION');
   });
 
+  it('on foot: its own (shorter) time, mode validated, and the dispatch is marked on foot', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+
+    const bad = await start(player.token, 'ceres').send({ mode: 'swim' });
+    expect(bad.status).toBe(400);
+
+    const response = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(response.status).toBe(200);
+    const body = response.body as { missionId: string; durationSeconds?: number };
+    const rules = configService.snapshot().rules.scavenging;
+    expect(Math.abs((body.durationSeconds ?? 0) - rules.foot_duration_seconds)).toBeLessThanOrEqual(5);
+    expect(rules.foot_duration_seconds).toBeLessThan(rules.duration_seconds);
+    const mission = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    expect(mission.type).toBe('SCAVENGE');
+  });
+
   it('a chemical ship with an empty tank can still scavenge (it never flies)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -211,7 +228,8 @@ describe('scavenging job (W8)', () => {
       fieldType: 'pirate',
       zone: 3,
       scrapPlace: true,
-      durationSeconds: 300,
+      durationSeconds: 600,
+      footDurationSeconds: 300,
       retryAfterSeconds: 0,
     });
     const safe = await request(httpServer(testApp.app))

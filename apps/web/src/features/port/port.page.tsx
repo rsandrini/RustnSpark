@@ -40,7 +40,7 @@ import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
-import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
+import type { PartInfoData } from '../parts/part-detail';
 
 const PORT_TABS = [
   'market',
@@ -398,8 +398,12 @@ export function PortPage({
   // Scavenging is a timed job (a mission of its own): starting it sends the ship out and the pilot
   // to the Transit screen, where the report arrives when it ends.
   const navigate = useNavigate();
+  const [scavengeMode, setScavengeMode] = useState<'ship' | 'foot'>('ship');
   const scavenge = useMutation({
-    mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`),
+    mutationFn: () =>
+      client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`, {
+        mode: scavengeMode,
+      }),
     onSuccess: () => {
       setActionError(null);
       void queryClient.invalidateQueries({ queryKey: ['active'] });
@@ -990,18 +994,6 @@ export function PortPage({
                             condition: 100,
                           }
                         : undefined;
-                    const nextCompare: PartCompareContext | undefined =
-                      nextPartInfo === undefined
-                        ? undefined
-                        : {
-                            shipId: ship.id,
-                            installedPartIds: installed.map((part) => part.id),
-                            currentSheet: ship.sheet,
-                            defaultScenario: 'replace',
-                            replaceCandidates: [
-                              { partInstanceId: item.id, displayName: item.displayName },
-                            ],
-                          };
                     return (
                       <PartCard
                         key={item.id}
@@ -1015,7 +1007,7 @@ export function PortPage({
                               aria-label={t('port.upgradesTo', { name: nextName })}
                             >
                               <h4>{t('port.upgradesTo', { name: nextName })}</h4>
-                              <PartDetail part={nextPartInfo} compare={nextCompare} />
+                              <PartDetail part={nextPartInfo} versus={item} />
                             </section>
                           )
                         }
@@ -1057,10 +1049,21 @@ export function PortPage({
             <ul className="scav-facts">
               <li>
                 {t('port.scav.time', {
-                  minutes: Math.max(1, Math.round(scavengeInfoQuery.data.durationSeconds / 60)),
+                  minutes: Math.max(
+                    1,
+                    Math.round(
+                      (scavengeMode === 'foot'
+                        ? scavengeInfoQuery.data.footDurationSeconds
+                        : scavengeInfoQuery.data.durationSeconds) / 60,
+                    ),
+                  ),
                 })}
               </li>
-              <li>{t('port.scav.risk', { zone: scavengeInfoQuery.data.zone })}</li>
+              <li>
+                {t(scavengeMode === 'foot' ? 'port.scav.riskFoot' : 'port.scav.risk', {
+                  zone: scavengeInfoQuery.data.zone,
+                })}
+              </li>
               <li>
                 {t('port.scav.nothing', {
                   percent: Math.round(scavengeInfoQuery.data.nothingChance * 100),
@@ -1081,7 +1084,35 @@ export function PortPage({
               <li>{t('port.scav.where')}</li>
             </ul>
           )}
-          {shipHandicapped && (
+          <fieldset className="scav-modes" data-testid="scavenge-mode">
+            <legend>{t('port.scav.modeTitle')}</legend>
+            {(['ship', 'foot'] as const).map((mode) => (
+              <label key={mode} className="scav-mode">
+                <input
+                  type="radio"
+                  name="scavenge-mode"
+                  value={mode}
+                  checked={scavengeMode === mode}
+                  onChange={() => setScavengeMode(mode)}
+                />
+                <span>
+                  <b>{t(`port.scav.mode.${mode}.name`)}</b>
+                  <br />
+                  <span className="sub">
+                    {t(`port.scav.mode.${mode}.hint`, {
+                      percent: Math.round(display.scavengeFootFactor * 100),
+                    })}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          {scavengeMode === 'foot' && (
+            <p className="notice warn" data-testid="scavenge-foot">
+              {t('port.scav.footNotice', { percent: Math.round(display.scavengeFootFactor * 100) })}
+            </p>
+          )}
+          {scavengeMode === 'ship' && shipHandicapped && (
             <p className="notice warn" data-testid="scavenge-handicap">
               {t('port.scav.handicap', { percent: Math.round(display.scavengeHandicap * 100) })}
             </p>
@@ -1103,7 +1134,7 @@ export function PortPage({
             disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
             onClick={() => scavenge.mutate()}
           >
-            {t('port.scavenge')}
+            {t(scavengeMode === 'foot' ? 'port.scavengeFoot' : 'port.scavenge')}
           </button>
         </section>
       )}

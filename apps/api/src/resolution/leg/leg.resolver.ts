@@ -98,6 +98,8 @@ export interface LegMissionContext {
   readonly mining: { readonly stop: MiningStop; readonly miner: MinerRig } | null;
   /** Parts kept in storage when the ship left port: what a pirate may take (never installed ones). */
   readonly storage: readonly StoredPart[];
+  /** Scavenging on foot: the ship stays put, so nothing finds it and nothing wears. */
+  readonly onFoot?: boolean;
 }
 
 export interface LegShipState {
@@ -282,6 +284,24 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   const encounterRng = rng.child('encounter');
   const wearRng = rng.child('wear');
   const miningRng = rng.child('mining');
+
+  // Scavenging on foot: the pilot searches the place without the ship, so nothing finds the
+  // ship (no encounter), nothing wears it and no fuel is burned.
+  if (input.context.onFoot === true) {
+    return {
+      index: input.index,
+      status: 'completed',
+      events,
+      ship: input.ship,
+      objectIntegrity: input.objectIntegrity,
+      client: input.context.client,
+      loot: [],
+      chokeFlags: NO_FLAGS,
+      encounter: null,
+      combatResult: null,
+      combatCredits: 0,
+    };
+  }
 
   // Tank burns raw units (sim fuel_gasto), not the credit-denominated fuelCost —
   // charging the priced figure to the tank drained it fuel_price× too fast and

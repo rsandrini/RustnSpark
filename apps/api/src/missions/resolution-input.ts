@@ -154,7 +154,11 @@ const FULL_CONDITION = 100;
 function layeredPools(
   snapshot: DispatchSnapshot,
   rules: GameRules,
-): {
+): LayeredPools {
+  return startingPools(snapshot.parts, rules);
+}
+
+export interface LayeredPools {
   hp: number;
   esc: number;
   armor: number;
@@ -162,8 +166,14 @@ function layeredPools(
   escRegenEnergy: number;
   battery: number;
   batteryRecharge: number;
-} {
-  const share = (part: DispatchSnapshot['parts'][number]): number =>
+}
+
+/** The pools a ship starts a fight with, from parts as they are now (worn parts give less). */
+export function startingPools(
+  parts: ReadonlyArray<{ condition: number; catalog: DispatchSnapshot['parts'][number]['catalog'] }>,
+  rules: GameRules,
+): LayeredPools {
+  const share = (part: { condition: number }): number =>
     Math.max(0, part.condition) / FULL_CONDITION;
   let hp = 0;
   let esc = 0;
@@ -172,7 +182,7 @@ function layeredPools(
   let energy = 0;
   let battery = 0;
   let recharge = 0;
-  for (const part of snapshot.parts) {
+  for (const part of parts) {
     const s = share(part);
     battery += part.catalog.batCharge * s;
     recharge += part.catalog.batInput * s;

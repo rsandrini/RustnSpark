@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import type { ConnectorCell, LocalizedText, PartCatalogStats, PreviewResponse, ShipSheet } from '../../api/generated';
+import type {
+  ConnectorCell,
+  LocalizedText,
+  PartCatalogStats,
+  PreviewResponse,
+  ShipSheet,
+} from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { sheetStat, useDisplay } from '../../ui/display';
 import { ConnectorGrid } from './connector-grid';
@@ -70,7 +76,11 @@ type EffectStat = (typeof EFFECT_STATS)[number];
 // A part's own catalog field, the ship-sheet field it feeds, and how to read its value off the
 // catalog — the three base stats every part has, named differently on the sheet than on the
 // catalog (mass keeps its name; structureCost becomes structureUsed; partHp becomes hp).
-const BASE_STATS: ReadonlyArray<{ key: string; sheetKey: keyof ShipSheet; read: (c: PartCatalogStats) => number }> = [
+const BASE_STATS: ReadonlyArray<{
+  key: string;
+  sheetKey: keyof ShipSheet;
+  read: (c: PartCatalogStats) => number;
+}> = [
   { key: 'mass', sheetKey: 'mass', read: (c) => c.mass },
   { key: 'structureCost', sheetKey: 'structureUsed', read: (c) => c.structureCost },
   { key: 'partHp', sheetKey: 'hp', read: (c) => c.partHp },
@@ -95,7 +105,7 @@ type DeltaTone = 'same' | 'good' | 'bad';
 function deltaTone(sheetKey: keyof ShipSheet, delta: number): DeltaTone {
   if (Math.abs(delta) < 0.05) return 'same';
   const higherIsBetter = !LOWER_IS_BETTER.has(sheetKey);
-  return (delta > 0) === higherIsBetter ? 'good' : 'bad';
+  return delta > 0 === higherIsBetter ? 'good' : 'bad';
 }
 
 const SUMMARY_STATS: readonly EffectStat[] = [
@@ -130,7 +140,10 @@ export interface StatRow {
  * power or USES it (never both), so the row says which instead of showing a bare signed number
  * ("Power generated 5" / "Power used in flight 3" / "Power used in combat 4").
  */
-export function effectRowsOf(catalog: PartCatalogStats, format: (value: number) => string): StatRow[] {
+export function effectRowsOf(
+  catalog: PartCatalogStats,
+  format: (value: number) => string,
+): StatRow[] {
   const rows: StatRow[] = EFFECT_STATS.filter((key) => catalog[key] !== 0).map((key) => {
     if (key === 'energyCont') {
       return {
@@ -140,7 +153,11 @@ export function effectRowsOf(catalog: PartCatalogStats, format: (value: number) 
       };
     }
     if (key === 'energyCombat') {
-      return { key: 'energyCombatUse', sheetKey: key, value: format(Math.abs(catalog.energyCombat)) };
+      return {
+        key: 'energyCombatUse',
+        sheetKey: key,
+        value: format(Math.abs(catalog.energyCombat)),
+      };
     }
     return { key, sheetKey: key, value: format(catalog[key]) };
   });
@@ -310,7 +327,9 @@ function CompareInline({ cells }: { cells: CompareCells | null }) {
   if (cells === null) return <span className="delta delta-same">{NONE}</span>;
   return (
     <span className="compare-inline">
-      <span className="compare-now">{cells.now} {ARROW}</span>
+      <span className="compare-now">
+        {cells.now} {ARROW}
+      </span>
       <span className={`delta delta-${cells.tone}`}>{afterText(cells)}</span>
     </span>
   );
@@ -319,9 +338,69 @@ function CompareInline({ cells }: { cells: CompareCells | null }) {
 export interface PartDetailProps {
   part: PartInfoData;
   compare?: PartCompareContext;
+  /** An upgrade: the part as it is today. The table then sets this part's stats against `part`
+      (the upgraded one), instead of asking what adding it does to the ship. */
+  versus?: PartInfoData;
 }
 
-export function PartDetail({ part, compare }: PartDetailProps) {
+interface VersusRow {
+  key: string;
+  sheetKey: keyof ShipSheet;
+  now: string;
+  after: string;
+  change: string;
+  tone: DeltaTone;
+}
+
+/** Every stat either version has, as "today → upgraded" with the change coloured by whether it helps. */
+function versusRowsOf(
+  now: PartCatalogStats,
+  upgraded: PartCatalogStats,
+  format: (value: number) => string,
+): VersusRow[] {
+  const numeric: Array<{
+    key: string;
+    sheetKey: keyof ShipSheet;
+    read: (c: PartCatalogStats) => number;
+  }> = [
+    ...EFFECT_STATS.map((stat) => ({
+      key: stat,
+      sheetKey: stat,
+      read: (c: PartCatalogStats) => c[stat],
+    })),
+    { key: 'shieldRegen', sheetKey: 'esc', read: (c) => c.shieldRegen ?? 0 },
+    ...BASE_STATS,
+  ];
+  return numeric
+    .filter((stat) => stat.read(now) !== 0 || stat.read(upgraded) !== 0)
+    .map((stat) => {
+      const before = stat.read(now);
+      const after = stat.read(upgraded);
+      // Power: a part generates OR uses it, so name the row after the version that has it.
+      const sample = stat.key === 'energyCont' ? (after !== 0 ? after : before) : 0;
+      const key =
+        stat.key === 'energyCont'
+          ? sample > 0
+            ? 'energyGen'
+            : 'energyUse'
+          : stat.key === 'energyCombat'
+            ? 'energyCombatUse'
+            : stat.key;
+      const delta = after - before;
+      const shown = (value: number) =>
+        format(stat.key === 'energyCont' || stat.key === 'energyCombat' ? Math.abs(value) : value);
+      return {
+        key,
+        sheetKey: stat.sheetKey,
+        now: shown(before),
+        after: shown(after),
+        change: Math.abs(delta) < 0.05 ? '' : signed(delta, format),
+        tone: deltaTone(stat.sheetKey, delta),
+      };
+    });
+}
+
+export function PartDetail({ part, compare, versus }: PartDetailProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const { catalog } = part;
@@ -354,13 +433,17 @@ export function PartDetail({ part, compare }: PartDetailProps) {
     compare,
     replaceInstanceId,
   );
-  const viabilityProblems = comparePreview.data?.viability.viable === false
-    ? comparePreview.data.viability.problems
-    : [];
+  const viabilityProblems =
+    comparePreview.data?.viability.viable === false ? comparePreview.data.viability.problems : [];
 
+  const versusRows = versus === undefined ? null : versusRowsOf(versus.catalog, catalog, format);
   const rows = [
     ...effectRowsOf(catalog, format),
-    ...BASE_STATS.map((stat) => ({ key: stat.key, sheetKey: stat.sheetKey, value: format(stat.read(catalog)) })),
+    ...BASE_STATS.map((stat) => ({
+      key: stat.key,
+      sheetKey: stat.sheetKey,
+      value: format(stat.read(catalog)),
+    })),
   ];
 
   return (
@@ -444,54 +527,78 @@ export function PartDetail({ part, compare }: PartDetailProps) {
           ))}
         </ul>
       )}
-      <table className="part-stats-table">
-        <thead>
-          <tr>
-            <th>{t('parts.compare.stat')}</th>
-            <th>{t('parts.compare.value')}</th>
-            {compare !== undefined && <th>{t('parts.compare.shipNow')}</th>}
-            {compare !== undefined && <th>{t('parts.compare.ifInstalled')}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const delta =
-              compare === undefined
-                ? null
-                : row.sheetKey === 'structureUsed'
-                  ? structureDeltaFor()
-                  : deltaFor(row.sheetKey);
-            return (
+      {versusRows !== null && (
+        <table className="part-stats-table" data-testid="upgrade-diff">
+          <thead>
+            <tr>
+              <th>{t('parts.compare.stat')}</th>
+              <th>{t('parts.compare.partNow')}</th>
+              <th>{t('parts.compare.partUpgraded')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {versusRows.map((row) => (
               <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
                 <td>{t(`parts.stat.${row.key}.label`)}</td>
-                <td>
-                  <b>{row.value}</b>
+                <td>{row.now}</td>
+                <td className={`delta delta-${row.tone}`}>
+                  {row.change === '' ? row.after : `${row.after} (${row.change})`}
                 </td>
-                {compare !== undefined && <td>{delta?.now ?? '—'}</td>}
-                {compare !== undefined && (
-                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>
-                    {delta === null ? '—' : afterText(delta)}
-                  </td>
-                )}
               </tr>
-            );
-          })}
-          {compare !== undefined &&
-            DERIVED_COMPARE_STATS.map((sheetKey) => {
-              const delta = deltaFor(sheetKey);
+            ))}
+          </tbody>
+        </table>
+      )}
+      {versusRows === null && (
+        <table className="part-stats-table">
+          <thead>
+            <tr>
+              <th>{t('parts.compare.stat')}</th>
+              <th>{t('parts.compare.value')}</th>
+              {compare !== undefined && <th>{t('parts.compare.shipNow')}</th>}
+              {compare !== undefined && <th>{t('parts.compare.ifInstalled')}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => {
+              const delta =
+                compare === undefined
+                  ? null
+                  : row.sheetKey === 'structureUsed'
+                    ? structureDeltaFor()
+                    : deltaFor(row.sheetKey);
               return (
-                <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
-                  <td>{t(`hangar.stats.${sheetKey}`)}</td>
-                  <td>{NONE}</td>
-                  <td>{delta?.now ?? NONE}</td>
-                  <td className={`delta delta-${delta?.tone ?? 'same'}`}>
-                    {delta === null ? '—' : afterText(delta)}
+                <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
+                  <td>{t(`parts.stat.${row.key}.label`)}</td>
+                  <td>
+                    <b>{row.value}</b>
                   </td>
+                  {compare !== undefined && <td>{delta?.now ?? '—'}</td>}
+                  {compare !== undefined && (
+                    <td className={`delta delta-${delta?.tone ?? 'same'}`}>
+                      {delta === null ? '—' : afterText(delta)}
+                    </td>
+                  )}
                 </tr>
               );
             })}
-        </tbody>
-      </table>
+            {compare !== undefined &&
+              DERIVED_COMPARE_STATS.map((sheetKey) => {
+                const delta = deltaFor(sheetKey);
+                return (
+                  <tr key={sheetKey} title={t(`hangar.statHelp.${sheetKey}`)}>
+                    <td>{t(`hangar.stats.${sheetKey}`)}</td>
+                    <td>{NONE}</td>
+                    <td>{delta?.now ?? NONE}</td>
+                    <td className={`delta delta-${delta?.tone ?? 'same'}`}>
+                      {delta === null ? '—' : afterText(delta)}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -504,7 +611,13 @@ export function PartDetail({ part, compare }: PartDetailProps) {
  * ever passed from the tray, never from a yard-placed block (nothing to compare a block already
  * on the ship against).
  */
-export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?: PartCompareContext }) {
+export function PartStatsCard({
+  part,
+  compare,
+}: {
+  part: PartInfoData;
+  compare?: PartCompareContext;
+}) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const { catalog } = part;
@@ -518,9 +631,8 @@ export function PartStatsCard({ part, compare }: { part: PartInfoData; compare?:
       ? compare.replaceCandidates?.[0]?.partInstanceId
       : undefined,
   );
-  const viabilityProblems = comparePreview.data?.viability.viable === false
-    ? comparePreview.data.viability.problems
-    : [];
+  const viabilityProblems =
+    comparePreview.data?.viability.viable === false ? comparePreview.data.viability.problems : [];
   const effectRows = effectRowsOf(catalog, format);
   const baseRows = BASE_STATS.map((stat) => ({
     key: stat.key,

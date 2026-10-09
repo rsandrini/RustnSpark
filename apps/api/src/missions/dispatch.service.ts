@@ -59,6 +59,8 @@ export interface DispatchSnapshot {
   readonly penalties?: readonly AppliedPenalty[];
   /** A scavenging job started by a ship that was not flight-ready: it finds less. */
   readonly handicapped?: boolean;
+  /** A scavenging job done on foot, without the ship: no encounters, no wear, no fuel. */
+  readonly onFoot?: boolean;
   /** A race run with the engines pushed (more speed and fuel, a risk of overheating). */
   readonly overdrive?: boolean;
   /** Resolved with the layered damage model (shield → armor → hull → parts). Older runs lack it. */
@@ -188,7 +190,7 @@ export class DispatchService {
     shipId: string,
     missionId: string,
     playerId: string,
-    options: { overdrive?: boolean } = {},
+    options: { overdrive?: boolean; onFoot?: boolean } = {},
   ): Promise<DispatchResponse> {
     const probe = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!probe) {
@@ -289,8 +291,11 @@ export class DispatchService {
             );
       // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
       // only finds less when the ship is not flight-ready.
+      const onFoot = mission.type === 'SCAVENGE' && options.onFoot === true;
       const handicapped =
-        mission.type === 'SCAVENGE' && (!viability.viable || viability.warnings.length > 0);
+        mission.type === 'SCAVENGE' &&
+        !onFoot &&
+        (!viability.viable || viability.warnings.length > 0);
       if (!viability.viable && mission.type !== 'SCAVENGE') {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
       }
@@ -352,6 +357,7 @@ export class DispatchService {
           .map((part) => ({ id: part.id, partType: part.partType })),
         ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
         ...(handicapped ? { handicapped: true } : {}),
+        ...(onFoot ? { onFoot: true } : {}),
         ...(overdrive ? { overdrive: true } : {}),
         layered: true,
       };

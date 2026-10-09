@@ -117,4 +117,15 @@ describe('scavenging finds (W8)', () => {
     expect(hand).toBeLessThan(normal * (rules.scavenging.handicap_factor + 0.1));
     expect(hand).toBeGreaterThan(0);
   });
+
+  it('on foot finds less often (foot share), and the foot share replaces the handicap', () => {
+    const found = (extra: Partial<ScavengeContext>) =>
+      many(place({ zone: 1, ...extra }), 2000).filter((finds) => finds.length > 0).length / 2000;
+    const normal = found({});
+    const foot = found({ onFoot: true });
+    expect(foot).toBeLessThan(normal * (rules.scavenging.foot_factor + 0.1));
+    expect(foot).toBeGreaterThan(0);
+    // Same run, handicapped or not: on foot there is no ship to judge.
+    expect(found({ onFoot: true, handicapped: true })).toBe(foot);
+  });
 });

@@ -120,6 +120,8 @@ const EXPECTED_KEYS: readonly string[] = [
   'scavenging.chance',
   'scavenging.cooldown_seconds',
   'scavenging.duration_seconds',
+  'scavenging.foot_duration_seconds',
+  'scavenging.foot_factor',
   'scavenging.handicap_factor',
   'scavenging.nothing_chance',
   'scavenging.quality_max',

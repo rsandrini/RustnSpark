@@ -906,7 +906,20 @@
       "nextAttempt": "Próximo trabalho em",
       "title": "Vasculhar os destroços",
       "nothing": "Cerca de {{percent}}% das buscas aqui não acham nada (quanto mais seguro o lugar, mais vezes).",
-      "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: só {{percent}}% da chance normal de achar algo."
+      "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: só {{percent}}% da chance normal de achar algo.",
+      "riskFoot": "Quanto mais arriscado o lugar (zona {{zone}}), melhores e mais raros os achados. A pé, nada pode te atacar. Peças raras só aparecem em lugares perigosos.",
+      "modeTitle": "Como buscar",
+      "mode": {
+        "ship": {
+          "name": "Com a nave",
+          "hint": "A nave vasculha o lugar: a chance total de achar coisas, mas piratas podem te encontrar. Não gasta combustível."
+        },
+        "foot": {
+          "name": "A pé",
+          "hint": "Você busca sem a nave: só {{percent}}% da chance normal, mas sem ataques, sem desgaste e sem combustível."
+        }
+      },
+      "footNotice": "A pé você só tem {{percent}}% da chance normal de achar algo. Em troca, nada te ataca e a nave não sofre dano."
     },
     "mine": {
       "title": "Minerar o campo",
@@ -943,7 +956,8 @@
     "upgraded": "Melhorado para {{name}}.",
     "upgradeFilter": "Filtro de melhorias",
     "upgradeOnlyAffordable": "Só o que eu posso pagar",
-    "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado."
+    "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
+    "scavengeFoot": "Vasculhar a pé"
   },
   "inventory": {
     "title": "Inventário",
@@ -1514,7 +1528,9 @@
       "ifInstalled": "Com esta peça",
       "scenarioLabel": "Comparar como",
       "addOption": "Adicionar",
-      "replaceOption": "Trocar por {{name}}"
+      "replaceOption": "Trocar por {{name}}",
+      "partNow": "Esta peça hoje",
+      "partUpgraded": "Melhorada"
     }
   },
   "market": {

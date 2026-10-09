@@ -27,6 +27,7 @@ describe('S8.5 — field type (GDD §14 chance by field)', () => {
     expect(GAME_CONFIG_DEFAULTS.scavenging.quality_min).toBe(15);
     expect(GAME_CONFIG_DEFAULTS.scavenging.quality_max).toBe(40);
     expect(GAME_CONFIG_DEFAULTS.scavenging.cooldown_seconds).toBe(300);
-    expect(GAME_CONFIG_DEFAULTS.scavenging.duration_seconds).toBe(300);
+    expect(GAME_CONFIG_DEFAULTS.scavenging.duration_seconds).toBe(600);
+    expect(GAME_CONFIG_DEFAULTS.scavenging.foot_duration_seconds).toBe(300);
   });
 });

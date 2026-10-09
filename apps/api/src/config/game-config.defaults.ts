@@ -239,7 +239,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     quality_min: 15,
     quality_max: 40,
     cooldown_seconds: 300,
-    duration_seconds: 300,
+    // With the ship (it searches in place, pirates can find it) takes longer than on foot.
+    duration_seconds: 600,
+    foot_duration_seconds: 300,
     scrap_share: 0.5,
     zone_quality_bonus: 5,
     zone_rarity_bias: 0.6,
@@ -251,6 +253,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // A ship that cannot fly (or flies with warnings) can still scavenge by hand, but finds less:
     // this share of the usual chance to find anything.
     handicap_factor: 0.5,
+    // On foot (no ship involved: no pirates, no wear, no fuel) finds less: this share of the
+    // usual chance to find anything.
+    foot_factor: 0.5,
   },
   parts: {
     starter_condition: 80,

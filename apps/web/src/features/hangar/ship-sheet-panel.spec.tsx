@@ -16,6 +16,25 @@ function headlineTile(label: string): HTMLElement {
     .closest('.sheet-headline-tile') as HTMLElement;
 }
 
+describe('ShipSheetPanel defense', () => {
+  it('shows the pools a fight would start with (worn or unconnected parts give less)', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={{ ...sheet, bli: 10, esc: 20 }}
+        problemCount={0}
+        layers={{ shield: 7, armor: 23, hull: 100, shieldRegen: 1 }}
+        installedCatalogs={[]}
+      />,
+    );
+    const tile = headlineTile('Armor · Shield');
+    expect(tile).toHaveTextContent('23');
+    expect(tile).toHaveTextContent('7');
+    expect(tile).not.toHaveTextContent('50');
+    expect(tile).not.toHaveTextContent('20');
+  });
+});
+
 describe('ShipSheetPanel range', () => {
   it('shows the range as a plain distance with how many routes it covers', () => {
     renderWithProviders(

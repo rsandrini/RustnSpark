@@ -1736,6 +1736,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'scavenging.foot_duration_seconds',
+    group: 'scavenging',
+    type: 'integer',
+    min: 1,
+    max: 86400,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.foot_duration_seconds),
+    description: {
+      en: 'How long a scavenging job on foot (no ship) takes, in mission time (scaled by missions.time_scale).',
+      'pt-BR':
+        'Quanto dura um saque a pé (sem a nave), em tempo de missão (escalado por missions.time_scale).',
+    },
+  },
+  {
     key: 'scavenging.scrap_share',
     group: 'scavenging',
     type: 'number',
@@ -1808,6 +1821,18 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'A ship that cannot fly (or flies with warnings) can still scavenge by hand, but only keeps this share of the usual chance to find anything.',
       'pt-BR': 'Uma nave que não voa (ou voa com avisos) ainda pode fazer buscas à mão, mas só mantém esta fração da chance normal de achar algo.',
+    },
+  },
+  {
+    key: 'scavenging.foot_factor',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.foot_factor),
+    description: {
+      en: 'Scavenging on foot (no ship: no pirates, no wear, no fuel) only keeps this share of the usual chance to find anything.',
+      'pt-BR': 'Saque a pé (sem a nave: sem piratas, sem desgaste, sem combustível) só mantém esta fração da chance normal de achar algo.',
     },
   },
   {

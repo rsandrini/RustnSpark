@@ -720,6 +720,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   problemCount={allProblems.length}
                   warningCount={allWarnings.length}
                   power={preview?.power}
+                  layers={preview?.layers}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />

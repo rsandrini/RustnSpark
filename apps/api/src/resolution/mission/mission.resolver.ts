@@ -377,5 +377,6 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
     client: mission.client,
     mining: mission.mining ?? null,
     storage: [],
+    ...(mission.scavenge?.onFoot === true ? { onFoot: true } : {}),
   }));
 }

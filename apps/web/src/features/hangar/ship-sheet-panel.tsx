@@ -15,6 +15,8 @@ export interface ShipSheetPanelProps {
   warningCount?: number;
   /** How the ship's power is shared while travelling: each kind of system's share of its need. */
   power?: { shares: Record<string, number> } | undefined;
+  /** What a fight starts with at the parts' current condition (worn or unconnected parts give less). */
+  layers?: { shield: number; armor: number; hull: number; shieldRegen: number } | undefined;
   /** The range read as routes ("covers 14 of 17"); null = the ship burns no fuel. */
   routeCoverage?: RouteCoverage | null;
   /** Every part actually installed right now: the sheet only carries Cruising power's net
@@ -83,6 +85,7 @@ export function ShipSheetPanel({
   problemCount,
   warningCount = 0,
   power,
+  layers,
   installedCatalogs,
   routeCoverage,
 }: ShipSheetPanelProps) {
@@ -109,7 +112,11 @@ export function ShipSheetPanel({
     0,
   );
   // Shields recover their own points per round (the sum over the shield parts installed).
-  const shieldRegen = installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
+  const shieldRegen =
+    layers?.shieldRegen ?? installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
+  // The pools a fight would really start with (parts as worn); the sheet's totals are nominal.
+  const shieldPool = layers?.shield ?? sheet.esc;
+  const armorPool = layers?.armor ?? sheet.bli * display.armorPoolFactor;
   // Systems that get less than their whole need while travelling (the bridge and the ones with no
   // power cost never show up here).
   const starved = Object.entries(power?.shares ?? {}).filter(
@@ -137,13 +144,13 @@ export function ShipSheetPanel({
         return mobilityNumber(sheetStat(sheet, 'mob', display));
       case 'esc':
         return sheet.esc > 0
-          ? t('hangar.stats.shieldValue', { pool: number(sheet.esc), regen: number(shieldRegen) })
+          ? t('hangar.stats.shieldValue', { pool: number(shieldPool), regen: number(shieldRegen) })
           : number(0);
       case 'bli':
         return sheet.bli > 0
           ? t('hangar.stats.armorValue', {
               rating: number(sheet.bli),
-              pool: number(sheet.bli * display.armorPoolFactor),
+              pool: number(armorPool),
             })
           : number(0);
       case 'structure':
@@ -248,8 +255,8 @@ export function ShipSheetPanel({
           <span>{t('hangar.headline.defense')}</span>
           <b>
             {t('hangar.headline.defenseValue', {
-              armor: number(sheet.bli * display.armorPoolFactor),
-              shield: number(sheet.esc),
+              armor: number(armorPool),
+              shield: number(shieldPool),
             })}
           </b>
         </div>
