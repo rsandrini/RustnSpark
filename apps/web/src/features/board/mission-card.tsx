@@ -36,7 +36,11 @@ export interface MissionCardProps {
 
 /** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
     everything else as it is. */
-function requirementNumber(value: number, unit: string | undefined, display: DisplayResponse): string {
+function requirementNumber(
+  value: number,
+  unit: string | undefined,
+  display: DisplayResponse,
+): string {
   const shown = unit === 'mobility' ? scaleSpeed(value, display) : value;
   return new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(shown);
 }
@@ -127,9 +131,7 @@ export function MissionCard({
         </p>
       )}
 
-      {info.race !== null && (
-        <RaceField race={info.race} reward={offer.reward} money={money} />
-      )}
+      {info.race !== null && <RaceField race={info.race} reward={offer.reward} money={money} />}
 
       <dl className="mcard-facts">
         <div>
@@ -202,7 +204,16 @@ export function MissionCard({
           )}
         </div>
       )}
-      {notEnoughFuel && <p className="error-text">{t('board.lowFuel')}</p>}
+      {notEnoughFuel && info.estimate !== null && (
+        <p className="error-text">
+          {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap
+            ? t('board.lowFuelCapacity', {
+                needed: Math.round(info.estimate.fuelNeeded),
+                cap: Math.round(fuelCap),
+              })
+            : t('board.lowFuel')}
+        </p>
+      )}
 
       <div className="mcard-meta">
         {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
@@ -263,7 +274,9 @@ function RaceField({
   const { t, i18n } = useTranslation();
   const display = useDisplay();
   const speed = (raw: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(scaleSpeed(raw, display));
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+      scaleSpeed(raw, display),
+    );
   const rows = [
     ...race.rivals.map((rival) => ({
       key: rival.name,
@@ -302,7 +315,9 @@ function RaceField({
                 {t('board.race.rank', { place: index + 1 })} {row.name}
               </td>
               <td>{row.mobility === null ? t('board.race.none') : speed(row.mobility)}</td>
-              <td>{row.expected === null ? t('board.race.none') : formatDuration(row.expected, t)}</td>
+              <td>
+                {row.expected === null ? t('board.race.none') : formatDuration(row.expected, t)}
+              </td>
               <td>{row.best === null ? t('board.race.none') : formatDuration(row.best, t)}</td>
             </tr>
           ))}

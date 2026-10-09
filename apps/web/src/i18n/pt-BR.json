@@ -1213,7 +1213,7 @@
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
       "MINER": "Uma plataforma de mineração instalada",
       "SPEED": "Mobilidade acima da velocidade de referência de resgate",
-      "RACE_SPEED": "A velocidade (mobilidade) da nave está abaixo do mínimo de entrada desta corrida."
+      "RACE_SPEED": "Velocidade da nave (mobilidade) igual ou acima do mínimo de entrada desta corrida"
     },
     "controlledBy": "Controlado por {{faction}}",
     "expiredLabel": "Expirada",
@@ -1257,7 +1257,8 @@
       "dynamic": "Cada corrida é diferente: forma, sorte e problemas movem os tempos em torno destes valores.",
       "finish": "Chegada"
     },
-    "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}"
+    "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",
+    "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta."
   },
   "map": {
     "title": "Mapa do setor",

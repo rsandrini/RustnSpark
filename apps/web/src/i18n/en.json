@@ -1213,7 +1213,7 @@
       "MIN_MOBILITY": "Mobility above the escort minimum",
       "MINER": "A mining rig installed",
       "SPEED": "Mobility above the rescue reference speed",
-      "RACE_SPEED": "Ship speed (mobility) is below this race's entry minimum."
+      "RACE_SPEED": "Ship speed (mobility) at or above this race's entry minimum"
     },
     "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",
@@ -1257,7 +1257,8 @@
       "dynamic": "Every race is different: form, luck and trouble move the times around these figures.",
       "finish": "Finish"
     },
-    "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}"
+    "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
+    "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route."
   },
   "map": {
     "title": "Sector map",

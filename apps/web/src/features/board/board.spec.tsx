@@ -222,6 +222,38 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.').length).toBeGreaterThan(0);
   });
 
+  it('says refuelling is not enough when the tanks themselves cannot hold what the trip burns', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'luna starter',
+              fuel: 3,
+              status: 'IN_PORT',
+              currentLocationId: 'ceres',
+              stance: 'NEUTRAL',
+              layout: [],
+              sheet: { fuelCap: 3 },
+              shipClass: 'MULTIROLE',
+              yard: { cells: classicSquareCells() },
+              activity: { kind: 'idle', until: null, missionId: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
+    expect(gauge).toHaveClass('bad');
+    expect(gauge).toHaveAttribute('aria-valuenow', '3');
+    expect(screen.getAllByText(/your tanks hold only 3/).length).toBeGreaterThan(0);
+  });
+
   it('keeps the fuel gauge out of the cramped facts grid, and hides a redundant equal estimate', async () => {
     server.use(
       http.get('/v1/locations/:id/missions', () =>
