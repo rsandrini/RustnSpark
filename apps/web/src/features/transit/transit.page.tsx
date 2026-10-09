@@ -22,6 +22,8 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { RouteMap } from '../../ui/RouteMap';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { EngineTuning } from '../hangar/engine-tuning';
+import { activeAsOffer } from '../board/active-offer';
+import { MissionCard } from '../board/mission-card';
 
 export interface TransitPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -251,6 +253,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     return `${locationName(route.nodeAId)} → ${locationName(route.nodeBId)}`;
   };
 
+  const offer = activeAsOffer(mission);
   const briefTitle = pickLocalized(mission.brief.title, i18n.language);
   const briefText = pickLocalized(mission.brief.description, i18n.language);
 
@@ -281,53 +284,71 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
       )}
       <div className="transit-layout">
         <div className="transit-main">
-          {briefTitle !== '' && (
-            <p className="mission-brief-line">
-              <b>{briefTitle}</b>
-              {briefText !== '' && (
-                <button
-                  type="button"
-                  className="btn info-btn mission-why-tag"
-                  aria-label={`${t('transit.briefLabel')}: ${briefTitle}`}
-                  title={briefText}
-                >
-                  {t('parts.infoGlyph')}
-                </button>
+          {offer !== null ? (
+            <MissionCard
+              offer={offer}
+              origin={worldQuery.data?.locations.find((entry) => entry.id === mission.originId)}
+              destination={worldQuery.data?.locations.find(
+                (entry) => entry.id === mission.destinationId,
               )}
-            </p>
+              mine
+              taken
+              hideMap
+              actions={null}
+              {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+              {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
+            />
+          ) : (
+            <>
+              {briefTitle !== '' && (
+                <p className="mission-brief-line">
+                  <b>{briefTitle}</b>
+                  {briefText !== '' && (
+                    <button
+                      type="button"
+                      className="btn info-btn mission-why-tag"
+                      aria-label={`${t('transit.briefLabel')}: ${briefTitle}`}
+                      title={briefText}
+                    >
+                      {t('parts.infoGlyph')}
+                    </button>
+                  )}
+                </p>
+              )}
+              <div className="briefing" data-testid="briefing">
+                <div className="fact fact-route">
+                  <div className="k">{t('transit.facts.route')}</div>
+                  <div className="v">{routeLabel}</div>
+                </div>
+                {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
+                  <div className="fact">
+                    <div className="k">{t('transit.facts.reward')}</div>
+                    <div className="v spark">{rewardText}</div>
+                  </div>
+                )}
+                {mission.type !== 'SCAVENGE' && (
+                  <>
+                    <div className="fact">
+                      <div className="k">{t('transit.facts.distance')}</div>
+                      <div className="v">{summary.totalDistance}</div>
+                    </div>
+                    <div className="fact">
+                      <div className="k">{t('transit.facts.legs')}</div>
+                      <div className="v">{summary.legCount}</div>
+                    </div>
+                  </>
+                )}
+                {destinationRisk !== undefined && (
+                  <div className="fact">
+                    <div className="k">{t('transit.facts.danger')}</div>
+                    <div className="v">
+                      <RiskBadge band={destinationRisk} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
-          <div className="briefing" data-testid="briefing">
-            <div className="fact fact-route">
-              <div className="k">{t('transit.facts.route')}</div>
-              <div className="v">{routeLabel}</div>
-            </div>
-            {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
-              <div className="fact">
-                <div className="k">{t('transit.facts.reward')}</div>
-                <div className="v spark">{rewardText}</div>
-              </div>
-            )}
-            {mission.type !== 'SCAVENGE' && (
-              <>
-                <div className="fact">
-                  <div className="k">{t('transit.facts.distance')}</div>
-                  <div className="v">{summary.totalDistance}</div>
-                </div>
-                <div className="fact">
-                  <div className="k">{t('transit.facts.legs')}</div>
-                  <div className="v">{summary.legCount}</div>
-                </div>
-              </>
-            )}
-            {destinationRisk !== undefined && (
-              <div className="fact">
-                <div className="k">{t('transit.facts.danger')}</div>
-                <div className="v">
-                  <RiskBadge band={destinationRisk} />
-                </div>
-              </div>
-            )}
-          </div>
 
           {mission.type === 'RACE' && <RaceRivals cargo={mission.cargo} />}
 

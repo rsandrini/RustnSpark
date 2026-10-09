@@ -1262,7 +1262,10 @@
       "finish": "Chegada"
     },
     "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",
-    "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta."
+    "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta.",
+    "yourMission": "Sua missão",
+    "startBefore": "Iniciar até",
+    "goToShip": "Abrir em Minha Nave"
   },
   "map": {
     "title": "Mapa do setor",

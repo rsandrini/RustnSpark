@@ -227,7 +227,9 @@ describe('part upgrade API (round 5)', () => {
   it('reports NO_NEXT_TIER for a family the catalog has not chained', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    // weapon_laser exists only at COMMON in the seed catalog (no weapon_laser_uncommon row).
+    // Every seeded family is chained now, so take the laser's next tier out of the catalog: the
+    // upgrade then has nowhere to go (an inactive tier counts as not existing).
+    await prisma.partCatalog.update({ where: { partType: 'weapon_laser_rare' }, data: { active: false } });
     const partId = await addLoosePart(player.seeded.player.id, 'weapon_laser');
 
     const response = await quoteUpgrade(player.token, partId);

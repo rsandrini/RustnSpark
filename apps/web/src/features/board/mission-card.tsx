@@ -32,6 +32,10 @@ export interface MissionCardProps {
   actions: ReactNode;
   /** The sector map, for the route drawing (the card reads it itself when not given). */
   world?: WorldResponse;
+  /** A mission already taken (accepted, held, under way): the same details as an offer, without
+      the "can you take it" verdict. `hideMap` leaves out the drawing when the host shows one. */
+  taken?: boolean;
+  hideMap?: boolean;
 }
 
 /** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
@@ -56,6 +60,8 @@ export function MissionCard({
   mine,
   actions,
   world,
+  taken = false,
+  hideMap = false,
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
@@ -116,7 +122,9 @@ export function MissionCard({
 
       <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
 
-      <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
+      {!hideMap && (
+        <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
+      )}
 
       {info.material !== null && (
         <p className="mcard-material">
@@ -217,18 +225,24 @@ export function MissionCard({
 
       <div className="mcard-meta">
         {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
-        <span className="sub">
-          {expired ? (
-            t('board.expiredLabel')
-          ) : (
-            <>
-              {t('board.expires')} <Countdown until={offer.expiresAt} />
-            </>
-          )}
-        </span>
-        <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-          {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-        </span>
+        {/* A mission under way no longer has a start deadline. */}
+        {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <span className="sub">
+            {expired ? (
+              t('board.expiredLabel')
+            ) : (
+              <>
+                {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
+                <Countdown until={offer.expiresAt} />
+              </>
+            )}
+          </span>
+        )}
+        {!taken && (
+          <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+            {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+          </span>
+        )}
         {offer.privatePlayerId !== null && (
           <span className="badge ok" data-testid="starter-badge">
             {t('board.starterBadge')}
@@ -242,7 +256,7 @@ export function MissionCard({
         )}
       </div>
 
-      {otherReasons.length > 0 && (
+      {!taken && otherReasons.length > 0 && (
         <ul className="reasons">
           {otherReasons.map((reason, index) => (
             <li key={`${reason.code}-${index}`}>

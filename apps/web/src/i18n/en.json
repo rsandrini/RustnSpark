@@ -1262,7 +1262,10 @@
       "finish": "Finish"
     },
     "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
-    "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route."
+    "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route.",
+    "yourMission": "Your mission",
+    "startBefore": "Start before",
+    "goToShip": "Open on My Ship"
   },
   "map": {
     "title": "Sector map",

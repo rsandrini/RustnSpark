@@ -219,7 +219,10 @@ describe('board (S10.6)', () => {
     const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
     expect(gauge).toHaveClass('bad');
     expect(gauge).toHaveAttribute('aria-valuenow', '5');
-    expect(screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.')
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('says refuelling is not enough when the tanks themselves cannot hold what the trip burns', async () => {
@@ -252,6 +255,70 @@ describe('board (S10.6)', () => {
     expect(gauge).toHaveClass('bad');
     expect(gauge).toHaveAttribute('aria-valuenow', '3');
     expect(screen.getAllByText(/your tanks hold only 3/).length).toBeGreaterThan(0);
+  });
+
+  it('shows the mission already taken at the top of the board, with all its details', async () => {
+    const iso = (offset: number) => new Date(Date.now() + offset).toISOString();
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'taken-1',
+              templateId: 'tpl-1',
+              type: 'TRANSPORT',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'hedus',
+              legs: [],
+              cargo: {},
+              reward: 2100,
+              expiresAt: iso(3_600_000),
+              status: 'ACCEPTED',
+              playerId: 'player-1',
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: iso(-60_000),
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 's',
+              version: 1,
+              legWindows: [],
+              brief: {
+                title: { en: 'Ore to Hedus', 'pt-BR': 'Minério para Hedus' },
+                description: { en: 'Haul ore.', 'pt-BR': 'Transportar minério.' },
+              },
+              info: {
+                title: { en: 'Ore to Hedus', 'pt-BR': 'Minério para Hedus' },
+                description: {
+                  en: 'Haul ore to the Hedus garrison.',
+                  'pt-BR': 'Transportar minério.',
+                },
+                legCount: 1,
+                totalDistance: 500,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 90, fuelNeeded: 6 },
+                material: null,
+                requirements: [{ code: 'CARGO_TYPE', message: 'cargo', met: true }],
+                race: null,
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+
+    const pinned = await screen.findByTestId('board-active-mission');
+    expect(within(pinned).getByText('Your mission')).toBeInTheDocument();
+    expect(within(pinned).getByText('Ore to Hedus')).toBeInTheDocument();
+    expect(within(pinned).getByText('Haul ore to the Hedus garrison.')).toBeInTheDocument();
+    expect(within(pinned).getByText('1m 30s')).toBeInTheDocument();
+    expect(within(pinned).getByRole('button', { name: 'Open on My Ship' })).toBeInTheDocument();
+    // it is not offered again as something to accept
+    expect(within(pinned).queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
   });
 
   it('keeps the fuel gauge out of the cramped facts grid, and hides a redundant equal estimate', async () => {
@@ -315,7 +382,7 @@ describe('board (S10.6)', () => {
     expect(within(fuelRow).getByText('Fuel needed')).toBeInTheDocument();
   });
 
-  it('shows a race offer\'s field: every rival\'s speed and time, you ranked among them, and the prizes', async () => {
+  it("shows a race offer's field: every rival's speed and time, you ranked among them, and the prizes", async () => {
     server.use(
       http.get('/v1/locations/:id/missions', () =>
         HttpResponse.json(
@@ -354,9 +421,27 @@ describe('board (S10.6)', () => {
                 requirements: [{ code: 'RACE_SPEED', message: 'too slow', met: true }],
                 race: {
                   rivals: [
-                    { name: 'Comet Runner', mobility: 2.4, durationSeconds: 700, bestSeconds: 600, worstSeconds: 900 },
-                    { name: 'Vega Dart', mobility: 4.1, durationSeconds: 410, bestSeconds: 350, worstSeconds: 520 },
-                    { name: 'Halo Sprint', mobility: 3.1, durationSeconds: 540, bestSeconds: 470, worstSeconds: 700 },
+                    {
+                      name: 'Comet Runner',
+                      mobility: 2.4,
+                      durationSeconds: 700,
+                      bestSeconds: 600,
+                      worstSeconds: 900,
+                    },
+                    {
+                      name: 'Vega Dart',
+                      mobility: 4.1,
+                      durationSeconds: 410,
+                      bestSeconds: 350,
+                      worstSeconds: 520,
+                    },
+                    {
+                      name: 'Halo Sprint',
+                      mobility: 3.1,
+                      durationSeconds: 540,
+                      bestSeconds: 470,
+                      worstSeconds: 700,
+                    },
                   ],
                   you: {
                     durationSeconds: 300,
@@ -388,7 +473,9 @@ describe('board (S10.6)', () => {
     expect(within(field).getByText(/Entry: speed 25 or more/)).toBeInTheDocument();
     expect(within(field).getByRole('columnheader', { name: 'Expected' })).toBeInTheDocument();
     expect(within(field).getByRole('columnheader', { name: 'Best day' })).toBeInTheDocument();
-    const vega = within(field).getByText(/Vega Dart/).closest('tr')!;
+    const vega = within(field)
+      .getByText(/Vega Dart/)
+      .closest('tr')!;
     expect(vega).toHaveTextContent('6m 50s'); // expected 410 s
     expect(vega).toHaveTextContent('5m 50s'); // best day 350 s
     expect(within(field).getByText(/1º 1,600 ¢/)).toBeInTheDocument();

@@ -279,6 +279,24 @@ describe('ship dispatch API (S7.2)', () => {
 
   // S10.7: the transit screen counts down per leg against the windows the server
   // computed at dispatch (pro-rata split of [serverTime, arrivalAt] by leg distance).
+  it('an accepted mission keeps the board card details on GET /v1/missions/active (time, fuel, requirements)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [30, 10]);
+    const response = await request(httpServer(testApp.app))
+      .get('/v1/missions/active')
+      .set(auth(player.token));
+    expect(response.status).toBe(200);
+    const [row] = response.body as Array<{ id: string; info?: Record<string, unknown> }>;
+    expect(row!.id).toBe(mission.id);
+    expect(row!.info).toMatchObject({
+      legCount: 2,
+      totalDistance: 40,
+      estimate: { durationSeconds: expect.any(Number), fuelNeeded: expect.any(Number) },
+      requirements: expect.any(Array),
+    });
+  });
+
   it('exposes per-leg windows on GET /v1/missions/active: none before dispatch, contiguous after', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

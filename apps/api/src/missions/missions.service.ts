@@ -135,6 +135,9 @@ export type ActiveMission = MissionInstance & {
     readonly title: { readonly en: string; readonly 'pt-BR': string };
     readonly description: { readonly en: string; readonly 'pt-BR': string };
   };
+  /** Everything the board card shows for this mission (time, fuel, requirements, material, race),
+      for the pilot's ship as it is now: an accepted mission must stay as readable as an offer. */
+  readonly info: OfferInfo;
 };
 
 interface ViewerContext {
@@ -314,10 +317,21 @@ export class MissionsService implements OnModuleInit {
       }),
     ]);
     const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+    // The same figures the board shows, so the accepted mission keeps its details (the
+    // eligibility verdict is not wanted here: the mission is already taken).
+    const viewer = await this.viewerContext(playerId, rows[0]!.originId);
+    const withInfo = await this.withEligibility(
+      rows.map((row) => ({ ...row, rewardEstimate: row.reward })),
+      viewer,
+      playerId,
+      rows[0]!.originId,
+    );
+    const infoById = new Map(withInfo.map((offer) => [offer.id, offer.info]));
     return rows.map((row) => {
       const template = wordsById.get(row.templateId);
       return {
         ...row,
+        info: infoById.get(row.id)!,
         legWindows: windows.get(row.id) ?? [],
         brief: {
           title: bilingual(template?.displayName),

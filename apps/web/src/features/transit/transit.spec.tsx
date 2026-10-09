@@ -62,6 +62,55 @@ describe('transit (S10.7)', () => {
     server.use(onboarded());
   });
 
+  it('an accepted mission keeps all its details: what it is, how long, the fuel, what it demands', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: {
+                  en: 'Deliver cargo from Ceres to Hedus.',
+                  'pt-BR': 'Entregar carga de Ceres para Hedus.',
+                },
+                legCount: 2,
+                totalDistance: 700,
+                peakDanger: 3,
+                peakZone: 1,
+                estimate: { durationSeconds: 150, fuelNeeded: 12 },
+                material: null,
+                requirements: [
+                  { code: 'CARGO_TYPE', message: 'cargo', met: true },
+                  { code: 'WEAPONS', message: 'weapons', met: false },
+                ],
+                race: null,
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+    const details = await screen.findByText('Ceres run');
+    const card = details.closest('article') as HTMLElement;
+    // the mission type, its description in plain sight (not only on hover), and the figures
+    expect(within(card).getByText('Delivery')).toBeInTheDocument();
+    expect(within(card).getByText('Deliver cargo from Ceres to Hedus.')).toBeInTheDocument();
+    expect(within(card).getByText('2m 30s')).toBeInTheDocument();
+    expect(within(card).getByText('700')).toBeInTheDocument();
+    // what it demands, with what is met and what is not
+    expect(within(card).getByText(/Cargo capacity for this load/)).toBeInTheDocument();
+    expect(within(card).getByText(/At least one installed weapon/)).toBeInTheDocument();
+    // fuel against what the ship carries
+    expect(within(card).getByRole('progressbar', { name: 'Fuel needed' })).toBeInTheDocument();
+    // the start deadline, and no "can you take it" verdict (it is already taken)
+    expect(within(card).getByText(/Start before/)).toBeInTheDocument();
+    expect(within(card).queryByText('Eligible')).not.toBeInTheDocument();
+  });
+
   it('embedded on My Ship, shows nothing at all when there is no active mission or last report', async () => {
     // Home is gone and Transit is embedded now (round-3): with nothing active and no report
     // yet, the host's own idle ActiveShipStage scene already says "docked" — the old

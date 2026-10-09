@@ -591,6 +591,8 @@ export type MissionBrief = z.infer<typeof MissionBriefSchema>;
 export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   legWindows: z.array(LegWindowSchema),
   brief: MissionBriefSchema,
+  /** The board card's figures for this mission (time, fuel, requirements, material, race). */
+  info: OfferInfoSchema.optional(),
 });
 export type ActiveMission = z.infer<typeof ActiveMissionSchema>;
 
