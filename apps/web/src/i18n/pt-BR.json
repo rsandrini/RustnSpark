@@ -1150,9 +1150,7 @@
     "scavengeTitle": "Saque de destroços",
     "race": {
       "title": "Seus rivais",
-      "rival": "{{name}} — velocidade {{mobility}}",
-      "overdrive": "Forçar os motores (overdrive)",
-      "overdriveHelp": "+{{speed}}% de velocidade, +{{fuel}}% de combustível gasto, {{risk}}% de risco de superaquecer (perde tempo)."
+      "rival": "{{name}} — velocidade {{mobility}}"
     }
   },
   "board": {
@@ -1386,7 +1384,8 @@
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "WEAPONS": "Nenhuma arma instalada.",
-    "unexpected": "Algo deu errado"
+    "unexpected": "Algo deu errado",
+    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam."
   },
   "language": {
     "label": "Idioma"
@@ -1585,5 +1584,32 @@
   "routeMap": {
     "label": "Rota de {{from}} para {{to}}",
     "title": "Rota"
+  },
+  "engineTuning": {
+    "title": "Ajuste dos motores",
+    "intro": "Rode os motores reduzidos para poupar combustível e energia, ou forçados por velocidade. Forçar arrisca uma falha de motor em cada trecho.",
+    "locked": "Os motores só podem ser ajustados com a nave no porto.",
+    "presets": "Ajustes rápidos",
+    "preset": {
+      "economy": "Economia",
+      "normal": "Normal",
+      "sprint": "Corrida"
+    },
+    "group": {
+      "chem": "Motores químicos",
+      "ion": "Motores de íons"
+    },
+    "level": "nível {{value}}",
+    "hint": {
+      "chem": "Abaixo de 1: mais lento, gasta menos combustível. Acima de 1: mais rápido, gasta bem mais combustível, pode superaquecer.",
+      "ion": "Não gasta combustível, mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, pode superaquecer."
+    },
+    "speed": "Velocidade {{value}} (listada: {{base}})",
+    "fuelBurn": "Consumo de combustível {{value}} (listado: {{base}})",
+    "power": "Energia: gera {{supply}}, usa {{demand}}, sobra {{spare}} (falta de energia sufoca outros sistemas; os motores continuam).",
+    "clean": "{{percent}}% de chance de nenhum motor falhar na viagem toda.",
+    "tripTime": "Esta viagem leva {{value}} (nos níveis listados: {{base}}).",
+    "tripFuel": "Combustível: precisa de {{needed}}, você leva {{have}} (nos níveis listados: {{base}}).",
+    "tripNoFit": "Nestes níveis a viagem precisa de mais combustível do que a nave leva. Reduza os motores químicos, ou force os de íons se a energia permitir."
   }
 }

@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} overheated while the engines were pushed — condition {condition}, {conditionLost} points gone. The leg burned extra fuel to make up the lost thrust.",
+    "Pushing the drive too hard cost it: {part} is at {condition} after losing {conditionLost} points, and the burn ran thirstier for the rest of the leg."
+  ]
+}

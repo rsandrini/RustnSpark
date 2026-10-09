@@ -36,6 +36,7 @@ export const MISSION_EVENT_TYPES = [
   'mining_paid',
   'mining_partial_failure',
   'motor',
+  'engine_push',
   'battery',
   'tank',
   'shield',

@@ -582,6 +582,9 @@ model Ship {
   currentLocationId String
   stance            ShipStance        @default(NEUTRAL)
   energyMode        String            @default("FULL")
+  // Engine tuning (bridge): 1 = engines as listed, below throttles down, above pushes.
+  chemLevel         Float             @default(1)
+  ionLevel          Float             @default(1)
   formatId          String            @default("classic_square")
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]

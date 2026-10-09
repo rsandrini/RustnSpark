@@ -1,3 +1,8 @@
+import {
+  applyEngineLevels,
+  clampLevels,
+  type EngineLevels,
+} from '../resolution/engine/engine.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { randomUUID } from 'node:crypto';
 import {
@@ -62,8 +67,8 @@ export interface DispatchSnapshot {
   readonly handicapped?: boolean;
   /** A scavenging job done on foot, without the ship: no encounters, no wear, no fuel. */
   readonly onFoot?: boolean;
-  /** A race run with the engines pushed (more speed and fuel, a risk of overheating). */
-  readonly overdrive?: boolean;
+  /** The levels the engines ran at (engine tuning on the bridge). */
+  readonly engine?: EngineLevels;
   /** Resolved with the layered damage model (shield → armor → hull → parts). Older runs lack it. */
   readonly layered?: boolean;
 }
@@ -191,7 +196,7 @@ export class DispatchService {
     shipId: string,
     missionId: string,
     playerId: string,
-    options: { overdrive?: boolean; onFoot?: boolean } = {},
+    options: { onFoot?: boolean } = {},
   ): Promise<DispatchResponse> {
     const probe = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!probe) {
@@ -312,15 +317,14 @@ export class DispatchService {
               connectorsByInstance,
               rules,
             );
-      // A race can be run with the engines pushed: more speed, more fuel, a risk of overheating.
-      const overdrive = mission.type === 'RACE' && options.overdrive === true;
-      if (overdrive) {
-        const { overdrive_speed: push, overdrive_fuel: burn } = rules.race;
-        flight.parts = flight.parts.map((part) =>
-          part.catalog.partClass === 'ENGINE'
-            ? { ...part, catalog: { ...part.catalog, pot: part.catalog.pot * push, fuelUse: part.catalog.fuelUse * burn } }
-            : part,
-        );
+      // Engine tuning (set on the bridge): the chemical and ion engines run at their chosen levels,
+      // so thrust, fuel burn and power already reflect them for time, fuel and the whole flight.
+      const engineLevels =
+        mission.type === 'SCAVENGE'
+          ? undefined
+          : clampLevels({ chem: ship.chemLevel, ion: ship.ionLevel }, rules);
+      if (engineLevels !== undefined) {
+        flight.parts = applyEngineLevels(flight.parts, engineLevels, rules);
         flight.sheet = deriveSheet(flight.parts, rules);
       }
       // GDD §7 balance 3: a chemical engine needs fuel aboard; ion ships skip this.
@@ -379,7 +383,7 @@ export class DispatchService {
         ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
         ...(handicapped ? { handicapped: true } : {}),
         ...(onFoot ? { onFoot: true } : {}),
-        ...(overdrive ? { overdrive: true } : {}),
+        ...(engineLevels !== undefined ? { engine: engineLevels } : {}),
         layered: true,
       };
 

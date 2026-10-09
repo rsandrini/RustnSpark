@@ -124,6 +124,19 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
       LEGENDARY: { COMMON: 1, UNCOMMON: 1, RARE: 0.7, EPIC: 0.4, LEGENDARY: 0.1 },
     },
   },
+  engine: {
+    chem_level_min: 0.5,
+    chem_level_max: 1.5,
+    ion_level_min: 0.5,
+    ion_level_max: 2.5,
+    fuel_push_exponent: 1.5,
+    ion_power_exponent: 2,
+    mishap_at_max: 0.35,
+    mishap_curve: 2,
+    mishap_wear_weight: 0.5,
+    mishap_wear: 6,
+    mishap_fuel: 0.25,
+  },
   encounter: {
     chance_divisor: 20,
     pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
@@ -195,13 +208,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prize_share_2: 0.8,
     prize_share_3: 0.4,
     // Each rival has a form on the day (speed varies ±this), a small chance of trouble that costs
-    // them time, and the player can push the engines (overdrive) for speed at a price.
+    // them time, and the player's own engine failures come from the engine tuning.
     form_spread: 0.1,
     mishap_chance: 0.08,
     mishap_penalty: 0.3,
-    overdrive_speed: 1.25,
-    overdrive_fuel: 1.6,
-    overdrive_risk: 0.15,
   },
   rescue: {
     reference_mob: 3,

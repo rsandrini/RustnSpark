@@ -6,6 +6,7 @@ export type ConfigGroup =
   | 'detection'
   | 'economy'
   | 'encounter'
+  | 'engine'
   | 'escape'
   | 'escort'
   | 'failure'
@@ -72,6 +73,17 @@ export type ConfigKey =
   | 'economy.start_credits'
   | 'economy.upgrade_costs'
   | 'economy.part_upgrade_price_multiplier'
+  | 'engine.chem_level_max'
+  | 'engine.chem_level_min'
+  | 'engine.fuel_push_exponent'
+  | 'engine.ion_level_max'
+  | 'engine.ion_level_min'
+  | 'engine.ion_power_exponent'
+  | 'engine.mishap_at_max'
+  | 'engine.mishap_curve'
+  | 'engine.mishap_fuel'
+  | 'engine.mishap_wear'
+  | 'engine.mishap_wear_weight'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
   | 'encounter.pirate_min_hp'
@@ -120,9 +132,6 @@ export type ConfigKey =
   | 'race.prize_share_1'
   | 'race.prize_share_2'
   | 'race.prize_share_3'
-  | 'race.overdrive_risk'
-  | 'race.overdrive_fuel'
-  | 'race.overdrive_speed'
   | 'race.mishap_penalty'
   | 'race.mishap_chance'
   | 'race.form_spread'
@@ -301,6 +310,30 @@ export type GameRules = Readonly<{
     payout_floor_integrity: number;
     repair_seconds_per_point: Readonly<Record<string, number>>;
   }>;
+  /** Engine tuning: how hard the pilot runs the chemical and the ion engines, and what it costs. */
+  engine: Readonly<{
+    /** Range of the chemical engines' level (1 = as listed; below saves fuel, above pushes). */
+    chem_level_min: number;
+    chem_level_max: number;
+    /** Range of the ion engines' level. */
+    ion_level_min: number;
+    ion_level_max: number;
+    /** Chemical fuel burned grows with the level to this power above 1 (below 1 it is linear). */
+    fuel_push_exponent: number;
+    /** An ion engine's power draw grows with the level to this power. */
+    ion_power_exponent: number;
+    /** Chance of an engine failure per leg at the highest level of an engine group. */
+    mishap_at_max: number;
+    /** How steeply that chance rises between level 1 (none) and the highest level. */
+    mishap_curve: number;
+    /** A worn engine fails more: up to this much more at zero condition (0.5 = +50%). */
+    mishap_wear_weight: number;
+    /** Condition points the group's engines lose on a failure; each failure of the run costs more
+        (the Nth failure costs N times this). */
+    mishap_wear: number;
+    /** Extra fuel burned that leg after a failure, as a share of the leg's burn. */
+    mishap_fuel: number;
+  }>;
   encounter: Readonly<{
     chance_divisor: number;
     pirate_strength_options: readonly number[];
@@ -380,16 +413,10 @@ export type GameRules = Readonly<{
     prize_share_3: number;
     /** A rival's form on the day: its speed varies ±this share around its listed speed. */
     form_spread: number;
-    /** Chance a ship (rival, or the player in overdrive) has trouble in the race and loses time. */
+    /** Chance a rival has trouble in the race and loses time (the player's engine failures come from the engine tuning). */
     mishap_chance: number;
     /** Time lost to trouble, as a share of the finishing time. */
     mishap_penalty: number;
-    /** Overdrive: the player's engines push this much harder (speed x). */
-    overdrive_speed: number;
-    /** Overdrive: fuel burned x. */
-    overdrive_fuel: number;
-    /** Overdrive: chance the engines overheat and the run loses `mishap_penalty` of time. */
-    overdrive_risk: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;

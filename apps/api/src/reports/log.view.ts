@@ -18,7 +18,7 @@ import { concatLine, type ReportLog, viewChrome } from './report.types.js';
  */
 const CATEGORY_ORDER = ['transit', 'combat', 'failure', 'environment', 'loot', 'payment'] as const;
 
-const PART_FAILURE_TYPES = new Set(['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor']);
+const PART_FAILURE_TYPES = new Set(['motor', 'engine_push', 'battery', 'tank', 'shield', 'weapon', 'sensor']);
 
 type EffectKey = 'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'none';
 

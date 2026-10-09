@@ -142,6 +142,20 @@ const miningSchema = z.object({
   job_duration_seconds: z.number().int().min(1).max(86400),
 });
 
+const engineSchema = z.object({
+  chem_level_min: z.number().min(0.1).max(1),
+  chem_level_max: z.number().min(1).max(3),
+  ion_level_min: z.number().min(0.1).max(1),
+  ion_level_max: z.number().min(1).max(5),
+  fuel_push_exponent: z.number().min(1).max(4),
+  ion_power_exponent: z.number().min(1).max(4),
+  mishap_at_max: z.number().min(0).max(1),
+  mishap_curve: z.number().min(0.5).max(5),
+  mishap_wear_weight: z.number().min(0).max(5),
+  mishap_wear: z.number().min(0).max(100),
+  mishap_fuel: z.number().min(0).max(2),
+});
+
 const powerSchema = z.object({
   success_curve: z
     .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
@@ -167,9 +181,6 @@ const raceSchema = z.object({
   form_spread: z.number().min(0).max(0.5),
   mishap_chance: z.number().min(0).max(1),
   mishap_penalty: z.number().min(0).max(2),
-  overdrive_speed: z.number().min(1).max(3),
-  overdrive_fuel: z.number().min(1).max(5),
-  overdrive_risk: z.number().min(0).max(1),
 });
 
 const rescueSchema = z.object({
@@ -237,6 +248,7 @@ const gameRulesSchema = z.object({
   wear: wearSchema,
   economy: economySchema,
   encounter: encounterSchema,
+  engine: engineSchema,
   escape: escapeSchema,
   detection: detectionSchema,
   stance: stanceSchema,

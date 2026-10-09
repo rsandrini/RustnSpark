@@ -160,42 +160,95 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(credits).toBe(before);
   }, 30_000);
 
-  it('overdrive pushes the engines: a faster flight for more fuel, recorded with the run', async () => {
-    const dispatchWith = async (overdrive: boolean) => {
+  it('engine tuning: the ship runs its engines at the chosen levels, recorded with the run', async () => {
+    const flyWith = async (chem: number) => {
       const setup = await raceWith(0.5);
       await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+      const set = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${setup.shipId}/engine-levels`)
+        .set('Authorization', `Bearer ${setup.token}`)
+        .send({ chem, ion: 1 });
+      expect(set.status).toBe(200);
       const response = await request(httpServer(testApp.app))
         .post(`/v1/ships/${setup.shipId}/dispatch`)
         .set('Authorization', `Bearer ${setup.token}`)
-        .send({ missionId: setup.mission.id, ...(overdrive ? { overdrive: true } : {}) });
+        .send({ missionId: setup.mission.id });
       expect(response.status).toBe(200);
       const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
-      const snapshot = (job.data as unknown as { snapshot: { overdrive?: boolean; parts: { catalog: { fuelUse: number } }[] } })
-        .snapshot;
+      const snapshot = (
+        job.data as unknown as {
+          snapshot: { engine?: { chem: number; ion: number }; parts: { catalog: { fuelUse: number } }[] };
+        }
+      ).snapshot;
       return {
         seconds: (response.body as { durationSeconds: number }).durationSeconds,
-        overdrive: snapshot.overdrive,
+        engine: snapshot.engine,
         fuelUse: snapshot.parts.reduce((sum, part) => sum + part.catalog.fuelUse, 0),
       };
     };
-    const calm = await dispatchWith(false);
-    const pushed = await dispatchWith(true);
-    expect(calm.overdrive).toBeUndefined();
-    expect(pushed.overdrive).toBe(true);
+    const calm = await flyWith(1);
+    const pushed = await flyWith(1.4);
+    const eased = await flyWith(0.6);
+    expect(calm.engine).toEqual({ chem: 1, ion: 1 });
+    expect(pushed.engine?.chem).toBeCloseTo(1.4);
     expect(pushed.seconds).toBeLessThan(calm.seconds);
     expect(pushed.fuelUse).toBeGreaterThan(calm.fuelUse);
-  }, 30_000);
+    // throttled down: slower, but cheaper to fly
+    expect(eased.seconds).toBeGreaterThan(calm.seconds);
+    expect(eased.fuelUse).toBeLessThan(calm.fuelUse);
+  }, 60_000);
 
-  it('overdrive is for races only: another mission type ignores it', async () => {
+  it('engine tuning: levels outside the admin range are brought back, and the preview agrees with the flight', async () => {
     const setup = await raceWith(0.5);
-    await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
     await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+    const set = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-levels`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ chem: 9, ion: 0 });
+    expect(set.status).toBe(200);
+    const { engine } = configService.snapshot().rules;
+    expect((set.body as { engineLevels: { chem: number; ion: number } }).engineLevels).toEqual({
+      chem: engine.chem_level_max,
+      ion: engine.ion_level_min,
+    });
+
+    const preview = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-preview`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id, chem: 1.2, ion: 1 });
+    expect(preview.status).toBe(200);
+    const shown = preview.body as {
+      cleanChance: number;
+      trip: { durationSeconds: number; fuelNeeded: number; legCount: number; fits: boolean };
+    };
+    expect(shown.cleanChance).toBeGreaterThan(0);
+    expect(shown.cleanChance).toBeLessThan(1);
+    expect(shown.trip.fits).toBe(true);
+
+    await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-levels`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ chem: 1.2, ion: 1 });
     const response = await request(httpServer(testApp.app))
       .post(`/v1/ships/${setup.shipId}/dispatch`)
       .set('Authorization', `Bearer ${setup.token}`)
-      .send({ missionId: setup.mission.id, overdrive: true });
+      .send({ missionId: setup.mission.id });
+    expect(response.status).toBe(200);
+    expect(Math.abs((response.body as { durationSeconds: number }).durationSeconds - shown.trip.durationSeconds)).toBeLessThanOrEqual(1);
+  }, 60_000);
+
+  it('engine tuning applies to every flying mission, not only races', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000, chemLevel: 1.3 } });
+    const response = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/dispatch`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id });
     expect(response.status).toBe(200);
     const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
-    expect((job.data as unknown as { snapshot: { overdrive?: boolean } }).snapshot.overdrive).toBeUndefined();
+    expect(
+      (job.data as unknown as { snapshot: { engine?: { chem: number } } }).snapshot.engine?.chem,
+    ).toBeCloseTo(1.3);
   }, 30_000);
 });

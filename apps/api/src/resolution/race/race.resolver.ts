@@ -117,8 +117,8 @@ export function raceWindow(input: {
 /**
  * Settles a race the player's ship finished. Every ship has its day: a rival's speed varies with
  * its form (`form_spread`), everyone's time with luck (`time_jitter`), a rival may have trouble
- * (`mishap_chance`) and the player's engines may overheat if pushed in overdrive (`overdrive_risk`);
- * trouble costs `mishap_penalty` of the time. A tie goes to the rival. Pure and deterministic:
+ * (`mishap_chance`) and the player's engines may fail if pushed (counted from the run's legs);
+ * each trouble costs `mishap_penalty` of the time. A tie goes to the rival. Pure and deterministic:
  * same seed, field and ship give the same standings (the report replays from the stored log).
  */
 export function resolveRace(input: {
@@ -127,11 +127,11 @@ export function resolveRace(input: {
   readonly totalDistance: number;
   readonly rules: GameRules;
   readonly rng: Rng;
-  /** The player ran with the engines pushed: it risks overheating. */
-  readonly overdrive?: boolean;
+  /** Engine failures the player's ship had on the way (pushed engines): each costs time. */
+  readonly playerMishaps?: number;
 }): RaceResult {
-  const { competitors, playerMobility, totalDistance, rules, rng, overdrive = false } = input;
-  const { time_jitter, form_spread, mishap_chance, mishap_penalty, overdrive_risk } = rules.race;
+  const { competitors, playerMobility, totalDistance, rules, rng, playerMishaps = 0 } = input;
+  const { time_jitter, form_spread, mishap_chance, mishap_penalty } = rules.race;
   const luck = (label: string): number => 1 + rng.child(label).uniform(-time_jitter, time_jitter);
   const form = (label: string): number =>
     1 + rng.child(`${label}-form`).uniform(-form_spread, form_spread);
@@ -149,14 +149,14 @@ export function resolveRace(input: {
       ...(hadTrouble ? { trouble: 'mishap' as const } : {}),
     };
   });
-  const overheated = overdrive && trouble('player', overdrive_risk);
+  const overheated = playerMishaps > 0;
   const you: RaceStanding = {
     name: '',
     mobility: playerMobility,
     seconds: Math.round(
       raceSeconds(totalDistance, playerMobility, rules) *
         luck('player') *
-        (overheated ? 1 + mishap_penalty : 1),
+        (1 + mishap_penalty * playerMishaps),
     ),
     you: true,
     ...(overheated ? { trouble: 'overheat' as const } : {}),

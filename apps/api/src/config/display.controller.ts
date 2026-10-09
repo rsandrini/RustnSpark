@@ -15,8 +15,6 @@ export interface DisplayResponse {
   readonly shieldRegen: number;
   /** Damage each armor point absorbs (armor is a pool). */
   readonly armorPoolFactor: number;
-  /** Race overdrive: speed x, fuel x and the chance of overheating. */
-  readonly overdrive: { readonly speed: number; readonly fuel: number; readonly risk: number };
 }
 
 @Controller('display')
@@ -25,7 +23,7 @@ export class DisplayController {
 
   @Get()
   display(): DisplayResponse {
-    const { ship, scavenging, race, combat } = this.config.snapshot().rules;
+    const { ship, scavenging, combat } = this.config.snapshot().rules;
     return {
       statScale: ship.stat_display_scale,
       mobFactor: ship.mob_factor,
@@ -33,11 +31,6 @@ export class DisplayController {
       scavengeFootFactor: scavenging.foot_factor,
       shieldRegen: combat.shield_regen,
       armorPoolFactor: combat.armor_pool_factor,
-      overdrive: {
-        speed: race.overdrive_speed,
-        fuel: race.overdrive_fuel,
-        risk: race.overdrive_risk,
-      },
     };
   }
 }

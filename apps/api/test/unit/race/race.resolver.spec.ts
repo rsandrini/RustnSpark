@@ -77,15 +77,16 @@ describe('resolveRace', () => {
     expect(outcomes.size).toBeGreaterThan(5);
   });
 
-  it('rivals sometimes have trouble that costs them time; the player only in overdrive', () => {
-    const noisy = { ...rules, race: { ...rules.race, mishap_chance: 1, overdrive_risk: 1, time_jitter: 0, form_spread: 0 } };
+  it('rivals sometimes have trouble that costs them time; the player only when its engines failed', () => {
+    const noisy = { ...rules, race: { ...rules.race, mishap_chance: 1, time_jitter: 0, form_spread: 0 } };
     const base = resolveRace({ competitors: field, playerMobility: 3, totalDistance: 800, rules: noisy, rng: createRng('t') });
     expect(base.standings.filter((s) => !s.you).every((s) => s.trouble === 'mishap')).toBe(true);
     expect(base.standings.find((s) => s.you)?.trouble).toBeUndefined();
-    const pushed = resolveRace({ competitors: field, playerMobility: 3, totalDistance: 800, rules: noisy, rng: createRng('t'), overdrive: true });
+    const pushed = resolveRace({ competitors: field, playerMobility: 3, totalDistance: 800, rules: noisy, rng: createRng('t'), playerMishaps: 2 });
     const you = pushed.standings.find((s) => s.you)!;
     expect(you.trouble).toBe('overheat');
-    expect(you.seconds).toBe(Math.round(raceSeconds(800, 3, noisy) * (1 + noisy.race.mishap_penalty)));
+    // every failure costs its share of the time: two failures, twice the penalty
+    expect(you.seconds).toBe(Math.round(raceSeconds(800, 3, noisy) * (1 + 2 * noisy.race.mishap_penalty)));
   });
 
   it('the board window brackets the expected time with a best and a worst day', () => {

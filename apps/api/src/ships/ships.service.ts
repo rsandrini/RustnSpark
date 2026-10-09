@@ -1,3 +1,4 @@
+import { clampLevels } from '../resolution/engine/engine.js';
 import { cellKey, formatCellsFromJson } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
@@ -51,6 +52,8 @@ export interface ShipResponse {
   currentLocationId: string;
   stance: string;
   energyMode: string;
+  /** Engine tuning set on the bridge (1 = engines as listed). */
+  engineLevels: { chem: number; ion: number };
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
@@ -316,6 +319,18 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
+  async setEngineLevels(shipId: string, chem: number, ion: number): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+    const levels = clampLevels({ chem, ion }, rules);
+    const updated = await this.prisma.ship.update({
+      where: { id: shipId },
+      data: { chemLevel: levels.chem, ionLevel: levels.ion },
+      include: { format: { select: { cells: true } } },
+    });
+    return this.toResponse(updated, rules);
+  }
+
   async listFormats(playerId: string): Promise<Array<{
     id: string;
     displayName: unknown;
@@ -566,6 +581,7 @@ export class ShipsService implements OnModuleInit {
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
       energyMode: ship.energyMode,
+      engineLevels: { chem: ship.chemLevel, ion: ship.ionLevel },
       layout: shipLayout,
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),

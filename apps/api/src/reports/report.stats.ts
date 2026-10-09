@@ -77,6 +77,7 @@ export interface ReportStats {
 
 const PART_FAILURE_TYPES: ReadonlySet<string> = new Set([
   'motor',
+  'engine_push',
   'battery',
   'tank',
   'shield',

@@ -68,6 +68,7 @@ describe('hashGameRules', () => {
       ship: GAME_CONFIG_DEFAULTS.ship,
       wear: GAME_CONFIG_DEFAULTS.wear,
       encounter: GAME_CONFIG_DEFAULTS.encounter,
+      engine: GAME_CONFIG_DEFAULTS.engine,
       escape: GAME_CONFIG_DEFAULTS.escape,
       detection: GAME_CONFIG_DEFAULTS.detection,
       stance: GAME_CONFIG_DEFAULTS.stance,

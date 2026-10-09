@@ -30,10 +30,19 @@ const FAILURE_CONSEQUENCE_VALUES = [
   'next_hit_bypasses_shield',
   'weapon_skips_half_attacks',
   'guaranteed_ambush',
+  'engine_overheat',
 ] as const satisfies readonly FailureConsequence[];
 
 /** Part-failure event types (the six choke categories). */
-const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
+const PART_FAILURE_TYPES = [
+  'motor',
+  'engine_push',
+  'battery',
+  'tank',
+  'shield',
+  'weapon',
+  'sensor',
+] as const;
 
 /** Combat events carry the GDD §15 layer split from S9.0 on. */
 const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
@@ -60,6 +69,7 @@ const CATEGORY_OF = {
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',
+  engine_push: 'failure',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',

@@ -44,6 +44,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',
+  engine_push: 'failure',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',
@@ -52,7 +53,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
 };
 
 const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
-const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
+const PART_FAILURE_TYPES = ['motor', 'engine_push', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
 
 function v2Event(
   type: (typeof MISSION_EVENT_TYPES)[number],

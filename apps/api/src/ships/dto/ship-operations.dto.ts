@@ -89,6 +89,21 @@ export class EnergyModeDto {
   energyMode!: 'BATTERY' | 'FULL' | 'OVERRIDE';
 }
 
+// Far above any admin range: the real limits come from the engine settings (clampLevels).
+const MAX_ENGINE_LEVEL = 10;
+
+export class EngineLevelsDto {
+  @IsNumber()
+  @Min(0)
+  @Max(MAX_ENGINE_LEVEL)
+  chem!: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(MAX_ENGINE_LEVEL)
+  ion!: number;
+}
+
 export class SetFormatDto {
   @IsString()
   formatId!: string;

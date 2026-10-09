@@ -228,7 +228,6 @@ export const DisplayResponseSchema = z.object({
   scavengeFootFactor: z.number(),
   shieldRegen: z.number(),
   armorPoolFactor: z.number(),
-  overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -275,6 +274,8 @@ export const ShipResponseSchema = z.object({
   currentLocationId: z.string(),
   stance: ShipStanceSchema,
   energyMode: EnergyModeSchema,
+  /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
+  engineLevels: z.object({ chem: z.number(), ion: z.number() }),
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
@@ -335,6 +336,40 @@ export const PreviewResponseSchema = z.object({
   routeCoverage: RouteCoverageSchema.nullable(),
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
+
+export const EnginePreviewSchema = z.object({
+  /** The levels this preview is for, kept inside the admin's ranges. */
+  levels: z.object({ chem: z.number(), ion: z.number() }),
+  ranges: z.object({
+    chem: z.tuple([z.number(), z.number()]),
+    ion: z.tuple([z.number(), z.number()]),
+  }),
+  /** Which engine groups the ship has. */
+  groups: z.array(z.enum(['chem', 'ion'])),
+  /** Speed (unrounded mobility) and fuel burn per distance at these levels. */
+  mobility: z.number(),
+  fuelUse: z.number(),
+  /** Cruising power at these levels. */
+  power: z.object({ supply: z.number(), demand: z.number(), spare: z.number() }),
+  /** Chance no engine fails during the whole run. */
+  cleanChance: z.number(),
+  /** The same two figures at level 1. */
+  baseline: z.object({ mobility: z.number(), fuelUse: z.number() }),
+  /** For a given mission: the trip at these levels and at level 1. */
+  trip: z
+    .object({
+      missionId: z.string(),
+      legCount: z.number(),
+      durationSeconds: z.number(),
+      fuelNeeded: z.number(),
+      fuelHave: z.number(),
+      fuelCap: z.number(),
+      fits: z.boolean(),
+      baseline: z.object({ durationSeconds: z.number(), fuelNeeded: z.number() }),
+    })
+    .optional(),
+});
+export type EnginePreview = z.infer<typeof EnginePreviewSchema>;
 
 export const RescueResponseSchema = z.object({
   shipId: z.string(),
@@ -487,21 +522,14 @@ export const OfferInfoSchema = z.object({
           worstSeconds: z.number(),
         }),
       ),
-      /** The viewer's own ship over this route (and in overdrive); null without a flyable ship. */
+      /** The viewer's own ship over this route, as its engines are tuned; null without a flyable ship. */
       you: z
         .object({
           durationSeconds: z.number(),
           bestSeconds: z.number(),
           worstSeconds: z.number(),
-          overdrive: z.object({
-            durationSeconds: z.number(),
-            bestSeconds: z.number(),
-            worstSeconds: z.number(),
-          }),
         })
         .nullable(),
-      /** What pushing the engines costs and risks: speed x, fuel x, chance of overheating. */
-      overdrive: z.object({ speed: z.number(), fuel: z.number(), risk: z.number() }),
       minMobility: z.number(),
       prizeShares: z.array(z.number()),
     })

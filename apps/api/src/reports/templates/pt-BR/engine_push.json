@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "{part} superaqueceu com os motores forçados — condição {condition}, {conditionLost} pontos perdidos. O trecho gastou combustível extra para compensar o empuxo perdido.",
+    "Forçar a propulsão demais custou caro: {part} está em {condition} após perder {conditionLost} pontos, e a queima ficou mais sedenta pelo resto do trecho."
+  ]
+}

@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  EnginePreview,
   ActiveMission,
   FactionsResponse,
   BuyResponse,
@@ -260,6 +261,7 @@ const ship = (): ShipResponse => ({
   currentLocationId: 'ceres',
   stance: 'NEUTRAL',
   energyMode: 'FULL',
+  engineLevels: { chem: 1, ion: 1 },
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
@@ -520,6 +522,7 @@ export const handlers = [
       currentLocationId: 'ceres',
       stance: 'NEUTRAL',
       energyMode: 'FULL',
+      engineLevels: { chem: 1, ion: 1 },
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
@@ -592,7 +595,6 @@ export const handlers = [
       scavengeFootFactor: 0.5,
       shieldRegen: 2,
       armorPoolFactor: 5,
-      overdrive: { speed: 1.25, fuel: 1.6, risk: 0.15 },
     })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
@@ -621,6 +623,41 @@ export const handlers = [
   http.post('/v1/ships/:id/energy-mode', async ({ request }) => {
     const body = (await request.json()) as { energyMode: ShipResponse['energyMode'] };
     return ok<ShipResponse>({ ...ship(), energyMode: body.energyMode });
+  }),
+
+  http.post('/v1/ships/:id/engine-levels', async ({ request }) => {
+    const body = (await request.json()) as { chem: number; ion: number };
+    return ok<ShipResponse>({ ...ship(), engineLevels: body });
+  }),
+
+  http.post('/v1/ships/:id/engine-preview', async ({ request }) => {
+    const body = (await request.json()) as { chem?: number; ion?: number; missionId?: string };
+    const chem = body.chem ?? 1;
+    const pushed = chem > 1 || (body.ion ?? 1) > 1;
+    return ok<EnginePreview>({
+      levels: { chem, ion: body.ion ?? 1 },
+      ranges: { chem: [0.5, 1.5], ion: [0.5, 2.5] },
+      groups: ['chem', 'ion'],
+      mobility: 2.5 * chem,
+      fuelUse: 8 * chem,
+      baseline: { mobility: 2.5, fuelUse: 8 },
+      power: { supply: 10, demand: 7, spare: 3 },
+      cleanChance: pushed ? 0.8 : 1,
+      ...(body.missionId !== undefined
+        ? {
+            trip: {
+              missionId: body.missionId,
+              legCount: 2,
+              durationSeconds: Math.round(300 / chem),
+              fuelNeeded: 20 * chem,
+              fuelHave: 25,
+              fuelCap: 40,
+              fits: 20 * chem <= 25,
+              baseline: { durationSeconds: 300, fuelNeeded: 20 },
+            },
+          }
+        : {}),
+    });
   }),
 
   http.get('/v1/ship-formats', () =>

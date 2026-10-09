@@ -1,3 +1,4 @@
+import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
 import {
   BadRequestException,
   ConflictException,
@@ -107,13 +108,7 @@ export interface OfferInfo {
       readonly durationSeconds: number;
       readonly bestSeconds: number;
       readonly worstSeconds: number;
-      readonly overdrive: {
-        readonly durationSeconds: number;
-        readonly bestSeconds: number;
-        readonly worstSeconds: number;
-      };
     } | null;
-    readonly overdrive: { readonly speed: number; readonly fuel: number; readonly risk: number };
     readonly minMobility: number;
     readonly prizeShares: readonly number[];
   } | null;
@@ -692,6 +687,18 @@ export class MissionsService implements OnModuleInit {
     });
     const sheet = viewer.ship === undefined ? null : deriveSheet(viewer.installed, rules);
     const viability = sheet === null ? null : checkViability(sheet, viewer.installed, rules);
+    // The estimates (time, fuel, a race window) are for the ship as the pilot has tuned its engines.
+    const levels =
+      viewer.ship === undefined
+        ? undefined
+        : clampLevels({ chem: viewer.ship.chemLevel, ion: viewer.ship.ionLevel }, rules);
+    const tuned =
+      viewer.ship === undefined || levels === undefined
+        ? null
+        : {
+            sheet: deriveSheet(applyEngineLevels(viewer.installed, levels, rules), rules),
+            pushed: levels.chem > 1 || levels.ion > 1,
+          };
 
     return rows.map((row) => {
       const reasons: EligibilityReason[] = [];
@@ -734,6 +741,7 @@ export class MissionsService implements OnModuleInit {
           requirementsById.get(row.templateId),
           viability,
           rules,
+          tuned,
         ),
       };
     });
@@ -763,6 +771,7 @@ function offerInfo(
   requirementsJson: unknown,
   viability: { readonly viable: boolean } | null,
   rules: GameRules,
+  tuned: { readonly sheet: ReturnType<typeof deriveSheet>; readonly pushed: boolean } | null,
 ): OfferInfo {
   const legs = (Array.isArray(row.legs) ? row.legs : []) as OfferLeg[];
   const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
@@ -770,11 +779,11 @@ function offerInfo(
   const peakZone = legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
 
   let estimate: OfferInfo['estimate'] = null;
-  if (sheet !== null && viability?.viable === true && sheet.mob > 0) {
+  if (sheet !== null && tuned !== null && viability?.viable === true && tuned.sheet.mob > 0) {
     estimate = {
       durationSeconds: missionDuration({
         totalDistance,
-        mobility: sheet.mob,
+        mobility: tuned.sheet.mob,
         durationK: rules.missions.duration_k,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
@@ -783,7 +792,7 @@ function offerInfo(
         (sum, leg) =>
           sum +
           fuelUnits({
-            fuelUse: sheet.fuelUse,
+            fuelUse: tuned.sheet.fuelUse,
             distance: leg.distance ?? 0,
             envFuelMult: leg.env?.fuelMult ?? 1,
           }),
@@ -825,13 +834,10 @@ function offerInfo(
           ...windowOf(rival.mobility, rules.race.form_spread, true),
         }))
       : [];
-  const yourMobility = sheet === null ? null : rawMobility(sheet.pot, sheet.mass, rules);
+  const yourMobility = tuned === null ? null : rawMobility(tuned.sheet.pot, tuned.sheet.mass, rules);
   const you =
     row.type === 'RACE' && yourMobility !== null && yourMobility > 0
-      ? {
-          ...windowOf(yourMobility, 0, false),
-          overdrive: windowOf(yourMobility * rules.race.overdrive_speed, 0, true),
-        }
+      ? windowOf(yourMobility, 0, tuned?.pushed === true)
       : null;
   return {
     title: bilingual(template?.displayName),
@@ -855,11 +861,6 @@ function offerInfo(
         ? {
             rivals,
             you,
-            overdrive: {
-              speed: rules.race.overdrive_speed,
-              fuel: rules.race.overdrive_fuel,
-              risk: rules.race.overdrive_risk,
-            },
             minMobility: rules.race.min_mobility,
             prizeShares: [
               rules.race.prize_share_1,

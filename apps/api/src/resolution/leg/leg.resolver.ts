@@ -1,3 +1,4 @@
+import { groupCondition, mishapChance, type EngineGroup, type EngineLevels } from '../engine/engine.js';
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { fuelUnits } from '../../economy/fuel-cost.calculator.js';
@@ -60,6 +61,8 @@ export interface PartSnapshot {
   readonly providesArmor?: boolean;
   /** What the part gives to or takes from the ship's power (layered model). */
   readonly power?: PowerPart;
+  /** An engine's group (chemical burns fuel, ion draws power): what engine tuning pushes. */
+  readonly engineGroup?: EngineGroup;
 }
 
 export interface LegRoute {
@@ -98,6 +101,8 @@ export interface LegMissionContext {
   readonly mining: { readonly stop: MiningStop; readonly miner: MinerRig } | null;
   /** Parts kept in storage when the ship left port: what a pirate may take (never installed ones). */
   readonly storage: readonly StoredPart[];
+  /** The levels the engines were run at (engine tuning); absent = as listed. */
+  readonly engine?: EngineLevels;
   /** Scavenging on foot: the ship stays put, so nothing finds it and nothing wears. */
   readonly onFoot?: boolean;
 }
@@ -124,6 +129,8 @@ export interface LegShipState {
   readonly escMax?: number;
   readonly escRegen?: number;
   readonly escRegenEnergy?: number;
+  /** Engine failures from pushing the engines so far this run: the Nth one wears N times as much. */
+  readonly pushFailures?: number;
   readonly spill?: number;
   /** Engines generate this share of their power this leg (a failed tank pump makes them struggle). */
   readonly engineFactor?: number;
@@ -401,6 +408,44 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     );
   }
 
+  // Engine tuning: an engine group pushed above level 1 can fail on a leg. One engine of the
+  // group is hurt (the Nth failure of the run costs N times the wear) and the leg burns extra fuel.
+  // Nothing aborts here; the ship only stops if no engine is left to push.
+  let pushFailures = input.ship.pushFailures ?? 0;
+  const pushKilled = new Set<string>();
+  const levels = input.context.engine;
+  if (levels !== undefined) {
+    const pushRng = rng.child('push');
+    for (const group of ['chem', 'ion'] as const) {
+      const level = levels[group];
+      const engines = parts.filter(
+        (part) => part.engineGroup === group && !isDead(part.condition, rules),
+      );
+      if (engines.length === 0 || level <= 1) continue;
+      const groupRng = pushRng.child(group);
+      const chance = mishapChance(group, level, groupCondition(parts, group), rules);
+      if (groupRng.float() >= chance) continue;
+      const victim = engines[Math.min(engines.length - 1, Math.floor(groupRng.float() * engines.length))]!;
+      pushFailures += 1;
+      const after = applyWear(victim.condition, rules.engine.mishap_wear * pushFailures);
+      parts = parts.map((part) => (part.id === victim.id ? { ...part, condition: after } : part));
+      if (isDead(after, rules)) pushKilled.add(victim.id);
+      fuel = Math.max(0, fuel - baseBurn * rules.engine.mishap_fuel);
+      events.push(
+        missionEvent({
+          leg: input.index,
+          category: 'failure',
+          type: 'engine_push',
+          actors,
+          magnitude: victim.condition - after,
+          condByPart: { [victim.id]: after },
+          credits: 0,
+          consequence: 'engine_overheat',
+        }),
+      );
+    }
+  }
+
   // A chokeEvent of type 'motor' means ONE engine failed this leg, not that the ship is
   // dead in the water — a ship with a second, still-working engine keeps going. Abort only
   // when every installed ENGINE part is either already dead or just choked this leg
@@ -413,7 +458,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   const motorAbort =
     engineParts.length > 0 &&
     engineParts.every(
-      (part) => isDead(part.condition, rules) || chokedMotorPartIds.has(part.id),
+      (part) =>
+        isDead(part.condition, rules) || chokedMotorPartIds.has(part.id) || pushKilled.has(part.id),
     );
 
   events.push(
@@ -449,6 +495,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     ...input.ship,
     parts,
     fuel,
+    ...(pushFailures > 0 ? { pushFailures } : {}),
     ...(engineFactor < 1 ? { engineFactor } : {}),
     // Layered model: a shield fully recovers between legs (energy is free while nobody shoots),
     // and any spare power the ship generates tops the batteries up a little.

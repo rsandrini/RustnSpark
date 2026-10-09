@@ -48,6 +48,12 @@ async function renderPort(): Promise<void> {
   await screen.findByRole('tab', { name: 'Market' });
 }
 
+// The ship view shows the engine tuning's sliders too: the repair plan's are the others.
+const repairSliders = () =>
+  screen
+    .getAllByRole('slider')
+    .filter((slider) => slider.closest('[data-testid="engine-tuning"]') === null);
+
 describe('port (S10.9)', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -121,7 +127,7 @@ describe('port (S10.9)', () => {
     expect(
       await screen.findByText('A destroyed part cannot be repaired: replace it.'),
     ).toBeInTheDocument();
-    const sliders = screen.getAllByRole('slider');
+    const sliders = repairSliders();
     expect(sliders).toHaveLength(6);
     expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
   });
@@ -130,7 +136,7 @@ describe('port (S10.9)', () => {
     await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
-    const sliders = screen.getAllByRole('slider');
+    const sliders = repairSliders();
     expect(sliders).toHaveLength(6);
     // A full repair is the default the first time there's damage to quote (owner: the workshop
     // fee should be a real number as soon as the tab opens, not 0 until a slider moves): every
@@ -256,7 +262,7 @@ describe('port (S10.9)', () => {
     // the "bigger plan": back out to nothing selected first, then pick a single part, to get the
     // small quote this test actually wants as its starting point.
     fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
-    const [slider] = screen.getAllByRole('slider');
+    const [slider] = repairSliders();
     fireEvent.change(slider!, { target: { value: '100' } });
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('20 ¢'));
     expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();

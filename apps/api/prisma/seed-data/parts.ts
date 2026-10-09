@@ -299,7 +299,7 @@ export const PARTS: SeedPart[] = [
     scrapValue: 38,
     partHp: 15,
     pot: 18,
-    energyCont: 0,
+    energyCont: -3,
     fuelUse: 0,
   },
   {
@@ -319,7 +319,7 @@ export const PARTS: SeedPart[] = [
     scrapValue: 75,
     partHp: 20,
     pot: 24,
-    energyCont: 0,
+    energyCont: -4,
     fuelUse: 0,
   },
   {
@@ -339,7 +339,7 @@ export const PARTS: SeedPart[] = [
     scrapValue: 150,
     partHp: 26,
     pot: 30,
-    energyCont: 0,
+    energyCont: -5,
     fuelUse: 0,
   },
   {
@@ -359,7 +359,7 @@ export const PARTS: SeedPart[] = [
     scrapValue: 300,
     partHp: 30,
     pot: 36,
-    energyCont: 0,
+    energyCont: -6,
     fuelUse: 0,
   },
   {
@@ -379,7 +379,7 @@ export const PARTS: SeedPart[] = [
     scrapValue: 600,
     partHp: 38,
     pot: 45,
-    energyCont: 0,
+    energyCont: -8,
     fuelUse: 0,
   },
   // Tanks come in three sizes (small 1×1, medium 2×1, large 3×1) and five rarities each: rarity

@@ -118,11 +118,13 @@ describe('transit (S10.7)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     const rivals = await screen.findByTestId('race-rivals');
-    const items = within(rivals).getAllByRole('listitem').map((item) => item.textContent);
+    const items = within(rivals)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
     expect(items).toEqual(['Vega Dart — speed 41', 'Comet Runner — speed 24']);
   });
 
-  it('a race can be run in overdrive: the choice is sent with the dispatch, with its price shown', async () => {
+  it("an accepted mission shows the engine tuning with this trip's time and fuel; dispatch sends only the mission", async () => {
     let body: Record<string, unknown> | null = null;
     server.use(
       http.get('/v1/missions/active', () =>
@@ -142,36 +144,28 @@ describe('transit (S10.7)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
-    const option = await screen.findByTestId('race-overdrive');
-    expect(option).toHaveTextContent('+25% speed, +60% fuel burned, 15% risk of overheating');
-    fireEvent.click(within(option).getByRole('checkbox'));
-    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
-    await waitFor(() => expect(body).toMatchObject({ missionId: 'm-1', overdrive: true }));
-  });
-
-  it('a race flown without the choice sends no overdrive', async () => {
-    let body: Record<string, unknown> | null = null;
-    server.use(
-      http.get('/v1/missions/active', () =>
-        HttpResponse.json(
-          [
-            mission({
-              type: 'RACE',
-              cargo: { race: { competitors: [{ id: 'r1', name: 'Comet Runner', mobility: 2.4 }] } },
-            }),
-          ],
-          { status: 200 },
-        ),
-      ),
-      http.post('/v1/ships/:id/dispatch', async ({ request }) => {
-        body = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(60_000), serverTime: iso(0) });
-      }),
+    const tuning = await screen.findByTestId('engine-tuning');
+    expect(await within(tuning).findByTestId('engine-trip-time')).toHaveTextContent(
+      'This trip takes',
     );
-    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(within(tuning).getByTestId('engine-trip-fuel')).toHaveTextContent(
+      'needs 20, you carry 25',
+    );
+    expect(within(tuning).getByTestId('engine-clean')).toHaveTextContent('100%');
+    // pushing the chemical engines changes the figures and the odds, before anything is sent
+    fireEvent.change(within(tuning).getByRole('slider', { name: 'Chemical engines' }), {
+      target: { value: '1.5' },
+    });
+    await waitFor(() =>
+      expect(within(tuning).getByTestId('engine-clean')).toHaveTextContent('80%'),
+    );
+    expect(within(tuning).getByTestId('engine-trip-fuel')).toHaveTextContent('needs 30');
+    expect(await within(tuning).findByRole('alert')).toHaveTextContent(
+      'more fuel than the ship carries',
+    );
     fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
     await waitFor(() => expect(body).not.toBeNull());
-    expect(body).not.toHaveProperty('overdrive');
+    expect(body).toEqual({ missionId: 'm-1' });
   });
 
   it('dispatches the accepted mission and flips to the in-transit view', async () => {
@@ -183,7 +177,9 @@ describe('transit (S10.7)', () => {
     const view = await screen.findByTestId('in-transit');
     expect(view).toBeInTheDocument();
     // the trip column carries the scene: it moves while the ship is under way
-    expect(within(screen.getByTestId('transit-aside')).getByTestId('transit-scene')).toHaveClass('moving');
+    expect(within(screen.getByTestId('transit-aside')).getByTestId('transit-scene')).toHaveClass(
+      'moving',
+    );
     expect(screen.getByTestId('briefing')).toBeInTheDocument();
     expect(screen.getAllByRole('timer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Leg 1 of 2')).toBeInTheDocument();
@@ -252,7 +248,12 @@ describe('transit (S10.7)', () => {
               shipId: 'ship-1',
               arrivalAt: iso(30 * 60 * 1000),
               legWindows: [
-                { legIndex: 0, routeId: 'ceres-gate', from: iso(-1 * 60 * 1000), to: iso(30 * 60 * 1000) },
+                {
+                  legIndex: 0,
+                  routeId: 'ceres-gate',
+                  from: iso(-1 * 60 * 1000),
+                  to: iso(30 * 60 * 1000),
+                },
               ],
             }),
           ],
@@ -263,7 +264,9 @@ describe('transit (S10.7)', () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
 
     const inTransit = await screen.findByTestId('in-transit');
-    expect(within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/)).toBeInTheDocument();
+    expect(
+      within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/),
+    ).toBeInTheDocument();
     expect(within(inTransit).getByText(/Arrives in/)).toBeInTheDocument();
     expect(within(inTransit).getByRole('timer')).toBeInTheDocument();
     // No itinerary list at all: one leg has nothing left to itemize.

@@ -1150,9 +1150,7 @@
     "scavengeTitle": "Scavenging",
     "race": {
       "title": "Your rivals",
-      "rival": "{{name}} — speed {{mobility}}",
-      "overdrive": "Push the engines (overdrive)",
-      "overdriveHelp": "+{{speed}}% speed, +{{fuel}}% fuel burned, {{risk}}% risk of overheating (loses time)."
+      "rival": "{{name}} — speed {{mobility}}"
     }
   },
   "board": {
@@ -1386,7 +1384,8 @@
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
     "WEAPONS": "No weapons installed.",
-    "unexpected": "Something went wrong"
+    "unexpected": "Something went wrong",
+    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply."
   },
   "language": {
     "label": "Language"
@@ -1585,5 +1584,32 @@
   "routeMap": {
     "label": "Route from {{from}} to {{to}}",
     "title": "Route"
+  },
+  "engineTuning": {
+    "title": "Engine tuning",
+    "intro": "Run the engines throttled down to save fuel and power, or pushed for speed. Pushing risks an engine failure on each leg.",
+    "locked": "The engines can only be tuned while the ship is in port.",
+    "presets": "Quick settings",
+    "preset": {
+      "economy": "Economy",
+      "normal": "Normal",
+      "sprint": "Sprint"
+    },
+    "group": {
+      "chem": "Chemical engines",
+      "ion": "Ion engines"
+    },
+    "level": "level {{value}}",
+    "hint": {
+      "chem": "Below 1: slower, burns less fuel. Above 1: faster, burns much more fuel, can overheat.",
+      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, can overheat."
+    },
+    "speed": "Speed {{value}} (listed: {{base}})",
+    "fuelBurn": "Fuel burn {{value}} (listed: {{base}})",
+    "power": "Power: makes {{supply}}, uses {{demand}}, spare {{spare}} (a shortfall starves other systems; engines keep running).",
+    "clean": "{{percent}}% chance no engine fails on the whole trip.",
+    "tripTime": "This trip takes {{value}} (at the listed levels: {{base}}).",
+    "tripFuel": "Fuel: needs {{needed}}, you carry {{have}} (at the listed levels: {{base}}).",
+    "tripNoFit": "At these levels the trip needs more fuel than the ship carries. Throttle the chemical engines down, or push the ion engines if the power allows."
   }
 }

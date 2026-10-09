@@ -10,7 +10,6 @@ const DEFAULT_DISPLAY: DisplayResponse = {
   scavengeFootFactor: 0.5,
   shieldRegen: 2,
   armorPoolFactor: 5,
-  overdrive: { speed: 1.25, fuel: 1.6, risk: 0.15 },
 };
 
 /** How derived numbers are shown, as tuned in the admin (`ship.stat_display_scale`). */

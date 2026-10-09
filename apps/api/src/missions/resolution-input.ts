@@ -1,3 +1,4 @@
+import { engineGroupOf } from '../resolution/engine/engine.js';
 import type { GameRules } from '../config/game-config.types.js';
 import type { EscapePreset } from '../resolution/encounter/escape.resolver.js';
 import type { FactionRelation, Stance } from '../resolution/encounter/encounter-policy.js';
@@ -47,7 +48,7 @@ export interface ResolutionContext {
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
   readonly scavenge?: ScavengeContext;
   /** RACE only: the rivals generated with the offer, frozen with the run. */
-  readonly race?: { readonly competitors: readonly RaceCompetitor[]; readonly overdrive?: boolean };
+  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
 }
 
 /** The rival ships of a RACE offer, as stored in its cargo (`cargo.race.competitors`). */
@@ -224,6 +225,9 @@ export function buildResolveInput(args: {
     partClass: part.catalog.partClass,
     providesEsc: part.catalog.esc > 0,
     condition: part.condition,
+    ...(snapshot.engine !== undefined && engineGroupOf(part.catalog) !== null
+      ? { engineGroup: engineGroupOf(part.catalog)! }
+      : {}),
     ...(snapshot.layered === true
       ? {
           providesArmor: part.catalog.bli > 0,
@@ -283,6 +287,7 @@ export function buildResolveInput(args: {
     missionOwner: context.missionOwner,
     missionForcesFlee: context.missionForcesFlee,
     objectCarried: OBJECT_CARRIED_TYPES.includes(args.missionType),
+    ...(snapshot.engine !== undefined ? { engine: snapshot.engine } : {}),
     client: context.client,
     ...(context.mining
       ? {
@@ -302,7 +307,7 @@ export function buildResolveInput(args: {
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
     ...(context.race && context.race.competitors.length > 0
-      ? { race: { ...context.race, ...(snapshot.overdrive === true ? { overdrive: true } : {}) } }
+      ? { race: context.race }
       : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };

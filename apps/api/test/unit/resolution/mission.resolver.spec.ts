@@ -433,6 +433,71 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
     }
   });
 
+  describe('engine tuning (pushed engines can fail)', () => {
+    const tuned = (chem: number, seed: string, legs = 3, engineCondition = 80) => {
+      const parts = PARTS.map((part) =>
+        part.id === 'engine-1'
+          ? { ...part, condition: engineCondition, engineGroup: 'chem' as const }
+          : part,
+      );
+      const route = Array.from({ length: legs }, () => ({
+        distance: 100,
+        danger: 0,
+        zone: 0,
+        env: { id: 'open', level: 1, fuelMult: 1 },
+      }));
+      return resolve(
+        seed,
+        snapshot({ parts }),
+        mission({ legs: route, engine: { chem, ion: 1 } }),
+      );
+    };
+    const failures = (out: ReturnType<typeof resolve>) =>
+      out.events.filter((event) => event.type === 'engine_push');
+
+    it('engines at level 1 or below never fail', () => {
+      for (const seed of ['p-1', 'p-2', 'p-3', 'p-4', 'p-5', 'p-6']) {
+        expect(failures(tuned(1, seed))).toHaveLength(0);
+        expect(failures(tuned(0.6, seed))).toHaveLength(0);
+      }
+    });
+
+    it('pushed engines fail now and then: the engine wears, the failure is on the record, the run goes on', () => {
+      let total = 0;
+      for (let index = 0; index < 40; index += 1) {
+        const out = tuned(rules.engine.chem_level_max, `push-${index}`, 4);
+        const found = failures(out);
+        total += found.length;
+        for (const event of found) {
+          expect(event.category).toBe('failure');
+          expect(event.consequence).toBe('engine_overheat');
+          expect(event.magnitude).toBeGreaterThan(0);
+          expect(event.effects.condByPart['engine-1']).toBeLessThan(80);
+        }
+        // never an abort by itself while the engine still has condition left
+        if (found.length === 1) expect(out.status).not.toBe('motor_abort');
+      }
+      expect(total).toBeGreaterThan(10);
+    });
+
+    it('each failure of the run costs more than the one before', () => {
+      let checked = 0;
+      for (let index = 0; index < 60 && checked < 3; index += 1) {
+        const found = failures(tuned(rules.engine.chem_level_max, `many-${index}`, 6, 100));
+        if (found.length < 2) continue;
+        checked += 1;
+        expect(found[1]!.magnitude).toBeGreaterThan(found[0]!.magnitude);
+      }
+      expect(checked).toBeGreaterThan(0);
+    });
+
+    it('is deterministic: same seed, same failures', () => {
+      const a = tuned(rules.engine.chem_level_max, 'same', 4);
+      const b = tuned(rules.engine.chem_level_max, 'same', 4);
+      expect(failures(a)).toEqual(failures(b));
+    });
+  });
+
   it('over many dangerous legs, an exposed part (engine) wears far more than a passive one (cargo)', () => {
     const dangerousLeg = mission({
       legs: [{ distance: 400, danger: 8, zone: 3, env: { id: 'open', level: 1, fuelMult: 1 } }],

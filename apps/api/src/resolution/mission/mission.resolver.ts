@@ -1,3 +1,4 @@
+import type { EngineLevels } from '../engine/engine.js';
 import type { Rng } from '../../common/rng/rng.js';
 import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
@@ -62,6 +63,8 @@ export interface MissionInput {
   readonly missionOwner: 'player' | 'enemy' | null;
   readonly missionForcesFlee: boolean;
   readonly objectCarried: boolean;
+  /** The levels the engines ran at (engine tuning). */
+  readonly engine?: EngineLevels;
   readonly client: EscortClient | null;
   /** Present on mining legs/stops (D30). */
   readonly mining?: { readonly stop: MiningStop; readonly miner: MinerRig };
@@ -72,7 +75,7 @@ export interface MissionInput {
   /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
   readonly scavenge?: ScavengeContext;
   /** RACE missions: the rival ships generated with the offer (frozen in its cargo). */
-  readonly race?: { readonly competitors: readonly RaceCompetitor[]; readonly overdrive?: boolean };
+  readonly race?: { readonly competitors: readonly RaceCompetitor[] };
 }
 
 export interface ResolveMissionInput {
@@ -293,7 +296,7 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       competitors: input.mission.race.competitors,
       // The unrounded speed: a rival's 2.6 must not be beaten or tied by a ship rounded up to 3.
       playerMobility: rawMobility(input.snapshot.sheet.pot, input.snapshot.sheet.mass, input.rules),
-      overdrive: input.mission.race.overdrive === true,
+      playerMishaps: events.filter((event) => event.type === 'engine_push').length,
       totalDistance,
       rules: input.rules,
       rng: root.child('race'),
@@ -377,6 +380,7 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
     client: mission.client,
     mining: mission.mining ?? null,
     storage: [],
+    ...(mission.engine !== undefined ? { engine: mission.engine } : {}),
     ...(mission.scavenge?.onFoot === true ? { onFoot: true } : {}),
   }));
 }
