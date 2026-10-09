@@ -15,6 +15,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     shield_regen: 2,
     // Armor is a pool too: each armor point is worth this much absorbed damage per fight.
     armor_pool_factor: 5,
+    armor_reduction: 0.25,
+    armor_reduction_max_share: 0.7,
     kite_factor: 0.2,
     first_strike_bonus: 2,
     max_rounds: 40,
@@ -141,6 +143,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     mishap_wear_weight: 0.5,
     mishap_wear: 6,
     mishap_fuel: 0.25,
+    push_wear: 4,
+    push_battery_share: 0.5,
   },
   encounter: {
     chance_divisor: 20,

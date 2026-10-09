@@ -11,6 +11,7 @@ import { resolveCombat } from '../../../src/resolution/combat/combat.resolver.js
 import type { CombatSheet } from '../../../src/resolution/combat/combat.types.js';
 import {
   applyHit,
+  armorReduction,
   environmentDamage,
   settleLosses,
   type DamageLayers,
@@ -27,6 +28,74 @@ const layers = (over: Partial<DamageLayers> = {}): DamageLayers => ({
   armorMax: 20,
   settled: { hp: 100, armor: 20, spill: 0 },
   ...over,
+});
+
+describe('armor cuts a hit by a flat amount, then its pool soaks the rest', () => {
+  // armor pool 40 = rating 8 (pool factor 5): a flat cut of 8 x 0.25 = 2 per hit
+  const armored = (over: Partial<DamageLayers> = {}) =>
+    layers({ esc: 0, armor: 40, armorMax: 40, ...over });
+
+  it('cuts a flat amount from every hit that gets past the shield', () => {
+    expect(armorReduction(40, 10, rules.combat)).toBeCloseTo(2);
+    expect(armorReduction(40, 4, rules.combat)).toBeCloseTo(2);
+  });
+
+  it('never cuts more than its share of the hit, so nothing is immune', () => {
+    expect(armorReduction(400, 4, rules.combat)).toBeCloseTo(4 * rules.combat.armor_reduction_max_share);
+  });
+
+  it('cuts less as the armor wears or runs down, and nothing once it is gone', () => {
+    expect(armorReduction(20, 10, rules.combat)).toBeCloseTo(1);
+    expect(armorReduction(0, 10, rules.combat)).toBe(0);
+  });
+
+  it('a hit: the shield first, the cut next (the pool pays nothing for it), the pool soaks the rest, the hull takes what remains', () => {
+    const hit = applyHit(armored({ esc: 4 }), 10, rules.combat);
+    // 4 to the shield, 6 left: armor cuts 2 for free and its pool soaks the other 4
+    expect(hit).toMatchObject({ shield: 4, reduced: 2, armor: 6, hull: 0, spill: 0 });
+    expect(hit.layers).toMatchObject({ esc: 0, armor: 36, hp: 100 });
+  });
+
+  it('with the pool used up the armor is gone: the hull takes the whole hit', () => {
+    const hit = applyHit(armored({ armor: 0 }), 9, rules.combat);
+    expect(hit).toMatchObject({ reduced: 0, armor: 0, hull: 9 });
+  });
+
+  it('the cut keeps working while the pool is nearly spent: only the soak runs out', () => {
+    const hit = applyHit(armored({ armor: 1 }), 10, rules.combat);
+    // rating left 0.2 => cut 0.05; pool soaks its last 1; the rest reaches the hull
+    expect(hit.reduced).toBeCloseTo(0.05);
+    expect(hit.layers.armor).toBe(0);
+    expect(hit.hull).toBeCloseTo(10 - 0.05 - 1);
+  });
+
+  it('without the combat rules (older callers) it is the plain pool', () => {
+    const hit = applyHit(armored(), 10);
+    expect(hit).toMatchObject({ reduced: 0, armor: 10, hull: 0 });
+    expect(hit.layers.armor).toBe(30);
+  });
+
+  it('in a fight: an armored ship lasts longer under the same attacker than a bare one', () => {
+    const attacker: CombatSheet = { pdf: 6, bli: 0, esc: 0, sen: 1, hp: 80, mob: 2 };
+    const bare: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 1, hp: 80, mob: 2, armor: 0 };
+    const plated: CombatSheet = { pdf: 0, bli: 8, esc: 0, sen: 1, hp: 80, mob: 2, armor: 8 * rules.combat.armor_pool_factor };
+    // (a fight runs until one side retreats, so what differs is how many rounds it takes)
+    const roundsToBreak = (target: CombatSheet) => {
+      let rounds = 0;
+      for (let i = 0; i < 40; i += 1) {
+        rounds += resolveCombat(attacker, target, rules.combat, createRng(`armor-${i}`)).rounds.length;
+      }
+      return rounds;
+    };
+    expect(roundsToBreak(plated)).toBeGreaterThan(roundsToBreak(bare));
+    // and the log of a round says how much the armor cut
+    const out = resolveCombat(attacker, plated, rules.combat, createRng('armor-log'));
+    const hits = out.rounds.filter((round) => round.attacker === 'A' && round.hit);
+    expect(hits.length).toBeGreaterThan(0);
+    // the first hit meets fresh armor, so it is cut; later ones are cut less as the pool runs down
+    expect(hits[0]!.armorReduced ?? 0).toBeGreaterThan(0);
+    expect(hits[0]!.armorAbsorbed).toBeGreaterThanOrEqual(hits[0]!.armorReduced ?? 0);
+  });
 });
 
 describe('applyHit: shield, then armor, then hull, then the parts', () => {

@@ -36,6 +36,7 @@ import { EngineTuning } from './engine-tuning';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
+import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
@@ -531,12 +532,19 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
           mission now lives in the persistent top bar instead of taking a line here. */}
-      <TransitPage
-        embedded
-        onGoToBoard={() => {
-          void goToTab('board');
-        }}
-      />
+      {/* Only on the Ship tab: the Board lists the mission itself (once), and the Port tabs have
+          no use for a summary above their lists. A ship floating in space still gets its rescue
+          options on every tab. */}
+      {pageTab === 'ship' && (
+        <TransitPage
+          embedded
+          onGoToBoard={() => {
+            void goToTab('board');
+          }}
+        />
+      )}
+      {/* (the Port tabs carry their own rescue banner) */}
+      {pageTab === 'board' && <RescueBanner />}
 
       {pageTab === 'board' && (
         <BoardPage

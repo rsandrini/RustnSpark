@@ -6,6 +6,7 @@ import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
+  pushWearPerLeg,
   applyEngineLevels,
   clampLevels,
   cleanRunChance,
@@ -39,11 +40,17 @@ export interface EnginePreview {
   readonly ranges: { readonly chem: [number, number]; readonly ion: [number, number] };
   /** Which engine groups the ship has (a slider for a group it lacks does nothing). */
   readonly groups: readonly EngineGroup[];
+  /** Where the thrust comes from at these levels (and as listed), summed over the working engines. */
+  readonly thrust: { readonly chem: number; readonly ion: number };
+  readonly baselineThrust: { readonly chem: number; readonly ion: number };
   /** Speed (mobility, unrounded) and fuel burn per distance at these levels. */
   readonly mobility: number;
   readonly fuelUse: number;
   /** Cruising power at these levels: generated, drawn and what is spare. */
   readonly power: { readonly supply: number; readonly demand: number; readonly spare: number };
+  /** Condition points lost per leg to the push itself (no failure needed): each chemical engine,
+      each ion engine and, because the ion engines draw on them, each battery. */
+  readonly wearPerLeg: { readonly chem: number; readonly ion: number; readonly battery: number };
   /** Chance no engine fails on the whole run (1 when nothing is pushed). */
   readonly cleanChance: number;
   /** The same figures at level 1, to show what the tuning changes. */
@@ -111,6 +118,15 @@ export class EnginePreviewService {
       .filter((part) => part.engineGroup !== undefined);
     const groups = [...new Set(engineParts.map((part) => part.engineGroup!))];
 
+    const thrustOf = (parts: typeof tunedParts) => {
+      const total = { chem: 0, ion: 0 };
+      for (const part of parts) {
+        const group = engineGroupOf(part.catalog);
+        if (group !== null) total[group] += part.catalog.pot;
+      }
+      return total;
+    };
+
     let trip: EnginePreview['trip'];
     if (request.missionId !== undefined) {
       const mission = await this.prisma.missionInstance.findFirst({
@@ -157,6 +173,8 @@ export class EnginePreviewService {
         ion: [rules.engine.ion_level_min, rules.engine.ion_level_max],
       },
       groups,
+      thrust: thrustOf(tunedParts),
+      baselineThrust: thrustOf(flight.parts),
       mobility: rawMobility(tunedSheet.pot, tunedSheet.mass, rules),
       fuelUse: tunedSheet.fuelUse,
       power: {
@@ -164,6 +182,7 @@ export class EnginePreviewService {
         demand: powerState.demand,
         spare: powerState.supply - powerState.demand,
       },
+      wearPerLeg: pushWearPerLeg(levels, rules),
       cleanChance: cleanRunChance(engineParts, levels, trip?.legCount ?? 1, rules),
       baseline: {
         mobility: rawMobility(baseSheet.pot, baseSheet.mass, rules),

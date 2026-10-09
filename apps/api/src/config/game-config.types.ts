@@ -40,6 +40,8 @@ export type ConfigKey =
   | 'combat.retreat_hp_ratio'
   | 'combat.shield_regen'
   | 'combat.armor_pool_factor'
+  | 'combat.armor_reduction'
+  | 'combat.armor_reduction_max_share'
   | 'detection.ambush_cap'
   | 'detection.ambush_per_sen_point'
   | 'economy.combat_loss_penalty'
@@ -87,6 +89,8 @@ export type ConfigKey =
   | 'engine.mishap_fuel'
   | 'engine.mishap_wear'
   | 'engine.mishap_wear_weight'
+  | 'engine.push_battery_share'
+  | 'engine.push_wear'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
   | 'encounter.pirate_min_hp'
@@ -230,6 +234,11 @@ export type GameRules = Readonly<{
     shield_regen: number;
     /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */
     armor_pool_factor: number;
+    /** Armor cuts every hit that gets past the shield by this much per point of armor rating it
+        still has (a pool point is `armor_pool_factor` of rating), before the pool soaks the rest. */
+    armor_reduction: number;
+    /** ...but never more than this share of the hit, so nothing is immune. */
+    armor_reduction_max_share: number;
   }>;
   ship: Readonly<{
     mob_factor: number;
@@ -344,6 +353,12 @@ export type GameRules = Readonly<{
     mishap_wear: number;
     /** Extra fuel burned that leg after a failure, as a share of the leg's burn. */
     mishap_fuel: number;
+    /** Wear from pushing, with or without a failure: condition points each engine of a pushed
+        group loses per leg at the highest level (less at lower levels, none at level 1). */
+    push_wear: number;
+    /** Pushing the ion engines also wears the batteries (they feed the extra draw): this share of
+        the engines' wear. */
+    push_battery_share: number;
   }>;
   encounter: Readonly<{
     chance_divisor: number;

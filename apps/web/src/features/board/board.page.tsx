@@ -219,6 +219,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               </button>
             }
             {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+            {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
             {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
           />
         </section>

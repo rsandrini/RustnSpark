@@ -145,7 +145,7 @@
       "unlimited": "unlimited",
       "routesCovered": "covers {{covered}} of {{total}} routes",
       "shieldValue": "{{pool}} (+{{regen}}/round)",
-      "armorValue": "{{rating}} (soaks {{pool}})"
+      "armorValue": "{{rating}} (cuts {{cut}} per hit, soaks {{pool}})"
     },
     "groups": {
       "combat": "Combat",
@@ -157,7 +157,7 @@
     "headline": {
       "firepower": "Firepower",
       "defense": "Armor · Shield",
-      "defenseHelp": "What the ship can soak in a fight: the shield first, then the armor, then the hull. Numbers are the points each layer can absorb.",
+      "defenseHelp": "What the ship can soak in a fight: the shield first, then the armor (which also cuts each hit), then the hull. Numbers are the points each layer can absorb.",
       "cargo": "Cargo",
       "mobility": "Mobility",
       "autonomy": "Range",
@@ -281,7 +281,7 @@
       "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
       "pot": "Total thrust from every installed engine. Feeds mobility.",
       "pdf": "Combat damage output from every installed weapon.",
-      "bli": "Armor is a pool: every point soaks several points of damage (see the number in brackets). It takes what the shield could not, before the hull, and wears down in a fight.",
+      "bli": "Armor sits behind the shield. It cuts every hit that gets past the shield by a flat amount (see the number in brackets), then its pool soaks the rest, and only what is left reaches the hull. It wears down in a fight, and a worn armor cuts less. Hull parts give hit points, not armor.",
       "esc": "A pool of damage soaked FIRST: it takes as much of every hit as it can hold. It recovers its own points every combat round, and each point it recovers costs combat energy — no energy, no recovery.",
       "sen": "Spots ambushes early, lowering the chance of being surprised in an encounter.",
       "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
@@ -1094,7 +1094,16 @@
       "noWear": "The journey itself left no marks.",
       "wear": "{{points}} condition points lost across {{parts}} part(s) to the journey itself.",
       "travelNote": "The journey hits like a weapon: the shield first (if the ship has one), then the armor, then the hull. What got through is the wear on the parts.",
-      "fromTo": "{{before}}% → {{after}}%"
+      "fromTo": "{{before}}% → {{after}}%",
+      "engines": {
+        "title": "Engine tuning",
+        "group": {
+          "chem": "Chemical engines",
+          "ion": "Ion engines"
+        },
+        "pushed": "ran at x{{value}}: pushed on {{legs}} leg(s), {{failures}} failure(s); the chance of no failure at all was {{chance}}%.",
+        "eased": "ran at x{{value}}: throttled down on {{legs}} leg(s), slower but burning less."
+      }
     },
     "story": {
       "leg": "Leg {{index}} · {{from}} → {{to}}",
@@ -1265,7 +1274,8 @@
     "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route.",
     "yourMission": "Your mission",
     "startBefore": "Start before",
-    "goToShip": "Open on My Ship"
+    "goToShip": "Open on My Ship",
+    "engineLevels": "Engines: chemical x{{chem}} · ion x{{ion}}"
   },
   "map": {
     "title": "Sector map",
@@ -1459,7 +1469,7 @@
       },
       "bli": {
         "label": "Armor",
-        "hint": "Reduces the damage taken from hits."
+        "hint": "Cuts every hit that gets past the shield by a flat amount, then soaks the rest from its pool, before the hull."
       },
       "esc": {
         "label": "Shield",
@@ -1621,8 +1631,8 @@
     },
     "level": "level {{value}}",
     "hint": {
-      "chem": "Below 1: slower, burns less fuel. Above 1: faster, burns much more fuel, can overheat.",
-      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, can overheat."
+      "chem": "Below 1: slower, burns less fuel. Above 1: faster, burns much more fuel, wears the chemical engines and can overheat.",
+      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, wears the ion engines AND the batteries, and can overheat."
     },
     "speed": "Speed {{value}} (listed: {{base}})",
     "fuelBurn": "Fuel burn {{value}} (listed: {{base}})",
@@ -1630,6 +1640,10 @@
     "clean": "{{percent}}% chance no engine fails on the whole trip.",
     "tripTime": "This trip takes {{value}} (at the listed levels: {{base}}).",
     "tripFuel": "Fuel: needs {{needed}}, you carry {{have}} (at the listed levels: {{base}}).",
-    "tripNoFit": "At these levels the trip needs more fuel than the ship carries. Throttle the chemical engines down, or push the ion engines if the power allows."
+    "tripNoFit": "At these levels the trip needs more fuel than the ship carries. Throttle the chemical engines down, or push the ion engines if the power allows.",
+    "thrustTitle": "Where the thrust comes from",
+    "thrustBar": "Chemical {{chem}}% · Ion {{ion}}% of the thrust",
+    "thrustLine": "{{group}}: {{value}} of the speed ({{percent}}% of the thrust; listed: {{base}})",
+    "wear": "Wear per leg from the push alone: chemical engines −{{chem}}, ion engines −{{ion}}, batteries −{{battery}}."
   }
 }

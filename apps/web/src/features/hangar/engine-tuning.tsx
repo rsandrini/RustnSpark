@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { EnginePreview, ShipResponse } from '../../api/generated';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { formatDuration } from '../../ui/duration';
+import { registerEngineTuningFlush } from './engine-tuning-sync';
 
 const SAVE_DELAY_MS = 500;
 const SLIDER_STEP = 0.05;
@@ -20,6 +21,20 @@ const PRESETS = [
 ] as const;
 
 type Group = 'chem' | 'ion';
+
+/** The share of the total thrust each group gives, in percent. */
+function thrustShare(thrust: { chem: number; ion: number }): { chem: number; ion: number } {
+  const total = thrust.chem + thrust.ion;
+  if (total <= 0) return { chem: 0, ion: 0 };
+  return { chem: (thrust.chem / total) * PERCENT, ion: (thrust.ion / total) * PERCENT };
+}
+
+/** Thrust to speed: the ship's speed is its total thrust over its mass, so each group's part of
+    the speed is its thrust over that same mass. */
+function thrustMass(data: EnginePreview): number {
+  const total = data.thrust.chem + data.thrust.ion;
+  return total > 0 && data.mobility > 0 ? total / data.mobility : 1;
+}
 
 function cleanTone(chance: number): 'ok' | 'warn' | 'bad' {
   return chance >= GOOD_CLEAN ? 'ok' : chance >= OK_CLEAN ? 'warn' : 'bad';
@@ -68,6 +83,20 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
       void queryClient.invalidateQueries({ queryKey: ['missions'] });
     },
   });
+
+  // The latest levels and what is saved, for the save-now below (dispatch calls it first).
+  const latest = useRef({ levels, saved, editable });
+  latest.current = { levels, saved, editable };
+  useEffect(
+    () =>
+      registerEngineTuningFlush(async () => {
+        const { levels: wanted, saved: stored, editable: canSave } = latest.current;
+        if (!canSave || (wanted.chem === stored.chem && wanted.ion === stored.ion)) return;
+        await save.mutateAsync(wanted);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   // Save a moment after the pilot stops moving a slider.
   useEffect(() => {
@@ -133,6 +162,44 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
       </div>
       {sliderFor('chem')}
       {sliderFor('ion')}
+      {data !== undefined && data.thrust.chem + data.thrust.ion > 0 && (
+        <div className="engine-thrust" data-testid="engine-thrust">
+          <span className="sub">{t('engineTuning.thrustTitle')}</span>
+          <div
+            className="engine-thrust-bar"
+            role="img"
+            aria-label={t('engineTuning.thrustBar', {
+              chem: number(thrustShare(data.thrust).chem, 0),
+              ion: number(thrustShare(data.thrust).ion, 0),
+            })}
+          >
+            <span
+              className="engine-thrust-chem"
+              style={{ width: `${thrustShare(data.thrust).chem}%` }}
+            />
+            <span
+              className="engine-thrust-ion"
+              style={{ width: `${thrustShare(data.thrust).ion}%` }}
+            />
+          </div>
+          <ul className="engine-thrust-legend">
+            {(['chem', 'ion'] as const)
+              .filter((group) => groups.includes(group))
+              .map((group) => (
+                <li key={group} data-testid={`engine-thrust-${group}`}>
+                  {t('engineTuning.thrustLine', {
+                    group: t(`engineTuning.group.${group}`),
+                    value: number(scaleSpeed(data.thrust[group] / thrustMass(data), display)),
+                    percent: number(thrustShare(data.thrust)[group], 0),
+                    base: number(
+                      scaleSpeed(data.baselineThrust[group] / thrustMass(data), display),
+                    ),
+                  })}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
       {data !== undefined && (
         <ul className="engine-stats" data-testid="engine-stats">
           <li>
@@ -156,6 +223,15 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
               spare: number(data.power.spare),
             })}
           </li>
+          {data.wearPerLeg.chem + data.wearPerLeg.ion + data.wearPerLeg.battery > 0 && (
+            <li data-testid="engine-wear">
+              {t('engineTuning.wear', {
+                chem: number(data.wearPerLeg.chem),
+                ion: number(data.wearPerLeg.ion),
+                battery: number(data.wearPerLeg.battery),
+              })}
+            </li>
+          )}
           <li className={`clean ${cleanTone(data.cleanChance)}`} data-testid="engine-clean">
             {t('engineTuning.clean', { percent: Math.round(data.cleanChance * PERCENT) })}
           </li>

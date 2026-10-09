@@ -22,6 +22,7 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { RouteMap } from '../../ui/RouteMap';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { EngineTuning } from '../hangar/engine-tuning';
+import { flushEngineTuning } from '../hangar/engine-tuning-sync';
 import { activeAsOffer } from '../board/active-offer';
 import { MissionCard } from '../board/mission-card';
 
@@ -109,10 +110,13 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     void queryClient.invalidateQueries({ queryKey: ['ships'] });
   };
   const dispatch = useMutation({
-    mutationFn: () =>
-      client.post<DispatchResponse>(`/v1/ships/${ship?.id ?? ''}/dispatch`, {
+    mutationFn: async () => {
+      // A slider moved a moment ago may not be saved yet: the trip flies with the levels shown.
+      await flushEngineTuning();
+      return client.post<DispatchResponse>(`/v1/ships/${ship?.id ?? ''}/dispatch`, {
         missionId: mission?.id ?? '',
-      }),
+      });
+    },
     onSuccess: (response) => {
       setDispatchServerTime(response.serverTime);
       setActionError(null);
@@ -296,6 +300,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
               hideMap
               actions={null}
               {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+              {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
               {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
             />
           ) : (

@@ -228,6 +228,7 @@ export const DisplayResponseSchema = z.object({
   scavengeFootFactor: z.number(),
   shieldRegen: z.number(),
   armorPoolFactor: z.number(),
+  armorReduction: z.number(),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -370,11 +371,16 @@ export const EnginePreviewSchema = z.object({
   }),
   /** Which engine groups the ship has. */
   groups: z.array(z.enum(['chem', 'ion'])),
+  /** Where the thrust comes from at these levels, and as listed (chemical and ion engines). */
+  thrust: z.object({ chem: z.number(), ion: z.number() }),
+  baselineThrust: z.object({ chem: z.number(), ion: z.number() }),
   /** Speed (unrounded mobility) and fuel burn per distance at these levels. */
   mobility: z.number(),
   fuelUse: z.number(),
   /** Cruising power at these levels. */
   power: z.object({ supply: z.number(), demand: z.number(), spare: z.number() }),
+  /** Condition points lost per leg to the push itself: a chemical engine, an ion engine, a battery. */
+  wearPerLeg: z.object({ chem: z.number(), ion: z.number(), battery: z.number() }),
   /** Chance no engine fails during the whole run. */
   cleanChance: z.number(),
   /** The same two figures at level 1. */
@@ -650,6 +656,8 @@ export const MissionCombatRoundSchema = z.object({
   hit: z.boolean(),
   damage: z.number(),
   armorAbsorbed: z.number(),
+  /** Layered model: the part of `armorAbsorbed` the armor cut outright (its pool did not pay). */
+  armorReduced: z.number().optional(),
   shieldAbsorbed: z.number(),
   hullDamage: z.number(),
   /** Layered model: the player ship's shield and armor left after this attack. */
@@ -710,6 +718,19 @@ export const ReportStatsSchema = z.object({
     .optional(),
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
+  /** How the engines were run (engine tuning), per group; empty when run as listed. */
+  engines: z
+    .array(
+      z.object({
+        group: z.enum(['chem', 'ion']),
+        levelPct: z.number(),
+        pushedLegs: z.number(),
+        easedLegs: z.number(),
+        failures: z.number(),
+        cleanChancePct: z.number(),
+      }),
+    )
+    .optional(),
   /** Every part that lost condition during the run, dispatch vs final. */
   partsDamage: z.array(
     z.object({

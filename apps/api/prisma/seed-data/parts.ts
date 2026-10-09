@@ -1024,9 +1024,9 @@ export const PARTS: SeedPart[] = [
     partType: 'armor_plate',
     displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
-      en: 'Heavy armor plating: the most protection per part, cutting the damage from every hit. Very heavy, so it slows your ship down.',
+      en: 'Heavy armor plating. Cuts every hit that gets past the shield by a flat amount, then soaks the rest until it is spent. Heavy and dear, for fighters and dangerous space; few hit points of its own.',
       'pt-BR':
-        'Placa de blindagem pesada: a maior proteção por peça, reduzindo o dano de cada ataque. Muito pesada, então deixa a nave mais lenta.',
+        'Blindagem pesada. Corta todo golpe que passa do escudo em uma quantia fixa e depois absorve o resto até se esgotar. Pesada e cara, para combatentes e espaço perigoso; poucos pontos de vida próprios.',
     },
     partClass: 'DEFENSE',
     rarity: 'UNCOMMON',
@@ -1036,15 +1036,16 @@ export const PARTS: SeedPart[] = [
     structureCost: 12,
     basePrice: 500,
     scrapValue: 125,
-    partHp: 40,
+    partHp: 24,
     bli: 4,
   },
   {
     partType: 'armor_plate_rare',
     displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
-      en: 'Advanced layered armor that soaks up more punishment than standard plating while weighing a little less.',
-      'pt-BR': 'Blindagem em camadas avançadas que absorve mais punição que o revestimento padrão pesando um pouco menos.',
+      en: 'Advanced layered armor: cuts more of every hit and soaks more punishment than standard plating, a little lighter.',
+      'pt-BR':
+        'Blindagem avançada em camadas: corta mais de cada golpe e absorve mais castigo que a placa padrão, um pouco mais leve.',
     },
     partClass: 'DEFENSE',
     rarity: 'RARE',
@@ -1054,15 +1055,16 @@ export const PARTS: SeedPart[] = [
     structureCost: 10,
     basePrice: 1000,
     scrapValue: 250,
-    partHp: 52,
+    partHp: 31,
     bli: 5,
   },
   {
     partType: 'armor_plate_epic',
     displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
-      en: 'A heavy armor plate with regenerative layering. Doubles the protection of a basic plate and shaves off mass and structure cost.',
-      'pt-BR': 'Uma placa de armadura pesada com camadas regenerativas. Dobra a proteção de uma placa básica e reduz massa e custo de estrutura.',
+      en: 'A heavy armor plate with regenerative layering: cuts and soaks far more than a basic plate, with less mass and structure cost.',
+      'pt-BR':
+        'Uma placa de blindagem pesada com camadas regenerativas: corta e absorve muito mais que a básica, com menos massa e custo de estrutura.',
     },
     partClass: 'DEFENSE',
     rarity: 'EPIC',
@@ -1072,15 +1074,16 @@ export const PARTS: SeedPart[] = [
     structureCost: 8,
     basePrice: 2000,
     scrapValue: 500,
-    partHp: 64,
+    partHp: 38,
     bli: 6,
   },
   {
     partType: 'armor_plate_legendary',
     displayName: { en: 'Armor Plate', 'pt-BR': 'Placa de Armadura' },
     description: {
-      en: 'A legendary armor slab forged from ultra-dense alloy. It shrugs off blows that would vaporize lesser plating.',
-      'pt-BR': 'Uma laje de armadura lendária forjada de liga ultradensa. Ignora golpes que vaporizariam revestimentos inferiores.',
+      en: 'A legendary armor slab forged from ultra-dense alloy. It cuts and soaks blows that would vaporize lesser plating.',
+      'pt-BR':
+        'Uma laje de blindagem lendária forjada em liga ultradensa. Corta e absorve golpes que vaporizariam placas inferiores.',
     },
     partClass: 'DEFENSE',
     rarity: 'LEGENDARY',
@@ -1090,16 +1093,16 @@ export const PARTS: SeedPart[] = [
     structureCost: 8,
     basePrice: 4000,
     scrapValue: 1000,
-    partHp: 80,
+    partHp: 48,
     bli: 8,
   },
   {
     partType: 'hull',
     displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
-      en: 'A cheap, light structural frame with a little armor. Adds hit points and a touch of protection, but no speed, cargo or firepower.',
+      en: 'A cheap, light structural frame: plenty of hit points, but no armor at all. Hit points keep the ship alive once armor and shield are gone.',
       'pt-BR':
-        'Uma estrutura barata e leve com um pouco de blindagem. Adiciona pontos de casco e um toque de proteção, mas nenhuma velocidade, carga ou poder de fogo.',
+        'Uma estrutura barata e leve: muitos pontos de vida, mas nenhuma blindagem. Os pontos de vida mantêm a nave viva quando a blindagem e o escudo acabam.',
     },
     partClass: 'DEFENSE',
     rarity: 'COMMON',
@@ -1109,16 +1112,15 @@ export const PARTS: SeedPart[] = [
     structureCost: 5,
     basePrice: 100,
     scrapValue: 25,
-    partHp: 20,
-    bli: 1,
+    partHp: 30,
   },
   {
     partType: 'hull_uncommon',
     displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
-      en: 'A stronger structural frame with better plating. Adds more hit points and armor than a basic hull without growing heavier.',
+      en: 'A stronger structural frame with more hit points than a basic hull, still no armor and no heavier.',
       'pt-BR':
-        'Uma estrutura mais forte com melhor blindagem. Adiciona mais pontos de casco e armadura que um casco básico sem ficar mais pesada.',
+        'Uma estrutura mais forte, com mais pontos de vida que o casco básico, ainda sem blindagem e sem mais peso.',
     },
     partClass: 'DEFENSE',
     rarity: 'UNCOMMON',
@@ -1128,16 +1130,15 @@ export const PARTS: SeedPart[] = [
     structureCost: 4,
     basePrice: 200,
     scrapValue: 50,
-    partHp: 26,
-    bli: 2,
+    partHp: 39,
   },
   {
     partType: 'hull_rare',
     displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
-      en: 'An advanced composite frame that is lighter and tougher than standard hull plating. Offers solid protection for mid-tier ships.',
+      en: 'An advanced composite frame that is lighter and holds far more hit points than standard hull plating. No armor.',
       'pt-BR':
-        'Uma estrutura composta avançada mais leve e resistente que o revestimento padrão de casco. Oferece proteção sólida para naves de tier médio.',
+        'Uma estrutura composta avançada, mais leve e com muito mais pontos de vida que o casco padrão. Sem blindagem.',
     },
     partClass: 'DEFENSE',
     rarity: 'RARE',
@@ -1147,16 +1148,15 @@ export const PARTS: SeedPart[] = [
     structureCost: 4,
     basePrice: 400,
     scrapValue: 100,
-    partHp: 34,
-    bli: 3,
+    partHp: 51,
   },
   {
     partType: 'hull_epic',
     displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
-      en: 'A heavy-duty hull frame with military-grade plating. Doubles the protection of a basic hull while costing less structure.',
+      en: 'A heavy-duty hull frame with military-grade structure: a great many hit points for little weight. No armor.',
       'pt-BR':
-        'Uma estrutura de casco pesada com blindagem de grau militar. Dobra a proteção de um casco básico custando menos estrutura.',
+        'Uma estrutura reforçada de padrão militar: muitíssimos pontos de vida por pouco peso. Sem blindagem.',
     },
     partClass: 'DEFENSE',
     rarity: 'EPIC',
@@ -1166,16 +1166,15 @@ export const PARTS: SeedPart[] = [
     structureCost: 3,
     basePrice: 800,
     scrapValue: 200,
-    partHp: 40,
-    bli: 4,
+    partHp: 60,
   },
   {
     partType: 'hull_legendary',
     displayName: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
     description: {
-      en: 'A legendary hull frame. Its woven alloy shell shrugs off hits that would shred a normal ship, yet it is remarkably light.',
+      en: 'A legendary hull frame. Its woven alloy shell holds more hit points than any other frame, yet it is remarkably light. No armor.',
       'pt-BR':
-        'Uma estrutura de casco lendária. Sua casca de liga tecida ignora golpes que destruiriam uma nave normal, mas é notavelmente leve.',
+        'Uma estrutura lendária. Sua casca de liga trançada guarda mais pontos de vida que qualquer outra, e é notavelmente leve. Sem blindagem.',
     },
     partClass: 'DEFENSE',
     rarity: 'LEGENDARY',
@@ -1185,8 +1184,7 @@ export const PARTS: SeedPart[] = [
     structureCost: 3,
     basePrice: 1600,
     scrapValue: 400,
-    partHp: 50,
-    bli: 5,
+    partHp: 75,
   },
   {
     partType: 'shield_basic',

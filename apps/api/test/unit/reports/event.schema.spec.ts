@@ -45,6 +45,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mining_partial_failure: 'payment',
   motor: 'failure',
   engine_push: 'failure',
+  engine_tuning: 'transit',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',
@@ -87,6 +88,9 @@ function v2Event(
         { name: '', mobility: 3.1, seconds: 1950, you: true },
       ],
     };
+  }
+  if (type === 'engine_tuning') {
+    base['tuning'] = { group: 'ion', levelPct: 250, chancePct: 35, outcome: 'held' };
   }
   if (type === 'pirate_demand') {
     base['motive'] = 'parts';

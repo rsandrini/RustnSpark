@@ -101,6 +101,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.armor_reduction',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.armor_reduction),
+    description: {
+      en: 'Armor cuts every hit that gets past the shield by this much per point of armor rating it still has, before its pool soaks the rest (worn or used-up armor cuts less).',
+      'pt-BR': 'A armadura corta todo golpe que passa do escudo em tanto por ponto de blindagem que ainda tem, antes de o reservatório absorver o resto (armadura gasta ou esgotada corta menos).',
+    },
+  },
+  {
+    key: 'combat.armor_reduction_max_share',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.armor_reduction_max_share),
+    description: {
+      en: 'Armor never cuts more than this share of a hit, so nothing is immune.',
+      'pt-BR': 'A armadura nunca corta mais que esta fração do golpe, para nada ficar imune.',
+    },
+  },
+  {
     key: 'combat.armor_pool_factor',
     group: 'combat',
     type: 'number',
@@ -1190,6 +1214,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: "Extra fuel burned on the leg after an engine failure, as a share of the leg's burn.",
       'pt-BR': 'Combustível extra gasto no trecho após uma falha de motor, como fração do gasto do trecho.',
+    },
+  },
+  {
+    key: 'engine.push_battery_share',
+    group: 'engine',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.push_battery_share),
+    description: {
+      en: "Pushing the ion engines also wears the batteries (they feed the extra draw): this share of the engines' wear per leg.",
+      'pt-BR': 'Forçar os motores de íons também desgasta as baterias (elas alimentam o consumo extra): esta fração do desgaste dos motores por trecho.',
+    },
+  },
+  {
+    key: 'engine.push_wear',
+    group: 'engine',
+    type: 'number',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.push_wear),
+    description: {
+      en: 'Wear from pushing, even when nothing fails: condition points each engine of a pushed group loses per leg at the highest level (less at lower levels, none at level 1).',
+      'pt-BR': 'Desgaste por forçar, mesmo sem falha: pontos de condição que cada motor de um grupo forçado perde por trecho no nível máximo (menos em níveis menores, nenhum no nível 1).',
     },
   },
   {

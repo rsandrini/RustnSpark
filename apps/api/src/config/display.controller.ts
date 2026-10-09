@@ -15,6 +15,8 @@ export interface DisplayResponse {
   readonly shieldRegen: number;
   /** Damage each armor point absorbs (armor is a pool). */
   readonly armorPoolFactor: number;
+  /** How much each point of armor rating cuts from every hit (before the pool soaks the rest). */
+  readonly armorReduction: number;
 }
 
 @Controller('display')
@@ -31,6 +33,7 @@ export class DisplayController {
       scavengeFootFactor: scavenging.foot_factor,
       shieldRegen: combat.shield_regen,
       armorPoolFactor: combat.armor_pool_factor,
+      armorReduction: combat.armor_reduction,
     };
   }
 }

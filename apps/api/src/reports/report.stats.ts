@@ -53,6 +53,16 @@ export interface ReportStats {
       readonly trouble?: 'mishap' | 'overheat';
     }[];
   } | null;
+  /** How the engines were run (engine tuning): per group, the level, the legs it was pushed or
+      eased, the failures and the chance the pushed legs went clean. Empty when run as listed. */
+  readonly engines: readonly {
+    readonly group: 'chem' | 'ion';
+    readonly levelPct: number;
+    readonly pushedLegs: number;
+    readonly easedLegs: number;
+    readonly failures: number;
+    readonly cleanChancePct: number;
+  }[];
   readonly loot: readonly {
     readonly materialId: string;
     readonly name: string;
@@ -74,6 +84,8 @@ export interface ReportStats {
     readonly after: number;
   }[];
 }
+
+const PERCENT = 100;
 
 const PART_FAILURE_TYPES: ReadonlySet<string> = new Set([
   'motor',
@@ -97,6 +109,10 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let stolenParts = 0;
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
+  const engineRuns = new Map<
+    'chem' | 'ion',
+    { levelPct: number; pushedLegs: number; easedLegs: number; failures: number; clean: number }
+  >();
   const damage = { shield: 0, armor: 0, hull: 0 };
   let wearPoints = 0;
   const travelLayers = { shield: 0, armor: 0, hull: 0 };
@@ -127,6 +143,23 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       });
     }
     if (event.type === 'race_result' && event.race !== undefined) race = event.race;
+    if (event.type === 'engine_tuning' && event.tuning !== undefined) {
+      const run = engineRuns.get(event.tuning.group) ?? {
+        levelPct: event.tuning.levelPct,
+        pushedLegs: 0,
+        easedLegs: 0,
+        failures: 0,
+        clean: 1,
+      };
+      run.levelPct = event.tuning.levelPct;
+      if (event.tuning.outcome === 'eased') run.easedLegs += 1;
+      else {
+        run.pushedLegs += 1;
+        run.clean *= 1 - event.tuning.chancePct / PERCENT;
+        if (event.tuning.outcome === 'failed') run.failures += 1;
+      }
+      engineRuns.set(event.tuning.group, run);
+    }
     if (event.type === 'mission_wear' && event.cascade) {
       travelLayers.shield += event.cascade.shield;
       travelLayers.armor += event.cascade.armor;
@@ -188,6 +221,14 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     found,
     pirates: { stolenParts, motive },
     race,
+    engines: [...engineRuns.entries()].map(([group, run]) => ({
+      group,
+      levelPct: run.levelPct,
+      pushedLegs: run.pushedLegs,
+      easedLegs: run.easedLegs,
+      failures: run.failures,
+      cleanChancePct: Math.round(run.clean * PERCENT),
+    })),
     loot: [...loot.entries()]
       .filter(([, quantity]) => quantity > 0)
       .map(([materialId, quantity]) => ({

@@ -70,6 +70,8 @@ export interface CombatAttackEvent {
   readonly damage: number;
   /** Pre-armor damage minus applied damage — what BLI deflected (0 on miss). */
   readonly armorAbsorbed: number;
+  /** Layered model: the part of `armorAbsorbed` the armor cut outright (its pool did not pay). */
+  readonly armorReduced?: number;
   readonly shieldAbsorbed: number;
   /** Defender HP after this attack. */
   readonly hp: number;

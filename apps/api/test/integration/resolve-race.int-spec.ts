@@ -218,9 +218,14 @@ describe('RACE mission resolution (pipeline)', () => {
       .send({ missionId: setup.mission.id, chem: 1.2, ion: 1 });
     expect(preview.status).toBe(200);
     const shown = preview.body as {
+      thrust: { chem: number; ion: number };
+      baselineThrust: { chem: number; ion: number };
       cleanChance: number;
       trip: { durationSeconds: number; fuelNeeded: number; legCount: number; fits: boolean };
     };
+    // the thrust is reported per engine group, and the chemical level (1.2) scales only its part
+    expect(shown.thrust.chem).toBeCloseTo(shown.baselineThrust.chem * 1.2);
+    expect(shown.thrust.ion).toBeCloseTo(shown.baselineThrust.ion);
     expect(shown.cleanChance).toBeGreaterThan(0);
     expect(shown.cleanChance).toBeLessThan(1);
     expect(shown.trip.fits).toBe(true);

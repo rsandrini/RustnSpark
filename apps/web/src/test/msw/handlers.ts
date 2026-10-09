@@ -624,6 +624,7 @@ export const handlers = [
       scavengeFootFactor: 0.5,
       shieldRegen: 2,
       armorPoolFactor: 5,
+      armorReduction: 0.25,
     })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
@@ -667,10 +668,13 @@ export const handlers = [
       levels: { chem, ion: body.ion ?? 1 },
       ranges: { chem: [0.5, 1.5], ion: [0.5, 2.5] },
       groups: ['chem', 'ion'],
+      thrust: { chem: 100 * chem, ion: 60 * (body.ion ?? 1) },
+      baselineThrust: { chem: 100, ion: 60 },
       mobility: 2.5 * chem,
       fuelUse: 8 * chem,
       baseline: { mobility: 2.5, fuelUse: 8 },
       power: { supply: 10, demand: 7, spare: 3 },
+      wearPerLeg: { chem: chem > 1 ? 2 : 0, ion: 0, battery: 0 },
       cleanChance: pushed ? 0.8 : 1,
       ...(body.missionId !== undefined
         ? {

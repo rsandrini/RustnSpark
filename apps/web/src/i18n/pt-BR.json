@@ -145,7 +145,7 @@
       "unlimited": "ilimitado",
       "routesCovered": "cobre {{covered}} de {{total}} rotas",
       "shieldValue": "{{pool}} (+{{regen}}/rodada)",
-      "armorValue": "{{rating}} (absorve {{pool}})"
+      "armorValue": "{{rating}} (corta {{cut}} por golpe, absorve {{pool}})"
     },
     "groups": {
       "combat": "Combate",
@@ -157,7 +157,7 @@
     "headline": {
       "firepower": "Poder de fogo",
       "defense": "Blindagem · Escudo",
-      "defenseHelp": "O que a nave aguenta numa luta: primeiro o escudo, depois a blindagem, depois o casco. Os números são os pontos que cada camada absorve.",
+      "defenseHelp": "O que a nave aguenta numa luta: primeiro o escudo, depois a blindagem (que também corta cada golpe), depois o casco. Os números são os pontos que cada camada absorve.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
       "autonomy": "Alcance",
@@ -281,7 +281,7 @@
       "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
       "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
       "pdf": "Dano de combate de cada arma instalada.",
-      "bli": "A blindagem é uma reserva: cada ponto absorve vários pontos de dano (veja o número entre parênteses). Ela pega o que o escudo não pegou, antes do casco, e se desgasta na luta.",
+      "bli": "A blindagem fica atrás do escudo. Ela corta todo golpe que passa do escudo em uma quantia fixa (veja o número entre parênteses), depois seu reservatório absorve o resto, e só o que sobra chega ao casco. Ela se desgasta na luta, e blindagem gasta corta menos. As peças de casco dão pontos de vida, não blindagem.",
       "esc": "Uma reserva de dano absorvida PRIMEIRO: pega de cada golpe o máximo que aguenta. Recupera pontos próprios a cada rodada de combate, e cada ponto recuperado custa energia de combate — sem energia, sem recuperação.",
       "sen": "Detecta emboscadas antes, reduzindo a chance de ser surpreendido num encontro.",
       "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
@@ -1094,7 +1094,16 @@
       "noWear": "A própria viagem não deixou marcas.",
       "wear": "{{points}} pontos de condição perdidos em {{parts}} peça(s) pela própria viagem.",
       "travelNote": "A viagem bate como uma arma: primeiro o escudo (se a nave tiver), depois a blindagem, depois o casco. O que passou é o desgaste nas peças.",
-      "fromTo": "{{before}}% → {{after}}%"
+      "fromTo": "{{before}}% → {{after}}%",
+      "engines": {
+        "title": "Ajuste dos motores",
+        "group": {
+          "chem": "Motores químicos",
+          "ion": "Motores de íons"
+        },
+        "pushed": "rodaram a x{{value}}: forçados em {{legs}} trecho(s), {{failures}} falha(s); a chance de nenhuma falha era {{chance}}%.",
+        "eased": "rodaram a x{{value}}: reduzidos em {{legs}} trecho(s), mais devagar mas gastando menos."
+      }
     },
     "story": {
       "leg": "Trecho {{index}} · {{from}} → {{to}}",
@@ -1265,7 +1274,8 @@
     "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta.",
     "yourMission": "Sua missão",
     "startBefore": "Iniciar até",
-    "goToShip": "Abrir em Minha Nave"
+    "goToShip": "Abrir em Minha Nave",
+    "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}"
   },
   "map": {
     "title": "Mapa do setor",
@@ -1459,7 +1469,7 @@
       },
       "bli": {
         "label": "Blindagem",
-        "hint": "Reduz o dano recebido dos ataques."
+        "hint": "Corta todo golpe que passa do escudo em uma quantia fixa e depois absorve o resto do seu reservatório, antes do casco."
       },
       "esc": {
         "label": "Escudo",
@@ -1621,8 +1631,8 @@
     },
     "level": "nível {{value}}",
     "hint": {
-      "chem": "Abaixo de 1: mais lento, gasta menos combustível. Acima de 1: mais rápido, gasta bem mais combustível, pode superaquecer.",
-      "ion": "Não gasta combustível, mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, pode superaquecer."
+      "chem": "Abaixo de 1: mais lento, gasta menos combustível. Acima de 1: mais rápido, gasta bem mais combustível, desgasta os motores químicos e pode superaquecer.",
+      "ion": "Não gasta combustível, mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, desgasta os motores de íons E as baterias, e pode superaquecer."
     },
     "speed": "Velocidade {{value}} (listada: {{base}})",
     "fuelBurn": "Consumo de combustível {{value}} (listado: {{base}})",
@@ -1630,6 +1640,10 @@
     "clean": "{{percent}}% de chance de nenhum motor falhar na viagem toda.",
     "tripTime": "Esta viagem leva {{value}} (nos níveis listados: {{base}}).",
     "tripFuel": "Combustível: precisa de {{needed}}, você leva {{have}} (nos níveis listados: {{base}}).",
-    "tripNoFit": "Nestes níveis a viagem precisa de mais combustível do que a nave leva. Reduza os motores químicos, ou force os de íons se a energia permitir."
+    "tripNoFit": "Nestes níveis a viagem precisa de mais combustível do que a nave leva. Reduza os motores químicos, ou force os de íons se a energia permitir.",
+    "thrustTitle": "De onde vem o empuxo",
+    "thrustBar": "Químico {{chem}}% · Íons {{ion}}% do empuxo",
+    "thrustLine": "{{group}}: {{value}} da velocidade ({{percent}}% do empuxo; listado: {{base}})",
+    "wear": "Desgaste por trecho só pelo esforço: motores químicos −{{chem}}, motores de íons −{{ion}}, baterias −{{battery}}."
   }
 }

@@ -274,6 +274,9 @@ function sweepCombatRules() {
     damage_die: 6,
     dc_base: 10,
     pierce_min_pdf: 8,
+    // (the legacy flat-armor model: the layered armor cut does not apply)
+    armor_reduction: 0,
+    armor_reduction_max_share: 0,
   } as const;
 }
 

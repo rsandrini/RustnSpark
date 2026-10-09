@@ -1025,9 +1025,9 @@ describe('parts and ships API (S4.3)', () => {
 
         expect(response.status).toBe(200);
         const preview = asPreview(response);
-        // hull partHp 20 -> hull_uncommon partHp 26: the sheet's hp goes up by exactly the gap,
+        // hull partHp 30 -> hull_uncommon partHp 39: the sheet's hp goes up by exactly the gap,
         // nothing else about the ship (still using the real installed set otherwise) changes it.
-        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 6);
+        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 9);
         // The endpoint never mutates anything: this is a read.
         const after = await prisma.partInstance.findUnique({ where: { id: hull!.id } });
         expect(after?.partType).toBe('hull');

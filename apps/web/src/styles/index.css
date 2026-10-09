@@ -2047,6 +2047,31 @@ svg .block.disconnected {
   font-variant-numeric: tabular-nums;
   color: var(--spark);
 }
+.engine-thrust {
+  display: grid;
+  gap: 4px;
+}
+.engine-thrust-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.engine-thrust-chem {
+  background: var(--amber);
+}
+.engine-thrust-ion {
+  background: var(--blue);
+}
+.engine-thrust-legend {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
 .engine-stats {
   margin: 0;
   padding-left: 18px;

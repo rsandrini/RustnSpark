@@ -6,6 +6,7 @@ import { ShipStage } from '../../ui/ShipStage';
 
 const ANIMATION_DELAY_MS = 350;
 const FULL = 100;
+const PERCENT = 100;
 
 /**
  * A bar that plays the loss: it starts at the level before and sinks to the level after, with the
@@ -77,6 +78,7 @@ export function ReportOverview({
   const combatMax = Math.max(1, combat.shield, combat.armor, combat.hull);
   const combatTotal = combat.shield + combat.armor + combat.hull;
   const wear = stats.travelWear;
+  const engines = stats.engines ?? [];
   const travel = stats.travelLayers ?? { shield: 0, armor: 0, hull: 0 };
   const travelTotal = travel.shield + travel.armor + travel.hull;
   const travelMax = Math.max(1, travel.shield, travel.armor, travel.hull);
@@ -146,6 +148,30 @@ export function ReportOverview({
             <p className="sub">{t('report.overview.travelNote')}</p>
           </article>
         </div>
+
+        {engines.length > 0 && (
+          <article className="panel" data-testid="report-engines">
+            <h2>{t('report.overview.engines.title')}</h2>
+            <ul className="stack">
+              {engines.map((run) => (
+                <li key={run.group} data-testid={`report-engine-${run.group}`}>
+                  <b>{t(`report.overview.engines.group.${run.group}`)}</b>{' '}
+                  {run.pushedLegs > 0
+                    ? t('report.overview.engines.pushed', {
+                        value: number(run.levelPct / PERCENT),
+                        legs: run.pushedLegs,
+                        failures: run.failures,
+                        chance: run.cleanChancePct,
+                      })
+                    : t('report.overview.engines.eased', {
+                        value: number(run.levelPct / PERCENT),
+                        legs: run.easedLegs,
+                      })}
+                </li>
+              ))}
+            </ul>
+          </article>
+        )}
 
         <article className="panel" data-testid="parts-damage">
           <h2>{t('report.detail.partsDamage')}</h2>

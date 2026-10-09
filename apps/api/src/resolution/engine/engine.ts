@@ -138,3 +138,27 @@ export function cleanRunChance(
   }
   return chance;
 }
+
+/**
+ * The wear one leg of pushing costs, with or without a failure: how many condition points each
+ * engine of a pushed group loses (more push, more wear, none at level 1 or below) and, for the ion
+ * engines, each battery (a share of that, `push_battery_share`).
+ */
+export function pushWear(group: EngineGroup, level: number, rules: GameRules): { engine: number; battery: number } {
+  const { engine } = rules;
+  const max = group === 'chem' ? engine.chem_level_max : engine.ion_level_max;
+  const push = level <= 1 || max <= 1 ? 0 : Math.min(1, (level - 1) / (max - 1));
+  const wear = engine.push_wear * push;
+  return { engine: wear, battery: group === 'ion' ? wear * engine.push_battery_share : 0 };
+}
+
+/** The per-leg wear of both groups at these levels (what the tuning panel shows). */
+export function pushWearPerLeg(
+  levels: EngineLevels,
+  rules: GameRules,
+): { chem: number; ion: number; battery: number } {
+  const clamped = clampLevels(levels, rules);
+  const chem = pushWear('chem', clamped.chem, rules);
+  const ion = pushWear('ion', clamped.ion, rules);
+  return { chem: chem.engine, ion: ion.engine, battery: ion.battery };
+}

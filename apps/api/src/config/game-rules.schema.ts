@@ -17,6 +17,8 @@ const combatSchema = z.object({
   pierce_min_pdf: z.number().int().min(0).max(50),
   shield_regen: z.number().min(0).max(20),
   armor_pool_factor: z.number().min(0).max(50),
+  armor_reduction: z.number().min(0).max(10),
+  armor_reduction_max_share: z.number().min(0).max(1),
   kite_factor: z.number().min(0).max(1),
   first_strike_bonus: z.number().int().min(0).max(10),
   max_rounds: z.number().int().min(1).max(200),
@@ -157,6 +159,8 @@ const engineSchema = z.object({
   mishap_wear_weight: z.number().min(0).max(5),
   mishap_wear: z.number().min(0).max(100),
   mishap_fuel: z.number().min(0).max(2),
+  push_wear: z.number().min(0).max(50),
+  push_battery_share: z.number().min(0).max(5),
 });
 
 const powerSchema = z.object({

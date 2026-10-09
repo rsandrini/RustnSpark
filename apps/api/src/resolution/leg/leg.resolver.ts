@@ -1,4 +1,10 @@
-import { groupCondition, mishapChance, type EngineGroup, type EngineLevels } from '../engine/engine.js';
+import {
+  groupCondition,
+  mishapChance,
+  pushWear,
+  type EngineGroup,
+  type EngineLevels,
+} from '../engine/engine.js';
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { fuelUnits } from '../../economy/fuel-cost.calculator.js';
@@ -271,6 +277,8 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags, rules: GameRul
   };
 }
 
+const PERCENT = 100;
+
 /**
  * Resolves one leg: fuel gate → chokes → encounter/combat → wear/integrity
  * (→ mining when configured). Purpose-separated child streams are created by
@@ -421,11 +429,61 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       const engines = parts.filter(
         (part) => part.engineGroup === group && !isDead(part.condition, rules),
       );
-      if (engines.length === 0 || level <= 1) continue;
+      // (a group the ship does not have, or one run as listed, leaves nothing to report)
+      if (engines.length === 0 || level === 1) continue;
+      if (level < 1) {
+        events.push(
+          missionEvent({
+            leg: input.index,
+            category: 'transit',
+            type: 'engine_tuning',
+            actors,
+            tuning: { group, levelPct: level * PERCENT, chancePct: 0, outcome: 'eased' },
+          }),
+        );
+        continue;
+      }
       const groupRng = pushRng.child(group);
       const chance = mishapChance(group, level, groupCondition(parts, group), rules);
-      if (groupRng.float() >= chance) continue;
-      const victim = engines[Math.min(engines.length - 1, Math.floor(groupRng.float() * engines.length))]!;
+      const failed = groupRng.float() < chance;
+      // Pushing wears, with or without a failure: the group's engines, and for the ion engines the
+      // batteries that feed their extra draw. More push, more wear (none at level 1).
+      const { engine: wear, battery: batteryWear } = pushWear(group, level, rules);
+      const worn: Record<string, number> = {};
+      let batteriesWorn = false;
+      parts = parts.map((part) => {
+        if (isDead(part.condition, rules)) return part;
+        const loss =
+          part.engineGroup === group ? wear : group === 'ion' && part.partClass === 'BATTERY' ? batteryWear : 0;
+        if (loss <= 0) return part;
+        const after = applyWear(part.condition, loss);
+        worn[part.id] = after;
+        if (part.partClass === 'BATTERY') batteriesWorn = true;
+        return { ...part, condition: after };
+      });
+      events.push(
+        missionEvent({
+          leg: input.index,
+          category: 'transit',
+          type: 'engine_tuning',
+          actors,
+          condByPart: worn,
+          tuning: {
+            group,
+            levelPct: level * PERCENT,
+            chancePct: chance * PERCENT,
+            outcome: failed ? 'failed' : 'held',
+            wear,
+            batteries: batteriesWorn,
+          },
+        }),
+      );
+      if (!failed) continue;
+      const standing = parts.filter(
+        (part) => part.engineGroup === group && !isDead(part.condition, rules),
+      );
+      if (standing.length === 0) continue;
+      const victim = standing[Math.min(standing.length - 1, Math.floor(groupRng.float() * standing.length))]!;
       pushFailures += 1;
       const after = applyWear(victim.condition, rules.engine.mishap_wear * pushFailures);
       parts = parts.map((part) => (part.id === victim.id ? { ...part, condition: after } : part));
@@ -531,7 +589,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         wearRng,
         wearScaleFor(input.context.type, rules),
       );
-      const hit = applyHit(layers, damage);
+      const hit = applyHit(layers, damage, rules.combat);
       const settled = settleLosses(ship.parts, hit.layers, rules);
       ship = {
         ...ship,
@@ -647,6 +705,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       hit: attack.hit,
       damage: attack.damage,
       armorAbsorbed: attack.armorAbsorbed,
+      ...(attack.armorReduced !== undefined ? { armorReduced: attack.armorReduced } : {}),
       shieldAbsorbed: attack.shieldAbsorbed,
       // Layered model: the armor pool soaks real damage, so the hull only takes what is left.
       hullDamage:

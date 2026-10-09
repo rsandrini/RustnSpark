@@ -22,30 +22,60 @@ export interface DamageLayers {
   readonly settled: { readonly hp: number; readonly armor: number; readonly spill: number };
 }
 
+/**
+ * How much of a hit (already past the shield) the armor simply cuts: a flat amount per point of
+ * armor rating it still has (the pool counts `armor_pool_factor` per rating point, so a worn or
+ * used-up armor cuts less), never more than `armor_reduction_max_share` of the hit. What is cut
+ * does not touch the pool; the pool then soaks what is left.
+ */
+export function armorReduction(
+  armor: number,
+  damage: number,
+  combat: GameRules['combat'],
+): number {
+  if (armor <= 0 || damage <= 0 || combat.armor_pool_factor <= 0) return 0;
+  const rating = armor / combat.armor_pool_factor;
+  return Math.min(damage * combat.armor_reduction_max_share, rating * combat.armor_reduction);
+}
+
 export interface HitResult {
   readonly layers: DamageLayers;
   readonly shield: number;
+  /** Everything the armor did: what it cut plus what its pool soaked. */
   readonly armor: number;
+  /** The part of `armor` that was cut outright (the pool did not pay for it). */
+  readonly reduced: number;
   readonly hull: number;
   readonly spill: number;
 }
 
-/** Applies one hit of `damage` through shield → armor → hull → parts. */
-export function applyHit(layers: DamageLayers, damage: number): HitResult {
+/**
+ * Applies one hit of `damage` through shield → armor → hull → parts. The armor first cuts the hit
+ * by a flat amount (when `combat` is given), then its pool soaks what is left; the hull takes the
+ * rest and anything past the hull spills onto the parts.
+ */
+export function applyHit(
+  layers: DamageLayers,
+  damage: number,
+  combat?: GameRules['combat'],
+): HitResult {
   const shield = Math.min(layers.esc, damage);
-  const armor = Math.min(layers.armor, damage - shield);
-  const hull = Math.min(layers.hp, damage - shield - armor);
-  const spill = damage - shield - armor - hull;
+  const afterShield = damage - shield;
+  const reduced = combat === undefined ? 0 : armorReduction(layers.armor, afterShield, combat);
+  const soaked = Math.min(layers.armor, afterShield - reduced);
+  const hull = Math.min(layers.hp, afterShield - reduced - soaked);
+  const spill = afterShield - reduced - soaked - hull;
   return {
     layers: {
       ...layers,
       esc: layers.esc - shield,
-      armor: layers.armor - armor,
+      armor: layers.armor - soaked,
       hp: layers.hp - hull,
       spill: layers.spill + spill,
     },
     shield,
-    armor,
+    armor: reduced + soaked,
+    reduced,
     hull,
     spill,
   };

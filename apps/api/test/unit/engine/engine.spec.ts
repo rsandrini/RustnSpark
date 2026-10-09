@@ -7,6 +7,8 @@ import {
   engineGroupOf,
   fuelFactor,
   mishapChance,
+  pushWear,
+  pushWearPerLeg,
 } from '../../../src/resolution/engine/engine.js';
 import type { InstalledPart, PartCatalog } from '../../../src/parts/part.types.js';
 
@@ -119,5 +121,18 @@ describe('engine tuning', () => {
     expect(
       cleanRunChance([{ engineGroup: 'chem' as const, condition: 100 }], { chem: 1, ion: 2.5 }, 3, rules),
     ).toBe(1);
+  });
+
+  it('pushing wears the engines (and, for ion, the batteries) per leg: nothing at level 1, more the harder', () => {
+    expect(pushWear('chem', 1, rules)).toEqual({ engine: 0, battery: 0 });
+    expect(pushWear('ion', 0.7, rules)).toEqual({ engine: 0, battery: 0 });
+    const top = pushWear('ion', rules.engine.ion_level_max, rules);
+    expect(top.engine).toBeCloseTo(rules.engine.push_wear);
+    expect(top.battery).toBeCloseTo(rules.engine.push_wear * rules.engine.push_battery_share);
+    // a chemical push never touches the batteries
+    expect(pushWear('chem', rules.engine.chem_level_max, rules).battery).toBe(0);
+    expect(pushWear('ion', 1.5, rules).engine).toBeLessThan(top.engine);
+    const both = pushWearPerLeg({ chem: rules.engine.chem_level_max, ion: 1 }, rules);
+    expect(both).toEqual({ chem: rules.engine.push_wear, ion: 0, battery: 0 });
   });
 });

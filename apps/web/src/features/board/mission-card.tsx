@@ -36,6 +36,8 @@ export interface MissionCardProps {
       the "can you take it" verdict. `hideMap` leaves out the drawing when the host shows one. */
   taken?: boolean;
   hideMap?: boolean;
+  /** A taken mission that has not left yet: the levels the engines will run at (engine tuning). */
+  engineLevels?: { chem: number; ion: number };
 }
 
 /** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
@@ -62,6 +64,7 @@ export function MissionCard({
   world,
   taken = false,
   hideMap = false,
+  engineLevels,
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
@@ -255,6 +258,21 @@ export function MissionCard({
           </span>
         )}
       </div>
+
+      {taken &&
+        engineLevels !== undefined &&
+        (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <p className="sub" data-testid="mcard-engines">
+            {t('board.engineLevels', {
+              chem: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.chem,
+              ),
+              ion: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.ion,
+              ),
+            })}
+          </p>
+        )}
 
       {!taken && otherReasons.length > 0 && (
         <ul className="reasons">

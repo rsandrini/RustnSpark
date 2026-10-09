@@ -140,7 +140,7 @@ describe('report (S10.8)', () => {
     );
   });
 
-  it('a #combat link from the mission history opens the fight\'s own popup automatically', async () => {
+  it("a #combat link from the mission history opens the fight's own popup automatically", async () => {
     renderWithRouter(routes, { initialEntries: ['/report/m-1#combat'] });
 
     // No click needed: landing with #combat opens the round-by-round popup by itself.
@@ -346,7 +346,7 @@ describe('report (S10.8)', () => {
     expect(debrief).toHaveTextContent('0 won · 1 lost · 1 escaped · 2 drawn');
   });
 
-  it('a race report shows the standings: place, every ship\'s speed and time, you highlighted', async () => {
+  it("a race report shows the standings: place, every ship's speed and time, you highlighted", async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>
         HttpResponse.json(
@@ -408,11 +408,60 @@ describe('report (S10.8)', () => {
     expect(debrief).not.toHaveTextContent('Shield');
   });
 
+  it('the overview says how the engines were run: level, pushed or eased legs, failures and the odds', async () => {
+    const tuned = {
+      ...STATS,
+      engines: [
+        {
+          group: 'ion',
+          levelPct: 250,
+          pushedLegs: 2,
+          easedLegs: 0,
+          failures: 1,
+          cleanChancePct: 36,
+        },
+        {
+          group: 'chem',
+          levelPct: 50,
+          pushedLegs: 0,
+          easedLegs: 2,
+          failures: 0,
+          cleanChancePct: 100,
+        },
+      ],
+    };
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: tuned,
+            view: 'summary',
+            lines: [{ text: 'Summary', segments: [{ t: 'text', value: 'Summary' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const panel = await screen.findByTestId('report-engines');
+    expect(panel).toHaveTextContent('Ion engines ran at x2.5: pushed on 2 leg(s), 1 failure(s)');
+    expect(panel).toHaveTextContent('chance of no failure at all was 36%');
+    expect(panel).toHaveTextContent('Chemical engines ran at x0.5: throttled down on 2 leg(s)');
+  });
+
   it('the overview shows the parts-damage bars (before → after), and nothing for a quiet run', async () => {
     const withDamage = {
       ...STATS,
       partsDamage: [
-        { partId: 'p1', partType: 'engine_chem_small', name: 'Small Chem Engine', before: 80, after: 55 },
+        {
+          partId: 'p1',
+          partType: 'engine_chem_small',
+          name: 'Small Chem Engine',
+          before: 80,
+          after: 55,
+        },
       ],
     };
     server.use(
@@ -436,9 +485,7 @@ describe('report (S10.8)', () => {
     expect(table).toHaveTextContent('−25');
     // The bar plays the loss: it ends at the level now, with the lost part showing behind it.
     const bar = within(table).getByRole('meter', { name: 'Small Chem Engine' });
-    await waitFor(() =>
-      expect(bar.querySelector('.lossbar-fill')).toHaveStyle({ width: '55%' }),
-    );
+    await waitFor(() => expect(bar.querySelector('.lossbar-fill')).toHaveStyle({ width: '55%' }));
     expect(bar.querySelector('.lossbar-lost')).toHaveStyle({ width: '80%' });
   });
 
@@ -461,6 +508,8 @@ describe('report (S10.8)', () => {
     expect(await screen.findByTestId('damage-travel')).toHaveTextContent(
       'The journey itself left no marks.',
     );
-    expect(screen.getByTestId('parts-damage')).toHaveTextContent('Nothing took damage on this run.');
+    expect(screen.getByTestId('parts-damage')).toHaveTextContent(
+      'Nothing took damage on this run.',
+    );
   });
 });

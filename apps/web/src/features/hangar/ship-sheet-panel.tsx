@@ -107,10 +107,7 @@ export function ShipSheetPanel({
   if (sheet === undefined) return classRow;
 
   const energyGenerate = installedCatalogs.reduce((sum, c) => sum + Math.max(0, c.energyCont), 0);
-  const energyConsume = installedCatalogs.reduce(
-    (sum, c) => sum + Math.max(0, -c.energyCont),
-    0,
-  );
+  const energyConsume = installedCatalogs.reduce((sum, c) => sum + Math.max(0, -c.energyCont), 0);
   // Shields recover their own points per round (the sum over the shield parts installed).
   const shieldRegen =
     layers?.shieldRegen ?? installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
@@ -150,6 +147,7 @@ export function ShipSheetPanel({
         return sheet.bli > 0
           ? t('hangar.stats.armorValue', {
               rating: number(sheet.bli),
+              cut: number((armorPool / display.armorPoolFactor) * display.armorReduction),
               pool: number(armorPool),
             })
           : number(0);
@@ -228,7 +226,13 @@ export function ShipSheetPanel({
       );
     }
     const tone: Tone | null =
-      key === 'autonomy' ? autonomyBand : key === 'condition' ? conditionBand : key === 'structure' ? structureBand : null;
+      key === 'autonomy'
+        ? autonomyBand
+        : key === 'condition'
+          ? conditionBand
+          : key === 'structure'
+            ? structureBand
+            : null;
     return <b className={tone !== null ? `tone-${tone}` : undefined}>{valueFor(key)}</b>;
   };
 

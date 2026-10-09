@@ -491,6 +491,90 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
       expect(checked).toBeGreaterThan(0);
     });
 
+    it('every pushed or eased leg leaves a line in the log, with the level, the chance and what came of it', () => {
+      const tunings = (out: ReturnType<typeof resolve>) =>
+        out.events.filter((event) => event.type === 'engine_tuning');
+      // pushed: one line per leg, held or failed, carrying the chance it was run with
+      const pushed = tuned(1.5, 'log-1', 3);
+      expect(tunings(pushed)).toHaveLength(3);
+      for (const event of tunings(pushed)) {
+        expect(event.category).toBe('transit');
+        expect(event.tuning).toMatchObject({ group: 'chem', levelPct: 150 });
+        expect(event.tuning!.chancePct).toBeGreaterThan(0);
+        expect(['held', 'failed']).toContain(event.tuning!.outcome);
+      }
+      // a failed leg says so, and also records the engine failure itself
+      const failedLegs = tunings(pushed).filter((event) => event.tuning!.outcome === 'failed').length;
+      expect(failures(pushed)).toHaveLength(failedLegs);
+      // eased: a line per leg, no chance of failing
+      const eased = tuned(0.6, 'log-2', 2);
+      expect(tunings(eased)).toHaveLength(2);
+      expect(tunings(eased)[0]!.tuning).toMatchObject({ group: 'chem', levelPct: 60, chancePct: 0, outcome: 'eased' });
+      // as listed: nothing to report
+      expect(tunings(tuned(1, 'log-3', 2))).toHaveLength(0);
+    });
+
+    describe('pushing wears things down even when nothing fails', () => {
+      // (failures switched off, so any wear seen is the push itself)
+      const safe: GameRules = { ...rules, engine: { ...rules.engine, mishap_at_max: 0 } };
+      const flown = (group: 'chem' | 'ion', level: number) => {
+        const parts = PARTS.map((part) =>
+          part.id === 'engine-1' ? { ...part, condition: 100, engineGroup: group } : { ...part, condition: 100 },
+        );
+        const route = Array.from({ length: 3 }, () => ({
+          distance: 100,
+          danger: 0,
+          zone: 0,
+          env: { id: 'open', level: 1, fuelMult: 1 },
+        }));
+        const out = resolveMission({
+          seed: 'wear-seed',
+          snapshot: snapshot({ parts }),
+          mission: mission({ legs: route, engine: { chem: group === 'chem' ? level : 1, ion: group === 'ion' ? level : 1 } }),
+          rules: safe,
+        });
+        return { out, last: out.legs.at(-1)!.ship.parts };
+      };
+      const cond = (parts: ReadonlyArray<{ id: string; condition: number }>, id: string) =>
+        parts.find((part) => part.id === id)!.condition;
+
+      // (the journey itself wears every part a little: the push is what comes on top of the run
+      // at the listed levels)
+      const base = flown('chem', 1).last;
+
+      it('a pushed chemical group wears its engine, nothing else (the batteries are not involved)', () => {
+        const { out, last } = flown('chem', rules.engine.chem_level_max);
+        expect(out.events.some((event) => event.type === 'engine_push')).toBe(false);
+        expect(cond(base, 'engine-1') - cond(last, 'engine-1')).toBeGreaterThan(rules.engine.push_wear * 2);
+        expect(cond(last, 'battery-1')).toBeCloseTo(cond(base, 'battery-1'));
+      });
+
+      it('a pushed ion group wears the ion engine AND the batteries (less than the engine)', () => {
+        const { last } = flown('ion', rules.engine.ion_level_max);
+        const engineLoss = cond(base, 'engine-1') - cond(last, 'engine-1');
+        const batteryLoss = cond(base, 'battery-1') - cond(last, 'battery-1');
+        expect(engineLoss).toBeGreaterThan(rules.engine.push_wear * 2);
+        expect(batteryLoss).toBeGreaterThan(0);
+        expect(batteryLoss).toBeLessThan(engineLoss);
+      });
+
+      it('wears more the harder it is pushed, and not at all as listed or throttled down', () => {
+        const loss = (level: number) => cond(base, 'engine-1') - cond(flown('chem', level).last, 'engine-1');
+        expect(loss(1.5)).toBeGreaterThan(loss(1.2));
+        expect(loss(1.2)).toBeGreaterThan(0);
+        expect(loss(1)).toBeCloseTo(0);
+        expect(loss(0.6)).toBeCloseTo(0);
+      });
+
+      it('the log says so: the push line carries the wear and the parts it touched', () => {
+        const { out } = flown('ion', rules.engine.ion_level_max);
+        const line = out.events.find((event) => event.type === 'engine_tuning')!;
+        expect(line.tuning).toMatchObject({ group: 'ion', batteries: true });
+        expect(line.tuning!.wear).toBeGreaterThan(0);
+        expect(Object.keys(line.effects.condByPart).sort()).toEqual(['battery-1', 'engine-1']);
+      });
+    });
+
     it('is deterministic: same seed, same failures', () => {
       const a = tuned(rules.engine.chem_level_max, 'same', 4);
       const b = tuned(rules.engine.chem_level_max, 'same', 4);

@@ -70,6 +70,7 @@ const CATEGORY_OF = {
   mining_partial_failure: 'payment',
   motor: 'failure',
   engine_push: 'failure',
+  engine_tuning: 'transit',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',
@@ -152,6 +153,7 @@ function eventMembers(
                 hit: z.boolean(),
                 damage: num,
                 armorAbsorbed: num,
+                armorReduced: num.optional(),
                 shieldAbsorbed: num,
                 hullDamage: num,
                 shieldAfter: num.optional(),
@@ -185,6 +187,16 @@ function eventMembers(
                 trouble: z.enum(['mishap', 'overheat']).optional(),
               }),
             ),
+          });
+        }
+        if (type === 'engine_tuning') {
+          extras['tuning'] = object({
+            group: z.enum(['chem', 'ion']),
+            levelPct: num,
+            chancePct: num,
+            outcome: z.enum(['held', 'failed', 'eased']),
+            wear: num.optional(),
+            batteries: z.boolean().optional(),
           });
         }
         if (type === 'pirate_demand') {

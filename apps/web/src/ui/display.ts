@@ -10,6 +10,7 @@ const DEFAULT_DISPLAY: DisplayResponse = {
   scavengeFootFactor: 0.5,
   shieldRegen: 2,
   armorPoolFactor: 5,
+  armorReduction: 0.25,
 };
 
 /** How derived numbers are shown, as tuned in the admin (`ship.stat_display_scale`). */

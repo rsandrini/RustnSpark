@@ -35,7 +35,7 @@ describe('rescue (S8.6 / S10.9)', () => {
 
   it('offers two ways out for a floating ship and confirms before charging', async () => {
     setShipStatus('ADRIFT');
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
     const banner = await screen.findByTestId('rescue-banner');
     expect(banner).toHaveTextContent('Floating in space');
@@ -63,7 +63,7 @@ describe('rescue (S8.6 / S10.9)', () => {
   it('waiting charges nothing yet and shows when the rescue arrives; the ship is towed then', async () => {
     setShipStatus('ADRIFT');
     setRescueWaitMs(1500);
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
 
     const banner = await screen.findByTestId('rescue-banner');
     fireEvent.click(within(banner).getByRole('button', { name: /Wait for the rescue — 400 ¢/ }));
@@ -86,7 +86,7 @@ describe('rescue (S8.6 / S10.9)', () => {
   });
 
   it('shows no rescue banner for a ship in port', async () => {
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
     expect(screen.queryByTestId('rescue-banner')).toBeNull();
   });
@@ -108,7 +108,7 @@ describe('rescue (S8.6 / S10.9)', () => {
         ),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/port'] });
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
     fireEvent.click(await screen.findByRole('button', { name: 'Rescue now — 700 ¢' }));
     const popup = await screen.findByRole('dialog');
     fireEvent.click(within(popup).getByRole('button', { name: 'Rescue now' }));

@@ -182,4 +182,26 @@ describe('computeReportStats', () => {
     );
     expect(stats.travelLayers).toEqual({ shield: 4, armor: 10, hull: 3 });
   });
+
+  it('summarises the engine tuning: level, legs pushed or eased, failures, and the chance of a clean run', () => {
+    const tuning = (leg: number, group: 'chem' | 'ion', levelPct: number, chancePct: number, outcome: string) =>
+      event({ type: 'engine_tuning', category: 'transit', leg, tuning: { group, levelPct, chancePct, outcome } });
+    const stats = computeReportStats(
+      log([
+        tuning(0, 'ion', 250, 40, 'held'),
+        tuning(0, 'chem', 50, 0, 'eased'),
+        tuning(1, 'ion', 250, 40, 'failed'),
+        tuning(1, 'chem', 50, 0, 'eased'),
+      ]),
+      { parts: {}, materials: {} },
+    );
+    expect(stats.engines).toEqual([
+      { group: 'ion', levelPct: 250, pushedLegs: 2, easedLegs: 0, failures: 1, cleanChancePct: 36 },
+      { group: 'chem', levelPct: 50, pushedLegs: 0, easedLegs: 2, failures: 0, cleanChancePct: 100 },
+    ]);
+  });
+
+  it('has no engine summary for a run with the engines as listed', () => {
+    expect(computeReportStats(log([]), { parts: {}, materials: {} }).engines).toEqual([]);
+  });
 });

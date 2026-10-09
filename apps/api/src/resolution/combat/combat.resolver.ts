@@ -1,3 +1,4 @@
+import { armorReduction } from '../damage/layers.js';
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
@@ -192,6 +193,7 @@ export function resolveCombat(
       const hit = roll + atk.pdf + bonus >= dc;
       let damage = 0;
       let armorAbsorbed = 0;
+      let armorReduced = 0;
       let shieldAbsorbed = 0;
       const layered = isA ? layeredB : layeredA;
       if (hit && layered) {
@@ -199,17 +201,23 @@ export function resolveCombat(
         // to the armor pool, and only the rest to the hull. Same single die roll as the legacy
         // model, so the random stream is unchanged.
         damage = Math.max(1, atk.pdf + rng.int(1, rules.damage_die));
+        // The armor first CUTS the hit by a flat amount (it keeps its pool), then its pool soaks
+        // the rest; both count as what the armor did (`armorAbsorbed`), `armorReduced` is the cut.
         if (isA) {
           shieldAbsorbed = Math.min(escB, damage);
           escB -= shieldAbsorbed;
-          armorAbsorbed = Math.min(armB, damage - shieldAbsorbed);
-          armB -= armorAbsorbed;
+          armorReduced = armorReduction(armB, damage - shieldAbsorbed, rules);
+          const soaked = Math.min(armB, damage - shieldAbsorbed - armorReduced);
+          armB -= soaked;
+          armorAbsorbed = armorReduced + soaked;
           hpB -= damage - shieldAbsorbed - armorAbsorbed;
         } else {
           shieldAbsorbed = Math.min(escA, damage);
           escA -= shieldAbsorbed;
-          armorAbsorbed = Math.min(armA, damage - shieldAbsorbed);
-          armA -= armorAbsorbed;
+          armorReduced = armorReduction(armA, damage - shieldAbsorbed, rules);
+          const soaked = Math.min(armA, damage - shieldAbsorbed - armorReduced);
+          armA -= soaked;
+          armorAbsorbed = armorReduced + soaked;
           hpA -= damage - shieldAbsorbed - armorAbsorbed;
         }
       } else if (hit) {
@@ -256,6 +264,7 @@ export function resolveCombat(
         hit,
         damage,
         armorAbsorbed,
+        ...(layered ? { armorReduced } : {}),
         shieldAbsorbed,
         hp: isA ? hpB : hpA,
         ...(layered ? { escAfter: isA ? escB : escA, armorAfter: isA ? armB : armA } : {}),
