@@ -1227,6 +1227,22 @@ a {
   letter-spacing: 1px;
 }
 
+.rarity-name.rarity-common {
+  color: var(--rar-common);
+}
+.rarity-name.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+.rarity-name.rarity-rare {
+  color: var(--rar-rare);
+}
+.rarity-name.rarity-epic {
+  color: var(--rar-epic);
+}
+.rarity-name.rarity-legendary {
+  color: var(--rar-legendary);
+}
+
 .rarity-badge.rarity-common {
   color: var(--rar-common);
 }

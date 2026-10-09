@@ -30,6 +30,9 @@ export interface PartCardProps {
   compare?: PartCompareContext;
   /** Extra content for the card's single info popup, under the part's own details. */
   infoExtra?: ReactNode;
+  /** What the hover card shows when it is not the card's own part (the Upgrade tab hovers the
+      part it WILL become). Everywhere else the hover card shows the card's part. */
+  hoverPart?: PartInfoData;
 }
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
@@ -43,6 +46,7 @@ export function PartCard({
   actions,
   compare,
   infoExtra,
+  hoverPart,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
@@ -116,7 +120,10 @@ export function PartCard({
           data-testid="part-card-hover-card"
           style={cardStyle}
         >
-          <PartStatsCard part={part} compare={compare} />
+          <PartStatsCard
+            part={hoverPart ?? part}
+            compare={hoverPart === undefined ? compare : undefined}
+          />
         </div>
       )}
     </article>

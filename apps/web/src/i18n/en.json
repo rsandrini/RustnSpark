@@ -951,13 +951,14 @@
     "upgradesTo": "Upgrades to {{name}}",
     "upgrade": "Upgrade",
     "upgradeConfirmTitle": "Upgrade for {{cost}} ¢?",
-    "upgradeQuote": "Upgrade {{name}} to {{nextName}} for {{cost}} ¢?",
+    "upgradeQuote": "Upgrade <from>{{name}}</from> to <to>{{nextName}}</to> for {{cost}} ¢?",
     "upgradeConfirm": "Upgrade",
     "upgraded": "Upgraded to {{name}}.",
     "upgradeFilter": "Upgrade filter",
     "upgradeOnlyAffordable": "Only what I can afford",
     "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
-    "scavengeFoot": "Go scavenging on foot"
+    "scavengeFoot": "Go scavenging on foot",
+    "upgradeFromTo": "{{from}} → {{to}}"
   },
   "inventory": {
     "title": "Inventory",

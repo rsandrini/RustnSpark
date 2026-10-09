@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
@@ -57,6 +57,9 @@ interface UpgradeConfirm {
   partInstanceId: string;
   name: string;
   nextName: string;
+  /** Rarities of the part now and of what it becomes: their names are shown in their colours. */
+  rarity: string;
+  nextRarity: string;
   cost: number;
 }
 
@@ -978,6 +981,11 @@ export function PortPage({
                       quote.nextDisplayName !== undefined
                         ? pickLocalized(quote.nextDisplayName, i18n.language)
                         : '';
+                    // Say exactly what becomes what: "Small Fuel Tank · Common → Small Fuel Tank · Uncommon".
+                    const fromTo = t('port.upgradeFromTo', {
+                      from: `${name} · ${t(`parts.rarities.${item.rarity}`, { defaultValue: item.rarity })}`,
+                      to: `${nextName} · ${t(`parts.rarities.${quote.nextRarity ?? ''}`, { defaultValue: quote.nextRarity ?? '' })}`,
+                    });
                     // Round-10 owner request: "Upgrade UI should show diff between current
                     // part and upgraded part" — the next tier doesn't exist as an owned
                     // instance yet, so it's a virtual PartInfoData (same trick Market uses
@@ -1000,20 +1008,18 @@ export function PortPage({
                         part={item}
                         price={quote.cost}
                         priceCaption={t('port.upgradeCost')}
+                        hoverPart={nextPartInfo}
                         infoExtra={
                           nextPartInfo !== undefined && (
-                            <section
-                              className="upgrade-next"
-                              aria-label={t('port.upgradesTo', { name: nextName })}
-                            >
-                              <h4>{t('port.upgradesTo', { name: nextName })}</h4>
+                            <section className="upgrade-next" aria-label={fromTo}>
+                              <h4>{fromTo}</h4>
                               <PartDetail part={nextPartInfo} versus={item} />
                             </section>
                           )
                         }
                         actions={
                           <>
-                            <span className="sub">{t('port.upgradesTo', { name: nextName })}</span>
+                            <span className="sub">{fromTo}</span>
                             <button
                               type="button"
                               className="btn primary"
@@ -1023,6 +1029,8 @@ export function PortPage({
                                   partInstanceId: item.id,
                                   name,
                                   nextName,
+                                  rarity: item.rarity,
+                                  nextRarity: quote.nextRarity ?? item.rarity,
                                   cost: quote.cost ?? 0,
                                 })
                               }
@@ -1208,11 +1216,24 @@ export function PortPage({
         {upgradeConfirm !== null && (
           <div className="stack">
             <p>
-              {t('port.upgradeQuote', {
-                name: upgradeConfirm.name,
-                nextName: upgradeConfirm.nextName,
-                cost: upgradeConfirm.cost,
-              })}
+              <Trans
+                i18nKey="port.upgradeQuote"
+                values={{
+                  name: upgradeConfirm.name,
+                  nextName: upgradeConfirm.nextName,
+                  cost: upgradeConfirm.cost,
+                }}
+                components={{
+                  from: (
+                    <b className={`rarity-name rarity-${upgradeConfirm.rarity.toLowerCase()}`} />
+                  ),
+                  to: (
+                    <b
+                      className={`rarity-name rarity-${upgradeConfirm.nextRarity.toLowerCase()}`}
+                    />
+                  ),
+                }}
+              />
             </p>
             {!upgradePart.isPending && wallet < upgradeConfirm.cost && (
               <p className="error-text">{t('port.insufficient')}</p>

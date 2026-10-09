@@ -951,13 +951,14 @@
     "upgradesTo": "Melhora para {{name}}",
     "upgrade": "Melhorar",
     "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
-    "upgradeQuote": "Melhorar {{name}} para {{nextName}} por {{cost}} ¢?",
+    "upgradeQuote": "Melhorar <from>{{name}}</from> para <to>{{nextName}}</to> por {{cost}} ¢?",
     "upgradeConfirm": "Melhorar",
     "upgraded": "Melhorado para {{name}}.",
     "upgradeFilter": "Filtro de melhorias",
     "upgradeOnlyAffordable": "Só o que eu posso pagar",
     "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
-    "scavengeFoot": "Vasculhar a pé"
+    "scavengeFoot": "Vasculhar a pé",
+    "upgradeFromTo": "{{from}} → {{to}}"
   },
   "inventory": {
     "title": "Inventário",

@@ -436,6 +436,8 @@ export function PartDetail({ part, compare, versus }: PartDetailProps) {
   const viabilityProblems =
     comparePreview.data?.viability.viable === false ? comparePreview.data.viability.problems : [];
 
+  const sizeNow = versus === undefined ? '' : `${versus.catalog.w}×${versus.catalog.h}`;
+  const sizeUpgraded = `${catalog.w}×${catalog.h}`;
   const versusRows = versus === undefined ? null : versusRowsOf(versus.catalog, catalog, format);
   const rows = [
     ...effectRowsOf(catalog, format),
@@ -537,6 +539,21 @@ export function PartDetail({ part, compare, versus }: PartDetailProps) {
             </tr>
           </thead>
           <tbody>
+            {versus !== undefined && (
+              <tr>
+                <td>{t('parts.size')}</td>
+                <td>{sizeNow}</td>
+                <td
+                  className={`delta delta-${
+                    versus.catalog.w === catalog.w && versus.catalog.h === catalog.h
+                      ? 'same'
+                      : 'bad'
+                  }`}
+                >
+                  {sizeUpgraded}
+                </td>
+              </tr>
+            )}
             {versusRows.map((row) => (
               <tr key={row.key} title={t(`parts.stat.${row.key}.hint`)}>
                 <td>{t(`parts.stat.${row.key}.label`)}</td>

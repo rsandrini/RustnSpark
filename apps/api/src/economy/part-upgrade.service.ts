@@ -86,6 +86,11 @@ export class PartUpgradeService {
     if (!nextCatalog || !nextCatalog.active) {
       return { part, eligible: false as const, reason: 'NO_NEXT_TIER' as const };
     }
+    // An upgrade is rarity and stats, never a different footprint: a part that grows would no
+    // longer fit where it sits. The catalog must keep every tier of a family the same size.
+    if (nextCatalog.w !== part.partCatalog.w || nextCatalog.h !== part.partCatalog.h) {
+      return { part, eligible: false as const, reason: 'NO_NEXT_TIER' as const };
+    }
     // Owner request (round 7): only a fully-repaired part can be upgraded — an upgrade changes
     // what the part IS, not its wear, so a damaged one has to be repaired first regardless of
     // whether the player could otherwise afford both at once.

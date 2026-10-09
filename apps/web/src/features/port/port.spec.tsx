@@ -614,8 +614,8 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Plated Hull' }));
 
     const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    await within(popup).findByRole('heading', { name: 'Upgrades to Reinforced Hull' });
-    const next = within(popup).getByRole('region', { name: 'Upgrades to Reinforced Hull' });
+    await within(popup).findByRole('heading', { name: 'Plated Hull · Common → Reinforced Hull · Uncommon' });
+    const next = within(popup).getByRole('region', { name: 'Plated Hull · Common → Reinforced Hull · Uncommon' });
     // The diff sets the upgraded part against the one the pilot owns (not "add it to the ship").
     const diff = within(next).getByTestId('upgrade-diff');
     expect(within(diff).getByText('This part today')).toBeInTheDocument();
@@ -623,6 +623,17 @@ describe('port (S10.9)', () => {
     const hpRow = within(diff).getByRole('row', { name: /^Hit points/ });
     expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument();
     expect(within(hpRow).getByText('40')).toBeInTheDocument();
+  });
+
+  it('hovering a card in the Upgrade tab shows the part it will become, not the one it is', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    const card = (await screen.findByText('Plated Hull')).closest('article') as HTMLElement;
+    fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
+    const hover = await screen.findByTestId('part-card-hover-card');
+    expect(hover).toHaveTextContent('Reinforced Hull');
+    expect(hover).not.toHaveTextContent('Plated Hull');
+    expect(hover).toHaveTextContent('Uncommon');
   });
 
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {
@@ -633,6 +644,9 @@ describe('port (S10.9)', () => {
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
     expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    // Both names wear their rarity's colour: what it is now, and what it becomes.
+    expect(within(popup).getByText('Plated Hull')).toHaveClass('rarity-name', 'rarity-common');
+    expect(within(popup).getByText('Reinforced Hull')).toHaveClass('rarity-name', 'rarity-uncommon');
     fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');
