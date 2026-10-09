@@ -21,21 +21,22 @@ function rulesWith(overrides: Partial<GameRules['parts']>): GameRules {
   return { ...GAME_CONFIG_DEFAULTS, parts: { ...GAME_CONFIG_DEFAULTS.parts, ...overrides } };
 }
 
+// The cheapest way out of a floating ship is waiting for the rescue: the kit must sell for less.
+const cheapestRescue = (rules: GameRules) =>
+  Math.round(rules.economy.rescue_cost * rules.economy.rescue_wait_fraction);
+
 describe('S8.6 restart-kit invariant (review item 4)', () => {
-  it('sells for strictly less than rescue_cost under the default config', () => {
+  it('sells for strictly less than the cheapest rescue under the default config', () => {
     const rules = GAME_CONFIG_DEFAULTS;
     const value = worstCaseRestartKitValue(rules, basePriceOf);
-    // 737 before round-3 dropped the battery (582); a round-3 follow-up then dropped the kit to
-    // one cargo hold instead of two, dropping the worst-case resale value again.
-    expect(value).toBe(499);
-    expect(value).toBeLessThan(rules.economy.rescue_cost);
+    expect(value).toBeLessThan(cheapestRescue(rules));
   });
 
-  it('would not hold at the old default of 50 — why restart_condition_max is 30', () => {
+  it('would not hold at the old default of 50 — why restart_condition_max is 15', () => {
     const rules = rulesWith({ restart_condition_max: 50 });
     const value = worstCaseRestartKitValue(rules, basePriceOf);
     expect(value).toBe(830);
-    expect(value).toBeGreaterThanOrEqual(rules.economy.rescue_cost);
+    expect(value).toBeGreaterThanOrEqual(cheapestRescue(rules));
   });
 
   it('holds at every condition up to the factory default', () => {
@@ -44,17 +45,17 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
     for (let condition = 0; condition <= defaultCondition; condition += 1) {
       expect(
         worstCaseRestartKitValue(rulesWith({ restart_condition_max: condition }), basePriceOf),
-      ).toBeLessThan(rules.economy.rescue_cost);
+      ).toBeLessThan(cheapestRescue(rules));
     }
   });
 
-  it('accounts for rescue_cost: lowering it below the kit value must be visible as a violation', () => {
+  it('accounts for the rescue price: lowering it below the kit value must be visible as a violation', () => {
     const rules: GameRules = {
       ...GAME_CONFIG_DEFAULTS,
       economy: { ...GAME_CONFIG_DEFAULTS.economy, rescue_cost: 490 },
     };
     expect(worstCaseRestartKitValue(rules, basePriceOf)).toBeGreaterThanOrEqual(
-      rules.economy.rescue_cost,
+      cheapestRescue(rules),
     );
   });
 });

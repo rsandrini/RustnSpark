@@ -1306,7 +1306,8 @@
         "SHIP_NOT_VIABLE": "The ship cannot fly yet: assemble it in the Hangar first.",
         "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
       }
-    }
+    },
+    "floating": "Your ship is floating here"
   },
   "notFound": {
     "title": "Page not found",
@@ -1385,16 +1386,25 @@
     "VALIDATION_ERROR": "Some fields are invalid.",
     "WEAPONS": "No weapons installed.",
     "unexpected": "Something went wrong",
-    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply."
+    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply.",
+    "RESCUE_NOT_DUE": "The rescue has not arrived yet."
   },
   "language": {
     "label": "Language"
   },
   "rescue": {
-    "title": "Ship adrift",
-    "body": "Your ship ran out of fuel and is drifting. A tow brings it back to port — it costs credits and may leave your balance negative.",
-    "action": "Call a tow",
-    "done": "Towed back to port for {{cost}} ¢. Fuel on board: {{fuel}}."
+    "title": "Floating in space",
+    "body": "Your ship ran out of fuel and drifts where it stopped. Nothing can be done with it until it is towed to a base. Pick how: wait for the rescue to arrive (cheaper) or call it now. Either may leave your balance negative.",
+    "nearestBase": "Nearest base: {{base}}, {{distance}} away.",
+    "waiting": "Rescue on its way — arrives in",
+    "wait": "Wait for the rescue — {{cost}} ¢ (about {{minutes}} min)",
+    "now": "Rescue now — {{cost}} ¢",
+    "confirmWait": "Wait for the rescue? It arrives in about {{minutes}} minutes and tows the ship to {{base}}. You pay {{cost}} ¢ when it arrives.",
+    "confirmNow": "Call the rescue now? The ship is towed to {{base}} at once and you pay {{cost}} ¢.",
+    "waitAction": "Wait for the rescue",
+    "nowAction": "Rescue now",
+    "waitStarted": "The rescue is on its way. You pay when it arrives.",
+    "done": "Towed to port for {{cost}} ¢. Fuel on board: {{fuel}}."
   },
   "parts": {
     "info": "Details",
@@ -1579,7 +1589,8 @@
       "repairing": "Repairs under way"
     },
     "docked": "Docked at {{place}}",
-    "repairingAt": "in the workshop at {{place}}"
+    "repairingAt": "in the workshop at {{place}}",
+    "floating": "Floating in space"
   },
   "routeMap": {
     "label": "Route from {{from}} to {{to}}",

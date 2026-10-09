@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../api/client';
 import type { EnergyMode, ShipResponse } from '../api/generated';
 import { useAuth } from '../features/auth/auth.hooks';
+import { useRescueSettle } from '../features/rescue/use-rescue-settle';
 import { useWorld } from '../features/ship/use-world';
 import { pickLocalized } from '../i18n/localized';
 import { FactionBadge } from './FactionBadge';
@@ -35,6 +36,7 @@ export function ShipIdentity() {
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
   });
   const ship = shipsQuery.data?.[0];
+  useRescueSettle(ship);
 
   const setEnergyMode = useMutation({
     mutationFn: (energyMode: EnergyMode) =>
@@ -53,14 +55,18 @@ export function ShipIdentity() {
   if (ship !== undefined) {
     const place = world.data?.locations.find((entry) => entry.id === ship.currentLocationId);
     const placeName =
-      place === undefined ? ship.currentLocationId : pickLocalized(place.displayName, i18n.language);
+      place === undefined
+        ? ship.currentLocationId
+        : pickLocalized(place.displayName, i18n.language);
     const { kind } = ship.activity;
     statusText =
-      kind === 'idle'
-        ? t('stage.docked', { place: placeName })
-        : kind === 'repairing'
-          ? t('stage.repairingAt', { place: placeName })
-          : t(`stage.mode.${kind}`);
+      ship.status === 'ADRIFT'
+        ? t('stage.floating')
+        : kind === 'idle'
+          ? t('stage.docked', { place: placeName })
+          : kind === 'repairing'
+            ? t('stage.repairingAt', { place: placeName })
+            : t(`stage.mode.${kind}`);
   }
 
   return (

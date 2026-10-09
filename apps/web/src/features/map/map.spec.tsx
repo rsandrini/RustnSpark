@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
+import { setShipStatus } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -51,7 +52,25 @@ describe('map (S10.5)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('shows each node\'s risk band on its own core fill, independent of the faction-colored ring', async () => {
+  it('a ship out of fuel floats between two places: no "you are here", a floating marker mid-route', async () => {
+    setShipStatus('ADRIFT');
+    try {
+      const { svg } = await renderMap();
+      const marker = await waitFor(() => {
+        const found = svg.querySelector('.ship-marker.floating');
+        if (found === null) throw new Error('floating marker missing');
+        return found;
+      });
+      expect(marker).toHaveAttribute('aria-label', 'Your ship is floating here');
+      // the tag that would say "you are here" on the port is gone (the legend still names it)
+      expect(svg.querySelectorAll('.you-tag text')).toHaveLength(1);
+      expect(svg.querySelector('.you-tag text')?.textContent).toBe('Floating in space');
+    } finally {
+      setShipStatus('IN_PORT');
+    }
+  });
+
+  it("shows each node's risk band on its own core fill, independent of the faction-colored ring", async () => {
     const { svg } = await renderMap();
 
     // Porto Ceres is low risk, Campo Drift-9 is high risk (test fixture) — the ring still

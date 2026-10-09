@@ -585,6 +585,12 @@ model Ship {
   // Engine tuning (bridge): 1 = engines as listed, below throttles down, above pushes.
   chemLevel         Float             @default(1)
   ionLevel          Float             @default(1)
+  // Where an out-of-fuel ship floats: a route, the node it was leaving and how far along (0..1).
+  floatRouteId      String?
+  floatFromId       String?
+  floatProgress     Float?
+  // When a waiting rescue arrives (null = nobody called yet).
+  rescueAt          DateTime?
   formatId          String            @default("classic_square")
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]

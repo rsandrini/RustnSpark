@@ -44,6 +44,10 @@ import type {
 let wallet = 4820;
 let fuelState = 25;
 let shipStatus: ShipStatus = 'IN_PORT';
+// When a waiting rescue arrives (null = nobody called one).
+let rescueDueAt: string | null = null;
+// How long a waiting rescue takes in the mock (a test can make it nearly instant).
+let rescueWaitMs = 600_000;
 
 const accessToken = 'test-access-token';
 
@@ -262,6 +266,21 @@ const ship = (): ShipResponse => ({
   stance: 'NEUTRAL',
   energyMode: 'FULL',
   engineLevels: { chem: 1, ion: 1 },
+  float:
+    shipStatus === 'ADRIFT'
+      ? { routeId: 'ceres-gate', fromId: 'ceres', toId: 'gate', progress: 0.5 }
+      : null,
+  rescue:
+    shipStatus === 'ADRIFT'
+      ? {
+          waitCost: 400,
+          nowCost: 700,
+          waitSeconds: 600,
+          dueAt: rescueDueAt,
+          baseId: 'ceres',
+          baseDistance: 300,
+        }
+      : null,
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
@@ -388,6 +407,12 @@ export function addWreck(): void {
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
 export function setShipStatus(status: ShipStatus): void {
   shipStatus = status;
+  rescueDueAt = null;
+}
+
+/** How long the mock's waiting rescue takes (a test makes it short to watch it arrive). */
+export function setRescueWaitMs(milliseconds: number): void {
+  rescueWaitMs = milliseconds;
 }
 
 /**
@@ -412,6 +437,8 @@ export function resetEconomyState(): void {
   wallet = 4820;
   fuelState = 25;
   shipStatus = 'IN_PORT';
+  rescueDueAt = null;
+  rescueWaitMs = 600_000;
   inventoryState = starterInventory();
   materialsState = [
     {
@@ -523,6 +550,8 @@ export const handlers = [
       stance: 'NEUTRAL',
       energyMode: 'FULL',
       engineLevels: { chem: 1, ion: 1 },
+      float: null,
+      rescue: null,
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
@@ -1063,7 +1092,7 @@ export const handlers = [
       targets,
     });
   }),
-  http.post('/v1/ships/:id/rescue', ({ params, request }) => {
+  http.post('/v1/ships/:id/rescue', async ({ params, request }) => {
     const rejected = missingKey(request);
     if (rejected !== null) return rejected;
     if (shipStatus !== 'ADRIFT') {
@@ -1072,17 +1101,58 @@ export const handlers = [
         { status: 409 },
       );
     }
+    const { mode } = (await request.json()) as { mode: 'now' | 'wait' };
+    if (mode === 'wait') {
+      rescueDueAt = rescueDueAt ?? new Date(Date.now() + rescueWaitMs).toISOString();
+      return ok<RescueResponse>({
+        shipId: String(params.id),
+        status: 'ADRIFT',
+        mode,
+        cost: 0,
+        fuel: fuelState,
+        credits: wallet,
+        restartParts: [],
+        baseId: 'ceres',
+        dueAt: rescueDueAt,
+      });
+    }
     // GDD §14: a tow may push the balance negative; the emergency ration is a quarter tank.
-    wallet -= 800;
+    wallet -= 700;
     fuelState = Math.max(fuelState, 10);
     shipStatus = 'IN_PORT';
+    rescueDueAt = null;
     return ok<RescueResponse>({
       shipId: String(params.id),
       status: 'IN_PORT',
-      cost: 800,
+      mode,
+      cost: 700,
       fuel: fuelState,
       credits: wallet,
       restartParts: [],
+      baseId: 'ceres',
+      dueAt: null,
+    });
+  }),
+  http.post('/v1/ships/:id/rescue/settle', ({ params }) => {
+    if (rescueDueAt === null || Date.parse(rescueDueAt) > Date.now()) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'RESCUE_NOT_DUE' } },
+        { status: 409 },
+      );
+    }
+    wallet -= 400;
+    shipStatus = 'IN_PORT';
+    rescueDueAt = null;
+    return ok<RescueResponse>({
+      shipId: String(params.id),
+      status: 'IN_PORT',
+      mode: 'wait',
+      cost: 400,
+      fuel: fuelState,
+      credits: wallet,
+      restartParts: [],
+      baseId: 'ceres',
+      dueAt: null,
     });
   }),
   http.get('/v1/travel/quote', ({ request }) => {

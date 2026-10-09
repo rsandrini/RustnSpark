@@ -1,3 +1,10 @@
+import {
+  RESCUE_BASE_TYPES,
+  rescuePrices,
+  towPlanFor,
+  type FloatSpot,
+  type TowPlan,
+} from './floating.js';
 import { clampLevels } from '../resolution/engine/engine.js';
 import { cellKey, formatCellsFromJson } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
@@ -66,6 +73,24 @@ export interface ShipResponse {
   activity: ShipActivity;
   /** The sheet's range read as routes: how many a full tank crosses; null = no fuel burn. */
   routeCoverage: RouteCoverage | null;
+  /** Where an out-of-fuel ship floats (null otherwise, or when the spot was not recorded). */
+  float: { routeId: string; fromId: string; toId: string; progress: number } | null;
+  /** The ways out for a floating ship: what each costs and where the tow ends. */
+  rescue: RescueOptions | null;
+}
+
+export interface RescueOptions {
+  /** Waiting for the rescue. */
+  waitCost: number;
+  /** Calling it now. */
+  nowCost: number;
+  /** How long waiting takes (mission time, seconds). */
+  waitSeconds: number;
+  /** When the waiting rescue arrives; null until the pilot calls it. */
+  dueAt: string | null;
+  /** The base the ship is towed to and how far it is from where the ship floats. */
+  baseId: string;
+  baseDistance: number;
 }
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
@@ -557,6 +582,57 @@ export class ShipsService implements OnModuleInit {
     return deriveSheet(applyConnectivity(installed, connected), rules).fuelCap;
   }
 
+  /** Where an adrift ship floats and what its rescue would cost (shared with the rescue itself). */
+  async adriftOf(
+    ship: {
+      readonly currentLocationId: string;
+      readonly floatRouteId: string | null;
+      readonly floatFromId: string | null;
+      readonly floatProgress: number | null;
+      readonly rescueAt: Date | null;
+    },
+    rules: GameRules,
+  ): Promise<{ float: ShipResponse['float']; rescue: RescueOptions; plan: TowPlan }> {
+    const [routes, locations] = await Promise.all([
+      this.prisma.route.findMany(),
+      this.prisma.location.findMany({ select: { id: true, type: true } }),
+    ]);
+    const baseIds = new Set(
+      locations.filter((place) => RESCUE_BASE_TYPES.has(place.type)).map((place) => place.id),
+    );
+    const spot: FloatSpot | null =
+      ship.floatRouteId !== null && ship.floatFromId !== null && ship.floatProgress !== null
+        ? { routeId: ship.floatRouteId, fromId: ship.floatFromId, progress: ship.floatProgress }
+        : null;
+    // A ship that went adrift before positions were recorded stays where it is docked on the map.
+    const plan = (spot === null ? null : towPlanFor(spot, routes, baseIds)) ?? {
+      baseId: ship.currentLocationId,
+      distance: 0,
+    };
+    const edge = spot === null ? undefined : routes.find((route) => route.id === spot.routeId);
+    const prices = rescuePrices(plan.distance, rules);
+    return {
+      float:
+        spot === null || edge === undefined
+          ? null
+          : {
+              routeId: spot.routeId,
+              fromId: spot.fromId,
+              toId: edge.nodeAId === spot.fromId ? edge.nodeBId : edge.nodeAId,
+              progress: spot.progress,
+            },
+      rescue: {
+        waitCost: prices.wait,
+        nowCost: prices.now,
+        waitSeconds: rules.economy.rescue_wait_seconds,
+        dueAt: ship.rescueAt === null ? null : ship.rescueAt.toISOString(),
+        baseId: plan.baseId,
+        baseDistance: Math.round(plan.distance),
+      },
+      plan,
+    };
+  }
+
   private async toResponse(ship: ShipWithFormat, rules: GameRules): Promise<ShipResponse> {
     const parts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const installedRows = parts.filter(
@@ -572,7 +648,10 @@ export class ShipsService implements OnModuleInit {
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
     const activity = await this.activityOf(ship);
+    const adrift = ship.status === 'ADRIFT' ? await this.adriftOf(ship, rules) : null;
     return {
+      float: adrift?.float ?? null,
+      rescue: adrift?.rescue ?? null,
       id: ship.id,
       ownerPlayerId: ship.ownerPlayerId,
       name: ship.name,

@@ -36,9 +36,11 @@ export class ConfigReferenceValidator {
     // kit at all is separately guaranteed by assertActiveParts when starter_parts is
     // edited). This keeps unrelated config edits from failing on a catalog row.
     const value = worstCaseRestartKitValue(rules, (partType) => basePrices.get(partType) ?? 0);
-    if (value >= rules.economy.rescue_cost) {
+    // The cheapest way out is waiting for the rescue: that is the price the kit must stay under.
+    const cheapestRescue = Math.round(rules.economy.rescue_cost * rules.economy.rescue_wait_fraction);
+    if (value >= cheapestRescue) {
       throw new GameConfigValidationError(
-        `Restart kit would sell for ${value}¢, not strictly less than rescue_cost ${rules.economy.rescue_cost}¢`,
+        `Restart kit would sell for ${value}¢, not strictly less than the cheapest rescue ${cheapestRescue}¢`,
         [{ key, message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE', value }],
       );
     }

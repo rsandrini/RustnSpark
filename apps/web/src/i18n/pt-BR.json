@@ -1306,7 +1306,8 @@
         "SHIP_NOT_VIABLE": "A nave ainda não pode voar: monte-a no Hangar primeiro.",
         "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
       }
-    }
+    },
+    "floating": "Sua nave está flutuando aqui"
   },
   "notFound": {
     "title": "Página não encontrada",
@@ -1385,16 +1386,25 @@
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "WEAPONS": "Nenhuma arma instalada.",
     "unexpected": "Algo deu errado",
-    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam."
+    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam.",
+    "RESCUE_NOT_DUE": "O resgate ainda não chegou."
   },
   "language": {
     "label": "Idioma"
   },
   "rescue": {
-    "title": "Nave à deriva",
-    "body": "Sua nave ficou sem combustível e está à deriva. Um reboque a traz de volta ao porto — custa créditos e pode deixar seu saldo negativo.",
-    "action": "Chamar reboque",
-    "done": "Rebocada de volta ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
+    "title": "Flutuando no espaço",
+    "body": "Sua nave ficou sem combustível e flutua onde parou. Não dá para fazer nada com ela até ser rebocada para uma base. Escolha como: esperar o resgate chegar (mais barato) ou chamá-lo já. Qualquer um pode deixar seu saldo negativo.",
+    "nearestBase": "Base mais próxima: {{base}}, a {{distance}} de distância.",
+    "waiting": "Resgate a caminho — chega em",
+    "wait": "Esperar o resgate — {{cost}} ¢ (cerca de {{minutes}} min)",
+    "now": "Resgate já — {{cost}} ¢",
+    "confirmWait": "Esperar o resgate? Ele chega em cerca de {{minutes}} minutos e reboca a nave para {{base}}. Você paga {{cost}} ¢ quando ele chegar.",
+    "confirmNow": "Chamar o resgate já? A nave é rebocada para {{base}} na hora e você paga {{cost}} ¢.",
+    "waitAction": "Esperar o resgate",
+    "nowAction": "Resgate já",
+    "waitStarted": "O resgate está a caminho. Você paga quando ele chegar.",
+    "done": "Rebocada ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
   },
   "parts": {
     "info": "Detalhes",
@@ -1579,7 +1589,8 @@
       "repairing": "Reparos em andamento"
     },
     "docked": "Atracada em {{place}}",
-    "repairingAt": "na oficina de {{place}}"
+    "repairingAt": "na oficina de {{place}}",
+    "floating": "Flutuando no espaço"
   },
   "routeMap": {
     "label": "Rota de {{from}} para {{to}}",

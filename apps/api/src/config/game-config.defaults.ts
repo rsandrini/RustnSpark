@@ -95,6 +95,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     },
     start_credits: 200,
     rescue_cost: 800,
+    // A floating ship can wait for a rescue (half the price) or call one now (that price plus a
+    // charge per unit of distance to the nearest base).
+    rescue_wait_fraction: 0.5,
+    rescue_wait_seconds: 600,
+    rescue_distance_price: 1,
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player
     // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
     rescue_fuel_fraction: 0.25,
@@ -269,11 +274,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   parts: {
     starter_condition: 80,
-    // 30, not 50: worst-case kit sell value (isolation × hostile × mood_max at
-    // restart_condition_max) is 706¢ against rescue_cost 800¢ — at 50 it was 1175¢ and
-    // rescue → kit → sell printed credits on a hostile port (S8.6 review). Both numbers
-    // move with the parts catalog's basePrice — see worstCaseRestartKitValue.
-    restart_condition_max: 30,
+    // 15, not 30: worst-case kit sell value (isolation × hostile × mood_max at
+    // restart_condition_max) must stay strictly below the CHEAPEST rescue (rescue_cost ×
+    // rescue_wait_fraction = 400¢) — with the seeded catalog prices it is 353¢ at 15, 706¢ at 30
+    // and 1175¢ at 50 (that printed credits on a hostile port, S8.6 review). Both numbers move
+    // with the parts catalog's basePrice — see worstCaseRestartKitValue.
+    restart_condition_max: 15,
   },
   onboarding: {
     // No battery: the starter kit has nothing that draws combat energy (no weapon/shield),

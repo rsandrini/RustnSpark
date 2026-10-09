@@ -436,15 +436,15 @@ describe('config tuning (S3.7)', () => {
       issues: [{ key: 'bundle', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
     });
 
-    // The same condition paired with a rescue_cost that still covers the kit (1227¢ at 50)
-    // is evaluated as a whole and stays valid.
+    // The same condition paired with a rescue_cost whose cheapest rescue (half of it) still
+    // covers the kit (1227¢ at 50) is evaluated as a whole and stays valid.
     const paired = await request(server)
       .post('/v1/admin/tuning/bundle?dryRun=true')
       .set('Authorization', `Bearer ${token}`)
       .send({
         entries: [
           { key: 'parts.restart_condition_max', value: 50 },
-          { key: 'economy.rescue_cost', value: 1500 },
+          { key: 'economy.rescue_cost', value: 2600 },
         ],
       });
     expect(paired.status).toBe(200);

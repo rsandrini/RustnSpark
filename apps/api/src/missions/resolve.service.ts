@@ -1,3 +1,5 @@
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import { floatSpotOf, type FloatSpot } from '../ships/floating.js';
 import { Injectable, Logger } from '@nestjs/common';
 import type { DispatchJobData } from './dispatch.service.js';
 // Constructor-injected services must be value imports: emitDecoratorMetadata cannot
@@ -235,6 +237,32 @@ export class MissionResolveService {
           data: { condition: Math.round(part.condition) },
         });
       }
+      // A ship that ran dry floats where it stopped: on the route of the leg it could not finish,
+      // as far along as the fuel it still had would carry it.
+      let floatSpot: FloatSpot | null = null;
+      if (outcome.shipStatus === 'ADRIFT') {
+        const dry = outcome.events.find((event) => event.type === 'fuel_exhausted');
+        const routeIds = snapshot.legs.map((leg) => leg.routeId ?? '');
+        if (dry !== undefined && routeIds.every((id) => id !== '')) {
+          const routes = await tx.route.findMany({ where: { id: { in: routeIds } } });
+          const leg = snapshot.legs[dry.leg];
+          floatSpot =
+            leg === undefined
+              ? null
+              : floatSpotOf({
+                  legIndex: dry.leg,
+                  fuelLeft: dry.magnitude,
+                  legBurn: fuelUnits({
+                    fuelUse: snapshot.parts.reduce((sum, part) => sum + part.catalog.fuelUse, 0),
+                    distance: leg.distance,
+                    envFuelMult: leg.env.fuelMult,
+                  }),
+                  originId: mission.originId,
+                  routeIds,
+                  routes: new Map(routes.map((route) => [route.id, route])),
+                });
+        }
+      }
       await tx.ship.update({
         where: { id: snapshot.shipId },
         data: {
@@ -242,6 +270,10 @@ export class MissionResolveService {
           fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
           status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
           ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
+          floatRouteId: floatSpot?.routeId ?? null,
+          floatFromId: floatSpot?.fromId ?? null,
+          floatProgress: floatSpot?.progress ?? null,
+          rescueAt: null,
         },
       });
       for (const entry of outcome.loot) {

@@ -285,6 +285,30 @@ export const ShipResponseSchema = z.object({
   /** Installed part instance ids with no compatible connector chain back to the bridge right
       now — still counted as mass/structure/HP, not contributing anything else. */
   disconnectedPartIds: z.array(z.string()),
+  /** Where an out-of-fuel ship floats: on a route, `progress` (0..1) of the way from `fromId` to `toId`. */
+  float: z
+    .object({
+      routeId: z.string(),
+      fromId: z.string(),
+      toId: z.string(),
+      progress: z.number(),
+    })
+    .nullable(),
+  /** The ways out for a floating ship; null otherwise. */
+  rescue: z
+    .object({
+      /** Waiting for the rescue. */
+      waitCost: z.number(),
+      /** Calling it now (waiting price + distance to the nearest base). */
+      nowCost: z.number(),
+      waitSeconds: z.number(),
+      /** When the waiting rescue arrives; null until the pilot calls it. */
+      dueAt: IsoDate.nullable(),
+      /** The base the ship is towed to, and how far it is from where the ship floats. */
+      baseId: z.string(),
+      baseDistance: z.number(),
+    })
+    .nullable(),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
@@ -378,6 +402,10 @@ export const RescueResponseSchema = z.object({
   fuel: z.number(),
   credits: z.number(),
   restartParts: z.array(z.string()),
+  /** `now`: towed at once; `wait`: the timer started (status stays ADRIFT, `dueAt` says when). */
+  mode: z.enum(['now', 'wait']),
+  baseId: z.string(),
+  dueAt: IsoDate.nullable(),
 });
 export type RescueResponse = z.infer<typeof RescueResponseSchema>;
 

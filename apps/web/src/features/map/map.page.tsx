@@ -64,7 +64,8 @@ export function MapPage({ guided = false }: MapPageProps) {
   });
 
   const world = worldQuery.data;
-  const shipLocation = shipsQuery.data?.[0]?.currentLocationId ?? null;
+  const ship = shipsQuery.data?.[0];
+  const shipLocation = ship?.currentLocationId ?? null;
   const flight = (activeQuery.data ?? []).find(
     (mission) => mission.status === 'IN_TRANSIT' && mission.legWindows.length > 0,
   );
@@ -97,6 +98,15 @@ export function MapPage({ guided = false }: MapPageProps) {
       ? positionAt(journey.stops, flight.legWindows, now)
       : null;
   const inFlight = position !== null && !position.docked;
+  // An out-of-fuel ship floats between two places, not on the place it left from.
+  const floatPoint = (() => {
+    if (ship?.status !== 'ADRIFT' || ship.float == null) return null;
+    const from = byId.get(ship.float.fromId);
+    const to = byId.get(ship.float.toId);
+    if (from === undefined || to === undefined) return null;
+    const { progress } = ship.float;
+    return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
+  })();
 
   if (worldQuery.isLoading || shipsQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
@@ -153,7 +163,7 @@ export function MapPage({ guided = false }: MapPageProps) {
             />
           )}
           {world.locations.map((location) => {
-            const isHere = location.id === shipLocation && !inFlight;
+            const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
             const isDestination = inFlight && flight?.destinationId === location.id;
             const label = isHere
               ? `${nameOf(location)} — ${t('map.youAreHere')}`
@@ -234,6 +244,22 @@ export function MapPage({ guided = false }: MapPageProps) {
               </g>
             );
           })}
+          {floatPoint !== null && (
+            <g
+              className="ship-marker floating"
+              transform={`translate(${floatPoint.x} ${floatPoint.y})`}
+              role="img"
+              aria-label={t('map.floating')}
+            >
+              <circle className="ship-halo" r={13} />
+              <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
+              <g className="you-tag" transform="translate(0 -26)">
+                <rect x={-62} y={-11} width={124} height={18} rx={9} />
+                <text y={2}>{t('stage.floating')}</text>
+                <path d="M-5,7 L0,13 L5,7 Z" />
+              </g>
+            </g>
+          )}
           {position !== null && inFlight && (
             <g
               className="ship-marker"
@@ -305,7 +331,14 @@ interface PlaceDetailsProps {
 // right now). Clicking anywhere else instead suggests missions from the pilot's OWN board that
 // are headed there — the ones actually worth anything, since a remote board's offers can't be
 // accepted from here (owner: "suggest quests to deliver that, not the remote quests").
-function PlaceDetails({ canTravel, place, description, isHere, shipLocation, byId }: PlaceDetailsProps) {
+function PlaceDetails({
+  canTravel,
+  place,
+  description,
+  isHere,
+  shipLocation,
+  byId,
+}: PlaceDetailsProps) {
   const { t, i18n } = useTranslation();
   const suggestingDeliveries = !isHere && shipLocation !== null;
   const boardLocationId = suggestingDeliveries ? shipLocation : place.id;

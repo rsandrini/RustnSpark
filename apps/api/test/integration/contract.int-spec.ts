@@ -345,7 +345,7 @@ describe('HTTP contract: real responses match packages/contract', () => {
   it('rescue of an adrift ship', async () => {
     // The dispatched mission above left the ship ON_MISSION; free it and strand it.
     await prisma.ship.update({ where: { id: shipId }, data: { status: 'ADRIFT', fuel: 0 } });
-    const rescue = await post(`/v1/ships/${shipId}/rescue`);
+    const rescue = await post(`/v1/ships/${shipId}/rescue`, { mode: 'now' });
     expect(rescue.status).toBe(200);
     contract(RescueResponseSchema, rescue.body, 'POST /ships/:id/rescue');
   });

@@ -61,6 +61,9 @@ export type ConfigKey =
   | 'economy.repair_min_base_price'
   | 'economy.repair_seconds_per_point'
   | 'economy.rescue_cost'
+  | 'economy.rescue_distance_price'
+  | 'economy.rescue_wait_fraction'
+  | 'economy.rescue_wait_seconds'
   | 'economy.rescue_fuel_fraction'
   | 'economy.reward_base'
   | 'economy.reward_danger_divisor'
@@ -291,7 +294,15 @@ export type GameRules = Readonly<{
         rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
     part_upgrade_price_multiplier: Readonly<Record<string, number>>;
     start_credits: number;
+    /** Reference tow price. Waiting for a rescue costs this times `rescue_wait_fraction`. */
     rescue_cost: number;
+    /** Rescuing a floating ship NOW costs the waiting price plus this per unit of distance to the
+        nearest base. */
+    rescue_distance_price: number;
+    /** Share of `rescue_cost` paid when the pilot waits for the rescue instead of calling it now. */
+    rescue_wait_fraction: number;
+    /** How long a waiting rescue takes to arrive (mission time). */
+    rescue_wait_seconds: number;
     rescue_fuel_fraction: number;
     /** Cheap parts (the bridge) are repaired as if they cost at least this much. */
     repair_min_base_price: number;
