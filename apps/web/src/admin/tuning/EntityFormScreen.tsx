@@ -43,6 +43,11 @@ const PART_SECTIONS: readonly FormSection[] = [
 ];
 const SECTIONS: Record<string, readonly FormSection[]> = { parts: PART_SECTIONS };
 
+// Parts are saved with the Save button, never automatically: the usual job there is to edit a part
+// and Duplicate it as a new (higher rarity) one, and an auto-save would already have changed the
+// original by then. Every other entity keeps the auto-save.
+const MANUAL_SAVE_ENTITIES: ReadonlySet<string> = new Set(['parts']);
+
 export type EntityFormMode = 'new' | 'edit' | 'clone';
 
 // Create / edit / clone of one entity row, as a page inside the admin shell: the top menu stays,
@@ -202,7 +207,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         onDuplicate={mode === 'edit' ? startDuplicate : undefined}
         errors={formErrors}
         issues={issues}
-        autoSave={mode === 'edit'}
+        autoSave={mode === 'edit' && !MANUAL_SAVE_ENTITIES.has(entityName)}
         onAutoSave={handleAutoSave}
         autoSaveStatus={autoSaveStatus}
       />

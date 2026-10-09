@@ -383,6 +383,55 @@ describe('EntityScreen', () => {
     expect(updated).toBe(false);
   });
 
+  it('a part is edited with Save, never auto-saved (so it can be edited and duplicated safely)', async () => {
+    const partSchema = {
+      entity: 'parts',
+      fields: [
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part code', 'pt-BR': 'Código' },
+        },
+        {
+          name: 'mass',
+          type: 'integer',
+          required: true,
+          min: 0,
+          max: 1000,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+      ],
+    };
+    let writes = 0;
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () =>
+        HttpResponse.json(partSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json([{ partType: 'tank_small', mass: 7, active: true }], { status: 200 }),
+      ),
+      http.put('/v1/admin/tuning/parts/:id', () => {
+        writes += 1;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+      http.patch('/v1/admin/tuning/parts/:id', () => {
+        writes += 1;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/parts/tank_small');
+    const mass = await screen.findByDisplayValue('7');
+    await user.clear(mass);
+    await user.type(mass, '9');
+    await user.tab(); // leaving the field used to save it
+    // longer than the auto-save delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    expect(writes).toBe(0);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
   it("renders a foreign-key field as a select of the other entity's rows, not free text", async () => {
     const schema = {
       entity: 'mission-templates',
