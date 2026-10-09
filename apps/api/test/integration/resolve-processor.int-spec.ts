@@ -439,7 +439,8 @@ describe('mission resolve processor (S7.3)', () => {
 
   it('adrift when fuel runs out: mission FAILED, ship ADRIFT, no payout', async () => {
     const player = await authFor(testApp.app);
-    // 0.01 fuel against a multi-credit first-leg burn: the fuel gate trips → adrift.
+    // Dispatch itself refuses a route the tank cannot cover, so the ship leaves with enough and
+    // loses it on the way (a leak): 0.01 fuel against the first leg's burn trips the fuel gate.
     const mission = await createAcceptedMission(player, 's7.3-adrift-seed', [150, 100]);
     const creditsBefore = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },
@@ -448,7 +449,11 @@ describe('mission resolve processor (S7.3)', () => {
     const payoutsBefore = await prisma.playerEvent.count({
       where: { playerId: player.seeded.player.id, type: 'wallet.credit' },
     });
-    const job = await dispatchedJob(player, mission, 0.01);
+    const dispatched = await dispatchedJob(player, mission, 10_000);
+    const job = {
+      ...dispatched,
+      data: { ...dispatched.data, snapshot: { ...dispatched.data.snapshot, fuel: 0.01 } },
+    } as Job<DispatchJobData>;
 
     const result = await processor.process(job);
     expect(result.status).toBe('FAILED');

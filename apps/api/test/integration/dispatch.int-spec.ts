@@ -388,6 +388,22 @@ describe('ship dispatch API (S7.2)', () => {
     expect(response.body).toMatchObject({ statusCode: 409, message: { error: 'FUEL_EMPTY' } });
   });
 
+  it('rejects a route the tank cannot cover: it would end adrift every time', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [4000, 4000]);
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5 } });
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'FUEL_INSUFFICIENT', have: 5 },
+    });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('IN_PORT');
+  });
+
   it('re-checks viability at dispatch time', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

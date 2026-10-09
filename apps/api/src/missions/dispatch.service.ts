@@ -1,3 +1,4 @@
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
@@ -328,6 +329,26 @@ export class DispatchService {
       }
 
       const legs = parseDispatchLegs(mission.legs);
+      // The burn per leg is fixed by distance, terrain and the engines, and nothing refuels the
+      // ship on the way: a route that needs more fuel than is aboard ends adrift every time, so
+      // it never leaves port (a pump failing on the way can only make the burn worse).
+      const fuelNeeded = legs.reduce(
+        (sum, leg) =>
+          sum +
+          fuelUnits({
+            fuelUse: flight.sheet.fuelUse,
+            distance: leg.distance,
+            envFuelMult: leg.env.fuelMult,
+          }),
+        0,
+      );
+      if (fuelNeeded > ship.fuel) {
+        throw new ConflictException({
+          error: 'FUEL_INSUFFICIENT',
+          needed: Math.ceil(fuelNeeded),
+          have: Math.floor(ship.fuel),
+        });
+      }
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
       const { durationSeconds, durationClass } = missionDuration({
         totalDistance,

@@ -4622,15 +4622,42 @@ svg .block.dir-blocked {
 /* Report overview: the loss is played, bars sink from what they were to what they are. */
 .damage-split {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 12px;
 }
-.loss-row,
-.parts-damage-row {
+.damage-split > *,
+.overview-body,
+.overview-body > * {
+  min-width: 0;
+}
+/* Shield / armor / hull rows: name, bar, number — the bar takes whatever room is left. */
+.loss-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) minmax(120px, 2fr) auto;
+  grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
+}
+/* Parts: the name and what was lost share a line, the bar runs the full width under them. */
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name lost'
+    'bar bar';
+  gap: 4px 10px;
+  align-items: center;
+}
+.parts-damage-row .parts-damage-name {
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.parts-damage-row .lossbar {
+  grid-area: bar;
+}
+.parts-damage-row .parts-damage-lost {
+  grid-area: lost;
+  text-align: right;
 }
 .lossbar {
   position: relative;
