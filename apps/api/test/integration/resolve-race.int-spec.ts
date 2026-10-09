@@ -242,6 +242,35 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(Math.abs((response.body as { durationSeconds: number }).durationSeconds - shown.trip.durationSeconds)).toBeLessThanOrEqual(1);
   }, 60_000);
 
+  it('end to end: a pushed engine leaves a line per leg in the stored log and in the rendered report', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { chemLevel: 1.5 } });
+    const { events, log } = await run(setup);
+    const legCount = (log.legs as { events: { leg: number }[] }).events.filter(
+      (event) => (event as { type?: string }).type === 'leg_travel',
+    ).length;
+    const lines = events.filter((event) => event.type === 'engine_tuning') as unknown as {
+      leg: number;
+      tuning: { group: string; levelPct: number; chancePct: number; outcome: string };
+    }[];
+    expect(lines).toHaveLength(legCount);
+    for (const line of lines) {
+      expect(line.tuning).toMatchObject({ group: 'chem', levelPct: 150 });
+      expect(line.tuning.chancePct).toBeGreaterThan(0);
+    }
+    // and the player sees it in the report's log and in its stats
+    const logView = await request(httpServer(testApp.app))
+      .get(`/v1/reports/${setup.mission.id}?view=log`)
+      .set('Authorization', `Bearer ${setup.token}`);
+    expect(logView.status).toBe(200);
+    expect(JSON.stringify(logView.body)).toContain('pushed to x1.5');
+    const summary = await request(httpServer(testApp.app))
+      .get(`/v1/reports/${setup.mission.id}`)
+      .set('Authorization', `Bearer ${setup.token}`);
+    const engines = (summary.body as { stats: { engines?: { group: string; levelPct: number; pushedLegs: number }[] } }).stats.engines;
+    expect(engines).toEqual([expect.objectContaining({ group: 'chem', levelPct: 150, pushedLegs: legCount })]);
+  }, 60_000);
+
   it('engine tuning applies to every flying mission, not only races', async () => {
     const setup = await raceWith(0.5);
     await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
