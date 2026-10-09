@@ -797,7 +797,13 @@
       "upload": "Upload",
       "reset": "Reset to default"
     },
-    "noneOption": "No part"
+    "noneOption": "No part",
+    "duplicate": "Duplicate",
+    "duplicateConfirmTitle": "Create a new row from this one?",
+    "duplicateConfirmBody": "A new row is created from the values in this form. \"{{id}}\" itself is not changed.",
+    "duplicateNewId": "New id",
+    "duplicateHint": "The id cannot be changed after it is created. The new row opens for editing right after.",
+    "duplicateConfirm": "Create the copy"
   },
   "factions": {
     "luna": "Luna Authority",

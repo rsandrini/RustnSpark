@@ -797,7 +797,13 @@
       "upload": "Enviar",
       "reset": "Voltar ao padrão"
     },
-    "noneOption": "Nenhuma peça"
+    "noneOption": "Nenhuma peça",
+    "duplicate": "Duplicar",
+    "duplicateConfirmTitle": "Criar uma nova linha a partir desta?",
+    "duplicateConfirmBody": "Uma nova linha é criada com os valores deste formulário. \"{{id}}\" em si não muda.",
+    "duplicateNewId": "Novo id",
+    "duplicateHint": "O id não pode ser mudado depois de criado. A nova linha abre para edição logo em seguida.",
+    "duplicateConfirm": "Criar a cópia"
   },
   "factions": {
     "luna": "Autoridade de Luna",

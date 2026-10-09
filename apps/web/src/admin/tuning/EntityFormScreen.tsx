@@ -6,6 +6,7 @@ import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
 import { cloneOf } from './entity-shared';
 import { ArtEditor } from './ArtEditor';
+import { Popup } from '../../ui/Popup';
 import { rowId } from './EntityScreen';
 import { validationIssuesOf } from '../../api/errors';
 import type * as dto from '../../api/generated';
@@ -14,12 +15,29 @@ const BREADCRUMB_SEPARATOR = '›';
 
 // Long forms read as titled groups instead of one flat grid of twenty inputs.
 const PART_SECTIONS: readonly FormSection[] = [
-  { titleKey: 'tuning.sections.identity', fields: ['partType', 'displayName', 'description', 'partClass', 'rarity'] },
-  { titleKey: 'tuning.sections.sizeCost', fields: ['w', 'h', 'mass', 'structureCost', 'basePrice', 'scrapValue', 'partHp'] },
-  { titleKey: 'tuning.sections.performance', fields: ['pot', 'pdf', 'bli', 'esc', 'sen', 'crg', 'min'] },
+  {
+    titleKey: 'tuning.sections.identity',
+    fields: ['partType', 'displayName', 'description', 'partClass', 'rarity'],
+  },
+  {
+    titleKey: 'tuning.sections.sizeCost',
+    fields: ['w', 'h', 'mass', 'structureCost', 'basePrice', 'scrapValue', 'partHp'],
+  },
+  {
+    titleKey: 'tuning.sections.performance',
+    fields: ['pot', 'pdf', 'bli', 'esc', 'sen', 'crg', 'min'],
+  },
   {
     titleKey: 'tuning.sections.energyFuel',
-    fields: ['energyCont', 'energyCombat', 'fuelCap', 'fuelUse', 'batCharge', 'batOutput', 'batInput'],
+    fields: [
+      'energyCont',
+      'energyCombat',
+      'fuelCap',
+      'fuelUse',
+      'batCharge',
+      'batOutput',
+      'batInput',
+    ],
   },
   { titleKey: 'tuning.sections.special', fields: ['specialProp'] },
 ];
@@ -47,6 +65,9 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     setIssues(found);
     setFormErrors(found.length > 0 ? [] : [error.message]);
   };
+  // "Duplicate" beside Save: the form's current values wait here for the pilot's confirmation.
+  const [duplicating, setDuplicating] = useState<Record<string, unknown> | null>(null);
+  const [duplicateId, setDuplicateId] = useState('');
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const autoSaveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -60,13 +81,24 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     queryFn: () => tuningApi.listEntities(entityName),
     enabled: !!entityName,
   });
+  const idField = entityName === 'parts' ? 'partType' : 'id';
   const createMutation = useMutation({
     mutationFn: (body: dto.CreateEntityRequest) => tuningApi.createEntity(entityName, body),
-    onSuccess: () => {
+    onSuccess: (_created, body) => {
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
+      // A duplicate opens the new row, ready to edit; a plain create goes back to the list.
+      if (duplicating !== null) {
+        const newId = String(body.data[idField]);
+        setDuplicating(null);
+        void navigate(`${listPath}/${encodeURIComponent(newId)}`);
+        return;
+      }
       void navigate(listPath);
     },
-    onError: showFailure,
+    onError: (error) => {
+      setDuplicating(null);
+      showFailure(error);
+    },
   });
   const updateMutation = useMutation({
     mutationFn: (params: { id: string; body: dto.UpdateEntityRequest }) =>
@@ -95,7 +127,9 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
 
   const visibleFields = schemaResponse.fields.filter((field) => field.name !== 'active');
   const initialData =
-    mode === 'clone' && source !== undefined ? cloneOf(source, t('tuning.cloneSuffix'), entityName === 'parts' ? 'partType' : 'id') : source;
+    mode === 'clone' && source !== undefined
+      ? cloneOf(source, t('tuning.cloneSuffix'), entityName === 'parts' ? 'partType' : 'id')
+      : source;
   const entityLabel = t(`tuning.entityNames.${entityName}`, { defaultValue: entityName });
   const title =
     mode === 'new'
@@ -113,6 +147,20 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     } else {
       createMutation.mutate({ data, reason });
     }
+  };
+
+  // The pilot clicked Duplicate: ask for the new id (pre-filled) and confirm before creating.
+  const startDuplicate = (data: Record<string, unknown>) => {
+    setDuplicating(data);
+    setDuplicateId(`${id ?? ''}_copy`);
+  };
+  const confirmDuplicate = () => {
+    if (duplicating === null || duplicateId.trim() === '') return;
+    const copy = cloneOf({ ...duplicating, [idField]: id ?? '' }, t('tuning.cloneSuffix'), idField);
+    createMutation.mutate({
+      data: { ...copy, [idField]: duplicateId.trim() },
+      reason: `duplicate-of-${id ?? ''}`,
+    });
   };
 
   const handleAutoSave = (data: Record<string, unknown>, reason: string) => {
@@ -151,12 +199,44 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         initialData={initialData}
         onSubmit={handleSubmit}
         onCancel={() => void navigate(listPath)}
+        onDuplicate={mode === 'edit' ? startDuplicate : undefined}
         errors={formErrors}
         issues={issues}
         autoSave={mode === 'edit'}
         onAutoSave={handleAutoSave}
         autoSaveStatus={autoSaveStatus}
       />
+      <Popup
+        open={duplicating !== null}
+        title={t('tuning.duplicateConfirmTitle')}
+        onClose={() => setDuplicating(null)}
+      >
+        <div className="stack">
+          <p>{t('tuning.duplicateConfirmBody', { id: id ?? '' })}</p>
+          <label className="lbl" htmlFor="duplicate-id">
+            {t('tuning.duplicateNewId')}
+          </label>
+          <input
+            id="duplicate-id"
+            type="text"
+            value={duplicateId}
+            onChange={(event) => setDuplicateId(event.target.value)}
+          />
+          <p className="sub">{t('tuning.duplicateHint')}</p>
+          <div className="schema-form-actions">
+            <button
+              type="button"
+              disabled={createMutation.isPending || duplicateId.trim() === ''}
+              onClick={confirmDuplicate}
+            >
+              {t('tuning.duplicateConfirm')}
+            </button>
+            <button type="button" onClick={() => setDuplicating(null)}>
+              {t('tuning.cancel')}
+            </button>
+          </div>
+        </div>
+      </Popup>
     </div>
   );
 }

@@ -163,6 +163,9 @@ interface SchemaFormProps {
   initialData?: Record<string, unknown>;
   onSubmit: (data: Record<string, unknown>, reason: string) => void | Promise<void>;
   onCancel?: () => void;
+  /** Adds a "Duplicate" button beside Save (existing rows only): it hands the form's CURRENT
+      values to the screen, which confirms and creates a new row from them. */
+  onDuplicate?: (data: Record<string, unknown>) => void;
   submitLabel?: string;
   errors?: string[];
   /** Server validation problems: shown as a summary and under the field each one names. */
@@ -237,6 +240,7 @@ export function SchemaForm({
   initialData = {},
   onSubmit,
   onCancel,
+  onDuplicate,
   submitLabel,
   errors,
   issues = [],
@@ -306,12 +310,30 @@ export function SchemaForm({
   const handleChange = (name: string, value: unknown, subKey?: string) => {
     setValues((prev) => {
       const next = subKey
-        ? { ...prev, [name]: { ...((prev[name] as Record<string, unknown> | undefined) ?? {}), [subKey]: value } }
+        ? {
+            ...prev,
+            [name]: {
+              ...((prev[name] as Record<string, unknown> | undefined) ?? {}),
+              [subKey]: value,
+            },
+          }
         : { ...prev, [name]: value };
       valuesRef.current = next;
       return next;
     });
     scheduleAutoSave();
+  };
+
+  const handleDuplicate = () => {
+    // What is typed now goes to the copy, not to the original: nothing pending is auto-saved
+    // onto the row being duplicated (the timer is cleared and the form counts as saved).
+    if (autoSaveTimer.current !== null) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    const payload = buildPayload(valuesRef.current, fields);
+    lastSavedSnapshot.current = JSON.stringify(payload);
+    onDuplicate?.(payload);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -530,9 +552,7 @@ export function SchemaForm({
 
   // What the field means, in plain words (tuning.help.<entity>.<field>); empty when none is written.
   const helpFor = (field: dto.EntitySchemaField): string =>
-    entity === undefined
-      ? ''
-      : t(`tuning.help.${entity}.${field.name}`, { defaultValue: '' });
+    entity === undefined ? '' : t(`tuning.help.${entity}.${field.name}`, { defaultValue: '' });
 
   const renderField = (field: dto.EntitySchemaField) => {
     const wide =
@@ -571,7 +591,20 @@ export function SchemaForm({
       onSubmit={handleSubmit}
       // Any field losing focus (tabbing to the next one, or about to close) flushes the pending
       // auto-save right away instead of waiting out the full debounce.
-      onBlur={autoSave ? () => flushAutoSave() : undefined}
+      onBlur={
+        autoSave
+          ? (event) => {
+              // Moving focus to "Duplicate" must not save the pending edit onto the row that is
+              // about to be copied: the edit belongs to the copy.
+              if (
+                (event.relatedTarget as HTMLElement | null)?.dataset['noAutosave'] !== undefined
+              ) {
+                return;
+              }
+              flushAutoSave();
+            }
+          : undefined
+      }
     >
       {issues.length > 0 && (
         <div className="form-error-summary" role="alert">
@@ -602,7 +635,9 @@ export function SchemaForm({
           {sectionGroups.map((group) => (
             <section key={group.titleKey ?? 'rest'} className="schema-form-section">
               {group.titleKey !== null && <h3>{t(group.titleKey)}</h3>}
-              <div className="schema-form-grid">{group.fields.map((field) => renderField(field))}</div>
+              <div className="schema-form-grid">
+                {group.fields.map((field) => renderField(field))}
+              </div>
             </section>
           ))}
           <div className="schema-form-grid">
@@ -626,6 +661,18 @@ export function SchemaForm({
       </div>
       <div className="schema-form-actions">
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>
+        {onDuplicate !== undefined && (
+          <button
+            type="button"
+            data-no-autosave=""
+            // (a mouse press must not move focus out of the field being edited: that blur would
+            // save the pending edit onto the original before this click is handled)
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleDuplicate}
+          >
+            {t('tuning.duplicate')}
+          </button>
+        )}
         {onCancel && (
           <button type="button" onClick={onCancel}>
             {t('tuning.cancel')}
