@@ -5029,7 +5029,7 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 /* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
 .report-overview {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }

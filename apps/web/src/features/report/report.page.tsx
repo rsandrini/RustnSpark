@@ -160,9 +160,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
             ))}
           </div>
 
-          {tab === 'overview' && (
-            <ReportOverview stats={report.stats} mission={report.mission} world={worldQuery.data} />
-          )}
+          {tab === 'overview' && <ReportOverview stats={report.stats} />}
 
           {tab !== 'overview' && report.view === 'log' && (
             <div className="log-table-wrap">
@@ -200,7 +198,8 @@ export function ReportPage({ guided = false }: ReportPageProps) {
               {report.chapters.map((chapter) => (
                 <article key={chapter.leg} className="event">
                   <h2>
-                    {storyPath[chapter.leg] !== undefined && storyPath[chapter.leg + 1] !== undefined
+                    {storyPath[chapter.leg] !== undefined &&
+                    storyPath[chapter.leg + 1] !== undefined
                       ? t('report.story.leg', {
                           index: chapter.leg + 1,
                           from: placeName(storyPath[chapter.leg] ?? ''),
@@ -357,20 +356,30 @@ function CascadeDetail({
                         Attacker) removes the need to invert the Attacker column mentally on
                         every row (owner: "show how much damage we take, like we show about
                         the enemy"). */}
-                    <span className={`attacker-${round.attacker === 'player' ? 'enemy' : 'player'}`}>
-                      {t(`report.combatLog.side.${round.attacker === 'player' ? 'enemy' : 'player'}`)}
+                    <span
+                      className={`attacker-${round.attacker === 'player' ? 'enemy' : 'player'}`}
+                    >
+                      {t(
+                        `report.combatLog.side.${round.attacker === 'player' ? 'enemy' : 'player'}`,
+                      )}
                     </span>
                   </td>
                   <td className={round.hit ? 'dmg-shield' : undefined}>
                     {round.hit ? round.shieldAbsorbed : '—'}
                     {round.hit && round.shieldAfter !== undefined && (
-                      <small className="sub"> {t('report.combatLog.left', { value: round.shieldAfter })}</small>
+                      <small className="sub">
+                        {' '}
+                        {t('report.combatLog.left', { value: round.shieldAfter })}
+                      </small>
                     )}
                   </td>
                   <td className={round.hit ? 'dmg-armor' : undefined}>
                     {round.hit ? round.armorAbsorbed : '—'}
                     {round.hit && round.armorAfter !== undefined && (
-                      <small className="sub"> {t('report.combatLog.left', { value: round.armorAfter })}</small>
+                      <small className="sub">
+                        {' '}
+                        {t('report.combatLog.left', { value: round.armorAfter })}
+                      </small>
                     )}
                   </td>
                   <td className={round.hit ? 'dmg-hull' : undefined}>
@@ -475,7 +484,9 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
         <div
           className="debrief-art"
           aria-hidden="true"
-          style={{ backgroundImage: `url(${placeArtUrl(mission.destinationId, 'wide', placeArt)})` }}
+          style={{
+            backgroundImage: `url(${placeArtUrl(mission.destinationId, 'wide', placeArt)})`,
+          }}
         />
       )}
       <div className="debrief-verdict">
@@ -622,7 +633,10 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                   <td>
                     {formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}
                     {row.trouble !== undefined && (
-                      <small className="race-trouble"> {t(`report.debrief.trouble.${row.trouble}`)}</small>
+                      <small className="race-trouble">
+                        {' '}
+                        {t(`report.debrief.trouble.${row.trouble}`)}
+                      </small>
                     )}
                   </td>
                 </tr>
@@ -663,7 +677,9 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
         </div>
       )}
 
-      {(damageTotal > 0 || stats.travelWear.points > 0) && <p className="debrief-hint">{t('report.debrief.repairHint')}</p>}
+      {(damageTotal > 0 || stats.travelWear.points > 0) && (
+        <p className="debrief-hint">{t('report.debrief.repairHint')}</p>
+      )}
     </section>
   );
 }

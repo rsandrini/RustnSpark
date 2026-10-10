@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ReportMission, ReportStats, WorldResponse } from '../../api/generated';
-import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
-import { ShipStage } from '../../ui/ShipStage';
+import type { ReportStats } from '../../api/generated';
 
 const ANIMATION_DELAY_MS = 350;
 const FULL = 100;
@@ -55,25 +53,9 @@ function conditionTone(value: number): 'ok' | 'warn' | 'bad' {
 
 // The run at a glance: where it went, what the trip cost the ship on the way and in fights, and
 // which parts paid for it (their condition sinking from what it was to what it is now).
-export function ReportOverview({
-  stats,
-  mission,
-  world,
-}: {
-  stats: ReportStats;
-  mission: ReportMission | undefined;
-  world: WorldResponse | undefined;
-}) {
+export function ReportOverview({ stats }: { stats: ReportStats }) {
   const { t, i18n } = useTranslation();
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
-  const path =
-    mission === undefined
-      ? []
-      : pathOfLegs(
-          (mission.routeIds ?? []).map((routeId) => ({ routeId })),
-          world,
-          mission.originId,
-        );
   const combat = stats.damage;
   const combatMax = Math.max(1, combat.shield, combat.armor, combat.hull);
   const combatTotal = combat.shield + combat.armor + combat.hull;
@@ -85,13 +67,6 @@ export function ReportOverview({
 
   return (
     <section className="report-overview" data-testid="report-overview">
-      {/* The place scene and the trip's map share one narrow column beside the numbers. */}
-      <aside className="overview-visual" data-testid="overview-visual">
-        {mission !== undefined && (
-          <ShipStage mode="idle" size="compact" placeId={mission.destinationId} />
-        )}
-        {path.length > 1 && <RouteMap path={path} world={world} compact />}
-      </aside>
       <div className="stack overview-body">
         <div className="damage-split">
           <article className="panel" data-testid="damage-combat">
