@@ -951,7 +951,7 @@
         "risk": "Risco",
         "riskValue": "Zona {{zone}} · piratas",
         "riskFoot": "Zona {{zone}} · seguro",
-        "nothing": "Nada encontrado",
+        "nothing": "Chance de achar algo",
         "quality": "Condição achada",
         "percent": "{{value}}%",
         "range": "{{min}}–{{max}}%"

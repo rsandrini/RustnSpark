@@ -1190,7 +1190,7 @@ export function PortPage({
                 <small>{t('port.scav.tile.nothing')}</small>
                 <b>
                   {t('port.scav.tile.percent', {
-                    value: Math.round(scavengeInfoQuery.data.nothingChance * 100),
+                    value: Math.round((1 - scavengeInfoQuery.data.nothingChance) * 100),
                   })}
                 </b>
               </li>
