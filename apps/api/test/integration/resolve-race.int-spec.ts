@@ -193,9 +193,9 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(pushed.engine?.chem).toBeCloseTo(1.4);
     expect(pushed.seconds).toBeLessThan(calm.seconds);
     expect(pushed.fuelUse).toBeGreaterThan(calm.fuelUse);
-    // throttled down: slower, but cheaper to fly
-    expect(eased.seconds).toBeGreaterThan(calm.seconds);
-    expect(eased.fuelUse).toBeLessThan(calm.fuelUse);
+    // asking to throttle down is brought back to 100%: the same trip as at the listed power
+    expect(eased.seconds).toBe(calm.seconds);
+    expect(eased.fuelUse).toBe(calm.fuelUse);
   }, 60_000);
 
   it('engine tuning: levels outside the admin range are brought back, and the preview agrees with the flight', async () => {
