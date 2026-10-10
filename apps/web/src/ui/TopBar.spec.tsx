@@ -63,7 +63,7 @@ describe('TopBar', () => {
     expect(document.querySelector('.hangar-links-row')).toBeNull();
   });
 
-  it('lets the pilot change the ship energy mode from the top bar', async () => {
+  it('lets the pilot change the battery management from the engine tuning, not the top bar', async () => {
     let postedMode: string | null = null;
     server.use(
       me(),
@@ -76,7 +76,9 @@ describe('TopBar', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     const identity = screen.getByText('luna starter').closest('.ship-identity') as HTMLElement;
-    const select = within(identity).getByRole('combobox', { name: 'Energy' });
+    expect(within(identity).queryByRole('combobox')).toBeNull();
+    const tuning = await screen.findByRole('group', { name: 'Engine tuning' });
+    const select = within(tuning).getByRole('combobox', { name: 'Energy' });
     expect(select).toHaveValue('FULL');
     await userEvent.selectOptions(select, 'BATTERY');
     await waitFor(() => expect(postedMode).toBe('BATTERY'));

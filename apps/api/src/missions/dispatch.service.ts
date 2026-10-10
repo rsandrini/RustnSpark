@@ -23,6 +23,7 @@ import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
+import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
@@ -286,14 +287,19 @@ export class DispatchService {
       // Part direction rules apply to every dispatch that flies the ship — except a scavenging job,
       // which is manual work at the current place: the ship never travels, so nothing points anywhere.
       const flightViability = checkViability(sheet, installedConnected, rules);
+      // The spare parts and the ore travel with the ship: they must fit the free slots plus the cargo space.
+      const hold = await loadHold(tx, playerId, installedConnected, sheet.crg);
       const viability =
         mission.type === 'SCAVENGE'
           ? flightViability
-          : withDirectionProblems(
-              flightViability,
-              (ship.layout as unknown as Placement[]) ?? [],
-              catalogForConnectivity,
-              connectorsByInstance,
+          : withHoldProblem(
+              withDirectionProblems(
+                flightViability,
+                (ship.layout as unknown as Placement[]) ?? [],
+                catalogForConnectivity,
+                connectorsByInstance,
+              ),
+              hold,
             );
       // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
       // only finds less when the ship is not flight-ready.

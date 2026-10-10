@@ -75,3 +75,7 @@ UPDATE "ShipFormat"
       "cellTarget" = 26,
       "description" = '{"en": "The original start pack", "pt-BR": "Grade basica 1"}'::jsonb
   WHERE "id" = 'classic_square' AND jsonb_array_length("cells") = 400;
+
+-- Engines never run below 100%: the lower bounds of the tuning range are gone (the range is
+-- 1 → the admin's top level).
+DELETE FROM "GameConfig" WHERE "key" IN ('engine.chem_level_min', 'engine.ion_level_min');

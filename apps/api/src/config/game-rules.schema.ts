@@ -143,9 +143,7 @@ const miningSchema = z.object({
 });
 
 const engineSchema = z.object({
-  chem_level_min: z.number().min(0.1).max(1),
   chem_level_max: z.number().min(1).max(3),
-  ion_level_min: z.number().min(0.1).max(1),
   ion_level_max: z.number().min(1).max(5),
   fuel_push_exponent: z.number().min(1).max(4),
   ion_power_exponent: z.number().min(1).max(4),

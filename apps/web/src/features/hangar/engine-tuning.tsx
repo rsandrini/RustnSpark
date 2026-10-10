@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import type { EnginePreview, ShipResponse } from '../../api/generated';
+import type { EnergyMode, EnginePreview, ShipResponse } from '../../api/generated';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { formatDuration } from '../../ui/duration';
 import { registerEngineTuningFlush } from './engine-tuning-sync';
@@ -15,10 +15,11 @@ const OK_CLEAN = 0.6;
 
 // Quick settings; the server keeps whatever it receives inside the admin's ranges.
 const PRESETS = [
-  { id: 'economy', chem: 0.75, ion: 1.5 },
   { id: 'normal', chem: 1, ion: 1 },
   { id: 'sprint', chem: 1.25, ion: 1.5 },
 ] as const;
+
+const ENERGY_MODES: readonly EnergyMode[] = ['BATTERY', 'FULL', 'OVERRIDE'];
 
 type Group = 'chem' | 'ion';
 
@@ -41,8 +42,9 @@ function cleanTone(chance: number): 'ok' | 'warn' | 'bad' {
 }
 
 /**
- * The bridge's engine tuning: how hard the chemical engines and the ion engines run. Below 1 an
- * engine throttles down (slower, cheaper), above 1 it pushes (faster, dearer, and it can fail).
+ * The bridge's engine tuning: how hard the chemical engines and the ion engines run. An engine never
+ * runs below its listed power (level 1); above 1 it pushes (faster, dearer, and it can fail). The
+ * battery management (where the combat energy comes from) lives here too.
  * The numbers under the sliders are the server's own maths for these levels — speed, fuel, power
  * and the chance the whole run goes clean — so the pilot decides if the risk is worth it. With a
  * `missionId` it also shows that trip's time and fuel.
@@ -62,6 +64,14 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
   useEffect(() => {
     setLevels({ chem: saved.chem, ion: saved.ion });
   }, [saved.chem, saved.ion]);
+
+  const setEnergyMode = useMutation({
+    mutationFn: (energyMode: EnergyMode) =>
+      client.post<ShipResponse>(`/v1/ships/${ship.id}/energy-mode`, { energyMode }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+    },
+  });
 
   const preview = useQuery({
     queryKey: ['engine-preview', ship.id, missionId ?? null, levels.chem, levels.ion, ship.fuel],
@@ -162,6 +172,22 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
       </div>
       {sliderFor('chem')}
       {sliderFor('ion')}
+      <label className="engine-energy">
+        <b>{t('engineTuning.battery.label')}</b>
+        <select
+          aria-label={t('ship.energyMode.label')}
+          value={ship.energyMode}
+          onChange={(event) => setEnergyMode.mutate(event.target.value as EnergyMode)}
+          disabled={!editable || setEnergyMode.isPending}
+        >
+          {ENERGY_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`ship.energyMode.${mode}`)}
+            </option>
+          ))}
+        </select>
+        <small className="sub">{t('engineTuning.battery.hint')}</small>
+      </label>
       {data !== undefined && data.thrust.chem + data.thrust.ion > 0 && (
         <div className="engine-thrust" data-testid="engine-thrust">
           <span className="sub">{t('engineTuning.thrustTitle')}</span>

@@ -209,7 +209,7 @@ describe('RACE mission resolution (pipeline)', () => {
     const { engine } = configService.snapshot().rules;
     expect((set.body as { engineLevels: { chem: number; ion: number } }).engineLevels).toEqual({
       chem: engine.chem_level_max,
-      ion: engine.ion_level_min,
+      ion: 1,
     });
 
     const preview = await request(httpServer(testApp.app))

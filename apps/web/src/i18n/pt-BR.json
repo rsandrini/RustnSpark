@@ -205,7 +205,8 @@
       "save": "Salvar layout",
       "auto": "Layout automático",
       "rotate": "Girar",
-      "remove": "Remover"
+      "remove": "Remover",
+      "clear": "Esvaziar a nave"
     },
     "state": {
       "selected": "Selecionado: {{name}}",
@@ -232,7 +233,8 @@
       "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
       "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
       "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
-      "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia."
+      "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
+      "HOLD_OVER_CAPACITY": "As peças sobressalentes e o minério não cabem no espaço de carga da nave."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -321,6 +323,17 @@
         "rig": "Mineradora (parada)",
         "other": "Outros"
       }
+    },
+    "clear": {
+      "title": "Esvaziar a nave?",
+      "body": "As {{count}} peças instaladas voltam para o inventário. Nada é vendido nem perdido, mas a nave não voa até ser montada de novo.",
+      "cancel": "Cancelar",
+      "confirm": "Esvaziar a nave"
+    },
+    "hold": {
+      "line": "Carregado: {{cells}} células de peças sobressalentes ({{slots}} livres na ponte), {{ore}} de minério. Espaço de carga usado: {{used}} de {{capacity}}.",
+      "over": "Carga demais para partir: venda ou deixe algo antes.",
+      "hint": "Peças sobressalentes e minério viajam com a nave. A ponte leva algumas peças de graça; o resto, e cada unidade de minério, ocupa espaço de carga."
     }
   },
   "home": {
@@ -1217,7 +1230,8 @@
       "MOB_TOO_LOW": "Mobilidade baixa demais",
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
-      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
+      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
+      "HOLD_OVER_CAPACITY": "As peças sobressalentes e o minério não cabem no espaço de carga da nave."
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",
@@ -1618,11 +1632,10 @@
   },
   "engineTuning": {
     "title": "Ajuste dos motores",
-    "intro": "Rode os motores reduzidos para poupar combustível e energia, ou forçados por velocidade. Forçar arrisca uma falha de motor em cada trecho.",
+    "intro": "Rode os motores na potência listada, ou force-os por velocidade. Forçar arrisca uma falha de motor em cada trecho. O gerenciamento de bateria também é ajustado aqui.",
     "locked": "Os motores só podem ser ajustados com a nave no porto.",
     "presets": "Ajustes rápidos",
     "preset": {
-      "economy": "Economia",
       "normal": "Normal",
       "sprint": "Corrida"
     },
@@ -1632,8 +1645,8 @@
     },
     "level": "nível {{value}}",
     "hint": {
-      "chem": "Abaixo de 1: mais lento, gasta menos combustível. Acima de 1: mais rápido, gasta bem mais combustível, desgasta os motores químicos e pode superaquecer.",
-      "ion": "Não gasta combustível, mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, desgasta os motores de íons E as baterias, e pode superaquecer."
+      "chem": "Sempre de pelo menos 100%. Acima de 1: mais rápido, queima muito mais combustível, desgasta os motores químicos e pode superaquecer.",
+      "ion": "Não queima combustível mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, desgasta os motores iônicos E as baterias, e pode superaquecer."
     },
     "speed": "Velocidade {{value}} (listada: {{base}})",
     "fuelBurn": "Consumo de combustível {{value}} (listado: {{base}})",
@@ -1645,6 +1658,10 @@
     "thrustTitle": "De onde vem o empuxo",
     "thrustBar": "Químico {{chem}}% · Íons {{ion}}% do empuxo",
     "thrustLine": "{{group}}: {{value}} da velocidade ({{percent}}% do empuxo; listado: {{base}})",
-    "wear": "Desgaste por trecho só pelo esforço: motores químicos −{{chem}}, motores de íons −{{ion}}, baterias −{{battery}}."
+    "wear": "Desgaste por trecho só pelo esforço: motores químicos −{{chem}}, motores de íons −{{ion}}, baterias −{{battery}}.",
+    "battery": {
+      "label": "Gerenciamento de bateria",
+      "hint": "De onde vem a energia de combate: só as baterias, tudo que a nave produz, ou um override que força mais os sistemas."
+    }
   }
 }

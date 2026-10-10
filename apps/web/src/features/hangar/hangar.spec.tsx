@@ -720,6 +720,30 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByText('Layout saved.')).toBeInTheDocument();
   });
 
+  it('empties the ship only after a confirmation: every part goes back to the inventory', async () => {
+    server.use(onboarded());
+    const assembled: Array<{ layout: Placement[] }> = [];
+    server.use(
+      http.post('/v1/ships/:id/assemble', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        assembled.push(body);
+        return HttpResponse.json(shipEcho(body.layout), { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Empty the ship' }));
+    // nothing is sent until the pilot confirms
+    expect(assembled).toHaveLength(0);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(assembled).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Empty the ship' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Empty the ship' }));
+    await waitFor(() => expect(assembled).toHaveLength(1));
+    expect(assembled[0]?.layout).toEqual([]);
+  });
+
   it('shows translated problems when the server rejects the layout', async () => {
     server.use(onboarded());
     server.use(

@@ -37,12 +37,15 @@ function clamp(value: number, low: number, high: number): number {
   return Math.min(high, Math.max(low, value));
 }
 
-/** The levels kept inside the admin's ranges (an out-of-range request is brought back, not refused). */
+/** An engine never runs below its listed power: the lowest level is 100%. */
+export const ENGINE_LEVEL_MIN = 1;
+
+/** The levels kept between 100% and the admin's top level (an out-of-range request is brought back, not refused). */
 export function clampLevels(levels: EngineLevels, rules: GameRules): EngineLevels {
   const { engine } = rules;
   return {
-    chem: clamp(levels.chem, engine.chem_level_min, engine.chem_level_max),
-    ion: clamp(levels.ion, engine.ion_level_min, engine.ion_level_max),
+    chem: clamp(levels.chem, ENGINE_LEVEL_MIN, engine.chem_level_max),
+    ion: clamp(levels.ion, ENGINE_LEVEL_MIN, engine.ion_level_max),
   };
 }
 

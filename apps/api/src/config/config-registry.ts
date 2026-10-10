@@ -1038,18 +1038,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'engine.chem_level_min',
-    group: 'engine',
-    type: 'number',
-    min: 0.1,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.chem_level_min),
-    description: {
-      en: 'Lowest level of the chemical engines: below 1 they throttle down, saving fuel and speed.',
-      'pt-BR': 'Menor nível dos motores químicos: abaixo de 1 eles reduzem, poupando combustível e velocidade.',
-    },
-  },
-  {
     key: 'engine.chem_level_max',
     group: 'engine',
     type: 'number',
@@ -1059,18 +1047,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Highest level of the chemical engines: above 1 they push for speed, burning more fuel and risking failures.',
       'pt-BR': 'Maior nível dos motores químicos: acima de 1 eles forçam por velocidade, gastando mais combustível e arriscando falhas.',
-    },
-  },
-  {
-    key: 'engine.ion_level_min',
-    group: 'engine',
-    type: 'number',
-    min: 0.1,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.ion_level_min),
-    description: {
-      en: 'Lowest level of the ion engines.',
-      'pt-BR': 'Menor nível dos motores de íons.',
     },
   },
   {

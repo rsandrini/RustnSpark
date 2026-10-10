@@ -10,6 +10,7 @@ import {
   applyEngineLevels,
   clampLevels,
   cleanRunChance,
+  ENGINE_LEVEL_MIN,
   engineGroupOf,
   type EngineGroup,
   type EngineLevels,
@@ -169,8 +170,8 @@ export class EnginePreviewService {
     return {
       levels,
       ranges: {
-        chem: [rules.engine.chem_level_min, rules.engine.chem_level_max],
-        ion: [rules.engine.ion_level_min, rules.engine.ion_level_max],
+        chem: [ENGINE_LEVEL_MIN, rules.engine.chem_level_max],
+        ion: [ENGINE_LEVEL_MIN, rules.engine.ion_level_max],
       },
       groups,
       thrust: thrustOf(tunedParts),

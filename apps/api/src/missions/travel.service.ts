@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
+import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip } from '../ships/penalties.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -223,11 +224,14 @@ export class TravelService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    const viability = withDirectionProblems(
-      checkViability(sheet, installedConnected, rules),
-      (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
-      connectorsByInstance,
+    const viability = withHoldProblem(
+      withDirectionProblems(
+        checkViability(sheet, installedConnected, rules),
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+      ),
+      await loadHold(this.prisma, playerId, installedConnected, sheet.crg),
     );
 
     const [active, repairing] = await Promise.all([

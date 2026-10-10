@@ -128,9 +128,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     },
   },
   engine: {
-    chem_level_min: 0.5,
     chem_level_max: 1.5,
-    ion_level_min: 0.5,
     ion_level_max: 2.5,
     fuel_push_exponent: 1.5,
     ion_power_exponent: 2,

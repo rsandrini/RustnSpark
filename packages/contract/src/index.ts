@@ -277,6 +277,19 @@ export const ShipResponseSchema = z.object({
   energyMode: EnergyModeSchema,
   /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
   engineLevels: z.object({ chem: z.number(), ion: z.number() }),
+  /** What the ship carries besides its installed parts: loose parts (the bridge's free slots, then
+      cargo space) and ore. Over capacity = the ship cannot depart. */
+  hold: z
+    .object({
+      slots: z.number(),
+      partCells: z.number(),
+      ore: z.number(),
+      capacity: z.number(),
+      used: z.number(),
+      free: z.number(),
+      over: z.boolean(),
+    })
+    .optional(),
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,

@@ -442,6 +442,35 @@ describe('ship dispatch API (S7.2)', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('refuses a ship whose spare parts and ore do not fit its free slots plus cargo space', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    // 40 loose hulls (2 cells each) far past the bridge's free slots and the starter cargo space
+    await prisma.partInstance.createMany({
+      data: Array.from({ length: 40 }, () => ({
+        partType: 'hull',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY' as const,
+      })),
+    });
+
+    const refused = await dispatch(player.token, player.shipId, mission.id);
+    expect(refused.status).toBe(400);
+    expect(refused.body).toMatchObject({ message: { error: 'SHIP_NOT_VIABLE' } });
+    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('HOLD_OVER_CAPACITY');
+
+    // selling (here: dropping) the surplus lets the same ship depart
+    await prisma.partInstance.deleteMany({
+      where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
+    });
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+  });
+
   it('a blocked engine does not ground the ship: it flies, with no thrust from that engine (slower)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

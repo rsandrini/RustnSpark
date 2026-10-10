@@ -16,6 +16,7 @@ import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
+import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import {
@@ -106,12 +107,15 @@ export class MiningJobService {
     const sheet = deriveSheet(installedConnected, rules);
     // Mining flies the ship out to the field, so the part direction rules (nothing behind an
     // engine's exhaust / a weapon's firing line) apply, like dispatch and travel.
-    const viability = withDirectionProblems(
-      checkViability(sheet, installedConnected, rules),
-      (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
-      connectorsByInstance,
-      { strict: true },
+    const viability = withHoldProblem(
+      withDirectionProblems(
+        checkViability(sheet, installedConnected, rules),
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+        { strict: true },
+      ),
+      await loadHold(this.prisma, playerId, installedConnected, sheet.crg),
     );
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

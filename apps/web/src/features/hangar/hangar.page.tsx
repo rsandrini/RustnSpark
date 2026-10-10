@@ -277,6 +277,27 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
 
+  // Empty the ship: every installed part goes back to the inventory (after a confirmation).
+  const [clearOpen, setClearOpen] = useState(false);
+  const clearShip = useMutation({
+    mutationFn: () =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/assemble`, { layout: [] }),
+    onSuccess: (updated) => {
+      setLayout(updated.layout);
+      setSaved(true);
+      setSaveError(null);
+      setSelectedId(null);
+      setPendingPartId(null);
+      setClearOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+    onError: (error) => {
+      setClearOpen(false);
+      setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) });
+    },
+  });
+
   const formatsQuery = useQuery({
     queryKey: ['shipFormats'],
     queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
@@ -769,6 +790,22 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </span>
                   )}
                 </div>
+                {ship?.hold !== undefined && (
+                  <p
+                    className={ship.hold.over ? 'warn-text' : 'sub'}
+                    data-testid="hold-line"
+                    title={t('hangar.hold.hint')}
+                  >
+                    {t('hangar.hold.line', {
+                      cells: ship.hold.partCells,
+                      slots: ship.hold.slots,
+                      ore: ship.hold.ore,
+                      used: ship.hold.used,
+                      capacity: ship.hold.capacity,
+                    })}
+                    {ship.hold.over && ` ${t('hangar.hold.over')}`}
+                  </p>
+                )}
                 {disconnectedPartIds.size > 0 && (
                   <p className="sub disconnected-note">
                     {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
@@ -927,7 +964,37 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 >
                   {t('hangar.actions.auto')}
                 </button>
+                <button
+                  type="button"
+                  className="btn block"
+                  disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
+                  onClick={() => setClearOpen(true)}
+                >
+                  {t('hangar.actions.clear')}
+                </button>
               </div>
+              <Popup
+                open={clearOpen}
+                title={t('hangar.clear.title')}
+                onClose={() => setClearOpen(false)}
+                actions={
+                  <>
+                    <button type="button" className="btn" onClick={() => setClearOpen(false)}>
+                      {t('hangar.clear.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      disabled={clearShip.isPending}
+                      onClick={() => clearShip.mutate()}
+                    >
+                      {t('hangar.clear.confirm')}
+                    </button>
+                  </>
+                }
+              >
+                <p>{t('hangar.clear.body', { count: effectiveLayout.length })}</p>
+              </Popup>
             </section>
           </div>
         </>

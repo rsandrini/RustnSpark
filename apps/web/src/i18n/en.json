@@ -205,7 +205,8 @@
       "save": "Save layout",
       "auto": "Auto layout",
       "rotate": "Rotate",
-      "remove": "Remove"
+      "remove": "Remove",
+      "clear": "Empty the ship"
     },
     "state": {
       "selected": "Selected: {{name}}",
@@ -232,7 +233,8 @@
       "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
       "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it.",
       "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent.",
-      "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation."
+      "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation.",
+      "HOLD_OVER_CAPACITY": "The spare parts and ore do not fit the ship's cargo space."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -321,6 +323,17 @@
         "rig": "Mining rig (idle)",
         "other": "Other"
       }
+    },
+    "clear": {
+      "title": "Empty the ship?",
+      "body": "All {{count}} installed parts go back to the inventory. Nothing is sold or lost, but the ship cannot fly until it is assembled again.",
+      "cancel": "Cancel",
+      "confirm": "Empty the ship"
+    },
+    "hold": {
+      "line": "Carried: {{cells}} cells of spare parts ({{slots}} free on the bridge), {{ore}} ore. Cargo space used: {{used}} of {{capacity}}.",
+      "over": "Too much to depart: sell or leave something first.",
+      "hint": "Spare parts and ore travel with the ship. The bridge carries some spare parts for free; the rest, and every unit of ore, takes cargo space."
     }
   },
   "home": {
@@ -1217,7 +1230,8 @@
       "MOB_TOO_LOW": "Mobility too low",
       "NO_FUEL_CAPACITY": "No fuel capacity",
       "NO_LIFE_SUPPORT": "No life support",
-      "STRUCTURE_EXCEEDED": "Structure budget exceeded"
+      "STRUCTURE_EXCEEDED": "Structure budget exceeded",
+      "HOLD_OVER_CAPACITY": "The spare parts and ore do not fit the ship's cargo space."
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",
@@ -1618,11 +1632,10 @@
   },
   "engineTuning": {
     "title": "Engine tuning",
-    "intro": "Run the engines throttled down to save fuel and power, or pushed for speed. Pushing risks an engine failure on each leg.",
+    "intro": "Run the engines at their listed power, or push them for speed. Pushing risks an engine failure on each leg. The battery management is set here too.",
     "locked": "The engines can only be tuned while the ship is in port.",
     "presets": "Quick settings",
     "preset": {
-      "economy": "Economy",
       "normal": "Normal",
       "sprint": "Sprint"
     },
@@ -1632,7 +1645,7 @@
     },
     "level": "level {{value}}",
     "hint": {
-      "chem": "Below 1: slower, burns less fuel. Above 1: faster, burns much more fuel, wears the chemical engines and can overheat.",
+      "chem": "Always at least 100%. Above 1: faster, burns much more fuel, wears the chemical engines and can overheat.",
       "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, wears the ion engines AND the batteries, and can overheat."
     },
     "speed": "Speed {{value}} (listed: {{base}})",
@@ -1645,6 +1658,10 @@
     "thrustTitle": "Where the thrust comes from",
     "thrustBar": "Chemical {{chem}}% · Ion {{ion}}% of the thrust",
     "thrustLine": "{{group}}: {{value}} of the speed ({{percent}}% of the thrust; listed: {{base}})",
-    "wear": "Wear per leg from the push alone: chemical engines −{{chem}}, ion engines −{{ion}}, batteries −{{battery}}."
+    "wear": "Wear per leg from the push alone: chemical engines −{{chem}}, ion engines −{{ion}}, batteries −{{battery}}.",
+    "battery": {
+      "label": "Battery management",
+      "hint": "Where the combat energy comes from: the batteries only, everything the ship makes, or an override that drives the systems harder."
+    }
   }
 }

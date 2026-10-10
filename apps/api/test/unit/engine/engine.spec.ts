@@ -64,10 +64,10 @@ describe('engine tuning', () => {
   });
 
   it('chemical: thrust and power follow the level; fuel is proportional below 1, steeper above', () => {
+    // asking for less than 100% is brought back to the listed power: engines are never throttled
     const down = applyEngineLevels([chem], { chem: 0.5, ion: 1 }, rules)[0]!.catalog;
-    expect(down.pot).toBe(20);
-    expect(down.fuelUse).toBeCloseTo(5);
-    expect(down.energyCont).toBe(2);
+    expect(down.pot).toBe(40);
+    expect(down.fuelUse).toBeCloseTo(10);
     const up = applyEngineLevels([chem], { chem: 1.5, ion: 1 }, rules)[0]!.catalog;
     expect(up.pot).toBe(60);
     expect(up.fuelUse).toBeCloseTo(10 * fuelFactor(1.5, rules));
@@ -80,13 +80,13 @@ describe('engine tuning', () => {
     expect(pushed.energyCont).toBe(-6 * 2 ** rules.engine.ion_power_exponent);
     expect(pushed.fuelUse).toBe(0);
     const eased = applyEngineLevels([ion], { chem: 1, ion: 0.5 }, rules)[0]!.catalog;
-    expect(eased.energyCont).toBeCloseTo(-1.5);
+    expect(eased.energyCont).toBe(-6);
   });
 
   it('a level outside the admin range is brought back inside it', () => {
     expect(clampLevels({ chem: 9, ion: 0 }, rules)).toEqual({
       chem: rules.engine.chem_level_max,
-      ion: rules.engine.ion_level_min,
+      ion: 1,
     });
   });
 

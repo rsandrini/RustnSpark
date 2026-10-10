@@ -76,10 +76,8 @@ export type ConfigKey =
   | 'economy.ship_tier_thresholds'
   | 'economy.part_upgrade_price_multiplier'
   | 'engine.chem_level_max'
-  | 'engine.chem_level_min'
   | 'engine.fuel_push_exponent'
   | 'engine.ion_level_max'
-  | 'engine.ion_level_min'
   | 'engine.ion_power_exponent'
   | 'engine.mishap_at_max'
   | 'engine.mishap_curve'
@@ -323,10 +321,8 @@ export type GameRules = Readonly<{
   /** Engine tuning: how hard the pilot runs the chemical and the ion engines, and what it costs. */
   engine: Readonly<{
     /** Range of the chemical engines' level (1 = as listed; below saves fuel, above pushes). */
-    chem_level_min: number;
     chem_level_max: number;
     /** Range of the ion engines' level. */
-    ion_level_min: number;
     ion_level_max: number;
     /** Chemical fuel burned grows with the level to this power above 1 (below 1 it is linear). */
     fuel_push_exponent: number;

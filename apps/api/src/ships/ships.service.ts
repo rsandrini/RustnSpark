@@ -26,6 +26,7 @@ import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout, extendLayout } from './auto-layout.js';
+import { computeHold, type HoldState } from './hold.js';
 import { applyConnectivity } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
@@ -61,6 +62,8 @@ export interface ShipResponse {
   energyMode: string;
   /** Engine tuning set on the bridge (1 = engines as listed). */
   engineLevels: { chem: number; ion: number };
+  /** The spare parts and ore the ship carries against its free slots and cargo space. */
+  hold: HoldState;
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
@@ -664,6 +667,18 @@ export class ShipsService implements OnModuleInit {
     const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
+    const held = await this.prisma.playerMaterial.aggregate({
+      where: { playerId: ship.ownerPlayerId },
+      _sum: { quantity: true },
+    });
+    const hold = computeHold({
+      slots: installedConnected.reduce((sum, part) => sum + (part.catalog.storageSlots ?? 0), 0),
+      partCells: parts
+        .filter((part) => part.location === 'INVENTORY')
+        .reduce((sum, part) => sum + part.partCatalog.w * part.partCatalog.h, 0),
+      ore: held._sum.quantity ?? 0,
+      capacity: sheet.crg,
+    });
     const activity = await this.activityOf(ship);
     const adrift = ship.status === 'ADRIFT' ? await this.adriftOf(ship, rules) : null;
     return {
@@ -678,6 +693,7 @@ export class ShipsService implements OnModuleInit {
       stance: ship.stance,
       energyMode: ship.energyMode,
       engineLevels: { chem: ship.chemLevel, ion: ship.ionLevel },
+      hold,
       layout: shipLayout,
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),

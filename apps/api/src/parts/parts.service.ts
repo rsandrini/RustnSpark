@@ -93,6 +93,7 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     shieldRegen: readNumber(row.specialProp, 'shieldRegen'),
     idlePower: readNumber(row.specialProp, 'idlePower'),
     armorPiercing: readFlag(row.specialProp, 'armorPiercing'),
+    storageSlots: readNumber(row.specialProp, 'storageSlots'),
   };
 }
 
