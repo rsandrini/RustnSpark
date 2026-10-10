@@ -73,7 +73,16 @@ export function EntityScreen() {
   if (!schemaResponse) return <p>{t('error.unexpected')}</p>;
 
   const visibleFields = schemaResponse.fields.filter((field) => field.name !== 'active');
-  const listFields = visibleFields.slice(0, LIST_COLUMNS);
+  // Where an entity has both, the price sits right next to the rarity tier (Parts, Materials).
+  const baseFields = visibleFields
+    .slice(0, LIST_COLUMNS)
+    .filter((field) => field.name !== 'basePrice');
+  const priceField = visibleFields.find((field) => field.name === 'basePrice');
+  const rarityAt = baseFields.findIndex((field) => field.name === 'rarity');
+  const listFields =
+    priceField !== undefined && rarityAt !== -1
+      ? [...baseFields.slice(0, rarityAt + 1), priceField, ...baseFields.slice(rarityAt + 1)]
+      : visibleFields.slice(0, LIST_COLUMNS);
   const enumFilterFields = visibleFields.filter(
     (field) => field.type === 'enum' && field.enumValues !== undefined,
   );
@@ -111,7 +120,9 @@ export function EntityScreen() {
         <div className="tuning-filters">
           {enumFilterFields.map((field) => {
             const groupLabel =
-              field.description !== undefined ? pickLocalized(field.description, i18n.language) : field.name;
+              field.description !== undefined
+                ? pickLocalized(field.description, i18n.language)
+                : field.name;
             const namespace = ENUM_FILTER_I18N_NAMESPACE[field.name];
             const valueLabel = (value: string) =>
               namespace !== undefined ? t(`${namespace}.${value}`, { defaultValue: value }) : value;
@@ -147,7 +158,9 @@ export function EntityScreen() {
             <tr>
               {listFields.map((field) => {
                 const label =
-                  field.description !== undefined ? pickLocalized(field.description, i18n.language) : field.name;
+                  field.description !== undefined
+                    ? pickLocalized(field.description, i18n.language)
+                    : field.name;
                 return (
                   <th key={field.name} title={label}>
                     <span className="th-label">{label}</span>
