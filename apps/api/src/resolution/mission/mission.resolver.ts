@@ -39,6 +39,8 @@ export interface MissionSnapshot {
   readonly energyMode?: LegShipState['energyMode'];
   readonly weaponEnergyDraw: LegShipState['weaponEnergyDraw'];
   readonly shieldEnergyDraw: LegShipState['shieldEnergyDraw'];
+  /** Share of the firepower that is armor-piercing (absent = none). */
+  readonly pierceShare?: number;
   /** Layered damage model (see LegShipState): the armor pool and the shield's regeneration. */
   readonly armor?: number;
   readonly escRegen?: number;
@@ -127,6 +129,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     energyMode: input.snapshot.energyMode,
     weaponEnergyDraw: input.snapshot.weaponEnergyDraw,
     shieldEnergyDraw: input.snapshot.shieldEnergyDraw,
+    ...(input.snapshot.pierceShare !== undefined
+      ? { pierceShare: input.snapshot.pierceShare }
+      : {}),
     ...(input.snapshot.armor !== undefined
       ? {
           armor: input.snapshot.armor,

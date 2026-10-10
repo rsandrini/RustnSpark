@@ -180,9 +180,9 @@ describe('part upgrade API (round 5)', () => {
   it('charges a higher markup for a rarer part (owner request, round 7: cost should grow with rarity)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    const shieldPartId = await addLoosePart(player.seeded.player.id, 'shield_basic');
+    const shieldPartId = await addLoosePart(player.seeded.player.id, 'shield_basic_uncommon');
     const [shieldBasic, shieldRare] = await Promise.all([
-      prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'shield_basic' } }),
+      prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'shield_basic_uncommon' } }),
       prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'shield_basic_rare' } }),
     ]);
     expect(shieldBasic.rarity).toBe('UNCOMMON');
@@ -230,7 +230,7 @@ describe('part upgrade API (round 5)', () => {
     // Every seeded family is chained now, so take the laser's next tier out of the catalog: the
     // upgrade then has nowhere to go (an inactive tier counts as not existing).
     await prisma.partCatalog.update({ where: { partType: 'weapon_laser_rare' }, data: { active: false } });
-    const partId = await addLoosePart(player.seeded.player.id, 'weapon_laser');
+    const partId = await addLoosePart(player.seeded.player.id, 'weapon_laser_uncommon');
 
     const response = await quoteUpgrade(player.token, partId);
     expect(response.status).toBe(200);

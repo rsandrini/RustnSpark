@@ -879,7 +879,8 @@ describe('market API (S8.2)', () => {
     expect(commonShelf.common).toBeGreaterThan(0);
     // about 80% common with the shipped catalog: far from the old "every uncommon on sale"
     expect(commonShelf.common / commonShelf.all).toBeGreaterThan(0.6);
-    expect(commonShelf.rare).toBeLessThanOrEqual(3);
+    // a few rare parts slip in (4.5% each of ~45 rare rows); the count grows with the catalog
+    expect(commonShelf.rare).toBeLessThanOrEqual(6);
     expect(await count('LEGENDARY')).toBe(0);
 
     await prisma.partCatalog.update({

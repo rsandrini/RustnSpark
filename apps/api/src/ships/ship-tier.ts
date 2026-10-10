@@ -6,7 +6,7 @@ export type ShipTier = 1 | 2 | 3 | 4 | 5;
 export type PricedPart = { basePrice: number };
 
 export function shipTier(parts: readonly PricedPart[], rules: GameRules): ShipTier {
-  const thresholds = rules.economy.upgrade_costs;
+  const thresholds = rules.economy.ship_tier_thresholds;
   const totalValue = parts.reduce((sum, part) => sum + part.basePrice, 0);
 
   let tier: ShipTier = 1;

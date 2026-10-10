@@ -8,7 +8,7 @@ import type { RaceCompetitor } from '../resolution/race/race.resolver.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
-import { combatEnergyDraw } from '../ships/combat-energy.js';
+import { combatEnergyDraw, pierceShare } from '../ships/combat-energy.js';
 import { isEnergyMode } from '../ships/energy-mode.types.js';
 import { powerPartOf } from '../resolution/power/power.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -55,7 +55,9 @@ export interface ResolutionContext {
 export function parseCompetitors(cargo: Record<string, unknown>): RaceCompetitor[] {
   const race = cargo['race'];
   const raw =
-    typeof race === 'object' && race !== null ? (race as { competitors?: unknown }).competitors : [];
+    typeof race === 'object' && race !== null
+      ? (race as { competitors?: unknown }).competitors
+      : [];
   if (!Array.isArray(raw)) return [];
   return raw.filter(
     (rival): rival is RaceCompetitor =>
@@ -152,10 +154,7 @@ const RELATIONS: Record<string, FactionRelation> = {
 const FULL_CONDITION = 100;
 
 /** Starting shield, armor and hull of a ship at its parts' current condition, and the shield's recovery. */
-function layeredPools(
-  snapshot: DispatchSnapshot,
-  rules: GameRules,
-): LayeredPools {
+function layeredPools(snapshot: DispatchSnapshot, rules: GameRules): LayeredPools {
   return startingPools(snapshot.parts, rules);
 }
 
@@ -171,7 +170,10 @@ export interface LayeredPools {
 
 /** The pools a ship starts a fight with, from parts as they are now (worn parts give less). */
 export function startingPools(
-  parts: ReadonlyArray<{ condition: number; catalog: DispatchSnapshot['parts'][number]['catalog'] }>,
+  parts: ReadonlyArray<{
+    condition: number;
+    catalog: DispatchSnapshot['parts'][number]['catalog'];
+  }>,
   rules: GameRules,
 ): LayeredPools {
   const share = (part: { condition: number }): number =>
@@ -250,6 +252,7 @@ export function buildResolveInput(args: {
     energyMode,
     weaponEnergyDraw,
     shieldEnergyDraw,
+    ...(pierceShare(installed) > 0 ? { pierceShare: pierceShare(installed) } : {}),
     ...(pools !== null
       ? {
           armor: pools.armor,
@@ -306,9 +309,7 @@ export function buildResolveInput(args: {
       : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
-    ...(context.race && context.race.competitors.length > 0
-      ? { race: context.race }
-      : {}),
+    ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
 }

@@ -206,7 +206,8 @@ export function resolveCombat(
         if (isA) {
           shieldAbsorbed = Math.min(escB, damage);
           escB -= shieldAbsorbed;
-          armorReduced = armorReduction(armB, damage - shieldAbsorbed, rules);
+          armorReduced =
+            armorReduction(armB, damage - shieldAbsorbed, rules) * (1 - (atk.pierceShare ?? 0));
           const soaked = Math.min(armB, damage - shieldAbsorbed - armorReduced);
           armB -= soaked;
           armorAbsorbed = armorReduced + soaked;
@@ -214,7 +215,8 @@ export function resolveCombat(
         } else {
           shieldAbsorbed = Math.min(escA, damage);
           escA -= shieldAbsorbed;
-          armorReduced = armorReduction(armA, damage - shieldAbsorbed, rules);
+          armorReduced =
+            armorReduction(armA, damage - shieldAbsorbed, rules) * (1 - (atk.pierceShare ?? 0));
           const soaked = Math.min(armA, damage - shieldAbsorbed - armorReduced);
           armA -= soaked;
           armorAbsorbed = armorReduced + soaked;
@@ -234,8 +236,7 @@ export function resolveCombat(
         if (isA) {
           const canAbsorb =
             escB > 0 &&
-            (dfdEnergy === null ||
-              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+            (dfdEnergy === null || payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
           if (canAbsorb) {
             shieldAbsorbed = Math.min(escB, damage);
             escB -= shieldAbsorbed;
@@ -244,8 +245,7 @@ export function resolveCombat(
         } else {
           const canAbsorb =
             escA > 0 &&
-            (dfdEnergy === null ||
-              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+            (dfdEnergy === null || payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
           if (canAbsorb) {
             shieldAbsorbed = Math.min(escA, damage);
             escA -= shieldAbsorbed;
@@ -307,11 +307,7 @@ export function resolveCombat(
  * Returns true when the shield is allowed to absorb (either paid or already
  * paid), false when energy is insufficient.
  */
-function payShieldEnergy(
-  energy: EnergyState,
-  draw: number,
-  incomingDamage: number,
-): boolean {
+function payShieldEnergy(energy: EnergyState, draw: number, incomingDamage: number): boolean {
   if (incomingDamage <= 0) {
     return true;
   }

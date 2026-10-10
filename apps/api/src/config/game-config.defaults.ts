@@ -14,8 +14,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     pierce_min_pdf: 8,
     shield_regen: 2,
     // Armor is a pool too: each armor point is worth this much absorbed damage per fight.
-    armor_pool_factor: 5,
-    armor_reduction: 0.25,
+    armor_pool_factor: 8,
+    armor_reduction: 0.5,
     armor_reduction_max_share: 0.7,
     kite_factor: 0.2,
     first_strike_bonus: 2,
@@ -25,7 +25,6 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   ship: {
     mob_factor: 1.6,
     stat_display_scale: 10,
-    cruise_deficit_floor: 0.25,
     fuel_mass_per_unit: 0,
   },
   wear: {
@@ -35,7 +34,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     dead_at_or_below: 1,
     base_min: 3,
     base_max: 5,
-    env_multiplier: 1.2,
+    env_multiplier: 1,
     choke_loss_min: 3,
     choke_loss_max: 8,
     defeat_loss_min: 8,
@@ -43,10 +42,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     overload_min: 8,
     overload_max: 15,
     scale_mode: 'all_stats',
-    danger_ref: 6,
-    danger_floor: 0.1,
-    danger_cap: 2.5,
-    system_base_min: 0.05,
+    danger_ref: 5,
+    danger_floor: 0.05,
+    danger_cap: 2,
+    system_base_min: 0.02,
     system_base_max: 0.15,
     system_defeat_share: 0.25,
     // Round-4 wear rework: starting values, tuned against the Layer-4 sim like the reward-scaling
@@ -65,9 +64,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     hull_to_condition: 0.5,
   },
   economy: {
-    fuel_price: 1.5,
+    fuel_price: 1.1,
     repair_price: 3,
-    repair_price_ref: 4,
+    repair_price_ref: 3,
     repair_factor: 0.8,
     maintenance_per_tier: 100,
     reward_base: 200,
@@ -78,11 +77,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_danger_divisor: 8,
     reward_distance_ref: 800,
     reward_distance_divisor: 1500,
-    reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
-    combat_win_base: 100,
+    reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
+    combat_win_base: 150,
     combat_win_per_tier: 50,
     combat_loss_penalty: 120,
-    upgrade_costs: { 2: 1200, 3: 2000, 4: 2800, 5: 3800 },
+    ship_tier_thresholds: { 2: 1200, 3: 3500, 4: 8000, 5: 18000 },
     // Round-5 upgrade mechanic: upgrading a part in place costs the price gap to its next
     // rarity tier, marked up a bit over just selling it and buying the next one (the premium
     // for staying installed and not having to re-slot it). Round-7 owner request: the markup
@@ -110,11 +109,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     sell_ratio: 0.6,
     isolation_mult: { 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 },
     faction_mult: { ally: 0.8, neutral: 1.0, hostile: 2.5 },
-    mood_min: 0.85,
-    mood_max: 1.15,
-    rarity_base_price: { common: 100, uncommon: 300, rare: 800, epic: 2000, legendary: 5000 },
-    payout_floor_integrity: 0.5,
-    repair_seconds_per_point: { hub: 3, outpost: 8 },
+    payout_floor_integrity: 0.4,
+    repair_seconds_per_point: { hub: 2, outpost: 6 },
     // Round-5 backlog: "almost nothing rare, epic really 1%, legendary no way" — the daily
     // chance a given new-parts catalog listing is actually on a port's shelf, by rarity. High
     // tiers are meant to come from drops or the upgrade mechanic, not a direct buy.
@@ -175,13 +171,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     weapon_skip_ratio: 0.5,
   },
   integrity: {
-    combat_factor: 0.6,
-    env_factor: 0.4,
+    combat_factor: 0.5,
+    env_factor: 0.2,
   },
   mining: {
     richness: { open: 0.2, radiation: 0.35, gravitational: 0.3, debris: 0.6 },
     rarity: { common: 0.3, uncommon: 0.6, rare: 0.85 },
-    material_price: { common: 20, uncommon: 60, rare: 200 },
     attempts_per_stop: 10,
     job_duration_seconds: 300,
   },
@@ -233,12 +228,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   ship_class: {
     cargo_share: 0.3,
-    pressurized_share: 0.15,
+    pressurized_share: 0.2,
     combat_share: 0.45,
   },
   missions: {
     hold_max: 1,
-    active_max: 1,
     duration_k: 2.25,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
@@ -257,7 +251,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     chance: { common: 0.12, mission: 0.27, pirate: 0.37 },
     quality_min: 15,
     quality_max: 40,
-    cooldown_seconds: 300,
+    cooldown_seconds: 600,
     // With the ship (it searches in place, pirates can find it) takes longer than on foot.
     duration_seconds: 600,
     foot_duration_seconds: 300,
@@ -277,12 +271,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     foot_factor: 0.5,
   },
   parts: {
-    starter_condition: 80,
-    // 15, not 30: worst-case kit sell value (isolation × hostile × mood_max at
-    // restart_condition_max) must stay strictly below the CHEAPEST rescue (rescue_cost ×
-    // rescue_wait_fraction = 400¢) — with the seeded catalog prices it is 353¢ at 15, 706¢ at 30
-    // and 1175¢ at 50 (that printed credits on a hostile port, S8.6 review). Both numbers move
-    // with the parts catalog's basePrice — see worstCaseRestartKitValue.
+    starter_condition: 85,
+    // The kit's sell value (base × 0.6 × this condition, a sale never pays above the base) must stay
+    // strictly below the CHEAPEST rescue (rescue_cost × rescue_wait_fraction = 400¢): about 62¢ at
+    // 15 with the seeded catalog and 370¢ at 100 — see worstCaseRestartKitValue.
     restart_condition_max: 15,
   },
   onboarding: {

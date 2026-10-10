@@ -31,7 +31,7 @@ export function worstCaseRestartKitValue(
           basePrice: basePriceOf(partType),
           isolation,
           factionRelation,
-          mood: economy.mood_max,
+          mood: 1,
           condition,
         },
         rules,

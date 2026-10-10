@@ -337,7 +337,10 @@ const PART_FIELDS: EntitySchemaField[] = [
     name: 'specialProp',
     type: 'json',
     required: false,
-    description: localeMap('Special properties', 'Propriedades especiais'),
+    description: localeMap(
+      'Special properties: pressurized, lifeSupport, shieldRegen, idlePower, armorPiercing (a weapon whose hits skip the armor cut)',
+      'Propriedades especiais: pressurized, lifeSupport, shieldRegen, idlePower, armorPiercing (arma cujos tiros ignoram o corte da armadura)',
+    ),
   },
   {
     name: 'connectorRules',

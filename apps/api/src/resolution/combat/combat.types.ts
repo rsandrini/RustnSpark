@@ -25,6 +25,8 @@ export interface CombatSheet {
   readonly weaponEnergyDraw?: number;
   /** Combat energy drawn by shields each round they absorb damage. */
   readonly shieldEnergyDraw?: number;
+  /** Share (0–1) of this side's firepower that ignores the armor's flat cut (lasers). */
+  readonly pierceShare?: number;
   /**
    * Layered damage model. When `armor` is present the ship is hit in layers: a hit drains the
    * shield pool first, what is left drains the armor pool, and only what armor cannot take reaches

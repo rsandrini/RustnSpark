@@ -10,6 +10,7 @@ import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
@@ -30,8 +31,10 @@ interface AuthPair {
 }
 
 // S8.4 acceptance (plan line 477): cost charged up-front atomically; duration = points ×
-// hub/outpost k (zone ≤ 1 → 3 s/point); parts change condition only on completion; ship
+// hub/outpost k (zone ≤ 1 → the hub k, 2 s/point by default); parts change condition only on completion; ship
 // cannot dispatch while repairing; job idempotent; sold-during-repair cannot wedge complete().
+const HUB_K = GAME_CONFIG_DEFAULTS.economy.repair_seconds_per_point['hub'] ?? 3;
+
 describe('repair job API (S8.4)', () => {
   let testApp: TestApp;
   let prisma: PrismaService;
@@ -191,8 +194,8 @@ describe('repair job API (S8.4)', () => {
       targets: Array<{ fromCondition: number; toCondition: number }>;
     };
     expect(body.cost).toBeGreaterThanOrEqual(1);
-    // ceres is zone ≤ 1 → hub = 3 s/point; 50 points repaired.
-    expect(body.durationSeconds).toBe(50 * 3);
+    // ceres is zone ≤ 1 → hub k s/point; 50 points repaired.
+    expect(body.durationSeconds).toBe(50 * HUB_K);
     expect(body.targets).toEqual([
       { partInstanceId: part.id, fromCondition: 50, toCondition: 100 },
     ]);
@@ -372,7 +375,7 @@ describe('repair job API (S8.4)', () => {
       ]);
       expect(started.status).toBe(200);
       const body = started.body as { repairJobId: string; durationSeconds: number };
-      // Hub k = 3 s/point × 99 points is well over 5 seconds; the figure charged and shown is real.
+      // Hub k × 99 points is well over 5 seconds; the figure charged and shown is real.
       expect(body.durationSeconds).toBeGreaterThan(5);
 
       const job = await repairQueue.getJob(body.repairJobId);
@@ -405,10 +408,10 @@ describe('repair job API (S8.4)', () => {
       fee: number;
       items: Array<{ partInstanceId: string; cost: number; durationSeconds: number }>;
     };
-    expect(quote.durationSeconds).toBe(50 * 3);
+    expect(quote.durationSeconds).toBe(50 * HUB_K);
     // The per-part lines plus the workshop fee are exactly the total that start() charges.
     expect(quote.items).toHaveLength(1);
-    expect(quote.items[0]).toMatchObject({ partInstanceId: part.id, durationSeconds: 50 * 3 });
+    expect(quote.items[0]).toMatchObject({ partInstanceId: part.id, durationSeconds: 50 * HUB_K });
     expect(quote.items.reduce((sum, item) => sum + item.cost, 0) + quote.fee).toBe(quote.cost);
     expect(await prisma.repairJob.count({ where: { shipId: player.shipId } })).toBe(0);
     const unchanged = await prisma.player.findUniqueOrThrow({

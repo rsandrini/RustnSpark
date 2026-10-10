@@ -28,7 +28,6 @@ const combatSchema = z.object({
 const shipSchema = z.object({
   mob_factor: z.number().min(0.1).max(5.0),
   stat_display_scale: z.number().min(1).max(100),
-  cruise_deficit_floor: z.number().min(0).max(1),
   fuel_mass_per_unit: z.number().min(0).max(1),
 });
 
@@ -79,7 +78,7 @@ const economySchema = z.object({
   combat_win_base: z.number().int().min(0).max(1000),
   combat_win_per_tier: z.number().int().min(0).max(500),
   combat_loss_penalty: z.number().int().min(0).max(1000),
-  upgrade_costs: z.record(z.string(), z.number().min(0).max(100000)),
+  ship_tier_thresholds: z.record(z.string(), z.number().min(0).max(100000)),
   part_upgrade_price_multiplier: z.record(z.string(), z.number().min(1).max(5)),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
@@ -92,9 +91,6 @@ const economySchema = z.object({
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),
-  mood_min: z.number().min(0).max(2),
-  mood_max: z.number().min(0).max(2),
-  rarity_base_price: z.record(z.string(), z.number().min(0).max(50000)),
   market_rarity_chance: z.record(z.string(), z.number().min(0).max(1)),
   market_rarity_by_bridge: z.record(z.string(), z.record(z.string(), z.number().min(0).max(1))),
   payout_floor_integrity: z.number().min(0).max(1),
@@ -142,7 +138,6 @@ const integritySchema = z.object({
 const miningSchema = z.object({
   richness: z.record(z.string(), z.number().min(0).max(1)),
   rarity: z.record(z.string(), z.number().min(0).max(1)),
-  material_price: z.record(z.string(), z.number().min(0).max(10000)),
   attempts_per_stop: z.number().int().min(1).max(100),
   job_duration_seconds: z.number().int().min(1).max(86400),
 });
@@ -209,7 +204,6 @@ const shipClassSchema = z.object({
 
 const missionsSchema = z.object({
   hold_max: z.number().int().min(0).max(10),
-  active_max: z.number().int().min(0).max(10),
   duration_k: z.number().min(0.1).max(10),
   duration_class_cutoffs: z.record(z.string(), z.number().min(60).max(86400)),
   time_scale: z.number().min(0.001).max(100),

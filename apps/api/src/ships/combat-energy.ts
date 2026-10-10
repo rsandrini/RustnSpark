@@ -29,3 +29,18 @@ export function combatEnergyDraw(parts: InstalledPart[]): CombatEnergyDraw {
   }
   return { weaponEnergyDraw, shieldEnergyDraw };
 }
+
+/**
+ * The share (0–1) of a ship's firepower that comes from armor-piercing weapons (lasers): those
+ * hits skip the armor's flat cut. Weighted by each weapon's `pdf`; 0 for a ship with none.
+ */
+export function pierceShare(parts: InstalledPart[]): number {
+  let total = 0;
+  let piercing = 0;
+  for (const part of parts) {
+    if (part.catalog.partClass !== 'WEAPON' || part.catalog.pdf <= 0) continue;
+    total += part.catalog.pdf;
+    if (part.catalog.armorPiercing === true) piercing += part.catalog.pdf;
+  }
+  return total > 0 ? piercing / total : 0;
+}

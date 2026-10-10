@@ -86,8 +86,6 @@ describe('S8.1 — part value and prices', () => {
 
   it('pins the isolation and faction maps from the economy doc', () => {
     expect(rules.economy.isolation_mult).toEqual({ 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 });
-    expect(rules.economy.mood_min).toBe(0.85);
-    expect(rules.economy.mood_max).toBe(1.15);
   });
 });
 

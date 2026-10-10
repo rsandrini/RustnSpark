@@ -226,8 +226,13 @@ function stableHash(input: string): number {
   return Math.abs(hash) / 0x7fffffff;
 }
 
+// A place's market mood is fixed when the world is seeded (Admin edits the Location row after that).
+const MOOD_MIN = 0.85;
+const MOOD_MAX = 1.15;
+
 function computeMood(locationId: string, seed: string): number {
-  const { mood_min: min, mood_max: max } = GAME_CONFIG_DEFAULTS.economy;
+  const min = MOOD_MIN;
+  const max = MOOD_MAX;
   const t = stableHash(`${seed}:${locationId}`);
   return min + t * (max - min);
 }

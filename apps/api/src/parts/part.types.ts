@@ -28,6 +28,8 @@ export interface PartCatalog {
   shieldRegen?: number;
   /** Weapon/shield/mining rig: power it keeps drawing while idle (0/absent = the default). */
   idlePower?: number;
+  /** Weapon whose hits ignore the armor's flat cut (shield and armor pool still count). */
+  armorPiercing?: boolean;
 }
 
 export interface PartInstance {

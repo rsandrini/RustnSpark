@@ -1,6 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
 import { PARTS } from './parts.js';
-import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 
 const MATERIALS = [
   {
@@ -36,15 +35,11 @@ const MATERIALS = [
 ];
 
 export async function seedMaterials(prisma: PrismaClient): Promise<void> {
-  const prices = GAME_CONFIG_DEFAULTS.mining.material_price as Record<string, number>;
   for (const material of MATERIALS) {
     const existing = await prisma.material.findUnique({ where: { id: material.id } });
     if (existing === null) {
       await prisma.material.create({
-        data: {
-          ...material,
-          basePrice: prices[material.rarity.toLowerCase()] ?? material.basePrice,
-        },
+        data: material,
       });
     }
   }
@@ -53,27 +48,28 @@ export async function seedMaterials(prisma: PrismaClient): Promise<void> {
 // Scrap: one material per part type, worth the part's catalog scrap value at every port (fixed
 // price). Scavenging in scrap places turns it up; it sells through the ordinary materials sale.
 export async function seedScrapMaterials(prisma: PrismaClient): Promise<void> {
-  for (const part of PARTS) {
+  const existing = new Set(
+    (await prisma.material.findMany({ select: { id: true } })).map((m) => m.id),
+  );
+  const missing = PARTS
     // A bridge is never scavenged (and is worth nothing): only parts with a scrap value leave scrap.
-    if (part.partClass === 'BRIDGE' || part.scrapValue <= 0) continue;
-    const id = `scrap_${part.partType}`;
-    const existing = await prisma.material.findUnique({ where: { id } });
-    if (existing !== null) continue;
-    await prisma.material.create({
-      data: {
-        id,
-        displayName: {
-          en: `Scrap: ${part.displayName.en}`,
-          'pt-BR': `Sucata: ${part.displayName['pt-BR']}`,
-        },
-        description: {
-          en: `Worn-out remains of a ${part.displayName.en}. Sells for a fixed price at any port.`,
-          'pt-BR': `Restos gastos de ${part.displayName['pt-BR']}. Vende por preço fixo em qualquer porto.`,
-        },
-        rarity: part.rarity,
-        basePrice: part.scrapValue,
-        fixedPrice: true,
+    .filter((part) => part.partClass !== 'BRIDGE' && part.scrapValue > 0)
+    .filter((part) => !existing.has(`scrap_${part.partType}`));
+  if (missing.length === 0) return;
+  await prisma.material.createMany({
+    data: missing.map((part) => ({
+      id: `scrap_${part.partType}`,
+      displayName: {
+        en: `Scrap: ${part.displayName.en}`,
+        'pt-BR': `Sucata: ${part.displayName['pt-BR']}`,
       },
-    });
-  }
+      description: {
+        en: `Worn-out remains of a ${part.displayName.en}. Sells for a fixed price at any port.`,
+        'pt-BR': `Restos gastos de ${part.displayName['pt-BR']}. Vende por preço fixo em qualquer porto.`,
+      },
+      rarity: part.rarity,
+      basePrice: part.scrapValue,
+      fixedPrice: true,
+    })),
+  });
 }

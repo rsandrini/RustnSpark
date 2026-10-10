@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { seedShipFormats } from '../../prisma/seed-data/ship-formats.js';
 
 // Points integration/e2e tests at the compose `test` profile's tmpfs Postgres (S1.4): run
 // `docker compose --profile test up -d --wait postgres-test` before using this helper.
@@ -71,6 +70,21 @@ export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   if (tables.length === 0) return;
   const qualifiedNames = tables.map((table) => `"public"."${table.tablename}"`).join(', ');
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${qualifiedNames} RESTART IDENTITY CASCADE`);
-  // Reference data that ships (and their layout validation) depend on must survive resets.
-  await seedShipFormats(prisma);
+  // Reference data that ships (and their layout validation) depend on must survive resets: the test
+  // world has one yard, the roomy 20×20 square, so layouts in any spec fit. (The shipped formats the
+  // Admin designed are seeded by the product seed and checked by the seed spec.)
+  const cells: [number, number][] = [];
+  for (let y = -10; y < 10; y += 1) {
+    for (let x = -10; x < 10; x += 1) cells.push([x, y]);
+  }
+  await prisma.shipFormat.create({
+    data: {
+      id: 'classic_square',
+      displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
+      description: { en: 'Test yard', 'pt-BR': 'Pátio de teste' },
+      cells,
+      minRarity: 'COMMON',
+      active: true,
+    },
+  });
 }

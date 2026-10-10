@@ -51,10 +51,7 @@ export type ConfigKey =
   | 'economy.fuel_price'
   | 'economy.isolation_mult'
   | 'economy.maintenance_per_tier'
-  | 'economy.mood_max'
-  | 'economy.mood_min'
   | 'economy.payout_floor_integrity'
-  | 'economy.rarity_base_price'
   | 'economy.market_rarity_chance'
   | 'economy.market_rarity_by_bridge'
   | 'economy.repair_factor'
@@ -76,7 +73,7 @@ export type ConfigKey =
   | 'economy.sell_min_condition'
   | 'economy.sell_ratio'
   | 'economy.start_credits'
-  | 'economy.upgrade_costs'
+  | 'economy.ship_tier_thresholds'
   | 'economy.part_upgrade_price_multiplier'
   | 'engine.chem_level_max'
   | 'engine.chem_level_min'
@@ -111,10 +108,8 @@ export type ConfigKey =
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
   | 'mining.job_duration_seconds'
-  | 'mining.material_price'
   | 'mining.rarity'
   | 'mining.richness'
-  | 'missions.active_max'
   | 'missions.board_min_per_location'
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_zone'
@@ -167,7 +162,6 @@ export type ConfigKey =
   | 'ship.fuel_mass_per_unit'
   | 'ship.mob_factor'
   | 'ship.stat_display_scale'
-  | 'ship.cruise_deficit_floor'
   | 'stance.neutral_attack_ratio'
   | 'stance.rating_armor_weight'
   | 'wear.base_max'
@@ -243,7 +237,6 @@ export type GameRules = Readonly<{
   ship: Readonly<{
     mob_factor: number;
     stat_display_scale: number;
-    cruise_deficit_floor: number;
     fuel_mass_per_unit: number;
   }>;
   wear: Readonly<{
@@ -298,7 +291,7 @@ export type GameRules = Readonly<{
     combat_win_base: number;
     combat_win_per_tier: number;
     combat_loss_penalty: number;
-    upgrade_costs: Readonly<Record<string, number>>;
+    ship_tier_thresholds: Readonly<Record<string, number>>;
     /** Multiplier on the base-price gap to the next rarity tier, keyed by the part's current
         rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
     part_upgrade_price_multiplier: Readonly<Record<string, number>>;
@@ -320,9 +313,6 @@ export type GameRules = Readonly<{
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;
-    mood_min: number;
-    mood_max: number;
-    rarity_base_price: Readonly<Record<string, number>>;
     /** Daily chance (0-1) a catalog listing of this rarity is actually in a port's new-parts shelf. */
     market_rarity_chance: Readonly<Record<string, number>>;
     /** The same chance by the rarity of the pilot's bridge (what the player's shelf is built from). */
@@ -397,7 +387,6 @@ export type GameRules = Readonly<{
   mining: Readonly<{
     richness: Readonly<Record<string, number>>;
     rarity: Readonly<Record<string, number>>;
-    material_price: Readonly<Record<string, number>>;
     attempts_per_stop: number;
     /** An independent mining job at a minable location (round 10): like a scavenging job,
         fixed duration scaled by `missions.time_scale`, same place in and out. */
@@ -460,7 +449,6 @@ export type GameRules = Readonly<{
   }>;
   missions: Readonly<{
     hold_max: number;
-    active_max: number;
     duration_k: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;

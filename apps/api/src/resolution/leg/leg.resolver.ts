@@ -48,12 +48,7 @@ import {
 import { rollChokes, type FailureEvent } from '../wear/failure.resolver.js';
 import { allocatePower, successChance, type PowerPart } from '../power/power.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
-import {
-  applyHit,
-  environmentDamage,
-  settleLosses,
-  type DamageLayers,
-} from '../damage/layers.js';
+import { applyHit, environmentDamage, settleLosses, type DamageLayers } from '../damage/layers.js';
 
 export type LegStatus =
   'completed' | 'motor_abort' | 'adrift' | 'escort_destroyed' | 'defeat_failed';
@@ -124,6 +119,8 @@ export interface LegShipState {
   readonly energyMode?: 'BATTERY' | 'FULL' | 'OVERRIDE';
   readonly weaponEnergyDraw: number;
   readonly shieldEnergyDraw: number;
+  /** Share of the firepower that is armor-piercing: those hits skip the armor's flat cut. */
+  readonly pierceShare?: number;
   /**
    * Layered damage model (absent = legacy per-part wear and flat armor). `hp`/`esc` above are the
    * hull and shield pools; these complete the picture: the armor pool, the sizes the pools
@@ -274,6 +271,7 @@ function combatSheetFor(ship: LegShipState, flags: LegChokeFlags, rules: GameRul
     energyCont: ship.sheet.energyCont,
     weaponEnergyDraw: ship.weaponEnergyDraw,
     shieldEnergyDraw: ship.shieldEnergyDraw,
+    ...(ship.pierceShare !== undefined ? { pierceShare: ship.pierceShare } : {}),
   };
 }
 
@@ -454,7 +452,11 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       parts = parts.map((part) => {
         if (isDead(part.condition, rules)) return part;
         const loss =
-          part.engineGroup === group ? wear : group === 'ion' && part.partClass === 'BATTERY' ? batteryWear : 0;
+          part.engineGroup === group
+            ? wear
+            : group === 'ion' && part.partClass === 'BATTERY'
+              ? batteryWear
+              : 0;
         if (loss <= 0) return part;
         const after = applyWear(part.condition, loss);
         worn[part.id] = after;
@@ -483,7 +485,8 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
         (part) => part.engineGroup === group && !isDead(part.condition, rules),
       );
       if (standing.length === 0) continue;
-      const victim = standing[Math.min(standing.length - 1, Math.floor(groupRng.float() * standing.length))]!;
+      const victim =
+        standing[Math.min(standing.length - 1, Math.floor(groupRng.float() * standing.length))]!;
       pushFailures += 1;
       const after = applyWear(victim.condition, rules.engine.mishap_wear * pushFailures);
       parts = parts.map((part) => (part.id === victim.id ? { ...part, condition: after } : part));

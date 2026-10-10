@@ -221,18 +221,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'ship.cruise_deficit_floor',
-    group: 'ship',
-    type: 'number',
-    min: 0,
-    max: 1,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship.cruise_deficit_floor),
-    description: {
-      en: 'A ship that uses more cruising power than it generates still flies: its engines keep generated/used of their thrust, but never less than this share.',
-      'pt-BR': 'Uma nave que gasta mais energia de cruzeiro do que gera ainda voa: os motores mantêm gerada/usada do empuxo, mas nunca menos que esta fração.',
-    },
-  },
-  {
     key: 'ship.fuel_mass_per_unit',
     group: 'ship',
     type: 'number',
@@ -722,15 +710,16 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'economy.upgrade_costs',
+    key: 'economy.ship_tier_thresholds',
     group: 'economy',
     type: 'json',
     min: 0,
     max: 100000,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.upgrade_costs),
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.ship_tier_thresholds),
     description: {
-      en: 'Tier upgrade cost thresholds.',
-      'pt-BR': 'Limites de custo de upgrade por tier.',
+      en: 'Ship tier thresholds: the total base price of the installed parts at which the ship reaches tier 2, 3, 4 and 5 (tier sets the mission pay).',
+      'pt-BR':
+        'Limites de tier da nave: o preço base total das peças instaladas em que a nave chega ao tier 2, 3, 4 e 5 (o tier define o pagamento das missões).',
     },
   },
   {
@@ -876,30 +865,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'economy.mood_min',
-    group: 'economy',
-    type: 'number',
-    min: 0,
-    max: 2,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.mood_min),
-    description: {
-      en: 'Lower bound of market mood fluctuation.',
-      'pt-BR': 'Limite inferior da flutuação de humor do mercado.',
-    },
-  },
-  {
-    key: 'economy.mood_max',
-    group: 'economy',
-    type: 'number',
-    min: 0,
-    max: 2,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.mood_max),
-    description: {
-      en: 'Upper bound of market mood fluctuation.',
-      'pt-BR': 'Limite superior da flutuação de humor do mercado.',
-    },
-  },
-  {
     key: 'economy.part_upgrade_price_multiplier',
     group: 'economy',
     type: 'json',
@@ -910,18 +875,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: 'Multiplier on the price gap to a part’s next rarity tier, charged to upgrade it in place — by the part’s current rarity.',
       'pt-BR':
         'Multiplicador sobre a diferença de preço para o próximo tier de raridade da peça, cobrado para melhorá-la no lugar — por raridade atual da peça.',
-    },
-  },
-  {
-    key: 'economy.rarity_base_price',
-    group: 'economy',
-    type: 'json',
-    min: 0,
-    max: 50000,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rarity_base_price),
-    description: {
-      en: 'Base price per item rarity.',
-      'pt-BR': 'Preço base por raridade de item.',
     },
   },
   {
@@ -1397,18 +1350,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'mining.material_price',
-    group: 'mining',
-    type: 'json',
-    min: 0,
-    max: 10000,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.material_price),
-    description: {
-      en: 'Base sell price per material rarity.',
-      'pt-BR': 'Preço base de venda por raridade de material.',
-    },
-  },
-  {
     key: 'mining.attempts_per_stop',
     group: 'mining',
     type: 'integer',
@@ -1767,18 +1708,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Maximum number of missions a player can place on hold.',
       'pt-BR': 'Número máximo de missões que um jogador pode deixar em espera.',
-    },
-  },
-  {
-    key: 'missions.active_max',
-    group: 'missions',
-    type: 'integer',
-    min: 0,
-    max: 10,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.active_max),
-    description: {
-      en: 'Maximum number of active missions per player.',
-      'pt-BR': 'Número máximo de missões ativas por jogador.',
     },
   },
   {

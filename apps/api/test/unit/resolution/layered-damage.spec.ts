@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { createRng } from '../../../src/common/rng/rng.js';
-import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import { APPENDIX_E_RULES as GAME_CONFIG_DEFAULTS } from '../../fixtures/appendix-e-rules.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   resolveMission,
@@ -95,6 +95,37 @@ describe('armor cuts a hit by a flat amount, then its pool soaks the rest', () =
     // the first hit meets fresh armor, so it is cut; later ones are cut less as the pool runs down
     expect(hits[0]!.armorReduced ?? 0).toBeGreaterThan(0);
     expect(hits[0]!.armorAbsorbed).toBeGreaterThanOrEqual(hits[0]!.armorReduced ?? 0);
+  });
+});
+
+describe('armor-piercing weapons (lasers) skip the armor cut', () => {
+  const plated: CombatSheet = {
+    pdf: 0,
+    bli: 8,
+    esc: 0,
+    sen: 1,
+    hp: 80,
+    mob: 2,
+    armor: 8 * rules.combat.armor_pool_factor,
+  };
+  const firstHit = (attacker: CombatSheet) => {
+    for (let i = 0; i < 60; i += 1) {
+      const out = resolveCombat(attacker, plated, rules.combat, createRng(`pierce-${i}`));
+      const hit = out.rounds.find((round) => round.attacker === 'A' && round.hit);
+      if (hit !== undefined) return hit;
+    }
+    throw new Error('no hit in 60 fights');
+  };
+
+  it('a fully piercing attacker is never cut, a half piercing one is cut half as much', () => {
+    const base: CombatSheet = { pdf: 6, bli: 0, esc: 0, sen: 1, hp: 80, mob: 2 };
+    const normal = firstHit(base);
+    const piercing = firstHit({ ...base, pierceShare: 1 });
+    const half = firstHit({ ...base, pierceShare: 0.5 });
+    expect(normal.armorReduced ?? 0).toBeGreaterThan(0);
+    expect(piercing.armorReduced ?? 0).toBe(0);
+    expect(half.armorReduced ?? 0).toBeGreaterThan(0);
+    expect(half.armorReduced ?? 0).toBeLessThan(normal.armorReduced ?? 0);
   });
 });
 

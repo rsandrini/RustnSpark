@@ -215,27 +215,27 @@ describe('config tuning (S3.7)', () => {
     const before = gameConfigService.snapshot();
 
     // A sale ignores isolation and faction (it never pays above the base), so the worst-case kit is
-    // the starter parts' base prices × 0.6 × condition (1¢ floor each): about 62¢ at the default
-    // 15% with the seeded catalog. The cheapest rescue is half of rescue_cost, so 100¢ (cheapest
-    // 50¢) is the violation.
+    // the starter parts' base prices × 0.6 × condition (1¢ floor each): 44¢ at the default 15% with
+    // the seeded catalog. The cheapest rescue is half of rescue_cost, so 80¢ (cheapest 40¢) is the
+    // violation.
     const rescue = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 100, expectedRevision, reason: 'cheaper rescue' });
+      .send({ value: 80, expectedRevision, reason: 'cheaper rescue' });
     expect(rescue.status).toBe(400);
     expect(rescue.body).toMatchObject({
       error: 'VALIDATION_ERROR',
       issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
     });
 
-    // 140¢ (cheapest 70¢) still covers that kit, so the same key accepts it.
+    // 100¢ (cheapest 50¢) still covers that kit, so the same key accepts it.
     const allowed = await request(server)
       .patch('/v1/admin/tuning/config/economy.rescue_cost')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 140, expectedRevision, reason: 'slightly cheaper rescue' });
+      .send({ value: 100, expectedRevision, reason: 'slightly cheaper rescue' });
     expect(allowed.status).toBe(200);
 
-    // At condition 60 the kit sells for about 250¢, which now reaches that cheapest rescue.
+    // At condition 60 the kit sells for about 174¢, which now reaches that cheapest rescue.
     const condition = await request(server)
       .patch('/v1/admin/tuning/config/parts.restart_condition_max')
       .set('Authorization', `Bearer ${token}`)
@@ -250,7 +250,7 @@ describe('config tuning (S3.7)', () => {
 
     const after = gameConfigService.snapshot();
     expect(after.rules.parts.restart_condition_max).toBe(before.rules.parts.restart_condition_max);
-    expect(after.rules.economy.rescue_cost).toBe(140);
+    expect(after.rules.economy.rescue_cost).toBe(100);
     const conditionRevisions = await prisma.tuningRevision.findMany({
       where: { entityId: 'parts.restart_condition_max' },
     });
@@ -429,7 +429,7 @@ describe('config tuning (S3.7)', () => {
     const alone = await request(server)
       .post('/v1/admin/tuning/bundle?dryRun=true')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 100 }] });
+      .send({ entries: [{ key: 'economy.rescue_cost', value: 80 }] });
     expect(alone.status).toBe(400);
     expect(alone.body).toMatchObject({
       error: 'VALIDATION_ERROR',
@@ -437,14 +437,14 @@ describe('config tuning (S3.7)', () => {
     });
 
     // The same cheap rescue paired with a condition whose kit (5¢ at 0) is worth less than the
-    // cheapest rescue (50¢) is evaluated as a whole and stays valid.
+    // cheapest rescue (40¢) is evaluated as a whole and stays valid.
     const paired = await request(server)
       .post('/v1/admin/tuning/bundle?dryRun=true')
       .set('Authorization', `Bearer ${token}`)
       .send({
         entries: [
           { key: 'parts.restart_condition_max', value: 0 },
-          { key: 'economy.rescue_cost', value: 100 },
+          { key: 'economy.rescue_cost', value: 80 },
         ],
       });
     expect(paired.status).toBe(200);
@@ -453,7 +453,7 @@ describe('config tuning (S3.7)', () => {
     const rejected = await request(server)
       .post('/v1/admin/tuning/bundle')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 100 }] });
+      .send({ entries: [{ key: 'economy.rescue_cost', value: 80 }] });
     expect(rejected.status).toBe(400);
 
     const listResponse = await request(server)
