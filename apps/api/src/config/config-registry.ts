@@ -878,6 +878,45 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.upgrade_materials',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.upgrade_materials),
+    description: {
+      en: "What an upgrade asks for besides money, by the part's current rarity: a list of {material, mode, k}. material is a material id or 'scrap' (any scrap). Mode 'gap' = ceil(√(price gap to the next tier) ÷ k); mode 'size' = k × a factor of the part's cells (1 up to 2 cells, 2 up to 4, 3 up to 9, 4 beyond).",
+      'pt-BR':
+        "O que um upgrade pede além de dinheiro, pela raridade atual da peça: uma lista de {material, mode, k}. material é um id de material ou 'scrap' (qualquer sucata). Modo 'gap' = ceil(√(diferença de preço até o próximo tier) ÷ k); modo 'size' = k × um fator das células da peça (1 até 2 células, 2 até 4, 3 até 9, 4 acima).",
+    },
+  },
+  {
+    key: 'economy.core_fragments',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.core_fragments),
+    description: {
+      en: 'Core fragments needed to craft each core (at a port, from the goods).',
+      'pt-BR':
+        'Fragmentos de núcleo necessários para fabricar cada núcleo (num porto, a partir dos bens).',
+    },
+  },
+  {
+    key: 'economy.core_drops',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.core_drops),
+    description: {
+      en: 'Cores and fragments found, by source (scavenge, mission) and by the highest zone crossed: a list of {material, chance, quantity}.',
+      'pt-BR':
+        'Núcleos e fragmentos encontrados, por fonte (scavenge, mission) e pela maior zona cruzada: uma lista de {material, chance, quantity}.',
+    },
+  },
+  {
     key: 'economy.part_upgrade_price_multiplier',
     group: 'economy',
     type: 'json',

@@ -81,6 +81,30 @@ const economySchema = z.object({
   combat_loss_penalty: z.number().int().min(0).max(1000),
   ship_tier_thresholds: z.record(z.string(), z.number().min(0).max(100000)),
   part_upgrade_price_multiplier: z.record(z.string(), z.number().min(1).max(5)),
+  upgrade_materials: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        material: z.string().min(1),
+        mode: z.enum(['gap', 'size']),
+        k: z.number().min(0.1).max(1000),
+      }),
+    ),
+  ),
+  core_fragments: z.record(z.string(), z.number().int().min(1).max(1000)),
+  core_drops: z.record(
+    z.string(),
+    z.record(
+      z.string(),
+      z.array(
+        z.object({
+          material: z.string().min(1),
+          chance: z.number().min(0).max(1),
+          quantity: z.number().int().min(1).max(1000),
+        }),
+      ),
+    ),
+  ),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
   rescue_distance_price: z.number().min(0).max(100),

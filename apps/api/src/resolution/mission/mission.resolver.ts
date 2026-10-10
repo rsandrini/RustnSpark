@@ -25,6 +25,7 @@ import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
 import type { StoredPart } from '../encounter/pirate-motive.js';
 import { rollScavengeFinds, type ScavengeContext } from '../scavenge/scavenge.resolver.js';
 import { rawMobility } from '../../ships/sheet.deriver.js';
+import { rollCoreDrops } from '../loot/core-drops.js';
 import { resolveRace, type RaceCompetitor } from '../race/race.resolver.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
@@ -233,6 +234,26 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           actors,
           magnitude: find.kind === 'part' ? find.condition : 0,
           found: find,
+        }),
+      );
+    }
+  }
+
+  // Cores and fragments turn up in the farther zones: on a scavenging job that came back, and on a
+  // mission that was carried through (their own stream, so they never move any other roll).
+  if (status === 'success' && input.mission.type !== 'TRAVEL' && input.mission.unpaid !== true) {
+    const peakZone = input.mission.legs.reduce((peak, leg) => Math.max(peak, leg.zone), 0);
+    const source = input.mission.scavenge !== undefined ? 'scavenge' : 'mission';
+    for (const drop of rollCoreDrops(source, peakZone, input.rules, root.child('core-drops'))) {
+      loot.push(drop);
+      events.push(
+        missionEvent({
+          leg: lastLeg,
+          category: 'loot',
+          type: 'core_drop',
+          actors,
+          magnitude: drop.quantity,
+          loot: [drop],
         }),
       );
     }

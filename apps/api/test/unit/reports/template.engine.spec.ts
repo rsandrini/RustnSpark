@@ -37,6 +37,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  core_drop: 'loot',
   race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
@@ -86,7 +87,10 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
         type === 'combat_win' || type === 'mission_payout' || type.startsWith('mining')
           ? 754
           : -120,
-      loot: type === 'mining' ? [{ materialId: 'common_ore', quantity: 3 }] : [],
+      loot:
+        type === 'mining' || type === 'core_drop'
+          ? [{ materialId: 'common_ore', quantity: 3 }]
+          : [],
     },
     magnitude: type === 'leg_travel' ? 742 : type === 'mining' ? 3 : 26,
   };

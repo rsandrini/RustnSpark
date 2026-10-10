@@ -75,6 +75,9 @@ export type ConfigKey =
   | 'economy.start_credits'
   | 'economy.ship_tier_thresholds'
   | 'economy.part_upgrade_price_multiplier'
+  | 'economy.upgrade_materials'
+  | 'economy.core_fragments'
+  | 'economy.core_drops'
   | 'engine.chem_level_max'
   | 'engine.fuel_push_exponent'
   | 'engine.ion_level_max'
@@ -193,6 +196,21 @@ export type ConfigKey =
   | 'wear.system_defeat_share'
   | 'world.seed';
 
+/** One material an upgrade asks for. `material` is a material id, or 'scrap' for any scrap. `gap` mode:
+    ceil(√(price gap to the next tier) ÷ k); `size` mode: k × a factor of the part's cells. */
+export interface UpgradeMaterialRule {
+  readonly material: string;
+  readonly mode: 'gap' | 'size';
+  readonly k: number;
+}
+
+/** A find: `chance` (0–1) of `quantity` units of `material`. */
+export interface CoreDrop {
+  readonly material: string;
+  readonly chance: number;
+  readonly quantity: number;
+}
+
 export type GameRulesAdmin = Readonly<{
   /**
    * How long a job actually takes for a player whose Player.debugFastOps is set (the switch
@@ -298,6 +316,12 @@ export type GameRules = Readonly<{
     /** Multiplier on the base-price gap to the next rarity tier, keyed by the part's current
         rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
     part_upgrade_price_multiplier: Readonly<Record<string, number>>;
+    /** What an upgrade asks for besides money, by the part's CURRENT rarity (see upgrade-materials.ts). */
+    upgrade_materials: Readonly<Record<string, readonly UpgradeMaterialRule[]>>;
+    /** Core fragments needed to craft each core. */
+    core_fragments: Readonly<Record<string, number>>;
+    /** Cores and fragments found: by source (scavenge / mission), then by zone. */
+    core_drops: Readonly<Record<string, Readonly<Record<string, readonly CoreDrop[]>>>>;
     start_credits: number;
     /** Reference tow price. Waiting for a rescue costs this times `rescue_wait_fraction`. */
     rescue_cost: number;

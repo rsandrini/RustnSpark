@@ -120,6 +120,7 @@ export function PortPage({
   const refuelKey = useIntentKey();
   const repairKey = useIntentKey();
   const upgradeKey = useIntentKey();
+  const craftKey = useIntentKey();
   const [upgradeConfirm, setUpgradeConfirm] = useState<UpgradeConfirm | null>(null);
 
   const shipsQuery = useQuery({
@@ -288,6 +289,23 @@ export function PortPage({
       setConfirm(null);
       setActionError(null);
       setNotice(t('port.sold', { name: soldName, price: response.price }));
+      afterTrade();
+    },
+    onError: onTradeError,
+  });
+
+  // Core fragments craft into a core at the port (all or nothing), from the pilot's goods.
+  const craftCore = useMutation({
+    mutationFn: (core: string) =>
+      client.post<{ core: string }>(
+        '/v1/market/craft-core',
+        { core },
+        { idempotencyKey: craftKey.keyFor(`${core}:${Date.now()}`) },
+      ),
+    onSuccess: (response) => {
+      craftKey.clear();
+      setActionError(null);
+      setNotice(t('port.craftDone', { name: t(`port.cores.${response.core}`) }));
       afterTrade();
     },
     onError: onTradeError,
@@ -671,6 +689,29 @@ export function PortPage({
 
           <h3>{t('port.materials')}</h3>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
+          {Object.entries(display.coreFragments).map(([core, needed]) => {
+            const fragments =
+              materials.find((holding) => holding.materialId === 'core_fragment')?.quantity ?? 0;
+            return (
+              <div key={core} className="panel craft-core" data-testid={`craft-${core}`}>
+                <span>
+                  {t('port.craftLine', {
+                    name: t(`port.cores.${core}`),
+                    needed,
+                    have: fragments,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={fragments < needed || craftCore.isPending}
+                  onClick={() => craftCore.mutate(core)}
+                >
+                  {t('port.craft')}
+                </button>
+              </div>
+            );
+          })}
           <div className="pcard-grid">
             {materials.map((holding) => {
               const name = pickLocalized(holding.displayName, i18n.language);
@@ -1020,10 +1061,30 @@ export function PortPage({
                         actions={
                           <>
                             <span className="sub">{fromTo}</span>
+                            {(quote.materials ?? []).length > 0 && (
+                              <ul className="upgrade-materials" data-testid="upgrade-materials">
+                                {(quote.materials ?? []).map((need) => (
+                                  <li
+                                    key={need.materialId}
+                                    className={need.have >= need.needed ? 'req-met' : 'req-unmet'}
+                                  >
+                                    {t('port.upgradeMaterial', {
+                                      name: pickLocalized(need.displayName, i18n.language),
+                                      have: need.have,
+                                      needed: need.needed,
+                                    })}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                             <button
                               type="button"
                               className="btn primary"
-                              disabled={upgradePart.isPending || (quote.cost ?? 0) > wallet}
+                              disabled={
+                                upgradePart.isPending ||
+                                (quote.cost ?? 0) > wallet ||
+                                (quote.materials ?? []).some((need) => need.have < need.needed)
+                              }
                               onClick={() =>
                                 setUpgradeConfirm({
                                   partInstanceId: item.id,

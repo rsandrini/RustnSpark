@@ -9,8 +9,9 @@ const DEFAULT_DISPLAY: DisplayResponse = {
   scavengeHandicap: 0.5,
   scavengeFootFactor: 0.5,
   shieldRegen: 2,
-  armorPoolFactor: 5,
-  armorReduction: 0.25,
+  armorPoolFactor: 8,
+  armorReduction: 0.5,
+  coreFragments: { prototype_core: 5, ancient_core: 15 },
 };
 
 /** How derived numbers are shown, as tuned in the admin (`ship.stat_display_scale`). */

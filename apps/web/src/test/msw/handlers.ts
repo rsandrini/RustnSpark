@@ -625,6 +625,7 @@ export const handlers = [
       shieldRegen: 2,
       armorPoolFactor: 5,
       armorReduction: 0.25,
+      coreFragments: { prototype_core: 5, ancient_core: 15 },
     })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
@@ -978,6 +979,14 @@ export const handlers = [
       nextPartType: tier.nextPartType,
       nextDisplayName: tier.nextName,
       cost: tier.cost,
+      materials: [
+        {
+          materialId: 'scrap',
+          displayName: { en: 'Scrap (any part)', 'pt-BR': 'Sucata (qualquer peça)' },
+          needed: 2,
+          have: 5,
+        },
+      ],
       nextRarity: tier.nextRarity,
       nextDescription: tier.nextDescription,
       nextCatalog: tier.nextCatalog,

@@ -173,13 +173,34 @@ describe('port (S10.9)', () => {
       http.post('/v1/ships/:id/preview', () =>
         HttpResponse.json({
           sheet: {
-            pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, hp: 10, mass: 4,
-            energyCont: 0, energyCombat: 0, batCharge: 0, batOutput: 0, batInput: 0,
-            fuelCap: 0, fuelUse: 0, structureUsed: 0, structureBudget: 10, autonomy: 0,
-            mob: 1, condition: 100,
+            pot: 0,
+            pdf: 0,
+            bli: 0,
+            esc: 0,
+            sen: 0,
+            crg: 0,
+            min: 0,
+            hp: 10,
+            mass: 4,
+            energyCont: 0,
+            energyCombat: 0,
+            batCharge: 0,
+            batOutput: 0,
+            batInput: 0,
+            fuelCap: 0,
+            fuelUse: 0,
+            structureUsed: 0,
+            structureBudget: 10,
+            autonomy: 0,
+            mob: 1,
+            condition: 100,
           },
           shipClass: 'MULTIROLE',
-          viability: { viable: false, problems: [{ code: 'NO_ENGINE', message: 'x' }], warnings: [] },
+          viability: {
+            viable: false,
+            problems: [{ code: 'NO_ENGINE', message: 'x' }],
+            warnings: [],
+          },
           layout: [],
           omittedPartInstanceIds: [],
           disconnectedPartIds: [],
@@ -369,9 +390,7 @@ describe('port (S10.9)', () => {
     );
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
-    expect(
-      await screen.findByText(/no fuel tank installed/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/no fuel tank installed/i)).toBeInTheDocument();
     expect(screen.queryByText(/tank is already full/i)).toBeNull();
     expect(screen.queryByTestId('refuel-cost')).toBeNull();
   });
@@ -597,10 +616,27 @@ describe('port (S10.9)', () => {
         expect(body.replacePartInstanceId).toBe('part-hull');
         return HttpResponse.json({
           sheet: {
-            pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 60, mass: 24,
-            energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
-            fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40, autonomy: 40,
-            mob: 2, condition: 1,
+            pot: 25,
+            pdf: 0,
+            bli: 12,
+            esc: 0,
+            sen: 2,
+            crg: 10,
+            min: 0,
+            hp: 60,
+            mass: 24,
+            energyCont: 8,
+            energyCombat: 0,
+            batCharge: 4,
+            batOutput: 10,
+            batInput: 8,
+            fuelCap: 40,
+            fuelUse: 1,
+            structureUsed: 18,
+            structureBudget: 40,
+            autonomy: 40,
+            mob: 2,
+            condition: 1,
           },
           shipClass: 'MULTIROLE',
           viability: { viable: true, problems: [] },
@@ -620,8 +656,12 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Plated Hull' }));
 
     const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    await within(popup).findByRole('heading', { name: 'Plated Hull · Common → Reinforced Hull · Uncommon' });
-    const next = within(popup).getByRole('region', { name: 'Plated Hull · Common → Reinforced Hull · Uncommon' });
+    await within(popup).findByRole('heading', {
+      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
+    });
+    const next = within(popup).getByRole('region', {
+      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
+    });
     // The diff sets the upgraded part against the one the pilot owns (not "add it to the ship").
     const diff = within(next).getByTestId('upgrade-diff');
     expect(within(diff).getByText('This part today')).toBeInTheDocument();
@@ -652,12 +692,76 @@ describe('port (S10.9)', () => {
     expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
     // Both names wear their rarity's colour: what it is now, and what it becomes.
     expect(within(popup).getByText('Plated Hull')).toHaveClass('rarity-name', 'rarity-common');
-    expect(within(popup).getByText('Reinforced Hull')).toHaveClass('rarity-name', 'rarity-uncommon');
+    expect(within(popup).getByText('Reinforced Hull')).toHaveClass(
+      'rarity-name',
+      'rarity-uncommon',
+    );
     fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,705 ¢'));
     // The upgraded part is now UNCOMMON, so it drops off this tab (no further chain in the fixture).
     await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
+  });
+
+  it('the upgrade card says what it asks for besides money, and blocks while something is missing', async () => {
+    server.use(
+      http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>
+        HttpResponse.json({
+          partInstanceId: String(params.id),
+          eligible: true,
+          nextPartType: 'hull_uncommon',
+          nextDisplayName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
+          cost: 115,
+          materials: [
+            {
+              materialId: 'scrap',
+              displayName: { en: 'Scrap (any part)', 'pt-BR': 'Sucata (qualquer peça)' },
+              needed: 4,
+              have: 1,
+            },
+          ],
+          nextRarity: 'UNCOMMON',
+        }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+    const list = (await screen.findAllByTestId('upgrade-materials'))[0]!;
+    expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
+    expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
+    expect(rowButton('Plated Hull')).toBeDisabled();
+  });
+
+  it('crafts a core from fragments in the goods tab, only when there are enough', async () => {
+    const crafted: string[] = [];
+    server.use(
+      http.get('/v1/materials', () =>
+        HttpResponse.json({
+          locationId: 'ceres',
+          materials: [
+            {
+              materialId: 'core_fragment',
+              displayName: { en: 'Core Fragment', 'pt-BR': 'Fragmento de Núcleo' },
+              rarity: 'EPIC',
+              quantity: 6,
+              unitPrice: 1,
+            },
+          ],
+        }),
+      ),
+      http.post('/v1/market/craft-core', async ({ request }) => {
+        crafted.push(((await request.json()) as { core: string }).core);
+        return HttpResponse.json({ core: 'prototype_core', fragmentsUsed: 5, quantity: 1 });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const prototype = await screen.findByTestId('craft-prototype_core');
+    expect(prototype).toHaveTextContent('Prototype Core: 6 of 5 core fragments');
+    expect(within(screen.getByTestId('craft-ancient_core')).getByRole('button')).toBeDisabled();
+    fireEvent.click(within(prototype).getByRole('button', { name: 'Craft' }));
+    await waitFor(() => expect(crafted).toEqual(['prototype_core']));
   });
 });

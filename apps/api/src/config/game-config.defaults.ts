@@ -90,6 +90,43 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // for staying installed and not having to re-slot it). Round-7 owner request: the markup
     // itself grows with the part's current rarity, keyed by the PartCatalog rarity enum — going
     // from an already-rare part to the next tier is a bigger luxury than a common one.
+    // What an upgrade needs besides money, by the part's current rarity. The rarer the step, the more it
+    // asks for: scrap (any part), then rare crystals, then cores found in dangerous places. Amounts stay
+    // small and grow with the part's value: `gap` = ceil(√(price gap) ÷ k), `size` = k × (1 for parts up
+    // to 2 cells, 2 up to 4, 3 up to 9, 4 beyond).
+    upgrade_materials: {
+      COMMON: [{ material: 'scrap', mode: 'gap', k: 5 }],
+      UNCOMMON: [{ material: 'rare_crystals', mode: 'gap', k: 5 }],
+      RARE: [
+        { material: 'prototype_core', mode: 'size', k: 1 },
+        { material: 'rare_crystals', mode: 'gap', k: 6 },
+      ],
+      EPIC: [
+        { material: 'ancient_core', mode: 'size', k: 1 },
+        { material: 'prototype_core', mode: 'size', k: 2 },
+        { material: 'rare_crystals', mode: 'gap', k: 6 },
+      ],
+    },
+    // Fragments (common finds in dangerous places) craft into cores at a port.
+    core_fragments: { prototype_core: 5, ancient_core: 15 },
+    // Where the pieces come from: scavenging in the farther zones, and rewards on missions that cross them.
+    core_drops: {
+      scavenge: {
+        '2': [{ material: 'core_fragment', chance: 0.15, quantity: 1 }],
+        '3': [
+          { material: 'core_fragment', chance: 0.35, quantity: 1 },
+          { material: 'prototype_core', chance: 0.04, quantity: 1 },
+        ],
+      },
+      mission: {
+        '2': [{ material: 'core_fragment', chance: 0.3, quantity: 1 }],
+        '3': [
+          { material: 'core_fragment', chance: 0.6, quantity: 2 },
+          { material: 'prototype_core', chance: 0.08, quantity: 1 },
+          { material: 'ancient_core', chance: 0.02, quantity: 1 },
+        ],
+      },
+    },
     part_upgrade_price_multiplier: {
       COMMON: 1.1,
       UNCOMMON: 1.2,

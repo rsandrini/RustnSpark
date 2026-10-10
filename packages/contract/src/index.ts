@@ -229,6 +229,8 @@ export const DisplayResponseSchema = z.object({
   shieldRegen: z.number(),
   armorPoolFactor: z.number(),
   armorReduction: z.number(),
+  /** Core fragments needed to craft each core (at a port). */
+  coreFragments: z.record(z.string(), z.number()),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -990,6 +992,17 @@ export const PartUpgradeQuoteResponseSchema = z.object({
   nextPartType: z.string().optional(),
   nextDisplayName: LocalizedTextSchema.optional(),
   cost: z.number().optional(),
+  /** What the upgrade also asks for besides money, against what the pilot holds ('scrap' = any scrap). */
+  materials: z
+    .array(
+      z.object({
+        materialId: z.string(),
+        displayName: LocalizedTextSchema,
+        needed: z.number(),
+        have: z.number(),
+      }),
+    )
+    .optional(),
   /** The next tier's own rarity and full catalog stats, so the client can build a virtual
       part and reuse the same before/after diff popup Market already has. */
   nextRarity: z.string().optional(),

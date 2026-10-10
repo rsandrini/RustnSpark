@@ -17,6 +17,8 @@ export interface DisplayResponse {
   readonly armorPoolFactor: number;
   /** How much each point of armor rating cuts from every hit (before the pool soaks the rest). */
   readonly armorReduction: number;
+  /** Core fragments needed to craft each core. */
+  readonly coreFragments: Readonly<Record<string, number>>;
 }
 
 @Controller('display')
@@ -25,7 +27,7 @@ export class DisplayController {
 
   @Get()
   display(): DisplayResponse {
-    const { ship, scavenging, combat } = this.config.snapshot().rules;
+    const { ship, scavenging, combat, economy } = this.config.snapshot().rules;
     return {
       statScale: ship.stat_display_scale,
       mobFactor: ship.mob_factor,
@@ -34,6 +36,7 @@ export class DisplayController {
       shieldRegen: combat.shield_regen,
       armorPoolFactor: combat.armor_pool_factor,
       armorReduction: combat.armor_reduction,
+      coreFragments: economy.core_fragments,
     };
   }
 }

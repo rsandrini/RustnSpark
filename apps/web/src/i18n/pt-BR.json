@@ -978,7 +978,15 @@
     "upgradeOnlyAffordable": "Só o que eu posso pagar",
     "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
     "scavengeFoot": "Vasculhar a pé",
-    "upgradeFromTo": "{{from}} → {{to}}"
+    "upgradeFromTo": "{{from}} → {{to}}",
+    "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
+    "craftLine": "{{name}}: {{have}} de {{needed}} fragmentos de núcleo",
+    "craft": "Fabricar",
+    "craftDone": "Fabricado: {{name}}.",
+    "cores": {
+      "prototype_core": "Núcleo Protótipo",
+      "ancient_core": "Núcleo Ancestral"
+    }
   },
   "inventory": {
     "title": "Inventário",
@@ -1397,6 +1405,7 @@
     "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
     "MISSION_NOT_ACCEPTED": "Aceite a missão primeiro.",
     "MISSION_REQUIREMENTS_NOT_MET": "Sua nave não cumpre os requisitos desta missão.",
+    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam.",
     "NOT_MINABLE": "Não há nada para minerar aqui.",
     "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro.",
     "NO_REPAIR_TARGETS": "Nada para reparar.",
@@ -1412,6 +1421,7 @@
     "REGISTRATION_CLOSED": "O registro está fechado no momento.",
     "REPORT_NOT_FOUND": "Relatório não encontrado.",
     "REPORT_SCHEMA_UNSUPPORTED": "Este relatório não pode ser lido.",
+    "RESCUE_NOT_DUE": "O resgate ainda não chegou.",
     "REVISION_MISMATCH": "A configuração mudou — recarregue e tente de novo.",
     "SCAVENGE_COOL_DOWN": "Nada de novo aqui ainda — tente de novo em {{seconds}} s.",
     "SHIP_MISMATCH": "Essa nave não corresponde a esta missão.",
@@ -1425,13 +1435,12 @@
     "SPEED": "Lento demais para este contrato.",
     "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
     "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
+    "UNKNOWN_CORE": "Esse núcleo não pode ser fabricado.",
     "UNKNOWN_FACTION": "Essa facção não é jogável.",
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "WEAPONS": "Nenhuma arma instalada.",
-    "unexpected": "Algo deu errado",
-    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam.",
-    "RESCUE_NOT_DUE": "O resgate ainda não chegou."
+    "unexpected": "Algo deu errado"
   },
   "language": {
     "label": "Idioma"

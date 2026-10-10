@@ -38,6 +38,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  core_drop: 'loot',
   race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',

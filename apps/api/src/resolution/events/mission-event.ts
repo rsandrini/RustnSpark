@@ -30,6 +30,7 @@ export const MISSION_EVENT_TYPES = [
   'mission_payout',
   'pirate_demand',
   'scavenge_find',
+  'core_drop',
   'race_result',
   'pvp_encounter',
   'mining',

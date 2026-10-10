@@ -978,7 +978,15 @@
     "upgradeOnlyAffordable": "Only what I can afford",
     "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
     "scavengeFoot": "Go scavenging on foot",
-    "upgradeFromTo": "{{from}} → {{to}}"
+    "upgradeFromTo": "{{from}} → {{to}}",
+    "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
+    "craftLine": "{{name}}: {{have}} of {{needed}} core fragments",
+    "craft": "Craft",
+    "craftDone": "Crafted: {{name}}.",
+    "cores": {
+      "prototype_core": "Prototype Core",
+      "ancient_core": "Ancient Core"
+    }
   },
   "inventory": {
     "title": "Inventory",
@@ -1397,6 +1405,7 @@
     "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
     "MISSION_NOT_ACCEPTED": "Accept the mission first.",
     "MISSION_REQUIREMENTS_NOT_MET": "Your ship does not meet this mission's requirements.",
+    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply.",
     "NOT_MINABLE": "There is nothing to mine here.",
     "NO_MINING_RIG": "A mining rig needs to be installed first.",
     "NO_REPAIR_TARGETS": "Nothing to repair.",
@@ -1412,6 +1421,7 @@
     "REGISTRATION_CLOSED": "Registration is closed right now.",
     "REPORT_NOT_FOUND": "Report not found.",
     "REPORT_SCHEMA_UNSUPPORTED": "This report cannot be read.",
+    "RESCUE_NOT_DUE": "The rescue has not arrived yet.",
     "REVISION_MISMATCH": "The configuration changed — reload and retry.",
     "SCAVENGE_COOL_DOWN": "Nothing new here yet — try again in {{seconds}} s.",
     "SHIP_MISMATCH": "That ship does not match this mission.",
@@ -1425,13 +1435,12 @@
     "SPEED": "Too slow for this contract.",
     "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
     "UNAUTHORIZED": "Your session ended — sign in again.",
+    "UNKNOWN_CORE": "That core cannot be crafted.",
     "UNKNOWN_FACTION": "That faction is not playable.",
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
     "WEAPONS": "No weapons installed.",
-    "unexpected": "Something went wrong",
-    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply.",
-    "RESCUE_NOT_DUE": "The rescue has not arrived yet."
+    "unexpected": "Something went wrong"
   },
   "language": {
     "label": "Language"

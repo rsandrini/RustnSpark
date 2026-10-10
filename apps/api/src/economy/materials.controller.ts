@@ -4,7 +4,7 @@ import {
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
 import { Idempotent } from '../common/idempotency/idempotent.decorator.js';
-import { SellMaterialDto } from './dto/market.dto.js';
+import { CraftCoreDto, SellMaterialDto } from './dto/market.dto.js';
 import { MaterialsService } from './materials.service.js';
 
 @Controller()
@@ -21,5 +21,12 @@ export class MaterialsController {
   @Idempotent()
   sell(@CurrentUser() user: CurrentUserPayload, @Body() dto: SellMaterialDto) {
     return this.materials.sell(user.playerId, dto.materialId, dto.quantity, dto.expectedPrice);
+  }
+
+  @Post('market/craft-core')
+  @HttpCode(HttpStatus.OK)
+  @Idempotent()
+  craftCore(@CurrentUser() user: CurrentUserPayload, @Body() dto: CraftCoreDto) {
+    return this.materials.craftCore(user.playerId, dto.core);
   }
 }

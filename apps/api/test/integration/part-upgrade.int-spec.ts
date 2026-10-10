@@ -107,6 +107,22 @@ describe('part upgrade API (round 5)', () => {
     return created.id;
   }
 
+  // The pilot's goods (ore, scrap, cores) an upgrade can ask for.
+  async function giveMaterial(playerId: string, materialId: string, quantity: number) {
+    await prisma.playerMaterial.upsert({
+      where: { playerId_materialId: { playerId, materialId } },
+      create: { playerId, materialId, quantity },
+      update: { quantity },
+    });
+  }
+
+  async function held(playerId: string, materialId: string): Promise<number> {
+    const row = await prisma.playerMaterial.findUnique({
+      where: { playerId_materialId: { playerId, materialId } },
+    });
+    return row?.quantity ?? 0;
+  }
+
   function quoteUpgrade(token: string, partInstanceId: string) {
     return request(httpServer(testApp.app))
       .post(`/v1/parts/${partInstanceId}/upgrade/quote`)
@@ -152,7 +168,7 @@ describe('part upgrade API (round 5)', () => {
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
   // part" — the diff popup needs the next tier's own stats (and rarity) to build a virtual
   // part to compare against, not just its name and the price.
-  it('quotes the next tier\'s full catalog stats and rarity, for the upgrade diff popup', async () => {
+  it("quotes the next tier's full catalog stats and rarity, for the upgrade diff popup", async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
@@ -207,7 +223,11 @@ describe('part upgrade API (round 5)', () => {
 
     const response = await quoteUpgrade(player.token, partId);
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ partInstanceId: partId, eligible: false, reason: 'MAX_TIER' });
+    expect(response.body).toMatchObject({
+      partInstanceId: partId,
+      eligible: false,
+      reason: 'MAX_TIER',
+    });
   });
 
   it('reports NOT_FULL_CONDITION for a worn part, even with a real next tier (owner request, round 7)', async () => {
@@ -229,7 +249,10 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     // Every seeded family is chained now, so take the laser's next tier out of the catalog: the
     // upgrade then has nowhere to go (an inactive tier counts as not existing).
-    await prisma.partCatalog.update({ where: { partType: 'weapon_laser_rare' }, data: { active: false } });
+    await prisma.partCatalog.update({
+      where: { partType: 'weapon_laser_rare' },
+      data: { active: false },
+    });
     const partId = await addLoosePart(player.seeded.player.id, 'weapon_laser_uncommon');
 
     const response = await quoteUpgrade(player.token, partId);
@@ -249,6 +272,7 @@ describe('part upgrade API (round 5)', () => {
     // start at 100 — 63 used to be a valid pre-upgrade condition here, proving the value carried
     // over unchanged; that specific case is now covered instead by the NOT_FULL_CONDITION tests.
     const partId = await addLoosePart(player.seeded.player.id, 'hull', 100);
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
     const quote = await quoteUpgrade(player.token, partId);
     const cost = (quote.body as { cost: number }).cost;
 
@@ -312,6 +336,7 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 1);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
 
     const response = await doUpgrade(player.token, partId, randomUUID());
     expect(response.status).toBe(409);
@@ -340,7 +365,7 @@ describe('part upgrade API (round 5)', () => {
     });
   });
 
-  it("rejects upgrading a part owned by another player", async () => {
+  it('rejects upgrading a part owned by another player', async () => {
     await freshSeededApp();
     const owner = await onboardPlayer();
     const stranger = await onboardPlayer();
@@ -355,6 +380,7 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100000);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
 
     const noKey = await doUpgrade(player.token, partId, undefined);
     expect(noKey.status).toBe(400);
@@ -370,5 +396,98 @@ describe('part upgrade API (round 5)', () => {
       where: { playerId: player.seeded.player.id, type: 'part.upgraded' },
     });
     expect(events).toHaveLength(1);
+  });
+
+  it('quotes the materials an upgrade asks for, against what the pilot holds (scrap from any part)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
+    await giveMaterial(player.seeded.player.id, 'scrap_weapon_laser', 1);
+
+    const quote = await quoteUpgrade(player.token, partId);
+    const { materials } = quote.body as {
+      materials: Array<{ materialId: string; needed: number; have: number }>;
+    };
+    expect(materials).toEqual([
+      expect.objectContaining({ materialId: 'scrap', needed: 2, have: 2 }),
+    ]);
+  });
+
+  it('refuses an upgrade the pilot has not the materials for, charging and changing nothing', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setCredits(player.seeded.player.id, 100000);
+    const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
+
+    const refused = await doUpgrade(player.token, partId, randomUUID());
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ message: { error: 'INSUFFICIENT_MATERIALS' } });
+    expect(await currentCredits(player.seeded.player.id)).toBe(100000);
+    expect(await held(player.seeded.player.id, 'scrap_cargo')).toBe(1);
+    const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: partId } });
+    expect(stored.partType).toBe('hull');
+  });
+
+  it('takes the scrap from the least valuable first and keeps the rest of the goods', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setCredits(player.seeded.player.id, 100000);
+    const partId = await addLoosePart(player.seeded.player.id, 'hull');
+    // cargo scrap is worth 20 each, a legendary laser scrap far more
+    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
+    await giveMaterial(player.seeded.player.id, 'scrap_weapon_laser_legendary', 3);
+
+    const ok = await doUpgrade(player.token, partId, randomUUID());
+    expect(ok.status).toBe(200);
+    expect(await held(player.seeded.player.id, 'scrap_cargo')).toBe(0);
+    expect(await held(player.seeded.player.id, 'scrap_weapon_laser_legendary')).toBe(2);
+  });
+
+  it('a rare step asks for a prototype core and rare crystals, and an epic one for the ancient core too', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const rare = await addLoosePart(player.seeded.player.id, 'hull_rare');
+    const epic = await addLoosePart(player.seeded.player.id, 'hull_epic');
+    const needed = async (partId: string) =>
+      (
+        (await quoteUpgrade(player.token, partId)).body as {
+          materials: Array<{ materialId: string }>;
+        }
+      ).materials.map((material) => material.materialId);
+    expect(await needed(rare)).toEqual(['prototype_core', 'rare_crystals']);
+    expect(await needed(epic)).toEqual(['ancient_core', 'prototype_core', 'rare_crystals']);
+  });
+
+  it('crafts a core from fragments, all or nothing', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const cost = configService.snapshot().rules.economy.core_fragments['prototype_core']!;
+    await giveMaterial(player.seeded.player.id, 'core_fragment', cost - 1);
+    const craft = (key: string) =>
+      request(httpServer(testApp.app))
+        .post('/v1/market/craft-core')
+        .set(auth(player.token))
+        .set('Idempotency-Key', key)
+        .send({ core: 'prototype_core' });
+
+    const short = await craft(randomUUID());
+    expect(short.status).toBe(400);
+    expect(await held(player.seeded.player.id, 'core_fragment')).toBe(cost - 1);
+    expect(await held(player.seeded.player.id, 'prototype_core')).toBe(0);
+
+    await giveMaterial(player.seeded.player.id, 'core_fragment', cost + 2);
+    const ok = await craft(randomUUID());
+    expect(ok.status).toBe(200);
+    expect(await held(player.seeded.player.id, 'core_fragment')).toBe(2);
+    expect(await held(player.seeded.player.id, 'prototype_core')).toBe(1);
+
+    const unknown = await request(httpServer(testApp.app))
+      .post('/v1/market/craft-core')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ core: 'no_such_core' });
+    expect(unknown.status).toBe(400);
   });
 });
