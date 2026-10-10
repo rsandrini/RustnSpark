@@ -713,210 +713,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {rotateHint}
                 </p>
               )}
-              <div className="format-picker">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setFormatPickerOpen((v) => !v)}
-                >
-                  {t('hangar.format.button')}
-                </button>
-                {formatPickerOpen && (
-                  <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
-                    {(formatsQuery.data ?? []).map((format) => (
-                      <li key={format.id}>
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={setFormat.isPending}
-                          onClick={() => setFormatPreview(format)}
-                        >
-                          {pickLocalized(format.displayName, i18n.language)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <Popup
-                open={formatPreview !== null}
-                title={
-                  formatPreview === null
-                    ? ''
-                    : pickLocalized(formatPreview.displayName, i18n.language)
-                }
-                onClose={() => setFormatPreview(null)}
-                actions={
-                  <>
-                    <button type="button" className="btn" onClick={() => setFormatPreview(null)}>
-                      {t('hangar.format.cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={setFormat.isPending || formatPreview === null}
-                      onClick={() => {
-                        if (formatPreview !== null) setFormat.mutate(formatPreview.id);
-                      }}
-                    >
-                      {t('hangar.format.apply')}
-                    </button>
-                  </>
-                }
-              >
-                {formatPreview !== null && (
-                  <>
-                    <FormatCellsPreview
-                      cells={formatPreview.cells}
-                      name={pickLocalized(formatPreview.displayName, i18n.language)}
-                    />
-                    {formatDropped.length > 0 && (
-                      <p className="format-drop-warning" role="status">
-                        {t('hangar.format.droppedWarning', { count: formatDropped.length })}
-                      </p>
-                    )}
-                  </>
-                )}
-              </Popup>
-            </section>
-
-            <section aria-label={t('hangar.sheet')}>
-              <div className="panel">
-                <div className="row-between">
-                  <h2>{t('hangar.sheet')}</h2>
-                  {shipRarity !== undefined && (
-                    <span title={t('hangar.shipRarityHint')}>
-                      <RarityBadge rarity={shipRarity} />
-                    </span>
-                  )}
-                </div>
-                {ship?.hold !== undefined && (
-                  <p
-                    className={ship.hold.over ? 'warn-text' : 'sub'}
-                    data-testid="hold-line"
-                    title={t('hangar.hold.hint')}
-                  >
-                    {t('hangar.hold.line', {
-                      parts: ship.hold.parts,
-                      slots: ship.hold.slots,
-                      used: ship.hold.used,
-                      capacity: ship.hold.capacity,
-                    })}
-                    {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
-                  </p>
-                )}
-                {disconnectedPartIds.size > 0 && (
-                  <p className="sub disconnected-note">
-                    {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
-                  </p>
-                )}
-                <p
-                  className="sub conn-legend"
-                  data-testid="port-legend"
-                  title={t('connectors.legend.shapes')}
-                >
-                  <span>{t('connectors.legend.title')}</span>
-                  <span className="conn-swatch conn-connected">
-                    {t('connectors.legend.connected')}
-                  </span>
-                  <span className="conn-swatch conn-incorrect">
-                    {t('connectors.legend.incorrect')}
-                  </span>
-                  <span className="conn-swatch conn-available">
-                    {t('connectors.legend.available')}
-                  </span>
-                </p>
-                <ShipSheetPanel
-                  shipClass={shipClass}
-                  sheet={sheet}
-                  problemCount={allProblems.length}
-                  warningCount={allWarnings.length}
-                  power={preview?.power}
-                  layers={preview?.layers}
-                  routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
-                  installedCatalogs={installedCatalogs}
-                />
-                {ship !== undefined && <EngineTuning ship={ship} missionId={acceptedFlightId} />}
-                {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
-                {!previewing && layout !== null && layout.length === 0 && (
-                  <p className="muted">{t('hangar.state.noPreview')}</p>
-                )}
-              </div>
-
-              {allWarnings.length > 0 && (
-                <div className="panel" data-testid="flight-warnings">
-                  <h2>{t('hangar.warnings.title')}</h2>
-                  <p className="sub">{t('hangar.warnings.explain')}</p>
-                  <ul>
-                    {allWarnings.map((problem) => (
-                      <li
-                        key={problem.code}
-                        className={
-                          problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'
-                        }
-                      >
-                        {t(`hangar.problems.${problem.code}`, {
-                          defaultValue: t(`error.${problem.code}`, {
-                            defaultValue: problem.message,
-                          }),
-                        })}
-                        {FIX_CLASS[problem.code] !== undefined && ship.status === 'IN_PORT' && (
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => {
-                              setStoreClass(FIX_CLASS[problem.code] ?? null);
-                              setSideTab('store');
-                            }}
-                          >
-                            {t('hangar.fix.findInStore')}
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {allProblems.length > 0 && (
-                <div className="panel">
-                  <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
-                  <ul>
-                    {allProblems.map((problem) => {
-                      const fixClass = FIX_CLASS[problem.code];
-                      return (
-                        <li key={problem.code} className="error-text">
-                          {t(`hangar.problems.${problem.code}`, {
-                            defaultValue: t(`error.${problem.code}`, {
-                              defaultValue: problem.message,
-                            }),
-                          })}
-                          {fixClass !== undefined && (
-                            <span className="fix-hint">
-                              {t('hangar.fix.needs', {
-                                part: t(`hangar.partClasses.${fixClass}`),
-                              })}
-                              {ship.status === 'IN_PORT' && (
-                                <button
-                                  type="button"
-                                  className="btn"
-                                  onClick={() => {
-                                    setStoreClass(fixClass);
-                                    setSideTab('store');
-                                  }}
-                                >
-                                  {t('hangar.fix.findInStore')}
-                                </button>
-                              )}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-
               {saveError !== null && (
                 <p className="error-text">
                   {saveError.problems.length > 0
@@ -994,6 +790,208 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               >
                 <p>{t('hangar.clear.body', { count: effectiveLayout.length })}</p>
               </Popup>
+              <div className="format-picker">
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setFormatPickerOpen((v) => !v)}
+                >
+                  {t('hangar.format.button')}
+                </button>
+                {formatPickerOpen && (
+                  <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
+                    {(formatsQuery.data ?? []).map((format) => (
+                      <li key={format.id}>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={setFormat.isPending}
+                          onClick={() => setFormatPreview(format)}
+                        >
+                          {pickLocalized(format.displayName, i18n.language)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <Popup
+                open={formatPreview !== null}
+                title={
+                  formatPreview === null
+                    ? ''
+                    : pickLocalized(formatPreview.displayName, i18n.language)
+                }
+                onClose={() => setFormatPreview(null)}
+                actions={
+                  <>
+                    <button type="button" className="btn" onClick={() => setFormatPreview(null)}>
+                      {t('hangar.format.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={setFormat.isPending || formatPreview === null}
+                      onClick={() => {
+                        if (formatPreview !== null) setFormat.mutate(formatPreview.id);
+                      }}
+                    >
+                      {t('hangar.format.apply')}
+                    </button>
+                  </>
+                }
+              >
+                {formatPreview !== null && (
+                  <>
+                    <FormatCellsPreview
+                      cells={formatPreview.cells}
+                      name={pickLocalized(formatPreview.displayName, i18n.language)}
+                    />
+                    {formatDropped.length > 0 && (
+                      <p className="format-drop-warning" role="status">
+                        {t('hangar.format.droppedWarning', { count: formatDropped.length })}
+                      </p>
+                    )}
+                  </>
+                )}
+              </Popup>
+            </section>
+
+            <section aria-label={t('hangar.sheet')}>
+              {allWarnings.length > 0 && (
+                <div className="panel" data-testid="flight-warnings">
+                  <h2>{t('hangar.warnings.title')}</h2>
+                  <p className="sub">{t('hangar.warnings.explain')}</p>
+                  <ul>
+                    {allWarnings.map((problem) => (
+                      <li
+                        key={problem.code}
+                        className={
+                          problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'
+                        }
+                      >
+                        {t(`hangar.problems.${problem.code}`, {
+                          defaultValue: t(`error.${problem.code}`, {
+                            defaultValue: problem.message,
+                          }),
+                        })}
+                        {FIX_CLASS[problem.code] !== undefined && ship.status === 'IN_PORT' && (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => {
+                              setStoreClass(FIX_CLASS[problem.code] ?? null);
+                              setSideTab('store');
+                            }}
+                          >
+                            {t('hangar.fix.findInStore')}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {allProblems.length > 0 && (
+                <div className="panel">
+                  <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
+                  <ul>
+                    {allProblems.map((problem) => {
+                      const fixClass = FIX_CLASS[problem.code];
+                      return (
+                        <li key={problem.code} className="error-text">
+                          {t(`hangar.problems.${problem.code}`, {
+                            defaultValue: t(`error.${problem.code}`, {
+                              defaultValue: problem.message,
+                            }),
+                          })}
+                          {fixClass !== undefined && (
+                            <span className="fix-hint">
+                              {t('hangar.fix.needs', {
+                                part: t(`hangar.partClasses.${fixClass}`),
+                              })}
+                              {ship.status === 'IN_PORT' && (
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => {
+                                    setStoreClass(fixClass);
+                                    setSideTab('store');
+                                  }}
+                                >
+                                  {t('hangar.fix.findInStore')}
+                                </button>
+                              )}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              <div className="panel">
+                <div className="row-between">
+                  <h2>{t('hangar.sheet')}</h2>
+                  {shipRarity !== undefined && (
+                    <span title={t('hangar.shipRarityHint')}>
+                      <RarityBadge rarity={shipRarity} />
+                    </span>
+                  )}
+                </div>
+                {ship?.hold !== undefined && (
+                  <p
+                    className={ship.hold.over ? 'warn-text' : 'sub'}
+                    data-testid="hold-line"
+                    title={t('hangar.hold.hint')}
+                  >
+                    {t('hangar.hold.line', {
+                      parts: ship.hold.parts,
+                      slots: ship.hold.slots,
+                      used: ship.hold.used,
+                      capacity: ship.hold.capacity,
+                    })}
+                    {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
+                  </p>
+                )}
+                {disconnectedPartIds.size > 0 && (
+                  <p className="sub disconnected-note">
+                    {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
+                  </p>
+                )}
+                <p
+                  className="sub conn-legend"
+                  data-testid="port-legend"
+                  title={t('connectors.legend.shapes')}
+                >
+                  <span>{t('connectors.legend.title')}</span>
+                  <span className="conn-swatch conn-connected">
+                    {t('connectors.legend.connected')}
+                  </span>
+                  <span className="conn-swatch conn-incorrect">
+                    {t('connectors.legend.incorrect')}
+                  </span>
+                  <span className="conn-swatch conn-available">
+                    {t('connectors.legend.available')}
+                  </span>
+                </p>
+                <ShipSheetPanel
+                  shipClass={shipClass}
+                  sheet={sheet}
+                  problemCount={allProblems.length}
+                  warningCount={allWarnings.length}
+                  power={preview?.power}
+                  layers={preview?.layers}
+                  routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
+                  installedCatalogs={installedCatalogs}
+                />
+                {ship !== undefined && <EngineTuning ship={ship} missionId={acceptedFlightId} />}
+                {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
+                {!previewing && layout !== null && layout.length === 0 && (
+                  <p className="muted">{t('hangar.state.noPreview')}</p>
+                )}
+              </div>
             </section>
           </div>
         </>

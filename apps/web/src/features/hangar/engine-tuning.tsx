@@ -148,143 +148,147 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
   };
 
   return (
-    <div
+    <details
       className="engine-tuning"
       data-testid="engine-tuning"
       role="group"
       aria-label={t('engineTuning.title')}
     >
-      <b className="engine-tuning-title">{t('engineTuning.title')}</b>
-      <p className="sub">{t('engineTuning.intro')}</p>
-      {!editable && <p className="notice warn">{t('engineTuning.locked')}</p>}
-      <div className="chips" role="group" aria-label={t('engineTuning.presets')}>
-        {PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className="chip"
-            disabled={!editable}
-            onClick={() => setLevels({ chem: preset.chem, ion: preset.ion })}
-          >
-            {t(`engineTuning.preset.${preset.id}`)}
-          </button>
-        ))}
-      </div>
-      {sliderFor('chem')}
-      {sliderFor('ion')}
-      <label className="engine-energy">
-        <b>{t('engineTuning.battery.label')}</b>
-        <select
-          aria-label={t('ship.energyMode.label')}
-          value={ship.energyMode}
-          onChange={(event) => setEnergyMode.mutate(event.target.value as EnergyMode)}
-          disabled={!editable || setEnergyMode.isPending}
-        >
-          {ENERGY_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {t(`ship.energyMode.${mode}`)}
-            </option>
+      <summary className="engine-tuning-title">
+        <b>{t('engineTuning.title')}</b>
+      </summary>
+      <div className="engine-tuning-body">
+        <p className="sub">{t('engineTuning.intro')}</p>
+        {!editable && <p className="notice warn">{t('engineTuning.locked')}</p>}
+        <div className="chips" role="group" aria-label={t('engineTuning.presets')}>
+          {PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="chip"
+              disabled={!editable}
+              onClick={() => setLevels({ chem: preset.chem, ion: preset.ion })}
+            >
+              {t(`engineTuning.preset.${preset.id}`)}
+            </button>
           ))}
-        </select>
-        <small className="sub">{t('engineTuning.battery.hint')}</small>
-      </label>
-      {data !== undefined && data.thrust.chem + data.thrust.ion > 0 && (
-        <div className="engine-thrust" data-testid="engine-thrust">
-          <span className="sub">{t('engineTuning.thrustTitle')}</span>
-          <div
-            className="engine-thrust-bar"
-            role="img"
-            aria-label={t('engineTuning.thrustBar', {
-              chem: number(thrustShare(data.thrust).chem, 0),
-              ion: number(thrustShare(data.thrust).ion, 0),
-            })}
+        </div>
+        {sliderFor('chem')}
+        {sliderFor('ion')}
+        <label className="engine-energy">
+          <b>{t('engineTuning.battery.label')}</b>
+          <select
+            aria-label={t('ship.energyMode.label')}
+            value={ship.energyMode}
+            onChange={(event) => setEnergyMode.mutate(event.target.value as EnergyMode)}
+            disabled={!editable || setEnergyMode.isPending}
           >
-            <span
-              className="engine-thrust-chem"
-              style={{ width: `${thrustShare(data.thrust).chem}%` }}
-            />
-            <span
-              className="engine-thrust-ion"
-              style={{ width: `${thrustShare(data.thrust).ion}%` }}
-            />
+            {ENERGY_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {t(`ship.energyMode.${mode}`)}
+              </option>
+            ))}
+          </select>
+          <small className="sub">{t('engineTuning.battery.hint')}</small>
+        </label>
+        {data !== undefined && data.thrust.chem + data.thrust.ion > 0 && (
+          <div className="engine-thrust" data-testid="engine-thrust">
+            <span className="sub">{t('engineTuning.thrustTitle')}</span>
+            <div
+              className="engine-thrust-bar"
+              role="img"
+              aria-label={t('engineTuning.thrustBar', {
+                chem: number(thrustShare(data.thrust).chem, 0),
+                ion: number(thrustShare(data.thrust).ion, 0),
+              })}
+            >
+              <span
+                className="engine-thrust-chem"
+                style={{ width: `${thrustShare(data.thrust).chem}%` }}
+              />
+              <span
+                className="engine-thrust-ion"
+                style={{ width: `${thrustShare(data.thrust).ion}%` }}
+              />
+            </div>
+            <ul className="engine-thrust-legend">
+              {(['chem', 'ion'] as const)
+                .filter((group) => groups.includes(group))
+                .map((group) => (
+                  <li key={group} data-testid={`engine-thrust-${group}`}>
+                    {t('engineTuning.thrustLine', {
+                      group: t(`engineTuning.group.${group}`),
+                      value: number(scaleSpeed(data.thrust[group] / thrustMass(data), display)),
+                      percent: number(thrustShare(data.thrust)[group], 0),
+                      base: number(
+                        scaleSpeed(data.baselineThrust[group] / thrustMass(data), display),
+                      ),
+                    })}
+                  </li>
+                ))}
+            </ul>
           </div>
-          <ul className="engine-thrust-legend">
-            {(['chem', 'ion'] as const)
-              .filter((group) => groups.includes(group))
-              .map((group) => (
-                <li key={group} data-testid={`engine-thrust-${group}`}>
-                  {t('engineTuning.thrustLine', {
-                    group: t(`engineTuning.group.${group}`),
-                    value: number(scaleSpeed(data.thrust[group] / thrustMass(data), display)),
-                    percent: number(thrustShare(data.thrust)[group], 0),
-                    base: number(
-                      scaleSpeed(data.baselineThrust[group] / thrustMass(data), display),
-                    ),
+        )}
+        {data !== undefined && (
+          <ul className="engine-stats" data-testid="engine-stats">
+            <li>
+              {t('engineTuning.speed', {
+                value: speed(data.mobility),
+                base: speed(data.baseline.mobility),
+              })}
+            </li>
+            {groups.includes('chem') && (
+              <li>
+                {t('engineTuning.fuelBurn', {
+                  value: number(data.fuelUse),
+                  base: number(data.baseline.fuelUse),
+                })}
+              </li>
+            )}
+            <li className={data.power.spare < 0 ? 'bad' : undefined}>
+              {t('engineTuning.power', {
+                supply: number(data.power.supply),
+                demand: number(data.power.demand),
+                spare: number(data.power.spare),
+              })}
+            </li>
+            {data.wearPerLeg.chem + data.wearPerLeg.ion + data.wearPerLeg.battery > 0 && (
+              <li data-testid="engine-wear">
+                {t('engineTuning.wear', {
+                  chem: number(data.wearPerLeg.chem),
+                  ion: number(data.wearPerLeg.ion),
+                  battery: number(data.wearPerLeg.battery),
+                })}
+              </li>
+            )}
+            <li className={`clean ${cleanTone(data.cleanChance)}`} data-testid="engine-clean">
+              {t('engineTuning.clean', { percent: Math.round(data.cleanChance * PERCENT) })}
+            </li>
+            {data.trip !== undefined && (
+              <>
+                <li data-testid="engine-trip-time">
+                  {t('engineTuning.tripTime', {
+                    value: formatDuration(data.trip.durationSeconds, t),
+                    base: formatDuration(data.trip.baseline.durationSeconds, t),
                   })}
                 </li>
-              ))}
+                <li className={data.trip.fits ? undefined : 'bad'} data-testid="engine-trip-fuel">
+                  {t('engineTuning.tripFuel', {
+                    needed: number(data.trip.fuelNeeded, 0),
+                    have: number(data.trip.fuelHave, 0),
+                    base: number(data.trip.baseline.fuelNeeded, 0),
+                  })}
+                </li>
+              </>
+            )}
           </ul>
-        </div>
-      )}
-      {data !== undefined && (
-        <ul className="engine-stats" data-testid="engine-stats">
-          <li>
-            {t('engineTuning.speed', {
-              value: speed(data.mobility),
-              base: speed(data.baseline.mobility),
-            })}
-          </li>
-          {groups.includes('chem') && (
-            <li>
-              {t('engineTuning.fuelBurn', {
-                value: number(data.fuelUse),
-                base: number(data.baseline.fuelUse),
-              })}
-            </li>
-          )}
-          <li className={data.power.spare < 0 ? 'bad' : undefined}>
-            {t('engineTuning.power', {
-              supply: number(data.power.supply),
-              demand: number(data.power.demand),
-              spare: number(data.power.spare),
-            })}
-          </li>
-          {data.wearPerLeg.chem + data.wearPerLeg.ion + data.wearPerLeg.battery > 0 && (
-            <li data-testid="engine-wear">
-              {t('engineTuning.wear', {
-                chem: number(data.wearPerLeg.chem),
-                ion: number(data.wearPerLeg.ion),
-                battery: number(data.wearPerLeg.battery),
-              })}
-            </li>
-          )}
-          <li className={`clean ${cleanTone(data.cleanChance)}`} data-testid="engine-clean">
-            {t('engineTuning.clean', { percent: Math.round(data.cleanChance * PERCENT) })}
-          </li>
-          {data.trip !== undefined && (
-            <>
-              <li data-testid="engine-trip-time">
-                {t('engineTuning.tripTime', {
-                  value: formatDuration(data.trip.durationSeconds, t),
-                  base: formatDuration(data.trip.baseline.durationSeconds, t),
-                })}
-              </li>
-              <li className={data.trip.fits ? undefined : 'bad'} data-testid="engine-trip-fuel">
-                {t('engineTuning.tripFuel', {
-                  needed: number(data.trip.fuelNeeded, 0),
-                  have: number(data.trip.fuelHave, 0),
-                  base: number(data.trip.baseline.fuelNeeded, 0),
-                })}
-              </li>
-            </>
-          )}
-        </ul>
-      )}
-      {data?.trip !== undefined && !data.trip.fits && (
-        <p className="error-text" role="alert">
-          {t('engineTuning.tripNoFit')}
-        </p>
-      )}
-    </div>
+        )}
+        {data?.trip !== undefined && !data.trip.fits && (
+          <p className="error-text" role="alert">
+            {t('engineTuning.tripNoFit')}
+          </p>
+        )}
+      </div>
+    </details>
   );
 }

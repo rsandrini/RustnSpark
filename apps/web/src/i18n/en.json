@@ -1738,6 +1738,7 @@
       "title": "Ready to fly?",
       "text": "Create a pilot, pick a faction and take your first job.",
       "button": "Create your pilot"
-    }
+    },
+    "authTabs": "Sign in or create an account"
   }
 }

@@ -127,7 +127,7 @@ describe('auth flow', () => {
     expect(await screen.findByRole('heading', { name: 'Luna Authority' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pirates' })).toBeInTheDocument();
     // the way in is still right there
-    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Create account' })).toHaveAttribute(
       'href',
       '/register',
     );
@@ -149,5 +149,21 @@ describe('auth flow', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.queryByTestId('landing-facts')).toBeNull();
+  });
+
+  it('sign up lives on the same page: /register is the landing with the Create account tab open', async () => {
+    renderWithRouter(routes, { initialEntries: ['/register'] });
+    // the hero and the story are still there, around the form
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Rust and Spark' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How a run goes' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Create account' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText(/^name/i)).toBeInTheDocument();
+    // and the way back to signing in is a tab, not a separate page
+    expect(screen.getByRole('tab', { name: 'Sign in' })).toHaveAttribute('href', '/login');
   });
 });

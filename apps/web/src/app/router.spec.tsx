@@ -17,10 +17,16 @@ describe('router', () => {
     const user = userEvent.setup();
     // Home was retired (round-3): a signed-out visit to '/' lands straight on the sign-in page.
     renderWithRouter(routes);
-    expect(await screen.findByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /sign in/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
 
-    await user.click(screen.getByRole('link', { name: /create an account/i }));
-    expect(screen.getByRole('heading', { name: /create account/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /create account/i }));
+    expect(screen.getByRole('tab', { name: /create account/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('shows the not found page for unknown routes', async () => {

@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 import { AuthProvider, useAuthContext } from '../features/auth/auth.context';
 import { LoginPage } from '../features/auth/login.page';
-import { RegisterPage } from '../features/auth/register.page';
 import { ProtectedRoute, RequireFaction } from '../features/auth/protected-route';
 import { AdminRoute } from '../features/auth/admin-route';
 import { OnboardingRoute } from '../features/onboarding/onboarding.page';
@@ -86,7 +85,8 @@ export const routes = [
         ),
       },
       { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <RegisterPage /> },
+      // sign-in and sign-up share one page: the landing, with the panel on its Create account tab
+      { path: '/register', element: <LoginPage /> },
       { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/reset-password', element: <ResetPasswordPage /> },
       {

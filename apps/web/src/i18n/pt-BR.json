@@ -1738,6 +1738,7 @@
       "title": "Pronto para voar?",
       "text": "Crie um piloto, escolha uma facção e pegue seu primeiro trabalho.",
       "button": "Criar seu piloto"
-    }
+    },
+    "authTabs": "Entrar ou criar uma conta"
   }
 }

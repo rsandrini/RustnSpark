@@ -2032,8 +2032,6 @@ svg .block.disconnected {
 }
 
 .engine-tuning {
-  display: grid;
-  gap: 8px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -2041,6 +2039,12 @@ svg .block.disconnected {
 }
 .engine-tuning-title {
   margin: 0;
+  cursor: pointer;
+}
+.engine-tuning-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
 }
 .engine-slider {
   display: grid;
@@ -4926,6 +4930,30 @@ body:has(.modal-backdrop) .part-hover-card {
   gap: 16px;
   align-items: start;
 }
+/* A mission card with the trip map inside: details on one half, the map on the other. */
+.mcard-with-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.mcard-with-side .mcard-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.mcard-with-side .mcard-side .route-map {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .mcard-with-side {
+    grid-template-columns: 1fr;
+  }
+}
+.transit-aside-solo {
+  grid-template-columns: 1fr;
+}
 /* The ship scene and the map side by side, so the pair takes one row of height. */
 .transit-aside {
   display: grid;
@@ -5230,4 +5258,25 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   .landing-ship {
     display: none;
   }
+}
+
+/* Sign in / Create account tabs inside the landing panel. */
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-tab {
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--mut);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.auth-tab.active {
+  border-bottom-color: var(--spark);
+  color: var(--ink);
 }
