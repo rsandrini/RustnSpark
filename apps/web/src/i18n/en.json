@@ -1004,7 +1004,20 @@
       "ancient_core": "Ancient Core"
     },
     "refuelAddValue": "+{{units}}",
-    "refuelAfterValue": "{{after}} / {{cap}}"
+    "refuelAfterValue": "{{after}} / {{cap}}",
+    "upgradeRulesTitle": "How upgrading works",
+    "upgradeRule1": "The part must be at 100% condition. Repair it first if it is not.",
+    "upgradeRule2": "Pay the credits shown on its card.",
+    "upgradeRule3": "Bring the scrap, crystals or cores the card lists. The part keeps its slot and gets the next rarity.",
+    "upgradeNoneWhy": "Nothing can be upgraded right now. Here is why:",
+    "upgradeBlockedRepair": "{{count}} part is not at 100% condition: repair it first.",
+    "upgradeBlockedRepair_other": "{{count}} parts are not at 100% condition: repair them first.",
+    "upgradeBlockedPart": "{{name}} · {{condition}}%",
+    "upgradeGoRepair": "Go to Repair",
+    "upgradeBlockedTop": "{{count}} part is already at the top rarity.",
+    "upgradeBlockedTop_other": "{{count}} parts are already at the top rarity.",
+    "upgradeBlockedNoTier": "{{count}} part has no next tier to upgrade to.",
+    "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to."
   },
   "inventory": {
     "title": "Inventory",

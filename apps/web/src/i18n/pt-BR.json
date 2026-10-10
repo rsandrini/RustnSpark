@@ -1004,7 +1004,20 @@
       "ancient_core": "Núcleo Ancestral"
     },
     "refuelAddValue": "+{{units}}",
-    "refuelAfterValue": "{{after}} / {{cap}}"
+    "refuelAfterValue": "{{after}} / {{cap}}",
+    "upgradeRulesTitle": "Como funciona o upgrade",
+    "upgradeRule1": "A peça precisa estar com 100% de condição. Repare antes, se não estiver.",
+    "upgradeRule2": "Pague os créditos mostrados no cartão dela.",
+    "upgradeRule3": "Leve a sucata, os cristais ou os núcleos que o cartão pede. A peça mantém o encaixe e sobe para a próxima raridade.",
+    "upgradeNoneWhy": "Nada pode receber upgrade agora. Veja por quê:",
+    "upgradeBlockedRepair": "{{count}} peça não está com 100% de condição: repare primeiro.",
+    "upgradeBlockedRepair_other": "{{count}} peças não estão com 100% de condição: repare primeiro.",
+    "upgradeBlockedPart": "{{name}} · {{condition}}%",
+    "upgradeGoRepair": "Ir para Reparo",
+    "upgradeBlockedTop": "{{count}} peça já está na raridade máxima.",
+    "upgradeBlockedTop_other": "{{count}} peças já estão na raridade máxima.",
+    "upgradeBlockedNoTier": "{{count}} peça não tem próxima raridade para evoluir.",
+    "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir."
   },
   "inventory": {
     "title": "Inventário",

@@ -352,6 +352,25 @@ describe('port (S10.9)', () => {
     );
   });
 
+  it('upgrade tab says why nothing is listed: parts below 100% need a repair first', async () => {
+    server.use(
+      http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>
+        HttpResponse.json({
+          partInstanceId: String(params.id),
+          eligible: false,
+          reason: 'NOT_FULL_CONDITION',
+        }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    const why = await screen.findByTestId('upgrade-why');
+    expect(why).toHaveTextContent(/not at 100% condition/);
+    expect(screen.getByTestId('upgrade-rules')).toHaveTextContent('100% condition');
+    fireEvent.click(within(why).getByRole('button', { name: 'Go to Repair' }));
+    expect(await screen.findByRole('tab', { name: /^Repair/, selected: true })).toBeInTheDocument();
+  });
+
   it('offers the Mining tab only where the location can be mined', async () => {
     server.use(
       http.get('/v1/locations/:id/mine/info', () => HttpResponse.json({ minable: false })),

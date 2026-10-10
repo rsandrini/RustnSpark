@@ -1015,8 +1015,51 @@ export function PortPage({
       {tab === 'upgrade' && (
         <section className="stack" data-testid="upgrade">
           <p className="sub">{t('port.upgradeHelp')}</p>
+          <div className="upgrade-rules" data-testid="upgrade-rules">
+            <b>{t('port.upgradeRulesTitle')}</b>
+            <ol>
+              <li>{t('port.upgradeRule1')}</li>
+              <li>{t('port.upgradeRule2')}</li>
+              <li>{t('port.upgradeRule3')}</li>
+            </ol>
+          </div>
           {(() => {
             const quotes = upgradeQuotesQuery.data;
+            // Why a part is NOT on the list: said plainly, with the way out.
+            const blocked = (reason: string) =>
+              upgradeCandidates.filter((item) => {
+                const quote = quotes?.get(item.id);
+                return quote?.eligible === false && quote.reason === reason;
+              });
+            const needRepair = blocked('NOT_FULL_CONDITION');
+            const atTop = blocked('MAX_TIER');
+            const noTier = blocked('NO_NEXT_TIER');
+            const whyNot = (
+              <div className="upgrade-why" data-testid="upgrade-why">
+                {needRepair.length > 0 && (
+                  <div>
+                    <p>{t('port.upgradeBlockedRepair', { count: needRepair.length })}</p>
+                    <ul className="upgrade-why-list">
+                      {needRepair.map((item) => (
+                        <li key={item.id}>
+                          {t('port.upgradeBlockedPart', {
+                            name: partName(item),
+                            condition: Math.round(item.condition),
+                          })}
+                        </li>
+                      ))}
+                    </ul>
+                    <button type="button" className="btn" onClick={() => setTab('repair')}>
+                      {t('port.upgradeGoRepair')}
+                    </button>
+                  </div>
+                )}
+                {atTop.length > 0 && <p>{t('port.upgradeBlockedTop', { count: atTop.length })}</p>}
+                {noTier.length > 0 && (
+                  <p>{t('port.upgradeBlockedNoTier', { count: noTier.length })}</p>
+                )}
+              </div>
+            );
             const upgradable = upgradeCandidates.filter(
               (item) => quotes?.get(item.id)?.eligible === true,
             );
@@ -1045,8 +1088,11 @@ export function PortPage({
                   <p className="sub">
                     {upgradable.length > 0
                       ? t('port.upgradeNoneAffordable')
-                      : t('port.upgradeNone')}
+                      : upgradeCandidates.length > 0
+                        ? t('port.upgradeNoneWhy')
+                        : t('port.upgradeNone')}
                   </p>
+                  {whyNot}
                 </>
               );
             }
@@ -1144,6 +1190,7 @@ export function PortPage({
                     );
                   })}
                 </div>
+                {whyNot}
               </>
             );
           })()}
