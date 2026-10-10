@@ -943,7 +943,19 @@
           "hint": "You search without the ship: only {{percent}}% of the usual chance, but no attacks, no wear and no fuel."
         }
       },
-      "footNotice": "On foot you only get {{percent}}% of the usual chance to find anything. In return, nothing attacks you and the ship takes no damage."
+      "footNotice": "On foot you only get {{percent}}% of the usual chance to find anything. In return, nothing attacks you and the ship takes no damage.",
+      "more": "More about scavenging",
+      "tile": {
+        "time": "Time",
+        "timeValue": "~{{minutes}} min",
+        "risk": "Risk",
+        "riskValue": "Zone {{zone}} · pirates",
+        "riskFoot": "Zone {{zone}} · safe",
+        "nothing": "Finds nothing",
+        "quality": "Condition found",
+        "percent": "{{value}}%",
+        "range": "{{min}}–{{max}}%"
+      }
     },
     "mine": {
       "title": "Mine the field",
@@ -990,7 +1002,9 @@
     "cores": {
       "prototype_core": "Prototype Core",
       "ancient_core": "Ancient Core"
-    }
+    },
+    "refuelAddValue": "+{{units}}",
+    "refuelAfterValue": "{{after}} / {{cap}}"
   },
   "inventory": {
     "title": "Inventory",

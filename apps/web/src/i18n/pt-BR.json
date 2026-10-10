@@ -943,7 +943,19 @@
           "hint": "Você busca sem a nave: só {{percent}}% da chance normal, mas sem ataques, sem desgaste e sem combustível."
         }
       },
-      "footNotice": "A pé você só tem {{percent}}% da chance normal de achar algo. Em troca, nada te ataca e a nave não sofre dano."
+      "footNotice": "A pé você só tem {{percent}}% da chance normal de achar algo. Em troca, nada te ataca e a nave não sofre dano.",
+      "more": "Mais sobre a busca de sucata",
+      "tile": {
+        "time": "Tempo",
+        "timeValue": "~{{minutes}} min",
+        "risk": "Risco",
+        "riskValue": "Zona {{zone}} · piratas",
+        "riskFoot": "Zona {{zone}} · seguro",
+        "nothing": "Nada encontrado",
+        "quality": "Condição achada",
+        "percent": "{{value}}%",
+        "range": "{{min}}–{{max}}%"
+      }
     },
     "mine": {
       "title": "Minerar o campo",
@@ -990,7 +1002,9 @@
     "cores": {
       "prototype_core": "Núcleo Protótipo",
       "ancient_core": "Núcleo Ancestral"
-    }
+    },
+    "refuelAddValue": "+{{units}}",
+    "refuelAfterValue": "{{after}} / {{cap}}"
   },
   "inventory": {
     "title": "Inventário",

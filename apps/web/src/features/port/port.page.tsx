@@ -32,6 +32,7 @@ import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { Gauge, conditionTone } from '../../ui/Gauge';
+import { ActionArt } from '../../ui/ActionArt';
 import { PartThumb } from '../../ui/PartThumb';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { PortTabs } from '../../ui/PortTabs';
@@ -146,6 +147,16 @@ export function PortPage({
     queryKey: ['materials'],
     queryFn: () => client.get<MaterialsResponse>('/v1/materials'),
   });
+  // Only places that can be mined at all get the Mining tab.
+  const minableQuery = useQuery({
+    queryKey: ['mineInfo', locationId],
+    enabled: locationId !== undefined,
+    queryFn: () => client.get<{ minable: boolean }>(`/v1/locations/${locationId ?? ''}/mine/info`),
+  });
+  const minable = minableQuery.data?.minable === true;
+  useEffect(() => {
+    if (tab === 'mining' && minableQuery.data?.minable === false) setTab('market');
+  }, [tab, minableQuery.data]);
   const scavengeInfoQuery = useQuery({
     queryKey: ['scavenge', locationId],
     enabled: locationId !== undefined && tab === 'scavenging',
@@ -555,7 +566,7 @@ export function PortPage({
   const portTabsRow = (
     <div className="page-tabs-row">
       <PortTabs
-        tabs={PORT_TABS.map((id) => ({
+        tabs={PORT_TABS.filter((id) => id !== 'mining' || minable).map((id) => ({
           id,
           label: t(`port.tabs.${id}`),
           badge: id === 'repair' ? repairBadge : undefined,
@@ -945,12 +956,15 @@ export function PortPage({
                 </div>
                 <div className="add">
                   <small>{t('port.refuelAdd')}</small>
-                  <b>+{wantedUnits}</b>
+                  <b>{t('port.refuelAddValue', { units: wantedUnits })}</b>
                 </div>
                 <div>
                   <small>{t('port.refuelAfter')}</small>
                   <b>
-                    {Math.round(fuel + wantedUnits)} / {Math.round(fuelCap)}
+                    {t('port.refuelAfterValue', {
+                      after: Math.round(fuel + wantedUnits),
+                      cap: Math.round(fuelCap),
+                    })}
                   </b>
                 </div>
               </div>
@@ -1138,51 +1152,66 @@ export function PortPage({
 
       {tab === 'scavenging' && (
         <section className="stack scav" data-testid="scavenging">
-          <h2>{t('port.scav.title')}</h2>
-          <p>{t('port.scav.what', { place: locationName(ship.currentLocationId) })}</p>
+          <header className="action-hero">
+            <ActionArt kind={scavengeMode === 'foot' ? 'scavenge-foot' : 'scavenge-ship'} />
+            <div>
+              <h2>{t('port.scav.title')}</h2>
+              <p className="sub">
+                {t('port.scav.what', { place: locationName(ship.currentLocationId) })}
+              </p>
+            </div>
+          </header>
           {scavengeInfoQuery.data !== undefined && (
-            <ul className="scav-facts">
+            <ul className="action-tiles" data-testid="scav-tiles">
               <li>
-                {t('port.scav.time', {
-                  minutes: Math.max(
-                    1,
-                    Math.round(
-                      (scavengeMode === 'foot'
-                        ? scavengeInfoQuery.data.footDurationSeconds
-                        : scavengeInfoQuery.data.durationSeconds) / 60,
+                <small>{t('port.scav.tile.time')}</small>
+                <b>
+                  {t('port.scav.tile.timeValue', {
+                    minutes: Math.max(
+                      1,
+                      Math.round(
+                        (scavengeMode === 'foot'
+                          ? scavengeInfoQuery.data.footDurationSeconds
+                          : scavengeInfoQuery.data.durationSeconds) / 60,
+                      ),
                     ),
-                  ),
-                })}
+                  })}
+                </b>
               </li>
               <li>
-                {t(scavengeMode === 'foot' ? 'port.scav.riskFoot' : 'port.scav.risk', {
-                  zone: scavengeInfoQuery.data.zone,
-                })}
+                <small>{t('port.scav.tile.risk')}</small>
+                <b>
+                  {scavengeMode === 'foot'
+                    ? t('port.scav.tile.riskFoot', { zone: scavengeInfoQuery.data.zone })
+                    : t('port.scav.tile.riskValue', { zone: scavengeInfoQuery.data.zone })}
+                </b>
               </li>
               <li>
-                {t('port.scav.nothing', {
-                  percent: Math.round(scavengeInfoQuery.data.nothingChance * 100),
-                })}
+                <small>{t('port.scav.tile.nothing')}</small>
+                <b>
+                  {t('port.scav.tile.percent', {
+                    value: Math.round(scavengeInfoQuery.data.nothingChance * 100),
+                  })}
+                </b>
               </li>
               <li>
-                {t('port.scav.quality', {
-                  min: scavengeInfoQuery.data.qualityMin,
-                  max: scavengeInfoQuery.data.qualityMax,
-                })}
+                <small>{t('port.scav.tile.quality')}</small>
+                <b>
+                  {t('port.scav.tile.range', {
+                    min: scavengeInfoQuery.data.qualityMin,
+                    max: scavengeInfoQuery.data.qualityMax,
+                  })}
+                </b>
               </li>
-              <li>
-                {t('port.scav.finds', {
-                  place: t(`port.scav.field.${scavengeInfoQuery.data.fieldType}`),
-                })}
-              </li>
-              {scavengeInfoQuery.data.scrapPlace && <li>{t('port.scav.scrap')}</li>}
-              <li>{t('port.scav.where')}</li>
             </ul>
           )}
           <fieldset className="scav-modes" data-testid="scavenge-mode">
             <legend>{t('port.scav.modeTitle')}</legend>
             {(['ship', 'foot'] as const).map((mode) => (
-              <label key={mode} className="scav-mode">
+              <label
+                key={mode}
+                className={`scav-mode action-card${scavengeMode === mode ? ' on' : ''}`}
+              >
                 <input
                   type="radio"
                   name="scavenge-mode"
@@ -1190,9 +1219,9 @@ export function PortPage({
                   checked={scavengeMode === mode}
                   onChange={() => setScavengeMode(mode)}
                 />
+                <ActionArt kind={mode === 'foot' ? 'scavenge-foot' : 'scavenge-ship'} />
                 <span>
                   <b>{t(`port.scav.mode.${mode}.name`)}</b>
-                  <br />
                   <span className="sub">
                     {t(`port.scav.mode.${mode}.hint`, {
                       percent: Math.round(display.scavengeFootFactor * 100),
@@ -1212,6 +1241,31 @@ export function PortPage({
               {t('port.scav.handicap', { percent: Math.round(display.scavengeHandicap * 100) })}
             </p>
           )}
+          {scavengeInfoQuery.data !== undefined && (
+            <details className="scav-more">
+              <summary>{t('port.scav.more')}</summary>
+              <ul className="scav-facts">
+                <li>
+                  {t(scavengeMode === 'foot' ? 'port.scav.riskFoot' : 'port.scav.risk', {
+                    zone: scavengeInfoQuery.data.zone,
+                  })}
+                </li>
+                <li>
+                  {t('port.scav.quality', {
+                    min: scavengeInfoQuery.data.qualityMin,
+                    max: scavengeInfoQuery.data.qualityMax,
+                  })}
+                </li>
+                <li>
+                  {t('port.scav.finds', {
+                    place: t(`port.scav.field.${scavengeInfoQuery.data.fieldType}`),
+                  })}
+                </li>
+                {scavengeInfoQuery.data.scrapPlace && <li>{t('port.scav.scrap')}</li>}
+                <li>{t('port.scav.where')}</li>
+              </ul>
+            </details>
+          )}
           {scavengeInfoQuery.data !== undefined && scavengeInfoQuery.data.retryAfterSeconds > 0 ? (
             <p className="notice" role="status">
               {t('port.scav.nextAttempt')}{' '}
@@ -1223,29 +1277,38 @@ export function PortPage({
           ) : (
             <p className="sub">{t('port.scav.ready')}</p>
           )}
-          <button
-            type="button"
-            className="btn primary"
-            disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
-            onClick={() => scavenge.mutate()}
-          >
-            {t(scavengeMode === 'foot' ? 'port.scavengeFoot' : 'port.scavenge')}
-          </button>
+          <div className="action-cta">
+            <button
+              type="button"
+              className="btn primary"
+              disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
+              onClick={() => scavenge.mutate()}
+            >
+              {t(scavengeMode === 'foot' ? 'port.scavengeFoot' : 'port.scavenge')}
+            </button>
+          </div>
         </section>
       )}
 
-      {tab === 'mining' && (
+      {tab === 'mining' && minable && (
         <section className="stack scav" data-testid="mining-job">
-          <h2>{t('port.mine.title')}</h2>
-          <p className="sub">{t('port.mine.what')}</p>
-          <button
-            type="button"
-            className="btn primary"
-            disabled={mine.isPending}
-            onClick={() => mine.mutate()}
-          >
-            {t('port.mine.action')}
-          </button>
+          <header className="action-hero">
+            <ActionArt kind="mining" />
+            <div>
+              <h2>{t('port.mine.title')}</h2>
+              <p className="sub">{t('port.mine.what')}</p>
+            </div>
+          </header>
+          <div className="action-cta">
+            <button
+              type="button"
+              className="btn primary"
+              disabled={mine.isPending}
+              onClick={() => mine.mutate()}
+            >
+              {t('port.mine.action')}
+            </button>
+          </div>
         </section>
       )}
 

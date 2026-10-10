@@ -1,4 +1,4 @@
-import { Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -10,6 +10,11 @@ import { MiningJobService } from './mining-job.service.js';
 @Controller('locations')
 export class MiningJobController {
   constructor(private readonly jobs: MiningJobService) {}
+
+  @Get(':id/mine/info')
+  info(@Param('id') locationId: string) {
+    return this.jobs.info(locationId);
+  }
 
   @Post(':id/mine')
   @HttpCode(HttpStatus.OK)

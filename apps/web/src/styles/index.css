@@ -5376,3 +5376,125 @@ details.collapsible > summary h2 {
   display: inline;
   margin: 0;
 }
+
+/* Port actions (scavenging, mining): an illustrated hero, stat tiles and choice cards. */
+.action-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.action-art .art-sky {
+  fill: #0a0f1a;
+}
+.action-art .art-star {
+  fill: #cdd9e5;
+  opacity: 0.7;
+}
+.action-art .art-ground {
+  fill: #1c2430;
+}
+.action-art .art-ship {
+  fill: #5a6b78;
+  stroke: #8da0b0;
+  stroke-width: 1;
+}
+.action-art .art-wreck {
+  fill: #3a4650;
+  stroke: #5a6b78;
+}
+.action-art .art-rock {
+  fill: #3a3f4a;
+}
+.action-art .art-vein,
+.action-art .art-beam {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+.action-art .art-spark {
+  fill: var(--spark);
+}
+.action-art .art-suit {
+  fill: #d0d7de;
+}
+.action-hero {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+.action-hero h2 {
+  margin: 0 0 4px;
+}
+.action-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.action-tiles li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel2);
+}
+.action-tiles small {
+  color: var(--mut);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.scav-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+}
+.scav-modes legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.action-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.action-card.on {
+  border-color: var(--spark);
+  box-shadow: 0 0 0 1px var(--spark);
+}
+.action-card input[type='radio'] {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.action-card > span {
+  display: grid;
+  gap: 2px;
+}
+.scav-more summary {
+  cursor: pointer;
+  color: var(--mut);
+}
+.action-cta {
+  display: flex;
+  justify-content: center;
+}
+@media (max-width: 700px) {
+  .action-hero,
+  .scav-modes {
+    grid-template-columns: 1fr;
+  }
+}

@@ -51,6 +51,27 @@ export class MiningJobService {
     private readonly clock: Clock,
   ) {}
 
+  /** Whether this location can be mined at all (a template that fits it exists): the port screen
+      only offers the Mining tab where the answer is yes. */
+  async info(locationId: string): Promise<{ minable: boolean }> {
+    const location = await this.prisma.location.findUnique({ where: { id: locationId } });
+    if (!location) throw new NotFoundException('location not found');
+    const templates = await this.prisma.missionTemplate.findMany({
+      where: { type: 'MINING', active: true },
+      select: { id: true, type: true, factionId: true, active: true, requirements: true },
+    });
+    const minable = isMiningEligible(
+      {
+        id: location.id,
+        type: location.type,
+        zone: location.zone,
+        factionId: location.factionId,
+      },
+      templates,
+    );
+    return { minable };
+  }
+
   async start(playerId: string, locationId: string): Promise<DispatchResponse> {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) throw new NotFoundException('location not found');

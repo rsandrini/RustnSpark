@@ -314,14 +314,14 @@ describe('port (S10.9)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
     // The tab explains itself: time, risk, what you find, and where it works.
     const scav = await screen.findByTestId('scavenging');
-    expect(await within(scav).findByText(/about 10 minutes/)).toBeInTheDocument();
-    expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
+    expect(await within(scav).findByText('~10 min')).toBeInTheDocument();
+    expect(within(scav).getByText(/Zone 1/)).toBeInTheDocument();
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/Only where your ship is docked/)).toBeInTheDocument();
 
     // On foot is a choice of its own: its own time, its own warning, its own button.
     fireEvent.click(within(scav).getByRole('radio', { name: /On foot/ }));
-    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(await within(scav).findByText('~5 min')).toBeInTheDocument();
     expect(within(scav).getByTestId('scavenge-foot')).toHaveTextContent('50%');
     expect(within(scav).queryByTestId('scavenge-handicap')).not.toBeInTheDocument();
     expect(within(scav).getByRole('button', { name: 'Go scavenging on foot' })).toBeInTheDocument();
@@ -350,6 +350,15 @@ describe('port (S10.9)', () => {
     await waitFor(() =>
       expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
     );
+  });
+
+  it('offers the Mining tab only where the location can be mined', async () => {
+    server.use(
+      http.get('/v1/locations/:id/mine/info', () => HttpResponse.json({ minable: false })),
+    );
+    await renderPort();
+    await screen.findByRole('tab', { name: 'Scavenging' });
+    await waitFor(() => expect(screen.queryByRole('tab', { name: 'Mining' })).toBeNull());
   });
 
   it('surfaces NOT_MINABLE from the server as a plain action error', async () => {

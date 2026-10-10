@@ -91,10 +91,20 @@ describe('independent mining job (round 10)', () => {
   // parts land adjacent to the existing cluster.
   async function installMiningRig(token: string, playerId: string, shipId: string): Promise<void> {
     const rig = await prisma.partInstance.create({
-      data: { partType: 'mining_rig', ownerPlayerId: playerId, condition: 100, location: 'INVENTORY' },
+      data: {
+        partType: 'mining_rig',
+        ownerPlayerId: playerId,
+        condition: 100,
+        location: 'INVENTORY',
+      },
     });
     const reactor = await prisma.partInstance.create({
-      data: { partType: 'reactor_solar', ownerPlayerId: playerId, condition: 100, location: 'INVENTORY' },
+      data: {
+        partType: 'reactor_solar',
+        ownerPlayerId: playerId,
+        condition: 100,
+        location: 'INVENTORY',
+      },
     });
     const installed = await prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId, location: 'INSTALLED', shipId },
@@ -114,6 +124,22 @@ describe('independent mining job (round 10)', () => {
   // locations are always eligible for its own template (luna's has no originTypes
   // restriction at all) — so NOT_MINABLE is exercised at the predicate level
   // (template.filler.spec.ts's isMiningEligible tests), not against this particular seed.
+
+  it('tells the port screen whether a location can be mined at all', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const yes = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/mine/info')
+      .set(auth(player.token));
+    expect(yes.status).toBe(200);
+    expect(yes.body).toEqual({ minable: true });
+
+    await prisma.missionTemplate.updateMany({ where: { type: 'MINING' }, data: { active: false } });
+    const no = await request(httpServer(testApp.app))
+      .get('/v1/locations/ceres/mine/info')
+      .set(auth(player.token));
+    expect(no.body).toEqual({ minable: false });
+  });
 
   it('refuses without a mining rig installed (NO_MINING_RIG)', async () => {
     await freshSeededApp();
@@ -175,11 +201,17 @@ describe('independent mining job (round 10)', () => {
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
     const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
     const engines = await prisma.partInstance.findMany({
-      where: { id: { in: layout.map((placement) => placement.partInstanceId) }, partCatalog: { partClass: 'ENGINE' } },
+      where: {
+        id: { in: layout.map((placement) => placement.partInstanceId) },
+        partCatalog: { partClass: 'ENGINE' },
+      },
       select: { id: true },
     });
     const engineId = engines[0]!.id;
-    await prisma.partInstance.update({ where: { id: engineId }, data: { connectors: Prisma.DbNull } });
+    await prisma.partInstance.update({
+      where: { id: engineId },
+      data: { connectors: Prisma.DbNull },
+    });
 
     // universal ports on the engine (turning it never disconnects it), then turn it through its
     // four facings until the ship is flight-viable apart from the
@@ -194,7 +226,9 @@ describe('independent mining job (round 10)', () => {
         .set(auth(player.token))
         .send({ layout: candidate });
       const viability = (
-        preview.body as { viability?: { problems: { code: string }[]; warnings: { code: string }[] } }
+        preview.body as {
+          viability?: { problems: { code: string }[]; warnings: { code: string }[] };
+        }
       ).viability;
       const warned = (viability?.warnings ?? []).map((problem) => problem.code);
       if ((viability?.problems.length ?? 1) === 0 && warned.includes('EXHAUST_BLOCKED')) {
@@ -211,7 +245,8 @@ describe('independent mining job (round 10)', () => {
     const refused = await start(player.token, 'ceres');
     expect(refused.status).toBe(400);
     const problems = (
-      (refused.body as { message?: { error?: string; problems?: { code: string }[] } }).message ?? {}
+      (refused.body as { message?: { error?: string; problems?: { code: string }[] } }).message ??
+      {}
     ).problems;
     expect(problems?.map((problem) => problem.code)).toContain('EXHAUST_BLOCKED');
 

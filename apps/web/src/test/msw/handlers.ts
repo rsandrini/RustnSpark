@@ -1239,6 +1239,7 @@ export const handlers = [
       serverTime: new Date().toISOString(),
     }),
   ),
+  http.get('/v1/locations/:id/mine/info', () => HttpResponse.json({ minable: true })),
   http.get('/v1/locations/:id/scavenge', ({ params }) => {
     const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
     return ok<ScavengeInfo>({
