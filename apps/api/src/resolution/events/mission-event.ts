@@ -33,6 +33,7 @@ export const MISSION_EVENT_TYPES = [
   'race_result',
   'pvp_encounter',
   'mining',
+  'mining_cargo_full',
   'mining_paid',
   'mining_partial_failure',
   'motor',

@@ -40,6 +40,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
+  mining_cargo_full: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',

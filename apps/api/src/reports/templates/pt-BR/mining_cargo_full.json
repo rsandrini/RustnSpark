@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "O porão encheu: mais {quantity} unidades de minério ficaram para trás.",
+    "Sem espaço no compartimento de carga — mais {quantity} unidades de minério não puderam ser trazidas."
+  ]
+}

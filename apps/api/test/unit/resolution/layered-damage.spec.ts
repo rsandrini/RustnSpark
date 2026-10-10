@@ -425,6 +425,41 @@ describe('a whole run in the layered model', () => {
     expect(out.events.some((event) => event.type === 'mission_wear')).toBe(false);
   });
 
+  it('mined ore rides in the cargo space: past it the rest stays behind, and the report says so', () => {
+    const quietRules = {
+      ...rules,
+      encounter: { ...rules.encounter, chance_divisor: 100000 },
+      mining: { ...rules.mining, attempts_per_stop: 40 },
+    };
+    const dig: MissionInput = {
+      ...trip(2),
+      type: 'MINING',
+      mining: {
+        stop: { env: 'debris', materialId: 'common_ore', materialRarity: 'common' },
+        miner: { min: 5, condition: 100 },
+      },
+    };
+    const mined = (crg: number) => {
+      const base = snap();
+      const out = resolveMission({
+        seed: 'ore',
+        snapshot: { ...base, sheet: { ...base.sheet, crg, min: 5 } },
+        mission: dig,
+        rules: quietRules,
+      });
+      return {
+        units: out.loot.reduce((sum, entry) => sum + entry.quantity, 0),
+        full: out.events.find((event) => event.type === 'mining_cargo_full'),
+      };
+    };
+    const roomy = mined(100);
+    expect(roomy.units).toBeGreaterThan(3);
+    expect(roomy.full).toBeUndefined();
+    const tight = mined(3);
+    expect(tight.units).toBe(3);
+    expect(tight.full?.magnitude).toBe(roomy.units - 3);
+  });
+
   it('the journey\'s hit is recorded by the layer that took it', () => {
     const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
     const out = resolveMission({ seed: 'layers', snapshot: snap(), mission: trip(12), rules: quietRules });

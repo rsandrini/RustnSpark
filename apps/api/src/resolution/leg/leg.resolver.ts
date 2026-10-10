@@ -955,8 +955,19 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       rules,
       miningRng,
     );
-    loot = [...loot, ...yields.flatMap((entry: MiningYield) => [{ ...entry }])];
-    for (const lootEvent of toMiningLootEvents(yields)) {
+    // The ore rides in the cargo space until the next port: past it, the rest stays behind. (Once
+    // delivered it joins the pilot's goods, which take no space.)
+    let room = Math.max(0, ship.sheet.crg);
+    let left = 0;
+    const kept: MiningYield[] = [];
+    for (const entry of yields) {
+      const take = Math.min(entry.quantity, room);
+      room -= take;
+      left += entry.quantity - take;
+      if (take > 0) kept.push({ ...entry, quantity: take });
+    }
+    loot = [...loot, ...kept.flatMap((entry: MiningYield) => [{ ...entry }])];
+    for (const lootEvent of toMiningLootEvents(kept)) {
       events.push(
         missionEvent({
           leg: input.index,
@@ -965,6 +976,17 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
           actors,
           magnitude: lootEvent.quantity,
           loot: [{ materialId: lootEvent.materialId, quantity: lootEvent.quantity }],
+        }),
+      );
+    }
+    if (left > 0) {
+      events.push(
+        missionEvent({
+          leg: input.index,
+          category: 'loot',
+          type: 'mining_cargo_full',
+          actors,
+          magnitude: left,
         }),
       );
     }
