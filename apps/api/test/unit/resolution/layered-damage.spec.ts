@@ -41,7 +41,9 @@ describe('armor cuts a hit by a flat amount, then its pool soaks the rest', () =
   });
 
   it('never cuts more than its share of the hit, so nothing is immune', () => {
-    expect(armorReduction(400, 4, rules.combat)).toBeCloseTo(4 * rules.combat.armor_reduction_max_share);
+    expect(armorReduction(400, 4, rules.combat)).toBeCloseTo(
+      4 * rules.combat.armor_reduction_max_share,
+    );
   });
 
   it('cuts less as the armor wears or runs down, and nothing once it is gone', () => {
@@ -78,12 +80,21 @@ describe('armor cuts a hit by a flat amount, then its pool soaks the rest', () =
   it('in a fight: an armored ship lasts longer under the same attacker than a bare one', () => {
     const attacker: CombatSheet = { pdf: 6, bli: 0, esc: 0, sen: 1, hp: 80, mob: 2 };
     const bare: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 1, hp: 80, mob: 2, armor: 0 };
-    const plated: CombatSheet = { pdf: 0, bli: 8, esc: 0, sen: 1, hp: 80, mob: 2, armor: 8 * rules.combat.armor_pool_factor };
+    const plated: CombatSheet = {
+      pdf: 0,
+      bli: 8,
+      esc: 0,
+      sen: 1,
+      hp: 80,
+      mob: 2,
+      armor: 8 * rules.combat.armor_pool_factor,
+    };
     // (a fight runs until one side retreats, so what differs is how many rounds it takes)
     const roundsToBreak = (target: CombatSheet) => {
       let rounds = 0;
       for (let i = 0; i < 40; i += 1) {
-        rounds += resolveCombat(attacker, target, rules.combat, createRng(`armor-${i}`)).rounds.length;
+        rounds += resolveCombat(attacker, target, rules.combat, createRng(`armor-${i}`)).rounds
+          .length;
       }
       return rounds;
     };
@@ -193,6 +204,42 @@ describe('settleLosses: damage becomes wear on the parts, evenly', () => {
   });
 });
 
+describe('settleLosses: the Hull Frame tanks the hull losses', () => {
+  const ship = [
+    { id: 'frame', condition: 100, hullFrame: true },
+    { id: 'engine', condition: 100 },
+    { id: 'bridge', condition: 100 },
+    { id: 'tank', condition: 100 },
+  ];
+  const withShare = (share: number) => ({
+    ...rules,
+    wear: { ...rules.wear, hull_frame_share: share },
+  });
+
+  it('takes its share of the wear points and passes the rest on to the other parts', () => {
+    // 40 of 100 hull lost at the half share: 20% worn on 4 parts = 80 points to hand out
+    const settled = settleLosses(ship, layers({ hp: 60 }), withShare(0.7));
+    // the frame tanks 70% of them (56 points, within its 100) and the other three split 24
+    expect(settled.parts[0]!.condition).toBeCloseTo(44);
+    expect(settled.parts[1]!.condition).toBeCloseTo(92);
+    expect(settled.parts[3]!.condition).toBeCloseTo(92);
+  });
+
+  it('is destroyed at most: what it cannot take goes on to the rest', () => {
+    const settled = settleLosses(ship, layers({ hp: 0 }), withShare(0.7));
+    // 200 points: the frame can only take its 100, the rest is spread over the other three
+    expect(settled.parts[0]!.condition).toBeCloseTo(0);
+    expect(settled.parts[1]!.condition).toBeCloseTo(100 - 100 / 3);
+  });
+
+  it('with the share at 0, or no frame, every part wears alike', () => {
+    const none = settleLosses(ship, layers({ hp: 80 }), withShare(0));
+    expect(none.parts.map((part) => Math.round(part.condition))).toEqual([90, 90, 90, 90]);
+    const noFrame = settleLosses(ship.slice(1), layers({ hp: 80 }), withShare(0.7));
+    expect(noFrame.parts.map((part) => Math.round(part.condition))).toEqual([90, 90, 90]);
+  });
+});
+
 describe('environmentDamage', () => {
   it('grows with the route danger and the environment, and is eased for mining', () => {
     const roll = (danger: number, env: number, scale = 1) =>
@@ -236,7 +283,12 @@ describe('layered combat', () => {
   });
 
   it('a shield recovers its own regen per round and nothing more', () => {
-    const result = resolveCombat(striker, ship({ esc: 0, escRegen: 3, escRegenEnergy: 0 }), quiet, createRng('regen'));
+    const result = resolveCombat(
+      striker,
+      ship({ esc: 0, escRegen: 3, escRegenEnergy: 0 }),
+      quiet,
+      createRng('regen'),
+    );
     const firstHit = result.rounds.find((round) => round.attacker === 'A' && round.hit);
     // starts empty; one round of recovery = 3 points to soak with
     expect(firstHit?.shieldAbsorbed).toBeLessThanOrEqual(3);
@@ -298,7 +350,7 @@ describe('batteries are a real store', () => {
     expect(result.final.batA).toBe(0);
   });
 
-  it('the ship\'s spare power pays first, so the battery lasts longer', () => {
+  it("the ship's spare power pays first, so the battery lasts longer", () => {
     const solo = resolveCombat(gunner(), target, long, createRng('spare'));
     const helped = resolveCombat(
       gunner({ energyMode: 'FULL', energyCont: 3 }),
@@ -322,7 +374,16 @@ describe('power-starved systems', () => {
   const target: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 0, hp: 400, mob: 1, armor: 0 };
   const long: GameRules['combat'] = { ...rules.combat, kite_factor: 0, retreat_hp_ratio: 0.01 };
   const gunner = (over: Partial<CombatSheet> = {}): CombatSheet => ({
-    pdf: 6, bli: 0, esc: 10, sen: 9, hp: 400, mob: 1, armor: 0, escMax: 10, escRegen: 3, ...over,
+    pdf: 6,
+    bli: 0,
+    esc: 10,
+    sen: 9,
+    hp: 400,
+    mob: 1,
+    armor: 0,
+    escMax: 10,
+    escRegen: 3,
+    ...over,
   });
 
   it('a weapon with no power never fires; with full power it always does', () => {
@@ -334,9 +395,12 @@ describe('power-starved systems', () => {
 
   it('a weapon with partial power fires only part of the time', () => {
     const shots = (power: number) =>
-      resolveCombat(gunner({ weaponPower: power }), target, long, createRng('w-half')).rounds.filter(
-        (round) => round.attacker === 'A',
-      ).length;
+      resolveCombat(
+        gunner({ weaponPower: power }),
+        target,
+        long,
+        createRng('w-half'),
+      ).rounds.filter((round) => round.attacker === 'A').length;
     expect(shots(0.5)).toBeLessThan(shots(1));
     expect(shots(0.5)).toBeGreaterThan(0);
   });
@@ -364,9 +428,26 @@ describe('a whole run in the layered model', () => {
     shipId: 's',
     parts: PARTS,
     sheet: {
-      pot: 40, pdf: 0, bli: 4, esc: 0, sen: 4, crg: 10, min: 0, hp: 100, mass: 20,
-      energyCont: 0, energyCombat: 0, batCharge: 0, batOutput: 0, batInput: 0,
-      fuelCap: 1000, fuelUse: 1, structureUsed: 5, structureBudget: 60, autonomy: 0, mob: 2,
+      pot: 40,
+      pdf: 0,
+      bli: 4,
+      esc: 0,
+      sen: 4,
+      crg: 10,
+      min: 0,
+      hp: 100,
+      mass: 20,
+      energyCont: 0,
+      energyCombat: 0,
+      batCharge: 0,
+      batOutput: 0,
+      batInput: 0,
+      fuelCap: 1000,
+      fuelUse: 1,
+      structureUsed: 5,
+      structureBudget: 60,
+      autonomy: 0,
+      mob: 2,
       condition: 100,
     },
     fuel: 1000,
@@ -399,7 +480,12 @@ describe('a whole run in the layered model', () => {
   it('the journey hurts every part alike: the cargo hold is not spared, the engine not singled out', () => {
     // a route with no pirates: only the journey's own damage
     const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
-    const out = resolveMission({ seed: 'quiet', snapshot: snap(), mission: trip(12), rules: quietRules });
+    const out = resolveMission({
+      seed: 'quiet',
+      snapshot: snap(),
+      mission: trip(12),
+      rules: quietRules,
+    });
     const byId = new Map(out.parts.map((part) => [part.id, part.condition]));
     expect(byId.get('bridge')).toBeLessThan(100);
     // every part that is not armor loses the same share
@@ -411,9 +497,20 @@ describe('a whole run in the layered model', () => {
 
   it('a calmer route hurts less than a dangerous one', () => {
     const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
-    const calm = resolveMission({ seed: 'z', snapshot: snap(), mission: trip(1), rules: quietRules });
-    const rough = resolveMission({ seed: 'z', snapshot: snap(), mission: trip(14), rules: quietRules });
-    const cond = (out: typeof calm) => out.parts.find((part) => part.id === 'bridge')?.condition ?? 0;
+    const calm = resolveMission({
+      seed: 'z',
+      snapshot: snap(),
+      mission: trip(1),
+      rules: quietRules,
+    });
+    const rough = resolveMission({
+      seed: 'z',
+      snapshot: snap(),
+      mission: trip(14),
+      rules: quietRules,
+    });
+    const cond = (out: typeof calm) =>
+      out.parts.find((part) => part.id === 'bridge')?.condition ?? 0;
     expect(cond(calm)).toBeGreaterThan(cond(rough));
   });
 
@@ -460,9 +557,14 @@ describe('a whole run in the layered model', () => {
     expect(tight.full?.magnitude).toBe(roomy.units - 3);
   });
 
-  it('the journey\'s hit is recorded by the layer that took it', () => {
+  it("the journey's hit is recorded by the layer that took it", () => {
     const quietRules = { ...rules, encounter: { ...rules.encounter, chance_divisor: 100000 } };
-    const out = resolveMission({ seed: 'layers', snapshot: snap(), mission: trip(12), rules: quietRules });
+    const out = resolveMission({
+      seed: 'layers',
+      snapshot: snap(),
+      mission: trip(12),
+      rules: quietRules,
+    });
     const wear = out.events.find((event) => event.type === 'mission_wear');
     expect(wear?.cascade).toBeDefined();
     // no shield on this ship: it is the armor that took it first

@@ -542,6 +542,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.hull_frame_share',
+    group: 'wear',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.hull_frame_share),
+    description: {
+      en: 'Share of the wear caused by hull losses that the Hull Frame parts tank (split evenly, never more than their condition); the rest passes through to the other parts. 0 = every part wears alike.',
+      'pt-BR':
+        'Fração do desgaste causado pelas perdas do casco que as peças de Estrutura de Casco absorvem (dividida igualmente, nunca mais que a condição delas); o resto passa para as outras peças. 0 = todas as peças desgastam igual.',
+    },
+  },
+  {
     key: 'wear.mining_wear_factor',
     group: 'wear',
     type: 'number',

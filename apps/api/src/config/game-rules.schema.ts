@@ -62,6 +62,8 @@ const wearSchema = z.object({
   mining_wear_factor: z.number().min(0).max(1),
   environment_damage_factor: z.number().min(0).max(50),
   hull_to_condition: z.number().min(0).max(2),
+  // Old stored rule sets have no such key: they replay as they ran (every part alike).
+  hull_frame_share: z.number().min(0).max(1).default(0),
 });
 
 const economySchema = z.object({

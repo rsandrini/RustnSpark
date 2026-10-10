@@ -186,6 +186,7 @@ export type ConfigKey =
   | 'wear.mining_wear_factor'
   | 'wear.environment_damage_factor'
   | 'wear.hull_to_condition'
+  | 'wear.hull_frame_share'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
@@ -296,6 +297,7 @@ export type GameRules = Readonly<{
     environment_damage_factor: number;
     /** Share of lost hull points that becomes condition lost on every part after a run. */
     hull_to_condition: number;
+    hull_frame_share: number;
   }>;
   economy: Readonly<{
     fuel_price: number;

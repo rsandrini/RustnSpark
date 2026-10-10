@@ -185,6 +185,8 @@ ship: they weaken it (see the Ship sheet warnings). Only a ship that cannot move
   (`combat.armor_pool_factor` points of absorbed damage per armor point). Parts are otherwise hurt
   only by a failed roll or an overload. After a run the losses are written back as condition lost
   (`wear.hull_to_condition` for the hull, armor parts for armor), so damage persists until repaired.
+  The Hull Frame parts (the `hull` family) tank `wear.hull_frame_share` of the wear the hull's losses
+  cause, up to their own condition; the rest passes through to the other parts alike.
   `wear.environment_damage_factor` sizes the journey's hit; `wear.mining_wear_factor` eases mining.
   Runs stored before this model (no `layered` flag) replay with the old per-part wear.
 - **Shield.** A shield part has a `shieldRegen` (in its special properties): points recovered each

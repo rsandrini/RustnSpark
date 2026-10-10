@@ -60,6 +60,8 @@ export interface PartSnapshot {
   readonly condition: number;
   /** The part adds to the armor pool (so armor lost wears it down). */
   readonly providesArmor?: boolean;
+  /** The part is a Hull Frame: it tanks the hull's losses first (layered model). */
+  readonly hullFrame?: boolean;
   /** What the part gives to or takes from the ship's power (layered model). */
   readonly power?: PowerPart;
   /** An engine's group (chemical burns fuel, ion draws power): what engine tuning pushes. */

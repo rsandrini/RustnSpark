@@ -13,6 +13,7 @@ import { isEnergyMode } from '../ships/energy-mode.types.js';
 import { powerPartOf } from '../resolution/power/power.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { shipTier } from '../ships/ship-tier.js';
+import { isHullFrame } from '../resolution/damage/layers.js';
 import type { DispatchSnapshot } from './dispatch.service.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 
@@ -238,6 +239,7 @@ export function buildResolveInput(args: {
     ...(snapshot.layered === true
       ? {
           providesArmor: part.catalog.bli > 0,
+          hullFrame: isHullFrame(part.partType),
           power: powerPartOf(part.id, part.catalog, rules.power.idle_demand),
         }
       : {}),

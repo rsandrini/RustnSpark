@@ -65,6 +65,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Hull points a run lost become condition lost on every part, at this share (1 = a hull at
     // 80% leaves every part 20% worn).
     hull_to_condition: 0.5,
+    // Of the wear the hull's losses cause, the Hull Frame parts tank this share (the rest passes
+    // through to the other parts). 0 = every part wears alike.
+    hull_frame_share: 0.7,
   },
   economy: {
     fuel_price: 1.1,

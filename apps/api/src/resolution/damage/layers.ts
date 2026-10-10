@@ -28,11 +28,7 @@ export interface DamageLayers {
  * used-up armor cuts less), never more than `armor_reduction_max_share` of the hit. What is cut
  * does not touch the pool; the pool then soaks what is left.
  */
-export function armorReduction(
-  armor: number,
-  damage: number,
-  combat: GameRules['combat'],
-): number {
+export function armorReduction(armor: number, damage: number, combat: GameRules['combat']): number {
   if (armor <= 0 || damage <= 0 || combat.armor_pool_factor <= 0) return 0;
   const rating = armor / combat.armor_pool_factor;
   return Math.min(damage * combat.armor_reduction_max_share, rating * combat.armor_reduction);
@@ -106,13 +102,22 @@ export function environmentDamage(
 interface WearablePart {
   readonly condition: number;
   readonly providesArmor?: boolean;
+  /** A Hull Frame: the part that tanks the hull's losses before the rest of the ship. */
+  readonly hullFrame?: boolean;
+}
+
+/** A Hull Frame is any size or rarity of the `hull` family (`hull`, `hull_small`, `hull_epic`...). */
+export function isHullFrame(partType: string): boolean {
+  return partType === 'hull' || partType.startsWith('hull_');
 }
 
 /**
- * Writes the losses since the last settlement back onto the parts as condition lost: hull lost
- * wears every part alike (so nothing is spared and nothing is singled out), armor lost wears the
- * armor parts, and anything that spilled past the hull wears every part on top. Returns the new
- * parts and the new settlement mark.
+ * Writes the losses since the last settlement back onto the parts as condition lost. Hull lost is
+ * a pool of wear points: the Hull Frame parts tank `hull_frame_share` of it (split evenly, never
+ * more than their condition), and what they cannot take, plus the rest of the share, passes
+ * through to the other parts alike. With no Hull Frame (or the share at 0) it wears every part
+ * alike. Armor lost wears the armor parts, and anything that spilled past the hull wears every
+ * part on top. Returns the new parts and the new settlement mark.
  */
 export function settleLosses<P extends WearablePart>(
   parts: readonly P[],
@@ -123,16 +128,30 @@ export function settleLosses<P extends WearablePart>(
   const lostArmor = Math.max(0, layers.settled.armor - layers.armor);
   const newSpill = Math.max(0, layers.spill - layers.settled.spill);
   const hullShare =
-    layers.hpMax > 0
-      ? Math.min(1, (lostHull / layers.hpMax) * rules.wear.hull_to_condition)
-      : 0;
+    layers.hpMax > 0 ? Math.min(1, (lostHull / layers.hpMax) * rules.wear.hull_to_condition) : 0;
   const armorShare =
     layers.armorMax > 0
       ? Math.min(1, (lostArmor / layers.armorMax) * rules.wear.hull_to_condition)
       : 0;
   const spillShare = layers.hpMax > 0 ? Math.min(1, newSpill / layers.hpMax) : 0;
+  // Hull wear points to hand out, and how the Hull Frames and the rest share them.
+  const frames = parts.filter((part) => part.hullFrame === true);
+  const others = parts.filter((part) => part.hullFrame !== true);
+  const frameShare = rules.wear.hull_frame_share;
+  let frameWear = hullShare;
+  let otherWear = hullShare;
+  if (frameShare > 0 && frames.length > 0 && others.length > 0 && hullShare > 0) {
+    const points = parts.reduce((sum, part) => sum + part.condition * hullShare, 0);
+    const frameTotal = frames.reduce((sum, part) => sum + part.condition, 0);
+    const otherTotal = others.reduce((sum, part) => sum + part.condition, 0);
+    const absorbed = Math.min(frameTotal, points * Math.min(1, frameShare));
+    frameWear = frameTotal > 0 ? absorbed / frameTotal : 0;
+    otherWear = otherTotal > 0 ? Math.min(1, (points - absorbed) / otherTotal) : 0;
+  }
   const next = parts.map((part) => {
-    let condition = part.condition * (1 - hullShare) * (1 - spillShare);
+    const wear =
+      part.hullFrame === true && frames.length > 0 && others.length > 0 ? frameWear : otherWear;
+    let condition = part.condition * (1 - wear) * (1 - spillShare);
     if (part.providesArmor === true) condition *= 1 - armorShare;
     return { ...part, condition: Math.max(0, condition) };
   });
