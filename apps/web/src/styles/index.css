@@ -4964,18 +4964,21 @@ body:has(.modal-backdrop) .part-hover-card {
 }
 .transit-aside-solo {
   grid-template-columns: 1fr;
-  height: 100%;
+  position: relative;
+  min-height: 160px;
 }
 .transit-layout:has(.transit-aside-solo) {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   align-items: stretch;
 }
+/* The scene takes the whole column but never more height than the card beside it. */
 .transit-aside-solo .ship-stage-wrap {
   margin: 0;
-  height: 100%;
+  position: absolute;
+  inset: 0;
 }
 .transit-aside-solo .transit-scene.stage-compact {
   height: 100%;
-  min-height: 220px;
 }
 /* The ship scene and the map side by side, so the pair takes one row of height. */
 .transit-aside {
