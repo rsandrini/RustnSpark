@@ -43,6 +43,14 @@ export interface ResolveJobResult {
 // - writes log + ship + parts + wallet/PlayerEvent + loot + final status in ONE transaction,
 //   with MissionLog.missionId's unique constraint as the hard double-effect guard;
 // - a mission already DONE/FAILED short-circuits as skipped (idempotent double invocation).
+/** Whether a ship left adrift still keeps the loot of its run: only an independent mining job (no contract). */
+export function keepsLootAdrift(mission: {
+  readonly type: string;
+  readonly reward: number;
+}): boolean {
+  return mission.type === 'MINING' && mission.reward <= 0;
+}
+
 @Injectable()
 export class MissionResolveService {
   private readonly logger = new Logger(MissionResolveService.name);
@@ -276,8 +284,11 @@ export class MissionResolveService {
           rescueAt: null,
         },
       });
-      // A ship left adrift loses the mission for sure: what it dug up or picked on the way is lost with it.
-      for (const entry of outcome.shipStatus === 'ADRIFT' ? [] : outcome.loot) {
+      // A ship left adrift loses the mission for sure, and what it carried for it with it; only the pilot's
+      // own independent mining job (no contract, no reward) keeps the ore it dug.
+      for (const entry of outcome.shipStatus === 'ADRIFT' && !keepsLootAdrift(mission)
+        ? []
+        : outcome.loot) {
         if (entry.quantity <= 0) continue;
         await tx.playerMaterial.upsert({
           where: {
