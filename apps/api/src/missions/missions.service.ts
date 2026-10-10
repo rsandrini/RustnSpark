@@ -31,6 +31,7 @@ import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
+import { fieldFor } from '../resolution/race/race.resolver.js';
 import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
@@ -94,7 +95,11 @@ export interface OfferInfo {
       ship already clears it. Empty when there is no ship to check against. */
   readonly requirements: readonly RequirementCheck[];
   /** Deliveries: how the cargo space is used (minimum, fixed load or open load) and what it pays. */
-  readonly cargo: { readonly mode: 'min' | 'fixed' | 'open'; readonly need: number; readonly unitPay: number } | null;
+  readonly cargo: {
+    readonly mode: 'min' | 'fixed' | 'open';
+    readonly need: number;
+    readonly unitPay: number;
+  } | null;
   /** Race offers: the rival field, the entry minimum and the 1st/2nd/3rd prize shares. */
   readonly race: {
     readonly rivals: readonly {
@@ -836,22 +841,34 @@ function offerInfo(
   // the pilot can judge the field before entering.
   const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);
   const windowOf = (mobility: number, form: number, trouble: boolean) => {
-    const window = raceWindow({ distance: totalDistance, mobility, rules, form, canHaveTrouble: trouble });
+    const window = raceWindow({
+      distance: totalDistance,
+      mobility,
+      rules,
+      form,
+      canHaveTrouble: trouble,
+    });
     return {
       durationSeconds: scaled(window.expected),
       bestSeconds: scaled(window.best),
       worstSeconds: scaled(window.worst),
     };
   };
+  const yourMobility =
+    tuned === null ? null : rawMobility(tuned.sheet.pot, tuned.sheet.mass, rules);
+  // The field follows the viewer's own speed part of the way (the same rule the race resolves by).
+  const drawn = parseCompetitors((row.cargo ?? {}) as Record<string, unknown>);
   const rivals =
     row.type === 'RACE'
-      ? parseCompetitors((row.cargo ?? {}) as Record<string, unknown>).map((rival) => ({
+      ? (yourMobility !== null && yourMobility > 0
+          ? fieldFor(drawn, yourMobility, rules)
+          : drawn
+        ).map((rival) => ({
           name: rival.name,
           mobility: rival.mobility,
           ...windowOf(rival.mobility, rules.race.form_spread, true),
         }))
       : [];
-  const yourMobility = tuned === null ? null : rawMobility(tuned.sheet.pot, tuned.sheet.mass, rules);
   const you =
     row.type === 'RACE' && yourMobility !== null && yourMobility > 0
       ? windowOf(yourMobility, 0, tuned?.pushed === true)

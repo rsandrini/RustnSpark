@@ -1556,6 +1556,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'race.field_follow',
+    group: 'race',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.field_follow),
+    description: {
+      en: "How far the rivals follow the player's speed: 0 keeps the field around race.reference_mob, 1 makes it as fast as the player's ship.",
+      'pt-BR':
+        'Quanto os rivais acompanham a velocidade do jogador: 0 mantém o grupo em torno de race.reference_mob, 1 deixa o grupo tão rápido quanto a nave do jogador.',
+    },
+  },
+  {
     key: 'race.form_spread',
     group: 'race',
     type: 'number',

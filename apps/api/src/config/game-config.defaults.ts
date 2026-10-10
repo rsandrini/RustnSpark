@@ -214,6 +214,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prize_share_3: 0.4,
     // Each rival has a form on the day (speed varies ±this), a small chance of trouble that costs
     // them time, and the player's own engine failures come from the engine tuning.
+    // The rivals follow the player's own speed part of the way: at 0 the field is fixed around
+    // reference_mob, at 1 it is always as fast as the player's ship. 0.6 keeps a faster ship ahead
+    // without leaving the field behind.
+    field_follow: 0.6,
     form_spread: 0.1,
     mishap_chance: 0.08,
     mishap_penalty: 0.3,

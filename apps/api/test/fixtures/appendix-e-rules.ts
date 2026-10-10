@@ -21,6 +21,8 @@ export const APPENDIX_E_RULES: GameRules = {
   },
   integrity: { ...GAME_CONFIG_DEFAULTS.integrity, combat_factor: 0.6, env_factor: 0.4 },
   mining: { ...GAME_CONFIG_DEFAULTS.mining, attempts_per_stop: 10 },
+  // the signed-off field is fixed around reference_mob (the rivals do not follow the player's speed)
+  race: { ...GAME_CONFIG_DEFAULTS.race, field_follow: 0 },
   parts: { ...GAME_CONFIG_DEFAULTS.parts, starter_condition: 80 },
   scavenging: { ...GAME_CONFIG_DEFAULTS.scavenging, cooldown_seconds: 300 },
   ship_class: { ...GAME_CONFIG_DEFAULTS.ship_class, pressurized_share: 0.15 },

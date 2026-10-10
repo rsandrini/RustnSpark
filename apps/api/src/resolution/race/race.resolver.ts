@@ -48,6 +48,8 @@ const RIVAL_NAMES = [
 ];
 
 const MIN_MOBILITY = 0.5;
+/** The field never shrinks below this share of its drawn speeds, whatever the player's speed. */
+const MIN_FIELD_SCALE = 0.5;
 const ROUND_FACTOR = 100;
 const SECOND_PLACE = 2;
 const THIRD_PLACE = 3;
@@ -79,6 +81,24 @@ export function generateCompetitors(rng: Rng, rules: GameRules): RaceCompetitor[
     own mission duration uses, so a faster ship really does arrive earlier. */
 export function raceSeconds(distance: number, mobility: number, rules: GameRules): number {
   return Math.round((distance / Math.max(mobility, MIN_MOBILITY)) * rules.missions.duration_k);
+}
+
+/**
+ * The field as the player meets it: the rivals' drawn speeds follow the player's own speed part of
+ * the way (`race.field_follow`), so a much faster ship still leads but never laps a field that stayed
+ * at the starter speed.
+ */
+export function fieldFor(
+  competitors: readonly RaceCompetitor[],
+  playerMobility: number,
+  rules: GameRules,
+): RaceCompetitor[] {
+  const { reference_mob, field_follow } = rules.race;
+  const scale = Math.max(MIN_FIELD_SCALE, 1 + field_follow * (playerMobility / reference_mob - 1));
+  return competitors.map((rival) => ({
+    ...rival,
+    mobility: Math.max(MIN_MOBILITY, roundTo2(rival.mobility * scale)),
+  }));
 }
 
 export interface RaceWindow {
@@ -130,7 +150,8 @@ export function resolveRace(input: {
   /** Engine failures the player's ship had on the way (pushed engines): each costs time. */
   readonly playerMishaps?: number;
 }): RaceResult {
-  const { competitors, playerMobility, totalDistance, rules, rng, playerMishaps = 0 } = input;
+  const { playerMobility, totalDistance, rules, rng, playerMishaps = 0 } = input;
+  const competitors = fieldFor(input.competitors, playerMobility, rules);
   const { time_jitter, form_spread, mishap_chance, mishap_penalty } = rules.race;
   const luck = (label: string): number => 1 + rng.child(label).uniform(-time_jitter, time_jitter);
   const form = (label: string): number =>

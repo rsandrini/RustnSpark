@@ -114,6 +114,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'power.tiers',
   'race.competitors_max',
   'race.competitors_min',
+  'race.field_follow',
   'race.form_spread',
   'race.min_mobility',
   'race.mishap_chance',

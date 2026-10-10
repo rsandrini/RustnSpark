@@ -136,6 +136,7 @@ export type ConfigKey =
   | 'race.prize_share_3'
   | 'race.mishap_penalty'
   | 'race.mishap_chance'
+  | 'race.field_follow'
   | 'race.form_spread'
   | 'race.reference_mob'
   | 'race.speed_spread'
@@ -427,6 +428,7 @@ export type GameRules = Readonly<{
     prize_share_2: number;
     prize_share_3: number;
     /** A rival's form on the day: its speed varies ±this share around its listed speed. */
+    field_follow: number;
     form_spread: number;
     /** Chance a rival has trouble in the race and loses time (the player's engine failures come from the engine tuning). */
     mishap_chance: number;
