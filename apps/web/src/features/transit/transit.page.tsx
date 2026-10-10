@@ -285,6 +285,30 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
       </aside>
     );
 
+  const acceptedActions = (
+    <div className="mcard-accepted">
+      <p>{t('transit.accepted')}</p>
+      <div className="actions">
+        <button
+          type="button"
+          className="btn primary"
+          disabled={dispatch.isPending || ship === undefined}
+          onClick={() => dispatch.mutate()}
+        >
+          {t('transit.dispatch')}
+        </button>
+        <button
+          type="button"
+          className="btn"
+          disabled={backOut.isPending}
+          onClick={() => backOut.mutate()}
+        >
+          {t('transit.cancelMission')}
+        </button>
+      </div>
+    </div>
+  );
+
   const body = (
     <>
       {!embedded && (
@@ -308,7 +332,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
               {...(mapInCard && mission.status !== 'HELD' && mission.status !== 'RESOLVING'
                 ? { side: tripMap }
                 : {})}
-              actions={null}
+              actions={mission.status === 'ACCEPTED' ? acceptedActions : null}
               {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
               {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
               {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
@@ -409,7 +433,8 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
             <p data-testid="resolving">{t('transit.resolving')}</p>
           ) : mission.status === 'ACCEPTED' ? (
             <section>
-              <p>{t('transit.accepted')}</p>
+              {/* the card carries the dispatch buttons when there is one */}
+              {offer === null && acceptedActions}
               {plannedRouteIds.length > 1 && (
                 <>
                   <p className="sub">{t('transit.legPlanTitle')}</p>
@@ -425,22 +450,6 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                   {t('transit.startDeadline')} <Countdown until={mission.deadlineAt} />
                 </p>
               )}
-              <button
-                type="button"
-                className="btn primary"
-                disabled={dispatch.isPending || ship === undefined}
-                onClick={() => dispatch.mutate()}
-              >
-                {t('transit.dispatch')}
-              </button>{' '}
-              <button
-                type="button"
-                className="btn"
-                disabled={backOut.isPending}
-                onClick={() => backOut.mutate()}
-              >
-                {t('transit.cancelMission')}
-              </button>
               {ship === undefined && <p className="sub">{t('board.noShip')}</p>}
             </section>
           ) : (

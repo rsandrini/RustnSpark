@@ -304,10 +304,9 @@ export function MissionCard({
             ))}
           </ul>
         )}
-
-        <footer className="mcard-actions">{actions}</footer>
       </div>
       {side !== undefined && <div className="mcard-side">{side}</div>}
+      {actions !== null && <footer className="mcard-actions">{actions}</footer>}
     </article>
   );
 }

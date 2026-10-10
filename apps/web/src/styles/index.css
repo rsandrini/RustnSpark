@@ -3183,6 +3183,9 @@ svg .block.cond-bad {
 .mcard-actions .btn.primary {
   flex: 1;
 }
+.mcard-accepted .btn.primary {
+  flex: 0 1 auto;
+}
 
 /* report debrief --------------------------------------------------------------- */
 .debrief {
@@ -4945,6 +4948,24 @@ body:has(.modal-backdrop) .part-hover-card {
 }
 .mcard-with-side {
   align-items: stretch;
+}
+.mcard-with-side > .mcard-actions {
+  grid-column: 1 / -1;
+}
+.mcard-accepted {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+}
+.mcard-accepted p {
+  margin: 0;
+}
+.mcard-accepted .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 .mcard-with-side .mcard-side {
   display: flex;
