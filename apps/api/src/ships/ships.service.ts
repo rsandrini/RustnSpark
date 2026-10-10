@@ -25,7 +25,7 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { autoLayout } from './auto-layout.js';
+import { autoLayout, extendLayout } from './auto-layout.js';
 import { applyConnectivity } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
@@ -219,10 +219,27 @@ export class ShipsService implements OnModuleInit {
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
-      installed = arranged.placed;
-      effectiveLayout = arranged.layout;
-      omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
+      const candidates = candidateParts.map(toInstalledPart);
+      const current = (ship.layout as unknown as Placement[] | null) ?? [];
+      const candidateIds = new Set(candidates.map((part) => part.instance.id));
+      const kept = current.filter((placement) => candidateIds.has(placement.partInstanceId));
+      if (kept.length > 0) {
+        // The ship already stands: keep its real arrangement and only try to seat the parts it does
+        // not hold yet, so a comparison measures the part and not a re-pack of the whole ship.
+        const keptIds = new Set(kept.map((placement) => placement.partInstanceId));
+        const added = candidates.filter((part) => !keptIds.has(part.instance.id));
+        effectiveLayout = extendLayout(kept, added, candidates, formatCells);
+        const placedIds = new Set(effectiveLayout.map((placement) => placement.partInstanceId));
+        installed = candidates.filter((part) => placedIds.has(part.instance.id));
+        omittedPartInstanceIds = candidates
+          .filter((part) => !placedIds.has(part.instance.id))
+          .map((part) => part.instance.id);
+      } else {
+        const arranged = arrange(candidates, formatCells);
+        installed = arranged.placed;
+        effectiveLayout = arranged.layout;
+        omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
+      }
       this.assertLayoutValid(effectiveLayout, playerParts, ship);
     }
 

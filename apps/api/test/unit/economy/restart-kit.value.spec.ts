@@ -32,11 +32,13 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
     expect(value).toBeLessThan(cheapestRescue(rules));
   });
 
-  it('would not hold at the old default of 50 — why restart_condition_max is 15', () => {
-    const rules = rulesWith({ restart_condition_max: 50 });
-    const value = worstCaseRestartKitValue(rules, basePriceOf);
-    expect(value).toBe(830);
-    expect(value).toBeGreaterThanOrEqual(cheapestRescue(rules));
+  it('is the kit at 0.6 of its base prices: a sale never pays above the base, whatever the place', () => {
+    // 1¢ bridge + round(0.6 × (100 + 200 + 80 + 100)) at condition 100 would be 289; at the
+    // default condition 15 it is 44.
+    expect(worstCaseRestartKitValue(rulesWith({ restart_condition_max: 100 }), basePriceOf)).toBe(
+      289,
+    );
+    expect(worstCaseRestartKitValue(GAME_CONFIG_DEFAULTS, basePriceOf)).toBe(44);
   });
 
   it('holds at every condition up to the factory default', () => {
@@ -52,7 +54,7 @@ describe('S8.6 restart-kit invariant (review item 4)', () => {
   it('accounts for the rescue price: lowering it below the kit value must be visible as a violation', () => {
     const rules: GameRules = {
       ...GAME_CONFIG_DEFAULTS,
-      economy: { ...GAME_CONFIG_DEFAULTS.economy, rescue_cost: 490 },
+      economy: { ...GAME_CONFIG_DEFAULTS.economy, rescue_cost: 80 },
     };
     expect(worstCaseRestartKitValue(rules, basePriceOf)).toBeGreaterThanOrEqual(
       cheapestRescue(rules),

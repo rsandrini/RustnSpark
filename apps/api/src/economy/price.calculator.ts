@@ -49,7 +49,18 @@ export function buyPrice(input: PartPriceInput, rules: GameRules): number {
   return toCredits(partValue(input, rules));
 }
 
-/** Sell price: `sell_ratio` (default 0.6) × local value (never worthless). */
+/**
+ * Sell price: `sell_ratio` (default 0.6) × base × place factor × mood × condition (never worthless),
+ * where the place factor (isolation × faction) and the mood only ever LOWER a sale: each is capped
+ * at 1. A remote or hostile port makes buying dearer but never pays more for what you sell, so the
+ * best sale anywhere (0.6 × base) stays below the cheapest purchase anywhere (0.9 × 0.8 × mood_min),
+ * and a cheap port still pays less for your part than it charges. That closes both the haul-between-
+ * markets loop and the repair-then-sell loop (a repair costs 0.6 × place factor per point).
+ */
 export function sellPrice(input: PartPriceInput, rules: GameRules): number {
-  return toCredits(partValue(input, rules) * rules.economy.sell_ratio);
+  const faction = rules.economy.faction_mult[input.factionRelation] ?? 1;
+  const place = Math.min(1, input.isolation * faction);
+  const mood = Math.min(1, input.mood);
+  const value = input.basePrice * place * mood * conditionMultiplier(input.condition);
+  return toCredits(value * rules.economy.sell_ratio);
 }

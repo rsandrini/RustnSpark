@@ -214,9 +214,28 @@ describe('config tuning (S3.7)', () => {
     const expectedRevision = await getCurrentRevision(prisma);
     const before = gameConfigService.snapshot();
 
-    // At condition 60 the worst-case kit sells for 1409¢ ≥ rescue_cost 800¢ (both numbers
-    // move with the live parts catalog's basePrice — worstCaseRestartKitValue recomputes
-    // from whatever is seeded, so this is a real boundary check, not a pinned constant).
+    // A sale ignores isolation and faction (it never pays above the base), so the worst-case kit is
+    // the starter parts' base prices × 0.6 × condition (1¢ floor each): about 62¢ at the default
+    // 15% with the seeded catalog. The cheapest rescue is half of rescue_cost, so 100¢ (cheapest
+    // 50¢) is the violation.
+    const rescue = await request(server)
+      .patch('/v1/admin/tuning/config/economy.rescue_cost')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: 100, expectedRevision, reason: 'cheaper rescue' });
+    expect(rescue.status).toBe(400);
+    expect(rescue.body).toMatchObject({
+      error: 'VALIDATION_ERROR',
+      issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
+    });
+
+    // 140¢ (cheapest 70¢) still covers that kit, so the same key accepts it.
+    const allowed = await request(server)
+      .patch('/v1/admin/tuning/config/economy.rescue_cost')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ value: 140, expectedRevision, reason: 'slightly cheaper rescue' });
+    expect(allowed.status).toBe(200);
+
+    // At condition 60 the kit sells for about 250¢, which now reaches that cheapest rescue.
     const condition = await request(server)
       .patch('/v1/admin/tuning/config/parts.restart_condition_max')
       .set('Authorization', `Bearer ${token}`)
@@ -229,28 +248,9 @@ describe('config tuning (S3.7)', () => {
       ],
     });
 
-    // Lowering rescue_cost below the kit's worst-case (706¢ at the default condition 30) is
-    // the same violation.
-    const rescue = await request(server)
-      .patch('/v1/admin/tuning/config/economy.rescue_cost')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ value: 700, expectedRevision, reason: 'cheaper rescue' });
-    expect(rescue.status).toBe(400);
-    expect(rescue.body).toMatchObject({
-      error: 'VALIDATION_ERROR',
-      issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
-    });
-
-    // 706 < 710 still holds, so the same key accepts a safe value.
-    const allowed = await request(server)
-      .patch('/v1/admin/tuning/config/economy.rescue_cost')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ value: 710, expectedRevision, reason: 'slightly cheaper rescue' });
-    expect(allowed.status).toBe(200);
-
     const after = gameConfigService.snapshot();
     expect(after.rules.parts.restart_condition_max).toBe(before.rules.parts.restart_condition_max);
-    expect(after.rules.economy.rescue_cost).toBe(710);
+    expect(after.rules.economy.rescue_cost).toBe(140);
     const conditionRevisions = await prisma.tuningRevision.findMany({
       where: { entityId: 'parts.restart_condition_max' },
     });
@@ -429,22 +429,22 @@ describe('config tuning (S3.7)', () => {
     const alone = await request(server)
       .post('/v1/admin/tuning/bundle?dryRun=true')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'parts.restart_condition_max', value: 50 }] });
+      .send({ entries: [{ key: 'economy.rescue_cost', value: 100 }] });
     expect(alone.status).toBe(400);
     expect(alone.body).toMatchObject({
       error: 'VALIDATION_ERROR',
       issues: [{ key: 'bundle', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
     });
 
-    // The same condition paired with a rescue_cost whose cheapest rescue (half of it) still
-    // covers the kit (1227¢ at 50) is evaluated as a whole and stays valid.
+    // The same cheap rescue paired with a condition whose kit (5¢ at 0) is worth less than the
+    // cheapest rescue (50¢) is evaluated as a whole and stays valid.
     const paired = await request(server)
       .post('/v1/admin/tuning/bundle?dryRun=true')
       .set('Authorization', `Bearer ${token}`)
       .send({
         entries: [
-          { key: 'parts.restart_condition_max', value: 50 },
-          { key: 'economy.rescue_cost', value: 2600 },
+          { key: 'parts.restart_condition_max', value: 0 },
+          { key: 'economy.rescue_cost', value: 100 },
         ],
       });
     expect(paired.status).toBe(200);
@@ -453,7 +453,7 @@ describe('config tuning (S3.7)', () => {
     const rejected = await request(server)
       .post('/v1/admin/tuning/bundle')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 490 }] });
+      .send({ entries: [{ key: 'economy.rescue_cost', value: 100 }] });
     expect(rejected.status).toBe(400);
 
     const listResponse = await request(server)

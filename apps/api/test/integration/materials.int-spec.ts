@@ -45,7 +45,7 @@ interface SellMaterialBody {
 }
 
 // S8.7 acceptance (plan line 485): materials are priced
-// `basePrice × isolation × faction × mood × sell_ratio`, selling more than you hold is a
+// `basePrice × place × mood × sell_ratio`, selling more than you hold is a
 // 400 with no credit, the sale is idempotent, and the negative-balance spending guard
 // blocks buying only — selling is always allowed (GDD §14 "cava e sai cavando").
 describe('materials API (S8.7)', () => {
@@ -111,7 +111,7 @@ describe('materials API (S8.7)', () => {
   }
 
   // Mirrors PricingService's relation lookup so the expected price is computed from the
-  // same seed data and rules (basePrice × isolation × faction × mood × sell_ratio).
+  // same seed data and rules (basePrice × place × mood × sell_ratio).
   async function unitPriceFor(playerId: string, materialId: string): Promise<number> {
     const [ship, player, material] = await Promise.all([
       prisma.ship.findFirstOrThrow({
@@ -131,14 +131,11 @@ describe('materials API (S8.7)', () => {
     const raw = player.factionId === null ? null : relations[player.factionId];
     const relation = raw === 'ally' || raw === 'hostile' ? raw : 'neutral';
     const factionMult = rules.economy.faction_mult[relation] ?? 1;
+    const place = Math.min(1, location.isolation * factionMult);
     return Math.max(
       0,
       Math.round(
-        material.basePrice *
-          location.isolation *
-          factionMult *
-          location.mood *
-          rules.economy.sell_ratio,
+        material.basePrice * place * Math.min(1, location.mood) * rules.economy.sell_ratio,
       ),
     );
   }

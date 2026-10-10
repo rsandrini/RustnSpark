@@ -37,7 +37,7 @@ export interface SellMaterialResponse {
 /**
  * S8.7: the materials side of the trade loop (GDD §13). Mined ore is credited to
  * `PlayerMaterial` by mission resolution; here it is listed with its local sell price
- * (`basePrice × isolation × faction × mood × sell_ratio`) and sold back to the port.
+ * (`basePrice × place × mood × sell_ratio`, place and mood capped at 1) and sold back to the port.
  * Selling is always allowed — even from a negative balance (GDD §14 blocks buying
  * only — "cava e sai cavando" is exactly this escape hatch).
  */

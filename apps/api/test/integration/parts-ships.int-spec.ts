@@ -995,6 +995,41 @@ describe('parts and ships API (S4.3)', () => {
       ).toEqual(before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort());
     });
 
+    it('compares an owned part against the ship as it stands, without re-packing the layout', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
+      const layout = ship.layout as Array<{ partInstanceId: string }>;
+      const spare = await prisma.partInstance.create({
+        data: {
+          partType: 'hull',
+          ownerPlayerId: seeded.player.id,
+          condition: 100,
+          location: 'INVENTORY',
+        },
+      });
+      const before = await request(httpServer(testApp.app))
+        .get(`/v1/ships/${shipId}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ partInstanceIds: [...layout.map((p) => p.partInstanceId), spare.id] });
+
+      expect(response.status).toBe(200);
+      const preview = asPreview(response);
+      // Every real placement is where it was, and nothing that was connected got cut off.
+      expect(preview.layout.slice(0, layout.length)).toEqual(layout);
+      expect(preview.disconnectedPartIds).toEqual([]);
+      expect(preview.omittedPartInstanceIds).toEqual([]);
+      expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 30);
+      expect(preview.sheet.fuelCap).toBe(asShip(before).sheet.fuelCap);
+    });
+
     describe('with a virtual (not-yet-owned) part', () => {
       it('swaps a virtual candidate in for the installed part of the same class', async () => {
         await freshSeededApp();

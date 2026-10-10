@@ -518,6 +518,9 @@ export function PartDetail({ part, compare, versus }: PartDetailProps) {
           </p>
         </>
       )}
+      {part.id !== undefined && comparePreview.data?.omittedPartInstanceIds.includes(part.id) === true && (
+        <p className="error-text compare-no-room">{t('parts.compare.noRoom')}</p>
+      )}
       {viabilityProblems.length > 0 && (
         <ul className="compare-viability-warning">
           {viabilityProblems.map((problem) => (
