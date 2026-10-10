@@ -230,7 +230,8 @@ const scavengingSchema = z.object({
 
 const partsSchema = z.object({
   starter_condition: z.number().int().min(0).max(100),
-  restart_condition_max: z.number().int().min(0).max(100),
+  replacement_condition: z.number().int().min(0).max(100),
+  replacement_types: z.record(z.string(), z.string().min(1)),
 });
 
 const onboardingSchema = z.object({

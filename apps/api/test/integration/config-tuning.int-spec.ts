@@ -125,8 +125,8 @@ describe('config tuning (S3.7)', () => {
     await resetDatabase(prisma);
   });
 
-  // The restart-kit guard reads PartCatalog base prices; the rest of this suite runs on a
-  // truncated (unseeded) world, so the invariant tests seed it first.
+  // Reference checks read the PartCatalog; the rest of this suite runs on a truncated (unseeded)
+  // world, so those tests seed it first.
   async function freshSeeded(): Promise<void> {
     await resetDatabase(prisma);
     await seed(prisma);
@@ -206,55 +206,30 @@ describe('config tuning (S3.7)', () => {
     expect(revisions).toHaveLength(0);
   });
 
-  it('rejects a restart kit that would sell for rescue_cost or more (S8.6, review item 4)', async () => {
+  it('rejects a replacement part type that is not an active part (a rescue would hand out nothing)', async () => {
     await freshSeeded();
     const server = httpServer(testApp.app);
     const admin = await createAdmin(prisma, passwordService);
     const token = await loginAdmin(server, admin);
     const expectedRevision = await getCurrentRevision(prisma);
-    const before = gameConfigService.snapshot();
-
-    // A sale ignores isolation and faction (it never pays above the base), so the worst-case kit is
-    // the starter parts' base prices × 0.6 × condition (1¢ floor each): 44¢ at the default 15% with
-    // the seeded catalog. The cheapest rescue is half of rescue_cost, so 80¢ (cheapest 40¢) is the
-    // violation.
-    const rescue = await request(server)
-      .patch('/v1/admin/tuning/config/economy.rescue_cost')
+    const response = await request(server)
+      .patch('/v1/admin/tuning/config/parts.replacement_types')
       .set('Authorization', `Bearer ${token}`)
-      .send({ value: 80, expectedRevision, reason: 'cheaper rescue' });
-    expect(rescue.status).toBe(400);
-    expect(rescue.body).toMatchObject({
+      .send({
+        value: {
+          bridge: 'no_such_part',
+          engine: 'engine_chem_small',
+          tank: 'tank_small',
+          life_support: 'life_support',
+        },
+        expectedRevision,
+        reason: 'typo',
+      });
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({
       error: 'VALIDATION_ERROR',
-      issues: [{ key: 'economy.rescue_cost', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
+      issues: [{ key: 'parts.replacement_types', message: 'STARTER_PART_NOT_ACTIVE' }],
     });
-
-    // 100¢ (cheapest 50¢) still covers that kit, so the same key accepts it.
-    const allowed = await request(server)
-      .patch('/v1/admin/tuning/config/economy.rescue_cost')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ value: 100, expectedRevision, reason: 'slightly cheaper rescue' });
-    expect(allowed.status).toBe(200);
-
-    // At condition 60 the kit sells for about 174¢, which now reaches that cheapest rescue.
-    const condition = await request(server)
-      .patch('/v1/admin/tuning/config/parts.restart_condition_max')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ value: 60, expectedRevision, reason: 'easier restarts' });
-    expect(condition.status).toBe(400);
-    expect(condition.body).toMatchObject({
-      error: 'VALIDATION_ERROR',
-      issues: [
-        { key: 'parts.restart_condition_max', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' },
-      ],
-    });
-
-    const after = gameConfigService.snapshot();
-    expect(after.rules.parts.restart_condition_max).toBe(before.rules.parts.restart_condition_max);
-    expect(after.rules.economy.rescue_cost).toBe(100);
-    const conditionRevisions = await prisma.tuningRevision.findMany({
-      where: { entityId: 'parts.restart_condition_max' },
-    });
-    expect(conditionRevisions).toHaveLength(0);
   });
 
   it('returns 409 when expectedRevision does not match the current latest revision', async () => {
@@ -418,55 +393,6 @@ describe('config tuning (S3.7)', () => {
     const afterBody = listAfter.body as ConfigEntry[];
     expect(findEntry(afterBody, 'economy.start_credits').currentValue).toBe(888);
     expect(findEntry(afterBody, 'combat.dc_base').currentValue).toBe(14);
-  });
-
-  it('bundle dry-run and import apply the restart-kit invariant to the whole bundle (S8.6)', async () => {
-    await freshSeeded();
-    const server = httpServer(testApp.app);
-    const admin = await createAdmin(prisma, passwordService);
-    const token = await loginAdmin(server, admin);
-
-    const alone = await request(server)
-      .post('/v1/admin/tuning/bundle?dryRun=true')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 80 }] });
-    expect(alone.status).toBe(400);
-    expect(alone.body).toMatchObject({
-      error: 'VALIDATION_ERROR',
-      issues: [{ key: 'bundle', message: 'RESTART_KIT_NOT_WORTH_LESS_THAN_RESCUE' }],
-    });
-
-    // The same cheap rescue paired with a condition whose kit (5¢ at 0) is worth less than the
-    // cheapest rescue (40¢) is evaluated as a whole and stays valid.
-    const paired = await request(server)
-      .post('/v1/admin/tuning/bundle?dryRun=true')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        entries: [
-          { key: 'parts.restart_condition_max', value: 0 },
-          { key: 'economy.rescue_cost', value: 80 },
-        ],
-      });
-    expect(paired.status).toBe(200);
-    expect((paired.body as BundleDryRunResponse).valid).toBe(true);
-
-    const rejected = await request(server)
-      .post('/v1/admin/tuning/bundle')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ key: 'economy.rescue_cost', value: 80 }] });
-    expect(rejected.status).toBe(400);
-
-    const listResponse = await request(server)
-      .get('/v1/admin/tuning/config')
-      .set('Authorization', `Bearer ${token}`);
-    const body = listResponse.body as ConfigEntry[];
-    // Nothing was written by either rejected call.
-    expect(findEntry(body, 'economy.rescue_cost').currentValue).toBe(
-      GAME_CONFIG_DEFAULTS.economy.rescue_cost,
-    );
-    expect(findEntry(body, 'parts.restart_condition_max').currentValue).toBe(
-      GAME_CONFIG_DEFAULTS.parts.restart_condition_max,
-    );
   });
 
   it('POST /v1/admin/tuning/config/:key/reset restores the factory default and sets modified: false', async () => {

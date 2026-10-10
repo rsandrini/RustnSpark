@@ -33,7 +33,7 @@ interface RescueBody {
   cost: number;
   fuel: number;
   credits: number;
-  restartParts: string[];
+  replacementParts: string[];
   viability: { viable: boolean; problems: { code: string }[] };
 }
 
@@ -44,8 +44,7 @@ interface RefuelBody {
 
 // S8.6 acceptance (plan line 484): a rescue (here with no recorded float spot: the base is where
 // the ship is docked, so the distance charge is 0 and 'now' costs the 400 ¢ reference) may drive the balance
-// negative (GDD §14), restart parts are free common parts at ≤50% condition, and the
-// player always ends with a viable ship. While negative, spending (refuel) is blocked —
+// negative (GDD §14), replacement parts are free, loose, common parts for what is missing or dead. While negative, spending (refuel) is blocked —
 // navigation and mining stay open, missions repay the debt (resolve-processor spec).
 describe('rescue API (S8.6)', () => {
   let testApp: TestApp;
@@ -164,7 +163,7 @@ describe('rescue API (S8.6)', () => {
       status: 'IN_PORT',
       cost: 400,
       credits: -300,
-      restartParts: [],
+      replacementParts: [],
       viability: { viable: true },
     });
 
@@ -192,7 +191,7 @@ describe('rescue API (S8.6)', () => {
     expect(rescueEvents[0]!.payload).toMatchObject({
       shipId: player.shipId,
       cost: 400,
-      restartParts: [],
+      replacementParts: [],
     });
   });
 
@@ -251,21 +250,16 @@ describe('rescue API (S8.6)', () => {
     ).resolves.toBe(1);
   });
 
-  it('restart kit: free common parts at restart_condition_max, old parts kept, ship viable', async () => {
+  it('replacements: only what is missing or dead, loose, common, at the replacement condition; nothing installed or removed', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const rules = configService.snapshot().rules;
-    const restartCondition = rules.parts.restart_condition_max;
-    const starterParts = rules.onboarding.starter_parts as string[];
 
-    // Strip the engine so the ADRIFT hull is no longer viable — the only way an
-    // already-viable ship ever reaches the restart path.
+    // Strip the engine: the ADRIFT hull has no engine any more.
     const engine = await prisma.partInstance.findFirstOrThrow({
       where: { shipId: player.shipId, location: 'INSTALLED', partType: 'engine_chem_small' },
     });
-    const partsBefore = await prisma.partInstance.count({
-      where: { ownerPlayerId: player.seeded.player.id },
-    });
+    const installedBefore = await installedParts(player.shipId);
     await prisma.partInstance.update({
       where: { id: engine.id },
       data: { location: 'INVENTORY', shipId: null },
@@ -276,63 +270,55 @@ describe('rescue API (S8.6)', () => {
     const response = await rescue(player.token, player.shipId, randomUUID());
     expect(response.status).toBe(200);
     const body = response.body as RescueBody;
-    expect(body.restartParts).toEqual(starterParts);
-    expect(body.viability.viable).toBe(true);
-    expect(body.viability.problems).toEqual([]);
-    // The kit itself is free: the only charge is the 400 ¢ tow.
+    // only the engine is missing: no bridge, no tank, no life support, no hull or cargo
+    expect(body.replacementParts).toEqual([rules.parts.replacement_types['engine']]);
     expect(body.cost).toBe(400);
     expect(body.credits).toBe(500 - 400);
     expect(body.status).toBe('IN_PORT');
 
-    // The restart kit comes back loose (D44): nothing is installed until the pilot assembles.
-    expect(await installedParts(player.shipId)).toHaveLength(0);
-    const kit = await prisma.partInstance.findMany({
+    // everything that was installed stays installed (the pilot swaps the new engine in)
+    expect(await installedParts(player.shipId)).toHaveLength(installedBefore.length - 1);
+    const handed = await prisma.partInstance.findMany({
       where: {
         ownerPlayerId: player.seeded.player.id,
         location: 'INVENTORY',
-        condition: restartCondition,
+        condition: rules.parts.replacement_condition,
       },
       include: { partCatalog: { select: { rarity: true } } },
     });
-    expect(kit).toHaveLength(starterParts.length);
-    for (const part of kit) {
-      expect(part.partCatalog.rarity).toBe('COMMON');
-      expect(part.condition).toBeLessThanOrEqual(50);
-    }
-
-    // Nothing is ever destroyed: the stripped engine is still owned, in inventory.
+    expect(handed).toHaveLength(1);
+    expect(handed[0]?.partCatalog.rarity).toBe('COMMON');
+    // nothing is ever destroyed: the stripped engine is still owned, in inventory
     expect(await prisma.partInstance.findUniqueOrThrow({ where: { id: engine.id } })).toMatchObject(
       { location: 'INVENTORY', shipId: null },
     );
-    await expect(
-      prisma.partInstance.count({ where: { ownerPlayerId: player.seeded.player.id } }),
-    ).resolves.toBe(partsBefore + starterParts.length);
-
-    const ship = await shipRow(player.shipId);
-    expect(ship.status).toBe('IN_PORT');
-    expect(ship.layout).toEqual([]);
-
-    // ...and the kit assembles into a viable ship.
-    await assembleStarterKit(
-      httpServer(testApp.app),
-      player.token,
-      player.shipId,
-      kit.map((part) => part.id),
-    );
-    expect(await installedParts(player.shipId)).toHaveLength(starterParts.length);
   });
 
-  it('restart kit clamps fuel to the new tank ceiling (review item 5)', async () => {
+  it('a dead part counts as missing: the replacement is handed over beside it, the dead one stays installed', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-
-    // Strip the engine (the only path to the restart kit) and drift in holding more
-    // fuel than the kit's tank can hold.
     const engine = await prisma.partInstance.findFirstOrThrow({
       where: { shipId: player.shipId, location: 'INSTALLED', partType: 'engine_chem_small' },
     });
+    await prisma.partInstance.update({ where: { id: engine.id }, data: { condition: 0 } });
+    await setStatus(player.shipId, 'ADRIFT');
+    await setCredits(player.seeded.player.id, 500);
+
+    const response = await rescue(player.token, player.shipId, randomUUID());
+    expect((response.body as RescueBody).replacementParts).toEqual(['engine_chem_small']);
+    expect(await prisma.partInstance.findUniqueOrThrow({ where: { id: engine.id } })).toMatchObject(
+      { location: 'INSTALLED', shipId: player.shipId },
+    );
+  });
+
+  it('a missing tank is replaced and the fuel is clamped to the new tank ceiling (review item 5)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const tank = await prisma.partInstance.findFirstOrThrow({
+      where: { shipId: player.shipId, location: 'INSTALLED', partType: 'tank_small' },
+    });
     await prisma.partInstance.update({
-      where: { id: engine.id },
+      where: { id: tank.id },
       data: { location: 'INVENTORY', shipId: null },
     });
     await setStatus(player.shipId, 'ADRIFT');
@@ -341,39 +327,22 @@ describe('rescue API (S8.6)', () => {
 
     const rescued = await rescue(player.token, player.shipId, randomUUID());
     expect(rescued.status).toBe(200);
-    expect((rescued.body as RescueBody).restartParts.length).toBeGreaterThan(0);
+    expect((rescued.body as RescueBody).replacementParts).toEqual(['tank_small']);
 
-    const rules = configService.snapshot().rules;
-    const kit = await prisma.partInstance.findMany({
-      where: {
-        ownerPlayerId: player.seeded.player.id,
-        location: 'INVENTORY',
-        condition: rules.parts.restart_condition_max,
-      },
-      include: { partCatalog: { select: { fuelCap: true } } },
+    const handed = await prisma.partCatalog.findUniqueOrThrow({
+      where: { partType: 'tank_small' },
     });
-    const kitFuelCap = kit.reduce((total, row) => total + (row.partCatalog.fuelCap ?? 0), 0);
-    expect(kitFuelCap).toBeGreaterThan(0);
-
     const ship = await shipRow(player.shipId);
-    expect(ship.fuel).toBe(kitFuelCap);
+    expect(ship.fuel).toBe(handed.fuelCap);
+  });
 
-    // The kit is loose: assemble it (the pilot's next step) before the pump check below.
-    await assembleStarterKit(
-      httpServer(testApp.app),
-      player.token,
-      player.shipId,
-      kit.map((part) => part.id),
-    );
-
-    // A full refuel is a free no-op: the tank sits exactly at its cap, never above it.
-    const full = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
-    expect(full.status).toBe(200);
-    expect(full.body as { units: number; fuel: number; fuelCap: number }).toMatchObject({
-      units: 0,
-      fuel: kitFuelCap,
-      fuelCap: kitFuelCap,
-    });
+  it('a ship that is fine gets nothing', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setStatus(player.shipId, 'ADRIFT');
+    await setCredits(player.seeded.player.id, 500);
+    const response = await rescue(player.token, player.shipId, randomUUID());
+    expect((response.body as RescueBody).replacementParts).toEqual([]);
   });
 
   it('spending guard both ways: negative balance blocks refuel, positive unlocks it', async () => {
@@ -443,8 +412,14 @@ describe('rescue API (S8.6)', () => {
         },
       });
       const locations = await prisma.location.findMany({ select: { id: true, type: true } });
-      const bases = new Set(locations.filter((l) => RESCUE_BASE_TYPES.has(l.type)).map((l) => l.id));
-      const plan = towPlanFor({ routeId: route.id, fromId: route.nodeAId, progress }, routes, bases)!;
+      const bases = new Set(
+        locations.filter((l) => RESCUE_BASE_TYPES.has(l.type)).map((l) => l.id),
+      );
+      const plan = towPlanFor(
+        { routeId: route.id, fromId: route.nodeAId, progress },
+        routes,
+        bases,
+      )!;
       return { route, plan };
     }
 
@@ -453,10 +428,16 @@ describe('rescue API (S8.6)', () => {
       const player = await onboardPlayer();
       const { route, plan } = await floatOnLongestRoute(player.shipId, 0.5);
 
-      const listed = await request(httpServer(testApp.app)).get('/v1/ships').set(auth(player.token));
+      const listed = await request(httpServer(testApp.app))
+        .get('/v1/ships')
+        .set(auth(player.token));
       const ship = (listed.body as Array<Record<string, unknown>>)[0]!;
       expect(ship['status']).toBe('ADRIFT');
-      expect(ship['float']).toMatchObject({ routeId: route.id, fromId: route.nodeAId, progress: 0.5 });
+      expect(ship['float']).toMatchObject({
+        routeId: route.id,
+        fromId: route.nodeAId,
+        progress: 0.5,
+      });
       expect(ship['rescue']).toMatchObject({
         waitCost: 400,
         nowCost: 400 + Math.round(plan.distance),
@@ -515,7 +496,10 @@ describe('rescue API (S8.6)', () => {
       expect((await shipRow(player.shipId)).rescueAt!.getTime()).toBe(dueBefore);
 
       // time passes
-      await prisma.ship.update({ where: { id: player.shipId }, data: { rescueAt: new Date(Date.now() - 1000) } });
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { rescueAt: new Date(Date.now() - 1000) },
+      });
       const arrived = await request(httpServer(testApp.app))
         .post(`/v1/ships/${player.shipId}/rescue/settle`)
         .set(auth(player.token));

@@ -1115,7 +1115,7 @@ export const handlers = [
         cost: 0,
         fuel: fuelState,
         credits: wallet,
-        restartParts: [],
+        replacementParts: [],
         baseId: 'ceres',
         dueAt: rescueDueAt,
       });
@@ -1132,7 +1132,7 @@ export const handlers = [
       cost: 700,
       fuel: fuelState,
       credits: wallet,
-      restartParts: [],
+      replacementParts: [],
       baseId: 'ceres',
       dueAt: null,
     });
@@ -1154,7 +1154,7 @@ export const handlers = [
       cost: 400,
       fuel: fuelState,
       credits: wallet,
-      restartParts: [],
+      replacementParts: [],
       baseId: 'ceres',
       dueAt: null,
     });

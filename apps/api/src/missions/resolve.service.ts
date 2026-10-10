@@ -276,7 +276,8 @@ export class MissionResolveService {
           rescueAt: null,
         },
       });
-      for (const entry of outcome.loot) {
+      // A ship left adrift loses the mission for sure: what it dug up or picked on the way is lost with it.
+      for (const entry of outcome.shipStatus === 'ADRIFT' ? [] : outcome.loot) {
         if (entry.quantity <= 0) continue;
         await tx.playerMaterial.upsert({
           where: {

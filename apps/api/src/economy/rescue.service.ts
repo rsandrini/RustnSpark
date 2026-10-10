@@ -22,7 +22,7 @@ export interface RescueResponse {
   readonly cost: number;
   readonly fuel: number;
   readonly credits: number;
-  readonly restartParts: string[];
+  readonly replacementParts: string[];
   readonly viability: ViabilityReport;
   /** The base the ship was towed to (or will be). */
   readonly baseId: string;
@@ -155,7 +155,7 @@ export class RescueService {
         rescueAt: null,
       },
     });
-    const restart = await this.inventory.ensureViableShip(tx, playerId, shipId);
+    const restart = await this.inventory.provideReplacements(tx, playerId, shipId);
     // Emergency ration (economy.rescue_fuel_fraction): never lowers fuel, never passes the tank.
     // Rescue stays a poor fuel source, but a broke player can still fly one short job.
     const ration = Math.round(restart.fuelCap * rules.economy.rescue_fuel_fraction);
@@ -168,7 +168,7 @@ export class RescueService {
       {
         playerId,
         type: RESCUE_EVENT,
-        payload: { shipId, cost, fuel, mode, baseId, restartParts: restart.restartParts },
+        payload: { shipId, cost, fuel, mode, baseId, replacementParts: restart.replacementParts },
       },
       tx,
     );
@@ -199,7 +199,7 @@ export class RescueService {
         cost: 0,
         fuel: ship.fuel,
         credits,
-        restartParts: [],
+        replacementParts: [],
         // Nothing changed on the ship yet: the viability is reported when the tow happens.
         viability: { viable: true, problems: [] },
         baseId: outcome.baseId,
@@ -213,7 +213,7 @@ export class RescueService {
       cost: outcome.cost,
       fuel: outcome.towed.fuel,
       credits,
-      restartParts: outcome.towed.restartParts,
+      replacementParts: outcome.towed.replacementParts,
       viability: outcome.towed.viability,
       baseId: outcome.baseId,
       dueAt: null,

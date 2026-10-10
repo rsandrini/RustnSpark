@@ -422,7 +422,7 @@ export const RescueResponseSchema = z.object({
   cost: z.number(),
   fuel: z.number(),
   credits: z.number(),
-  restartParts: z.array(z.string()),
+  replacementParts: z.array(z.string()),
   /** `now`: towed at once; `wait`: the timer started (status stays ADRIFT, `dueAt` says when). */
   mode: z.enum(['now', 'wait']),
   baseId: z.string(),

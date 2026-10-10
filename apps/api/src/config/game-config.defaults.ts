@@ -275,10 +275,16 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   parts: {
     starter_condition: 85,
-    // The kit's sell value (base × 0.6 × this condition, a sale never pays above the base) must stay
-    // strictly below the CHEAPEST rescue (rescue_cost × rescue_wait_fraction = 400¢): about 62¢ at
-    // 15 with the seeded catalog and 370¢ at 100 — see worstCaseRestartKitValue.
-    restart_condition_max: 15,
+    // A rescue hands over loose common parts for whatever is missing or dead, at this condition
+    // (never installed: the pilot swaps them in). One type per essential role:
+    // the bridge, an engine, a tank (only when the ship burns fuel), life support (only with a cabin).
+    replacement_condition: 50,
+    replacement_types: {
+      bridge: 'bridge',
+      engine: 'engine_chem_small',
+      tank: 'tank_small',
+      life_support: 'life_support',
+    },
   },
   onboarding: {
     // No battery: the starter kit has nothing that draws combat energy (no weapon/shield),

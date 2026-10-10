@@ -1962,15 +1962,29 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'parts.restart_condition_max',
+    key: 'parts.replacement_condition',
     group: 'parts',
     type: 'integer',
     min: 0,
     max: 100,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.parts.restart_condition_max),
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.parts.replacement_condition),
     description: {
-      en: 'Maximum condition of parts after a player restart.',
-      'pt-BR': 'Condição máxima das peças após reinício do jogador.',
+      en: 'Condition of the loose replacement parts a rescue hands over for what is missing or dead.',
+      'pt-BR':
+        'Condição das peças de reposição soltas que um resgate entrega no lugar do que falta ou morreu.',
+    },
+  },
+  {
+    key: 'parts.replacement_types',
+    group: 'parts',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.parts.replacement_types),
+    description: {
+      en: 'Which part a rescue hands over for each essential role: bridge, engine, tank (only when the ship burns fuel) and life_support (only with a passenger cabin).',
+      'pt-BR':
+        'Qual peça um resgate entrega para cada função essencial: bridge, engine, tank (só se a nave queima combustível) e life_support (só com cabine de passageiros).',
     },
   },
   {

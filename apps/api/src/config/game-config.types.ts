@@ -118,7 +118,8 @@ export type ConfigKey =
   | 'missions.time_scale'
   | 'onboarding.home_locations'
   | 'onboarding.starter_parts'
-  | 'parts.restart_condition_max'
+  | 'parts.replacement_condition'
+  | 'parts.replacement_types'
   | 'parts.starter_condition'
   | 'power.life_support_min'
   | 'power.pump_engine_factor'
@@ -482,7 +483,8 @@ export type GameRules = Readonly<{
   }>;
   parts: Readonly<{
     starter_condition: number;
-    restart_condition_max: number;
+    replacement_condition: number;
+    replacement_types: Readonly<Record<string, string>>;
   }>;
   onboarding: Readonly<{
     starter_parts: readonly string[];

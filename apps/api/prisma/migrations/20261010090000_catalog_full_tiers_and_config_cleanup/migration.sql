@@ -79,3 +79,7 @@ UPDATE "ShipFormat"
 -- Engines never run below 100%: the lower bounds of the tuning range are gone (the range is
 -- 1 → the admin's top level).
 DELETE FROM "GameConfig" WHERE "key" IN ('engine.chem_level_min', 'engine.ion_level_min');
+
+-- A rescue now hands over loose replacements (parts.replacement_condition / replacement_types, added
+-- by the seed) for what is missing or dead, instead of a restart kit: the kit's condition is gone.
+DELETE FROM "GameConfig" WHERE "key" = 'parts.restart_condition_max';
