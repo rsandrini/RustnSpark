@@ -66,10 +66,17 @@ export function MapPage({ guided = false }: MapPageProps) {
   const world = worldQuery.data;
   const ship = shipsQuery.data?.[0];
   const shipLocation = ship?.currentLocationId ?? null;
-  // A scavenging job is done at the place: the ship does not fly anywhere, so the map keeps it docked.
+  // A scavenging job and an independent mining job are done at the place (they start and end where the
+  // ship is): the map keeps the ship there with a tag saying what it is doing, not as a trip.
+  const workAtPlace = (activeQuery.data ?? []).find(
+    (mission) =>
+      mission.status === 'IN_TRANSIT' &&
+      (mission.type === 'SCAVENGE' || mission.type === 'MINING') &&
+      mission.originId === mission.destinationId,
+  );
   const flight = (activeQuery.data ?? []).find(
     (mission) =>
-      mission.status === 'IN_TRANSIT' && mission.type !== 'SCAVENGE' && mission.legWindows.length > 0,
+      mission.status === 'IN_TRANSIT' && mission !== workAtPlace && mission.legWindows.length > 0,
   );
   const now = useNow(flight !== undefined);
 
@@ -219,7 +226,11 @@ export function MapPage({ guided = false }: MapPageProps) {
                       transform={`translate(${location.x} ${location.y - 34})`}
                     >
                       <rect x={-50} y={-11} width={100} height={18} rx={9} />
-                      <text y={2}>{t('map.youAreHere')}</text>
+                      <text y={2}>
+                        {workAtPlace === undefined
+                          ? t('map.youAreHere')
+                          : t(`map.working.${workAtPlace.type}`)}
+                      </text>
                       <path d="M-5,7 L0,13 L5,7 Z" />
                     </g>
                   </>

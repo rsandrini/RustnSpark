@@ -1347,7 +1347,11 @@
         "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
       }
     },
-    "floating": "Sua nave está flutuando aqui"
+    "floating": "Sua nave está flutuando aqui",
+    "working": {
+      "SCAVENGE": "Vasculhando",
+      "MINING": "Minerando"
+    }
   },
   "notFound": {
     "title": "Página não encontrada",

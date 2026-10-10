@@ -304,15 +304,18 @@ describe('map (S10.5)', () => {
     expect(svg.querySelector('.you-tag')).toBeNull();
   });
 
-  it('a scavenging job is done at the place: the map keeps the ship docked, no flight path', async () => {
+  it.each([
+    ['SCAVENGE', 'Scavenging'],
+    ['MINING', 'Mining'],
+  ])('a %s job is done at the place: the ship stays there with a tag saying what it does, no flight path', async (type, tag) => {
     const now = Date.now();
     server.use(
       http.get('/v1/missions/active', () =>
         HttpResponse.json([
           {
             id: 'm-scav',
-            templateId: 'scavenge_generic',
-            type: 'SCAVENGE',
+            templateId: 'job_template',
+            type,
             factionId: 'luna',
             originId: 'ceres',
             destinationId: 'ceres',
@@ -345,6 +348,7 @@ describe('map (S10.5)', () => {
     await waitFor(() => expect(svg.querySelector('[aria-label*="You are here"]')).not.toBeNull());
     expect(svg.querySelector('polyline.flight-path')).toBeNull();
     expect(svg.querySelector('[aria-label="Your ship"]')).toBeNull();
+    expect(svg.querySelector('.you-tag')).toHaveTextContent(tag);
   });
 
   it('highlights corridors from the server hot flag, with no threshold of its own', async () => {

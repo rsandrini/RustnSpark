@@ -1347,7 +1347,11 @@
         "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
       }
     },
-    "floating": "Your ship is floating here"
+    "floating": "Your ship is floating here",
+    "working": {
+      "SCAVENGE": "Scavenging",
+      "MINING": "Mining"
+    }
   },
   "notFound": {
     "title": "Page not found",
