@@ -15,6 +15,12 @@ export interface PublicFaction {
   readonly art: ArtUrls | null;
 }
 
+/** What the sign-in page may show anyone: the factions as the admin has them and a few catalog counts. */
+export interface PublicLanding {
+  readonly factions: PublicFaction[];
+  readonly counts: { readonly parts: number; readonly places: number; readonly factions: number };
+}
+
 /** What every signed-in player needs: which entities have uploaded images (the rest keep defaults). */
 @Controller()
 export class ArtPublicController {
@@ -40,6 +46,31 @@ export class ArtPublicController {
         playable: row.playable,
         art: art[row.id] ?? null,
       })),
+    };
+  }
+
+  // The sign-in page: nothing but what is public by nature (faction names, pitch, colour and art,
+  // plus catalog counts) — no player data, no tuning values. Cached for a minute by the browser.
+  @Public()
+  @Get('public/landing')
+  async landing(@Res({ passthrough: true }) response: Response): Promise<PublicLanding> {
+    const [factions, art, parts, places] = await Promise.all([
+      this.prisma.faction.findMany({ orderBy: { id: 'asc' } }),
+      this.art.listUrls('factions'),
+      this.prisma.partCatalog.count({ where: { active: true } }),
+      this.prisma.location.count(),
+    ]);
+    response.set('Cache-Control', 'public, max-age=60');
+    return {
+      factions: factions.map((row) => ({
+        id: row.id,
+        displayName: row.displayName as PublicFaction['displayName'],
+        description: row.description as PublicFaction['description'],
+        color: row.color,
+        playable: row.playable,
+        art: art[row.id] ?? null,
+      })),
+      counts: { parts, places, factions: factions.length },
     };
   }
 

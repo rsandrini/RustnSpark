@@ -66,7 +66,12 @@ describe('accessibility (axe)', () => {
         ),
       );
       const { container, unmount } = renderWithRouter(routes, { initialEntries: [path] });
-      await screen.findByRole('heading');
+      // the sign-in page has a hero heading plus section headings: wait for the page's own h1
+      await screen.findByRole('heading', { level: path === '/login' ? 1 : undefined });
+      // ...and for the public data to land, so the whole page is audited
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 60));
+      });
       const results = await axe(container, {
         rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
       });

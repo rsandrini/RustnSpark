@@ -21,7 +21,9 @@ const PNG = Buffer.concat([
   Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
   Buffer.from('not-a-real-image-but-has-the-signature'),
 ]);
-const SVG = Buffer.from('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>');
+const SVG = Buffer.from(
+  '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>',
+);
 
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
@@ -55,7 +57,13 @@ describe('art uploads (factions and places)', () => {
         email,
         passwordHash: await passwordService.hash('admin-password-1'),
         role: 'ADMIN',
-        player: { create: { name: `admin_${crypto.randomUUID().replaceAll('-', '').slice(0, 22)}`, credits: 0, locale: 'en' } },
+        player: {
+          create: {
+            name: `admin_${crypto.randomUUID().replaceAll('-', '').slice(0, 22)}`,
+            credits: 0,
+            locale: 'en',
+          },
+        },
       },
     });
     const response = await request(httpServer(testApp.app))
@@ -81,7 +89,9 @@ describe('art uploads (factions and places)', () => {
         .set('Authorization', `Bearer ${token}`);
       expect(listed.status).toBe(200);
       const rows = (listed.body as { factions: { id: string; art: unknown }[] }).factions;
-      return Object.fromEntries(rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]));
+      return Object.fromEntries(
+        rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]),
+      );
     };
     expect(await art()).toEqual({}); // nothing uploaded: every faction uses its default
 
@@ -101,7 +111,12 @@ describe('art uploads (factions and places)', () => {
     expect(Buffer.from(served.body as Buffer).equals(PNG)).toBe(true);
 
     // replacing it swaps the file (the old one is deleted), resetting removes the slot and the file
-    const second = await upload(token, 'logo', Buffer.concat([PNG, Buffer.from('v2')]), 'image/png');
+    const second = await upload(
+      token,
+      'logo',
+      Buffer.concat([PNG, Buffer.from('v2')]),
+      'image/png',
+    );
     expect((second.body as { url: string }).url).not.toBe(url);
     expect((await request(httpServer(testApp.app)).get(url)).status).toBe(404);
     expect(readdirSync(ART_DIR)).toHaveLength(1);
@@ -114,7 +129,9 @@ describe('art uploads (factions and places)', () => {
     expect(await art()).toEqual({});
 
     // every change is a tuning revision
-    const revisions = await prisma.tuningRevision.findMany({ where: { entityType: 'factions', entityId: 'luna' } });
+    const revisions = await prisma.tuningRevision.findMany({
+      where: { entityType: 'factions', entityId: 'luna' },
+    });
     expect(revisions.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -145,8 +162,11 @@ describe('art uploads (factions and places)', () => {
       .set('Authorization', `Bearer ${token}`);
     expect(reset.body).toEqual({ slot: 'wide', url: null });
     expect(
-      (await request(httpServer(testApp.app)).get('/v1/places/art').set('Authorization', `Bearer ${token}`))
-        .body,
+      (
+        await request(httpServer(testApp.app))
+          .get('/v1/places/art')
+          .set('Authorization', `Bearer ${token}`)
+      ).body,
     ).toEqual({ places: {} });
     expect((await upload(token, 'logo', PNG, 'image/png', 'nowhere')).status).toBe(404);
   });
@@ -164,7 +184,9 @@ describe('art uploads (factions and places)', () => {
     const token = await adminToken();
     expect((await upload(token, 'logo', PNG, 'image/gif')).status).toBe(400);
     expect((await upload(token, 'logo', Buffer.from('plain text'), 'image/png')).status).toBe(400);
-    const evil = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+    const evil = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    );
     const scripted = await upload(token, 'logo', evil, 'image/svg+xml');
     expect(scripted.status).toBe(400);
     const handler = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="x()"></svg>');
@@ -184,9 +206,16 @@ describe('art uploads (factions and places)', () => {
         .send({ email: seeded.email, password: seeded.password }),
     );
     expect((await upload(playerToken, 'logo', PNG, 'image/png')).status).toBe(403);
-    expect((await request(httpServer(testApp.app)).get('/v1/art/..%2F..%2Fetc%2Fpasswd')).status).toBe(404);
-    expect((await request(httpServer(testApp.app)).get('/v1/art/luna-logo-zzzz.png')).status).toBe(404);
-    expect((await request(httpServer(testApp.app)).post('/v1/admin/tuning/factions/luna/art/logo')).status).toBe(401);
+    expect(
+      (await request(httpServer(testApp.app)).get('/v1/art/..%2F..%2Fetc%2Fpasswd')).status,
+    ).toBe(404);
+    expect((await request(httpServer(testApp.app)).get('/v1/art/luna-logo-zzzz.png')).status).toBe(
+      404,
+    );
+    expect(
+      (await request(httpServer(testApp.app)).post('/v1/admin/tuning/factions/luna/art/logo'))
+        .status,
+    ).toBe(401);
   });
 
   it('lists the factions as the admin has them: names, pitch, colour, playable — what players should see', async () => {
@@ -199,9 +228,11 @@ describe('art uploads (factions and places)', () => {
     const response = await request(httpServer(testApp.app))
       .get('/v1/factions')
       .set('Authorization', `Bearer ${token}`);
-    const factions = (response.body as {
-      factions: { id: string; displayName: { en: string }; color: string; playable: boolean }[];
-    }).factions;
+    const factions = (
+      response.body as {
+        factions: { id: string; displayName: { en: string }; color: string; playable: boolean }[];
+      }
+    ).factions;
     expect(factions.map((faction) => faction.id)).toEqual(['explorers', 'luna', 'pirates', 'sun']);
     const luna = factions.find((faction) => faction.id === 'luna');
     expect(luna?.displayName.en).toBe('Moon Combine');
@@ -209,5 +240,27 @@ describe('art uploads (factions and places)', () => {
     expect(factions.find((faction) => faction.id === 'pirates')?.playable).toBe(false);
     // signed-in only
     expect((await request(httpServer(testApp.app)).get('/v1/factions')).status).toBe(401);
+  });
+
+  it('the sign-in page data is public: factions with names, pitch and art, plus catalog counts only', async () => {
+    await seed(prisma);
+    const response = await request(httpServer(testApp.app)).get('/v1/public/landing');
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toContain('max-age=60');
+    const body = response.body as {
+      factions: Array<{ id: string; displayName: { en: string }; art: unknown }>;
+      counts: { parts: number; places: number; factions: number };
+    };
+    expect(body.factions.map((faction) => faction.id).sort()).toEqual([
+      'explorers',
+      'luna',
+      'pirates',
+      'sun',
+    ]);
+    expect(body.factions[0]!.displayName.en).not.toBe('');
+    expect(body.counts).toMatchObject({ parts: expect.any(Number), places: 12, factions: 4 });
+    expect(body.counts.parts).toBeGreaterThan(200);
+    // nothing but those two keys: no player data, no tuning values
+    expect(Object.keys(body).sort()).toEqual(['counts', 'factions']);
   });
 });

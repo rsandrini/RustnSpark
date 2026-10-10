@@ -109,4 +109,45 @@ describe('auth flow', () => {
 
     expect(await screen.findByText(/passwords do not match/i)).toBeInTheDocument();
   });
+
+  it('the sign-in page tells what the game is, how a run goes and who is out there', async () => {
+    renderWithRouter(routes, { initialEntries: ['/login'] });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Rust and Spark' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/space logistics and ship-building strategy game/i),
+    ).toBeInTheDocument();
+    // not an idle game: the page never calls it that
+    expect(screen.queryByText(/idle/i)).toBeNull();
+    // the four steps, the facts from the server and the factions as the admin has them
+    expect(screen.getByRole('heading', { name: 'How a run goes' })).toBeInTheDocument();
+    expect(await screen.findByTestId('landing-facts')).toHaveTextContent('220 parts to build with');
+    expect(await screen.findByRole('heading', { name: 'Luna Authority' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pirates' })).toBeInTheDocument();
+    // the way in is still right there
+    expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
+      'href',
+      '/register',
+    );
+    expect(screen.getByRole('link', { name: 'Create your pilot' })).toHaveAttribute(
+      'href',
+      '/register',
+    );
+    expect(screen.getByRole('link', { name: 'Forgot your password?' })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    );
+  });
+
+  it('the sign-in page still works if the public data cannot be loaded', async () => {
+    server.use(http.get('/v1/public/landing', () => HttpResponse.json({}, { status: 500 })));
+    renderWithRouter(routes, { initialEntries: ['/login'] });
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Rust and Spark' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('landing-facts')).toBeNull();
+  });
 });

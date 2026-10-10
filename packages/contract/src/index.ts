@@ -218,6 +218,13 @@ export type PublicFaction = z.infer<typeof PublicFactionSchema>;
 
 /** GET /v1/factions */
 export const FactionsResponseSchema = z.object({ factions: z.array(PublicFactionSchema) });
+/** GET /v1/public/landing — what the sign-in page shows without a session. */
+export const LandingResponseSchema = z.object({
+  factions: z.array(PublicFactionSchema),
+  counts: z.object({ parts: z.number(), places: z.number(), factions: z.number() }),
+});
+export type LandingResponse = z.infer<typeof LandingResponseSchema>;
+
 export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
 
 /** GET /v1/display: how derived numbers are shown (admin-tuned, see `ship.stat_display_scale`). */

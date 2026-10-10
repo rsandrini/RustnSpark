@@ -1683,5 +1683,61 @@
       "label": "Gerenciamento de bateria",
       "hint": "De onde vem a energia de combate: só as baterias, tudo que a nave produz, ou um override que força mais os sistemas."
     }
+  },
+  "landing": {
+    "kicker": "Um jogo de estratégia espacial de logística e montagem de naves",
+    "title": "Rust and Spark",
+    "pitch": "Monte sua nave com peças, planeje a viagem, mande-a em missões num relógio em tempo real e leia o que aconteceu. Um mundo compartilhado de pilotos, facções e uma economia viva.",
+    "facts": {
+      "parts_one": "{{count}} peça para montar",
+      "parts_other": "{{count}} peças para montar",
+      "places_one": "{{count}} lugar no mapa",
+      "places_other": "{{count}} lugares no mapa",
+      "factions_one": "{{count}} poder",
+      "factions_other": "{{count}} poderes"
+    },
+    "how": {
+      "title": "Como é uma viagem",
+      "build": {
+        "title": "Monte",
+        "text": "Monte uma nave com peças em cinco raridades e vários tamanhos. Cada peça tem peso, energia e um lugar na grade."
+      },
+      "plan": {
+        "title": "Planeje",
+        "text": "Ajuste os motores e a bateria, carregue a carga, escolha uma missão e uma rota. Combustível, perigo e tempo decidem o que paga."
+      },
+      "fly": {
+        "title": "Voe",
+        "text": "As missões rodam no servidor em tempo real. Volte quando quiser: o relógio continua sem você."
+      },
+      "read": {
+        "title": "Leia",
+        "text": "Cada viagem é contada como um RPG de texto: lutas, desgaste, saque e o que custou. Repare, melhore e saia de novo."
+      }
+    },
+    "more": {
+      "title": "Não é um jogo para deixar rodando sozinho",
+      "missions": {
+        "title": "Muitos jeitos de ganhar",
+        "text": "Entregas, passageiros, mineração, vasculhar destroços, escoltas e corridas. Carga aberta paga por unidade; cargas fixas enchem o porão."
+      },
+      "economy": {
+        "title": "Uma economia viva",
+        "text": "Melhorias pedem dinheiro mais sucata, cristais e núcleos raros achados em lugares perigosos. O minério que você extrai é seu para vender."
+      },
+      "risk": {
+        "title": "Tudo tem custo",
+        "text": "Piratas, desgaste e ficar sem combustível. Um reboque custa créditos e a missão. Peças sobressalentes e carga disputam espaço."
+      }
+    },
+    "factions": {
+      "title": "Quatro poderes, um setor",
+      "intro": "Cada facção tem seus portos, contratos e preços, e nenhuma gosta das outras do mesmo jeito."
+    },
+    "cta": {
+      "title": "Pronto para voar?",
+      "text": "Crie um piloto, escolha uma facção e pegue seu primeiro trabalho.",
+      "button": "Criar seu piloto"
+    }
   }
 }

@@ -25,9 +25,13 @@ const PUBLIC_ROUTES = new Set([
   'POST /v1/auth/refresh',
   'POST /v1/auth/register',
   'POST /v1/auth/reset-password',
+  // uploaded art: plain <img>/CSS files, content-hashed names, sandboxed by CSP
+  'GET /v1/art/:file',
   'GET /v1/health',
   'GET /v1/health/live',
   'GET /v1/health/ready',
+  // the sign-in page: faction names, pitch and art plus catalog counts, nothing about players
+  'GET /v1/public/landing',
 ]);
 
 /**

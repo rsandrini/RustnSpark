@@ -3,6 +3,7 @@ import type {
   EnginePreview,
   ActiveMission,
   FactionsResponse,
+  LandingResponse,
   BuyResponse,
   DispatchResponse,
   InventoryItem,
@@ -488,7 +489,10 @@ const UPGRADE_TIERS: Record<
   hull: {
     nextPartType: 'hull_uncommon',
     nextName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
-    nextDescription: { en: 'A tougher hull plate.', 'pt-BR': 'Uma placa de casco mais resistente.' },
+    nextDescription: {
+      en: 'A tougher hull plate.',
+      'pt-BR': 'Uma placa de casco mais resistente.',
+    },
     nextRarity: 'UNCOMMON',
     nextCatalog: catalog('hull_uncommon', 'DEFENSE', { partHp: 60, mass: 4, w: 2, h: 2 }),
     cost: 115,
@@ -568,6 +572,37 @@ export const handlers = [
 
   http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
 
+  // The sign-in page's public data.
+  http.get('/v1/public/landing', () =>
+    ok<LandingResponse>({
+      factions: [
+        {
+          id: 'luna',
+          displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade Luna' },
+          description: {
+            en: 'Port clerks, steady freight and the weight of official seals behind every contract.',
+            'pt-BR':
+              'Escriturários de porto, frete constante e o peso de selos oficiais em cada contrato.',
+          },
+          color: '#4a90d9',
+          playable: true,
+          art: null,
+        },
+        {
+          id: 'pirates',
+          displayName: { en: 'Pirates', 'pt-BR': 'Piratas' },
+          description: {
+            en: 'Loose clans that prey on shipping in debris fields and dead zones.',
+            'pt-BR': 'Clãs soltos que atacam o transporte em campos de destroços e zonas mortas.',
+          },
+          color: '#c23b3b',
+          playable: false,
+          art: null,
+        },
+      ],
+      counts: { parts: 220, places: 12, factions: 4 },
+    }),
+  ),
   // Uploaded faction images (none by default: every faction shows its built-in art).
   // The factions as the admin has them (the same texts the language files used to carry).
   http.get('/v1/factions', () =>
@@ -578,7 +613,8 @@ export const handlers = [
           displayName: { en: 'Explorers', 'pt-BR': 'Exploradores' },
           description: {
             en: 'Frontier prospectors pushing past the charted belt for ore nobody has priced yet.',
-            'pt-BR': 'Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou.',
+            'pt-BR':
+              'Prospectores de fronteira empurrando além da cinta catalogada por minério que ninguém precificou.',
           },
           color: '#3fa66a',
           playable: true,
@@ -589,7 +625,8 @@ export const handlers = [
           displayName: { en: 'Luna Authority', 'pt-BR': 'Autoridade de Luna' },
           description: {
             en: 'Port clerks, steady freight and the weight of official seals behind every contract.',
-            'pt-BR': 'Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato.',
+            'pt-BR':
+              'Escritórios portuários, frete previsível e o peso dos selos oficiais em cada contrato.',
           },
           color: '#4a90d9',
           playable: true,
@@ -608,7 +645,8 @@ export const handlers = [
           displayName: { en: 'Sun Traders', 'pt-BR': 'Comerciantes do Sol' },
           description: {
             en: 'Free merchants who answer to no port authority and always know a buyer.',
-            'pt-BR': 'Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador.',
+            'pt-BR':
+              'Livre-comerciantes que não respondem a autoridade portuária e sempre conhecem um comprador.',
           },
           color: '#e3b341',
           playable: true,
@@ -617,7 +655,8 @@ export const handlers = [
       ],
     }),
   ),
-  http.get('/v1/display', () => HttpResponse.json({
+  http.get('/v1/display', () =>
+    HttpResponse.json({
       statScale: 10,
       mobFactor: 1.6,
       scavengeHandicap: 0.5,
@@ -626,7 +665,8 @@ export const handlers = [
       armorPoolFactor: 5,
       armorReduction: 0.25,
       coreFragments: { prototype_core: 5, ancient_core: 15 },
-    })),
+    }),
+  ),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).
@@ -1483,9 +1523,30 @@ const boardState: MissionOffer[] = [
     },
     {
       requirements: [
-        { code: 'MINER', message: 'Needs a mining system', met: false, needed: 1, actual: 0, unit: 'mining' },
-        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true, needed: 5, actual: 10, unit: 'cargo' },
-        { code: 'MIN_MOBILITY', message: 'Mobility is below the escort minimum.', met: false, needed: 1.5, actual: 1.1, unit: 'mobility' },
+        {
+          code: 'MINER',
+          message: 'Needs a mining system',
+          met: false,
+          needed: 1,
+          actual: 0,
+          unit: 'mining',
+        },
+        {
+          code: 'CARGO_TYPE',
+          message: 'Cargo hold does not fit this cargo',
+          met: true,
+          needed: 5,
+          actual: 10,
+          unit: 'cargo',
+        },
+        {
+          code: 'MIN_MOBILITY',
+          message: 'Mobility is below the escort minimum.',
+          met: false,
+          needed: 1.5,
+          actual: 1.1,
+          unit: 'mobility',
+        },
       ],
     },
   ),

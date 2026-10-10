@@ -1683,5 +1683,61 @@
       "label": "Battery management",
       "hint": "Where the combat energy comes from: the batteries only, everything the ship makes, or an override that drives the systems harder."
     }
+  },
+  "landing": {
+    "kicker": "A space logistics and ship-building strategy game",
+    "title": "Rust and Spark",
+    "pitch": "Build your ship from parts, plan the run, send it out on a real-time clock, and read what happened. A shared world of pilots, factions and a living economy.",
+    "facts": {
+      "parts_one": "{{count}} part to build with",
+      "parts_other": "{{count}} parts to build with",
+      "places_one": "{{count}} place on the map",
+      "places_other": "{{count}} places on the map",
+      "factions_one": "{{count}} power",
+      "factions_other": "{{count}} powers"
+    },
+    "how": {
+      "title": "How a run goes",
+      "build": {
+        "title": "Build",
+        "text": "Assemble a ship from parts in five rarities and several sizes. Every part has weight, power and a place on the grid."
+      },
+      "plan": {
+        "title": "Plan",
+        "text": "Tune the engines and the battery, load your cargo, pick a mission and a route. Fuel, danger and time decide what pays."
+      },
+      "fly": {
+        "title": "Fly",
+        "text": "Missions run on the server in real time. Come back when you like: the clock keeps going without you."
+      },
+      "read": {
+        "title": "Read",
+        "text": "Every run is told like a text RPG: fights, wear, loot and what it cost. Repair, upgrade and go again."
+      }
+    },
+    "more": {
+      "title": "Not a game you can just leave running",
+      "missions": {
+        "title": "Many ways to earn",
+        "text": "Deliveries, passengers, mining, scavenging, escorts and races. Open cargo pays by the unit; fixed loads fill your hold."
+      },
+      "economy": {
+        "title": "A living economy",
+        "text": "Upgrades need money plus scrap, crystals and rare cores found in dangerous places. Ore you dig up is yours to sell."
+      },
+      "risk": {
+        "title": "Everything costs",
+        "text": "Pirates, wear and running dry. A tow costs credits and the mission. Spare parts and cargo compete for space."
+      }
+    },
+    "factions": {
+      "title": "Four powers, one sector",
+      "intro": "Each faction runs its own ports, contracts and prices, and none of them likes the others the same way."
+    },
+    "cta": {
+      "title": "Ready to fly?",
+      "text": "Create a pilot, pick a faction and take your first job.",
+      "button": "Create your pilot"
+    }
   }
 }
