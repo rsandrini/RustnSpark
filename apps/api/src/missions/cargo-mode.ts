@@ -44,9 +44,9 @@ export interface CargoLoad {
   readonly fits: boolean;
 }
 
-/** What the mission loads, given the ship's cargo space and the ore already in it. */
-export function cargoLoadFor(terms: CargoTerms, capacity: number, ore: number): CargoLoad {
-  const room = Math.max(0, capacity - ore);
+/** What the mission loads, given the ship's cargo space (the pilot's goods take none). */
+export function cargoLoadFor(terms: CargoTerms, capacity: number): CargoLoad {
+  const room = capacity;
   switch (terms.mode) {
     case 'min':
       return { units: 0, fits: capacity >= terms.need };

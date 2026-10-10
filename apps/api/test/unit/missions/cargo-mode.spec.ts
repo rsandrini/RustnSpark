@@ -22,21 +22,21 @@ describe('delivery cargo modes', () => {
 
   it('minimum limit: nothing is loaded, the cargo space only has to reach the need', () => {
     const terms = cargoTermsOf('DELIVERY', { cargo: 5 }, rules)!;
-    expect(cargoLoadFor(terms, 5, 4)).toEqual({ units: 0, fits: true });
-    expect(cargoLoadFor(terms, 4, 0)).toEqual({ units: 0, fits: false });
+    expect(cargoLoadFor(terms, 5)).toEqual({ units: 0, fits: true });
+    expect(cargoLoadFor(terms, 4)).toEqual({ units: 0, fits: false });
   });
 
-  it('fixed: loads exactly the need and needs that much room beside the ore', () => {
+  it('fixed: loads exactly the need and needs that much cargo space', () => {
     const terms = cargoTermsOf('DELIVERY', { cargo: 6, cargoMode: 'fixed' }, rules)!;
-    expect(cargoLoadFor(terms, 10, 3)).toEqual({ units: 6, fits: true });
-    expect(cargoLoadFor(terms, 10, 5)).toEqual({ units: 6, fits: false });
+    expect(cargoLoadFor(terms, 10)).toEqual({ units: 6, fits: true });
+    expect(cargoLoadFor(terms, 5)).toEqual({ units: 6, fits: false });
     expect(openCargoExtra(terms, 6)).toBe(0);
   });
 
-  it('open: loads all the room left, needs the minimum, and each unit beyond it pays', () => {
+  it('open: loads all the cargo space, needs the minimum, and each unit beyond it pays', () => {
     const terms = cargoTermsOf('DELIVERY', { cargo: 3, cargoMode: 'open', unitPay: 20 }, rules)!;
-    expect(cargoLoadFor(terms, 10, 2)).toEqual({ units: 8, fits: true });
-    expect(cargoLoadFor(terms, 10, 8)).toEqual({ units: 3, fits: false });
+    expect(cargoLoadFor(terms, 10)).toEqual({ units: 10, fits: true });
+    expect(cargoLoadFor(terms, 2)).toEqual({ units: 3, fits: false });
     expect(openCargoExtra(terms, 8)).toBe(100);
     expect(openCargoExtra(terms, 3)).toBe(0);
   });

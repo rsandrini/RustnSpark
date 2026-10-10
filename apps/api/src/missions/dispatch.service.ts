@@ -302,15 +302,14 @@ export class DispatchService {
       // Part direction rules apply to every dispatch that flies the ship — except a scavenging job,
       // which is manual work at the current place: the ship never travels, so nothing points anywhere.
       const flightViability = checkViability(sheet, installedConnected, rules);
-      // The spare parts and the ore travel with the ship: they must fit the free slots plus the cargo space.
-      // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space too.
+      // The spare parts travel with the ship: they must fit the bridge's slots; the mission's cargo, the cargo space.
+      // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space.
       const template = await tx.missionTemplate.findUnique({
         where: { id: mission.templateId },
         select: { requirements: true },
       });
       const terms = cargoTermsOf(mission.type, template?.requirements, rules);
-      const oreHeld = (await loadHold(tx, playerId, 0, sheet.crg)).ore;
-      const load = terms === null ? null : cargoLoadFor(terms, sheet.crg, oreHeld);
+      const load = terms === null ? null : cargoLoadFor(terms, sheet.crg);
       const hold = await loadHold(
         tx,
         playerId,

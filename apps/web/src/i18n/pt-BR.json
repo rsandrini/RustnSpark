@@ -234,7 +234,7 @@
       "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
       "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
       "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
-      "HOLD_OVER_CAPACITY": "O minério e a carga da missão não cabem no espaço de carga da nave.",
+      "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "errors": {
@@ -332,10 +332,9 @@
       "confirm": "Esvaziar a nave"
     },
     "hold": {
-      "line": "Carregado: {{parts}} de {{slots}} espaços de peças sobressalentes, {{ore}} de minério. Espaço de carga usado: {{used}} de {{capacity}}.",
+      "line": "Carregado: {{parts}} de {{slots}} espaços de peças sobressalentes. Seus bens (minério, sucata) ficam em terra e não ocupam espaço.",
       "partsOver": "Peças sobressalentes demais para partir: venda ou deixe algumas.",
-      "cargoOver": "Carga demais para partir: venda parte do minério antes.",
-      "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). O minério e a carga que uma missão embarca ocupam espaço de carga."
+      "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). Só a carga que uma missão embarca ocupa espaço de carga."
     }
   },
   "home": {
@@ -1233,7 +1232,7 @@
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
-      "HOLD_OVER_CAPACITY": "O minério e a carga da missão não cabem no espaço de carga da nave.",
+      "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "requirements": {
@@ -1295,7 +1294,7 @@
     "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}",
     "cargo": {
       "fixed": "Carga fixa: {{need}} unidades, ocupando esse tanto do seu espaço de carga.",
-      "open": "Carga aberta: no mínimo {{need}} unidades, e você leva o quanto o espaço de carga ainda tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
+      "open": "Carga aberta: no mínimo {{need}} unidades, e você leva todo o espaço de carga que tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
     }
   },
   "map": {

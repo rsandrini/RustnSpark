@@ -62,7 +62,7 @@ export interface ShipResponse {
   energyMode: string;
   /** Engine tuning set on the bridge (1 = engines as listed). */
   engineLevels: { chem: number; ion: number };
-  /** The spare parts and ore the ship carries against its free slots and cargo space. */
+  /** The spare parts the ship carries against the bridge's slots (and a mission's cargo against its space). */
   hold: HoldState;
   layout: Placement[];
   sheet: ShipSheet;
@@ -667,14 +667,9 @@ export class ShipsService implements OnModuleInit {
     const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    const held = await this.prisma.playerMaterial.aggregate({
-      where: { playerId: ship.ownerPlayerId },
-      _sum: { quantity: true },
-    });
     const hold = computeHold({
       slots: rules.ship.spare_part_slots,
       parts: parts.filter((part) => part.location === 'INVENTORY').length,
-      ore: held._sum.quantity ?? 0,
       capacity: sheet.crg,
     });
     const activity = await this.activityOf(ship);
