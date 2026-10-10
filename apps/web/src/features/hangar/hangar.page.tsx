@@ -859,8 +859,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
             <section aria-label={t('hangar.sheet')}>
               {allWarnings.length > 0 && (
-                <div className="panel" data-testid="flight-warnings">
-                  <h2>{t('hangar.warnings.title')}</h2>
+                <details open className="panel collapsible" data-testid="flight-warnings">
+                  <summary>
+                    <h2>{t('hangar.warnings.title')}</h2>
+                  </summary>
                   <p className="sub">{t('hangar.warnings.explain')}</p>
                   <ul>
                     {allWarnings.map((problem) => (
@@ -890,12 +892,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </details>
               )}
 
               {allProblems.length > 0 && (
-                <div className="panel">
-                  <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
+                <details open className="panel collapsible">
+                  <summary>
+                    <h2>{t('hangar.problems.INVALID_LAYOUT')}</h2>
+                  </summary>
                   <ul>
                     {allProblems.map((problem) => {
                       const fixClass = FIX_CLASS[problem.code];
@@ -929,7 +933,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       );
                     })}
                   </ul>
-                </div>
+                </details>
               )}
               <div className="panel">
                 <div className="row-between">

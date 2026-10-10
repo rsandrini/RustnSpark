@@ -4943,8 +4943,19 @@ body:has(.modal-backdrop) .part-hover-card {
   gap: 8px;
   min-width: 0;
 }
+.mcard-with-side {
+  align-items: stretch;
+}
+.mcard-with-side .mcard-side {
+  display: flex;
+  min-width: 0;
+}
 .mcard-with-side .mcard-side .route-map {
   margin: 0;
+  flex: 1;
+  max-width: none;
+  display: flex;
+  align-items: center;
 }
 @media (max-width: 700px) {
   .mcard-with-side {
@@ -4953,6 +4964,18 @@ body:has(.modal-backdrop) .part-hover-card {
 }
 .transit-aside-solo {
   grid-template-columns: 1fr;
+  height: 100%;
+}
+.transit-layout:has(.transit-aside-solo) {
+  align-items: stretch;
+}
+.transit-aside-solo .ship-stage-wrap {
+  margin: 0;
+  height: 100%;
+}
+.transit-aside-solo .transit-scene.stage-compact {
+  height: 100%;
+  min-height: 220px;
 }
 /* The ship scene and the map side by side, so the pair takes one row of height. */
 .transit-aside {
@@ -5279,4 +5302,14 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 .auth-tab.active {
   border-bottom-color: var(--spark);
   color: var(--ink);
+}
+
+/* Collapsible panels (flight warnings, layout problems): the heading is the toggle. */
+details.collapsible > summary {
+  cursor: pointer;
+  list-style: revert;
+}
+details.collapsible > summary h2 {
+  display: inline;
+  margin: 0;
 }

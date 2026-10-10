@@ -263,17 +263,17 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 
   // Beside the briefing, not under it: the ship scene and the trip's map share a narrow column.
   const inTransit = mission.status !== 'ACCEPTED';
+  // With a mission card the map lives inside the card (half of it) and the scene gets the column.
+  const mapInCard = offer !== null && mission.type !== 'SCAVENGE';
   const tripMap =
     mission.type !== 'SCAVENGE' ? (
       <RouteMap
         path={inTransit ? nodeIds : plannedNodeIds}
         world={worldQuery.data}
         {...(inTransit ? { progress: progress / 100, animated: true } : {})}
-        compact
+        compact={!mapInCard}
       />
     ) : undefined;
-  // With a mission card the map lives inside the card (half of it) and the scene gets the column.
-  const mapInCard = offer !== null && tripMap !== undefined;
   const aside =
     mission.status === 'HELD' || mission.status === 'RESOLVING' ? null : (
       <aside
