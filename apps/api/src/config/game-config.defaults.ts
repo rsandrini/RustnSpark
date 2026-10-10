@@ -177,7 +177,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   mining: {
     richness: { open: 0.2, radiation: 0.35, gravitational: 0.3, debris: 0.6 },
     rarity: { common: 0.3, uncommon: 0.6, rare: 0.85 },
-    attempts_per_stop: 10,
+    attempts_per_stop: 20,
     job_duration_seconds: 300,
   },
   power: {

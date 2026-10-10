@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { ScriptedRng } from '../../../src/common/rng/scripted.rng.js';
 import { createRng } from '../../../src/common/rng/rng.js';
-import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import { APPENDIX_E_RULES as GAME_CONFIG_DEFAULTS } from '../../fixtures/appendix-e-rules.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   miningChance,

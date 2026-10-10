@@ -78,6 +78,7 @@ describe('S5.0 — Appendix E sign-off gate', () => {
       'ship_class.pressurized_share',
       'parts.starter_condition',
       'scavenging.cooldown_seconds',
+      'mining.attempts_per_stop',
     ]);
 
     it('every approved key exists in GAME_CONFIG_DEFAULTS with exactly the approved value', () => {

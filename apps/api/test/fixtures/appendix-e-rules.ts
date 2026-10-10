@@ -20,6 +20,7 @@ export const APPENDIX_E_RULES: GameRules = {
     reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
   },
   integrity: { ...GAME_CONFIG_DEFAULTS.integrity, combat_factor: 0.6, env_factor: 0.4 },
+  mining: { ...GAME_CONFIG_DEFAULTS.mining, attempts_per_stop: 10 },
   parts: { ...GAME_CONFIG_DEFAULTS.parts, starter_condition: 80 },
   scavenging: { ...GAME_CONFIG_DEFAULTS.scavenging, cooldown_seconds: 300 },
   ship_class: { ...GAME_CONFIG_DEFAULTS.ship_class, pressurized_share: 0.15 },
