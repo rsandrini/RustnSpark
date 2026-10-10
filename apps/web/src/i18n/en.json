@@ -1689,11 +1689,11 @@
     "title": "Rust and Spark",
     "pitch": "Build your ship from parts, plan the run, send it out on a real-time clock, and read what happened. A shared world of pilots, factions and a living economy.",
     "facts": {
-      "parts_one": "{{count}} part to build with",
+      "parts": "{{count}} part to build with",
       "parts_other": "{{count}} parts to build with",
-      "places_one": "{{count}} place on the map",
+      "places": "{{count}} place on the map",
       "places_other": "{{count}} places on the map",
-      "factions_one": "{{count}} power",
+      "factions": "{{count}} power",
       "factions_other": "{{count}} powers"
     },
     "how": {

@@ -1689,11 +1689,11 @@
     "title": "Rust and Spark",
     "pitch": "Monte sua nave com peças, planeje a viagem, mande-a em missões num relógio em tempo real e leia o que aconteceu. Um mundo compartilhado de pilotos, facções e uma economia viva.",
     "facts": {
-      "parts_one": "{{count}} peça para montar",
+      "parts": "{{count}} peça para montar",
       "parts_other": "{{count}} peças para montar",
-      "places_one": "{{count}} lugar no mapa",
+      "places": "{{count}} lugar no mapa",
       "places_other": "{{count}} lugares no mapa",
-      "factions_one": "{{count}} poder",
+      "factions": "{{count}} poder",
       "factions_other": "{{count}} poderes"
     },
     "how": {
