@@ -302,9 +302,11 @@ describe('port (S10.9)', () => {
     await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
-    expect(screen.getByText('Fuel 25 / 40')).toBeInTheDocument();
     // The slider defaults to filling the tank; the price shown is the server's quote of that amount.
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
+    // The bar shows what the slider adds, and the summary spells it out.
+    expect(screen.getByText('Fuel 25 + 15 → 40 / 40')).toBeInTheDocument();
+    expect(screen.getByTestId('refuel-summary')).toHaveTextContent('+15');
     fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,775 ¢'));

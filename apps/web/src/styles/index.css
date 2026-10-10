@@ -3370,6 +3370,45 @@ svg .block.cond-bad {
   width: 100%;
 }
 
+.refuel-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+.refuel-summary > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel2);
+}
+.refuel-summary small {
+  color: var(--mut);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+.refuel-summary b {
+  font-variant-numeric: tabular-nums;
+}
+.refuel-summary .add b {
+  color: var(--spark);
+}
+.refuel-panel input[type='range'] {
+  accent-color: var(--blue);
+}
+/* What the slider would add, past the current fuel: a lighter blue stripe. */
+.gauge.fuel .gauge-planned {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.55),
+    rgba(88, 166, 255, 0.55) 4px,
+    rgba(88, 166, 255, 0.28) 4px,
+    rgba(88, 166, 255, 0.28) 8px
+  );
+}
 .refuel-panel .over {
   color: var(--bad);
 }

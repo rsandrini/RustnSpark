@@ -907,7 +907,17 @@ export function PortPage({
             max={fuelCap}
             tone="fuel"
             ariaLabel={t('port.fuelBar')}
-            label={t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })}
+            planned={fuel + wantedUnits}
+            label={
+              wantedUnits > 0
+                ? t('port.refuelGaugeAfter', {
+                    fuel: Math.round(fuel),
+                    add: wantedUnits,
+                    after: Math.round(fuel + wantedUnits),
+                    cap: Math.round(fuelCap),
+                  })
+                : t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })
+            }
           />
           <p className="sub">{t('port.refuelHint')}</p>
           {noTank ? (
@@ -928,6 +938,22 @@ export function PortPage({
                 value={wantedUnits}
                 onChange={(event) => setRefuelUnits(Number(event.target.value))}
               />
+              <div className="refuel-summary" data-testid="refuel-summary">
+                <div>
+                  <small>{t('port.refuelNow')}</small>
+                  <b>{Math.round(fuel)}</b>
+                </div>
+                <div className="add">
+                  <small>{t('port.refuelAdd')}</small>
+                  <b>+{wantedUnits}</b>
+                </div>
+                <div>
+                  <small>{t('port.refuelAfter')}</small>
+                  <b>
+                    {Math.round(fuel + wantedUnits)} / {Math.round(fuelCap)}
+                  </b>
+                </div>
+              </div>
               <div className="statrow">
                 <span>
                   {t('port.refuelUnits', { units: wantedUnits })}
