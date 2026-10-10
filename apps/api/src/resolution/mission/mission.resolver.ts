@@ -70,6 +70,8 @@ export interface MissionInput {
   readonly client: EscortClient | null;
   /** Present on mining legs/stops (D30). */
   readonly mining?: { readonly stop: MiningStop; readonly miner: MinerRig };
+  /** The pilot's own free mining job: no payout line, the ore is the whole result. */
+  readonly unpaid?: boolean;
   /** Open-cargo deliveries: what the units beyond the minimum add to the pay (credits). */
   readonly cargoExtra?: number;
   readonly contractedMining?: {
@@ -238,7 +240,10 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
 
   // Payment only when every leg completed. Trips and scavenging jobs pay nothing, so they write
   // no payment line either.
-  const paysNothing = input.mission.type === 'TRAVEL' || input.mission.type === 'SCAVENGE';
+  const paysNothing =
+    input.mission.type === 'TRAVEL' ||
+    input.mission.type === 'SCAVENGE' ||
+    input.mission.unpaid === true;
   // A race pays by finishing place, not by integrity: settled below.
   const isRace = input.mission.type === 'RACE' && input.mission.race !== undefined;
   if (status === 'success' && !paysNothing && !isRace) {

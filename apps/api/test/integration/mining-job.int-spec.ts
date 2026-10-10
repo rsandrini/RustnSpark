@@ -134,6 +134,9 @@ describe('independent mining job (round 10)', () => {
     const response = await start(player.token, 'ceres');
     expect(response.status).toBe(200);
     const body = response.body as { missionId: string; durationSeconds?: number };
+    // it digs an ore (a material sold by price), never a fixed-price scrap material
+    const job = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    expect((job.cargo as { materialId: string }).materialId.startsWith('scrap_')).toBe(false);
     expect(
       Math.abs(
         (body.durationSeconds ?? 0) - configService.snapshot().rules.mining.job_duration_seconds,

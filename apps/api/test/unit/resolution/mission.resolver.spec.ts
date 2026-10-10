@@ -682,3 +682,16 @@ describe('open-cargo deliveries', () => {
     expect(payoutOf(100)).toBeGreaterThan(plain);
   });
 });
+
+describe("the pilot's own free mining job", () => {
+  it('pays no credits and writes no payout: the ore is the whole result', () => {
+    const job = mission({ type: 'MINING', unpaid: true });
+    const out = resolve('own-job', snapshot(), job);
+    expect(out.status).toBe('success');
+    expect(out.events.some((event) => event.type === 'mission_payout')).toBe(false);
+    expect(out.creditsDelta).toBe(0);
+    // a paid mining mission still pays
+    const paid = resolve('own-job', snapshot(), mission({ type: 'MINING' }));
+    expect(paid.events.some((event) => event.type === 'mission_payout')).toBe(true);
+  });
+});

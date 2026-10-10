@@ -45,6 +45,8 @@ export interface ResolutionContext {
     readonly minimumYield?: number;
   };
   readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
+  /** The pilot's own free mining job (no contract, no reward): it pays no credits, only the ore. */
+  readonly unpaid?: boolean;
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
   readonly scavenge?: ScavengeContext;
   /** RACE only: the rivals generated with the offer, frozen with the run. */
@@ -135,6 +137,9 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
       : {}),
     ...(source.scavenge !== undefined && source.scavenge !== null
       ? { scavenge: source.scavenge }
+      : {}),
+    ...(source.type === 'MINING' && cargo['contracted'] !== true && (source.reward ?? 0) <= 0
+      ? { unpaid: true }
       : {}),
     ...(source.type === 'RACE' ? { race: { competitors: parseCompetitors(cargo) } } : {}),
     ...(cargo['contracted'] === true &&
@@ -312,6 +317,7 @@ export function buildResolveInput(args: {
           cargoExtra: Math.max(0, snapshot.cargo.units - snapshot.cargo.need) * snapshot.cargo.unitPay,
         }
       : {}),
+    ...(context.unpaid ? { unpaid: true } : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
     ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),

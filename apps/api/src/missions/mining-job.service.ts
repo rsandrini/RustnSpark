@@ -127,7 +127,8 @@ export class MiningJobService {
     }
 
     const materials = await this.prisma.material.findMany({
-      where: { active: true },
+      // ores only: the scrap materials have a fixed price and are found by scavenging, not dug up
+      where: { active: true, fixedPrice: false },
       select: { id: true },
     });
     if (materials.length === 0) throw new ConflictException({ error: 'NOT_MINABLE' });
