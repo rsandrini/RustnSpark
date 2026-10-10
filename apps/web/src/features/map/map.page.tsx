@@ -66,8 +66,10 @@ export function MapPage({ guided = false }: MapPageProps) {
   const world = worldQuery.data;
   const ship = shipsQuery.data?.[0];
   const shipLocation = ship?.currentLocationId ?? null;
+  // A scavenging job is done at the place: the ship does not fly anywhere, so the map keeps it docked.
   const flight = (activeQuery.data ?? []).find(
-    (mission) => mission.status === 'IN_TRANSIT' && mission.legWindows.length > 0,
+    (mission) =>
+      mission.status === 'IN_TRANSIT' && mission.type !== 'SCAVENGE' && mission.legWindows.length > 0,
   );
   const now = useNow(flight !== undefined);
 

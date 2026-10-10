@@ -304,6 +304,49 @@ describe('map (S10.5)', () => {
     expect(svg.querySelector('.you-tag')).toBeNull();
   });
 
+  it('a scavenging job is done at the place: the map keeps the ship docked, no flight path', async () => {
+    const now = Date.now();
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([
+          {
+            id: 'm-scav',
+            templateId: 'scavenge_generic',
+            type: 'SCAVENGE',
+            factionId: 'luna',
+            originId: 'ceres',
+            destinationId: 'ceres',
+            legs: [],
+            cargo: {},
+            reward: 0,
+            expiresAt: new Date(now + 3_600_000).toISOString(),
+            status: 'IN_TRANSIT',
+            playerId: 'player-1',
+            privatePlayerId: null,
+            shipId: 'ship-1',
+            acceptedAt: new Date(now - 60_000).toISOString(),
+            arrivalAt: new Date(now + 600_000).toISOString(),
+            deadlineAt: null,
+            seed: 's',
+            version: 1,
+            legWindows: [
+              {
+                legIndex: 0,
+                routeId: 'ceres-gate',
+                from: new Date(now - 300_000).toISOString(),
+                to: new Date(now + 300_000).toISOString(),
+              },
+            ],
+          },
+        ]),
+      ),
+    );
+    const { svg } = await renderMap();
+    await waitFor(() => expect(svg.querySelector('[aria-label*="You are here"]')).not.toBeNull());
+    expect(svg.querySelector('polyline.flight-path')).toBeNull();
+    expect(svg.querySelector('[aria-label="Your ship"]')).toBeNull();
+  });
+
   it('highlights corridors from the server hot flag, with no threshold of its own', async () => {
     const { svg } = await renderMap();
     const hot = svg.querySelectorAll('line.edge.hot').length;
