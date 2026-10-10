@@ -1,15 +1,15 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
 import type { ConnectorLayout } from '../parts/connectors.js';
+import { isDead } from '../parts/condition.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import type { InstalledPart, Placement } from '../parts/part.types.js';
-import { autoLayout } from '../ships/auto-layout.js';
 import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
 import { applyConnectivity } from '../ships/connectivity.js';
-import { CLASSIC_SQUARE_CELLS, connectedPartIds } from '../ships/geometry.js';
+import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
 
@@ -19,106 +19,86 @@ export interface ViabilityReport {
 }
 
 export interface RestartOutcome {
-  readonly restartParts: string[];
+  /** The part types handed over (loose, in the inventory) for what was missing or dead. */
+  readonly replacementParts: string[];
   readonly viability: ViabilityReport;
-  /** Tank ceiling of the hull as it stands after the check (kit or original build). */
+  /** Tank ceiling of the ship once the replacements are installed (installed tanks + the ones handed over). */
   readonly fuelCap: number;
 }
 
 /**
- * S8.6: the restart floor (GDD §14 "peças de recomeço = sucata grátis"). A ship that is
- * no longer viable — only reachable by selling installed parts off an ADRIFT hull — is
- * rebuilt from the onboarding starter kit at `parts.restart_condition_max`, free of
- * charge. Nothing is destroyed: every old part is moved to the player's inventory
- * first, so the kit is strictly additive. The kit is laid out and viability-checked
- * exactly like onboarding, so the player always ends with a viable ship.
+ * What a rescue hands over: loose common parts, at `parts.replacement_condition`, for the essential
+ * roles that are missing or dead — a bridge, an engine, a tank (only when the ship burns fuel) and life
+ * support (only with a passenger cabin). Nothing is installed or removed: the pilot swaps them in, and
+ * the broken originals stay in the inventory. A ship that is fine gets nothing.
  */
 @Injectable()
 export class InventoryService {
   constructor(private readonly config: GameConfigService) {}
 
-  async ensureViableShip(
+  async provideReplacements(
     tx: Prisma.TransactionClient,
     playerId: string,
     shipId: string,
   ): Promise<RestartOutcome> {
     const rules = this.config.snapshot().rules;
     const current = await this.installedOf(tx, shipId);
-    const currentReport = this.viabilityOf(current, rules);
-    if (currentReport.viable) {
-      return {
-        restartParts: [],
-        viability: currentReport,
-        fuelCap: deriveSheet(current, rules).fuelCap,
-      };
-    }
+    const alive = current.filter((part) => !isDead(Math.round(part.instance.condition), rules));
+    const types = rules.parts.replacement_types;
 
-    for (const part of current) {
-      await tx.partInstance.update({
-        where: { id: part.instance.id },
-        data: { location: 'INVENTORY', shipId: null },
+    const wanted: string[] = [];
+    if (
+      !alive.some((part) => part.catalog.partClass === 'BRIDGE') &&
+      types['bridge'] !== undefined
+    ) {
+      wanted.push(types['bridge']);
+    }
+    const engineType = types['engine'];
+    let engineBurnsFuel = alive.some(
+      (part) => part.catalog.partClass === 'ENGINE' && part.catalog.fuelUse > 0,
+    );
+    if (!alive.some((part) => part.catalog.partClass === 'ENGINE') && engineType !== undefined) {
+      wanted.push(engineType);
+      const row = await tx.partCatalog.findUnique({
+        where: { partType: engineType },
+        select: { fuelUse: true },
       });
+      engineBurnsFuel = (row?.fuelUse ?? 0) > 0;
+    }
+    if (
+      engineBurnsFuel &&
+      !alive.some((part) => part.catalog.fuelCap > 0) &&
+      types['tank'] !== undefined
+    ) {
+      wanted.push(types['tank']);
+    }
+    if (
+      alive.some((part) => part.catalog.pressurized) &&
+      !alive.some((part) => part.catalog.lifeSupport) &&
+      types['life_support'] !== undefined
+    ) {
+      wanted.push(types['life_support']);
     }
 
-    const starterParts = [...(rules.onboarding.starter_parts as string[])];
-    const condition = rules.parts.restart_condition_max;
-    // Sequential, in starter_parts order: cuid ids are not ordered by creation, so sorting
-    // the kit by id would hand autoLayout a different sequence (and layout) per rescue.
-    const kit = [];
-    for (const partType of starterParts) {
-      kit.push(
+    const handed: Array<{ partCatalog: { fuelCap: number | null } }> = [];
+    for (const partType of wanted) {
+      handed.push(
         await tx.partInstance.create({
           data: {
             partType,
             ownerPlayerId: playerId,
-            condition,
+            condition: rules.parts.replacement_condition,
             location: 'INVENTORY',
             connectors: toJsonInput(await rollConnectorsForPartType(tx, partType, true)),
           },
-          include: { partCatalog: true },
+          include: { partCatalog: { select: { fuelCap: true } } },
         }),
       );
     }
-    const kitParts = kit.map((part) => ({
-      instance: part,
-      catalog: pickCatalogStats(part.partCatalog),
-    }));
-
-    const catalogMap = new Map(kitParts.map((part) => [part.instance.id, part.catalog]));
-    const layout = autoLayout(kitParts, catalogMap, CLASSIC_SQUARE_CELLS);
-    if (layout.length !== kitParts.length) {
-      throw new ConflictException({ error: 'AUTO_LAYOUT_OMITTED_PARTS' });
-    }
-
-    const kitConnectorsByInstance = new Map(
-      kit.map((part) => [part.id, part.connectors as ConnectorLayout | null]),
-    );
-    const kitConnectedIds = connectedPartIds(layout, catalogMap, kitConnectorsByInstance);
-    const kitPartsConnected = applyConnectivity(kitParts, kitConnectedIds);
-    const kitSheet = deriveSheet(kitPartsConnected, rules);
-    const viability = checkViability(kitSheet, kitPartsConnected, rules);
-    if (!viability.viable) {
-      throw new ConflictException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
-    }
-
-    // The kit comes back loose (D44), like the onboarding kit: the pilot re-assembles in the
-    // Hangar. The layout above only proves the kit can fly. Everything that was installed is
-    // already back in inventory, so the hull is empty until the player assembles it.
-    // The hull can drift in with more fuel than the kit's tank holds (the old tank was
-    // sold off while ADRIFT, or swapped for a smaller one), so the stored fuel is clamped
-    // to the new ceiling — fuel above fuelCap is unspendable at the pump (refuel sees no
-    // need) yet reports as a full-plus tank everywhere the sheet is derived (S8.6 review).
-    const shipRow = await tx.ship.findUniqueOrThrow({
-      where: { id: shipId },
-      select: { fuel: true },
-    });
-    const fuel = Math.min(shipRow.fuel, kitSheet.fuelCap);
-    await tx.ship.update({
-      where: { id: shipId },
-      data: { layout: [], fuel },
-    });
-
-    return { restartParts: starterParts, viability, fuelCap: kitSheet.fuelCap };
+    const fuelCap =
+      deriveSheet(current, rules).fuelCap +
+      handed.reduce((sum, part) => sum + (part.partCatalog.fuelCap ?? 0), 0);
+    return { replacementParts: wanted, viability: this.viabilityOf(current, rules), fuelCap };
   }
 
   private async installedOf(

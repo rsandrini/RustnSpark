@@ -38,12 +38,16 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  core_drop: 'loot',
   race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
+  mining_cargo_full: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',
+  engine_push: 'failure',
+  engine_tuning: 'transit',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',
@@ -52,7 +56,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
 };
 
 const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
-const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
+const PART_FAILURE_TYPES = ['motor', 'engine_push', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
 
 function v2Event(
   type: (typeof MISSION_EVENT_TYPES)[number],
@@ -86,6 +90,9 @@ function v2Event(
         { name: '', mobility: 3.1, seconds: 1950, you: true },
       ],
     };
+  }
+  if (type === 'engine_tuning') {
+    base['tuning'] = { group: 'ion', levelPct: 250, chancePct: 35, outcome: 'held' };
   }
   if (type === 'pirate_demand') {
     base['motive'] = 'parts';

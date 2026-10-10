@@ -56,6 +56,14 @@ function readFlag(specialProp: unknown, key: string): boolean {
   return (specialProp as Record<string, unknown>)[key] === true;
 }
 
+function readNumber(specialProp: unknown, key: string): number {
+  if (typeof specialProp !== 'object' || specialProp === null) {
+    return 0;
+  }
+  const value = (specialProp as Record<string, unknown>)[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
 export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
   return {
     partType: row.partType,
@@ -82,6 +90,9 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
     batInput: row.batInput ?? 0,
     pressurized: readFlag(row.specialProp, 'pressurized'),
     lifeSupport: readFlag(row.specialProp, 'lifeSupport'),
+    shieldRegen: readNumber(row.specialProp, 'shieldRegen'),
+    idlePower: readNumber(row.specialProp, 'idlePower'),
+    armorPiercing: readFlag(row.specialProp, 'armorPiercing'),
   };
 }
 

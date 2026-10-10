@@ -21,6 +21,7 @@ import {
   AssembleDto,
   AutoAssembleDto,
   EnergyModeDto,
+  EngineLevelsDto,
   PreviewDto,
   SetFormatDto,
   StanceDto,
@@ -87,6 +88,14 @@ export class ShipsController {
   @OwnedResource({ type: 'ship', param: 'id' })
   energyMode(@Param('id') shipId: string, @Body() dto: EnergyModeDto) {
     return this.shipsService.setEnergyMode(shipId, dto.energyMode);
+  }
+
+  @Post(':id/engine-levels')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  engineLevels(@Param('id') shipId: string, @Body() dto: EngineLevelsDto) {
+    return this.shipsService.setEngineLevels(shipId, dto.chem, dto.ion);
   }
 
   @Post(':id/format')

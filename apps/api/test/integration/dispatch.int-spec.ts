@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { AppModule } from '../../src/app.module.js';
 import { EnvService } from '../../src/common/env/env.module.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
@@ -278,6 +280,24 @@ describe('ship dispatch API (S7.2)', () => {
 
   // S10.7: the transit screen counts down per leg against the windows the server
   // computed at dispatch (pro-rata split of [serverTime, arrivalAt] by leg distance).
+  it('an accepted mission keeps the board card details on GET /v1/missions/active (time, fuel, requirements)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [30, 10]);
+    const response = await request(httpServer(testApp.app))
+      .get('/v1/missions/active')
+      .set(auth(player.token));
+    expect(response.status).toBe(200);
+    const [row] = response.body as Array<{ id: string; info?: Record<string, unknown> }>;
+    expect(row!.id).toBe(mission.id);
+    expect(row!.info).toMatchObject({
+      legCount: 2,
+      totalDistance: 40,
+      estimate: { durationSeconds: expect.any(Number), fuelNeeded: expect.any(Number) },
+      requirements: expect.any(Array),
+    });
+  });
+
   it('exposes per-leg windows on GET /v1/missions/active: none before dispatch, contiguous after', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -387,6 +407,22 @@ describe('ship dispatch API (S7.2)', () => {
     expect(response.body).toMatchObject({ statusCode: 409, message: { error: 'FUEL_EMPTY' } });
   });
 
+  it('rejects a route the tank cannot cover: it would end adrift every time', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [4000, 4000]);
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5 } });
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'FUEL_INSUFFICIENT', have: 5 },
+    });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('IN_PORT');
+  });
+
   it('re-checks viability at dispatch time', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -405,6 +441,135 @@ describe('ship dispatch API (S7.2)', () => {
     expect(
       (response.body as { message: { problems: unknown[] } }).message.problems.length,
     ).toBeGreaterThan(0);
+  });
+
+  it('refuses a ship with more spare parts than the bridge has slots for, however small they are', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    const slots = GAME_CONFIG_DEFAULTS.ship.spare_part_slots;
+    await prisma.partInstance.createMany({
+      data: Array.from({ length: slots + 1 }, () => ({
+        partType: 'cargo',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY' as const,
+      })),
+    });
+
+    const refused = await dispatch(player.token, player.shipId, mission.id);
+    expect(refused.status).toBe(400);
+    expect(refused.body).toMatchObject({ message: { error: 'SHIP_NOT_VIABLE' } });
+    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('HOLD_PARTS_OVER');
+
+    // one part fewer and the ship flies
+    const extra = await prisma.partInstance.findFirstOrThrow({
+      where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
+    });
+    await prisma.partInstance.delete({ where: { id: extra.id } });
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+  });
+
+  it('a fixed-cargo delivery fills the cargo space it asks for, and the ore ashore takes none', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    // the starter hold is 5: a fixed load of 5 fills it
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 5, cargoMode: 'fixed' } },
+    });
+    // goods held ashore (ore, scrap) do not count against the hold
+    await prisma.playerMaterial.create({
+      data: { playerId: player.seeded.player.id, materialId: 'common_ore', quantity: 500 },
+    });
+
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    expect(stored.cargo).toMatchObject({ load: { mode: 'fixed', units: 5, need: 5 } });
+  });
+
+  it('a fixed load bigger than the cargo space cannot depart', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 9, cargoMode: 'fixed' } },
+    });
+    const refused = await dispatch(player.token, player.shipId, mission.id);
+    expect(refused.status).toBe(400);
+    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('HOLD_OVER_CAPACITY');
+  });
+
+  it('an open-cargo delivery loads the whole cargo space', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 2, cargoMode: 'open', unitPay: 30 } },
+    });
+
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    // starter hold 5: 5 units loaded, 3 of them beyond the minimum
+    expect(stored.cargo).toMatchObject({ load: { mode: 'open', units: 5, need: 2, unitPay: 30 } });
+  });
+
+  it('a blocked engine does not ground the ship: it flies, with no thrust from that engine (slower)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [30, 10]);
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
+    const engine = await prisma.partInstance.findFirstOrThrow({
+      where: { id: { in: layout.map((placement) => placement.partInstanceId) }, partCatalog: { partClass: 'ENGINE' } },
+    });
+    const healthy = await request(httpServer(testApp.app))
+      .get(`/v1/ships/${player.shipId}`)
+      .set(auth(player.token));
+    const { rules } = configService.snapshot();
+    const secondsAt = (mob: number): number =>
+      Math.round((40 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
+    const healthySeconds = secondsAt((healthy.body as { sheet: { mob: number } }).sheet.mob);
+
+    // Universal ports on the engine (so turning it never disconnects it), then turn it until the
+    // part next to it plugs its exhaust: that is the only thing wrong — a warning, not a problem.
+    await prisma.partInstance.update({ where: { id: engine.id }, data: { connectors: Prisma.DbNull } });
+    let blocked = false;
+    for (const rot of [0, 90, 180, 270]) {
+      const candidate = layout.map((placement) =>
+        placement.partInstanceId === engine.id ? { ...placement, rot } : placement,
+      );
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/preview`)
+        .set(auth(player.token))
+        .send({ layout: candidate });
+      const viability = (
+        preview.body as { viability: { viable: boolean; warnings: { code: string }[] } }
+      ).viability;
+      if (viability.viable && viability.warnings.some((w) => w.code === 'EXHAUST_BLOCKED')) {
+        await prisma.ship.update({ where: { id: player.shipId }, data: { layout: candidate } });
+        blocked = true;
+        break;
+      }
+    }
+    expect(blocked).toBe(true);
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(200);
+    const seconds = (response.body as { durationSeconds: number }).durationSeconds;
+    expect(seconds).toBeGreaterThan(healthySeconds);
+    // thrust 0 leaves mobility at its floor of 1
+    expect(seconds).toBe(secondsAt(1));
   });
 
   it('rejects a mission that is not accepted and another player’s mission', async () => {

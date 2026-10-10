@@ -1,6 +1,6 @@
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart, PartCatalog } from '../parts/part.types.js';
-import { performance } from '../parts/condition.js';
+import { isDead, performance } from '../parts/condition.js';
 import { roundHalfEven } from '../resolution/numeric/round-half-even.js';
 import type { ShipSheet } from './sheet.types.js';
 
@@ -37,7 +37,11 @@ export function deriveSheet(parts: InstalledPart[], rules: GameRules): ShipSheet
     .reduce((total, part) => total + part.catalog.structureCost, 0);
 
   const fuelUse = sumStat(parts, 'fuelUse');
-  const fuelCap = sumStat(parts, 'fuelCap');
+  // A dead tank (worn to nothing) holds no fuel: its capacity is gone with it.
+  const fuelCap = sumStat(
+    parts.filter((part) => !isDead(part.instance.condition, rules)),
+    'fuelCap',
+  );
   const pot = sumStat(parts, 'pot');
   // A full tank is part of the ship's mass; the factor is Admin-tunable and 0 by default.
   const mass = sumStat(parts, 'mass') + fuelCap * rules.ship.fuel_mass_per_unit;

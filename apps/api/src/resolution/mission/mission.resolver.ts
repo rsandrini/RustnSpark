@@ -1,3 +1,4 @@
+import type { EngineLevels } from '../engine/engine.js';
 import type { Rng } from '../../common/rng/rng.js';
 import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
@@ -23,6 +24,8 @@ import type { FactionRelation, MissionType, Stance } from '../encounter/encounte
 import type { MinerRig, MiningStop } from '../mining/mining.resolver.js';
 import type { StoredPart } from '../encounter/pirate-motive.js';
 import { rollScavengeFinds, type ScavengeContext } from '../scavenge/scavenge.resolver.js';
+import { rawMobility } from '../../ships/sheet.deriver.js';
+import { rollCoreDrops } from '../loot/core-drops.js';
 import { resolveRace, type RaceCompetitor } from '../race/race.resolver.js';
 
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
@@ -37,6 +40,15 @@ export interface MissionSnapshot {
   readonly energyMode?: LegShipState['energyMode'];
   readonly weaponEnergyDraw: LegShipState['weaponEnergyDraw'];
   readonly shieldEnergyDraw: LegShipState['shieldEnergyDraw'];
+  /** Share of the firepower that is armor-piercing (absent = none). */
+  readonly pierceShare?: number;
+  /** Layered damage model (see LegShipState): the armor pool and the shield's regeneration. */
+  readonly armor?: number;
+  readonly escRegen?: number;
+  readonly escRegenEnergy?: number;
+  /** Layered model: energy in the batteries at departure (full at the port) and their recharge per leg. */
+  readonly battery?: number;
+  readonly batteryRecharge?: number;
   /** Loose parts at dispatch (a frozen copy, D19): the only parts a pirate can take. */
   readonly storage?: readonly StoredPart[];
 }
@@ -54,9 +66,15 @@ export interface MissionInput {
   readonly missionOwner: 'player' | 'enemy' | null;
   readonly missionForcesFlee: boolean;
   readonly objectCarried: boolean;
+  /** The levels the engines ran at (engine tuning). */
+  readonly engine?: EngineLevels;
   readonly client: EscortClient | null;
   /** Present on mining legs/stops (D30). */
   readonly mining?: { readonly stop: MiningStop; readonly miner: MinerRig };
+  /** The pilot's own free mining job: no payout line, the ore is the whole result. */
+  readonly unpaid?: boolean;
+  /** Open-cargo deliveries: what the units beyond the minimum add to the pay (credits). */
+  readonly cargoExtra?: number;
   readonly contractedMining?: {
     readonly materialId: string;
     readonly requiredQuantity: number;
@@ -116,6 +134,26 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     energyMode: input.snapshot.energyMode,
     weaponEnergyDraw: input.snapshot.weaponEnergyDraw,
     shieldEnergyDraw: input.snapshot.shieldEnergyDraw,
+    ...(input.snapshot.pierceShare !== undefined
+      ? { pierceShare: input.snapshot.pierceShare }
+      : {}),
+    ...(input.snapshot.armor !== undefined
+      ? {
+          armor: input.snapshot.armor,
+          armorMax: input.snapshot.armor,
+          hpMax: input.snapshot.hp,
+          escMax: input.snapshot.esc,
+          escRegen: input.snapshot.escRegen ?? 0,
+          escRegenEnergy: input.snapshot.escRegenEnergy ?? 0,
+          ...(input.snapshot.battery !== undefined
+            ? {
+                battery: input.snapshot.battery,
+                batteryMax: input.snapshot.battery,
+                batteryRecharge: input.snapshot.batteryRecharge ?? 0,
+              }
+            : {}),
+        }
+      : {}),
   };
   let integrity = 100;
   let client = input.mission.client;
@@ -201,9 +239,32 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     }
   }
 
+  // Cores and fragments turn up in the farther zones: on a scavenging job that came back, and on a
+  // mission that was carried through (their own stream, so they never move any other roll).
+  if (status === 'success' && input.mission.type !== 'TRAVEL' && input.mission.unpaid !== true) {
+    const peakZone = input.mission.legs.reduce((peak, leg) => Math.max(peak, leg.zone), 0);
+    const source = input.mission.scavenge !== undefined ? 'scavenge' : 'mission';
+    for (const drop of rollCoreDrops(source, peakZone, input.rules, root.child('core-drops'))) {
+      loot.push(drop);
+      events.push(
+        missionEvent({
+          leg: lastLeg,
+          category: 'loot',
+          type: 'core_drop',
+          actors,
+          magnitude: drop.quantity,
+          loot: [drop],
+        }),
+      );
+    }
+  }
+
   // Payment only when every leg completed. Trips and scavenging jobs pay nothing, so they write
   // no payment line either.
-  const paysNothing = input.mission.type === 'TRAVEL' || input.mission.type === 'SCAVENGE';
+  const paysNothing =
+    input.mission.type === 'TRAVEL' ||
+    input.mission.type === 'SCAVENGE' ||
+    input.mission.unpaid === true;
   // A race pays by finishing place, not by integrity: settled below.
   const isRace = input.mission.type === 'RACE' && input.mission.race !== undefined;
   if (status === 'success' && !paysNothing && !isRace) {
@@ -212,15 +273,16 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       (peak, leg) => (leg.danger > peak ? leg.danger : peak),
       0,
     );
-    const base = rewardBase(
-      {
-        tier: input.mission.tier,
-        danger: maxDanger,
-        distance: totalDistance,
-        missionType: input.mission.type ?? 'delivery',
-      },
-      input.rules,
-    );
+    const base =
+      rewardBase(
+        {
+          tier: input.mission.tier,
+          danger: maxDanger,
+          distance: totalDistance,
+          missionType: input.mission.type ?? 'delivery',
+        },
+        input.rules,
+      ) + (input.mission.cargoExtra ?? 0);
 
     if (input.mission.contractedMining !== undefined) {
       const mined = loot
@@ -266,7 +328,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
     const totalDistance = input.mission.legs.reduce((sum, leg) => sum + leg.distance, 0);
     const result = resolveRace({
       competitors: input.mission.race.competitors,
-      playerMobility: input.snapshot.sheet.mob,
+      // The unrounded speed: a rival's 2.6 must not be beaten or tied by a ship rounded up to 3.
+      playerMobility: rawMobility(input.snapshot.sheet.pot, input.snapshot.sheet.mass, input.rules),
+      playerMishaps: events.filter((event) => event.type === 'engine_push').length,
       totalDistance,
       rules: input.rules,
       rng: root.child('race'),
@@ -350,5 +414,7 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
     client: mission.client,
     mining: mission.mining ?? null,
     storage: [],
+    ...(mission.engine !== undefined ? { engine: mission.engine } : {}),
+    ...(mission.scavenge?.onFoot === true ? { onFoot: true } : {}),
   }));
 }

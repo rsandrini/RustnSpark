@@ -6,6 +6,9 @@ import { type ReportLog, viewChrome } from './report.types.js';
 
 /** A narrative event line; `detail` carries the popup payload (S10.8). */
 export interface NarrativeLine extends ReportLine {
+  /** What kind of event this is (combat, transit, failure, environment, loot, payment). */
+  readonly category: string;
+  readonly type: string;
   /** Present only when the stored event carries a v2 cascade (S9.0). */
   readonly detail?: {
     readonly cascade: MissionDamageCascade;
@@ -44,10 +47,11 @@ export function renderNarrative(
     log.events.forEach((event, storedIndex) => {
       if (event.leg !== leg) return;
       const line = renderEventLine(event, storedIndex, log.seed, locale, names);
+      const tagged = { ...line, category: event.category, type: event.type };
       lines.push(
         event.cascade
-          ? { ...line, detail: { cascade: event.cascade, rounds: event.rounds } }
-          : line,
+          ? { ...tagged, detail: { cascade: event.cascade, rounds: event.rounds } }
+          : tagged,
       );
     });
     return { leg, header, lines };

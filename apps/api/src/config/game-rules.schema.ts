@@ -16,6 +16,9 @@ const combatSchema = z.object({
   pierce_ratio: z.number().min(0).max(1),
   pierce_min_pdf: z.number().int().min(0).max(50),
   shield_regen: z.number().min(0).max(20),
+  armor_pool_factor: z.number().min(0).max(50),
+  armor_reduction: z.number().min(0).max(10),
+  armor_reduction_max_share: z.number().min(0).max(1),
   kite_factor: z.number().min(0).max(1),
   first_strike_bonus: z.number().int().min(0).max(10),
   max_rounds: z.number().int().min(1).max(200),
@@ -24,7 +27,9 @@ const combatSchema = z.object({
 
 const shipSchema = z.object({
   mob_factor: z.number().min(0.1).max(5.0),
+  stat_display_scale: z.number().min(1).max(100),
   fuel_mass_per_unit: z.number().min(0).max(1),
+  spare_part_slots: z.number().int().min(0).max(100),
 });
 
 const wearSchema = z.object({
@@ -54,6 +59,9 @@ const wearSchema = z.object({
   // absorbs correspondingly less while at least one is installed.
   defense_wear_bonus: z.number().min(0).max(5),
   other_exposed_wear_factor: z.number().min(0).max(1),
+  mining_wear_factor: z.number().min(0).max(1),
+  environment_damage_factor: z.number().min(0).max(50),
+  hull_to_condition: z.number().min(0).max(2),
 });
 
 const economySchema = z.object({
@@ -71,20 +79,45 @@ const economySchema = z.object({
   combat_win_base: z.number().int().min(0).max(1000),
   combat_win_per_tier: z.number().int().min(0).max(500),
   combat_loss_penalty: z.number().int().min(0).max(1000),
-  upgrade_costs: z.record(z.string(), z.number().min(0).max(100000)),
+  ship_tier_thresholds: z.record(z.string(), z.number().min(0).max(100000)),
   part_upgrade_price_multiplier: z.record(z.string(), z.number().min(1).max(5)),
+  upgrade_materials: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        material: z.string().min(1),
+        mode: z.enum(['gap', 'size']),
+        k: z.number().min(0.1).max(1000),
+      }),
+    ),
+  ),
+  core_fragments: z.record(z.string(), z.number().int().min(1).max(1000)),
+  core_drops: z.record(
+    z.string(),
+    z.record(
+      z.string(),
+      z.array(
+        z.object({
+          material: z.string().min(1),
+          chance: z.number().min(0).max(1),
+          quantity: z.number().int().min(1).max(1000),
+        }),
+      ),
+    ),
+  ),
   start_credits: z.number().int().min(0).max(10000),
   rescue_cost: z.number().int().min(0).max(10000),
+  rescue_distance_price: z.number().min(0).max(100),
+  rescue_wait_fraction: z.number().min(0).max(1),
+  rescue_wait_seconds: z.number().int().min(1).max(86400),
   rescue_fuel_fraction: z.number().min(0).max(1),
   repair_min_base_price: z.number().min(0).max(1000),
   sell_min_condition: z.number().min(0).max(100),
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),
-  mood_min: z.number().min(0).max(2),
-  mood_max: z.number().min(0).max(2),
-  rarity_base_price: z.record(z.string(), z.number().min(0).max(50000)),
   market_rarity_chance: z.record(z.string(), z.number().min(0).max(1)),
+  market_rarity_by_bridge: z.record(z.string(), z.record(z.string(), z.number().min(0).max(1))),
   payout_floor_integrity: z.number().min(0).max(1),
   repair_seconds_per_point: z.record(z.string(), z.number().min(0).max(60)),
 });
@@ -130,9 +163,34 @@ const integritySchema = z.object({
 const miningSchema = z.object({
   richness: z.record(z.string(), z.number().min(0).max(1)),
   rarity: z.record(z.string(), z.number().min(0).max(1)),
-  material_price: z.record(z.string(), z.number().min(0).max(10000)),
   attempts_per_stop: z.number().int().min(1).max(100),
   job_duration_seconds: z.number().int().min(1).max(86400),
+});
+
+const engineSchema = z.object({
+  chem_level_max: z.number().min(1).max(3),
+  ion_level_max: z.number().min(1).max(5),
+  fuel_push_exponent: z.number().min(1).max(4),
+  ion_power_exponent: z.number().min(1).max(4),
+  mishap_at_max: z.number().min(0).max(1),
+  mishap_curve: z.number().min(0.5).max(5),
+  mishap_wear_weight: z.number().min(0).max(5),
+  mishap_wear: z.number().min(0).max(100),
+  mishap_fuel: z.number().min(0).max(2),
+  push_wear: z.number().min(0).max(50),
+  push_battery_share: z.number().min(0).max(5),
+});
+
+const powerSchema = z.object({
+  success_curve: z
+    .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
+    .min(2),
+  idle_demand: z.number().min(0).max(10),
+  combat_demand_factor: z.number().min(1).max(10),
+  life_support_min: z.number().min(0).max(1),
+  pump_engine_factor: z.number().min(0).max(1),
+  pump_fuel_factor: z.number().min(1).max(5),
+  tiers: z.record(z.string(), z.array(z.string())),
 });
 
 const raceSchema = z.object({
@@ -145,6 +203,10 @@ const raceSchema = z.object({
   prize_share_1: z.number().min(0).max(10),
   prize_share_2: z.number().min(0).max(10),
   prize_share_3: z.number().min(0).max(10),
+  field_follow: z.number().min(0).max(1),
+  form_spread: z.number().min(0).max(0.5),
+  mishap_chance: z.number().min(0).max(1),
+  mishap_penalty: z.number().min(0).max(2),
 });
 
 const rescueSchema = z.object({
@@ -166,7 +228,7 @@ const shipClassSchema = z.object({
 
 const missionsSchema = z.object({
   hold_max: z.number().int().min(0).max(10),
-  active_max: z.number().int().min(0).max(10),
+  open_cargo_unit_pay: z.number().min(0).max(10000),
   duration_k: z.number().min(0.1).max(10),
   duration_class_cutoffs: z.record(z.string(), z.number().min(60).max(86400)),
   time_scale: z.number().min(0.001).max(100),
@@ -181,14 +243,20 @@ const scavengingSchema = z.object({
   quality_max: z.number().int().min(0).max(100),
   cooldown_seconds: z.number().int().min(0).max(86400),
   duration_seconds: z.number().int().min(1).max(86400),
+  foot_duration_seconds: z.number().int().min(1).max(86400),
   scrap_share: z.number().min(0).max(1),
   zone_quality_bonus: z.number().int().min(0).max(50),
   zone_rarity_bias: z.number().min(0).max(10),
+  nothing_chance: z.array(z.number().min(0).max(1)).min(1),
+  tier_min_zone: z.record(z.string(), z.number().int().min(0).max(10)),
+  handicap_factor: z.number().min(0).max(1),
+  foot_factor: z.number().min(0).max(1),
 });
 
 const partsSchema = z.object({
   starter_condition: z.number().int().min(0).max(100),
-  restart_condition_max: z.number().int().min(0).max(100),
+  replacement_condition: z.number().int().min(0).max(100),
+  replacement_types: z.record(z.string(), z.string().min(1)),
 });
 
 const onboardingSchema = z.object({
@@ -207,12 +275,14 @@ const gameRulesSchema = z.object({
   wear: wearSchema,
   economy: economySchema,
   encounter: encounterSchema,
+  engine: engineSchema,
   escape: escapeSchema,
   detection: detectionSchema,
   stance: stanceSchema,
   failure: failureSchema,
   integrity: integritySchema,
   mining: miningSchema,
+  power: powerSchema,
   race: raceSchema,
   rescue: rescueSchema,
   escort: escortSchema,

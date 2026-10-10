@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
@@ -23,6 +23,7 @@ import type {
   SellMaterialResponse,
   ShipResponse,
   WorldResponse,
+  PreviewResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
@@ -37,16 +38,28 @@ import { PortTabs } from '../../ui/PortTabs';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
-import { PartInfoButton } from '../parts/part-info-button';
-import type { PartCompareContext, PartInfoData } from '../parts/part-detail';
+import { useDisplay } from '../../ui/display';
+import { PartDetail } from '../parts/part-detail';
+import type { PartInfoData } from '../parts/part-detail';
 
-const PORT_TABS = ['market', 'goods', 'repair', 'refuel', 'upgrade', 'scavenging', 'mining'] as const;
+const PORT_TABS = [
+  'market',
+  'goods',
+  'repair',
+  'refuel',
+  'upgrade',
+  'scavenging',
+  'mining',
+] as const;
 type PortTabId = (typeof PORT_TABS)[number];
 
 interface UpgradeConfirm {
   partInstanceId: string;
   name: string;
   nextName: string;
+  /** Rarities of the part now and of what it becomes: their names are shown in their colours. */
+  rarity: string;
+  nextRarity: string;
   cost: number;
 }
 
@@ -107,6 +120,7 @@ export function PortPage({
   const refuelKey = useIntentKey();
   const repairKey = useIntentKey();
   const upgradeKey = useIntentKey();
+  const craftKey = useIntentKey();
   const [upgradeConfirm, setUpgradeConfirm] = useState<UpgradeConfirm | null>(null);
 
   const shipsQuery = useQuery({
@@ -137,6 +151,20 @@ export function PortPage({
     enabled: locationId !== undefined && tab === 'scavenging',
     queryFn: () => client.get<ScavengeInfo>(`/v1/locations/${locationId ?? ''}/scavenge`),
   });
+  // Whether the ship could fly right now: a ship that cannot (or flies with warnings) still
+  // scavenges by hand, but finds less — the Scavenging tab says so up front.
+  const display = useDisplay();
+  const readinessQuery = useQuery({
+    queryKey: ['shipReadiness', ship?.id, ship?.layout],
+    enabled: ship !== undefined && tab === 'scavenging',
+    queryFn: () =>
+      client.post<PreviewResponse>(`/v1/ships/${ship?.id ?? ''}/preview`, {
+        layout: ship?.layout ?? [],
+      }),
+  });
+  const shipHandicapped =
+    readinessQuery.data !== undefined &&
+    (!readinessQuery.data.viability.viable || readinessQuery.data.viability.warnings.length > 0);
   // The repair plan: only parts the pilot moved past their current condition are repaired.
   const damagedInstalled = useMemo(
     () =>
@@ -207,6 +235,8 @@ export function PortPage({
   const partName = (item: InventoryItem) => pickLocalized(item.displayName, i18n.language);
 
   const wallet = user?.credits ?? 0;
+  // Upgrade tab: by default only what the pilot can pay for right now.
+  const [onlyAffordable, setOnlyAffordable] = useState(true);
   const broke = wallet < 0;
   const afterTrade = () => {
     // Profile only (wallet): a session refresh per trade would rotate the refresh token.
@@ -264,6 +294,23 @@ export function PortPage({
     onError: onTradeError,
   });
 
+  // Core fragments craft into a core at the port (all or nothing), from the pilot's goods.
+  const craftCore = useMutation({
+    mutationFn: (core: string) =>
+      client.post<{ core: string }>(
+        '/v1/market/craft-core',
+        { core },
+        { idempotencyKey: craftKey.keyFor(`${core}:${Date.now()}`) },
+      ),
+    onSuccess: (response) => {
+      craftKey.clear();
+      setActionError(null);
+      setNotice(t('port.craftDone', { name: t(`port.cores.${response.core}`) }));
+      afterTrade();
+    },
+    onError: onTradeError,
+  });
+
   // Refuel: choose how much (slider); the server prices that exact amount before anything is charged.
   const [refuelUnits, setRefuelUnits] = useState<number | null>(null);
   const tankSpace =
@@ -315,6 +362,9 @@ export function PortPage({
     onSuccess: (response) => {
       repairKey.clear();
       setRepairPlan(null);
+      // The paid plan is spent: leaving it selected would compare its (old) total with the wallet
+      // that was just debited and report "not enough money" for a repair that already went through.
+      setRepairTargets({});
       setActionError(null);
       setNotice(
         t('port.repairStarted', {
@@ -369,8 +419,12 @@ export function PortPage({
   // Scavenging is a timed job (a mission of its own): starting it sends the ship out and the pilot
   // to the Transit screen, where the report arrives when it ends.
   const navigate = useNavigate();
+  const [scavengeMode, setScavengeMode] = useState<'ship' | 'foot'>('ship');
   const scavenge = useMutation({
-    mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`),
+    mutationFn: () =>
+      client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`, {
+        mode: scavengeMode,
+      }),
     onSuccess: () => {
       setActionError(null);
       void queryClient.invalidateQueries({ queryKey: ['active'] });
@@ -635,6 +689,29 @@ export function PortPage({
 
           <h3>{t('port.materials')}</h3>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
+          {Object.entries(display.coreFragments).map(([core, needed]) => {
+            const fragments =
+              materials.find((holding) => holding.materialId === 'core_fragment')?.quantity ?? 0;
+            return (
+              <div key={core} className="panel craft-core" data-testid={`craft-${core}`}>
+                <span>
+                  {t('port.craftLine', {
+                    name: t(`port.cores.${core}`),
+                    needed,
+                    have: fragments,
+                  })}
+                </span>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={fragments < needed || craftCore.isPending}
+                  onClick={() => craftCore.mutate(core)}
+                >
+                  {t('port.craft')}
+                </button>
+              </div>
+            );
+          })}
           <div className="pcard-grid">
             {materials.map((holding) => {
               const name = pickLocalized(holding.displayName, i18n.language);
@@ -861,7 +938,9 @@ export function PortPage({
                   {money(refuelCost)}
                 </b>
               </div>
-              {refuelCost > wallet && <p className="error-text">{t('port.insufficient')}</p>}
+              {!refuel.isPending && refuelCost > wallet && (
+                <p className="error-text">{t('port.insufficient')}</p>
+              )}
               <div className="row-between">
                 <button
                   type="button"
@@ -898,87 +977,134 @@ export function PortPage({
           <p className="sub">{t('port.upgradeHelp')}</p>
           {(() => {
             const quotes = upgradeQuotesQuery.data;
-            const eligible = upgradeCandidates.filter(
+            const upgradable = upgradeCandidates.filter(
               (item) => quotes?.get(item.id)?.eligible === true,
             );
+            const eligible = onlyAffordable
+              ? upgradable.filter((item) => (quotes?.get(item.id)?.cost ?? 0) <= wallet)
+              : upgradable;
             if (quotes === undefined && upgradeCandidates.length > 0) {
               return <p className="sub">{t('loading')}</p>;
             }
+            const filterChips = upgradable.length > 0 && (
+              <div className="chips" role="group" aria-label={t('port.upgradeFilter')}>
+                <button
+                  type="button"
+                  className={`chip${onlyAffordable ? ' on' : ''}`}
+                  aria-pressed={onlyAffordable}
+                  onClick={() => setOnlyAffordable((current) => !current)}
+                >
+                  {t('port.upgradeOnlyAffordable')}
+                </button>
+              </div>
+            );
             if (eligible.length === 0) {
-              return <p className="sub">{t('port.upgradeNone')}</p>;
+              return (
+                <>
+                  {filterChips}
+                  <p className="sub">
+                    {upgradable.length > 0
+                      ? t('port.upgradeNoneAffordable')
+                      : t('port.upgradeNone')}
+                  </p>
+                </>
+              );
             }
             return (
-              <div className="pcard-grid">
-                {eligible.map((item) => {
-                  const quote = quotes?.get(item.id);
-                  if (quote === undefined || !quote.eligible) return null;
-                  const name = partName(item);
-                  const nextName =
-                    quote.nextDisplayName !== undefined
-                      ? pickLocalized(quote.nextDisplayName, i18n.language)
-                      : '';
-                  // Round-10 owner request: "Upgrade UI should show diff between current
-                  // part and upgraded part" — the next tier doesn't exist as an owned
-                  // instance yet, so it's a virtual PartInfoData (same trick Market uses
-                  // for a catalog listing), replacing this exact instance.
-                  const nextPartInfo: PartInfoData | undefined =
-                    quote.nextCatalog !== undefined &&
-                    quote.nextRarity !== undefined &&
-                    quote.nextDisplayName !== undefined
-                      ? {
-                          displayName: quote.nextDisplayName,
-                          description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
-                          rarity: quote.nextRarity,
-                          catalog: quote.nextCatalog,
-                          condition: 100,
+              <>
+                {filterChips}
+                <div className="pcard-grid">
+                  {eligible.map((item) => {
+                    const quote = quotes?.get(item.id);
+                    if (quote === undefined || !quote.eligible) return null;
+                    const name = partName(item);
+                    const nextName =
+                      quote.nextDisplayName !== undefined
+                        ? pickLocalized(quote.nextDisplayName, i18n.language)
+                        : '';
+                    // Say exactly what becomes what: "Small Fuel Tank · Common → Small Fuel Tank · Uncommon".
+                    const fromTo = t('port.upgradeFromTo', {
+                      from: `${name} · ${t(`parts.rarities.${item.rarity}`, { defaultValue: item.rarity })}`,
+                      to: `${nextName} · ${t(`parts.rarities.${quote.nextRarity ?? ''}`, { defaultValue: quote.nextRarity ?? '' })}`,
+                    });
+                    // Round-10 owner request: "Upgrade UI should show diff between current
+                    // part and upgraded part" — the next tier doesn't exist as an owned
+                    // instance yet, so it's a virtual PartInfoData (same trick Market uses
+                    // for a catalog listing), replacing this exact instance.
+                    const nextPartInfo: PartInfoData | undefined =
+                      quote.nextCatalog !== undefined &&
+                      quote.nextRarity !== undefined &&
+                      quote.nextDisplayName !== undefined
+                        ? {
+                            displayName: quote.nextDisplayName,
+                            description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
+                            rarity: quote.nextRarity,
+                            catalog: quote.nextCatalog,
+                            condition: 100,
+                          }
+                        : undefined;
+                    return (
+                      <PartCard
+                        key={item.id}
+                        part={item}
+                        price={quote.cost}
+                        priceCaption={t('port.upgradeCost')}
+                        hoverPart={nextPartInfo}
+                        infoExtra={
+                          nextPartInfo !== undefined && (
+                            <section className="upgrade-next" aria-label={fromTo}>
+                              <h4>{fromTo}</h4>
+                              <PartDetail part={nextPartInfo} versus={item} />
+                            </section>
+                          )
                         }
-                      : undefined;
-                  const nextCompare: PartCompareContext | undefined =
-                    nextPartInfo === undefined
-                      ? undefined
-                      : {
-                          shipId: ship.id,
-                          installedPartIds: installed.map((part) => part.id),
-                          currentSheet: ship.sheet,
-                          replaceCandidates: [
-                            { partInstanceId: item.id, displayName: item.displayName },
-                          ],
-                        };
-                  return (
-                    <PartCard
-                      key={item.id}
-                      part={item}
-                      price={quote.cost}
-                      priceCaption={t('port.upgradeCost')}
-                      actions={
-                        <>
-                          <span className="sub">
-                            {t('port.upgradesTo', { name: nextName })}
-                            {nextPartInfo !== undefined && (
-                              <PartInfoButton part={nextPartInfo} compare={nextCompare} />
+                        actions={
+                          <>
+                            <span className="sub">{fromTo}</span>
+                            {(quote.materials ?? []).length > 0 && (
+                              <ul className="upgrade-materials" data-testid="upgrade-materials">
+                                {(quote.materials ?? []).map((need) => (
+                                  <li
+                                    key={need.materialId}
+                                    className={need.have >= need.needed ? 'req-met' : 'req-unmet'}
+                                  >
+                                    {t('port.upgradeMaterial', {
+                                      name: pickLocalized(need.displayName, i18n.language),
+                                      have: need.have,
+                                      needed: need.needed,
+                                    })}
+                                  </li>
+                                ))}
+                              </ul>
                             )}
-                          </span>
-                          <button
-                            type="button"
-                            className="btn primary"
-                            disabled={upgradePart.isPending || (quote.cost ?? 0) > wallet}
-                            onClick={() =>
-                              setUpgradeConfirm({
-                                partInstanceId: item.id,
-                                name,
-                                nextName,
-                                cost: quote.cost ?? 0,
-                              })
-                            }
-                          >
-                            {t('port.upgrade')}
-                          </button>
-                        </>
-                      }
-                    />
-                  );
-                })}
-              </div>
+                            <button
+                              type="button"
+                              className="btn primary"
+                              disabled={
+                                upgradePart.isPending ||
+                                (quote.cost ?? 0) > wallet ||
+                                (quote.materials ?? []).some((need) => need.have < need.needed)
+                              }
+                              onClick={() =>
+                                setUpgradeConfirm({
+                                  partInstanceId: item.id,
+                                  name,
+                                  nextName,
+                                  rarity: item.rarity,
+                                  nextRarity: quote.nextRarity ?? item.rarity,
+                                  cost: quote.cost ?? 0,
+                                })
+                              }
+                            >
+                              {t('port.upgrade')}
+                            </button>
+                          </>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </>
             );
           })()}
         </section>
@@ -992,10 +1118,26 @@ export function PortPage({
             <ul className="scav-facts">
               <li>
                 {t('port.scav.time', {
-                  minutes: Math.max(1, Math.round(scavengeInfoQuery.data.durationSeconds / 60)),
+                  minutes: Math.max(
+                    1,
+                    Math.round(
+                      (scavengeMode === 'foot'
+                        ? scavengeInfoQuery.data.footDurationSeconds
+                        : scavengeInfoQuery.data.durationSeconds) / 60,
+                    ),
+                  ),
                 })}
               </li>
-              <li>{t('port.scav.risk', { zone: scavengeInfoQuery.data.zone })}</li>
+              <li>
+                {t(scavengeMode === 'foot' ? 'port.scav.riskFoot' : 'port.scav.risk', {
+                  zone: scavengeInfoQuery.data.zone,
+                })}
+              </li>
+              <li>
+                {t('port.scav.nothing', {
+                  percent: Math.round(scavengeInfoQuery.data.nothingChance * 100),
+                })}
+              </li>
               <li>
                 {t('port.scav.quality', {
                   min: scavengeInfoQuery.data.qualityMin,
@@ -1010,6 +1152,39 @@ export function PortPage({
               {scavengeInfoQuery.data.scrapPlace && <li>{t('port.scav.scrap')}</li>}
               <li>{t('port.scav.where')}</li>
             </ul>
+          )}
+          <fieldset className="scav-modes" data-testid="scavenge-mode">
+            <legend>{t('port.scav.modeTitle')}</legend>
+            {(['ship', 'foot'] as const).map((mode) => (
+              <label key={mode} className="scav-mode">
+                <input
+                  type="radio"
+                  name="scavenge-mode"
+                  value={mode}
+                  checked={scavengeMode === mode}
+                  onChange={() => setScavengeMode(mode)}
+                />
+                <span>
+                  <b>{t(`port.scav.mode.${mode}.name`)}</b>
+                  <br />
+                  <span className="sub">
+                    {t(`port.scav.mode.${mode}.hint`, {
+                      percent: Math.round(display.scavengeFootFactor * 100),
+                    })}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          {scavengeMode === 'foot' && (
+            <p className="notice warn" data-testid="scavenge-foot">
+              {t('port.scav.footNotice', { percent: Math.round(display.scavengeFootFactor * 100) })}
+            </p>
+          )}
+          {scavengeMode === 'ship' && shipHandicapped && (
+            <p className="notice warn" data-testid="scavenge-handicap">
+              {t('port.scav.handicap', { percent: Math.round(display.scavengeHandicap * 100) })}
+            </p>
           )}
           {scavengeInfoQuery.data !== undefined && scavengeInfoQuery.data.retryAfterSeconds > 0 ? (
             <p className="notice" role="status">
@@ -1028,7 +1203,7 @@ export function PortPage({
             disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
             onClick={() => scavenge.mutate()}
           >
-            {t('port.scavenge')}
+            {t(scavengeMode === 'foot' ? 'port.scavengeFoot' : 'port.scavenge')}
           </button>
         </section>
       )}
@@ -1075,7 +1250,9 @@ export function PortPage({
                 time: formatDuration(repairPlan.seconds, t),
               })}
             </p>
-            {wallet < repairPlan.cost && <p className="error-text">{t('port.insufficient')}</p>}
+            {!repair.isPending && wallet < repairPlan.cost && (
+              <p className="error-text">{t('port.insufficient')}</p>
+            )}
             <button
               type="button"
               className="btn primary"
@@ -1100,13 +1277,28 @@ export function PortPage({
         {upgradeConfirm !== null && (
           <div className="stack">
             <p>
-              {t('port.upgradeQuote', {
-                name: upgradeConfirm.name,
-                nextName: upgradeConfirm.nextName,
-                cost: upgradeConfirm.cost,
-              })}
+              <Trans
+                i18nKey="port.upgradeQuote"
+                values={{
+                  name: upgradeConfirm.name,
+                  nextName: upgradeConfirm.nextName,
+                  cost: upgradeConfirm.cost,
+                }}
+                components={{
+                  from: (
+                    <b className={`rarity-name rarity-${upgradeConfirm.rarity.toLowerCase()}`} />
+                  ),
+                  to: (
+                    <b
+                      className={`rarity-name rarity-${upgradeConfirm.nextRarity.toLowerCase()}`}
+                    />
+                  ),
+                }}
+              />
             </p>
-            {wallet < upgradeConfirm.cost && <p className="error-text">{t('port.insufficient')}</p>}
+            {!upgradePart.isPending && wallet < upgradeConfirm.cost && (
+              <p className="error-text">{t('port.insufficient')}</p>
+            )}
             <button
               type="button"
               className="btn primary"

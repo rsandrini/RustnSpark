@@ -1,3 +1,4 @@
+import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
 import {
   BadRequestException,
   ConflictException,
@@ -22,11 +23,15 @@ import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { cargoTermsOf } from './cargo-mode.js';
+import { rawMobility } from '../ships/sheet.deriver.js';
+import { raceWindow } from '../resolution/race/race.resolver.js';
 import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
+import { fieldFor } from '../resolution/race/race.resolver.js';
 import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
@@ -89,13 +94,29 @@ export interface OfferInfo {
       failure reasons — so the board can show what a mission demands even when the viewer's
       ship already clears it. Empty when there is no ship to check against. */
   readonly requirements: readonly RequirementCheck[];
+  /** Deliveries: how the cargo space is used (minimum, fixed load or open load) and what it pays. */
+  readonly cargo: {
+    readonly mode: 'min' | 'fixed' | 'open';
+    readonly need: number;
+    readonly unitPay: number;
+  } | null;
   /** Race offers: the rival field, the entry minimum and the 1st/2nd/3rd prize shares. */
   readonly race: {
     readonly rivals: readonly {
       readonly name: string;
       readonly mobility: number;
+      /** Where the rival usually finishes (its listed speed, no luck): the board shows this. */
       readonly durationSeconds: number;
+      /** Its best and worst day (form, luck, trouble). */
+      readonly bestSeconds: number;
+      readonly worstSeconds: number;
     }[];
+    /** The viewer's own ship over this route; null without a flyable ship. */
+    readonly you: {
+      readonly durationSeconds: number;
+      readonly bestSeconds: number;
+      readonly worstSeconds: number;
+    } | null;
     readonly minMobility: number;
     readonly prizeShares: readonly number[];
   } | null;
@@ -122,6 +143,9 @@ export type ActiveMission = MissionInstance & {
     readonly title: { readonly en: string; readonly 'pt-BR': string };
     readonly description: { readonly en: string; readonly 'pt-BR': string };
   };
+  /** Everything the board card shows for this mission (time, fuel, requirements, material, race),
+      for the pilot's ship as it is now: an accepted mission must stay as readable as an offer. */
+  readonly info: OfferInfo;
 };
 
 interface ViewerContext {
@@ -301,10 +325,21 @@ export class MissionsService implements OnModuleInit {
       }),
     ]);
     const wordsById = new Map(templates.map((entry) => [entry.id, entry]));
+    // The same figures the board shows, so the accepted mission keeps its details (the
+    // eligibility verdict is not wanted here: the mission is already taken).
+    const viewer = await this.viewerContext(playerId, rows[0]!.originId);
+    const withInfo = await this.withEligibility(
+      rows.map((row) => ({ ...row, rewardEstimate: row.reward })),
+      viewer,
+      playerId,
+      rows[0]!.originId,
+    );
+    const infoById = new Map(withInfo.map((offer) => [offer.id, offer.info]));
     return rows.map((row) => {
       const template = wordsById.get(row.templateId);
       return {
         ...row,
+        info: infoById.get(row.id)!,
         legWindows: windows.get(row.id) ?? [],
         brief: {
           title: bilingual(template?.displayName),
@@ -674,6 +709,18 @@ export class MissionsService implements OnModuleInit {
     });
     const sheet = viewer.ship === undefined ? null : deriveSheet(viewer.installed, rules);
     const viability = sheet === null ? null : checkViability(sheet, viewer.installed, rules);
+    // The estimates (time, fuel, a race window) are for the ship as the pilot has tuned its engines.
+    const levels =
+      viewer.ship === undefined
+        ? undefined
+        : clampLevels({ chem: viewer.ship.chemLevel, ion: viewer.ship.ionLevel }, rules);
+    const tuned =
+      viewer.ship === undefined || levels === undefined
+        ? null
+        : {
+            sheet: deriveSheet(applyEngineLevels(viewer.installed, levels, rules), rules),
+            pushed: levels.chem > 1 || levels.ion > 1,
+          };
 
     return rows.map((row) => {
       const reasons: EligibilityReason[] = [];
@@ -716,6 +763,7 @@ export class MissionsService implements OnModuleInit {
           requirementsById.get(row.templateId),
           viability,
           rules,
+          tuned,
         ),
       };
     });
@@ -745,6 +793,7 @@ function offerInfo(
   requirementsJson: unknown,
   viability: { readonly viable: boolean } | null,
   rules: GameRules,
+  tuned: { readonly sheet: ReturnType<typeof deriveSheet>; readonly pushed: boolean } | null,
 ): OfferInfo {
   const legs = (Array.isArray(row.legs) ? row.legs : []) as OfferLeg[];
   const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
@@ -752,11 +801,11 @@ function offerInfo(
   const peakZone = legs.reduce((peak, leg) => Math.max(peak, leg.zone ?? 0), 0);
 
   let estimate: OfferInfo['estimate'] = null;
-  if (sheet !== null && viability?.viable === true && sheet.mob > 0) {
+  if (sheet !== null && tuned !== null && viability?.viable === true && tuned.sheet.mob > 0) {
     estimate = {
       durationSeconds: missionDuration({
         totalDistance,
-        mobility: sheet.mob,
+        mobility: tuned.sheet.mob,
         durationK: rules.missions.duration_k,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
@@ -765,7 +814,7 @@ function offerInfo(
         (sum, leg) =>
           sum +
           fuelUnits({
-            fuelUse: sheet.fuelUse,
+            fuelUse: tuned.sheet.fuelUse,
             distance: leg.distance ?? 0,
             envFuelMult: leg.env?.fuelMult ?? 1,
           }),
@@ -790,20 +839,40 @@ function offerInfo(
         );
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.
+  const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);
+  const windowOf = (mobility: number, form: number, trouble: boolean) => {
+    const window = raceWindow({
+      distance: totalDistance,
+      mobility,
+      rules,
+      form,
+      canHaveTrouble: trouble,
+    });
+    return {
+      durationSeconds: scaled(window.expected),
+      bestSeconds: scaled(window.best),
+      worstSeconds: scaled(window.worst),
+    };
+  };
+  const yourMobility =
+    tuned === null ? null : rawMobility(tuned.sheet.pot, tuned.sheet.mass, rules);
+  // The field follows the viewer's own speed part of the way (the same rule the race resolves by).
+  const drawn = parseCompetitors((row.cargo ?? {}) as Record<string, unknown>);
   const rivals =
     row.type === 'RACE'
-      ? parseCompetitors((row.cargo ?? {}) as Record<string, unknown>).map((rival) => ({
+      ? (yourMobility !== null && yourMobility > 0
+          ? fieldFor(drawn, yourMobility, rules)
+          : drawn
+        ).map((rival) => ({
           name: rival.name,
           mobility: rival.mobility,
-          durationSeconds: missionDuration({
-            totalDistance,
-            mobility: rival.mobility,
-            durationK: rules.missions.duration_k,
-            timeScale: rules.missions.time_scale,
-            classCutoffs: rules.missions.duration_class_cutoffs,
-          }).durationSeconds,
+          ...windowOf(rival.mobility, rules.race.form_spread, true),
         }))
       : [];
+  const you =
+    row.type === 'RACE' && yourMobility !== null && yourMobility > 0
+      ? windowOf(yourMobility, 0, tuned?.pushed === true)
+      : null;
   return {
     title: bilingual(template?.displayName),
     description: bilingual(template?.description),
@@ -821,10 +890,12 @@ function offerInfo(
             quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
           },
     requirements,
+    cargo: cargoTermsOf(row.type, requirementsJson, rules),
     race:
       row.type === 'RACE'
         ? {
             rivals,
+            you,
             minMobility: rules.race.min_mobility,
             prizeShares: [
               rules.race.prize_share_1,

@@ -5,12 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { localize } from '../common/i18n/localize.js';
+import { GameConfigService } from '../config/game-config.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { MAX_CREDITS, WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PricingService } from './pricing.service.js';
 
 export const MATERIAL_SELL_EVENT = 'market.sell_material';
+export const CORE_CRAFT_EVENT = 'market.craft_core';
+const FRAGMENT = 'core_fragment';
 
 const ZERO = 0;
 
@@ -37,7 +40,7 @@ export interface SellMaterialResponse {
 /**
  * S8.7: the materials side of the trade loop (GDD §13). Mined ore is credited to
  * `PlayerMaterial` by mission resolution; here it is listed with its local sell price
- * (`basePrice × isolation × faction × mood × sell_ratio`) and sold back to the port.
+ * (`basePrice × place × mood × sell_ratio`, place and mood capped at 1) and sold back to the port.
  * Selling is always allowed — even from a negative balance (GDD §14 blocks buying
  * only — "cava e sai cavando" is exactly this escape hatch).
  */
@@ -48,6 +51,7 @@ export class MaterialsService {
     private readonly pricing: PricingService,
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
+    private readonly config: GameConfigService,
   ) {}
 
   async list(playerId: string): Promise<MaterialsResponse> {
@@ -155,5 +159,47 @@ export class MaterialsService {
     });
 
     return { materialId, quantity, price, credits };
+  }
+
+  /** Crafts a core from fragments out of the pilot's goods (`economy.core_fragments`): all or nothing. */
+  async craftCore(
+    playerId: string,
+    core: string,
+  ): Promise<{ core: string; fragmentsUsed: number; quantity: number }> {
+    const cost = this.config.snapshot().rules.economy.core_fragments[core];
+    if (cost === undefined) throw new BadRequestException({ error: 'UNKNOWN_CORE' });
+    await this.prisma.$transaction(async (tx) => {
+      const taken = await tx.$queryRaw<Array<{ quantity: number }>>`
+        UPDATE "PlayerMaterial" SET quantity = quantity - ${cost}
+        WHERE "playerId" = ${playerId} AND "materialId" = ${FRAGMENT} AND quantity >= ${cost}
+        RETURNING quantity
+      `;
+      if (taken[0] === undefined) {
+        const held = await tx.playerMaterial.findUnique({
+          where: { playerId_materialId: { playerId, materialId: FRAGMENT } },
+          select: { quantity: true },
+        });
+        throw new BadRequestException({
+          error: 'INSUFFICIENT_MATERIALS',
+          needed: cost,
+          held: held?.quantity ?? ZERO,
+        });
+      }
+      if (taken[0].quantity === ZERO) {
+        await tx.playerMaterial.delete({
+          where: { playerId_materialId: { playerId, materialId: FRAGMENT } },
+        });
+      }
+      await tx.playerMaterial.upsert({
+        where: { playerId_materialId: { playerId, materialId: core } },
+        create: { playerId, materialId: core, quantity: 1 },
+        update: { quantity: { increment: 1 } },
+      });
+      await this.events.record(
+        { playerId, type: CORE_CRAFT_EVENT, payload: { core, fragments: cost } },
+        tx,
+      );
+    });
+    return { core, fragmentsUsed: cost, quantity: 1 };
   }
 }

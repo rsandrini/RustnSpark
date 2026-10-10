@@ -1,3 +1,11 @@
+import {
+  RESCUE_BASE_TYPES,
+  rescuePrices,
+  towPlanFor,
+  type FloatSpot,
+  type TowPlan,
+} from './floating.js';
+import { clampLevels } from '../resolution/engine/engine.js';
 import { cellKey, formatCellsFromJson } from './geometry.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
@@ -17,7 +25,8 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { autoLayout } from './auto-layout.js';
+import { autoLayout, extendLayout } from './auto-layout.js';
+import { computeHold, type HoldState } from './hold.js';
 import { applyConnectivity } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
@@ -25,7 +34,9 @@ import { connectedPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
-import { checkViability, type ViabilityProblem } from './viability.js';
+import { startingPools } from '../missions/resolution-input.js';
+import { allocatePower, powerPartOf } from '../resolution/power/power.js';
+import { checkViability, type ViabilityReport } from './viability.js';
 
 // Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
 // apps/web's part-detail.tsx lowestRarity — a local copy, not a shared import, since
@@ -49,6 +60,10 @@ export interface ShipResponse {
   currentLocationId: string;
   stance: string;
   energyMode: string;
+  /** Engine tuning set on the bridge (1 = engines as listed). */
+  engineLevels: { chem: number; ion: number };
+  /** The spare parts the ship carries against the bridge's slots (and a mission's cargo against its space). */
+  hold: HoldState;
   layout: Placement[];
   sheet: ShipSheet;
   shipClass: ShipClassType;
@@ -61,6 +76,24 @@ export interface ShipResponse {
   activity: ShipActivity;
   /** The sheet's range read as routes: how many a full tank crosses; null = no fuel burn. */
   routeCoverage: RouteCoverage | null;
+  /** Where an out-of-fuel ship floats (null otherwise, or when the spot was not recorded). */
+  float: { routeId: string; fromId: string; toId: string; progress: number } | null;
+  /** The ways out for a floating ship: what each costs and where the tow ends. */
+  rescue: RescueOptions | null;
+}
+
+export interface RescueOptions {
+  /** Waiting for the rescue. */
+  waitCost: number;
+  /** Calling it now. */
+  nowCost: number;
+  /** How long waiting takes (mission time, seconds). */
+  waitSeconds: number;
+  /** When the waiting rescue arrives; null until the pilot calls it. */
+  dueAt: string | null;
+  /** The base the ship is towed to and how far it is from where the ship floats. */
+  baseId: string;
+  baseDistance: number;
 }
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
@@ -74,7 +107,12 @@ export interface ShipActivity {
 export interface PreviewResponse {
   sheet: ShipSheet;
   shipClass: ShipClassType;
-  viability: { viable: boolean; problems: ViabilityProblem[] };
+  viability: ViabilityReport;
+  /** How the ship's power would be shared while travelling: each kind of system's share of its need. */
+  power?: { supply: number; demand: number; shares: Record<string, number> };
+  /** What a fight would start with (shield, armor and hull pools, shield recovery per round) at
+      the parts' current condition: worn or unconnected parts give less than the sheet's totals. */
+  layers?: { shield: number; armor: number; hull: number; shieldRegen: number };
   layout: Placement[];
   omittedPartInstanceIds: string[];
   disconnectedPartIds: string[];
@@ -129,7 +167,7 @@ export class ShipsService implements OnModuleInit {
     // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
     // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
-    await this.persistLayout(shipId, layout, playerParts);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -153,7 +191,7 @@ export class ShipsService implements OnModuleInit {
     this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
-    await this.persistLayout(shipId, layout, playerParts);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -184,10 +222,27 @@ export class ShipsService implements OnModuleInit {
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
-      const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
-      installed = arranged.placed;
-      effectiveLayout = arranged.layout;
-      omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
+      const candidates = candidateParts.map(toInstalledPart);
+      const current = (ship.layout as unknown as Placement[] | null) ?? [];
+      const candidateIds = new Set(candidates.map((part) => part.instance.id));
+      const kept = current.filter((placement) => candidateIds.has(placement.partInstanceId));
+      if (kept.length > 0) {
+        // The ship already stands: keep its real arrangement and only try to seat the parts it does
+        // not hold yet, so a comparison measures the part and not a re-pack of the whole ship.
+        const keptIds = new Set(kept.map((placement) => placement.partInstanceId));
+        const added = candidates.filter((part) => !keptIds.has(part.instance.id));
+        effectiveLayout = extendLayout(kept, added, candidates, formatCells);
+        const placedIds = new Set(effectiveLayout.map((placement) => placement.partInstanceId));
+        installed = candidates.filter((part) => placedIds.has(part.instance.id));
+        omittedPartInstanceIds = candidates
+          .filter((part) => !placedIds.has(part.instance.id))
+          .map((part) => part.instance.id);
+      } else {
+        const arranged = arrange(candidates, formatCells);
+        installed = arranged.placed;
+        effectiveLayout = arranged.layout;
+        omittedPartInstanceIds = arranged.omitted.map((part) => part.instance.id);
+      }
       this.assertLayoutValid(effectiveLayout, playerParts, ship);
     }
 
@@ -204,10 +259,32 @@ export class ShipsService implements OnModuleInit {
       catalogForConnectivity,
       connectorsByInstance,
     );
+    const powerState = allocatePower(
+      installedConnected.map((part) =>
+        powerPartOf(part.instance.id, part.catalog, rules.power.idle_demand),
+      ),
+      'cruise',
+      rules,
+    );
+    const pools = startingPools(
+      installedConnected.map((part) => ({ condition: part.instance.condition, catalog: part.catalog })),
+      rules,
+    );
     return {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
       viability,
+      layers: {
+        shield: pools.esc,
+        armor: pools.armor,
+        hull: pools.hp,
+        shieldRegen: pools.escRegen,
+      },
+      power: {
+        supply: powerState.supply,
+        demand: powerState.demand,
+        shares: powerState.byKind,
+      },
       layout: effectiveLayout,
       omittedPartInstanceIds,
       routeCoverage: await this.routeCoverageFor(sheet),
@@ -282,6 +359,18 @@ export class ShipsService implements OnModuleInit {
     const updated = await this.prisma.ship.update({
       where: { id: shipId },
       data: { energyMode },
+      include: { format: { select: { cells: true } } },
+    });
+    return this.toResponse(updated, rules);
+  }
+
+  async setEngineLevels(shipId: string, chem: number, ion: number): Promise<ShipResponse> {
+    const { ship, rules } = await this.loadShipWithRules(shipId);
+    this.assertCanModify(ship);
+    const levels = clampLevels({ chem, ion }, rules);
+    const updated = await this.prisma.ship.update({
+      where: { id: shipId },
+      data: { chemLevel: levels.chem, ionLevel: levels.ion },
       include: { format: { select: { cells: true } } },
     });
     return this.toResponse(updated, rules);
@@ -462,6 +551,8 @@ export class ShipsService implements OnModuleInit {
     shipId: string,
     layout: Placement[],
     playerParts: PartInstanceWithCatalog[],
+    currentFuel: number,
+    rules: GameRules,
   ): Promise<void> {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     const previouslyInstalled = playerParts.filter(
@@ -484,9 +575,82 @@ export class ShipsService implements OnModuleInit {
       }
       await tx.ship.update({
         where: { id: shipId },
-        data: { layout: toJsonInput(layout) },
+        // The fuel aboard can never exceed what the tanks that stay on the ship can hold: take
+        // the tank off and its fuel goes with it (no tank left = an empty ship).
+        data: {
+          layout: toJsonInput(layout),
+          fuel: Math.min(currentFuel, this.fuelCapOf(layout, playerParts, rules)),
+        },
       });
     });
+  }
+
+  /** What the tanks of this layout can hold (connected, working tanks only). */
+  private fuelCapOf(
+    layout: Placement[],
+    playerParts: PartInstanceWithCatalog[],
+    rules: GameRules,
+  ): number {
+    const ids = new Set(layout.map((placement) => placement.partInstanceId));
+    const rows = playerParts.filter((part) => ids.has(part.id));
+    const installed = rows.map(toInstalledPart);
+    const catalog = new Map(installed.map((part) => [part.instance.id, part.catalog]));
+    const connectors = new Map(
+      rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connected = connectedPartIds(layout, catalog, connectors);
+    return deriveSheet(applyConnectivity(installed, connected), rules).fuelCap;
+  }
+
+  /** Where an adrift ship floats and what its rescue would cost (shared with the rescue itself). */
+  async adriftOf(
+    ship: {
+      readonly currentLocationId: string;
+      readonly floatRouteId: string | null;
+      readonly floatFromId: string | null;
+      readonly floatProgress: number | null;
+      readonly rescueAt: Date | null;
+    },
+    rules: GameRules,
+  ): Promise<{ float: ShipResponse['float']; rescue: RescueOptions; plan: TowPlan }> {
+    const [routes, locations] = await Promise.all([
+      this.prisma.route.findMany(),
+      this.prisma.location.findMany({ select: { id: true, type: true } }),
+    ]);
+    const baseIds = new Set(
+      locations.filter((place) => RESCUE_BASE_TYPES.has(place.type)).map((place) => place.id),
+    );
+    const spot: FloatSpot | null =
+      ship.floatRouteId !== null && ship.floatFromId !== null && ship.floatProgress !== null
+        ? { routeId: ship.floatRouteId, fromId: ship.floatFromId, progress: ship.floatProgress }
+        : null;
+    // A ship that went adrift before positions were recorded stays where it is docked on the map.
+    const plan = (spot === null ? null : towPlanFor(spot, routes, baseIds)) ?? {
+      baseId: ship.currentLocationId,
+      distance: 0,
+    };
+    const edge = spot === null ? undefined : routes.find((route) => route.id === spot.routeId);
+    const prices = rescuePrices(plan.distance, rules);
+    return {
+      float:
+        spot === null || edge === undefined
+          ? null
+          : {
+              routeId: spot.routeId,
+              fromId: spot.fromId,
+              toId: edge.nodeAId === spot.fromId ? edge.nodeBId : edge.nodeAId,
+              progress: spot.progress,
+            },
+      rescue: {
+        waitCost: prices.wait,
+        nowCost: prices.now,
+        waitSeconds: rules.economy.rescue_wait_seconds,
+        dueAt: ship.rescueAt === null ? null : ship.rescueAt.toISOString(),
+        baseId: plan.baseId,
+        baseDistance: Math.round(plan.distance),
+      },
+      plan,
+    };
   }
 
   private async toResponse(ship: ShipWithFormat, rules: GameRules): Promise<ShipResponse> {
@@ -503,8 +667,16 @@ export class ShipsService implements OnModuleInit {
     const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
+    const hold = computeHold({
+      slots: rules.ship.spare_part_slots,
+      parts: parts.filter((part) => part.location === 'INVENTORY').length,
+      capacity: sheet.crg,
+    });
     const activity = await this.activityOf(ship);
+    const adrift = ship.status === 'ADRIFT' ? await this.adriftOf(ship, rules) : null;
     return {
+      float: adrift?.float ?? null,
+      rescue: adrift?.rescue ?? null,
       id: ship.id,
       ownerPlayerId: ship.ownerPlayerId,
       name: ship.name,
@@ -513,6 +685,8 @@ export class ShipsService implements OnModuleInit {
       currentLocationId: ship.currentLocationId,
       stance: ship.stance,
       energyMode: ship.energyMode,
+      engineLevels: { chem: ship.chemLevel, ion: ship.ionLevel },
+      hold,
       layout: shipLayout,
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),

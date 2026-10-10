@@ -64,8 +64,26 @@ function decidePolicy(c: PolicyCase, neutralRatio: number): 'IGNORE' | 'FLEE' | 
 
 describe('S5.0 — Appendix E sign-off gate', () => {
   describe('pinned defaults', () => {
+    // Keys the owner has tuned in the Admin since the sign-off; the defaults follow the DB, and the
+    // formula specs run on APPENDIX_E_RULES (the signed-off values), so they are not pinned here.
+    const TUNED_SINCE_SIGNOFF: ReadonlySet<string> = new Set([
+      'economy.payout_floor_integrity',
+      'integrity.combat_factor',
+      'integrity.env_factor',
+      'wear.env_multiplier',
+      'wear.danger_ref',
+      'wear.danger_floor',
+      'wear.danger_cap',
+      'wear.system_base_min',
+      'ship_class.pressurized_share',
+      'parts.starter_condition',
+      'scavenging.cooldown_seconds',
+      'mining.attempts_per_stop',
+    ]);
+
     it('every approved key exists in GAME_CONFIG_DEFAULTS with exactly the approved value', () => {
       for (const [key, approved] of Object.entries(APPENDIX_E_DEFAULTS)) {
+        if (TUNED_SINCE_SIGNOFF.has(key)) continue;
         expect({ key, value: valueAt(GAME_CONFIG_DEFAULTS, key) }).toEqual({
           key,
           value: approved,

@@ -110,7 +110,7 @@ describe('market panel: descriptions and filters', () => {
     expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,820 ¢');
   });
 
-  it('compares a listing against the installed part of the same class, colored by whether it helps', async () => {
+  it('compares a listing as an ADDITION by default (what buying it as an extra part does), colored by whether it helps', async () => {
     server.use(
       onboarded(),
       http.post('/v1/ships/:id/preview', async ({ request }) => {
@@ -118,11 +118,11 @@ describe('market panel: descriptions and filters', () => {
           virtualPart?: { partType: string; condition: number };
           replacePartInstanceId?: string;
         };
-        // The default fixture's only installed DEFENSE-class part is part-hull (Plated Hull).
         expect(body.virtualPart?.partType).toBe('hull');
-        expect(body.replacePartInstanceId).toBe('part-hull');
+        // an addition: nothing is replaced unless the pilot picks it
+        expect(body.replacePartInstanceId).toBeUndefined();
         return HttpResponse.json({
-          sheet: { ...defaultSheet, hp: defaultSheet.hp + 6 },
+          sheet: { ...defaultSheet, hp: defaultSheet.hp + 10 },
           shipClass: 'MULTIROLE',
           viability: { viable: true, problems: [] },
           layout: [],
@@ -135,10 +135,12 @@ describe('market panel: descriptions and filters', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(within(dialog).getByText('If you install this now')).toBeInTheDocument(),
+    );
     const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
-    expect(within(hpRow).getByText('46 (+6)')).toHaveClass('delta-good');
+    await waitFor(() => expect(within(hpRow).getByText('50 (+10)')).toBeInTheDocument());
+    expect(within(hpRow).getByText('50 (+10)')).toHaveClass('delta-good');
   });
 
   it('lets the pilot switch between "replace X" and "add it" for the same listing (owner request)', async () => {
@@ -163,18 +165,19 @@ describe('market panel: descriptions and filters', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: /^Details: Plated Hull/ })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    // Defaults to the same auto-picked swap as before.
-    await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
-    const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
-
-    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Compare as' }), {
-      target: { value: '' },
-    });
+    // Opens on "add it".
     await waitFor(() =>
       expect(within(dialog).getByText('If you install this now')).toBeInTheDocument(),
     );
+    const hpRow = within(dialog).getByRole('row', { name: /^Hit points/ });
     await waitFor(() => expect(within(hpRow).getByText('50 (+10)')).toBeInTheDocument());
+
+    // The picker switches to replacing the installed part of the same class.
+    fireEvent.change(within(dialog).getByRole('combobox', { name: 'Compare as' }), {
+      target: { value: 'part-hull' },
+    });
+    await waitFor(() => expect(within(dialog).getByText(/swap this in for/i)).toBeInTheDocument());
+    await waitFor(() => expect(within(hpRow).getByText('46 (+6)')).toBeInTheDocument());
   });
 
   it('compares a listing with nothing installed of its class as a plain addition, not a swap', async () => {

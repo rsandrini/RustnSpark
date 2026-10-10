@@ -51,6 +51,13 @@ describe('S8.1 — part value and prices', () => {
     );
   });
 
+  it('sell never rises with a remote, hostile or high-mood place, only falls with a cheap one', () => {
+    const remoteHostile = input({ isolation: 2, factionRelation: 'hostile', mood: 1.15 });
+    expect(sellPrice(remoteHostile, rules)).toBe(sellPrice(input(), rules));
+    expect(sellPrice(input({ isolation: 0.9, factionRelation: 'ally' }), rules)).toBe(43);
+    expect(sellPrice(input({ mood: 0.9, condition: 50 }), rules)).toBe(27);
+  });
+
   it('sell is sell_ratio (0.6) × value', () => {
     expect(rules.economy.sell_ratio).toBe(0.6);
     // value 100 → sell 60
@@ -79,8 +86,6 @@ describe('S8.1 — part value and prices', () => {
 
   it('pins the isolation and faction maps from the economy doc', () => {
     expect(rules.economy.isolation_mult).toEqual({ 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 });
-    expect(rules.economy.mood_min).toBe(0.85);
-    expect(rules.economy.mood_max).toBe(1.15);
   });
 });
 

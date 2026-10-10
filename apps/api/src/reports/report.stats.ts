@@ -19,7 +19,16 @@ export interface ReportStats {
     readonly drawn: number;
     readonly pvp: number;
   };
+  /** Damage taken in fights: through the shield, the armor and the hull. */
   readonly damage: { readonly shield: number; readonly armor: number; readonly hull: number };
+  /**
+   * Wear from the journey itself (space, radiation, debris...): condition points lost across the
+   * ship's parts by the run's wear events, and how many parts were touched — separate from combat
+   * damage, which only counts fights.
+   */
+  readonly travelWear: { readonly points: number; readonly parts: number };
+  /** Where the journey's own damage went: soaked by the shield, the armor, the hull (layered runs). */
+  readonly travelLayers: { readonly shield: number; readonly armor: number; readonly hull: number };
   /** Parts that failed (motor, battery, tank, shield, weapon, sensor). */
   readonly partFailures: number;
   readonly fuelLost: number;
@@ -41,8 +50,19 @@ export interface ReportStats {
       readonly mobility: number;
       readonly seconds: number;
       readonly you: boolean;
+      readonly trouble?: 'mishap' | 'overheat';
     }[];
   } | null;
+  /** How the engines were run (engine tuning): per group, the level, the legs it was pushed or
+      eased, the failures and the chance the pushed legs went clean. Empty when run as listed. */
+  readonly engines: readonly {
+    readonly group: 'chem' | 'ion';
+    readonly levelPct: number;
+    readonly pushedLegs: number;
+    readonly easedLegs: number;
+    readonly failures: number;
+    readonly cleanChancePct: number;
+  }[];
   readonly loot: readonly {
     readonly materialId: string;
     readonly name: string;
@@ -65,8 +85,11 @@ export interface ReportStats {
   }[];
 }
 
+const PERCENT = 100;
+
 const PART_FAILURE_TYPES: ReadonlySet<string> = new Set([
   'motor',
+  'engine_push',
   'battery',
   'tank',
   'shield',
@@ -86,7 +109,14 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
   let stolenParts = 0;
   let motive: string | null = null;
   let race: ReportStats['race'] = null;
+  const engineRuns = new Map<
+    'chem' | 'ion',
+    { levelPct: number; pushedLegs: number; easedLegs: number; failures: number; clean: number }
+  >();
   const damage = { shield: 0, armor: 0, hull: 0 };
+  let wearPoints = 0;
+  const travelLayers = { shield: 0, armor: 0, hull: 0 };
+  const wornParts = new Set<string>();
   const loot = new Map<string, number>();
   const found: ReportStats['found'][number][] = [];
   // Seeded with the dispatch condition, then overwritten by each event's condByPart entries in
@@ -113,6 +143,28 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       });
     }
     if (event.type === 'race_result' && event.race !== undefined) race = event.race;
+    if (event.type === 'engine_tuning' && event.tuning !== undefined) {
+      const run = engineRuns.get(event.tuning.group) ?? {
+        levelPct: event.tuning.levelPct,
+        pushedLegs: 0,
+        easedLegs: 0,
+        failures: 0,
+        clean: 1,
+      };
+      run.levelPct = event.tuning.levelPct;
+      if (event.tuning.outcome === 'eased') run.easedLegs += 1;
+      else {
+        run.pushedLegs += 1;
+        run.clean *= 1 - event.tuning.chancePct / PERCENT;
+        if (event.tuning.outcome === 'failed') run.failures += 1;
+      }
+      engineRuns.set(event.tuning.group, run);
+    }
+    if (event.type === 'mission_wear' && event.cascade) {
+      travelLayers.shield += event.cascade.shield;
+      travelLayers.armor += event.cascade.armor;
+      travelLayers.hull += event.cascade.hp;
+    }
     if (event.type === 'pirate_demand') {
       stolenParts += event.stolen?.length ?? 0;
       motive = event.motive ?? motive;
@@ -131,6 +183,13 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
       loot.set(entry.materialId, (loot.get(entry.materialId) ?? 0) + entry.quantity);
     }
     for (const [partId, condition] of Object.entries(event.effects.condByPart)) {
+      if (event.type === 'mission_wear') {
+        const lost = (finalCondition.get(partId) ?? condition) - condition;
+        if (lost > 0) {
+          wearPoints += lost;
+          wornParts.add(partId);
+        }
+      }
       finalCondition.set(partId, condition);
     }
   }
@@ -153,6 +212,8 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     distance,
     fights: { won, lost, escaped, drawn, pvp },
     damage,
+    travelWear: { points: wearPoints, parts: wornParts.size },
+    travelLayers,
     hasShield: log.hasShield,
     partsDamage,
     partFailures,
@@ -160,6 +221,14 @@ export function computeReportStats(log: ReportLog, names: EntityNames): ReportSt
     found,
     pirates: { stolenParts, motive },
     race,
+    engines: [...engineRuns.entries()].map(([group, run]) => ({
+      group,
+      levelPct: run.levelPct,
+      pushedLegs: run.pushedLegs,
+      easedLegs: run.easedLegs,
+      failures: run.failures,
+      cleanChancePct: Math.round(run.clean * PERCENT),
+    })),
     loot: [...loot.entries()]
       .filter(([, quantity]) => quantity > 0)
       .map(([materialId, quantity]) => ({

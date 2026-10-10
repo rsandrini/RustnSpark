@@ -143,7 +143,9 @@
       "mob": "Mobility",
       "structureValue": "{{used}} / {{budget}}",
       "unlimited": "unlimited",
-      "routesCovered": "covers {{covered}} of {{total}} routes"
+      "routesCovered": "covers {{covered}} of {{total}} routes",
+      "shieldValue": "{{pool}} (+{{regen}}/round)",
+      "armorValue": "{{rating}} (cuts {{cut}} per hit, soaks {{pool}})"
     },
     "groups": {
       "combat": "Combat",
@@ -154,17 +156,19 @@
     },
     "headline": {
       "firepower": "Firepower",
-      "defense": "Defense",
-      "defenseHelp": "Armor plus Shield: the ship's two defenses against incoming hits, combined.",
+      "defense": "Armor · Shield",
+      "defenseHelp": "What the ship can soak in a fight: the shield first, then the armor (which also cuts each hit), then the hull. Numbers are the points each layer can absorb.",
       "cargo": "Cargo",
       "mobility": "Mobility",
       "autonomy": "Range",
       "condition": "Condition",
       "energy": "Energy",
-      "structure": "Structure"
+      "structure": "Structure",
+      "defenseValue": "{{armor}} · {{shield}}"
     },
     "summary": {
       "ready": "Ready to fly",
+      "readyWithWarnings": "Ready to fly, with {{count}} warning(s)",
       "problemCount": "{{count}} problem(s)",
       "showAllStats": "Show all stats"
     },
@@ -173,8 +177,10 @@
       "deficit": "Deficit {{value}}",
       "breakdown": "Generates {{generate}} · Consumes {{consume}}",
       "draw": "Draws {{value}}/round",
-      "covered": "Battery covers it ({{output}}/round)",
-      "insufficient": "Exceeds battery output ({{output}}/round)"
+      "covered": "Covered: ship surplus + battery ({{output}}/round)",
+      "insufficient": "Exceeds ship surplus + battery ({{output}}/round)",
+      "noDrain": "The ship's spare power covers it: the battery is not drained.",
+      "lasts": "The battery lasts about {{rounds}} round(s) of this."
     },
     "classes": {
       "HAULER": "Hauler",
@@ -199,7 +205,8 @@
       "save": "Save layout",
       "auto": "Auto layout",
       "rotate": "Rotate",
-      "remove": "Remove"
+      "remove": "Remove",
+      "clear": "Empty the ship"
     },
     "state": {
       "selected": "Selected: {{name}}",
@@ -213,18 +220,22 @@
       "NO_ENGINE": "No engine installed.",
       "MOB_TOO_LOW": "Mobility is below 1.",
       "NO_FUEL_CAPACITY": "Chemical engine needs a fuel tank.",
-      "NO_LIFE_SUPPORT": "No life support installed.",
+      "NO_LIFE_SUPPORT": "Pressurized modules but no life support installed.",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded.",
       "OUT_OF_BOUNDS": "Part is outside the grid.",
       "OVERLAP": "Parts overlap.",
       "DISCONNECTED": "Parts must touch the bridge.",
       "INVALID_LAYOUT": "The layout is not valid.",
-      "ENERGY_CRUISE_NEGATIVE": "The ship uses more energy in flight than it generates.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than your batteries can deliver — install a battery, or a bigger one.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than your batteries can store — install a battery, or a bigger one.",
-      "EXHAUST_BLOCKED": "An engine has parts behind its exhaust — move it to the back edge of the ship or turn it.",
-      "FACING_BLOCKED": "A weapon has parts in its line of fire — move it to the edge of the ship or turn it.",
-      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side."
+      "ENERGY_CRUISE_NEGATIVE": "The systems need more power than the ship generates, so they compete for it: the bridge and life support are served first, then the ones that matter right now. Starved systems work only part of the time. Engines are not affected.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Weapons and shields draw more energy each round than the ship can supply (its spare power plus the batteries). In a fight some attacks and shield recovery will go unpowered — add power generation or a battery.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Weapons and shields draw more energy than the ship's spare power plus its batteries can store — long fights will run out of power. Add power generation or a battery.",
+      "EXHAUST_BLOCKED": "An engine has a part directly behind its exhaust: it gives no thrust. Move it, move the part, or turn the engine.",
+      "FACING_BLOCKED": "A weapon has a part in its line of fire: it will not shoot. Move it or turn it.",
+      "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it.",
+      "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent.",
+      "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation.",
+      "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -262,7 +273,8 @@
       "condition": "Condition"
     },
     "rotate": {
-      "blocked": "There is no room to rotate this part here: move a neighbour away first."
+      "blocked": "There is no room to rotate this part here: move a neighbour away first.",
+      "twice": "No room to turn it sideways here, so it was turned twice instead."
     },
     "statHelp": {
       "class": "The ship class, decided automatically by how much of the structure budget goes to cargo, pressurized (passenger) space and combat parts.",
@@ -272,16 +284,16 @@
       "hp": "Total hit points from every installed part. Lost in combat, restored by repair.",
       "pot": "Total thrust from every installed engine. Feeds mobility.",
       "pdf": "Combat damage output from every installed weapon.",
-      "bli": "Reduces the damage of each hit that gets through the shield.",
-      "esc": "Absorbs damage first in a fight, before armor or the hull take any. Regenerates a little each combat round. Draws Combat power from the battery — with no battery to power it, it can't be installed.",
+      "bli": "Armor sits behind the shield. It cuts every hit that gets past the shield by a flat amount (see the number in brackets), then its pool soaks the rest, and only what is left reaches the hull. It wears down in a fight, and a worn armor cuts less. Hull parts give hit points, not armor.",
+      "esc": "A pool of damage soaked FIRST: it takes as much of every hit as it can hold. It recovers its own points every combat round, and each point it recovers costs combat energy — no energy, no recovery.",
       "sen": "Spots ambushes early, lowering the chance of being surprised in an encounter.",
       "mass": "Total weight of every installed part (plus a loaded tank's fuel, where that adds weight). Pulls mobility down.",
       "fuelCap": "How much fuel the ship can hold, from every installed tank.",
       "fuelUse": "How much fuel is burned per unit of travel.",
-      "energyCont": "Continuous power balance: reactor/solar generation minus everything that always draws power (sensors, life support, mining rigs...). Must stay at zero or above, or the ship can't fly — separate from Combat power below, and never drawn from the battery.",
-      "energyCombat": "Total combat-only power draw from every installed weapon and shield (always zero or negative). Covered by the battery's charge and output, never by Cruising power or the reactor — see Battery capacity / Battery output.",
-      "batCharge": "Total energy the battery can store for combat. Must cover the ship's whole Combat power draw, or weapons/shields can't be installed.",
-      "batOutput": "The most energy the battery can deliver in a single round. Must cover the ship's whole Combat power draw per round, or weapons/shields can't be installed.",
+      "energyCont": "Cruising power balance: what generators produce minus what always draws power (sensors, life support, mining rigs...). Below zero the ship still flies, but its engines only get the share of power that exists. Separate from combat power, which comes from the batteries.",
+      "energyCombat": "Energy that weapons and shields draw each combat round (always zero or negative). The ship's own spare power (cruising power above zero) pays for it first; the batteries cover only what that cannot. Pick the batteries-only mode to keep the ship's spare power out of combat.",
+      "batCharge": "Total energy the batteries can hold for combat. It only needs to cover what the ship's own spare power cannot — with enough generation you need no battery at all.",
+      "batOutput": "The most energy the batteries can deliver in one round. It only needs to cover what the ship's own spare power cannot pay for each round.",
       "batInput": "How fast the battery recharges between fights.",
       "autonomy": "How far a full tank takes the ship, in route-distance units (the same units as route lengths). Below it: how many of the world's routes that covers.",
       "condition": "Average wear across every installed part, from 100% (new) down.",
@@ -294,6 +306,35 @@
     "facing": {
       "exhaust": "Exhaust side",
       "weapon": "Firing side"
+    },
+    "warnings": {
+      "title": "Warnings",
+      "explain": "The ship can fly, but weaker — fix these to get its full performance."
+    },
+    "power": {
+      "title": "Power is short — they get:",
+      "entry": "{{system}} {{percent}}%",
+      "kind": {
+        "bridge": "Bridge",
+        "life": "Life support",
+        "pump": "Fuel pump",
+        "sensor": "Sensors",
+        "weapon": "Weapons (idle)",
+        "shield": "Shield (idle)",
+        "rig": "Mining rig (idle)",
+        "other": "Other"
+      }
+    },
+    "clear": {
+      "title": "Empty the ship?",
+      "body": "All {{count}} installed parts go back to the inventory. Nothing is sold or lost, but the ship cannot fly until it is assembled again.",
+      "cancel": "Cancel",
+      "confirm": "Empty the ship"
+    },
+    "hold": {
+      "line": "Carried: {{parts}} of {{slots}} spare-part slots. Your goods (ore, scrap) are kept ashore and take no space.",
+      "partsOver": "Too many spare parts to depart: sell or leave some.",
+      "hint": "Spare parts ride free in the bridge slots (one slot per part, any size or rarity). Only the cargo a mission loads takes cargo space."
     }
   },
   "home": {
@@ -770,7 +811,13 @@
       "upload": "Upload",
       "reset": "Reset to default"
     },
-    "noneOption": "No part"
+    "noneOption": "No part",
+    "duplicate": "Duplicate",
+    "duplicateConfirmTitle": "Create a new row from this one?",
+    "duplicateConfirmBody": "A new row is created from the values in this form. \"{{id}}\" itself is not changed.",
+    "duplicateNewId": "New id",
+    "duplicateHint": "The id cannot be changed after it is created. The new row opens for editing right after.",
+    "duplicateConfirm": "Create the copy"
   },
   "factions": {
     "luna": "Luna Authority",
@@ -863,21 +910,36 @@
     "fuelBar": "Fuel tank",
     "refuelHint": "Fuel is bought by the unit; a full tank costs the price shown when you confirm.",
     "scav": {
-      "what": "Send your ship to search the wreckage around {{place}} for parts other pilots left behind. It is a job like a mission: the ship is out of port while it works, and a report tells you what it found.",
-      "time": "It takes about {{minutes}} minutes, and the ship cannot be used meanwhile.",
-      "risk": "The risk comes from the place (zone {{zone}}): pirates may find you while you search, and the riskier the place, the better the finds.",
+      "what": "Search the wreckage around {{place}} for parts other pilots left behind. It is manual work at the place: the ship stays in port but is busy meanwhile, and a report tells you what was found.",
+      "time": "It takes about {{minutes}} minutes; the ship cannot be used meanwhile.",
+      "risk": "The riskier the place (zone {{zone}}), the better and rarer the finds — and pirates may find you while you search. Rare parts only turn up in dangerous places.",
       "quality": "Everything you find is USED: about {{min}}–{{max}}% condition at this place. Repair it, install it or sell it.",
-      "finds": "At {{place}} you can find one or more parts; a pirate-held field gives the most.",
+      "finds": "At {{place}} a search can turn up one or more parts; a pirate-held field gives the most.",
       "scrap": "Wreckage here also holds scrap: worn-out remains that sell at a fixed price at any port.",
       "field": {
         "common": "an ordinary port",
         "mission": "a mission site",
         "pirate": "a pirate-held debris field"
       },
-      "where": "It only works where your ship is docked, and each place has its own waiting time between jobs.",
+      "where": "Only where your ship is docked; each place has its own waiting time between jobs.",
       "ready": "Ready to go.",
       "nextAttempt": "Next job in",
-      "title": "Scavenge the wreckage"
+      "title": "Scavenge the wreckage",
+      "nothing": "About {{percent}}% of searches here find nothing (the safer the place, the more often).",
+      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything.",
+      "riskFoot": "The riskier the place (zone {{zone}}), the better and rarer the finds. On foot nothing can attack you. Rare parts only turn up in dangerous places.",
+      "modeTitle": "How to search",
+      "mode": {
+        "ship": {
+          "name": "With the ship",
+          "hint": "The ship searches the place: the full chance to find things, but pirates may find you. Uses no fuel."
+        },
+        "foot": {
+          "name": "On foot",
+          "hint": "You search without the ship: only {{percent}}% of the usual chance, but no attacks, no wear and no fuel."
+        }
+      },
+      "footNotice": "On foot you only get {{percent}}% of the usual chance to find anything. In return, nothing attacks you and the ship takes no damage."
     },
     "mine": {
       "title": "Mine the field",
@@ -909,9 +971,22 @@
     "upgradesTo": "Upgrades to {{name}}",
     "upgrade": "Upgrade",
     "upgradeConfirmTitle": "Upgrade for {{cost}} ¢?",
-    "upgradeQuote": "Upgrade {{name}} to {{nextName}} for {{cost}} ¢?",
+    "upgradeQuote": "Upgrade <from>{{name}}</from> to <to>{{nextName}}</to> for {{cost}} ¢?",
     "upgradeConfirm": "Upgrade",
-    "upgraded": "Upgraded to {{name}}."
+    "upgraded": "Upgraded to {{name}}.",
+    "upgradeFilter": "Upgrade filter",
+    "upgradeOnlyAffordable": "Only what I can afford",
+    "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
+    "scavengeFoot": "Go scavenging on foot",
+    "upgradeFromTo": "{{from}} → {{to}}",
+    "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
+    "craftLine": "{{name}}: {{have}} of {{needed}} core fragments",
+    "craft": "Craft",
+    "craftDone": "Crafted: {{name}}.",
+    "cores": {
+      "prototype_core": "Prototype Core",
+      "ancient_core": "Ancient Core"
+    }
   },
   "inventory": {
     "title": "Inventory",
@@ -938,10 +1013,9 @@
   "report": {
     "title": "Mission report",
     "tabs": {
-      "summary": "Summary",
+      "overview": "Overview",
       "narrative": "The story",
-      "log": "Log",
-      "detail": "Details"
+      "log": "Log"
     },
     "detail": {
       "partsDamage": "Parts that took damage",
@@ -964,7 +1038,8 @@
     "cascade": {
       "shield": "Shield absorbed",
       "armor": "Armor absorbed",
-      "hp": "Hull damage"
+      "hp": "Hull damage",
+      "order": "How a hit is split: the shield takes as much as it can, the armor takes what is left, and only the rest reaches the hull. The journey itself hits the same way."
     },
     "combatLog": {
       "title": "Round by round",
@@ -978,7 +1053,8 @@
       "side": {
         "player": "You",
         "enemy": "Enemy"
-      }
+      },
+      "left": "({{value}} left)"
     },
     "refKind": {
       "loot": "Item",
@@ -1019,7 +1095,54 @@
       "found": "Found",
       "foundPart": "{{name}} ({{condition}}%)",
       "foundScrap": "Scrap: {{name}}",
-      "raceTitle": "Race result — you finished #{{place}}"
+      "raceTitle": "Race result — you finished #{{place}}",
+      "trouble": {
+        "mishap": "had trouble",
+        "overheat": "engines overheated"
+      },
+      "damageCombat": "Fight damage",
+      "travelWear": "Wear on the way",
+      "wearValue": "{{points}} points · {{parts}} part(s)"
+    },
+    "overview": {
+      "combatTitle": "Damage in fights",
+      "noCombatDamage": "No damage from fights.",
+      "layer": {
+        "shield": "Shield",
+        "armor": "Armor",
+        "hull": "Hull"
+      },
+      "travelTitle": "Wear on the way",
+      "noWear": "The journey itself left no marks.",
+      "wear": "{{points}} condition points lost across {{parts}} part(s) to the journey itself.",
+      "travelNote": "The journey hits like a weapon: the shield first (if the ship has one), then the armor, then the hull. What got through is the wear on the parts.",
+      "fromTo": "{{before}}% → {{after}}%",
+      "engines": {
+        "title": "Engine tuning",
+        "group": {
+          "chem": "Chemical engines",
+          "ion": "Ion engines"
+        },
+        "pushed": "ran at x{{value}}: pushed on {{legs}} leg(s), {{failures}} failure(s); the chance of no failure at all was {{chance}}%.",
+        "eased": "ran at x{{value}}: throttled down on {{legs}} leg(s), slower but burning less."
+      }
+    },
+    "story": {
+      "leg": "Leg {{index}} · {{from}} → {{to}}",
+      "categories": {
+        "combat": "Fight",
+        "transit": "Flight",
+        "failure": "Trouble",
+        "environment": "Space",
+        "loot": "Find",
+        "payment": "Pay"
+      }
+    },
+    "logTable": {
+      "leg": "Leg",
+      "kind": "Kind",
+      "what": "What happened",
+      "effect": "Effect"
     }
   },
   "transit": {
@@ -1116,7 +1239,9 @@
       "MOB_TOO_LOW": "Mobility too low",
       "NO_FUEL_CAPACITY": "No fuel capacity",
       "NO_LIFE_SUPPORT": "No life support",
-      "STRUCTURE_EXCEEDED": "Structure budget exceeded"
+      "STRUCTURE_EXCEEDED": "Structure budget exceeded",
+      "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",
@@ -1125,7 +1250,7 @@
       "MIN_MOBILITY": "Mobility above the escort minimum",
       "MINER": "A mining rig installed",
       "SPEED": "Mobility above the rescue reference speed",
-      "RACE_SPEED": "Ship speed (mobility) is below this race's entry minimum."
+      "RACE_SPEED": "Ship speed (mobility) at or above this race's entry minimum"
     },
     "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",
@@ -1147,6 +1272,7 @@
       "MINING": "a Mining Rig and cargo space for the ore.",
       "RESCUE": "a fast ship (mobility) and room for the survivors.",
       "TRAVEL": "nothing special: fuel for the trip.",
+      "SCAVENGE": "nothing special: any ship can search a place, a flight-ready one finds more.",
       "RACE": "a fast ship: it must beat the entry speed, and the faster the better."
     },
     "mining": {
@@ -1157,11 +1283,27 @@
       "title": "The field",
       "pilot": "Pilot",
       "speed": "Speed",
-      "time": "Time",
       "you": "You",
       "rank": "{{place}}.",
       "entry": "Entry: speed {{mobility}} or more. Prizes:",
-      "prize": "{{place}}º {{amount}}"
+      "prize": "{{place}}º {{amount}}",
+      "expected": "Expected",
+      "expectedHint": "Where this ship usually finishes. The real result depends on form, luck and trouble on the day.",
+      "best": "Best day",
+      "bestHint": "A great day: best form and luck.",
+      "none": "—",
+      "dynamic": "Every race is different: form, luck and trouble move the times around these figures.",
+      "finish": "Finish"
+    },
+    "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
+    "lowFuelCapacity": "This trip needs {{needed}} fuel but your tanks hold only {{cap}}, so refuelling will not be enough: install more tank capacity, or pick a shorter route.",
+    "yourMission": "Your mission",
+    "startBefore": "Start before",
+    "goToShip": "Open on My Ship",
+    "engineLevels": "Engines: chemical x{{chem}} · ion x{{ion}}",
+    "cargo": {
+      "fixed": "Fixed load: {{need}} units of cargo, taking that much of your cargo space.",
+      "open": "Open load: at least {{need}} units, and you take all the cargo space you have. Every unit beyond {{need}} pays {{pay}} ¢."
     }
   },
   "map": {
@@ -1212,6 +1354,11 @@
         "SHIP_NOT_VIABLE": "The ship cannot fly yet: assemble it in the Hangar first.",
         "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
       }
+    },
+    "floating": "Your ship is floating here",
+    "working": {
+      "SCAVENGE": "Scavenging",
+      "MINING": "Mining"
     }
   },
   "notFound": {
@@ -1220,29 +1367,25 @@
   },
   "loading": "Loading...",
   "error": {
-    "unexpected": "Something went wrong",
-    "NO_SHIP": "You have no ship.",
-    "ACTIVE_MISSION_EXISTS": "A mission is already under way.",
-    "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location.",
-    "CARGO_TYPE": "Cargo capacity below the manifest.",
-    "PRESSURIZED_LIFE_SUPPORT": "Ship lacks pressurized life support.",
-    "WEAPONS": "No weapons installed.",
-    "MIN_MOBILITY": "Mobility below the mission minimum.",
-    "MINER": "No mining rig installed.",
-    "SPEED": "Too slow for this contract.",
-    "HOLD_LIMIT": "You already hold a mission.",
-    "UNKNOWN_FACTION": "That faction is not playable.",
-    "ALREADY_REPAIRING": "This ship is already being repaired.",
-    "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
     "ACCOUNT_BANNED": "This account has been suspended.",
+    "ACTIVE_MISSION_EXISTS": "A mission is already under way.",
+    "ALREADY_REPAIRING": "This ship is already being repaired.",
+    "ART_BAD_SIZE": "The image is empty or larger than 1.5 MB.",
+    "ART_NOT_AN_IMAGE": "That file is not a valid (or not a safe) image.",
+    "ART_UNKNOWN_SLOT": "That image slot does not exist.",
+    "ART_UNSUPPORTED_TYPE": "Upload a PNG, JPEG, WebP or SVG image.",
+    "AUTO_LAYOUT_OMITTED_PARTS": "Automatic layout could not place every part.",
     "BALANCE_NEGATIVE": "Your balance is negative — earn credits before spending.",
     "BATTERY_CHARGE_INSUFFICIENT": "Battery charge is too low for this build — install a battery, or a bigger one.",
     "BATTERY_OUTPUT_INSUFFICIENT": "Battery output is too low for this build — install a battery, or a bigger one.",
+    "CARGO_TYPE": "Cargo capacity below the manifest.",
     "CREDIT_OVERFLOW": "That sale is too large to credit.",
     "DISCONNECTED": "Some parts are not connected to the bridge.",
     "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — install a reactor, a bigger one, or fewer continuous-draw parts.",
     "FORMAT_NOT_UNLOCKED": "That ship format isn't unlocked for your current bridge.",
     "FUEL_EMPTY": "The tank is empty.",
+    "FUEL_INSUFFICIENT": "This route needs more fuel than the ship carries: you would run dry on the way. Refuel, add tank capacity, or pick a shorter route.",
+    "HOLD_LIMIT": "You already hold a mission.",
     "HOLD_NOT_OWNED": "You are not holding this mission.",
     "INSUFFICIENT_FUNDS": "Not enough credits.",
     "INSUFFICIENT_MATERIALS": "You do not hold that much.",
@@ -1252,53 +1395,69 @@
     "INVALID_LIMIT": "Invalid page size.",
     "INVALID_LISTING": "That offer is no longer listed.",
     "INVALID_QUANTITY": "Invalid quantity.",
-    "PART_DESTROYED": "A destroyed part (0%) cannot be repaired. Replace it.",
     "INVALID_REPAIR_TARGET": "That repair would go below the part’s current condition. Reload the repair tab and try again.",
+    "LISTING_SOLD": "That used part was just sold.",
     "MAINTENANCE": "The game is down for maintenance. Try again shortly.",
+    "MINER": "No mining rig installed.",
+    "MIN_MOBILITY": "Mobility below the mission minimum.",
     "MISSION_EXPIRED": "This mission has expired.",
     "MISSION_MALFORMED": "This mission is malformed.",
+    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
     "MISSION_NOT_ACCEPTED": "Accept the mission first.",
     "MISSION_REQUIREMENTS_NOT_MET": "Your ship does not meet this mission's requirements.",
+    "NOT_A_FLIGHT": "That mission is not a flight, so the engines do not apply.",
+    "NOT_MINABLE": "There is nothing to mine here.",
+    "NO_MINING_RIG": "A mining rig needs to be installed first.",
     "NO_REPAIR_TARGETS": "Nothing to repair.",
+    "NO_ROUTE": "There is no route out of this place, so there is nothing to search around.",
+    "NO_SHIP": "You have no ship.",
     "OUT_OF_BOUNDS": "A part is outside the build area.",
     "OVERLAP": "Parts overlap.",
+    "PART_DESTROYED": "A destroyed part (0%) cannot be repaired. Replace it.",
     "PART_NOT_INSTALLED": "That part is not installed.",
+    "PRESSURIZED_LIFE_SUPPORT": "Ship lacks pressurized life support.",
     "PRICE_CHANGED": "The price changed to {{price}} ¢.",
+    "RATE_LIMITED": "Too many requests — slow down for a moment.",
     "REGISTRATION_CLOSED": "Registration is closed right now.",
     "REPORT_NOT_FOUND": "Report not found.",
     "REPORT_SCHEMA_UNSUPPORTED": "This report cannot be read.",
+    "RESCUE_NOT_DUE": "The rescue has not arrived yet.",
     "REVISION_MISMATCH": "The configuration changed — reload and retry.",
     "SCAVENGE_COOL_DOWN": "Nothing new here yet — try again in {{seconds}} s.",
     "SHIP_MISMATCH": "That ship does not match this mission.",
     "SHIP_NOT_ADRIFT": "The ship is not adrift.",
     "SHIP_NOT_AT_LOCATION": "Your ship is not at this location.",
+    "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location.",
     "SHIP_NOT_IN_PORT": "The ship must be in port.",
     "SHIP_NOT_VIABLE": "The ship is not viable — fix the build first.",
     "SHIP_ON_MISSION": "The ship is on a mission.",
     "SHIP_REPAIRING": "The ship is being repaired.",
+    "SPEED": "Too slow for this contract.",
+    "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
+    "UNAUTHORIZED": "Your session ended — sign in again.",
+    "UNKNOWN_CORE": "That core cannot be crafted.",
+    "UNKNOWN_FACTION": "That faction is not playable.",
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
-    "RATE_LIMITED": "Too many requests — slow down for a moment.",
-    "UNAUTHORIZED": "Your session ended — sign in again.",
-    "LISTING_SOLD": "That used part was just sold.",
-    "MISSION_NOT_ABANDONABLE": "This mission has already left port, so it can no longer be cancelled.",
-    "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
-    "NO_ROUTE": "There is no route out of this place, so there is nothing to search around.",
-    "NOT_MINABLE": "There is nothing to mine here.",
-    "NO_MINING_RIG": "A mining rig needs to be installed first.",
-    "ART_UNKNOWN_SLOT": "That image slot does not exist.",
-    "ART_UNSUPPORTED_TYPE": "Upload a PNG, JPEG, WebP or SVG image.",
-    "ART_BAD_SIZE": "The image is empty or larger than 1.5 MB.",
-    "ART_NOT_AN_IMAGE": "That file is not a valid (or not a safe) image."
+    "WEAPONS": "No weapons installed.",
+    "unexpected": "Something went wrong"
   },
   "language": {
     "label": "Language"
   },
   "rescue": {
-    "title": "Ship adrift",
-    "body": "Your ship ran out of fuel and is drifting. A tow brings it back to port — it costs credits and may leave your balance negative.",
-    "action": "Call a tow",
-    "done": "Towed back to port for {{cost}} ¢. Fuel on board: {{fuel}}."
+    "title": "Floating in space",
+    "body": "Your ship ran out of fuel and drifts where it stopped. Nothing can be done with it until it is towed to a base. Pick how: wait for the rescue to arrive (cheaper) or call it now. Either may leave your balance negative.",
+    "nearestBase": "Nearest base: {{base}}, {{distance}} away.",
+    "waiting": "Rescue on its way — arrives in",
+    "wait": "Wait for the rescue — {{cost}} ¢ (about {{minutes}} min)",
+    "now": "Rescue now — {{cost}} ¢",
+    "confirmWait": "Wait for the rescue? It arrives in about {{minutes}} minutes and tows the ship to {{base}}. You pay {{cost}} ¢ when it arrives.",
+    "confirmNow": "Call the rescue now? The ship is towed to {{base}} at once and you pay {{cost}} ¢.",
+    "waitAction": "Wait for the rescue",
+    "nowAction": "Rescue now",
+    "waitStarted": "The rescue is on its way. You pay when it arrives.",
+    "done": "Towed to port for {{cost}} ¢. Fuel on board: {{fuel}}."
   },
   "parts": {
     "info": "Details",
@@ -1344,7 +1503,7 @@
       },
       "bli": {
         "label": "Armor",
-        "hint": "Reduces the damage taken from hits."
+        "hint": "Cuts every hit that gets past the shield by a flat amount, then soaks the rest from its pool, before the hull."
       },
       "esc": {
         "label": "Shield",
@@ -1401,6 +1560,22 @@
       "partHp": {
         "label": "Hit points",
         "hint": "Damage this part can take before it breaks."
+      },
+      "energyGen": {
+        "label": "Power generated",
+        "hint": "Power this part produces while flying. A generator does not also consume."
+      },
+      "energyUse": {
+        "label": "Power used (flight)",
+        "hint": "Power this part draws all the time. Generators elsewhere on the ship must cover it, or the engines get only the share of power that exists."
+      },
+      "energyCombatUse": {
+        "label": "Power used (combat)",
+        "hint": "Power drawn per combat round, taken from the batteries."
+      },
+      "shieldRegen": {
+        "label": "Shield recovery",
+        "hint": "Shield points recovered each combat round. Each costs combat energy."
       }
     },
     "summaryNone": "Structural part",
@@ -1410,14 +1585,18 @@
     "compare": {
       "title": "If you install this now",
       "titleSwap": "If you swap this in for {{name}}",
+      "noRoom": "This part has no free spot on the ship where it connects, so it is not counted below.",
       "loading": "Checking what this would do to the ship…",
       "error": "Couldn't check what this would do to the ship.",
       "stat": "Stat",
       "value": "This part",
-      "ifInstalled": "Ship, if installed",
+      "shipNow": "Ship now",
+      "ifInstalled": "With this part",
       "scenarioLabel": "Compare as",
       "addOption": "Add it",
-      "replaceOption": "Replace {{name}}"
+      "replaceOption": "Replace {{name}}",
+      "partNow": "This part today",
+      "partUpgraded": "Upgraded"
     }
   },
   "market": {
@@ -1464,6 +1643,45 @@
       "repairing": "Repairs under way"
     },
     "docked": "Docked at {{place}}",
-    "repairingAt": "in the workshop at {{place}}"
+    "repairingAt": "in the workshop at {{place}}",
+    "floating": "Floating in space"
+  },
+  "routeMap": {
+    "label": "Route from {{from}} to {{to}}",
+    "title": "Route"
+  },
+  "engineTuning": {
+    "title": "Engine tuning",
+    "intro": "Run the engines at their listed power, or push them for speed. Pushing risks an engine failure on each leg. The battery management is set here too.",
+    "locked": "The engines can only be tuned while the ship is in port.",
+    "presets": "Quick settings",
+    "preset": {
+      "normal": "Normal",
+      "sprint": "Sprint"
+    },
+    "group": {
+      "chem": "Chemical engines",
+      "ion": "Ion engines"
+    },
+    "level": "level {{value}}",
+    "hint": {
+      "chem": "Always at least 100%. Above 1: faster, burns much more fuel, wears the chemical engines and can overheat.",
+      "ion": "Burns no fuel but draws power, and the draw climbs faster than the thrust. Above 1: more thrust, wears the ion engines AND the batteries, and can overheat."
+    },
+    "speed": "Speed {{value}} (listed: {{base}})",
+    "fuelBurn": "Fuel burn {{value}} (listed: {{base}})",
+    "power": "Power: makes {{supply}}, uses {{demand}}, spare {{spare}} (a shortfall starves other systems; engines keep running).",
+    "clean": "{{percent}}% chance no engine fails on the whole trip.",
+    "tripTime": "This trip takes {{value}} (at the listed levels: {{base}}).",
+    "tripFuel": "Fuel: needs {{needed}}, you carry {{have}} (at the listed levels: {{base}}).",
+    "tripNoFit": "At these levels the trip needs more fuel than the ship carries. Throttle the chemical engines down, or push the ion engines if the power allows.",
+    "thrustTitle": "Where the thrust comes from",
+    "thrustBar": "Chemical {{chem}}% · Ion {{ion}}% of the thrust",
+    "thrustLine": "{{group}}: {{value}} of the speed ({{percent}}% of the thrust; listed: {{base}})",
+    "wear": "Wear per leg from the push alone: chemical engines −{{chem}}, ion engines −{{ion}}, batteries −{{battery}}.",
+    "battery": {
+      "label": "Battery management",
+      "hint": "Where the combat energy comes from: the batteries only, everything the ship makes, or an override that drives the systems harder."
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import { APPENDIX_E_RULES as GAME_CONFIG_DEFAULTS } from '../../fixtures/appendix-e-rules.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   contractedMiningPayout,

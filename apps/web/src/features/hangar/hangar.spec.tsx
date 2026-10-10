@@ -148,16 +148,20 @@ describe('hangar (S10.4)', () => {
     expect(toggle).toHaveClass('stage-toggle-overlay');
 
     fireEvent.click(toggle);
-    expect(container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    expect(
+      container.querySelector('.ship-stage-overlay-host [data-testid="transit-scene"]'),
+    ).toBeNull();
     // Docked and ready has nothing left to say that the top bar's own ship status doesn't
     // already say on every screen (owner request, round 10) — no placeholder caption at all.
-    expect(screen.queryByTestId('stage-caption')).toBeNull();
+    expect(container.querySelector('.ship-stage-overlay-host [data-testid="stage-caption"]')).toBeNull();
     expect(window.localStorage.getItem('rs.hangar.stageCollapsed')).toBe('1');
 
     unmount();
     const second = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
-    expect(second.container.querySelector('[data-testid="transit-scene"]')).toBeNull();
+    expect(
+      second.container.querySelector('.ship-stage-overlay-host [data-testid="transit-scene"]'),
+    ).toBeNull();
     expect(screen.getByRole('button', { name: 'Show animation' })).toBeInTheDocument();
   });
 
@@ -230,7 +234,7 @@ describe('hangar (S10.4)', () => {
     );
     for (const label of [
       'Firepower',
-      'Defense',
+      'Armor · Shield',
       'Mobility',
       'Range',
       'Condition',
@@ -278,7 +282,7 @@ describe('hangar (S10.4)', () => {
       .getByText('Combat power')
       .closest('.statrow');
     expect(combatPowerRow).toHaveTextContent('Draws 0/round');
-    expect(combatPowerRow).toHaveTextContent('Battery covers it (10/round)');
+    expect(combatPowerRow).toHaveTextContent('Covered: ship surplus + battery (18/round)');
   });
 
   it('shows the rarity in the hover popup for a placed block, not printed on the block itself (owner request, round 8 follow-up)', async () => {
@@ -324,7 +328,7 @@ describe('hangar (S10.4)', () => {
     expect(badge).toHaveClass('rarity-badge', 'rarity-common');
   });
 
-  it('never rounds mobility up past 1 — the display must agree with "Mobility is below 1"', async () => {
+  it('mobility reads 0 without an engine, and 10x the pot/mass figure with one (display scale)', async () => {
     server.use(
       onboarded(),
       http.get('/v1/ships', () =>
@@ -338,7 +342,7 @@ describe('hangar (S10.4)', () => {
             currentLocationId: 'ceres',
             stance: 'NEUTRAL',
             layout: [],
-            sheet: { ...testSheet, mob: 0.958 },
+            sheet: { ...testSheet, pot: 0, mass: 20, mob: 1 },
             shipClass: 'MULTIROLE',
             yard: { cells: classicSquareCells() },
             activity: { kind: 'idle', until: null, missionId: null },
@@ -349,12 +353,12 @@ describe('hangar (S10.4)', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    // One decimal would round 0.958 up to a displayed "1", which then contradicts a
-    // MOB_TOO_LOW ("Mobility is below 1.") problem shown right next to it. Mobility is a
-    // headline tile (always visible), so scope to it — the same number also appears in the
-    // collapsed "Show all stats" detail below.
+    // The game floors mobility at 1 internally; the player reads the unrounded figure, so a ship
+    // without an engine is 0, not a misleading 1. It is a headline tile (always visible).
     const headline = await screen.findByTestId('sheet-headline');
-    expect(within(headline).getByText('0.96')).toBeInTheDocument();
+    const tile = within(headline).getByText('Mobility').closest('.sheet-headline-tile');
+    expect(tile).toHaveTextContent('0');
+    expect(tile).not.toHaveTextContent('1');
   });
 
   it('opens a part popup only from its (i) button — clicking the row itself never opens one', async () => {
@@ -410,7 +414,7 @@ describe('hangar (S10.4)', () => {
     // delta cell specifically by its own class, not by (ambiguous) text.
     const mobRow = within(dialog).getByRole('row', { name: /^Mobility/ });
     const mobDelta = mobRow.querySelector('.delta');
-    expect(mobDelta).toHaveTextContent('2');
+    expect(mobDelta).toHaveTextContent('16.7');
     expect(mobDelta).toHaveClass('delta-same');
   });
 
@@ -646,8 +650,18 @@ describe('hangar (S10.4)', () => {
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     const trayButton = await screen.findByRole('button', { name: /^cargo/i });
 
+    // the engine faces E: the cell right beside it, to the east, plugs its exhaust
+    const engine = await waitFor(() => {
+      const element = block(container, 'part-engine');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const behindX = Number(engine.getAttribute('data-gx')) + 1;
+    const behindY = Number(engine.getAttribute('data-gy'));
+    expect(container.querySelector('rect.block.dir-blocked')).toBeNull();
+
     fireEvent.click(trayButton);
-    fireEvent.click(cell(container, 8, 0)); // east of the engine, which faces E
+    fireEvent.click(cell(container, behindX, behindY));
     expect(block(container, 'part-cargo-b')).not.toBeNull();
     await waitFor(() =>
       expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull(),
@@ -704,6 +718,30 @@ describe('hangar (S10.4)', () => {
       ]),
     );
     expect(await screen.findByText('Layout saved.')).toBeInTheDocument();
+  });
+
+  it('empties the ship only after a confirmation: every part goes back to the inventory', async () => {
+    server.use(onboarded());
+    const assembled: Array<{ layout: Placement[] }> = [];
+    server.use(
+      http.post('/v1/ships/:id/assemble', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        assembled.push(body);
+        return HttpResponse.json(shipEcho(body.layout), { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Empty the ship' }));
+    // nothing is sent until the pilot confirms
+    expect(assembled).toHaveLength(0);
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(assembled).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Empty the ship' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Empty the ship' }));
+    await waitFor(() => expect(assembled).toHaveLength(1));
+    expect(assembled[0]?.layout).toEqual([]);
   });
 
   it('shows translated problems when the server rejects the layout', async () => {
@@ -774,7 +812,7 @@ describe('hangar (S10.4)', () => {
     expect(screen.queryByTestId('rotate-hint')).toBeNull();
   });
 
-  it('a rotation that would overlap a neighbour is refused with a reason instead of moving anything', async () => {
+  it('a long part with no room to swing sideways is turned twice instead, and says so', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
     // cargo-a is 2x1 at (2,2); battery sits at (2,1) and the tank at (3,0): turning cargo-a into
@@ -786,10 +824,13 @@ describe('hangar (S10.4)', () => {
 
     const cargoA = block(container, 'part-cargo-a') as SVGRectElement;
     const before = [cargoA.getAttribute('data-gx'), cargoA.getAttribute('data-gy')];
+    const widthBefore = Number(cargoA.getAttribute('width'));
     fireEvent.pointerDown(cargoA);
     fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
-    expect(await screen.findByTestId('rotate-hint')).toBeInTheDocument();
+    expect(await screen.findByTestId('rotate-hint')).toHaveTextContent('turned twice');
+    // A half turn: same footprint, same cell — it did not move and did not fail.
     const after = block(container, 'part-cargo-a') as SVGRectElement;
     expect([after.getAttribute('data-gx'), after.getAttribute('data-gy')]).toEqual(before);
+    expect(Number(after.getAttribute('width'))).toBeCloseTo(widthBefore, 3);
   });
 });

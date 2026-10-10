@@ -143,7 +143,7 @@ describe('checkViability', () => {
     expect(result.problems.map((p) => p.code)).toContain('NO_FUEL_CAPACITY');
   });
 
-  it('fails with ENERGY_CRUISE_NEGATIVE when continuous draw exceeds generation', () => {
+  it('warns (does not block) ENERGY_CRUISE_NEGATIVE when continuous draw exceeds generation', () => {
     const parts = buildInstalled([
       'bridge',
       'sensor_radar',
@@ -154,18 +154,19 @@ describe('checkViability', () => {
     ]);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.viable).toBe(false);
-    expect(result.problems.map((p) => p.code)).toContain('ENERGY_CRUISE_NEGATIVE');
+    expect(result.warnings.map((p) => p.code)).toContain('ENERGY_CRUISE_NEGATIVE');
+    expect(result.problems.map((p) => p.code)).not.toContain('ENERGY_CRUISE_NEGATIVE');
   });
 
-  it('fails with BATTERY_OUTPUT_INSUFFICIENT when combat drain exceeds battery output', () => {
+  it('warns BATTERY_OUTPUT_INSUFFICIENT when combat drain exceeds battery output', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'weapon_laser']);
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.problems.map((p) => p.code)).toEqual([
+    expect(result.warnings.map((p) => p.code)).toEqual([
       'BATTERY_OUTPUT_INSUFFICIENT',
       'BATTERY_CHARGE_INSUFFICIENT',
     ]);
+    expect(result.problems.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
   });
 
   it('fails with STRUCTURE_EXCEEDED when parts exceed the structure budget', () => {
@@ -185,7 +186,7 @@ describe('checkViability', () => {
     expect(result.problems.map((p) => p.code)).toContain('STRUCTURE_EXCEEDED');
   });
 
-  it('fails with BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
+  it('warns BATTERY_CHARGE_INSUFFICIENT when combat drain exceeds battery charge', () => {
     const base = buildInstalled(['bridge', 'battery_small', 'weapon_laser']);
     const battery = { ...CATALOG_BY_TYPE.get('battery_small')!, batCharge: 1, batOutput: 1000 };
     const parts = base.map((part) =>
@@ -193,11 +194,11 @@ describe('checkViability', () => {
     );
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
-    expect(result.problems.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
-    expect(result.problems.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).toContain('BATTERY_CHARGE_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
   });
 
-  it('fails with NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
+  it('warns NO_LIFE_SUPPORT when a pressurized part has no life support part', () => {
     const base = buildInstalled(['bridge', 'cargo']);
     const pressurized = base.map((part) =>
       part.catalog.partType === 'cargo'
@@ -206,7 +207,7 @@ describe('checkViability', () => {
     );
     const sheet = deriveSheet(pressurized, rules);
     const result = checkViability(sheet, pressurized, rules);
-    expect(result.problems.map((p) => p.code)).toContain('NO_LIFE_SUPPORT');
+    expect(result.warnings.map((p) => p.code)).toContain('NO_LIFE_SUPPORT');
   });
 
   it('does not report NO_LIFE_SUPPORT when a life support part is installed', () => {
@@ -228,5 +229,59 @@ describe('checkViability', () => {
     const sheet = deriveSheet(parts, rules);
     const result = checkViability(sheet, parts, rules);
     expect(result.problems.map((p) => p.code)).not.toContain('NO_FUEL_CAPACITY');
+  });
+
+  it('the ship\'s own spare power pays for combat: no battery needed when generation is enough', () => {
+    const parts = buildInstalled([
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'reactor_solar',
+      'reactor_solar',
+      'weapon_laser',
+    ]);
+    const generous = parts.map((part) =>
+      part.catalog.partType === 'reactor_solar'
+        ? { ...part, catalog: { ...part.catalog, energyCont: 40 } }
+        : part,
+    );
+    const sheet = deriveSheet(generous, rules);
+    expect(sheet.energyCont).toBeGreaterThan(Math.abs(sheet.energyCombat));
+    const result = checkViability(sheet, generous, rules);
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_CHARGE_INSUFFICIENT');
+  });
+
+  it('a shield that may run short of energy is only a low note, not a weapons warning', () => {
+    const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'shield_basic']);
+    const sheet = deriveSheet(parts, rules);
+    const result = checkViability(sheet, parts, rules);
+    expect(result.warnings.map((p) => p.code)).toContain('SHIELD_ENERGY_LOW');
+    expect(result.warnings.map((p) => p.code)).not.toContain('BATTERY_OUTPUT_INSUFFICIENT');
+    expect(result.viable).toBe(true);
+  });
+
+  it('life support that cannot be powered to its minimum keeps the ship in port', () => {
+    const parts = buildInstalled(['bridge', 'cargo', 'sensor_radar']).map((part) =>
+      part.catalog.partType === 'cargo'
+        ? { ...part, catalog: { ...part.catalog, pressurized: true, energyCont: -2 } }
+        : part,
+    );
+    const sheet = deriveSheet(parts, rules);
+    // nothing generates power: the bridge takes all there is (none), life support gets nothing
+    expect(checkViability(sheet, parts, rules).problems.map((p) => p.code)).toContain(
+      'LIFE_SUPPORT_UNPOWERED',
+    );
+    const powered = [
+      ...parts,
+      ...buildInstalled(['reactor_solar']).map((part) => ({
+        ...part,
+        instance: { ...part.instance, id: 'gen' },
+        catalog: { ...part.catalog, energyCont: 10 },
+      })),
+    ];
+    expect(
+      checkViability(deriveSheet(powered, rules), powered, rules).problems.map((p) => p.code),
+    ).not.toContain('LIFE_SUPPORT_UNPOWERED');
   });
 });

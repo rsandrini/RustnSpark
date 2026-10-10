@@ -1,3 +1,4 @@
+import { armorReduction } from '../damage/layers.js';
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { roundHalfEven } from '../numeric/round-half-even.js';
@@ -24,31 +25,41 @@ export interface CombatOptions {
 interface EnergyState {
   budget: number;
   shieldPaid: boolean;
+  /** What the batteries hold now (undefined = an inexhaustible battery, the legacy behaviour). */
+  stored: number | undefined;
+  /** The budget this round started with, to see how much of it was spent. */
+  roundStart: number;
 }
 
 function energyEnabled(sheet: CombatSheet): boolean {
   return sheet.energyMode !== undefined;
 }
 
-function roundEnergyBudget(sheet: CombatSheet): number {
+/** The ship's own spare power available to combat in its mode (none in batteries-only). */
+function sparePower(sheet: CombatSheet): number {
   const mode = sheet.energyMode ?? 'OVERRIDE';
-  const battery = sheet.batOutput ?? 0;
-  const surplus = Math.max(0, sheet.energyCont ?? 0);
-  switch (mode) {
-    case 'BATTERY':
-      return battery;
-    case 'FULL':
-    case 'OVERRIDE':
-    default:
-      // OVERRIDE currently behaves like FULL because the component-shutdown
-      // mechanic it implies does not exist yet. Once it does, this branch can
-      // draw from continuous systems too.
-      return battery + surplus;
-  }
+  // OVERRIDE currently behaves like FULL because the component-shutdown mechanic it implies does
+  // not exist yet. Once it does, this branch can draw from continuous systems too.
+  return mode === 'BATTERY' ? 0 : Math.max(0, sheet.energyCont ?? 0);
+}
+
+function roundEnergyBudget(sheet: CombatSheet, stored: number | undefined): number {
+  const output = sheet.batOutput ?? 0;
+  const battery = stored === undefined ? output : Math.min(output, stored);
+  return battery + sparePower(sheet);
 }
 
 function freshEnergyState(sheet: CombatSheet): EnergyState {
-  return { budget: roundEnergyBudget(sheet), shieldPaid: false };
+  const budget = roundEnergyBudget(sheet, sheet.battery);
+  return { budget, shieldPaid: false, stored: sheet.battery, roundStart: budget };
+}
+
+/** What a round took out of the batteries: whatever the ship's spare power could not pay. */
+function drainBattery(energy: EnergyState | null, sheet: CombatSheet): void {
+  if (energy === null || energy.stored === undefined) return;
+  const spent = energy.roundStart - energy.budget;
+  const fromBattery = Math.max(0, spent - sparePower(sheet));
+  energy.stored = Math.max(0, energy.stored - fromBattery);
 }
 
 /**
@@ -77,8 +88,14 @@ export function resolveCombat(
   let hpB = b.hp;
   let escA = a.esc;
   let escB = b.esc;
-  const maxEscA = a.esc;
-  const maxEscB = b.esc;
+  const maxEscA = a.escMax ?? a.esc;
+  const maxEscB = b.escMax ?? b.esc;
+  // Layered model (see CombatSheet.armor): armor is a pool, regeneration is the shield's own and
+  // costs combat energy. A side without `armor` plays by the legacy rules.
+  const layeredA = a.armor !== undefined;
+  const layeredB = b.armor !== undefined;
+  let armA = a.armor ?? 0;
+  let armB = b.armor ?? 0;
   const minA = a.hp * rules.retreat_hp_ratio;
   const minB = b.hp * rules.retreat_hp_ratio;
   const dmob = a.mob - b.mob;
@@ -95,18 +112,36 @@ export function resolveCombat(
       break;
     }
 
-    escA = Math.min(maxEscA, escA + rules.shield_regen);
-    escB = Math.min(maxEscB, escB + rules.shield_regen);
-
     // Recompute per-round energy budgets for sides that use the mechanic.
     if (energyA !== null) {
-      energyA.budget = roundEnergyBudget(a);
+      energyA.budget = roundEnergyBudget(a, energyA.stored);
+      energyA.roundStart = energyA.budget;
       energyA.shieldPaid = false;
     }
     if (energyB !== null) {
-      energyB.budget = roundEnergyBudget(b);
+      energyB.budget = roundEnergyBudget(b, energyB.stored);
+      energyB.roundStart = energyB.budget;
       energyB.shieldPaid = false;
     }
+
+    // Shield recovery. Legacy shields recover a flat amount for free; a layered shield recovers its
+    // own regen per round and turns combat energy into shield points to do it (no energy, no
+    // recovery).
+    // A shield starved of power may not recover at all this round.
+    const aShieldUp =
+      a.shieldPower === undefined || a.shieldPower >= 1 || rng.float() < a.shieldPower;
+    const bShieldUp =
+      b.shieldPower === undefined || b.shieldPower >= 1 || rng.float() < b.shieldPower;
+    escA = layeredA
+      ? aShieldUp
+        ? regenerate(escA, maxEscA, a.escRegen ?? 0, a.escRegenEnergy ?? 0, energyA)
+        : escA
+      : Math.min(maxEscA, escA + rules.shield_regen);
+    escB = layeredB
+      ? bShieldUp
+        ? regenerate(escB, maxEscB, b.escRegen ?? 0, b.escRegenEnergy ?? 0, energyB)
+        : escB
+      : Math.min(maxEscB, escB + rules.shield_regen);
 
     // Both draws always run (kite p may be 0; tapes still consume them).
     const aKite = Math.max(0, dmob) * rules.kite_factor > rng.float();
@@ -128,6 +163,11 @@ export function resolveCombat(
       const atk = isA ? a : b;
       const dfd = isA ? b : a;
       const atkEnergy = isA ? energyA : energyB;
+
+      // A weapon starved of power may fail to fire: the shot simply does not happen.
+      if (atk.weaponPower !== undefined && atk.weaponPower < 1 && rng.float() >= atk.weaponPower) {
+        continue;
+      }
 
       // Energy-gated weapons: no budget means the attack simply does not happen.
       if (atkEnergy !== null) {
@@ -153,8 +193,36 @@ export function resolveCombat(
       const hit = roll + atk.pdf + bonus >= dc;
       let damage = 0;
       let armorAbsorbed = 0;
+      let armorReduced = 0;
       let shieldAbsorbed = 0;
-      if (hit) {
+      const layered = isA ? layeredB : layeredA;
+      if (hit && layered) {
+        // Layered: the whole hit goes to the shield first (as much as it can take), what is left
+        // to the armor pool, and only the rest to the hull. Same single die roll as the legacy
+        // model, so the random stream is unchanged.
+        damage = Math.max(1, atk.pdf + rng.int(1, rules.damage_die));
+        // The armor first CUTS the hit by a flat amount (it keeps its pool), then its pool soaks
+        // the rest; both count as what the armor did (`armorAbsorbed`), `armorReduced` is the cut.
+        if (isA) {
+          shieldAbsorbed = Math.min(escB, damage);
+          escB -= shieldAbsorbed;
+          armorReduced =
+            armorReduction(armB, damage - shieldAbsorbed, rules) * (1 - (atk.pierceShare ?? 0));
+          const soaked = Math.min(armB, damage - shieldAbsorbed - armorReduced);
+          armB -= soaked;
+          armorAbsorbed = armorReduced + soaked;
+          hpB -= damage - shieldAbsorbed - armorAbsorbed;
+        } else {
+          shieldAbsorbed = Math.min(escA, damage);
+          escA -= shieldAbsorbed;
+          armorReduced =
+            armorReduction(armA, damage - shieldAbsorbed, rules) * (1 - (atk.pierceShare ?? 0));
+          const soaked = Math.min(armA, damage - shieldAbsorbed - armorReduced);
+          armA -= soaked;
+          armorAbsorbed = armorReduced + soaked;
+          hpA -= damage - shieldAbsorbed - armorAbsorbed;
+        }
+      } else if (hit) {
         const base = atk.pdf + rng.int(1, rules.damage_die);
         const fura = atk.pdf >= rules.pierce_min_pdf ? base * rules.pierce_ratio : 0;
         const bli = Math.min(dfd.bli, rules.armor_cap);
@@ -168,8 +236,7 @@ export function resolveCombat(
         if (isA) {
           const canAbsorb =
             escB > 0 &&
-            (dfdEnergy === null ||
-              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+            (dfdEnergy === null || payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
           if (canAbsorb) {
             shieldAbsorbed = Math.min(escB, damage);
             escB -= shieldAbsorbed;
@@ -178,8 +245,7 @@ export function resolveCombat(
         } else {
           const canAbsorb =
             escA > 0 &&
-            (dfdEnergy === null ||
-              payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
+            (dfdEnergy === null || payShieldEnergy(dfdEnergy, dfd.shieldEnergyDraw ?? 0, damage));
           if (canAbsorb) {
             shieldAbsorbed = Math.min(escA, damage);
             escA -= shieldAbsorbed;
@@ -198,10 +264,16 @@ export function resolveCombat(
         hit,
         damage,
         armorAbsorbed,
+        ...(layered ? { armorReduced } : {}),
         shieldAbsorbed,
         hp: isA ? hpB : hpA,
+        ...(layered ? { escAfter: isA ? escB : escA, armorAfter: isA ? armB : armA } : {}),
       });
     }
+
+    // End of the round: what the batteries gave comes off their charge.
+    drainBattery(energyA, a);
+    drainBattery(energyB, b);
   }
 
   let outcome: CombatOutcome;
@@ -216,7 +288,16 @@ export function resolveCombat(
   return {
     outcome,
     rounds: events,
-    final: { hpA, hpB, escA, escB },
+    final: {
+      hpA,
+      hpB,
+      escA,
+      escB,
+      ...(layeredA ? { armA } : {}),
+      ...(layeredB ? { armB } : {}),
+      ...(energyA?.stored !== undefined ? { batA: energyA.stored } : {}),
+      ...(energyB?.stored !== undefined ? { batB: energyB.stored } : {}),
+    },
   };
 }
 
@@ -226,11 +307,7 @@ export function resolveCombat(
  * Returns true when the shield is allowed to absorb (either paid or already
  * paid), false when energy is insufficient.
  */
-function payShieldEnergy(
-  energy: EnergyState,
-  draw: number,
-  incomingDamage: number,
-): boolean {
+function payShieldEnergy(energy: EnergyState, draw: number, incomingDamage: number): boolean {
   if (incomingDamage <= 0) {
     return true;
   }
@@ -247,4 +324,25 @@ function payShieldEnergy(
   energy.budget -= draw;
   energy.shieldPaid = true;
   return true;
+}
+
+/**
+ * One round of layered shield recovery: up to `regen` points, never above `max`, and never more
+ * than the combat energy left can pay for (`energyPerPoint` each). With no energy state in play
+ * the recovery is free.
+ */
+function regenerate(
+  current: number,
+  max: number,
+  regen: number,
+  energyPerPoint: number,
+  energy: EnergyState | null,
+): number {
+  let points = Math.max(0, Math.min(regen, max - current));
+  if (points <= 0) return current;
+  if (energy !== null && energyPerPoint > 0) {
+    points = Math.min(points, Math.floor(energy.budget / energyPerPoint));
+    energy.budget -= points * energyPerPoint;
+  }
+  return current + points;
 }

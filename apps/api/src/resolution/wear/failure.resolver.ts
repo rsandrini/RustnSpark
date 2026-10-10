@@ -11,7 +11,8 @@ export type FailureConsequence =
   | 'fuel_leak'
   | 'next_hit_bypasses_shield'
   | 'weapon_skips_half_attacks'
-  | 'guaranteed_ambush';
+  | 'guaranteed_ambush'
+  | 'engine_overheat';
 
 /** GDD §9 failure table — first match wins; non-critical classes return null. */
 export const FAILURE_CONSEQUENCE: Readonly<Record<FailureCategory, FailureConsequence>> = {

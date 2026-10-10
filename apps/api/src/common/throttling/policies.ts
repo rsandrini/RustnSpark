@@ -5,7 +5,8 @@ import type { ThrottleRoutePolicy } from '../decorators/throttle-route.decorator
 //
 //   auth     login / register — strict, keyed by IP (+ email for login); set per route.
 //   intent   POST/PUT/PATCH/DELETE — a player action that changes state; moderate.
-//   read     GET — the client polls (transit, board, reports); generous.
+//   read     GET — the client polls (transit, board, reports) and the Upgrade tab asks one quote
+//            per part; generous (raised after a pilot hit the limit upgrading a ship).
 //   preview  side-effect-free POSTs the UI fires while the player edits (ship stats, repair
 //            quote); generous, since they are read-shaped.
 //
@@ -14,17 +15,17 @@ import type { ThrottleRoutePolicy } from '../decorators/throttle-route.decorator
 export const THROTTLE_TTL_MS = 60_000;
 
 export const READ_POLICY: ThrottleRoutePolicy = {
-  limit: 300,
+  limit: 2400,
   ttlMs: THROTTLE_TTL_MS,
   key: 'account',
 };
 export const INTENT_POLICY: ThrottleRoutePolicy = {
-  limit: 120,
+  limit: 600,
   ttlMs: THROTTLE_TTL_MS,
   key: 'account',
 };
 export const PREVIEW_POLICY: ThrottleRoutePolicy = {
-  limit: 240,
+  limit: 1200,
   ttlMs: THROTTLE_TTL_MS,
   key: 'account',
 };

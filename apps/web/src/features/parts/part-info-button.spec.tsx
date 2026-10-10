@@ -96,6 +96,7 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
           shipId: 'ship-1',
           installedPartIds: ['part-cargo-a'],
           currentSheet: baseSheet,
+          defaultScenario: 'replace',
           replaceCandidates: [
             {
               partInstanceId: 'part-cargo-a',

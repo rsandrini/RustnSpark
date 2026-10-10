@@ -153,7 +153,8 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
     const rescued = await request(httpServer(testApp.app))
       .post(`/v1/ships/${player.shipId}/rescue`)
       .set(auth(player.token))
-      .set('Idempotency-Key', randomUUID());
+      .set('Idempotency-Key', randomUUID())
+      .send({ mode: 'now' });
     expect(rescued.status).toBe(200);
     expect((rescued.body as { fuel: number }).fuel).toBe(Math.round(fuelCap * 0.5));
   });

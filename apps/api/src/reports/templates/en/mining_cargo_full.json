@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "The hold is full: {quantity} more units of ore stayed behind.",
+    "No room left in the cargo space — {quantity} more units of ore could not be brought back."
+  ]
+}

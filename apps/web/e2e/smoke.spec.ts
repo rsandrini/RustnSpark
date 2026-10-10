@@ -51,12 +51,14 @@ for (const faction of FACTIONS) {
     await expect(page.getByRole('heading', { name: 'Mission report' })).toBeVisible();
     // The debrief leads (verdict, mission, credits, fights), then the story.
     await expect(page.getByTestId('debrief')).toBeVisible();
+    // The overview opens first: the trip on the map and what it cost the ship.
+    await expect(page.getByTestId('report-overview')).toBeVisible();
+    await assertClean(page, 'report overview');
+    await page.getByRole('tab', { name: 'The story' }).click();
     await expect(page.locator('article.event').first()).toBeVisible();
     await assertClean(page, 'report story');
-    await page.getByRole('tab', { name: 'Summary' }).click();
-    await assertClean(page, 'report summary');
     await page.getByRole('tab', { name: 'Log' }).click();
-    await expect(page.locator('ol.log-lines li').first()).toBeVisible();
+    await expect(page.locator('table.log-table tbody tr').first()).toBeVisible();
     await assertClean(page, 'report log');
 
     // --- port ----------------------------------------------------------------------------------

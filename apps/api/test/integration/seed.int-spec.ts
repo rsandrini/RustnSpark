@@ -114,14 +114,17 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(130);
+    expect(counts.gameConfig).toBe(169);
     expect(counts.locations).toBe(12);
     expect(counts.routes).toBe(17);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
-    // 3 ores + one fixed-price scrap material per scavengeable part (every part but the bridge).
-    expect(counts.materials).toBe(3 + PARTS.filter((part) => part.partClass !== 'BRIDGE').length);
+    // 3 ores + the 3 upgrade pieces (fragment, prototype core, ancient core) + one fixed-price scrap
+    // material per scavengeable part (every part but the bridge).
+    expect(counts.materials).toBe(
+      3 + 3 + PARTS.filter((part) => part.partClass !== 'BRIDGE').length,
+    );
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
 

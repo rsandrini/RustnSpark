@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  EnginePreview,
   ActiveMission,
   FactionsResponse,
   BuyResponse,
@@ -43,6 +44,10 @@ import type {
 let wallet = 4820;
 let fuelState = 25;
 let shipStatus: ShipStatus = 'IN_PORT';
+// When a waiting rescue arrives (null = nobody called one).
+let rescueDueAt: string | null = null;
+// How long a waiting rescue takes in the mock (a test can make it nearly instant).
+let rescueWaitMs = 600_000;
 
 const accessToken = 'test-access-token';
 
@@ -260,6 +265,22 @@ const ship = (): ShipResponse => ({
   currentLocationId: 'ceres',
   stance: 'NEUTRAL',
   energyMode: 'FULL',
+  engineLevels: { chem: 1, ion: 1 },
+  float:
+    shipStatus === 'ADRIFT'
+      ? { routeId: 'ceres-gate', fromId: 'ceres', toId: 'gate', progress: 0.5 }
+      : null,
+  rescue:
+    shipStatus === 'ADRIFT'
+      ? {
+          waitCost: 400,
+          nowCost: 700,
+          waitSeconds: 600,
+          dueAt: rescueDueAt,
+          baseId: 'ceres',
+          baseDistance: 300,
+        }
+      : null,
   layout: starterLayout(),
   sheet: sheet(),
   shipClass: 'MULTIROLE',
@@ -386,6 +407,12 @@ export function addWreck(): void {
 /** Puts the fixture ship into a status (e.g. ADRIFT) for rescue scenarios. */
 export function setShipStatus(status: ShipStatus): void {
   shipStatus = status;
+  rescueDueAt = null;
+}
+
+/** How long the mock's waiting rescue takes (a test makes it short to watch it arrive). */
+export function setRescueWaitMs(milliseconds: number): void {
+  rescueWaitMs = milliseconds;
 }
 
 /**
@@ -410,6 +437,8 @@ export function resetEconomyState(): void {
   wallet = 4820;
   fuelState = 25;
   shipStatus = 'IN_PORT';
+  rescueDueAt = null;
+  rescueWaitMs = 600_000;
   inventoryState = starterInventory();
   materialsState = [
     {
@@ -520,6 +549,9 @@ export const handlers = [
       currentLocationId: 'ceres',
       stance: 'NEUTRAL',
       energyMode: 'FULL',
+      engineLevels: { chem: 1, ion: 1 },
+      float: null,
+      rescue: null,
       layout: [],
       sheet: sheet(),
       shipClass: 'MULTIROLE',
@@ -585,6 +617,16 @@ export const handlers = [
       ],
     }),
   ),
+  http.get('/v1/display', () => HttpResponse.json({
+      statScale: 10,
+      mobFactor: 1.6,
+      scavengeHandicap: 0.5,
+      scavengeFootFactor: 0.5,
+      shieldRegen: 2,
+      armorPoolFactor: 5,
+      armorReduction: 0.25,
+      coreFragments: { prototype_core: 5, ancient_core: 15 },
+    })),
   http.get('/v1/places/art', () => ok({ places: {} })),
 
   // Default for the admin connector rules editor's live preview (specs override it per test).
@@ -597,7 +639,7 @@ export const handlers = [
     return ok<PreviewResponse>({
       sheet: sheet(),
       shipClass: 'MULTIROLE',
-      viability: { viable: true, problems: [] },
+      viability: { viable: true, problems: [], warnings: [] },
       layout: body.layout ?? [],
       omittedPartInstanceIds: [],
       disconnectedPartIds: [],
@@ -612,6 +654,44 @@ export const handlers = [
   http.post('/v1/ships/:id/energy-mode', async ({ request }) => {
     const body = (await request.json()) as { energyMode: ShipResponse['energyMode'] };
     return ok<ShipResponse>({ ...ship(), energyMode: body.energyMode });
+  }),
+
+  http.post('/v1/ships/:id/engine-levels', async ({ request }) => {
+    const body = (await request.json()) as { chem: number; ion: number };
+    return ok<ShipResponse>({ ...ship(), engineLevels: body });
+  }),
+
+  http.post('/v1/ships/:id/engine-preview', async ({ request }) => {
+    const body = (await request.json()) as { chem?: number; ion?: number; missionId?: string };
+    const chem = body.chem ?? 1;
+    const pushed = chem > 1 || (body.ion ?? 1) > 1;
+    return ok<EnginePreview>({
+      levels: { chem, ion: body.ion ?? 1 },
+      ranges: { chem: [0.5, 1.5], ion: [0.5, 2.5] },
+      groups: ['chem', 'ion'],
+      thrust: { chem: 100 * chem, ion: 60 * (body.ion ?? 1) },
+      baselineThrust: { chem: 100, ion: 60 },
+      mobility: 2.5 * chem,
+      fuelUse: 8 * chem,
+      baseline: { mobility: 2.5, fuelUse: 8 },
+      power: { supply: 10, demand: 7, spare: 3 },
+      wearPerLeg: { chem: chem > 1 ? 2 : 0, ion: 0, battery: 0 },
+      cleanChance: pushed ? 0.8 : 1,
+      ...(body.missionId !== undefined
+        ? {
+            trip: {
+              missionId: body.missionId,
+              legCount: 2,
+              durationSeconds: Math.round(300 / chem),
+              fuelNeeded: 20 * chem,
+              fuelHave: 25,
+              fuelCap: 40,
+              fits: 20 * chem <= 25,
+              baseline: { durationSeconds: 300, fuelNeeded: 20 },
+            },
+          }
+        : {}),
+    });
   }),
 
   http.get('/v1/ship-formats', () =>
@@ -899,6 +979,14 @@ export const handlers = [
       nextPartType: tier.nextPartType,
       nextDisplayName: tier.nextName,
       cost: tier.cost,
+      materials: [
+        {
+          materialId: 'scrap',
+          displayName: { en: 'Scrap (any part)', 'pt-BR': 'Sucata (qualquer peça)' },
+          needed: 2,
+          have: 5,
+        },
+      ],
       nextRarity: tier.nextRarity,
       nextDescription: tier.nextDescription,
       nextCatalog: tier.nextCatalog,
@@ -1017,7 +1105,7 @@ export const handlers = [
       targets,
     });
   }),
-  http.post('/v1/ships/:id/rescue', ({ params, request }) => {
+  http.post('/v1/ships/:id/rescue', async ({ params, request }) => {
     const rejected = missingKey(request);
     if (rejected !== null) return rejected;
     if (shipStatus !== 'ADRIFT') {
@@ -1026,17 +1114,58 @@ export const handlers = [
         { status: 409 },
       );
     }
+    const { mode } = (await request.json()) as { mode: 'now' | 'wait' };
+    if (mode === 'wait') {
+      rescueDueAt = rescueDueAt ?? new Date(Date.now() + rescueWaitMs).toISOString();
+      return ok<RescueResponse>({
+        shipId: String(params.id),
+        status: 'ADRIFT',
+        mode,
+        cost: 0,
+        fuel: fuelState,
+        credits: wallet,
+        replacementParts: [],
+        baseId: 'ceres',
+        dueAt: rescueDueAt,
+      });
+    }
     // GDD §14: a tow may push the balance negative; the emergency ration is a quarter tank.
-    wallet -= 800;
+    wallet -= 700;
     fuelState = Math.max(fuelState, 10);
     shipStatus = 'IN_PORT';
+    rescueDueAt = null;
     return ok<RescueResponse>({
       shipId: String(params.id),
       status: 'IN_PORT',
-      cost: 800,
+      mode,
+      cost: 700,
       fuel: fuelState,
       credits: wallet,
-      restartParts: [],
+      replacementParts: [],
+      baseId: 'ceres',
+      dueAt: null,
+    });
+  }),
+  http.post('/v1/ships/:id/rescue/settle', ({ params }) => {
+    if (rescueDueAt === null || Date.parse(rescueDueAt) > Date.now()) {
+      return HttpResponse.json(
+        { statusCode: 409, message: { error: 'RESCUE_NOT_DUE' } },
+        { status: 409 },
+      );
+    }
+    wallet -= 400;
+    shipStatus = 'IN_PORT';
+    rescueDueAt = null;
+    return ok<RescueResponse>({
+      shipId: String(params.id),
+      status: 'IN_PORT',
+      mode: 'wait',
+      cost: 400,
+      fuel: fuelState,
+      credits: wallet,
+      replacementParts: [],
+      baseId: 'ceres',
+      dueAt: null,
     });
   }),
   http.get('/v1/travel/quote', ({ request }) => {
@@ -1078,12 +1207,14 @@ export const handlers = [
       dropChance: 0.25,
       zone: 1,
       scrapPlace: false,
-      durationSeconds: 300,
+      durationSeconds: 600,
+      footDurationSeconds: 300,
       cooldownSeconds: 300,
       retryAfterSeconds: retry,
       attempts: retry > 0 ? 1 : 0,
       qualityMin: 30,
       qualityMax: 70,
+      nothingChance: 0.3,
     });
   }),
   http.post('/v1/locations/:id/scavenge', () => {
@@ -1127,6 +1258,7 @@ const reportExtras = {
     distance: 820,
     fights: { won: 1, lost: 0, escaped: 0, drawn: 0, pvp: 0 },
     damage: { shield: 4, armor: 3, hull: 2 },
+    travelWear: { points: 12, parts: 2 },
     hasShield: true,
     partsDamage: [
       {
@@ -1326,7 +1458,7 @@ const boardOffer = (
 });
 
 const boardState: MissionOffer[] = [
-  boardOffer({ id: 'b-1' }),
+  boardOffer({ id: 'b-1' }, { cargo: { mode: 'open', need: 3, unitPay: 20 } }),
   boardOffer({
     id: 'b-2',
     type: 'TRANSPORT',
@@ -1351,8 +1483,9 @@ const boardState: MissionOffer[] = [
     },
     {
       requirements: [
-        { code: 'MINER', message: 'Needs a mining system', met: false },
-        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true },
+        { code: 'MINER', message: 'Needs a mining system', met: false, needed: 1, actual: 0, unit: 'mining' },
+        { code: 'CARGO_TYPE', message: 'Cargo hold does not fit this cargo', met: true, needed: 5, actual: 10, unit: 'cargo' },
+        { code: 'MIN_MOBILITY', message: 'Mobility is below the escort minimum.', met: false, needed: 1.5, actual: 1.1, unit: 'mobility' },
       ],
     },
   ),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { ScriptedRng } from '../../../src/common/rng/scripted.rng.js';
 import { createRng } from '../../../src/common/rng/rng.js';
-import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import { APPENDIX_E_RULES as GAME_CONFIG_DEFAULTS } from '../../fixtures/appendix-e-rules.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   miningChance,
@@ -127,5 +127,20 @@ describe('S5.6 — contracted mining settlement (GDD §12)', () => {
       status: 'partial_failure',
       settled: false,
     });
+  });
+
+  it('a paid quest never comes back empty: the minimum yield floors a bad run', () => {
+    const hopeless: MinerRig = { min: 0, condition: 100 }; // no rig power: every roll fails
+    expect(resolveMining(stop(), hopeless, rules, createRng('x'))).toEqual([]);
+    expect(resolveMining(stop({ minimumYield: 1 }), hopeless, rules, createRng('x'))).toEqual([
+      { materialId: 'common_ore', quantity: 1 },
+    ]);
+  });
+
+  it('the floor never lowers a good run', () => {
+    const strong: MinerRig = { min: 5, condition: 100 };
+    const plain = resolveMining(stop(), strong, rules, createRng('y'));
+    const floored = resolveMining(stop({ minimumYield: 1 }), strong, rules, createRng('y'));
+    expect(floored).toEqual(plain);
   });
 });

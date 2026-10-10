@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorCodeOf, problemsOf } from '../../api/errors';
 import type {
+  ActiveMission,
   InventoryItem,
   Placement,
   PreviewResponse,
@@ -14,15 +15,28 @@ import type {
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
-import { directionViolations, footprint, nextRot, placementIssue, type Rot } from './hangar.geometry';
+import {
+  directionViolations,
+  footprint,
+  nextRot,
+  placementIssue,
+  type Rot,
+} from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
-import { PartStatsCard, RarityBadge, lowestRarity, type PartCompareContext } from '../parts/part-detail';
+import {
+  PartStatsCard,
+  RarityBadge,
+  lowestRarity,
+  type PartCompareContext,
+} from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
+import { EngineTuning } from './engine-tuning';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
+import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
@@ -44,8 +58,23 @@ const FIX_CLASS: Record<string, string> = {
   ENERGY_CRUISE_NEGATIVE: 'REACTOR',
   BATTERY_OUTPUT_INSUFFICIENT: 'BATTERY',
   BATTERY_CHARGE_INSUFFICIENT: 'BATTERY',
+  SHIELD_ENERGY_LOW: 'BATTERY',
   NO_LIFE_SUPPORT: 'UTILITY',
+  LIFE_SUPPORT_UNPOWERED: 'REACTOR',
 };
+
+// Problems that do not keep the ship on the ground — it flies weaker (mirrors the API's
+// ships/viability.ts SOFT_CODES): shown as warnings, not as "problems".
+const SOFT_CODES: ReadonlySet<string> = new Set([
+  'ENERGY_CRUISE_NEGATIVE',
+  'BATTERY_OUTPUT_INSUFFICIENT',
+  'BATTERY_CHARGE_INSUFFICIENT',
+  'SHIELD_ENERGY_LOW',
+  'NO_LIFE_SUPPORT',
+  'EXHAUST_BLOCKED',
+  'FACING_BLOCKED',
+  'FACING_CONNECTOR',
+]);
 
 const PREVIEW_DEBOUNCE_MS = 400;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
@@ -63,6 +92,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     queryKey: ['ships'],
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
   });
+  // The mission waiting for departure (if any): the engine tuning then shows its time and fuel.
+  const activeQuery = useQuery({
+    queryKey: ['active'],
+    queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
+  });
+  const acceptedFlightId = activeQuery.data?.find(
+    (entry) => entry.status === 'ACCEPTED' && entry.type !== 'SCAVENGE',
+  )?.id;
   const inventoryQuery = useQuery({
     queryKey: ['inventory'],
     queryFn: () => client.get<InventoryItem[]>('/v1/inventory'),
@@ -74,10 +111,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     () => new Set((ship?.yard.cells ?? []).map(([x, y]) => `${x},${y}`)),
     [ship],
   );
-  const disconnectedPartIds = useMemo(
-    () => new Set(ship?.disconnectedPartIds ?? []),
-    [ship],
-  );
+  const disconnectedPartIds = useMemo(() => new Set(ship?.disconnectedPartIds ?? []), [ship]);
   const parts = useMemo(() => inventoryQuery.data ?? [], [inventoryQuery.data]);
 
   const [layout, setLayout] = useState<Placement[] | null>(null);
@@ -243,6 +277,27 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
 
+  // Empty the ship: every installed part goes back to the inventory (after a confirmation).
+  const [clearOpen, setClearOpen] = useState(false);
+  const clearShip = useMutation({
+    mutationFn: () =>
+      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/assemble`, { layout: [] }),
+    onSuccess: (updated) => {
+      setLayout(updated.layout);
+      setSaved(true);
+      setSaveError(null);
+      setSelectedId(null);
+      setPendingPartId(null);
+      setClearOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['ships'] });
+      void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    },
+    onError: (error) => {
+      setClearOpen(false);
+      setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) });
+    },
+  });
+
   const formatsQuery = useQuery({
     queryKey: ['shipFormats'],
     queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
@@ -322,7 +377,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       (placement) => placement.partInstanceId === partInstanceId,
     );
     const rot: Rot = existing?.rot ?? 0;
-    if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet) !== null) {
+    if (
+      placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet) !==
+      null
+    ) {
       return;
     }
     // A NEW engine/weapon is dropped facing a way that has nothing behind it when one exists;
@@ -330,7 +388,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     let startRot: Rot = rot;
     if (existing === undefined) {
       const clean = ([0, 90, 180, 270] as const).find((candidate) => {
-        if (placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, candidate, yardCellSet) !== null) {
+        if (
+          placementIssue(
+            effectiveLayout,
+            catalogById,
+            partInstanceId,
+            gx,
+            gy,
+            candidate,
+            yardCellSet,
+          ) !== null
+        ) {
           return false;
         }
         const trial = [...effectiveLayout, { partInstanceId, gx, gy, rot: candidate }];
@@ -372,15 +440,26 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     if (selectedId === null || modifyBlocked) return;
     const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
     if (existing === undefined || catalogById.get(selectedId) === undefined) return;
-    const turned = nextRot(existing.rot);
-    if (
-      placementIssue(effectiveLayout, catalogById, selectedId, existing.gx, existing.gy, turned, yardCellSet) !==
-      null
-    ) {
+    // A quarter turn first; if a long part has no room to swing sideways here, turn it twice
+    // instead (a half turn keeps its footprint, so it always fits where it already sits).
+    const quarter = nextRot(existing.rot);
+    const half = nextRot(quarter);
+    const fits = (rot: Rot) =>
+      placementIssue(
+        effectiveLayout,
+        catalogById,
+        selectedId,
+        existing.gx,
+        existing.gy,
+        rot,
+        yardCellSet,
+      ) === null;
+    const turned = fits(quarter) ? quarter : fits(half) ? half : null;
+    if (turned === null) {
       setRotateHint(t('hangar.rotate.blocked'));
       return;
     }
-    setRotateHint(null);
+    setRotateHint(turned === quarter ? null : t('hangar.rotate.twice'));
     setLayout(
       effectiveLayout.map((placement) =>
         placement.partInstanceId === selectedId ? { ...placement, rot: turned } : placement,
@@ -399,8 +478,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const sheet = preview?.sheet ?? ship?.sheet;
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
-
-  const allProblems = [...viabilityProblems, ...previewProblems];
+  const everyProblem = [
+    ...viabilityProblems,
+    ...(preview?.viability.warnings ?? []),
+    ...previewProblems,
+  ];
+  // One entry per code (the API and the local direction check can both report the same one).
+  const uniqueProblems = everyProblem.filter(
+    (problem, index) => everyProblem.findIndex((other) => other.code === problem.code) === index,
+  );
+  const allProblems = uniqueProblems.filter((problem) => !SOFT_CODES.has(problem.code));
+  const allWarnings = uniqueProblems.filter((problem) => SOFT_CODES.has(problem.code));
 
   // Cruising power's generate/consume split (owner example: "generate"/"consume", not a bare
   // signed number) needs each installed part's own catalog value — the sheet only carries the
@@ -452,11 +540,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           scene (or, collapsed, the placeholder bar) isn't already using. */}
       <div className="ship-stage-overlay-host">
         <ActiveShipStage size="compact" collapsed={stageCollapsed} />
-        <button
-          type="button"
-          className="btn tiny stage-toggle-overlay"
-          onClick={toggleStage}
-        >
+        <button type="button" className="btn tiny stage-toggle-overlay" onClick={toggleStage}>
           {stageCollapsed ? t('hangar.stage.show') : t('hangar.stage.hide')}
         </button>
       </div>
@@ -469,11 +553,36 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* The travel/job summary — "the resume of the travel on main page" (owner request):
           renders nothing when the ship is idle, so it never crowds the yard. The last-finished
           mission now lives in the persistent top bar instead of taking a line here. */}
-      <TransitPage embedded onGoToBoard={() => { void goToTab('board'); }} />
+      {/* Only on the Ship tab: the Board lists the mission itself (once), and the Port tabs have
+          no use for a summary above their lists. A ship floating in space still gets its rescue
+          options on every tab. */}
+      {pageTab === 'ship' && (
+        <TransitPage
+          embedded
+          onGoToBoard={() => {
+            void goToTab('board');
+          }}
+        />
+      )}
+      {/* (the Port tabs carry their own rescue banner) */}
+      {pageTab === 'board' && <RescueBanner />}
 
-      {pageTab === 'board' && <BoardPage embedded onGoToShip={() => { void goToTab('ship'); }} />}
+      {pageTab === 'board' && (
+        <BoardPage
+          embedded
+          onGoToShip={() => {
+            void goToTab('ship');
+          }}
+        />
+      )}
       {pageTab === 'port' && (
-        <PortPage embedded onGoToShip={() => { void goToTab('ship'); }} subNavContainer={subNavNode} />
+        <PortPage
+          embedded
+          onGoToShip={() => {
+            void goToTab('ship');
+          }}
+          subNavContainer={subNavNode}
+        />
       )}
 
       {pageTab === 'ship' && (
@@ -605,7 +714,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 </p>
               )}
               <div className="format-picker">
-                <button type="button" className="btn" onClick={() => setFormatPickerOpen((v) => !v)}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setFormatPickerOpen((v) => !v)}
+                >
                   {t('hangar.format.button')}
                 </button>
                 {formatPickerOpen && (
@@ -628,7 +741,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               <Popup
                 open={formatPreview !== null}
                 title={
-                  formatPreview === null ? '' : pickLocalized(formatPreview.displayName, i18n.language)
+                  formatPreview === null
+                    ? ''
+                    : pickLocalized(formatPreview.displayName, i18n.language)
                 }
                 onClose={() => setFormatPreview(null)}
                 actions={
@@ -675,29 +790,93 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </span>
                   )}
                 </div>
+                {ship?.hold !== undefined && (
+                  <p
+                    className={ship.hold.over ? 'warn-text' : 'sub'}
+                    data-testid="hold-line"
+                    title={t('hangar.hold.hint')}
+                  >
+                    {t('hangar.hold.line', {
+                      parts: ship.hold.parts,
+                      slots: ship.hold.slots,
+                      used: ship.hold.used,
+                      capacity: ship.hold.capacity,
+                    })}
+                    {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
+                  </p>
+                )}
                 {disconnectedPartIds.size > 0 && (
                   <p className="sub disconnected-note">
                     {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
                   </p>
                 )}
-                <p className="sub conn-legend" data-testid="port-legend" title={t('connectors.legend.shapes')}>
+                <p
+                  className="sub conn-legend"
+                  data-testid="port-legend"
+                  title={t('connectors.legend.shapes')}
+                >
                   <span>{t('connectors.legend.title')}</span>
-                  <span className="conn-swatch conn-connected">{t('connectors.legend.connected')}</span>
-                  <span className="conn-swatch conn-incorrect">{t('connectors.legend.incorrect')}</span>
-                  <span className="conn-swatch conn-available">{t('connectors.legend.available')}</span>
+                  <span className="conn-swatch conn-connected">
+                    {t('connectors.legend.connected')}
+                  </span>
+                  <span className="conn-swatch conn-incorrect">
+                    {t('connectors.legend.incorrect')}
+                  </span>
+                  <span className="conn-swatch conn-available">
+                    {t('connectors.legend.available')}
+                  </span>
                 </p>
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}
                   problemCount={allProblems.length}
+                  warningCount={allWarnings.length}
+                  power={preview?.power}
+                  layers={preview?.layers}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />
+                {ship !== undefined && <EngineTuning ship={ship} missionId={acceptedFlightId} />}
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
                 {!previewing && layout !== null && layout.length === 0 && (
                   <p className="muted">{t('hangar.state.noPreview')}</p>
                 )}
               </div>
+
+              {allWarnings.length > 0 && (
+                <div className="panel" data-testid="flight-warnings">
+                  <h2>{t('hangar.warnings.title')}</h2>
+                  <p className="sub">{t('hangar.warnings.explain')}</p>
+                  <ul>
+                    {allWarnings.map((problem) => (
+                      <li
+                        key={problem.code}
+                        className={
+                          problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'
+                        }
+                      >
+                        {t(`hangar.problems.${problem.code}`, {
+                          defaultValue: t(`error.${problem.code}`, {
+                            defaultValue: problem.message,
+                          }),
+                        })}
+                        {FIX_CLASS[problem.code] !== undefined && ship.status === 'IN_PORT' && (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => {
+                              setStoreClass(FIX_CLASS[problem.code] ?? null);
+                              setSideTab('store');
+                            }}
+                          >
+                            {t('hangar.fix.findInStore')}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {allProblems.length > 0 && (
                 <div className="panel">
@@ -784,7 +963,37 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 >
                   {t('hangar.actions.auto')}
                 </button>
+                <button
+                  type="button"
+                  className="btn block"
+                  disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
+                  onClick={() => setClearOpen(true)}
+                >
+                  {t('hangar.actions.clear')}
+                </button>
               </div>
+              <Popup
+                open={clearOpen}
+                title={t('hangar.clear.title')}
+                onClose={() => setClearOpen(false)}
+                actions={
+                  <>
+                    <button type="button" className="btn" onClick={() => setClearOpen(false)}>
+                      {t('hangar.clear.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      disabled={clearShip.isPending}
+                      onClick={() => clearShip.mutate()}
+                    >
+                      {t('hangar.clear.confirm')}
+                    </button>
+                  </>
+                }
+              >
+                <p>{t('hangar.clear.body', { count: effectiveLayout.length })}</p>
+              </Popup>
             </section>
           </div>
         </>

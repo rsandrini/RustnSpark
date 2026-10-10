@@ -48,6 +48,12 @@ async function renderPort(): Promise<void> {
   await screen.findByRole('tab', { name: 'Market' });
 }
 
+// The ship view shows the engine tuning's sliders too: the repair plan's are the others.
+const repairSliders = () =>
+  screen
+    .getAllByRole('slider')
+    .filter((slider) => slider.closest('[data-testid="engine-tuning"]') === null);
+
 describe('port (S10.9)', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -121,7 +127,7 @@ describe('port (S10.9)', () => {
     expect(
       await screen.findByText('A destroyed part cannot be repaired: replace it.'),
     ).toBeInTheDocument();
-    const sliders = screen.getAllByRole('slider');
+    const sliders = repairSliders();
     expect(sliders).toHaveLength(6);
     expect(sliders.filter((slider) => (slider as HTMLInputElement).disabled)).toHaveLength(1);
   });
@@ -130,7 +136,7 @@ describe('port (S10.9)', () => {
     await renderPort();
 
     fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
-    const sliders = screen.getAllByRole('slider');
+    const sliders = repairSliders();
     expect(sliders).toHaveLength(6);
     // A full repair is the default the first time there's damage to quote (owner: the workshop
     // fee should be a real number as soon as the tab opens, not 0 until a slider moves): every
@@ -160,6 +166,90 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('3,632 ¢'));
+  });
+
+  it('says so up front when the ship cannot fly: scavenging stays open, with a reduced chance', async () => {
+    server.use(
+      http.post('/v1/ships/:id/preview', () =>
+        HttpResponse.json({
+          sheet: {
+            pot: 0,
+            pdf: 0,
+            bli: 0,
+            esc: 0,
+            sen: 0,
+            crg: 0,
+            min: 0,
+            hp: 10,
+            mass: 4,
+            energyCont: 0,
+            energyCombat: 0,
+            batCharge: 0,
+            batOutput: 0,
+            batInput: 0,
+            fuelCap: 0,
+            fuelUse: 0,
+            structureUsed: 0,
+            structureBudget: 10,
+            autonomy: 0,
+            mob: 1,
+            condition: 100,
+          },
+          shipClass: 'MULTIROLE',
+          viability: {
+            viable: false,
+            problems: [{ code: 'NO_ENGINE', message: 'x' }],
+            warnings: [],
+          },
+          layout: [],
+          omittedPartInstanceIds: [],
+          disconnectedPartIds: [],
+          routeCoverage: null,
+        }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    const notice = await screen.findByTestId('scavenge-handicap');
+    expect(notice).toHaveTextContent('only 50% of the usual chance');
+    expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
+  });
+
+  it('shows no handicap notice for a ship that is ready', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    await screen.findByTestId('scavenging');
+    await waitFor(() => expect(screen.queryByTestId('scavenge-handicap')).not.toBeInTheDocument());
+  });
+
+  it('does not report "not enough money" for a repair that was just paid for', async () => {
+    // The wallet barely covers the plan; once it is debited, the spent plan must not be compared
+    // with the smaller balance (owner report: the warning appeared right after accepting).
+    setWallet(1300);
+    // The repair is a timed job: the parts stay damaged on screen until it completes.
+    server.use(
+      http.post('/v1/ships/:id/repair', ({ params }) => {
+        setWallet(112);
+        return HttpResponse.json({
+          repairJobId: 'job-1',
+          shipId: String(params.id),
+          cost: 1188,
+          durationSeconds: 30,
+          completesAt: new Date(Date.now() + 30_000).toISOString(),
+          targets: [],
+        });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    const summary = screen.getByTestId('repair-summary');
+    await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
+    fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
+    const popup = await screen.findByRole('dialog', { name: 'Repair for 1188 ¢?' });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Start repair' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Repair started for 1188 ¢');
+    await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('112 ¢'));
+    expect(screen.queryByText(/not enough credits|insufficient credits/i)).not.toBeInTheDocument();
   });
 
   it('never lets "Start repair" open on a stale (pre-refetch) quote for a bigger plan', async () => {
@@ -193,7 +283,7 @@ describe('port (S10.9)', () => {
     // the "bigger plan": back out to nothing selected first, then pick a single part, to get the
     // small quote this test actually wants as its starting point.
     fireEvent.click(within(summary).getByRole('button', { name: 'Back to current' }));
-    const [slider] = screen.getAllByRole('slider');
+    const [slider] = repairSliders();
     fireEvent.change(slider!, { target: { value: '100' } });
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('20 ¢'));
     expect(within(summary).getByRole('button', { name: 'Start repair' })).toBeEnabled();
@@ -222,10 +312,18 @@ describe('port (S10.9)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
     // The tab explains itself: time, risk, what you find, and where it works.
     const scav = await screen.findByTestId('scavenging');
-    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(await within(scav).findByText(/about 10 minutes/)).toBeInTheDocument();
     expect(within(scav).getByText(/zone 1/)).toBeInTheDocument();
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
-    expect(within(scav).getByText(/only works where your ship is docked/)).toBeInTheDocument();
+    expect(within(scav).getByText(/Only where your ship is docked/)).toBeInTheDocument();
+
+    // On foot is a choice of its own: its own time, its own warning, its own button.
+    fireEvent.click(within(scav).getByRole('radio', { name: /On foot/ }));
+    expect(await within(scav).findByText(/about 5 minutes/)).toBeInTheDocument();
+    expect(within(scav).getByTestId('scavenge-foot')).toHaveTextContent('50%');
+    expect(within(scav).queryByTestId('scavenge-handicap')).not.toBeInTheDocument();
+    expect(within(scav).getByRole('button', { name: 'Go scavenging on foot' })).toBeInTheDocument();
+    fireEvent.click(within(scav).getByRole('radio', { name: /With the ship/ }));
 
     // Starting the job sends the ship out and back to the Ship view, where the travel
     // summary lives (the mock's /v1/missions/active does not simulate the new job itself).
@@ -292,9 +390,7 @@ describe('port (S10.9)', () => {
     );
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
-    expect(
-      await screen.findByText(/no fuel tank installed/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/no fuel tank installed/i)).toBeInTheDocument();
     expect(screen.queryByText(/tank is already full/i)).toBeNull();
     expect(screen.queryByTestId('refuel-cost')).toBeNull();
   });
@@ -485,6 +581,28 @@ describe('port (S10.9)', () => {
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
   // part" — the same before/after popup Market already has, built from a virtual part at the
   // next tier (which doesn't exist as an owned instance yet).
+  it('the upgrade tab starts on "only what I can afford", which still lists what is within reach', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Only what I can afford' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('with too few credits the list says so, and turning the filter off shows everything upgradable', async () => {
+    setWallet(1);
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    expect(
+      await screen.findByText(/Nothing you can upgrade with your credits/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Plated Hull')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Only what I can afford' }));
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+  });
   it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
     server.use(
       http.post('/v1/ships/:id/preview', async ({ request }) => {
@@ -498,10 +616,27 @@ describe('port (S10.9)', () => {
         expect(body.replacePartInstanceId).toBe('part-hull');
         return HttpResponse.json({
           sheet: {
-            pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 60, mass: 24,
-            energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
-            fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40, autonomy: 40,
-            mob: 2, condition: 1,
+            pot: 25,
+            pdf: 0,
+            bli: 12,
+            esc: 0,
+            sen: 2,
+            crg: 10,
+            min: 0,
+            hp: 60,
+            mass: 24,
+            energyCont: 8,
+            energyCombat: 0,
+            batCharge: 4,
+            batOutput: 10,
+            batInput: 8,
+            fuelCap: 40,
+            fuelUse: 1,
+            structureUsed: 18,
+            structureBudget: 40,
+            autonomy: 40,
+            mob: 2,
+            condition: 1,
           },
           shipClass: 'MULTIROLE',
           viability: { viable: true, problems: [] },
@@ -516,16 +651,35 @@ describe('port (S10.9)', () => {
 
     const hullRow = (await screen.findByText('Plated Hull')).closest('article');
     expect(hullRow).not.toBeNull();
-    // The upgrade-target info button opens the diff popup for "Reinforced Hull" (the next
-    // tier), not another popup for "Plated Hull" itself (that one already exists separately).
-    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Reinforced Hull' }));
+    // One info button per card: it opens the part itself AND, under it, the next tier's diff.
+    expect(within(hullRow!).getAllByRole('button', { name: /^Details:/ })).toHaveLength(1);
+    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Plated Hull' }));
 
-    const popup = await screen.findByRole('dialog', { name: 'Reinforced Hull' });
-    // Replacing Plated Hull, not adding a second hull — the comparison's own wording says so.
-    await within(popup).findByText('If you swap this in for Plated Hull');
-    // The next tier's own higher hp (60 vs the ship's current 40) shows as a positive delta.
-    const hpRow = within(popup).getByRole('row', { name: /^Hit points/ });
-    await waitFor(() => expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument());
+    const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
+    await within(popup).findByRole('heading', {
+      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
+    });
+    const next = within(popup).getByRole('region', {
+      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
+    });
+    // The diff sets the upgraded part against the one the pilot owns (not "add it to the ship").
+    const diff = within(next).getByTestId('upgrade-diff');
+    expect(within(diff).getByText('This part today')).toBeInTheDocument();
+    // The next tier's own higher hp (40 today, 60 upgraded) shows as a positive delta.
+    const hpRow = within(diff).getByRole('row', { name: /^Hit points/ });
+    expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument();
+    expect(within(hpRow).getByText('40')).toBeInTheDocument();
+  });
+
+  it('hovering a card in the Upgrade tab shows the part it will become, not the one it is', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    const card = (await screen.findByText('Plated Hull')).closest('article') as HTMLElement;
+    fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
+    const hover = await screen.findByTestId('part-card-hover-card');
+    expect(hover).toHaveTextContent('Reinforced Hull');
+    expect(hover).not.toHaveTextContent('Plated Hull');
+    expect(hover).toHaveTextContent('Uncommon');
   });
 
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {
@@ -536,11 +690,78 @@ describe('port (S10.9)', () => {
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
     expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    // Both names wear their rarity's colour: what it is now, and what it becomes.
+    expect(within(popup).getByText('Plated Hull')).toHaveClass('rarity-name', 'rarity-common');
+    expect(within(popup).getByText('Reinforced Hull')).toHaveClass(
+      'rarity-name',
+      'rarity-uncommon',
+    );
     fireEvent.click(within(popup).getByRole('button', { name: 'Upgrade' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Upgraded to Reinforced Hull.');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,705 ¢'));
     // The upgraded part is now UNCOMMON, so it drops off this tab (no further chain in the fixture).
     await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
+  });
+
+  it('the upgrade card says what it asks for besides money, and blocks while something is missing', async () => {
+    server.use(
+      http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>
+        HttpResponse.json({
+          partInstanceId: String(params.id),
+          eligible: true,
+          nextPartType: 'hull_uncommon',
+          nextDisplayName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
+          cost: 115,
+          materials: [
+            {
+              materialId: 'scrap',
+              displayName: { en: 'Scrap (any part)', 'pt-BR': 'Sucata (qualquer peça)' },
+              needed: 4,
+              have: 1,
+            },
+          ],
+          nextRarity: 'UNCOMMON',
+        }),
+      ),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    await screen.findByText('Plated Hull');
+    const list = (await screen.findAllByTestId('upgrade-materials'))[0]!;
+    expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
+    expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
+    expect(rowButton('Plated Hull')).toBeDisabled();
+  });
+
+  it('crafts a core from fragments in the goods tab, only when there are enough', async () => {
+    const crafted: string[] = [];
+    server.use(
+      http.get('/v1/materials', () =>
+        HttpResponse.json({
+          locationId: 'ceres',
+          materials: [
+            {
+              materialId: 'core_fragment',
+              displayName: { en: 'Core Fragment', 'pt-BR': 'Fragmento de Núcleo' },
+              rarity: 'EPIC',
+              quantity: 6,
+              unitPrice: 1,
+            },
+          ],
+        }),
+      ),
+      http.post('/v1/market/craft-core', async ({ request }) => {
+        crafted.push(((await request.json()) as { core: string }).core);
+        return HttpResponse.json({ core: 'prototype_core', fragmentsUsed: 5, quantity: 1 });
+      }),
+    );
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const prototype = await screen.findByTestId('craft-prototype_core');
+    expect(prototype).toHaveTextContent('Prototype Core: 6 of 5 core fragments');
+    expect(within(screen.getByTestId('craft-ancient_core')).getByRole('button')).toBeDisabled();
+    fireEvent.click(within(prototype).getByRole('button', { name: 'Craft' }));
+    await waitFor(() => expect(crafted).toEqual(['prototype_core']));
   });
 });

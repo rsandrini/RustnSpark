@@ -1,14 +1,14 @@
 import type { Locale } from '../common/locale/locale.js';
 import type { ReportLine } from './templates/template.engine.js';
 import type { EntityNames } from './templates/template.engine.js';
-import { renderLog } from './log.view.js';
+import { renderLog, type LogLine } from './log.view.js';
 import { renderNarrative, type NarrativeChapter } from './narrative.view.js';
 import type { ReportLog, ViewName } from './report.types.js';
 import { renderSummary } from './summary.view.js';
 
 export type ViewResult =
   | { readonly view: 'summary'; readonly lines: readonly ReportLine[] }
-  | { readonly view: 'log'; readonly lines: readonly ReportLine[] }
+  | { readonly view: 'log'; readonly lines: readonly LogLine[] }
   | { readonly view: 'narrative'; readonly chapters: readonly NarrativeChapter[] };
 
 /**

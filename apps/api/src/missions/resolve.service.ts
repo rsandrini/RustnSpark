@@ -1,3 +1,5 @@
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import { floatSpotOf, type FloatSpot } from '../ships/floating.js';
 import { Injectable, Logger } from '@nestjs/common';
 import type { DispatchJobData } from './dispatch.service.js';
 // Constructor-injected services must be value imports: emitDecoratorMetadata cannot
@@ -9,6 +11,7 @@ import { loadScavengeContext } from './scavenge-context.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
+import { isDead } from '../parts/condition.js';
 import { buildResolveInput, contextFromLive } from './resolution-input.js';
 import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
@@ -40,6 +43,14 @@ export interface ResolveJobResult {
 // - writes log + ship + parts + wallet/PlayerEvent + loot + final status in ONE transaction,
 //   with MissionLog.missionId's unique constraint as the hard double-effect guard;
 // - a mission already DONE/FAILED short-circuits as skipped (idempotent double invocation).
+/** Whether a ship left adrift still keeps the loot of its run: only an independent mining job (no contract). */
+export function keepsLootAdrift(mission: {
+  readonly type: string;
+  readonly reward: number;
+}): boolean {
+  return mission.type === 'MINING' && mission.reward <= 0;
+}
+
 @Injectable()
 export class MissionResolveService {
   private readonly logger = new Logger(MissionResolveService.name);
@@ -121,9 +132,14 @@ export class MissionResolveService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      reward: mission.reward,
       scavenge:
         mission.type === 'SCAVENGE'
-          ? await loadScavengeContext(this.prisma, mission.destinationId)
+          ? {
+              ...(await loadScavengeContext(this.prisma, mission.destinationId)),
+              ...(snapshot.handicapped === true ? { handicapped: true } : {}),
+              ...(snapshot.onFoot === true ? { onFoot: true } : {}),
+            }
           : null,
     });
     const outcome = resolveMission(
@@ -216,6 +232,11 @@ export class MissionResolveService {
           }
         }
       }
+      const finalCondition = new Map(outcome.parts.map((part) => [part.id, part.condition]));
+      const fuelCapAfter = snapshot.parts
+        .filter((part) => part.connected)
+        .filter((part) => !isDead(Math.round(finalCondition.get(part.id) ?? part.condition), rules))
+        .reduce((sum, part) => sum + part.catalog.fuelCap, 0);
       for (const part of outcome.parts) {
         await tx.partInstance.updateMany({
           where: { id: part.id },
@@ -224,15 +245,50 @@ export class MissionResolveService {
           data: { condition: Math.round(part.condition) },
         });
       }
+      // A ship that ran dry floats where it stopped: on the route of the leg it could not finish,
+      // as far along as the fuel it still had would carry it.
+      let floatSpot: FloatSpot | null = null;
+      if (outcome.shipStatus === 'ADRIFT') {
+        const dry = outcome.events.find((event) => event.type === 'fuel_exhausted');
+        const routeIds = snapshot.legs.map((leg) => leg.routeId ?? '');
+        if (dry !== undefined && routeIds.every((id) => id !== '')) {
+          const routes = await tx.route.findMany({ where: { id: { in: routeIds } } });
+          const leg = snapshot.legs[dry.leg];
+          floatSpot =
+            leg === undefined
+              ? null
+              : floatSpotOf({
+                  legIndex: dry.leg,
+                  fuelLeft: dry.magnitude,
+                  legBurn: fuelUnits({
+                    fuelUse: snapshot.parts.reduce((sum, part) => sum + part.catalog.fuelUse, 0),
+                    distance: leg.distance,
+                    envFuelMult: leg.env.fuelMult,
+                  }),
+                  originId: mission.originId,
+                  routeIds,
+                  routes: new Map(routes.map((route) => [route.id, route])),
+                });
+        }
+      }
       await tx.ship.update({
         where: { id: snapshot.shipId },
         data: {
-          fuel: Math.max(0, outcome.fuel),
+          // A tank that ended the run dead (or one that is simply gone) takes its fuel with it.
+          fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
           status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
           ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
+          floatRouteId: floatSpot?.routeId ?? null,
+          floatFromId: floatSpot?.fromId ?? null,
+          floatProgress: floatSpot?.progress ?? null,
+          rescueAt: null,
         },
       });
-      for (const entry of outcome.loot) {
+      // A ship left adrift loses the mission for sure, and what it carried for it with it; only the pilot's
+      // own independent mining job (no contract, no reward) keeps the ore it dug.
+      for (const entry of outcome.shipStatus === 'ADRIFT' && !keepsLootAdrift(mission)
+        ? []
+        : outcome.loot) {
         if (entry.quantity <= 0) continue;
         await tx.playerMaterial.upsert({
           where: {

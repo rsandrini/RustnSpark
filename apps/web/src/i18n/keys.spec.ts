@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { MissionTypeSchema, ReportViewNameSchema } from '@rustandspark/contract';
+import { MissionTypeSchema } from '@rustandspark/contract';
 import en from './en.json';
 import ptBR from './pt-BR.json';
 
@@ -67,7 +67,7 @@ describe('i18n keys used by the code', () => {
     const families: Array<[string, string[]]> = [
       ['hangar stat rows', hangarStats],
       ['mission types', MissionTypeSchema.options.map((type) => `board.type.${type}`)],
-      ['report tabs', ReportViewNameSchema.options.map((view) => `report.tabs.${view}`)],
+      ['report tabs', ['overview', 'narrative', 'log'].map((tab) => `report.tabs.${tab}`)],
       ['port tabs', ['market', 'repair', 'refuel', 'scavenging'].map((tab) => `port.tabs.${tab}`)],
     ];
 

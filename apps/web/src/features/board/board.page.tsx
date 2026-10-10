@@ -3,11 +3,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { PlaceBanner } from '../../ui/PlaceArt';
+import { activeAsOffer } from './active-offer';
 import { MissionCard } from './mission-card';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
-import type { MissionOffer, MissionType, ShipResponse, WorldResponse } from '../../api/generated';
+import type {
+  ActiveMission,
+  MissionOffer,
+  MissionType,
+  ShipResponse,
+  WorldResponse,
+} from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
@@ -53,6 +60,14 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     queryKey: ['world'],
     queryFn: () => client.get<WorldResponse>('/v1/locations'),
   });
+
+  // The mission already taken stays readable here too, not only on My Ship.
+  const activeQuery = useQuery({
+    queryKey: ['active'],
+    queryFn: () => client.get<ActiveMission[]>('/v1/missions/active'),
+  });
+  const taken = (activeQuery.data ?? []).find((entry) => activeAsOffer(entry) !== null);
+  const takenOffer = taken === undefined ? null : activeAsOffer(taken);
 
   const ship = shipsQuery.data?.[0];
   const originId = params.get('location') ?? ship?.currentLocationId ?? null;
@@ -180,6 +195,36 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         </button>
       </div>
 
+      {takenOffer !== null && (
+        <section className="stack board-taken" data-testid="board-active-mission">
+          <h2>{t('board.yourMission')}</h2>
+          <MissionCard
+            offer={takenOffer}
+            origin={worldQuery.data?.locations.find((entry) => entry.id === takenOffer.originId)}
+            destination={worldQuery.data?.locations.find(
+              (entry) => entry.id === takenOffer.destinationId,
+            )}
+            mine
+            taken
+            actions={
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  if (embedded && onGoToShip !== undefined) onGoToShip();
+                  else void navigate('/hangar');
+                }}
+              >
+                {t('board.goToShip')}
+              </button>
+            }
+            {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+            {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
+            {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
+          />
+        </section>
+      )}
+
       {ship === undefined && originId === null && <p className="sub">{t('board.noShip')}</p>}
       {actionError !== null && (
         <p className="error-text" role="alert">
@@ -206,7 +251,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               )}
               fuelHave={ship?.fuel}
               fuelCap={ship?.sheet.fuelCap}
-              shipMobility={ship?.sheet.mob}
+              world={worldQuery.data}
               mine={mine}
               actions={
                 <>

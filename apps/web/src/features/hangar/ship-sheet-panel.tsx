@@ -1,3 +1,4 @@
+import { sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
@@ -10,6 +11,12 @@ export interface ShipSheetPanelProps {
       its fix actions still renders separately, lower on the page — this is a pointer to it, not
       a replacement for it. */
   problemCount: number;
+  /** Warnings do not ground the ship: it flies, weaker (energy shortfalls, blocked parts). */
+  warningCount?: number;
+  /** How the ship's power is shared while travelling: each kind of system's share of its need. */
+  power?: { shares: Record<string, number> } | undefined;
+  /** What a fight starts with at the parts' current condition (worn or unconnected parts give less). */
+  layers?: { shield: number; armor: number; hull: number; shieldRegen: number } | undefined;
   /** The range read as routes ("covers 14 of 17"); null = the ship burns no fuel. */
   routeCoverage?: RouteCoverage | null;
   /** Every part actually installed right now: the sheet only carries Cruising power's net
@@ -76,16 +83,19 @@ export function ShipSheetPanel({
   shipClass,
   sheet,
   problemCount,
+  warningCount = 0,
+  power,
+  layers,
   installedCatalogs,
   routeCoverage,
 }: ShipSheetPanelProps) {
   const { t, i18n } = useTranslation();
+  const display = useDisplay();
   const number = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
-  // Mobility has a hard threshold (MOB_TOO_LOW fires below 1): one decimal can round e.g. 0.96
-  // up to a displayed "1", which then looks wrong next to "Mobility is below 1."
+  // Mobility is shown on the admin's display scale (default x10), one decimal at most.
   const mobilityNumber = (value: number) =>
-    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(value);
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
 
   const classRow = (
     <div className="statrow" title={t('hangar.statHelp.class')}>
@@ -97,17 +107,26 @@ export function ShipSheetPanel({
   if (sheet === undefined) return classRow;
 
   const energyGenerate = installedCatalogs.reduce((sum, c) => sum + Math.max(0, c.energyCont), 0);
-  const energyConsume = installedCatalogs.reduce(
-    (sum, c) => sum + Math.max(0, -c.energyCont),
-    0,
+  const energyConsume = installedCatalogs.reduce((sum, c) => sum + Math.max(0, -c.energyCont), 0);
+  // Shields recover their own points per round (the sum over the shield parts installed).
+  const shieldRegen =
+    layers?.shieldRegen ?? installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
+  // The pools a fight would really start with (parts as worn); the sheet's totals are nominal.
+  const shieldPool = layers?.shield ?? sheet.esc;
+  const armorPool = layers?.armor ?? sheet.bli * display.armorPoolFactor;
+  // Systems that get less than their whole need while travelling (the bridge and the ones with no
+  // power cost never show up here).
+  const starved = Object.entries(power?.shares ?? {}).filter(
+    ([kind, share]) => share < 1 && kind !== 'other',
   );
   const combatDraw = Math.abs(sheet.energyCombat);
-  const combatCovered = sheet.batOutput >= combatDraw;
+  // The ship's own surplus powers combat first; the batteries cover only what it cannot.
+  const combatSurplus = Math.max(0, sheet.energyCont);
+  const combatCovered = sheet.batOutput + combatSurplus >= combatDraw;
   const unlimitedRange = sheet.fuelUse <= 0;
   const autonomyBand = rangeTone(unlimitedRange ? null : routeCoverage);
   const conditionBand = conditionTone(sheet.condition);
   const structureBand = structureTone(sheet.structureUsed, sheet.structureBudget);
-  const defense = sheet.bli + sheet.esc;
   const autonomyText = unlimitedRange ? t('hangar.stats.unlimited') : number(sheet.autonomy);
   const coverageText =
     !unlimitedRange && routeCoverage !== null && routeCoverage !== undefined
@@ -119,7 +138,19 @@ export function ShipSheetPanel({
   const valueFor = (key: string): string => {
     switch (key) {
       case 'mob':
-        return mobilityNumber(sheet.mob);
+        return mobilityNumber(sheetStat(sheet, 'mob', display));
+      case 'esc':
+        return sheet.esc > 0
+          ? t('hangar.stats.shieldValue', { pool: number(shieldPool), regen: number(shieldRegen) })
+          : number(0);
+      case 'bli':
+        return sheet.bli > 0
+          ? t('hangar.stats.armorValue', {
+              rating: number(sheet.bli),
+              cut: number((armorPool / display.armorPoolFactor) * display.armorReduction),
+              pool: number(armorPool),
+            })
+          : number(0);
       case 'structure':
         return t('hangar.stats.structureValue', {
           used: number(sheet.structureUsed),
@@ -150,6 +181,19 @@ export function ShipSheetPanel({
               consume: number(energyConsume),
             })}
           </div>
+          {starved.length > 0 && (
+            <div className="substat" data-testid="power-shares">
+              {t('hangar.power.title')}{' '}
+              {starved
+                .map(([kind, share]) =>
+                  t('hangar.power.entry', {
+                    system: t(`hangar.power.kind.${kind}`),
+                    percent: Math.round(share * 100),
+                  }),
+                )
+                .join(' · ')}
+            </div>
+          )}
         </div>
       );
     }
@@ -160,16 +204,35 @@ export function ShipSheetPanel({
           <span className={`pill pill-${tone}`}>
             {t('hangar.energyStatus.draw', { value: number(combatDraw) })}
           </span>
+          {combatDraw > 0 && (
+            <div className="substat" data-testid="battery-lasts">
+              {combatDraw - combatSurplus <= 0
+                ? t('hangar.energyStatus.noDrain')
+                : t('hangar.energyStatus.lasts', {
+                    rounds: Math.floor(sheet.batCharge / (combatDraw - combatSurplus)),
+                  })}
+            </div>
+          )}
           <div className="substat">
             {combatCovered
-              ? t('hangar.energyStatus.covered', { output: number(sheet.batOutput) })
-              : t('hangar.energyStatus.insufficient', { output: number(sheet.batOutput) })}
+              ? t('hangar.energyStatus.covered', {
+                  output: number(sheet.batOutput + combatSurplus),
+                })
+              : t('hangar.energyStatus.insufficient', {
+                  output: number(sheet.batOutput + combatSurplus),
+                })}
           </div>
         </div>
       );
     }
     const tone: Tone | null =
-      key === 'autonomy' ? autonomyBand : key === 'condition' ? conditionBand : key === 'structure' ? structureBand : null;
+      key === 'autonomy'
+        ? autonomyBand
+        : key === 'condition'
+          ? conditionBand
+          : key === 'structure'
+            ? structureBand
+            : null;
     return <b className={tone !== null ? `tone-${tone}` : undefined}>{valueFor(key)}</b>;
   };
 
@@ -178,8 +241,14 @@ export function ShipSheetPanel({
   return (
     <>
       {classRow}
-      <div className={`sheet-status ${problemCount === 0 ? 'ready' : 'problem'}`}>
-        {problemCount === 0 ? t('hangar.summary.ready') : t('hangar.summary.problemCount', { count: problemCount })}
+      <div
+        className={`sheet-status ${problemCount > 0 ? 'problem' : warningCount > 0 ? 'warning' : 'ready'}`}
+      >
+        {problemCount > 0
+          ? t('hangar.summary.problemCount', { count: problemCount })
+          : warningCount > 0
+            ? t('hangar.summary.readyWithWarnings', { count: warningCount })
+            : t('hangar.summary.ready')}
       </div>
       <div className="sheet-headline" data-testid="sheet-headline">
         <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
@@ -188,7 +257,12 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.headline.defenseHelp')}>
           <span>{t('hangar.headline.defense')}</span>
-          <b>{number(defense)}</b>
+          <b>
+            {t('hangar.headline.defenseValue', {
+              armor: number(armorPool),
+              shield: number(shieldPool),
+            })}
+          </b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
           <span>{t('hangar.headline.cargo')}</span>
@@ -196,7 +270,7 @@ export function ShipSheetPanel({
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
           <span>{t('hangar.headline.mobility')}</span>
-          <b>{mobilityNumber(sheet.mob)}</b>
+          <b>{mobilityNumber(sheetStat(sheet, 'mob', display))}</b>
         </div>
         <div className="sheet-headline-tile" title={t('hangar.statHelp.autonomy')}>
           <span>{t('hangar.headline.autonomy')}</span>

@@ -159,4 +159,130 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(log.outcome).toBe('partial_failure');
     expect(credits).toBe(before);
   }, 30_000);
+
+  it('engine tuning: the ship runs its engines at the chosen levels, recorded with the run', async () => {
+    const flyWith = async (chem: number) => {
+      const setup = await raceWith(0.5);
+      await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+      const set = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${setup.shipId}/engine-levels`)
+        .set('Authorization', `Bearer ${setup.token}`)
+        .send({ chem, ion: 1 });
+      expect(set.status).toBe(200);
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${setup.shipId}/dispatch`)
+        .set('Authorization', `Bearer ${setup.token}`)
+        .send({ missionId: setup.mission.id });
+      expect(response.status).toBe(200);
+      const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
+      const snapshot = (
+        job.data as unknown as {
+          snapshot: { engine?: { chem: number; ion: number }; parts: { catalog: { fuelUse: number } }[] };
+        }
+      ).snapshot;
+      return {
+        seconds: (response.body as { durationSeconds: number }).durationSeconds,
+        engine: snapshot.engine,
+        fuelUse: snapshot.parts.reduce((sum, part) => sum + part.catalog.fuelUse, 0),
+      };
+    };
+    const calm = await flyWith(1);
+    const pushed = await flyWith(1.4);
+    const eased = await flyWith(0.6);
+    expect(calm.engine).toEqual({ chem: 1, ion: 1 });
+    expect(pushed.engine?.chem).toBeCloseTo(1.4);
+    expect(pushed.seconds).toBeLessThan(calm.seconds);
+    expect(pushed.fuelUse).toBeGreaterThan(calm.fuelUse);
+    // asking to throttle down is brought back to 100%: the same trip as at the listed power
+    expect(eased.seconds).toBe(calm.seconds);
+    expect(eased.fuelUse).toBe(calm.fuelUse);
+  }, 60_000);
+
+  it('engine tuning: levels outside the admin range are brought back, and the preview agrees with the flight', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+    const set = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-levels`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ chem: 9, ion: 0 });
+    expect(set.status).toBe(200);
+    const { engine } = configService.snapshot().rules;
+    expect((set.body as { engineLevels: { chem: number; ion: number } }).engineLevels).toEqual({
+      chem: engine.chem_level_max,
+      ion: 1,
+    });
+
+    const preview = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-preview`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id, chem: 1.2, ion: 1 });
+    expect(preview.status).toBe(200);
+    const shown = preview.body as {
+      thrust: { chem: number; ion: number };
+      baselineThrust: { chem: number; ion: number };
+      cleanChance: number;
+      trip: { durationSeconds: number; fuelNeeded: number; legCount: number; fits: boolean };
+    };
+    // the thrust is reported per engine group, and the chemical level (1.2) scales only its part
+    expect(shown.thrust.chem).toBeCloseTo(shown.baselineThrust.chem * 1.2);
+    expect(shown.thrust.ion).toBeCloseTo(shown.baselineThrust.ion);
+    expect(shown.cleanChance).toBeGreaterThan(0);
+    expect(shown.cleanChance).toBeLessThan(1);
+    expect(shown.trip.fits).toBe(true);
+
+    await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/engine-levels`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ chem: 1.2, ion: 1 });
+    const response = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/dispatch`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id });
+    expect(response.status).toBe(200);
+    expect(Math.abs((response.body as { durationSeconds: number }).durationSeconds - shown.trip.durationSeconds)).toBeLessThanOrEqual(1);
+  }, 60_000);
+
+  it('end to end: a pushed engine leaves a line per leg in the stored log and in the rendered report', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { chemLevel: 1.5 } });
+    const { events, log } = await run(setup);
+    const legCount = (log.legs as { events: { leg: number }[] }).events.filter(
+      (event) => (event as { type?: string }).type === 'leg_travel',
+    ).length;
+    const lines = events.filter((event) => event.type === 'engine_tuning') as unknown as {
+      leg: number;
+      tuning: { group: string; levelPct: number; chancePct: number; outcome: string };
+    }[];
+    expect(lines).toHaveLength(legCount);
+    for (const line of lines) {
+      expect(line.tuning).toMatchObject({ group: 'chem', levelPct: 150 });
+      expect(line.tuning.chancePct).toBeGreaterThan(0);
+    }
+    // and the player sees it in the report's log and in its stats
+    const logView = await request(httpServer(testApp.app))
+      .get(`/v1/reports/${setup.mission.id}?view=log`)
+      .set('Authorization', `Bearer ${setup.token}`);
+    expect(logView.status).toBe(200);
+    expect(JSON.stringify(logView.body)).toContain('pushed to x1.5');
+    const summary = await request(httpServer(testApp.app))
+      .get(`/v1/reports/${setup.mission.id}`)
+      .set('Authorization', `Bearer ${setup.token}`);
+    const engines = (summary.body as { stats: { engines?: { group: string; levelPct: number; pushedLegs: number }[] } }).stats.engines;
+    expect(engines).toEqual([expect.objectContaining({ group: 'chem', levelPct: 150, pushedLegs: legCount })]);
+  }, 60_000);
+
+  it('engine tuning applies to every flying mission, not only races', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000, chemLevel: 1.3 } });
+    const response = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/dispatch`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id });
+    expect(response.status).toBe(200);
+    const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
+    expect(
+      (job.data as unknown as { snapshot: { engine?: { chem: number } } }).snapshot.engine?.chem,
+    ).toBeCloseTo(1.3);
+  }, 30_000);
 });

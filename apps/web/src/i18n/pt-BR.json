@@ -143,7 +143,9 @@
       "mob": "Mobilidade",
       "structureValue": "{{used}} / {{budget}}",
       "unlimited": "ilimitado",
-      "routesCovered": "cobre {{covered}} de {{total}} rotas"
+      "routesCovered": "cobre {{covered}} de {{total}} rotas",
+      "shieldValue": "{{pool}} (+{{regen}}/rodada)",
+      "armorValue": "{{rating}} (corta {{cut}} por golpe, absorve {{pool}})"
     },
     "groups": {
       "combat": "Combate",
@@ -154,27 +156,31 @@
     },
     "headline": {
       "firepower": "Poder de fogo",
-      "defense": "Defesa",
-      "defenseHelp": "Blindagem mais Escudo: as duas defesas da nave contra acertos, somadas.",
+      "defense": "Blindagem · Escudo",
+      "defenseHelp": "O que a nave aguenta numa luta: primeiro o escudo, depois a blindagem (que também corta cada golpe), depois o casco. Os números são os pontos que cada camada absorve.",
       "cargo": "Carga",
       "mobility": "Mobilidade",
       "autonomy": "Alcance",
       "condition": "Condição",
       "energy": "Energia",
-      "structure": "Estrutura"
+      "structure": "Estrutura",
+      "defenseValue": "{{armor}} · {{shield}}"
     },
     "summary": {
       "ready": "Pronta para voar",
       "problemCount": "{{count}} problema(s)",
-      "showAllStats": "Ver todas as estatísticas"
+      "showAllStats": "Ver todas as estatísticas",
+      "readyWithWarnings": "Pronta para voar, com {{count}} aviso(s)"
     },
     "energyStatus": {
       "surplus": "Excedente +{{value}}",
       "deficit": "Déficit {{value}}",
       "breakdown": "Gera {{generate}} · Consome {{consume}}",
       "draw": "Consome {{value}}/rodada",
-      "covered": "A bateria cobre ({{output}}/rodada)",
-      "insufficient": "Excede a saída da bateria ({{output}}/rodada)"
+      "covered": "Coberto: sobra da nave + bateria ({{output}}/rodada)",
+      "insufficient": "Excede a sobra da nave + bateria ({{output}}/rodada)",
+      "noDrain": "A sobra de energia da nave cobre: a bateria não é consumida.",
+      "lasts": "A bateria dura cerca de {{rounds}} rodada(s) assim."
     },
     "classes": {
       "HAULER": "Cargueiro",
@@ -199,7 +205,8 @@
       "save": "Salvar layout",
       "auto": "Layout automático",
       "rotate": "Girar",
-      "remove": "Remover"
+      "remove": "Remover",
+      "clear": "Esvaziar a nave"
     },
     "state": {
       "selected": "Selecionado: {{name}}",
@@ -213,18 +220,22 @@
       "NO_ENGINE": "Nenhum motor instalado.",
       "MOB_TOO_LOW": "Mobilidade abaixo de 1.",
       "NO_FUEL_CAPACITY": "Motor químico precisa de tanque.",
-      "NO_LIFE_SUPPORT": "Nenhum suporte de vida instalado.",
+      "NO_LIFE_SUPPORT": "Há módulos pressurizados, mas nenhum suporte de vida instalado.",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido.",
       "OUT_OF_BOUNDS": "Peça fora da grade.",
       "OVERLAP": "Peças sobrepostas.",
       "DISCONNECTED": "Peças precisam tocar a ponte.",
       "INVALID_LAYOUT": "O layout não é válido.",
-      "ENERGY_CRUISE_NEGATIVE": "A nave gasta mais energia em voo do que gera.",
-      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos consomem mais energia por rodada do que suas baterias entregam — instale uma bateria, ou uma maior.",
-      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos consomem mais energia do que suas baterias armazenam — instale uma bateria, ou uma maior.",
-      "EXHAUST_BLOCKED": "Um motor tem peças atrás do escapamento — mova-o para a borda traseira da nave ou gire-o.",
-      "FACING_BLOCKED": "Uma arma tem peças na linha de tiro — mova-a para a borda da nave ou gire-a.",
-      "FACING_CONNECTOR": "Um motor ou arma tem conector no lado voltado para fora."
+      "ENERGY_CRUISE_NEGATIVE": "Os sistemas precisam de mais energia do que a nave gera, então disputam: a ponte e o suporte de vida são servidos primeiro, depois os que importam agora. Sistemas sem energia funcionam só parte do tempo. Os motores não são afetados.",
+      "BATTERY_OUTPUT_INSUFFICIENT": "Armas e escudos puxam mais energia por rodada do que a nave consegue fornecer (a sobra de energia mais as baterias). Numa luta alguns ataques e a recuperação do escudo ficarão sem energia — adicione geração ou uma bateria.",
+      "BATTERY_CHARGE_INSUFFICIENT": "Armas e escudos puxam mais energia do que a sobra da nave mais as baterias armazenam — lutas longas ficarão sem energia. Adicione geração ou uma bateria.",
+      "EXHAUST_BLOCKED": "Um motor tem uma peça logo atrás do escape: ele não dá empuxo. Mova-o, mova a peça ou gire o motor.",
+      "FACING_BLOCKED": "Uma arma tem uma peça na linha de tiro: ela não atira. Mova-a ou gire-a.",
+      "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
+      "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
+      "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
+      "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -262,7 +273,8 @@
       "condition": "Condição"
     },
     "rotate": {
-      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro."
+      "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
+      "twice": "Não há espaço para virá-la de lado aqui, então ela foi girada duas vezes."
     },
     "statHelp": {
       "class": "A classe da nave, decidida automaticamente por quanto do orçamento de estrutura vai para carga, espaço pressurizado (passageiros) e peças de combate.",
@@ -272,16 +284,16 @@
       "hp": "Pontos de vida totais de cada peça instalada. Perdidos em combate, restaurados no reparo.",
       "pot": "Empuxo total de cada motor instalado. Alimenta a mobilidade.",
       "pdf": "Dano de combate de cada arma instalada.",
-      "bli": "Reduz o dano de cada acerto que passa pelo escudo.",
-      "esc": "Absorve o dano primeiro numa luta, antes da blindagem ou do casco. Regenera um pouco a cada rodada de combate. Consome Potência de combate da bateria — sem bateria para alimentá-lo, não pode ser instalado.",
+      "bli": "A blindagem fica atrás do escudo. Ela corta todo golpe que passa do escudo em uma quantia fixa (veja o número entre parênteses), depois seu reservatório absorve o resto, e só o que sobra chega ao casco. Ela se desgasta na luta, e blindagem gasta corta menos. As peças de casco dão pontos de vida, não blindagem.",
+      "esc": "Uma reserva de dano absorvida PRIMEIRO: pega de cada golpe o máximo que aguenta. Recupera pontos próprios a cada rodada de combate, e cada ponto recuperado custa energia de combate — sem energia, sem recuperação.",
       "sen": "Detecta emboscadas antes, reduzindo a chance de ser surpreendido num encontro.",
       "mass": "Peso total de cada peça instalada (mais o combustível de um tanque cheio, quando isso adiciona peso). Reduz a mobilidade.",
       "fuelCap": "Quanto combustível a nave pode carregar, de cada tanque instalado.",
       "fuelUse": "Quanto combustível é consumido por unidade de viagem.",
-      "energyCont": "Balanço de energia contínua: geração do reator/painel solar menos tudo que sempre consome (sensores, suporte de vida, plataformas de mineração...). Precisa ficar em zero ou mais, ou a nave não voa — é separado da Potência de combate abaixo, e nunca é tirado da bateria.",
-      "energyCombat": "Consumo total de energia só de combate, de cada arma e escudo instalado (sempre zero ou negativo). Coberto pela carga e pela saída da bateria, nunca pela Potência de cruzeiro ou pelo reator — veja Capacidade da bateria / Saída da bateria.",
-      "batCharge": "Energia total que a bateria consegue guardar para combate. Precisa cobrir todo o consumo de Potência de combate da nave, ou armas/escudos não podem ser instalados.",
-      "batOutput": "O máximo de energia que a bateria entrega numa única rodada. Precisa cobrir todo o consumo de Potência de combate da nave por rodada, ou armas/escudos não podem ser instalados.",
+      "energyCont": "Balanço de energia de cruzeiro: o que os geradores produzem menos o que sempre consome (sensores, suporte de vida, plataformas de mineração...). Abaixo de zero a nave ainda voa, mas os motores recebem só a parte da energia que existe. Separado da energia de combate, que vem das baterias.",
+      "energyCombat": "Energia que armas e escudos puxam a cada rodada de combate (sempre zero ou negativa). A sobra de energia da própria nave (potência de cruzeiro acima de zero) paga primeiro; as baterias cobrem só o que ela não cobre. Escolha o modo só-baterias para tirar a sobra da nave do combate.",
+      "batCharge": "Energia total que as baterias guardam para o combate. Só precisa cobrir o que a sobra da própria nave não cobre — com geração suficiente você não precisa de bateria.",
+      "batOutput": "O máximo de energia que as baterias entregam numa rodada. Só precisa cobrir o que a sobra da própria nave não paga a cada rodada.",
       "batInput": "Quão rápido a bateria recarrega entre lutas.",
       "autonomy": "Até onde um tanque cheio leva a nave, em unidades de distância de rota (as mesmas unidades do comprimento das rotas). Abaixo: quantas rotas do mundo isso cobre.",
       "condition": "Desgaste médio de cada peça instalada, de 100% (nova) para baixo.",
@@ -294,6 +306,35 @@
     "facing": {
       "exhaust": "Lado do escapamento",
       "weapon": "Lado do disparo"
+    },
+    "warnings": {
+      "title": "Avisos",
+      "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total."
+    },
+    "power": {
+      "title": "Falta energia — recebem:",
+      "entry": "{{system}} {{percent}}%",
+      "kind": {
+        "bridge": "Ponte",
+        "life": "Suporte de vida",
+        "pump": "Bomba de combustível",
+        "sensor": "Sensores",
+        "weapon": "Armas (paradas)",
+        "shield": "Escudo (parado)",
+        "rig": "Mineradora (parada)",
+        "other": "Outros"
+      }
+    },
+    "clear": {
+      "title": "Esvaziar a nave?",
+      "body": "As {{count}} peças instaladas voltam para o inventário. Nada é vendido nem perdido, mas a nave não voa até ser montada de novo.",
+      "cancel": "Cancelar",
+      "confirm": "Esvaziar a nave"
+    },
+    "hold": {
+      "line": "Carregado: {{parts}} de {{slots}} espaços de peças sobressalentes. Seus bens (minério, sucata) ficam em terra e não ocupam espaço.",
+      "partsOver": "Peças sobressalentes demais para partir: venda ou deixe algumas.",
+      "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). Só a carga que uma missão embarca ocupa espaço de carga."
     }
   },
   "home": {
@@ -770,7 +811,13 @@
       "upload": "Enviar",
       "reset": "Voltar ao padrão"
     },
-    "noneOption": "Nenhuma peça"
+    "noneOption": "Nenhuma peça",
+    "duplicate": "Duplicar",
+    "duplicateConfirmTitle": "Criar uma nova linha a partir desta?",
+    "duplicateConfirmBody": "Uma nova linha é criada com os valores deste formulário. \"{{id}}\" em si não muda.",
+    "duplicateNewId": "Novo id",
+    "duplicateHint": "O id não pode ser mudado depois de criado. A nova linha abre para edição logo em seguida.",
+    "duplicateConfirm": "Criar a cópia"
   },
   "factions": {
     "luna": "Autoridade de Luna",
@@ -863,21 +910,36 @@
     "fuelBar": "Tanque de combustível",
     "refuelHint": "O combustível é vendido por unidade; o tanque cheio custa o valor mostrado ao confirmar.",
     "scav": {
-      "what": "Mande sua nave vasculhar os destroços ao redor de {{place}} atrás de peças que outros pilotos deixaram. É um trabalho como uma missão: a nave fica fora do porto enquanto trabalha, e um relatório conta o que ela achou.",
-      "time": "Leva cerca de {{minutes}} minutos, e a nave não pode ser usada nesse tempo.",
-      "risk": "O risco vem do lugar (zona {{zone}}): piratas podem te encontrar durante a busca, e quanto mais arriscado o lugar, melhores os achados.",
+      "what": "Vasculhe os destroços ao redor de {{place}} atrás de peças que outros pilotos deixaram. É trabalho manual no próprio lugar: a nave fica no porto, mas ocupada, e um relatório conta o que foi achado.",
+      "time": "Leva cerca de {{minutes}} minutos; a nave não pode ser usada nesse tempo.",
+      "risk": "Quanto mais arriscado o lugar (zona {{zone}}), melhores e mais raros os achados — e piratas podem te encontrar durante a busca. Peças raras só aparecem em lugares perigosos.",
       "quality": "Tudo o que você acha é USADO: cerca de {{min}}–{{max}}% de condição neste lugar. Conserte, instale ou venda.",
-      "finds": "Em {{place}} você pode achar uma ou mais peças; um campo dominado por piratas rende mais.",
+      "finds": "Em {{place}} uma busca pode achar uma ou mais peças; um campo dominado por piratas dá mais.",
       "scrap": "Os destroços daqui também têm sucata: restos gastos que vendem por preço fixo em qualquer porto.",
       "field": {
         "common": "um porto comum",
         "mission": "um local de missão",
         "pirate": "um campo de destroços pirata"
       },
-      "where": "Só funciona onde sua nave está atracada, e cada lugar tem o próprio tempo de espera entre trabalhos.",
+      "where": "Só onde sua nave está atracada; cada lugar tem o próprio tempo de espera entre trabalhos.",
       "ready": "Pronto para partir.",
       "nextAttempt": "Próximo trabalho em",
-      "title": "Vasculhar os destroços"
+      "title": "Vasculhar os destroços",
+      "nothing": "Cerca de {{percent}}% das buscas aqui não acham nada (quanto mais seguro o lugar, mais vezes).",
+      "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: só {{percent}}% da chance normal de achar algo.",
+      "riskFoot": "Quanto mais arriscado o lugar (zona {{zone}}), melhores e mais raros os achados. A pé, nada pode te atacar. Peças raras só aparecem em lugares perigosos.",
+      "modeTitle": "Como buscar",
+      "mode": {
+        "ship": {
+          "name": "Com a nave",
+          "hint": "A nave vasculha o lugar: a chance total de achar coisas, mas piratas podem te encontrar. Não gasta combustível."
+        },
+        "foot": {
+          "name": "A pé",
+          "hint": "Você busca sem a nave: só {{percent}}% da chance normal, mas sem ataques, sem desgaste e sem combustível."
+        }
+      },
+      "footNotice": "A pé você só tem {{percent}}% da chance normal de achar algo. Em troca, nada te ataca e a nave não sofre dano."
     },
     "mine": {
       "title": "Minerar o campo",
@@ -909,9 +971,22 @@
     "upgradesTo": "Melhora para {{name}}",
     "upgrade": "Melhorar",
     "upgradeConfirmTitle": "Melhorar por {{cost}} ¢?",
-    "upgradeQuote": "Melhorar {{name}} para {{nextName}} por {{cost}} ¢?",
+    "upgradeQuote": "Melhorar <from>{{name}}</from> para <to>{{nextName}}</to> por {{cost}} ¢?",
     "upgradeConfirm": "Melhorar",
-    "upgraded": "Melhorado para {{name}}."
+    "upgraded": "Melhorado para {{name}}.",
+    "upgradeFilter": "Filtro de melhorias",
+    "upgradeOnlyAffordable": "Só o que eu posso pagar",
+    "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
+    "scavengeFoot": "Vasculhar a pé",
+    "upgradeFromTo": "{{from}} → {{to}}",
+    "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
+    "craftLine": "{{name}}: {{have}} de {{needed}} fragmentos de núcleo",
+    "craft": "Fabricar",
+    "craftDone": "Fabricado: {{name}}.",
+    "cores": {
+      "prototype_core": "Núcleo Protótipo",
+      "ancient_core": "Núcleo Ancestral"
+    }
   },
   "inventory": {
     "title": "Inventário",
@@ -938,10 +1013,9 @@
   "report": {
     "title": "Relatório da missão",
     "tabs": {
-      "summary": "Resumo",
+      "overview": "Visão geral",
       "narrative": "A história",
-      "log": "Registro",
-      "detail": "Detalhes"
+      "log": "Registro"
     },
     "detail": {
       "partsDamage": "Peças que sofreram dano",
@@ -964,7 +1038,8 @@
     "cascade": {
       "shield": "Absorvido pelo escudo",
       "armor": "Absorvido pela blindagem",
-      "hp": "Dano ao casco"
+      "hp": "Dano ao casco",
+      "order": "Como um golpe é dividido: o escudo pega o máximo que puder, a blindagem pega o que sobrar e só o resto chega ao casco. A própria viagem atinge da mesma forma."
     },
     "combatLog": {
       "title": "Rodada a rodada",
@@ -978,7 +1053,8 @@
       "side": {
         "player": "Você",
         "enemy": "Inimigo"
-      }
+      },
+      "left": "({{value}} restantes)"
     },
     "refKind": {
       "loot": "Item",
@@ -1019,7 +1095,54 @@
       "found": "Achados",
       "foundPart": "{{name}} ({{condition}}%)",
       "foundScrap": "Sucata: {{name}}",
-      "raceTitle": "Resultado da corrida — você terminou em {{place}}º"
+      "raceTitle": "Resultado da corrida — você terminou em {{place}}º",
+      "trouble": {
+        "mishap": "teve problemas",
+        "overheat": "motores superaqueceram"
+      },
+      "damageCombat": "Dano em lutas",
+      "travelWear": "Desgaste no caminho",
+      "wearValue": "{{points}} pontos · {{parts}} peça(s)"
+    },
+    "overview": {
+      "combatTitle": "Dano em combates",
+      "noCombatDamage": "Nenhum dano de combates.",
+      "layer": {
+        "shield": "Escudo",
+        "armor": "Blindagem",
+        "hull": "Casco"
+      },
+      "travelTitle": "Desgaste no caminho",
+      "noWear": "A própria viagem não deixou marcas.",
+      "wear": "{{points}} pontos de condição perdidos em {{parts}} peça(s) pela própria viagem.",
+      "travelNote": "A viagem bate como uma arma: primeiro o escudo (se a nave tiver), depois a blindagem, depois o casco. O que passou é o desgaste nas peças.",
+      "fromTo": "{{before}}% → {{after}}%",
+      "engines": {
+        "title": "Ajuste dos motores",
+        "group": {
+          "chem": "Motores químicos",
+          "ion": "Motores de íons"
+        },
+        "pushed": "rodaram a x{{value}}: forçados em {{legs}} trecho(s), {{failures}} falha(s); a chance de nenhuma falha era {{chance}}%.",
+        "eased": "rodaram a x{{value}}: reduzidos em {{legs}} trecho(s), mais devagar mas gastando menos."
+      }
+    },
+    "story": {
+      "leg": "Trecho {{index}} · {{from}} → {{to}}",
+      "categories": {
+        "combat": "Luta",
+        "transit": "Voo",
+        "failure": "Problema",
+        "environment": "Espaço",
+        "loot": "Achado",
+        "payment": "Pagamento"
+      }
+    },
+    "logTable": {
+      "leg": "Trecho",
+      "kind": "Tipo",
+      "what": "O que aconteceu",
+      "effect": "Efeito"
     }
   },
   "transit": {
@@ -1116,7 +1239,9 @@
       "MOB_TOO_LOW": "Mobilidade baixa demais",
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
-      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido"
+      "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
+      "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",
@@ -1125,7 +1250,7 @@
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
       "MINER": "Uma plataforma de mineração instalada",
       "SPEED": "Mobilidade acima da velocidade de referência de resgate",
-      "RACE_SPEED": "A velocidade (mobilidade) da nave está abaixo do mínimo de entrada desta corrida."
+      "RACE_SPEED": "Velocidade da nave (mobilidade) igual ou acima do mínimo de entrada desta corrida"
     },
     "controlledBy": "Controlado por {{faction}}",
     "expiredLabel": "Expirada",
@@ -1147,6 +1272,7 @@
       "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
       "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
       "TRAVEL": "nada especial: combustível para a viagem.",
+      "SCAVENGE": "nada especial: qualquer nave pode vasculhar um lugar, uma pronta para voar encontra mais.",
       "RACE": "uma nave rápida: precisa superar a velocidade de entrada, e quanto mais rápida melhor."
     },
     "mining": {
@@ -1157,11 +1283,27 @@
       "title": "O grid",
       "pilot": "Piloto",
       "speed": "Velocidade",
-      "time": "Tempo",
       "you": "Você",
       "rank": "{{place}}.",
       "entry": "Entrada: velocidade {{mobility}} ou mais. Prêmios:",
-      "prize": "{{place}}º {{amount}}"
+      "prize": "{{place}}º {{amount}}",
+      "expected": "Esperado",
+      "expectedHint": "Onde esta nave costuma terminar. O resultado real depende da forma, da sorte e de problemas no dia.",
+      "best": "Melhor dia",
+      "bestHint": "Um grande dia: melhor forma e sorte.",
+      "none": "—",
+      "dynamic": "Cada corrida é diferente: forma, sorte e problemas movem os tempos em torno destes valores.",
+      "finish": "Chegada"
+    },
+    "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",
+    "lowFuelCapacity": "Esta viagem precisa de {{needed}} de combustível, mas seus tanques guardam só {{cap}}; reabastecer não basta: instale mais capacidade de tanque ou escolha uma rota mais curta.",
+    "yourMission": "Sua missão",
+    "startBefore": "Iniciar até",
+    "goToShip": "Abrir em Minha Nave",
+    "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}",
+    "cargo": {
+      "fixed": "Carga fixa: {{need}} unidades, ocupando esse tanto do seu espaço de carga.",
+      "open": "Carga aberta: no mínimo {{need}} unidades, e você leva todo o espaço de carga que tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
     }
   },
   "map": {
@@ -1212,6 +1354,11 @@
         "SHIP_NOT_VIABLE": "A nave ainda não pode voar: monte-a no Hangar primeiro.",
         "NOT_ENOUGH_FUEL": "Combustível insuficiente para esta viagem: reabasteça no porto primeiro."
       }
+    },
+    "floating": "Sua nave está flutuando aqui",
+    "working": {
+      "SCAVENGE": "Vasculhando",
+      "MINING": "Minerando"
     }
   },
   "notFound": {
@@ -1220,29 +1367,25 @@
   },
   "loading": "Carregando...",
   "error": {
-    "unexpected": "Algo deu errado",
-    "NO_SHIP": "Você não tem uma nave.",
-    "ACTIVE_MISSION_EXISTS": "Já há uma missão em andamento.",
-    "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local.",
-    "CARGO_TYPE": "Capacidade de carga abaixo do manifest.",
-    "PRESSURIZED_LIFE_SUPPORT": "A nave não tem suporte de vida pressurizado.",
-    "WEAPONS": "Nenhuma arma instalada.",
-    "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão.",
-    "MINER": "Nenhum equipamento de mineração instalado.",
-    "SPEED": "Lento demais para este contrato.",
-    "HOLD_LIMIT": "Você já está com uma missão reservada.",
-    "UNKNOWN_FACTION": "Essa facção não é jogável.",
-    "ALREADY_REPAIRING": "Esta nave já está em reparo.",
-    "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
     "ACCOUNT_BANNED": "Esta conta foi suspensa.",
+    "ACTIVE_MISSION_EXISTS": "Já há uma missão em andamento.",
+    "ALREADY_REPAIRING": "Esta nave já está em reparo.",
+    "ART_BAD_SIZE": "A imagem está vazia ou tem mais de 1,5 MB.",
+    "ART_NOT_AN_IMAGE": "Esse arquivo não é uma imagem válida (ou segura).",
+    "ART_UNKNOWN_SLOT": "Esse espaço de imagem não existe.",
+    "ART_UNSUPPORTED_TYPE": "Envie uma imagem PNG, JPEG, WebP ou SVG.",
+    "AUTO_LAYOUT_OMITTED_PARTS": "A montagem automática não conseguiu posicionar todas as peças.",
     "BALANCE_NEGATIVE": "Seu saldo está negativo — ganhe créditos antes de gastar.",
     "BATTERY_CHARGE_INSUFFICIENT": "A carga da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
     "BATTERY_OUTPUT_INSUFFICIENT": "A saída da bateria é insuficiente para esta montagem — instale uma bateria, ou uma maior.",
+    "CARGO_TYPE": "Capacidade de carga abaixo do manifest.",
     "CREDIT_OVERFLOW": "Essa venda é grande demais para ser creditada.",
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
     "FORMAT_NOT_UNLOCKED": "Esse formato de nave não está desbloqueado para a ponte atual.",
     "FUEL_EMPTY": "O tanque está vazio.",
+    "FUEL_INSUFFICIENT": "Esta rota precisa de mais combustível do que a nave tem: você ficaria sem no caminho. Reabasteça, aumente a capacidade dos tanques ou escolha uma rota mais curta.",
+    "HOLD_LIMIT": "Você já está com uma missão reservada.",
     "HOLD_NOT_OWNED": "Você não está com esta missão reservada.",
     "INSUFFICIENT_FUNDS": "Créditos insuficientes.",
     "INSUFFICIENT_MATERIALS": "Você não possui essa quantidade.",
@@ -1252,53 +1395,69 @@
     "INVALID_LIMIT": "Tamanho de página inválido.",
     "INVALID_LISTING": "Essa oferta não está mais disponível.",
     "INVALID_QUANTITY": "Quantidade inválida.",
-    "PART_DESTROYED": "Uma peça destruída (0%) não pode ser reparada. Troque-a.",
     "INVALID_REPAIR_TARGET": "Esse reparo ficaria abaixo da condição atual da peça. Recarregue a aba de reparo e tente de novo.",
+    "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
     "MAINTENANCE": "O jogo está em manutenção. Tente novamente em breve.",
+    "MINER": "Nenhum equipamento de mineração instalado.",
+    "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão.",
     "MISSION_EXPIRED": "Esta missão expirou.",
     "MISSION_MALFORMED": "Esta missão está malformada.",
+    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
     "MISSION_NOT_ACCEPTED": "Aceite a missão primeiro.",
     "MISSION_REQUIREMENTS_NOT_MET": "Sua nave não cumpre os requisitos desta missão.",
+    "NOT_A_FLIGHT": "Essa missão não é um voo, então os motores não se aplicam.",
+    "NOT_MINABLE": "Não há nada para minerar aqui.",
+    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro.",
     "NO_REPAIR_TARGETS": "Nada para reparar.",
+    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
+    "NO_SHIP": "Você não tem uma nave.",
     "OUT_OF_BOUNDS": "Uma peça está fora da área de montagem.",
     "OVERLAP": "As peças se sobrepõem.",
+    "PART_DESTROYED": "Uma peça destruída (0%) não pode ser reparada. Troque-a.",
     "PART_NOT_INSTALLED": "Essa peça não está instalada.",
+    "PRESSURIZED_LIFE_SUPPORT": "A nave não tem suporte de vida pressurizado.",
     "PRICE_CHANGED": "O preço mudou para {{price}} ¢.",
+    "RATE_LIMITED": "Requisições demais — aguarde um instante.",
     "REGISTRATION_CLOSED": "O registro está fechado no momento.",
     "REPORT_NOT_FOUND": "Relatório não encontrado.",
     "REPORT_SCHEMA_UNSUPPORTED": "Este relatório não pode ser lido.",
+    "RESCUE_NOT_DUE": "O resgate ainda não chegou.",
     "REVISION_MISMATCH": "A configuração mudou — recarregue e tente de novo.",
     "SCAVENGE_COOL_DOWN": "Nada de novo aqui ainda — tente de novo em {{seconds}} s.",
     "SHIP_MISMATCH": "Essa nave não corresponde a esta missão.",
     "SHIP_NOT_ADRIFT": "A nave não está à deriva.",
     "SHIP_NOT_AT_LOCATION": "Sua nave não está neste local.",
+    "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local.",
     "SHIP_NOT_IN_PORT": "A nave precisa estar no porto.",
     "SHIP_NOT_VIABLE": "A nave não é viável — corrija a montagem primeiro.",
     "SHIP_ON_MISSION": "A nave está em missão.",
     "SHIP_REPAIRING": "A nave está em reparo.",
+    "SPEED": "Lento demais para este contrato.",
+    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
+    "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
+    "UNKNOWN_CORE": "Esse núcleo não pode ser fabricado.",
+    "UNKNOWN_FACTION": "Essa facção não é jogável.",
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
-    "RATE_LIMITED": "Requisições demais — aguarde um instante.",
-    "UNAUTHORIZED": "Sua sessão terminou — entre novamente.",
-    "LISTING_SOLD": "Essa peça usada acabou de ser vendida.",
-    "MISSION_NOT_ABANDONABLE": "Esta missão já saiu do porto, então não pode mais ser cancelada.",
-    "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",
-    "NO_ROUTE": "Não há rota saindo deste lugar, então não há o que vasculhar por perto.",
-    "NOT_MINABLE": "Não há nada para minerar aqui.",
-    "NO_MINING_RIG": "É preciso instalar uma plataforma de mineração primeiro.",
-    "ART_UNKNOWN_SLOT": "Esse espaço de imagem não existe.",
-    "ART_UNSUPPORTED_TYPE": "Envie uma imagem PNG, JPEG, WebP ou SVG.",
-    "ART_BAD_SIZE": "A imagem está vazia ou tem mais de 1,5 MB.",
-    "ART_NOT_AN_IMAGE": "Esse arquivo não é uma imagem válida (ou segura)."
+    "WEAPONS": "Nenhuma arma instalada.",
+    "unexpected": "Algo deu errado"
   },
   "language": {
     "label": "Idioma"
   },
   "rescue": {
-    "title": "Nave à deriva",
-    "body": "Sua nave ficou sem combustível e está à deriva. Um reboque a traz de volta ao porto — custa créditos e pode deixar seu saldo negativo.",
-    "action": "Chamar reboque",
-    "done": "Rebocada de volta ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
+    "title": "Flutuando no espaço",
+    "body": "Sua nave ficou sem combustível e flutua onde parou. Não dá para fazer nada com ela até ser rebocada para uma base. Escolha como: esperar o resgate chegar (mais barato) ou chamá-lo já. Qualquer um pode deixar seu saldo negativo.",
+    "nearestBase": "Base mais próxima: {{base}}, a {{distance}} de distância.",
+    "waiting": "Resgate a caminho — chega em",
+    "wait": "Esperar o resgate — {{cost}} ¢ (cerca de {{minutes}} min)",
+    "now": "Resgate já — {{cost}} ¢",
+    "confirmWait": "Esperar o resgate? Ele chega em cerca de {{minutes}} minutos e reboca a nave para {{base}}. Você paga {{cost}} ¢ quando ele chegar.",
+    "confirmNow": "Chamar o resgate já? A nave é rebocada para {{base}} na hora e você paga {{cost}} ¢.",
+    "waitAction": "Esperar o resgate",
+    "nowAction": "Resgate já",
+    "waitStarted": "O resgate está a caminho. Você paga quando ele chegar.",
+    "done": "Rebocada ao porto por {{cost}} ¢. Combustível a bordo: {{fuel}}."
   },
   "parts": {
     "info": "Detalhes",
@@ -1344,7 +1503,7 @@
       },
       "bli": {
         "label": "Blindagem",
-        "hint": "Reduz o dano recebido dos ataques."
+        "hint": "Corta todo golpe que passa do escudo em uma quantia fixa e depois absorve o resto do seu reservatório, antes do casco."
       },
       "esc": {
         "label": "Escudo",
@@ -1401,6 +1560,22 @@
       "partHp": {
         "label": "Pontos de casco",
         "hint": "Dano que esta peça aguenta antes de quebrar."
+      },
+      "energyGen": {
+        "label": "Energia gerada",
+        "hint": "Energia que esta peça produz em voo. Um gerador não consome ao mesmo tempo."
+      },
+      "energyUse": {
+        "label": "Energia usada (voo)",
+        "hint": "Energia que esta peça consome o tempo todo. Geradores na nave precisam cobrir, ou os motores recebem só a parte da energia que existe."
+      },
+      "energyCombatUse": {
+        "label": "Energia usada (combate)",
+        "hint": "Energia consumida por rodada de combate, tirada das baterias."
+      },
+      "shieldRegen": {
+        "label": "Recuperação do escudo",
+        "hint": "Pontos de escudo recuperados a cada rodada de combate. Cada um custa energia de combate."
       }
     },
     "summaryNone": "Peça estrutural",
@@ -1410,14 +1585,18 @@
     "compare": {
       "title": "Se você instalar agora",
       "titleSwap": "Se você trocar por {{name}}",
+      "noRoom": "Esta peça não tem lugar livre na nave onde se conecte, então não entra na conta abaixo.",
       "loading": "Verificando o que isso faria à nave…",
       "error": "Não foi possível verificar o efeito disso na nave.",
       "stat": "Estatística",
       "value": "Esta peça",
-      "ifInstalled": "Nave, se instalada",
+      "shipNow": "Nave agora",
+      "ifInstalled": "Com esta peça",
       "scenarioLabel": "Comparar como",
       "addOption": "Adicionar",
-      "replaceOption": "Trocar por {{name}}"
+      "replaceOption": "Trocar por {{name}}",
+      "partNow": "Esta peça hoje",
+      "partUpgraded": "Melhorada"
     }
   },
   "market": {
@@ -1464,6 +1643,45 @@
       "repairing": "Reparos em andamento"
     },
     "docked": "Atracada em {{place}}",
-    "repairingAt": "na oficina de {{place}}"
+    "repairingAt": "na oficina de {{place}}",
+    "floating": "Flutuando no espaço"
+  },
+  "routeMap": {
+    "label": "Rota de {{from}} para {{to}}",
+    "title": "Rota"
+  },
+  "engineTuning": {
+    "title": "Ajuste dos motores",
+    "intro": "Rode os motores na potência listada, ou force-os por velocidade. Forçar arrisca uma falha de motor em cada trecho. O gerenciamento de bateria também é ajustado aqui.",
+    "locked": "Os motores só podem ser ajustados com a nave no porto.",
+    "presets": "Ajustes rápidos",
+    "preset": {
+      "normal": "Normal",
+      "sprint": "Corrida"
+    },
+    "group": {
+      "chem": "Motores químicos",
+      "ion": "Motores de íons"
+    },
+    "level": "nível {{value}}",
+    "hint": {
+      "chem": "Sempre de pelo menos 100%. Acima de 1: mais rápido, queima muito mais combustível, desgasta os motores químicos e pode superaquecer.",
+      "ion": "Não queima combustível mas consome energia, e o consumo cresce mais rápido que o empuxo. Acima de 1: mais empuxo, desgasta os motores iônicos E as baterias, e pode superaquecer."
+    },
+    "speed": "Velocidade {{value}} (listada: {{base}})",
+    "fuelBurn": "Consumo de combustível {{value}} (listado: {{base}})",
+    "power": "Energia: gera {{supply}}, usa {{demand}}, sobra {{spare}} (falta de energia sufoca outros sistemas; os motores continuam).",
+    "clean": "{{percent}}% de chance de nenhum motor falhar na viagem toda.",
+    "tripTime": "Esta viagem leva {{value}} (nos níveis listados: {{base}}).",
+    "tripFuel": "Combustível: precisa de {{needed}}, você leva {{have}} (nos níveis listados: {{base}}).",
+    "tripNoFit": "Nestes níveis a viagem precisa de mais combustível do que a nave leva. Reduza os motores químicos, ou force os de íons se a energia permitir.",
+    "thrustTitle": "De onde vem o empuxo",
+    "thrustBar": "Químico {{chem}}% · Íons {{ion}}% do empuxo",
+    "thrustLine": "{{group}}: {{value}} da velocidade ({{percent}}% do empuxo; listado: {{base}})",
+    "wear": "Desgaste por trecho só pelo esforço: motores químicos −{{chem}}, motores de íons −{{ion}}, baterias −{{battery}}.",
+    "battery": {
+      "label": "Gerenciamento de bateria",
+      "hint": "De onde vem a energia de combate: só as baterias, tudo que a nave produz, ou um override que força mais os sistemas."
+    }
   }
 }

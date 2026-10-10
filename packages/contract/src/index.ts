@@ -118,6 +118,9 @@ export const PartCatalogStatsSchema = z.object({
   batInput: z.number(),
   pressurized: z.boolean(),
   lifeSupport: z.boolean(),
+  /** Shield parts: points of shield recovered per combat round. */
+  shieldRegen: z.number().optional(),
+  idlePower: z.number().optional(),
 });
 export type PartCatalogStats = z.infer<typeof PartCatalogStatsSchema>;
 
@@ -217,6 +220,20 @@ export type PublicFaction = z.infer<typeof PublicFactionSchema>;
 export const FactionsResponseSchema = z.object({ factions: z.array(PublicFactionSchema) });
 export type FactionsResponse = z.infer<typeof FactionsResponseSchema>;
 
+/** GET /v1/display: how derived numbers are shown (admin-tuned, see `ship.stat_display_scale`). */
+export const DisplayResponseSchema = z.object({
+  statScale: z.number(),
+  mobFactor: z.number(),
+  scavengeHandicap: z.number(),
+  scavengeFootFactor: z.number(),
+  shieldRegen: z.number(),
+  armorPoolFactor: z.number(),
+  armorReduction: z.number(),
+  /** Core fragments needed to craft each core (at a port). */
+  coreFragments: z.record(z.string(), z.number()),
+});
+export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
+
 export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
 export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
 
@@ -260,6 +277,23 @@ export const ShipResponseSchema = z.object({
   currentLocationId: z.string(),
   stance: ShipStanceSchema,
   energyMode: EnergyModeSchema,
+  /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
+  engineLevels: z.object({ chem: z.number(), ion: z.number() }),
+  /** What the ship carries besides its installed parts: loose parts (one bridge slot each) and a
+      mission's cargo (cargo space). Over capacity = the ship cannot depart. */
+  hold: z
+    .object({
+      slots: z.number(),
+      parts: z.number(),
+      missionCargo: z.number(),
+      capacity: z.number(),
+      used: z.number(),
+      free: z.number(),
+      partsOver: z.boolean(),
+      cargoOver: z.boolean(),
+      over: z.boolean(),
+    })
+    .optional(),
   layout: z.array(PlacementSchema),
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
@@ -269,6 +303,30 @@ export const ShipResponseSchema = z.object({
   /** Installed part instance ids with no compatible connector chain back to the bridge right
       now — still counted as mass/structure/HP, not contributing anything else. */
   disconnectedPartIds: z.array(z.string()),
+  /** Where an out-of-fuel ship floats: on a route, `progress` (0..1) of the way from `fromId` to `toId`. */
+  float: z
+    .object({
+      routeId: z.string(),
+      fromId: z.string(),
+      toId: z.string(),
+      progress: z.number(),
+    })
+    .nullable(),
+  /** The ways out for a floating ship; null otherwise. */
+  rescue: z
+    .object({
+      /** Waiting for the rescue. */
+      waitCost: z.number(),
+      /** Calling it now (waiting price + distance to the nearest base). */
+      nowCost: z.number(),
+      waitSeconds: z.number(),
+      /** When the waiting rescue arrives; null until the pilot calls it. */
+      dueAt: IsoDate.nullable(),
+      /** The base the ship is towed to, and how far it is from where the ship floats. */
+      baseId: z.string(),
+      baseDistance: z.number(),
+    })
+    .nullable(),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
@@ -294,7 +352,26 @@ export type Problem = z.infer<typeof ProblemSchema>;
 export const PreviewResponseSchema = z.object({
   sheet: ShipSheetSchema,
   shipClass: ShipClassTypeSchema,
-  viability: z.object({ viable: z.boolean(), problems: z.array(ProblemSchema) }),
+  viability: z.object({
+    viable: z.boolean(),
+    /** Block flight. */
+    problems: z.array(ProblemSchema),
+    /** Do not block flight; the ship flies weaker (energy shortfalls, blocked engines/weapons). */
+    warnings: z.array(ProblemSchema).default([]),
+  }),
+  /** Travelling power sharing: what each kind of system gets of its need (0..1). */
+  power: z
+    .object({ supply: z.number(), demand: z.number(), shares: z.record(z.string(), z.number()) })
+    .optional(),
+  /** What a fight starts with, at the parts' current condition (unconnected parts give nothing). */
+  layers: z
+    .object({
+      shield: z.number(),
+      armor: z.number(),
+      hull: z.number(),
+      shieldRegen: z.number(),
+    })
+    .optional(),
   layout: z.array(PlacementSchema),
   omittedPartInstanceIds: z.array(z.string()),
   disconnectedPartIds: z.array(z.string()),
@@ -302,13 +379,56 @@ export const PreviewResponseSchema = z.object({
 });
 export type PreviewResponse = z.infer<typeof PreviewResponseSchema>;
 
+export const EnginePreviewSchema = z.object({
+  /** The levels this preview is for, kept inside the admin's ranges. */
+  levels: z.object({ chem: z.number(), ion: z.number() }),
+  ranges: z.object({
+    chem: z.tuple([z.number(), z.number()]),
+    ion: z.tuple([z.number(), z.number()]),
+  }),
+  /** Which engine groups the ship has. */
+  groups: z.array(z.enum(['chem', 'ion'])),
+  /** Where the thrust comes from at these levels, and as listed (chemical and ion engines). */
+  thrust: z.object({ chem: z.number(), ion: z.number() }),
+  baselineThrust: z.object({ chem: z.number(), ion: z.number() }),
+  /** Speed (unrounded mobility) and fuel burn per distance at these levels. */
+  mobility: z.number(),
+  fuelUse: z.number(),
+  /** Cruising power at these levels. */
+  power: z.object({ supply: z.number(), demand: z.number(), spare: z.number() }),
+  /** Condition points lost per leg to the push itself: a chemical engine, an ion engine, a battery. */
+  wearPerLeg: z.object({ chem: z.number(), ion: z.number(), battery: z.number() }),
+  /** Chance no engine fails during the whole run. */
+  cleanChance: z.number(),
+  /** The same two figures at level 1. */
+  baseline: z.object({ mobility: z.number(), fuelUse: z.number() }),
+  /** For a given mission: the trip at these levels and at level 1. */
+  trip: z
+    .object({
+      missionId: z.string(),
+      legCount: z.number(),
+      durationSeconds: z.number(),
+      fuelNeeded: z.number(),
+      fuelHave: z.number(),
+      fuelCap: z.number(),
+      fits: z.boolean(),
+      baseline: z.object({ durationSeconds: z.number(), fuelNeeded: z.number() }),
+    })
+    .optional(),
+});
+export type EnginePreview = z.infer<typeof EnginePreviewSchema>;
+
 export const RescueResponseSchema = z.object({
   shipId: z.string(),
   status: z.string(),
   cost: z.number(),
   fuel: z.number(),
   credits: z.number(),
-  restartParts: z.array(z.string()),
+  replacementParts: z.array(z.string()),
+  /** `now`: towed at once; `wait`: the timer started (status stays ADRIFT, `dueAt` says when). */
+  mode: z.enum(['now', 'wait']),
+  baseId: z.string(),
+  dueAt: IsoDate.nullable(),
 });
 export type RescueResponse = z.infer<typeof RescueResponseSchema>;
 
@@ -391,6 +511,10 @@ export const RequirementCheckSchema = z.object({
   code: z.string(),
   message: z.string(),
   met: z.boolean(),
+  /** Numeric requirements: what the ship needs and what it has (mobility in game units, shown on the display scale). */
+  needed: z.number().optional(),
+  actual: z.number().optional(),
+  unit: z.enum(['mobility', 'cargo', 'mining']).optional(),
 });
 export type RequirementCheck = z.infer<typeof RequirementCheckSchema>;
 
@@ -434,13 +558,35 @@ export const OfferInfoSchema = z.object({
     .nullable(),
   /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
   requirements: z.array(RequirementCheckSchema),
+  /** Deliveries: how the cargo space is used (min = needs this much space, fixed = loads exactly this
+      many units, open = loads what fits, paid per unit beyond the minimum); null on other types. */
+  cargo: z
+    .object({ mode: z.enum(['min', 'fixed', 'open']), need: z.number(), unitPay: z.number() })
+    .nullable()
+    .optional(),
   /** Race offers: the rival ships (speed + time over this route), the entry minimum and the prize
       shares for 1st/2nd/3rd (of the winner's board figure's base). null on every other type. */
   race: z
     .object({
       rivals: z.array(
-        z.object({ name: z.string(), mobility: z.number(), durationSeconds: z.number() }),
+        z.object({
+          name: z.string(),
+          mobility: z.number(),
+          /** Where the rival usually finishes (listed speed, no luck). */
+          durationSeconds: z.number(),
+          /** Its best and worst day. */
+          bestSeconds: z.number(),
+          worstSeconds: z.number(),
+        }),
       ),
+      /** The viewer's own ship over this route, as its engines are tuned; null without a flyable ship. */
+      you: z
+        .object({
+          durationSeconds: z.number(),
+          bestSeconds: z.number(),
+          worstSeconds: z.number(),
+        })
+        .nullable(),
       minMobility: z.number(),
       prizeShares: z.array(z.number()),
     })
@@ -474,6 +620,8 @@ export type MissionBrief = z.infer<typeof MissionBriefSchema>;
 export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   legWindows: z.array(LegWindowSchema),
   brief: MissionBriefSchema,
+  /** The board card's figures for this mission (time, fuel, requirements, material, race). */
+  info: OfferInfoSchema.optional(),
 });
 export type ActiveMission = z.infer<typeof ActiveMissionSchema>;
 
@@ -531,12 +679,20 @@ export const MissionCombatRoundSchema = z.object({
   hit: z.boolean(),
   damage: z.number(),
   armorAbsorbed: z.number(),
+  /** Layered model: the part of `armorAbsorbed` the armor cut outright (its pool did not pay). */
+  armorReduced: z.number().optional(),
   shieldAbsorbed: z.number(),
   hullDamage: z.number(),
+  /** Layered model: the player ship's shield and armor left after this attack. */
+  shieldAfter: z.number().optional(),
+  armorAfter: z.number().optional(),
 });
 export type MissionCombatRound = z.infer<typeof MissionCombatRoundSchema>;
 
 export const NarrativeLineSchema = ReportLineSchema.extend({
+  /** What kind of event: combat, transit, failure, environment, loot, payment. */
+  category: z.string().optional(),
+  type: z.string().optional(),
   detail: z
     .object({
       cascade: MissionDamageCascadeSchema,
@@ -545,6 +701,17 @@ export const NarrativeLineSchema = ReportLineSchema.extend({
     .optional(),
 });
 export type NarrativeLine = z.infer<typeof NarrativeLineSchema>;
+
+/** One row of the log view: the line plus its parts, to be laid out as a table. */
+export const LogLineSchema = ReportLineSchema.extend({
+  leg: z.number().optional(),
+  category: z.string().optional(),
+  categoryLabel: z.string().optional(),
+  type: z.string().optional(),
+  description: ReportLineSchema.optional(),
+  effect: ReportLineSchema.optional(),
+});
+export type LogLine = z.infer<typeof LogLineSchema>;
 
 export const NarrativeChapterSchema = z.object({
   leg: z.number(),
@@ -566,8 +733,27 @@ export const ReportStatsSchema = z.object({
     pvp: z.number(),
   }),
   damage: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }),
+  /** Wear from the journey itself: condition points lost across parts, and how many parts. */
+  travelWear: z.object({ points: z.number(), parts: z.number() }),
+  /** Where the journey's own damage went: the shield, the armor, the hull. */
+  travelLayers: z
+    .object({ shield: z.number(), armor: z.number(), hull: z.number() })
+    .optional(),
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
+  /** How the engines were run (engine tuning), per group; empty when run as listed. */
+  engines: z
+    .array(
+      z.object({
+        group: z.enum(['chem', 'ion']),
+        levelPct: z.number(),
+        pushedLegs: z.number(),
+        easedLegs: z.number(),
+        failures: z.number(),
+        cleanChancePct: z.number(),
+      }),
+    )
+    .optional(),
   /** Every part that lost condition during the run, dispatch vs final. */
   partsDamage: z.array(
     z.object({
@@ -596,7 +782,13 @@ export const ReportStatsSchema = z.object({
       /** displayed time = standing seconds x this (missions.time_scale at the run) */
       timeScale: z.number(),
       standings: z.array(
-        z.object({ name: z.string(), mobility: z.number(), seconds: z.number(), you: z.boolean() }),
+        z.object({
+          name: z.string(),
+          mobility: z.number(),
+          seconds: z.number(),
+          you: z.boolean(),
+          trouble: z.enum(['mishap', 'overheat']).optional(),
+        }),
       ),
     })
     .nullable(),
@@ -609,6 +801,8 @@ export const ReportMissionSchema = z.object({
   originId: z.string(),
   destinationId: z.string(),
   reward: z.number(),
+  /** The routes the trip follows, one per leg (for the map). */
+  routeIds: z.array(z.string()).optional(),
   title: LocalizedTextSchema,
 });
 export type ReportMission = z.infer<typeof ReportMissionSchema>;
@@ -621,7 +815,7 @@ const reportBase = {
 };
 export const ReportResponseSchema = z.discriminatedUnion('view', [
   z.object({ ...reportBase, view: z.literal('summary'), lines: z.array(ReportLineSchema) }),
-  z.object({ ...reportBase, view: z.literal('log'), lines: z.array(ReportLineSchema) }),
+  z.object({ ...reportBase, view: z.literal('log'), lines: z.array(LogLineSchema) }),
   z.object({
     ...reportBase,
     view: z.literal('narrative'),
@@ -798,6 +992,17 @@ export const PartUpgradeQuoteResponseSchema = z.object({
   nextPartType: z.string().optional(),
   nextDisplayName: LocalizedTextSchema.optional(),
   cost: z.number().optional(),
+  /** What the upgrade also asks for besides money, against what the pilot holds ('scrap' = any scrap). */
+  materials: z
+    .array(
+      z.object({
+        materialId: z.string(),
+        displayName: LocalizedTextSchema,
+        needed: z.number(),
+        have: z.number(),
+      }),
+    )
+    .optional(),
   /** The next tier's own rarity and full catalog stats, so the client can build a virtual
       part and reuse the same before/after diff popup Market already has. */
   nextRarity: z.string().optional(),
@@ -826,11 +1031,15 @@ export const ScavengeInfoSchema = z.object({
   scrapPlace: z.boolean(),
   /** How long a job takes (mission time). */
   durationSeconds: z.number(),
+  /** How long the same job takes on foot, without the ship. */
+  footDurationSeconds: z.number(),
   cooldownSeconds: z.number(),
   retryAfterSeconds: z.number(),
   attempts: z.number(),
   qualityMin: z.number(),
   qualityMax: z.number(),
+  /** Chance (0..1) a run here finds nothing at all. */
+  nothingChance: z.number(),
 });
 export type ScavengeInfo = z.infer<typeof ScavengeInfoSchema>;
 

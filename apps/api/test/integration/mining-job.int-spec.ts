@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
@@ -133,6 +134,9 @@ describe('independent mining job (round 10)', () => {
     const response = await start(player.token, 'ceres');
     expect(response.status).toBe(200);
     const body = response.body as { missionId: string; durationSeconds?: number };
+    // it digs an ore (a material sold by price), never a fixed-price scrap material
+    const job = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    expect((job.cargo as { materialId: string }).materialId.startsWith('scrap_')).toBe(false);
     expect(
       Math.abs(
         (body.durationSeconds ?? 0) - configService.snapshot().rules.mining.job_duration_seconds,
@@ -175,8 +179,10 @@ describe('independent mining job (round 10)', () => {
       select: { id: true },
     });
     const engineId = engines[0]!.id;
+    await prisma.partInstance.update({ where: { id: engineId }, data: { connectors: Prisma.DbNull } });
 
-    // turn the engine through its four facings until the ship is flight-viable apart from the
+    // universal ports on the engine (turning it never disconnects it), then turn it through its
+    // four facings until the ship is flight-viable apart from the
     // direction rule: that one problem, EXHAUST_BLOCKED, is what this test is about
     let chosen: number | null = null;
     for (const rot of [0, 90, 180, 270]) {
@@ -187,10 +193,11 @@ describe('independent mining job (round 10)', () => {
         .post(`/v1/ships/${player.shipId}/preview`)
         .set(auth(player.token))
         .send({ layout: candidate });
-      const codes = (
-        (preview.body as { viability?: { problems: { code: string }[] } }).viability?.problems ?? []
-      ).map((problem) => problem.code);
-      if (codes.length === 1 && codes[0] === 'EXHAUST_BLOCKED') {
+      const viability = (
+        preview.body as { viability?: { problems: { code: string }[]; warnings: { code: string }[] } }
+      ).viability;
+      const warned = (viability?.warnings ?? []).map((problem) => problem.code);
+      if ((viability?.problems.length ?? 1) === 0 && warned.includes('EXHAUST_BLOCKED')) {
         chosen = rot;
         await prisma.ship.update({
           where: { id: player.shipId },

@@ -66,6 +66,7 @@ export function torneioRules(fixture: CombatTapesFixture): GameRules['combat'] {
     armor_cap: fixture.dials.bli_teto,
     pierce_ratio: fixture.dials.fura,
     shield_regen: fixture.dials.esc_regen,
+    armor_pool_factor: 5,
     kite_factor: fixture.dials.kite,
     first_strike_bonus: 0,
     max_rounds: 50,

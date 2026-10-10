@@ -16,9 +16,11 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
+import { pathOfLegs } from '../../ui/RouteMap';
+import { ReportOverview } from './report-overview';
+import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
-import { conditionTone, Gauge } from '../../ui/Gauge';
 import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
 
@@ -37,13 +39,14 @@ export function ReportPage({ guided = false }: ReportPageProps) {
   useEffect(() => {
     void reloadProfile();
   }, [reloadProfile]);
-  const { t } = useTranslation();
-  // "Details" (the parts-damage table) is a client-only tab: its data is `report.stats`, which
-  // comes back on every server view alike, so it never needs a view of its own — it rides along
-  // on whichever real view was last fetched (cheapest: 'summary').
-  type ReportTab = ReportViewName | 'detail';
-  const [tab, setTab] = useState<ReportTab>('narrative');
-  const view: ReportViewName = tab === 'detail' ? 'summary' : tab;
+  const { t, i18n } = useTranslation();
+  // "Overview" is a client-only tab: everything it shows is `report.stats`, which comes back on
+  // every server view alike, so it never needs a view of its own — it rides along on whichever
+  // real view was last fetched (cheapest: 'summary').
+  type ReportTab = 'overview' | 'narrative' | 'log';
+  // A #combat link (from the mission history) goes straight to the story, where the fight is.
+  const [tab, setTab] = useState<ReportTab>(location.hash === '#combat' ? 'narrative' : 'overview');
+  const view: ReportViewName = tab === 'overview' ? 'summary' : tab;
   const [popupLine, setPopupLine] = useState<string | null>(null);
   const [refPopup, setRefPopup] = useState<Extract<ReportSegment, { t: 'ref' }> | null>(null);
 
@@ -107,7 +110,20 @@ export function ReportPage({ guided = false }: ReportPageProps) {
     </span>
   );
 
-  const tabs: readonly ReportTab[] = ['narrative', 'summary', 'log', 'detail'];
+  const tabs: readonly ReportTab[] = ['overview', 'narrative', 'log'];
+  const placeName = (id: string) => {
+    const found = worldQuery.data?.locations.find((entry) => entry.id === id);
+    return found === undefined ? id : pickLocalized(found.displayName, i18n.language);
+  };
+  // The places the trip passed through, so each chapter can say "Ceres → Hedus".
+  const storyPath =
+    report?.mission === undefined
+      ? []
+      : pathOfLegs(
+          (report.mission.routeIds ?? []).map((routeId) => ({ routeId })),
+          worldQuery.data,
+          report.mission.originId,
+        );
 
   return (
     <main className="app" data-guided={guided ? '' : undefined}>
@@ -144,37 +160,67 @@ export function ReportPage({ guided = false }: ReportPageProps) {
             ))}
           </div>
 
-          {tab === 'detail' && <PartsDamageTable stats={report.stats} />}
-
-          {tab !== 'detail' && report.view === 'summary' && (
-            <section className="stack">
-              {report.lines.map((line, index) => (
-                <p key={index} className={index === 0 ? 'sub' : undefined}>
-                  {renderLine(line, `l${index}`)}
-                </p>
-              ))}
-            </section>
+          {tab === 'overview' && (
+            <ReportOverview stats={report.stats} mission={report.mission} world={worldQuery.data} />
           )}
 
-          {report.view === 'log' && (
-            <ol className="stack mono log-lines">
-              {report.lines.map((line, index) => (
-                <li key={index}>{renderLine(line, `l${index}`)}</li>
-              ))}
-            </ol>
+          {tab !== 'overview' && report.view === 'log' && (
+            <div className="log-table-wrap">
+              <table className="log-table" data-testid="log-table">
+                <thead>
+                  <tr>
+                    <th>{t('report.logTable.leg')}</th>
+                    <th>{t('report.logTable.kind')}</th>
+                    <th>{t('report.logTable.what')}</th>
+                    <th>{t('report.logTable.effect')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.lines.map((line, index) => (
+                    <tr key={index} className={`ev ev-${line.category ?? 'other'}`}>
+                      <td>{line.leg === undefined ? '' : line.leg + 1}</td>
+                      <td>
+                        <span className={`ev-tag ev-${line.category ?? 'other'}`}>
+                          {line.categoryLabel ?? ''}
+                        </span>
+                      </td>
+                      <td>{renderLine(line.description ?? line, `d${index}`)}</td>
+                      <td className="log-effect">
+                        {line.effect === undefined ? '' : renderLine(line.effect, `e${index}`)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          {report.view === 'narrative' && (
+          {tab !== 'overview' && report.view === 'narrative' && (
             <section className="stack report-story">
               {report.chapters.map((chapter) => (
                 <article key={chapter.leg} className="event">
-                  <h2>{renderLine(chapter.header, `h${chapter.leg}`)}</h2>
-                  <ol className="stack">
+                  <h2>
+                    {storyPath[chapter.leg] !== undefined && storyPath[chapter.leg + 1] !== undefined
+                      ? t('report.story.leg', {
+                          index: chapter.leg + 1,
+                          from: placeName(storyPath[chapter.leg] ?? ''),
+                          to: placeName(storyPath[chapter.leg + 1] ?? ''),
+                        })
+                      : renderLine(chapter.header, `h${chapter.leg}`)}
+                  </h2>
+                  <ol className="stack story-events">
                     {chapter.lines.map((line, index) => {
                       const key = `${chapter.leg}-${index}`;
                       const hasDetail = line.detail !== undefined;
                       return (
-                        <li key={key}>
+                        <li key={key} className={`ev ev-${line.category ?? 'other'}`}>
+                          {line.category !== undefined && (
+                            <span className={`ev-tag ev-${line.category}`}>
+                              {t(`report.story.categories.${line.category}`, {
+                                defaultValue: line.category,
+                              })}
+                            </span>
+                          )}
                           {renderLine(line, key)}
                           {hasDetail && (
                             <>
@@ -262,6 +308,7 @@ function CascadeDetail({
   const rounds = line?.detail?.rounds;
   return (
     <div className="stack">
+      <p className="sub">{t('report.cascade.order')}</p>
       {Object.entries(cascade).map(([field, value]) => (
         <div className="statrow" key={field}>
           <span>{t(`report.cascade.${field}`, { defaultValue: field })}</span>
@@ -316,9 +363,15 @@ function CascadeDetail({
                   </td>
                   <td className={round.hit ? 'dmg-shield' : undefined}>
                     {round.hit ? round.shieldAbsorbed : '—'}
+                    {round.hit && round.shieldAfter !== undefined && (
+                      <small className="sub"> {t('report.combatLog.left', { value: round.shieldAfter })}</small>
+                    )}
                   </td>
                   <td className={round.hit ? 'dmg-armor' : undefined}>
                     {round.hit ? round.armorAbsorbed : '—'}
+                    {round.hit && round.armorAfter !== undefined && (
+                      <small className="sub"> {t('report.combatLog.left', { value: round.armorAfter })}</small>
+                    )}
                   </td>
                   <td className={round.hit ? 'dmg-hull' : undefined}>
                     {round.hit ? round.hullDamage : '—'}
@@ -375,39 +428,6 @@ function RefDetail({ segment }: { segment: Extract<ReportSegment, { t: 'ref' }> 
  * "current → target" preview with, just inverted (value = now, planned = the higher dispatch
  * figure, so the lighter segment reads as what was lost).
  */
-function PartsDamageTable({ stats }: { stats: ReportStats }) {
-  const { t } = useTranslation();
-  const rows = stats.partsDamage;
-  return (
-    <section className="stack" data-testid="parts-damage">
-      <h2>{t('report.detail.partsDamage')}</h2>
-      <p className="sub">{t('report.detail.partsDamageIntro')}</p>
-      {rows.length === 0 ? (
-        <p className="sub">{t('report.detail.noDamage')}</p>
-      ) : (
-        <ul className="stack parts-damage-list">
-          {rows.map((row) => (
-            <li key={row.partId} className="parts-damage-row">
-              <span className="parts-damage-name">{row.name}</span>
-              <Gauge
-                value={row.after}
-                max={100}
-                planned={row.before}
-                tone={conditionTone(row.after)}
-                ariaLabel={row.name}
-                label={`${row.before}% → ${row.after}%`}
-              />
-              <span className="parts-damage-lost error-text">
-                {t('report.detail.lost', { amount: row.before - row.after })}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 function outcomeTone(outcome: string): 'ok' | 'warn' | 'bad' {
   if (outcome === 'failed' || outcome === 'adrift') return 'bad';
   if (outcome === 'partial_failure') return 'warn';
@@ -427,6 +447,7 @@ interface DebriefProps {
 function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
   const placeArt = usePlaceArt();
   const { t, i18n } = useTranslation();
+  const display = useDisplay();
   const tone = outcomeTone(outcome);
   const number = (value: number) => new Intl.NumberFormat(i18n.language).format(value);
   const place = (id: string) => {
@@ -515,7 +536,7 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
           </dd>
         </div>
         <div className={damageTotal > 0 ? 'bad' : undefined}>
-          <dt>{t('report.debrief.damage')}</dt>
+          <dt>{t('report.debrief.damageCombat')}</dt>
           <dd>
             {damageTotal > 0
               ? // A ship with no shield never has one to report 0 damage to.
@@ -529,6 +550,17 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                     hull: stats.damage.hull,
                   },
                 )
+              : t('report.debrief.noDamage')}
+          </dd>
+        </div>
+        <div className={stats.travelWear.points > 0 ? 'bad' : undefined}>
+          <dt>{t('report.debrief.travelWear')}</dt>
+          <dd>
+            {stats.travelWear.points > 0
+              ? t('report.debrief.wearValue', {
+                  points: stats.travelWear.points,
+                  parts: stats.travelWear.parts,
+                })
               : t('report.debrief.noDamage')}
           </dd>
         </div>
@@ -572,7 +604,7 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
               <tr>
                 <th>{t('board.race.pilot')}</th>
                 <th>{t('board.race.speed')}</th>
-                <th>{t('board.race.time')}</th>
+                <th>{t('board.race.finish')}</th>
               </tr>
             </thead>
             <tbody>
@@ -582,8 +614,17 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
                     {t('board.race.rank', { place: index + 1 })}{' '}
                     {row.you ? t('board.race.you') : row.name}
                   </td>
-                  <td>{row.mobility}</td>
-                  <td>{formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}</td>
+                  <td>
+                    {new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                      scaleSpeed(row.mobility, display),
+                    )}
+                  </td>
+                  <td>
+                    {formatDuration(row.seconds * (stats.race?.timeScale ?? 1), t)}
+                    {row.trouble !== undefined && (
+                      <small className="race-trouble"> {t(`report.debrief.trouble.${row.trouble}`)}</small>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -622,7 +663,7 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
         </div>
       )}
 
-      {damageTotal > 0 && <p className="debrief-hint">{t('report.debrief.repairHint')}</p>}
+      {(damageTotal > 0 || stats.travelWear.points > 0) && <p className="debrief-hint">{t('report.debrief.repairHint')}</p>}
     </section>
   );
 }

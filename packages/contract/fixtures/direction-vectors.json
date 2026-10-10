@@ -186,7 +186,7 @@
    "expected": []
   },
   {
-   "name": "2x1 engine: part further west diagonally is blocked",
+   "name": "2x1 engine: a part further west in another row is not in its lane",
    "parts": {
     "e": {
      "class": "ENGINE",
@@ -213,12 +213,7 @@
      "rot": 0
     }
    ],
-   "expected": [
-    {
-     "id": "e",
-     "code": "EXHAUST_BLOCKED"
-    }
-   ]
+   "expected": []
   },
   {
    "name": "2x1 engine: parts under the engine are fine",
@@ -496,6 +491,196 @@
      "code": "EXHAUST_BLOCKED"
     }
    ]
+  },
+  {
+   "name": "engine in column 2: a part behind it in another row does not block it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 0,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 1,
+     "gy": 1,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "a part far behind the engine in the same row does not block it (only the cell right behind counts)",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 2,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 2,
+     "rot": 0
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "engine facing N: only its own column counts",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 0,
+     "gy": 0,
+     "rot": 90
+    },
+    {
+     "id": "e",
+     "gx": 1,
+     "gy": 1,
+     "rot": 90
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "a 1x2 weapon facing W is blocked by a part right behind either of its rows",
+   "parts": {
+    "w": {
+     "class": "WEAPON",
+     "w": 1,
+     "h": 2
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 1,
+     "gy": 1,
+     "rot": 0
+    },
+    {
+     "id": "w",
+     "gx": 2,
+     "gy": 0,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "w",
+     "code": "FACING_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "a part right behind the engine blocks it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 2,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 2,
+     "rot": 0
+    }
+   ],
+   "expected": [
+    {
+     "id": "e",
+     "code": "EXHAUST_BLOCKED"
+    }
+   ]
+  },
+  {
+   "name": "a part diagonal to the exhaust does not block it",
+   "parts": {
+    "e": {
+     "class": "ENGINE",
+     "w": 1,
+     "h": 1
+    },
+    "b": {
+     "class": "UTILITY",
+     "w": 1,
+     "h": 1
+    }
+   },
+   "layout": [
+    {
+     "id": "b",
+     "gx": 2,
+     "gy": 1,
+     "rot": 0
+    },
+    {
+     "id": "e",
+     "gx": 3,
+     "gy": 2,
+     "rot": 0
+    }
+   ],
+   "expected": []
   }
  ]
 }

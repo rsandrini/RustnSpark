@@ -450,6 +450,30 @@ describe('reports API (S9.3)', () => {
     expect(body.chapters![1]!.lines).toHaveLength(2);
     expect(body.chapters![0]!.lines[1]!.detail?.cascade).toEqual({ shield: 18, armor: 9, hp: 4 });
     expect(body.chapters![0]!.lines[0]!.detail).toBeUndefined();
+    // each event says what kind it is, so the screen can style the timeline
+    expect(body.chapters![0]!.lines.map((line) => (line as { category?: string }).category)).toEqual([
+      'transit',
+      'combat',
+    ]);
+  });
+
+  it('gives each log row its parts (leg, kind, what happened, effect) for a table', async () => {
+    const fixture = await setup();
+    const res = await report(fixture.token, fixture.missionId, { view: 'log' });
+    const rows = (res.body as { lines: Array<Record<string, unknown>> }).lines;
+    expect(rows[1]).toMatchObject({ leg: 0, category: 'combat', categoryLabel: 'combat' });
+    expect(rows[1]).toHaveProperty('description.text');
+    expect(rows[1]).toHaveProperty('effect.text');
+    // the line itself is unchanged: description and effect still read as one sentence
+    expect(String(rows[1]!.text)).toContain(String((rows[1]!.description as { text: string }).text));
+  });
+
+  it('reports the trip itself: the routes taken and the wear of the journey apart from fights', async () => {
+    const fixture = await setup();
+    const res = await report(fixture.token, fixture.missionId);
+    const body = res.body as { stats: { travelWear: { points: number; parts: number } }; mission?: { routeIds?: string[] } };
+    expect(body.stats.travelWear).toEqual({ points: expect.any(Number), parts: expect.any(Number) });
+    expect(Array.isArray(body.mission?.routeIds)).toBe(true);
   });
 
   it('rejects an unknown view with 400', async () => {

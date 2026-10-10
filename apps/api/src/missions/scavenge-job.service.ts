@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -14,11 +13,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
-import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { legForRoute, type FillerWorld } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
 
+export type ScavengeMode = 'ship' | 'foot';
 export const SCAVENGE_TEMPLATE_ID = 'scavenge_generic';
 const MS_PER_HOUR = 3_600_000;
 const MS_PER_SECOND = 1000;
@@ -41,7 +40,12 @@ export class ScavengeJobService {
     private readonly clock: Clock,
   ) {}
 
-  async start(playerId: string, locationId: string): Promise<DispatchResponse> {
+  async start(
+    playerId: string,
+    locationId: string,
+    mode: ScavengeMode = 'ship',
+  ): Promise<DispatchResponse> {
+    const onFoot = mode === 'foot';
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) throw new NotFoundException('location not found');
     const { rules } = this.config.snapshot();
@@ -81,12 +85,8 @@ export class ScavengeJobService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    // Deliberately NO direction-rule check here: scavenging is manual work at the current location,
-    // not a trip flown with the ship (engine exhaust / weapon facing only matter when it travels).
-    const viability = checkViability(sheet, installedConnected, rules);
-    if (!viability.viable) {
-      throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
-    }
+    // No viability gate: scavenging is manual work at the current location, not a trip flown with
+    // the ship, so even a ship that cannot fly can do it (dispatch marks it handicapped).
 
     const now = this.clock.now();
     const counter = await this.prisma.scavengeCounter.upsert({
@@ -131,7 +131,7 @@ export class ScavengeJobService {
     const distance = Math.max(
       1,
       Math.round(
-        (rules.scavenging.duration_seconds /
+        ((onFoot ? rules.scavenging.foot_duration_seconds : rules.scavenging.duration_seconds) /
           (rules.missions.duration_k * rules.missions.time_scale)) *
           sheet.mob,
       ),
@@ -178,7 +178,9 @@ export class ScavengeJobService {
     }
 
     try {
-      const response = await this.dispatchService.dispatch(ship.id, missionId, playerId);
+      const response = await this.dispatchService.dispatch(ship.id, missionId, playerId, {
+        onFoot,
+      });
       await this.prisma.scavengeCounter.update({
         where: { playerId_locationId: { playerId, locationId } },
         data: { attemptCount: counter.attemptCount + 1, lastAttemptAt: now },

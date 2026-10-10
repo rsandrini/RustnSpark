@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../api/client';
-import type { EnergyMode, ShipResponse } from '../api/generated';
+import type { ShipResponse } from '../api/generated';
 import { useAuth } from '../features/auth/auth.hooks';
+import { useRescueSettle } from '../features/rescue/use-rescue-settle';
 import { useWorld } from '../features/ship/use-world';
 import { pickLocalized } from '../i18n/localized';
 import { FactionBadge } from './FactionBadge';
@@ -18,8 +19,6 @@ function hexPlaceholder(seed: string): string {
   return (hash % 0xffffff).toString(16).padStart(6, '0').toUpperCase();
 }
 
-const ENERGY_MODES: readonly EnergyMode[] = ['BATTERY', 'FULL', 'OVERRIDE'];
-
 /**
  * Faction, ship name and current status/location, in the middle of the top bar (owner request):
  * who the pilot is flying for, which ship, and what it is doing now — visible from every
@@ -29,20 +28,12 @@ export function ShipIdentity() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const world = useWorld();
-  const queryClient = useQueryClient();
   const shipsQuery = useQuery({
     queryKey: ['ships'],
     queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
   });
   const ship = shipsQuery.data?.[0];
-
-  const setEnergyMode = useMutation({
-    mutationFn: (energyMode: EnergyMode) =>
-      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/energy-mode`, { energyMode }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['ships'] });
-    },
-  });
+  useRescueSettle(ship);
 
   if (user?.factionId == null) return null;
 
@@ -53,37 +44,24 @@ export function ShipIdentity() {
   if (ship !== undefined) {
     const place = world.data?.locations.find((entry) => entry.id === ship.currentLocationId);
     const placeName =
-      place === undefined ? ship.currentLocationId : pickLocalized(place.displayName, i18n.language);
+      place === undefined
+        ? ship.currentLocationId
+        : pickLocalized(place.displayName, i18n.language);
     const { kind } = ship.activity;
     statusText =
-      kind === 'idle'
-        ? t('stage.docked', { place: placeName })
-        : kind === 'repairing'
-          ? t('stage.repairingAt', { place: placeName })
-          : t(`stage.mode.${kind}`);
+      ship.status === 'ADRIFT'
+        ? t('stage.floating')
+        : kind === 'idle'
+          ? t('stage.docked', { place: placeName })
+          : kind === 'repairing'
+            ? t('stage.repairingAt', { place: placeName })
+            : t(`stage.mode.${kind}`);
   }
 
   return (
     <div className="ship-identity">
       <FactionBadge factionId={user.factionId} />
       {shipName !== undefined && <span className="ship-identity-name">{shipName}</span>}
-      {ship !== undefined && (
-        <label className="ship-identity-energy">
-          <span className="sr-only">{t('ship.energyMode.label')}</span>
-          <select
-            aria-label={t('ship.energyMode.label')}
-            value={ship.energyMode}
-            onChange={(event) => setEnergyMode.mutate(event.target.value as EnergyMode)}
-            disabled={ship.status !== 'IN_PORT' || setEnergyMode.isPending}
-          >
-            {ENERGY_MODES.map((mode) => (
-              <option key={mode} value={mode}>
-                {t(`ship.energyMode.${mode}`)}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
       {statusText !== undefined && <span className="ship-identity-status">{statusText}</span>}
     </div>
   );

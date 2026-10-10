@@ -14,8 +14,14 @@ function renderAt(path: string) {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/admin/tuning/entities/:entity" element={<EntityScreen />} />
-        <Route path="/admin/tuning/entities/:entity/new" element={<EntityFormScreen mode="new" />} />
-        <Route path="/admin/tuning/entities/:entity/:id" element={<EntityFormScreen mode="edit" />} />
+        <Route
+          path="/admin/tuning/entities/:entity/new"
+          element={<EntityFormScreen mode="new" />}
+        />
+        <Route
+          path="/admin/tuning/entities/:entity/:id"
+          element={<EntityFormScreen mode="edit" />}
+        />
         <Route
           path="/admin/tuning/entities/:entity/:id/clone"
           element={<EntityFormScreen mode="clone" />}
@@ -149,7 +155,11 @@ describe('EntityScreen', () => {
       {
         id: 'scout',
         displayName: { en: 'Scout', 'pt-BR': 'Batedor' },
-        cells: [[0, 0], [1, 0], [2, 0]],
+        cells: [
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ],
         active: true,
       },
     ];
@@ -174,17 +184,43 @@ describe('EntityScreen', () => {
     const schema = {
       entity: 'ship-formats',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Format id', 'pt-BR': 'ID' } },
-        { name: 'displayName', type: 'locale-map', required: true, description: { en: 'Display name', 'pt-BR': 'Nome' } },
-        { name: 'cells', type: 'grid-cells', required: true, description: { en: 'Format cells', 'pt-BR': 'Células' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Format id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'displayName',
+          type: 'locale-map',
+          required: true,
+          description: { en: 'Display name', 'pt-BR': 'Nome' },
+        },
+        {
+          name: 'cells',
+          type: 'grid-cells',
+          required: true,
+          description: { en: 'Format cells', 'pt-BR': 'Células' },
+        },
       ],
     };
     const rows = [
-      { id: 'scout', displayName: { en: 'Scout', 'pt-BR': 'Batedor' }, cells: [[0, 0], [1, 0], [2, 0]], active: true },
+      {
+        id: 'scout',
+        displayName: { en: 'Scout', 'pt-BR': 'Batedor' },
+        cells: [
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ],
+        active: true,
+      },
     ];
     let created: { data: Record<string, unknown> } | null = null;
     server.use(
-      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/schema/ship-formats', () =>
+        HttpResponse.json(schema, { status: 200 }),
+      ),
       http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json(rows, { status: 200 })),
       http.post('/v1/admin/tuning/ship-formats', async ({ request }) => {
         created = (await request.json()) as { data: Record<string, unknown> };
@@ -202,19 +238,35 @@ describe('EntityScreen', () => {
 
     await waitFor(() => expect(created).not.toBeNull());
     expect(created!.data.id).toBe('scout_copy');
-    expect(created!.data.cells).toEqual([[0, 0], [1, 0], [2, 0]]);
+    expect(created!.data.cells).toEqual([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ]);
   });
 
   it('lays a ship format form out as a details column beside the centered drawing area', async () => {
     const schema = {
       entity: 'ship-formats',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Format id', 'pt-BR': 'ID' } },
-        { name: 'cells', type: 'grid-cells', required: true, description: { en: 'Format cells', 'pt-BR': 'Células' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Format id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'cells',
+          type: 'grid-cells',
+          required: true,
+          description: { en: 'Format cells', 'pt-BR': 'Células' },
+        },
       ],
     };
     server.use(
-      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/schema/ship-formats', () =>
+        HttpResponse.json(schema, { status: 200 }),
+      ),
       http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json([], { status: 200 })),
     );
     const user = userEvent.setup();
@@ -234,8 +286,20 @@ describe('EntityScreen', () => {
     const schema = {
       entity: 'parts',
       fields: [
-        { name: 'partType', type: 'string', required: true, description: { en: 'Part code', 'pt-BR': 'Código' } },
-        { name: 'mass', type: 'integer', required: true, min: 0, max: 1000, description: { en: 'Mass', 'pt-BR': 'Massa' } },
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part code', 'pt-BR': 'Código' },
+        },
+        {
+          name: 'mass',
+          type: 'integer',
+          required: true,
+          min: 0,
+          max: 1000,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
       ],
     };
     server.use(
@@ -251,17 +315,147 @@ describe('EntityScreen', () => {
     expect(screen.getByDisplayValue('7')).toBeInTheDocument();
   });
 
-  it('renders a foreign-key field as a select of the other entity\'s rows, not free text', async () => {
+  it('the edit form has a Duplicate button beside Save: it confirms, then creates a NEW part from the form (the original is untouched)', async () => {
+    const schema = {
+      entity: 'parts',
+      fields: [
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part code', 'pt-BR': 'Código' },
+        },
+        {
+          name: 'mass',
+          type: 'integer',
+          required: true,
+          min: 0,
+          max: 1000,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+      ],
+    };
+    let created: { data: Record<string, unknown>; reason: string } | null = null;
+    let updated = false;
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json([{ partType: 'tank_small', mass: 7, active: true }], { status: 200 }),
+      ),
+      http.post('/v1/admin/tuning/parts', async ({ request }) => {
+        created = (await request.json()) as { data: Record<string, unknown>; reason: string };
+        return HttpResponse.json({ partType: 'tank_small_plus' }, { status: 201 });
+      }),
+      http.put('/v1/admin/tuning/parts/:id', () => {
+        updated = true;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+      http.patch('/v1/admin/tuning/parts/:id', () => {
+        updated = true;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/parts/tank_small');
+    const save = await screen.findByRole('button', { name: 'Save' });
+    const duplicate = screen.getByRole('button', { name: 'Duplicate' });
+    // beside Save, in the same row of buttons
+    expect(duplicate.parentElement).toBe(save.parentElement);
+
+    // the pilot changes a value in the form, then duplicates: the copy gets it
+    const mass = screen.getByDisplayValue('7');
+    await user.clear(mass);
+    await user.type(mass, '9');
+    await user.click(duplicate);
+
+    // nothing is created until the confirmation is accepted
+    const dialog = await screen.findByRole('dialog');
+    expect(created).toBeNull();
+    const newId = within(dialog).getByLabelText('New id');
+    expect(newId).toHaveValue('tank_small_copy');
+    await user.clear(newId);
+    await user.type(newId, 'tank_small_plus');
+    await user.click(within(dialog).getByRole('button', { name: 'Create the copy' }));
+
+    await waitFor(() => expect(created).not.toBeNull());
+    expect(created!.data).toMatchObject({ partType: 'tank_small_plus', mass: 9 });
+    // the original received none of it (no auto-save of the pending edit)
+    expect(updated).toBe(false);
+  });
+
+  it('a part is edited with Save, never auto-saved (so it can be edited and duplicated safely)', async () => {
+    const partSchema = {
+      entity: 'parts',
+      fields: [
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part code', 'pt-BR': 'Código' },
+        },
+        {
+          name: 'mass',
+          type: 'integer',
+          required: true,
+          min: 0,
+          max: 1000,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+      ],
+    };
+    let writes = 0;
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () =>
+        HttpResponse.json(partSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json([{ partType: 'tank_small', mass: 7, active: true }], { status: 200 }),
+      ),
+      http.put('/v1/admin/tuning/parts/:id', () => {
+        writes += 1;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+      http.patch('/v1/admin/tuning/parts/:id', () => {
+        writes += 1;
+        return HttpResponse.json({}, { status: 200 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/parts/tank_small');
+    const mass = await screen.findByDisplayValue('7');
+    await user.clear(mass);
+    await user.type(mass, '9');
+    await user.tab(); // leaving the field used to save it
+    // longer than the auto-save delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    expect(writes).toBe(0);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it("renders a foreign-key field as a select of the other entity's rows, not free text", async () => {
     const schema = {
       entity: 'mission-templates',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Template id', 'pt-BR': 'ID' } },
-        { name: 'factionId', type: 'string', required: true, references: 'factions', description: { en: 'Owning faction', 'pt-BR': 'Facção dona' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Template id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'factionId',
+          type: 'string',
+          required: true,
+          references: 'factions',
+          description: { en: 'Owning faction', 'pt-BR': 'Facção dona' },
+        },
       ],
     };
     let created: { data: Record<string, unknown> } | null = null;
     server.use(
-      http.get('/v1/admin/tuning/schema/mission-templates', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/schema/mission-templates', () =>
+        HttpResponse.json(schema, { status: 200 }),
+      ),
       http.get('/v1/admin/tuning/mission-templates', () => HttpResponse.json([], { status: 200 })),
       http.get('/v1/admin/tuning/factions', () =>
         HttpResponse.json(
@@ -280,7 +474,9 @@ describe('EntityScreen', () => {
     const user = userEvent.setup();
     renderAt('/admin/tuning/entities/mission-templates/new');
     const select = await screen.findByRole('combobox', { name: /owning faction/i });
-    expect(await within(select).findByRole('option', { name: 'Luna Authority (luna)' })).toBeInTheDocument();
+    expect(
+      await within(select).findByRole('option', { name: 'Luna Authority (luna)' }),
+    ).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: /template id/i }), 'run');
     await user.selectOptions(select, 'sun');
     await user.click(screen.getByRole('button', { name: /save/i }));
@@ -292,22 +488,52 @@ describe('EntityScreen', () => {
     const envSchema = {
       entity: 'environments',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Env id', 'pt-BR': 'ID' } },
-        { name: 'subsystemTarget', type: 'enum', enumValues: ['none', 'hull', 'engine'], required: false, description: { en: 'Targeted subsystem', 'pt-BR': 'Alvo' } },
-        { name: 'mitigatingPart', type: 'string', required: false, references: 'parts', referenceNone: 'none', description: { en: 'Part that mitigates the hazard', 'pt-BR': 'Peça' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Env id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'subsystemTarget',
+          type: 'enum',
+          enumValues: ['none', 'hull', 'engine'],
+          required: false,
+          description: { en: 'Targeted subsystem', 'pt-BR': 'Alvo' },
+        },
+        {
+          name: 'mitigatingPart',
+          type: 'string',
+          required: false,
+          references: 'parts',
+          referenceNone: 'none',
+          description: { en: 'Part that mitigates the hazard', 'pt-BR': 'Peça' },
+        },
       ],
     };
     const factionSchema = {
       entity: 'factions',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Faction id', 'pt-BR': 'ID' } },
-        { name: 'color', type: 'string', required: true, description: { en: 'Faction color', 'pt-BR': 'Cor' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Faction id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'color',
+          type: 'string',
+          required: true,
+          description: { en: 'Faction color', 'pt-BR': 'Cor' },
+        },
       ],
     };
     server.use(
       http.get('/v1/admin/tuning/schema/environments', () => HttpResponse.json(envSchema)),
       http.get('/v1/admin/tuning/environments', () =>
-        HttpResponse.json([{ id: 'nebula', subsystemTarget: 'hull', mitigatingPart: 'armor_plate', active: true }]),
+        HttpResponse.json([
+          { id: 'nebula', subsystemTarget: 'hull', mitigatingPart: 'armor_plate', active: true },
+        ]),
       ),
       http.get('/v1/admin/tuning/parts', () =>
         HttpResponse.json([
@@ -316,11 +542,15 @@ describe('EntityScreen', () => {
         ]),
       ),
       http.get('/v1/admin/tuning/schema/factions', () => HttpResponse.json(factionSchema)),
-      http.get('/v1/admin/tuning/factions', () => HttpResponse.json([{ id: 'luna', color: '#4a90d9', active: true }])),
+      http.get('/v1/admin/tuning/factions', () =>
+        HttpResponse.json([{ id: 'luna', color: '#4a90d9', active: true }]),
+      ),
     );
     const first = renderAt('/admin/tuning/entities/environments/nebula');
     const part = await screen.findByRole('combobox', { name: /part that mitigates/i });
-    expect(await within(part).findByRole('option', { name: 'Armor Plate (armor_plate)' })).toBeInTheDocument();
+    expect(
+      await within(part).findByRole('option', { name: 'Armor Plate (armor_plate)' }),
+    ).toBeInTheDocument();
     expect(within(part).getByRole('option', { name: 'No part' })).toHaveValue('none');
     expect(part).toHaveValue('armor_plate');
     // the target subsystem is a closed list, not free text
@@ -336,12 +566,26 @@ describe('EntityScreen', () => {
     const schema = {
       entity: 'materials',
       fields: [
-        { name: 'id', type: 'string', required: true, description: { en: 'Material id', 'pt-BR': 'ID' } },
-        { name: 'basePrice', type: 'integer', required: true, min: 1, max: 1000, description: { en: 'Base price', 'pt-BR': 'Preço' } },
+        {
+          name: 'id',
+          type: 'string',
+          required: true,
+          description: { en: 'Material id', 'pt-BR': 'ID' },
+        },
+        {
+          name: 'basePrice',
+          type: 'integer',
+          required: true,
+          min: 1,
+          max: 1000,
+          description: { en: 'Base price', 'pt-BR': 'Preço' },
+        },
       ],
     };
     server.use(
-      http.get('/v1/admin/tuning/schema/materials', () => HttpResponse.json(schema, { status: 200 })),
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(schema, { status: 200 }),
+      ),
       http.get('/v1/admin/tuning/materials', () => HttpResponse.json([], { status: 200 })),
       http.post('/v1/admin/tuning/materials', () =>
         HttpResponse.json(

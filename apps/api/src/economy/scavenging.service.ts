@@ -21,6 +21,8 @@ export interface ScavengeInfo {
   readonly scrapPlace: boolean;
   /** How long a job takes (mission time). */
   readonly durationSeconds: number;
+  /** How long the same job takes on foot (without the ship). */
+  readonly footDurationSeconds: number;
   readonly cooldownSeconds: number;
   /** Seconds until the next job may start here; 0 when ready. */
   readonly retryAfterSeconds: number;
@@ -28,6 +30,8 @@ export interface ScavengeInfo {
   /** Condition range (percent) of a found part at THIS place (zone bonus included). */
   readonly qualityMin: number;
   readonly qualityMax: number;
+  /** Chance (0..1) a run here finds nothing at all (before any handicap for a ship that cannot fly). */
+  readonly nothingChance: number;
 }
 
 const SCRAP_PLACE_TYPES: ReadonlySet<string> = new Set(['scrap_field', 'dead_zone', 'relay']);
@@ -79,9 +83,14 @@ export class ScavengingService {
       zone: location.zone,
       scrapPlace: SCRAP_PLACE_TYPES.has(location.type),
       durationSeconds: rules.scavenging.duration_seconds,
+      footDurationSeconds: rules.scavenging.foot_duration_seconds,
       cooldownSeconds,
       retryAfterSeconds,
       attempts: counter?.attemptCount ?? 0,
+      nothingChance:
+        rules.scavenging.nothing_chance[
+          Math.min(Math.max(0, location.zone), rules.scavenging.nothing_chance.length - 1)
+        ] ?? 0,
       qualityMin,
       qualityMax: Math.min(
         MAX_CONDITION,

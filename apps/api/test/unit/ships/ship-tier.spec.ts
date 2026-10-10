@@ -90,36 +90,39 @@ function parts(ids: readonly string[]): Array<{ basePrice: number }> {
 function rulesWithThresholds(thresholds: Record<string, number>): GameRules {
   return {
     ...GAME_CONFIG_DEFAULTS,
-    economy: { ...GAME_CONFIG_DEFAULTS.economy, upgrade_costs: thresholds },
+    economy: { ...GAME_CONFIG_DEFAULTS.economy, ship_tier_thresholds: thresholds },
   };
 }
 
+// The tier table these expectations were written against; the factory table follows the Admin.
+const SIGNED_OFF_TIERS = rulesWithThresholds({ '2': 1200, '3': 2000, '4': 2800, '5': 3800 });
+
 describe('shipTier', () => {
   it('returns tier 1 for an empty parts list', () => {
-    expect(shipTier([], GAME_CONFIG_DEFAULTS)).toBe(1);
+    expect(shipTier([], SIGNED_OFF_TIERS)).toBe(1);
   });
 
   it('returns tier 1 for the starter build', () => {
-    expect(shipTier(parts(STARTER_BUILD), GAME_CONFIG_DEFAULTS)).toBe(1);
+    expect(shipTier(parts(STARTER_BUILD), SIGNED_OFF_TIERS)).toBe(1);
   });
 
   it('computes the exact tier for each BUILDS_UPGRADE build from catalog prices', () => {
     // carga: 0 + 800 + 200 + 150 + 80*3 + 100 + 120 = 1610 -> tier 2
-    expect(shipTier(parts(BUILDS_UPGRADE.carga), GAME_CONFIG_DEFAULTS)).toBe(2);
+    expect(shipTier(parts(BUILDS_UPGRADE.carga), SIGNED_OFF_TIERS)).toBe(2);
 
     // combate: 0 + 800 + 200 + 150 + 500 + 350 + 120 + 200 + 100 = 2420 -> tier 3
-    expect(shipTier(parts(BUILDS_UPGRADE.combate), GAME_CONFIG_DEFAULTS)).toBe(3);
+    expect(shipTier(parts(BUILDS_UPGRADE.combate), SIGNED_OFF_TIERS)).toBe(3);
 
     // minerador: 0 + 800 + 200 + 150 + 400 + 80 + 80 + 100 = 1810 -> tier 2
-    expect(shipTier(parts(BUILDS_UPGRADE.minerador), GAME_CONFIG_DEFAULTS)).toBe(2);
+    expect(shipTier(parts(BUILDS_UPGRADE.minerador), SIGNED_OFF_TIERS)).toBe(2);
 
     // rapido: 0 + 800 + 100 + 200 + 150 + 120 + 120 + 100 + 200 = 1790 -> tier 2
-    expect(shipTier(parts(BUILDS_UPGRADE.rapido), GAME_CONFIG_DEFAULTS)).toBe(2);
+    expect(shipTier(parts(BUILDS_UPGRADE.rapido), SIGNED_OFF_TIERS)).toBe(2);
   });
 
   it('returns tier 5 for a build whose total base value reaches the top threshold', () => {
     const tier5Build = ['bridge', ...Array.from({ length: 17 }, () => 'reactor_nuclear')];
-    expect(shipTier(parts(tier5Build), GAME_CONFIG_DEFAULTS)).toBe(5);
+    expect(shipTier(parts(tier5Build), SIGNED_OFF_TIERS)).toBe(5);
   });
 
   it('respects custom thresholds from GameRules', () => {
@@ -133,6 +136,6 @@ describe('shipTier', () => {
     }));
     // Callers normalize nested catalog data to the unified { basePrice } shape.
     const normalized = instances.map((i) => ({ basePrice: i.partCatalog.basePrice }));
-    expect(shipTier(normalized, GAME_CONFIG_DEFAULTS)).toBe(1);
+    expect(shipTier(normalized, SIGNED_OFF_TIERS)).toBe(1);
   });
 });

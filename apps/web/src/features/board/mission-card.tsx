@@ -1,14 +1,24 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MissionOffer, WorldLocation } from '../../api/generated';
+import type {
+  DisplayResponse,
+  MissionOffer,
+  WorldLocation,
+  WorldResponse,
+} from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { Gauge } from '../../ui/Gauge';
+import { scaleSpeed, useDisplay } from '../../ui/display';
+import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { factionName, useFactions } from '../../ui/factions';
 import { serverNow } from '../../api/client';
+
+/** The game compares whole-number speeds: "needs 3" means 2.5 or more on the unrounded sheet. */
+const HALF = 0.5;
 
 export interface MissionCardProps {
   offer: MissionOffer;
@@ -18,10 +28,27 @@ export interface MissionCardProps {
   fuelHave?: number;
   /** Tank size, to draw the fuel-aboard bar the trip's cost is carved out of. */
   fuelCap?: number;
-  /** The viewer's ship speed, to rank it against a race's rivals. */
-  shipMobility?: number;
   mine: boolean;
   actions: ReactNode;
+  /** The sector map, for the route drawing (the card reads it itself when not given). */
+  world?: WorldResponse;
+  /** A mission already taken (accepted, held, under way): the same details as an offer, without
+      the "can you take it" verdict. `hideMap` leaves out the drawing when the host shows one. */
+  taken?: boolean;
+  hideMap?: boolean;
+  /** A taken mission that has not left yet: the levels the engines will run at (engine tuning). */
+  engineLevels?: { chem: number; ion: number };
+}
+
+/** A requirement figure as the player reads it: mobility on the display scale (like the ship sheet),
+    everything else as it is. */
+function requirementNumber(
+  value: number,
+  unit: string | undefined,
+  display: DisplayResponse,
+): string {
+  const shown = unit === 'mobility' ? scaleSpeed(value, display) : value;
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(shown);
 }
 
 // One offer with everything needed to decide: what the job is, where it goes, what it pays, how
@@ -32,13 +59,17 @@ export function MissionCard({
   destination,
   fuelHave,
   fuelCap,
-  shipMobility,
   mine,
   actions,
+  world,
+  taken = false,
+  hideMap = false,
+  engineLevels,
 }: MissionCardProps) {
   const { t, i18n } = useTranslation();
   const { info } = offer;
   const factions = useFactions().byId;
+  const display = useDisplay();
   const title = pickLocalized(info.title, i18n.language);
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
@@ -94,6 +125,10 @@ export function MissionCard({
 
       <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
 
+      {!hideMap && (
+        <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
+      )}
+
       {info.material !== null && (
         <p className="mcard-material">
           {info.material.contracted && info.material.quantity !== null
@@ -107,15 +142,7 @@ export function MissionCard({
         </p>
       )}
 
-      {info.race !== null && (
-        <RaceField
-          race={info.race}
-          reward={offer.reward}
-          shipMobility={shipMobility}
-          yourSeconds={info.estimate?.durationSeconds ?? null}
-          money={money}
-        />
-      )}
+      {info.race !== null && <RaceField race={info.race} reward={offer.reward} money={money} />}
 
       <dl className="mcard-facts">
         <div>
@@ -144,11 +171,30 @@ export function MissionCard({
                   {req.met ? '✓' : '✗'}
                 </span>
                 {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
+                {req.needed !== undefined && req.actual !== undefined && (
+                  <span className="req-numbers" data-testid={`req-${req.code}`}>
+                    {t('board.requirementNumbers', {
+                      actual: requirementNumber(req.actual, req.unit, display),
+                      needed: requirementNumber(req.needed, req.unit, display),
+                    })}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {offer.info.cargo != null && offer.info.cargo.mode !== 'min' && (
+        <p className="mcard-cargo sub" data-testid="mcard-cargo">
+          {offer.info.cargo.mode === 'fixed'
+            ? t('board.cargo.fixed', { need: offer.info.cargo.need })
+            : t('board.cargo.open', {
+                need: offer.info.cargo.need,
+                pay: offer.info.cargo.unitPay,
+              })}
+        </p>
+      )}
 
       {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
           text has no room in a narrow 1/4-width grid cell) and placed after what the mission
@@ -180,22 +226,37 @@ export function MissionCard({
           )}
         </div>
       )}
-      {notEnoughFuel && <p className="error-text">{t('board.lowFuel')}</p>}
+      {notEnoughFuel && info.estimate !== null && (
+        <p className="error-text">
+          {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap
+            ? t('board.lowFuelCapacity', {
+                needed: Math.round(info.estimate.fuelNeeded),
+                cap: Math.round(fuelCap),
+              })
+            : t('board.lowFuel')}
+        </p>
+      )}
 
       <div className="mcard-meta">
         {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
-        <span className="sub">
-          {expired ? (
-            t('board.expiredLabel')
-          ) : (
-            <>
-              {t('board.expires')} <Countdown until={offer.expiresAt} />
-            </>
-          )}
-        </span>
-        <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-          {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-        </span>
+        {/* A mission under way no longer has a start deadline. */}
+        {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <span className="sub">
+            {expired ? (
+              t('board.expiredLabel')
+            ) : (
+              <>
+                {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
+                <Countdown until={offer.expiresAt} />
+              </>
+            )}
+          </span>
+        )}
+        {!taken && (
+          <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+            {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+          </span>
+        )}
         {offer.privatePlayerId !== null && (
           <span className="badge ok" data-testid="starter-badge">
             {t('board.starterBadge')}
@@ -209,7 +270,22 @@ export function MissionCard({
         )}
       </div>
 
-      {otherReasons.length > 0 && (
+      {taken &&
+        engineLevels !== undefined &&
+        (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <p className="sub" data-testid="mcard-engines">
+            {t('board.engineLevels', {
+              chem: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.chem,
+              ),
+              ion: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.ion,
+              ),
+            })}
+          </p>
+        )}
+
+      {!taken && otherReasons.length > 0 && (
         <ul className="reasons">
           {otherReasons.map((reason, index) => (
             <li key={`${reason.code}-${index}`}>
@@ -226,38 +302,42 @@ export function MissionCard({
   );
 }
 
-// A race offer's grid: every rival's speed and time over this route, with the viewer's own ship
-// ranked among them (same speed -> time formula the server resolves with), plus the prize per place.
+// A race offer's grid: every rival's speed and how long it should take over this route (its
+// expected time and its best day: form, luck and trouble make the real result differ), with the
+// viewer's own ship ranked among them, plus the prize per place.
 function RaceField({
   race,
   reward,
-  shipMobility,
-  yourSeconds,
   money,
 }: {
   race: NonNullable<MissionOffer['info']['race']>;
   reward: number;
-  shipMobility: number | undefined;
-  yourSeconds: number | null;
   money: (value: number) => string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const display = useDisplay();
+  const speed = (raw: number) =>
+    new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+      scaleSpeed(raw, display),
+    );
   const rows = [
     ...race.rivals.map((rival) => ({
       key: rival.name,
       name: rival.name,
       mobility: rival.mobility,
-      seconds: rival.durationSeconds,
+      expected: rival.durationSeconds,
+      best: rival.bestSeconds,
       you: false,
     })),
     {
       key: 'you',
       name: t('board.race.you'),
-      mobility: shipMobility ?? null,
-      seconds: yourSeconds,
+      mobility: null as number | null,
+      expected: race.you?.durationSeconds ?? null,
+      best: race.you?.bestSeconds ?? null,
       you: true,
     },
-  ].sort((a, b) => (a.seconds ?? Infinity) - (b.seconds ?? Infinity));
+  ].sort((a, b) => (a.expected ?? Infinity) - (b.expected ?? Infinity));
   const topShare = race.prizeShares[0] ?? 1;
   return (
     <section className="mcard-race" aria-label={t('board.race.title')} data-testid="race-field">
@@ -267,7 +347,8 @@ function RaceField({
           <tr>
             <th>{t('board.race.pilot')}</th>
             <th>{t('board.race.speed')}</th>
-            <th>{t('board.race.time')}</th>
+            <th title={t('board.race.expectedHint')}>{t('board.race.expected')}</th>
+            <th title={t('board.race.bestHint')}>{t('board.race.best')}</th>
           </tr>
         </thead>
         <tbody>
@@ -276,20 +357,27 @@ function RaceField({
               <td>
                 {t('board.race.rank', { place: index + 1 })} {row.name}
               </td>
-              <td>{row.mobility === null ? '—' : row.mobility}</td>
-              <td>{row.seconds === null ? '—' : formatDuration(row.seconds, t)}</td>
+              <td>{row.mobility === null ? t('board.race.none') : speed(row.mobility)}</td>
+              <td>
+                {row.expected === null ? t('board.race.none') : formatDuration(row.expected, t)}
+              </td>
+              <td>{row.best === null ? t('board.race.none') : formatDuration(row.best, t)}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <small className="sub">
-        {t('board.race.entry', { mobility: race.minMobility })}{' '}
+        {t('board.race.entry', { mobility: speed(Math.ceil(race.minMobility) - HALF) })}{' '}
         {race.prizeShares
           .map((share, index) =>
-            t('board.race.prize', { place: index + 1, amount: money(Math.round((reward * share) / topShare)) }),
+            t('board.race.prize', {
+              place: index + 1,
+              amount: money(Math.round((reward * share) / topShare)),
+            }),
           )
           .join(' · ')}
       </small>
+      <small className="sub">{t('board.race.dynamic')}</small>
     </section>
   );
 }

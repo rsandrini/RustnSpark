@@ -606,7 +606,7 @@ a {
   background: rgba(3, 6, 10, 0.66);
   display: grid;
   place-items: center;
-  z-index: 30;
+  z-index: 100;
 }
 
 .modal {
@@ -1103,7 +1103,13 @@ a {
   color: var(--line);
 }
 
-.ship-identity-energy select {
+.engine-energy {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.engine-energy select {
   font-size: 11px;
   padding: 2px 6px;
   border: 1px solid var(--line);
@@ -1113,7 +1119,7 @@ a {
   cursor: pointer;
 }
 
-.ship-identity-energy select:disabled {
+.engine-energy select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -1127,6 +1133,21 @@ a {
   .top-bar .game-nav,
   .top-bar .top-bar-right {
     justify-self: center;
+  }
+
+  /* The ship's name, energy mode and status must wrap on a phone: on one line they are wider than
+     the screen, and the whole page then scrolls sideways. */
+  .ship-identity {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .ship-identity-name,
+  .ship-identity-status {
+    max-width: 100%;
+  }
+  .ship-identity-status::before {
+    content: none;
   }
 }
 
@@ -1210,6 +1231,22 @@ a {
 .rarity-badge {
   font-size: 13px;
   letter-spacing: 1px;
+}
+
+.rarity-name.rarity-common {
+  color: var(--rar-common);
+}
+.rarity-name.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+.rarity-name.rarity-rare {
+  color: var(--rar-rare);
+}
+.rarity-name.rarity-epic {
+  color: var(--rar-epic);
+}
+.rarity-name.rarity-legendary {
+  color: var(--rar-legendary);
 }
 
 .rarity-badge.rarity-common {
@@ -1343,8 +1380,24 @@ svg .block.floating {
   stroke-dasharray: 0.2 0.12;
 }
 
+/* A part that is not wired to the bridge does nothing: dim its fill and blink a yellow border. */
 svg .block.disconnected {
-  opacity: 0.45;
+  fill-opacity: 0.45;
+  stroke: #ffd400;
+  stroke-width: 0.1;
+  animation: disconnected-blink 1s ease-in-out infinite;
+}
+
+@keyframes disconnected-blink {
+  50% {
+    stroke-opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg .block.disconnected {
+    animation: none;
+  }
 }
 
 .block-label {
@@ -1976,6 +2029,72 @@ svg .block.disconnected {
   /* Same top space as Board's own filter row (owner request — the removed "For sale" heading
      no longer sets it, and the two lists should feel like siblings). */
   margin: 12px 0;
+}
+
+.engine-tuning {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel2);
+}
+.engine-tuning-title {
+  margin: 0;
+}
+.engine-slider {
+  display: grid;
+  gap: 4px;
+}
+.engine-slider input[type='range'] {
+  width: 100%;
+}
+.engine-level {
+  font-variant-numeric: tabular-nums;
+  color: var(--spark);
+}
+.engine-thrust {
+  display: grid;
+  gap: 4px;
+}
+.engine-thrust-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.engine-thrust-chem {
+  background: var(--amber);
+}
+.engine-thrust-ion {
+  background: var(--blue);
+}
+.engine-thrust-legend {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.engine-stats {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+}
+.engine-stats .bad {
+  color: var(--bad);
+}
+.engine-stats .clean.ok {
+  color: var(--ok);
+}
+.engine-stats .clean.warn {
+  color: var(--amber);
+}
+.engine-stats .clean.bad {
+  color: var(--bad);
 }
 
 .chips {
@@ -4495,4 +4614,381 @@ svg .block.dir-blocked {
   width: 44px;
   height: 32px;
   padding: 0;
+}
+
+/* Comparison in the part hover card: what the ship has now, then what it would have. */
+.compare-inline {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.compare-inline .compare-now {
+  color: var(--mut);
+}
+
+/* The wallet stays in view while the part list scrolls under it. */
+.market-panel > .balance {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 15px;
+}
+.market-panel > .balance b {
+  color: var(--spark);
+}
+
+/* Flight warnings: the ship flies, weaker — amber, not the red of a problem. */
+.sheet-status.warning {
+  background: rgba(224, 161, 60, 0.16);
+  color: var(--amber);
+}
+.warn-text {
+  color: var(--amber);
+}
+
+/* "Your ship: 12 · needs 25" next to a numeric requirement on a mission card. */
+.mcard-requirements .req-numbers {
+  display: block;
+  margin-left: 22px;
+  font-size: 12px;
+  color: var(--mut);
+}
+.mcard-requirements .req-unmet .req-numbers {
+  color: var(--amber);
+}
+
+/* The trip on the sector map (mission cards, transit, report). */
+.route-map {
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.route-map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.route-map .rm-route {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+.route-map .rm-path {
+  stroke: var(--spark);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.route-map .rm-node {
+  fill: var(--line-strong);
+  stroke: none;
+}
+.route-map .rm-node.on {
+  fill: var(--spark);
+}
+.route-map .rm-node.end {
+  fill: var(--bg);
+  stroke: var(--spark);
+  stroke-width: 2;
+}
+.route-map .rm-label {
+  fill: var(--ink);
+  font-size: 10px;
+}
+.route-map .rm-ship {
+  fill: var(--blue);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+/* Report overview: the loss is played, bars sink from what they were to what they are. */
+.damage-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+}
+.damage-split > *,
+.overview-body,
+.overview-body > * {
+  min-width: 0;
+}
+/* Shield / armor / hull rows: name, bar, number — the bar takes whatever room is left. */
+.loss-row {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+/* Parts: the name and what was lost share a line, the bar runs the full width under them. */
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name lost'
+    'bar bar';
+  gap: 4px 10px;
+  align-items: center;
+}
+.parts-damage-row .parts-damage-name {
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.parts-damage-row .lossbar {
+  grid-area: bar;
+}
+.parts-damage-row .parts-damage-lost {
+  grid-area: lost;
+  text-align: right;
+}
+.lossbar {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--panel2);
+  overflow: hidden;
+}
+.lossbar-lost,
+.lossbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+.lossbar-lost {
+  background: rgba(248, 81, 73, 0.45);
+}
+.lossbar-fill {
+  background: var(--ok);
+  transition: width 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+.lossbar.warn .lossbar-fill {
+  background: var(--amber);
+}
+.lossbar.bad .lossbar-fill {
+  background: var(--bad);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lossbar-fill {
+    transition: none;
+  }
+}
+
+/* The story: a timeline per leg, each event tagged by what kind it is. */
+.report-story .story-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+.report-story li.ev {
+  border-left: 3px solid var(--line-strong);
+  padding: 4px 0 4px 10px;
+}
+.ev-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--panel2);
+  color: var(--mut);
+}
+li.ev-combat,
+tr.ev-combat td:first-child {
+  border-left-color: var(--bad);
+}
+li.ev-failure,
+tr.ev-failure td:first-child {
+  border-left-color: var(--rust);
+}
+li.ev-environment,
+tr.ev-environment td:first-child {
+  border-left-color: var(--amber);
+}
+li.ev-loot,
+li.ev-payment,
+tr.ev-loot td:first-child,
+tr.ev-payment td:first-child {
+  border-left-color: var(--ok);
+}
+li.ev-transit,
+tr.ev-transit td:first-child {
+  border-left-color: var(--blue);
+}
+.ev-tag.ev-combat {
+  color: var(--bad);
+}
+.ev-tag.ev-failure {
+  color: var(--rust);
+}
+.ev-tag.ev-environment {
+  color: var(--amber);
+}
+.ev-tag.ev-loot,
+.ev-tag.ev-payment {
+  color: var(--ok);
+}
+.ev-tag.ev-transit {
+  color: var(--blue);
+}
+
+/* The log as a table. */
+.log-table-wrap {
+  overflow-x: auto;
+}
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.log-table th {
+  text-align: left;
+  color: var(--mut);
+  font-weight: 600;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.log-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.log-table td:first-child {
+  border-left: 3px solid var(--line-strong);
+  width: 1%;
+  white-space: nowrap;
+}
+.log-table .log-effect {
+  white-space: nowrap;
+  color: var(--ink);
+  font-weight: 600;
+}
+.race-trouble {
+  color: var(--amber);
+}
+
+/* Small maps stay small: a glance at the route, never a banner. */
+.route-map.compact {
+  max-width: 320px;
+}
+.report-overview .route-map.compact,
+.stack > .route-map.compact {
+  margin-inline: auto;
+}
+/* Under way: the route marches and the ship pulses, like the sector map's flight path. */
+.route-map.animated .rm-path {
+  stroke-dasharray: 8 6;
+  animation: flight-dash 1.2s linear infinite;
+}
+.route-map .rm-ship-wrap {
+  transition: transform 1s linear;
+}
+.route-map .rm-ship-pulse {
+  fill: var(--blue);
+  opacity: 0.6;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: here-pulse 1.6s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-map.animated .rm-path,
+  .route-map .rm-ship-pulse {
+    animation: none;
+  }
+}
+
+/* A low-level note (not a warning): quiet, never red or amber. */
+.low-note {
+  color: var(--mut);
+  font-size: 12px;
+}
+
+/* An open details popup is always on top, and the hover cards step aside while it is open. */
+body:has(.modal-backdrop) .compare-hover-card,
+body:has(.modal-backdrop) .part-hover-card {
+  display: none;
+}
+
+/* Quest details and trip scene side by side: the text on the left, the ship scene and the map in
+   a narrow column on the right (stacked on a phone). */
+.transit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 16px;
+  align-items: start;
+}
+/* The ship scene and the map side by side, so the pair takes one row of height. */
+.transit-aside {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.transit-aside .route-map {
+  align-self: stretch;
+  display: grid;
+  align-items: center;
+}
+.transit-aside .route-map {
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .transit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+/* The wide scene above the screen steps aside when the trip column carries its own. */
+main:has(.transit-aside) .ship-stage-overlay-host {
+  display: none;
+}
+
+/* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
+.report-overview {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+/* The place scene with the map under it in column one, the numbers beside it. */
+.overview-visual {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.overview-visual .route-map {
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .report-overview {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* What an upgrade asks for besides money: met in the normal colour, missing flagged. */
+.upgrade-materials {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.upgrade-materials .req-unmet {
+  color: var(--bad);
+}
+
+.craft-core {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
 }

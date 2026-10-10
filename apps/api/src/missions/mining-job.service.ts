@@ -16,6 +16,7 @@ import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
+import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import {
@@ -106,11 +107,15 @@ export class MiningJobService {
     const sheet = deriveSheet(installedConnected, rules);
     // Mining flies the ship out to the field, so the part direction rules (nothing behind an
     // engine's exhaust / a weapon's firing line) apply, like dispatch and travel.
-    const viability = withDirectionProblems(
-      checkViability(sheet, installedConnected, rules),
-      (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
-      connectorsByInstance,
+    const viability = withHoldProblem(
+      withDirectionProblems(
+        checkViability(sheet, installedConnected, rules),
+        (ship.layout as unknown as Placement[]) ?? [],
+        catalogForConnectivity,
+        connectorsByInstance,
+        { strict: true },
+      ),
+      await loadHold(this.prisma, playerId, rules.ship.spare_part_slots, sheet.crg),
     );
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
@@ -122,7 +127,8 @@ export class MiningJobService {
     }
 
     const materials = await this.prisma.material.findMany({
-      where: { active: true },
+      // ores only: the scrap materials have a fixed price and are found by scavenging, not dug up
+      where: { active: true, fixedPrice: false },
       select: { id: true },
     });
     if (materials.length === 0) throw new ConflictException({ error: 'NOT_MINABLE' });

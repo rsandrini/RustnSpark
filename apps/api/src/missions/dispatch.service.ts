@@ -1,3 +1,9 @@
+import {
+  applyEngineLevels,
+  clampLevels,
+  type EngineLevels,
+} from '../resolution/engine/engine.js';
+import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
@@ -17,7 +23,10 @@ import { applyConnectivity } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
+import { loadHold, withHoldProblem } from '../ships/hold.js';
+import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
 import { checkViability } from '../ships/viability.js';
+import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
@@ -53,6 +62,24 @@ export interface DispatchSnapshot {
   readonly legs: readonly DispatchLeg[];
   /** Loose parts when the ship left port: the only parts a pirate can take (frozen, D19). */
   readonly storage?: ReadonlyArray<{ readonly id: string; readonly partType: string }>;
+  /** Flight warnings the ship left port with (blocked engines/weapons, a cruise power shortfall):
+      the parts above are already weakened by them, this is what the report says about it. */
+  readonly penalties?: readonly AppliedPenalty[];
+  /** A scavenging job started by a ship that was not flight-ready: it finds less. */
+  readonly handicapped?: boolean;
+  /** A scavenging job done on foot, without the ship: no encounters, no wear, no fuel. */
+  readonly onFoot?: boolean;
+  /** The levels the engines ran at (engine tuning on the bridge). */
+  readonly engine?: EngineLevels;
+  /** What a delivery loaded (fixed or open cargo): the units aboard and the terms they are paid on. */
+  readonly cargo?: {
+    readonly mode: 'fixed' | 'open';
+    readonly units: number;
+    readonly need: number;
+    readonly unitPay: number;
+  };
+  /** Resolved with the layered damage model (shield → armor → hull → parts). Older runs lack it. */
+  readonly layered?: boolean;
 }
 
 export interface DispatchJobData {
@@ -150,8 +177,15 @@ export async function rebuildDispatchData(
       storage: rows
         .filter((part) => part.location === 'INVENTORY')
         .map((part) => ({ id: part.id, partType: part.partType })),
+      ...(loadedCargoOf(mission) !== undefined ? { cargo: loadedCargoOf(mission) } : {}),
     },
   };
+}
+
+/** The cargo a delivery loaded at dispatch, as kept on the mission row. */
+function loadedCargoOf(mission: MissionInstance): DispatchSnapshot['cargo'] | undefined {
+  const load = (mission.cargo as { load?: DispatchSnapshot['cargo'] } | null)?.load;
+  return load !== undefined && typeof load.units === 'number' ? load : undefined;
 }
 
 const MS_PER_SECOND = 1000;
@@ -174,7 +208,12 @@ export class DispatchService {
     private readonly producer: MissionProducer,
   ) {}
 
-  async dispatch(shipId: string, missionId: string, playerId: string): Promise<DispatchResponse> {
+  async dispatch(
+    shipId: string,
+    missionId: string,
+    playerId: string,
+    options: { onFoot?: boolean } = {},
+  ): Promise<DispatchResponse> {
     const probe = await this.prisma.missionInstance.findUnique({ where: { id: missionId } });
     if (!probe) {
       throw new NotFoundException('mission not found');
@@ -263,28 +302,95 @@ export class DispatchService {
       // Part direction rules apply to every dispatch that flies the ship — except a scavenging job,
       // which is manual work at the current place: the ship never travels, so nothing points anywhere.
       const flightViability = checkViability(sheet, installedConnected, rules);
+      // The spare parts travel with the ship: they must fit the bridge's slots; the mission's cargo, the cargo space.
+      // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space.
+      const template = await tx.missionTemplate.findUnique({
+        where: { id: mission.templateId },
+        select: { requirements: true },
+      });
+      const terms = cargoTermsOf(mission.type, template?.requirements, rules);
+      const load = terms === null ? null : cargoLoadFor(terms, sheet.crg);
+      const hold = await loadHold(
+        tx,
+        playerId,
+        rules.ship.spare_part_slots,
+        sheet.crg,
+        load?.units ?? 0,
+      );
       const viability =
         mission.type === 'SCAVENGE'
           ? flightViability
-          : withDirectionProblems(
-              flightViability,
+          : withHoldProblem(
+              withDirectionProblems(
+                flightViability,
+                (ship.layout as unknown as Placement[]) ?? [],
+                catalogForConnectivity,
+                connectorsByInstance,
+              ),
+              hold,
+            );
+      // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
+      // only finds less when the ship is not flight-ready.
+      const onFoot = mission.type === 'SCAVENGE' && options.onFoot === true;
+      const handicapped =
+        mission.type === 'SCAVENGE' &&
+        !onFoot &&
+        (!viability.viable || viability.warnings.length > 0);
+      if (!viability.viable && mission.type !== 'SCAVENGE') {
+        throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
+      }
+      // Warnings do not ground the ship, they weaken it: the flight is resolved from the parts as
+      // they would actually perform (a scavenging job never flies, so nothing is weakened).
+      const flight =
+        mission.type === 'SCAVENGE'
+          ? { parts: installedConnected, sheet, penalties: [] as AppliedPenalty[] }
+          : flightShip(
+              installedConnected,
               (ship.layout as unknown as Placement[]) ?? [],
               catalogForConnectivity,
               connectorsByInstance,
+              rules,
             );
-      if (!viability.viable) {
-        throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
+      // Engine tuning (set on the bridge): the chemical and ion engines run at their chosen levels,
+      // so thrust, fuel burn and power already reflect them for time, fuel and the whole flight.
+      const engineLevels =
+        mission.type === 'SCAVENGE'
+          ? undefined
+          : clampLevels({ chem: ship.chemLevel, ion: ship.ionLevel }, rules);
+      if (engineLevels !== undefined) {
+        flight.parts = applyEngineLevels(flight.parts, engineLevels, rules);
+        flight.sheet = deriveSheet(flight.parts, rules);
       }
       // GDD §7 balance 3: a chemical engine needs fuel aboard; ion ships skip this.
-      if (sheet.fuelUse > 0 && ship.fuel <= 0) {
+      if (mission.type !== 'SCAVENGE' && sheet.fuelUse > 0 && ship.fuel <= 0) {
         throw new ConflictException({ error: 'FUEL_EMPTY' });
       }
 
       const legs = parseDispatchLegs(mission.legs);
+      // The burn per leg is fixed by distance, terrain and the engines, and nothing refuels the
+      // ship on the way: a route that needs more fuel than is aboard ends adrift every time, so
+      // it never leaves port (a pump failing on the way can only make the burn worse).
+      const fuelNeeded = legs.reduce(
+        (sum, leg) =>
+          sum +
+          fuelUnits({
+            fuelUse: flight.sheet.fuelUse,
+            distance: leg.distance,
+            envFuelMult: leg.env.fuelMult,
+          }),
+        0,
+      );
+      if (fuelNeeded > ship.fuel) {
+        throw new ConflictException({
+          error: 'FUEL_INSUFFICIENT',
+          needed: Math.ceil(fuelNeeded),
+          have: Math.floor(ship.fuel),
+        });
+      }
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
       const { durationSeconds, durationClass } = missionDuration({
         totalDistance,
-        mobility: sheet.mob,
+        mobility: flight.sheet.mob,
         durationK: rules.missions.duration_k,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
@@ -297,7 +403,7 @@ export class DispatchService {
         currentLocationId: ship.currentLocationId,
         stance: ship.stance,
         energyMode: ship.energyMode,
-        parts: installedConnected.map((part) => ({
+        parts: flight.parts.map((part) => ({
           id: part.instance.id,
           partType: part.instance.partType,
           condition: part.instance.condition,
@@ -308,11 +414,26 @@ export class DispatchService {
         storage: rows
           .filter((part) => part.location === 'INVENTORY')
           .map((part) => ({ id: part.id, partType: part.partType })),
+        ...(flight.penalties.length > 0 ? { penalties: flight.penalties } : {}),
+        ...(handicapped ? { handicapped: true } : {}),
+        ...(onFoot ? { onFoot: true } : {}),
+        ...(engineLevels !== undefined ? { engine: engineLevels } : {}),
+        ...(terms !== null && load !== null && terms.mode !== 'min'
+          ? { cargo: { mode: terms.mode, units: load.units, need: terms.need, unitPay: terms.unitPay } }
+          : {}),
+        layered: true,
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({
         where: { id: mission.id, status: 'ACCEPTED', playerId, shipId },
-        data: { status: 'IN_TRANSIT', arrivalAt },
+        data: {
+          status: 'IN_TRANSIT',
+          arrivalAt,
+          // what the delivery loaded, kept on the row so a rebuilt job pays the same
+          ...(snapshot.cargo !== undefined
+            ? { cargo: { ...((mission.cargo as object) ?? {}), load: snapshot.cargo } }
+            : {}),
+        },
       });
       if (missionUpdate.count === 0) {
         throw new ConflictException({ error: 'MISSION_NOT_ACCEPTED' });

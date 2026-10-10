@@ -34,6 +34,33 @@ export function autoLayout(
   return placements;
 }
 
+/**
+ * Adds `added` to a layout that already stands, without moving anything: each new part takes the
+ * first free spot where it fits and connects. Used by the compare preview, which must show what
+ * the ship does with the part ADDED to its real arrangement — re-packing everything from scratch
+ * gives another layout whose connections differ, so the comparison would measure the re-pack
+ * instead of the part. A part with no free spot is simply not placed (the caller reports it).
+ */
+export function extendLayout(
+  existing: readonly Placement[],
+  added: readonly InstalledPart[],
+  everyPart: readonly InstalledPart[],
+  formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
+): Placement[] {
+  const catalog = new Map<string, PartCatalog>(everyPart.map((p) => [p.instance.id, p.catalog]));
+  const connectors = new Map<string, ConnectorLayout | null>(
+    everyPart
+      .filter((part) => part.instance.connectors !== undefined)
+      .map((part) => [part.instance.id, part.instance.connectors as ConnectorLayout | null]),
+  );
+  const placements = [...existing];
+  for (const part of added) {
+    const placement = findPlacement(part, placements, catalog, formatCells, connectors);
+    if (placement !== null) placements.push(placement);
+  }
+  return placements;
+}
+
 function findPlacement(
   part: InstalledPart,
   existing: Placement[],

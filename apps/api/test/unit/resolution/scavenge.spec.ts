@@ -19,6 +19,7 @@ const TIERS = [
   { tier: 'UNCOMMON', chance: 0.3 },
   { tier: 'RARE', chance: 0.1 },
 ];
+const nonEmpty = (runs: ReturnType<typeof rollScavengeFinds>[]) => runs.filter((finds) => finds.length > 0);
 const place = (over: Partial<ScavengeContext> = {}): ScavengeContext => ({
   zone: 0,
   fieldType: 'common',
@@ -33,9 +34,8 @@ const many = (context: ScavengeContext, runs = 600) =>
   );
 
 describe('scavenging finds (W8)', () => {
-  it('always finds something, and only USED parts (a condition roll, never new)', () => {
-    for (const finds of many(place())) {
-      expect(finds.length).toBeGreaterThan(0);
+  it('finds only USED parts (a condition roll, never new) when it finds anything', () => {
+    for (const finds of nonEmpty(many(place()))) {
       for (const find of finds) {
         expect(find.kind).toBe('part');
         expect(find.condition).toBeGreaterThanOrEqual(rules.scavenging.quality_min);
@@ -46,7 +46,7 @@ describe('scavenging finds (W8)', () => {
 
   it('risk pays: a dangerous zone finds rarer, better parts than a safe one', () => {
     const avg = (context: ScavengeContext) => {
-      const finds = many(context).flat();
+      const finds = nonEmpty(many(context)).flat();
       return {
         condition: finds.reduce((sum, find) => sum + find.condition, 0) / finds.length,
         rare:
@@ -85,7 +85,47 @@ describe('scavenging finds (W8)', () => {
     );
   });
 
-  it('finds nothing only when the catalog is empty', () => {
+  it('finds nothing when the catalog is empty', () => {
     expect(rollScavengeFinds(place({ catalog: [] }), rules, createRng('x'))).toEqual([]);
+  });
+
+  it('a run can come back empty: often in a safe zone, rarely in a dangerous one', () => {
+    const emptyShare = (context: ScavengeContext) =>
+      many(context, 2000).filter((finds) => finds.length === 0).length / 2000;
+    const safe = emptyShare(place({ zone: 0 }));
+    const risky = emptyShare(place({ zone: 3 }));
+    expect(safe).toBeGreaterThan(rules.scavenging.nothing_chance[0]! - 0.05);
+    expect(safe).toBeLessThan(rules.scavenging.nothing_chance[0]! + 0.05);
+    expect(risky).toBeLessThan(safe - 0.2);
+  });
+
+  it('rare drops are for dangerous places: none below their minimum zone', () => {
+    const rareFinds = (zone: number) =>
+      many(place({ zone, tiers: [{ tier: 'COMMON', chance: 0.5 }, { tier: 'RARE', chance: 0.5 }] }), 1500)
+        .flat()
+        .filter((find) => CATALOG.find((c) => c.partType === find.partType)?.rarity === 'RARE').length;
+    expect(rareFinds(0)).toBe(0);
+    expect(rareFinds(1)).toBe(0);
+    expect(rareFinds(2)).toBeGreaterThan(0);
+  });
+
+  it('a ship that is not flight-ready (handicapped) finds something far less often', () => {
+    const found = (handicapped: boolean) =>
+      many(place({ zone: 1, handicapped }), 2000).filter((finds) => finds.length > 0).length / 2000;
+    const normal = found(false);
+    const hand = found(true);
+    expect(hand).toBeLessThan(normal * (rules.scavenging.handicap_factor + 0.1));
+    expect(hand).toBeGreaterThan(0);
+  });
+
+  it('on foot finds less often (foot share), and the foot share replaces the handicap', () => {
+    const found = (extra: Partial<ScavengeContext>) =>
+      many(place({ zone: 1, ...extra }), 2000).filter((finds) => finds.length > 0).length / 2000;
+    const normal = found({});
+    const foot = found({ onFoot: true });
+    expect(foot).toBeLessThan(normal * (rules.scavenging.foot_factor + 0.1));
+    expect(foot).toBeGreaterThan(0);
+    // Same run, handicapped or not: on foot there is no ship to judge.
+    expect(found({ onFoot: true, handicapped: true })).toBe(foot);
   });
 });

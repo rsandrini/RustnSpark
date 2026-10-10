@@ -143,7 +143,7 @@ describe('parts and ships API (S4.3)', () => {
         // (round-3 playtest review of the starter kit).
         expect(parts.length).toBe(5);
         for (const part of parts) {
-          expect(part.condition).toBe(80);
+          expect(part.condition).toBe(85);
           expect(part.location).toBe('INVENTORY');
           expect(part.shipId).toBeNull();
         }
@@ -176,7 +176,7 @@ describe('parts and ships API (S4.3)', () => {
       expect(asShip(second).id).toBe(asShip(first).id);
     });
 
-    it('yard reports the ship\'s format cells, not a fixed square (round-11, Ship Format)', async () => {
+    it("yard reports the ship's format cells, not a fixed square (round-11, Ship Format)", async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();
       const ship = asShip(await onboard(token, 'luna'));
@@ -243,7 +243,7 @@ describe('parts and ships API (S4.3)', () => {
       expect(installedStill.length).toBe(switched.layout.length);
     });
 
-    it('rejects a format switch above the bridge\'s rarity', async () => {
+    it("rejects a format switch above the bridge's rarity", async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();
       const ship = asShip(await onboard(token, 'luna'));
@@ -268,7 +268,7 @@ describe('parts and ships API (S4.3)', () => {
       );
     });
 
-    it('lists only classic_square when the ship has no bridge installed yet', async () => {
+    it('lists only the common-bridge formats when the ship has no bridge installed yet', async () => {
       await freshSeededApp();
       const { token } = await seedAndToken();
       await onboard(token, 'luna');
@@ -278,7 +278,8 @@ describe('parts and ships API (S4.3)', () => {
         .set('Authorization', `Bearer ${token}`);
       expect(list.status).toBe(200);
       const ids = (list.body as Array<{ id: string }>).map((f) => f.id);
-      expect(ids).toEqual(['classic_square']);
+      // the two formats a COMMON bridge unlocks (the seeded set has more, for better bridges)
+      expect([...ids].sort()).toEqual(['classic_round', 'classic_square']);
     });
 
     it('a disconnected part counts as mass/structure/hp but not its function (Connectors v0.1)', async () => {
@@ -299,8 +300,8 @@ describe('parts and ships API (S4.3)', () => {
         include: { partCatalog: true },
       });
       const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
-      const targetId = (before.layout.find((p) => p.partInstanceId !== bridgeId)!
-        .partInstanceId) as string;
+      const targetId = before.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId as string;
 
       // Force this part's connectors to something that can never match its neighbors (every
       // real catalog part defaults to the universal fallback, so this directly fabricates a
@@ -337,8 +338,8 @@ describe('parts and ships API (S4.3)', () => {
         include: { partCatalog: true },
       });
       const bridgeId = rows.find((row) => row.partCatalog.partClass === 'BRIDGE')!.id;
-      const targetId = (assembled.layout.find((p) => p.partInstanceId !== bridgeId)!
-        .partInstanceId) as string;
+      const targetId = assembled.layout.find((p) => p.partInstanceId !== bridgeId)!
+        .partInstanceId as string;
       await prisma.partInstance.update({
         where: { id: targetId },
         data: { connectors: { cells: [] } },
@@ -457,7 +458,7 @@ describe('parts and ships API (S4.3)', () => {
       const types = items.map((item) => item.partType as string).sort();
       expect(types).toEqual(['bridge', 'cargo', 'engine_chem_small', 'hull', 'tank_small'].sort());
       for (const item of items) {
-        expect(item.condition).toBe(80);
+        expect(item.condition).toBe(85);
         expect(item.catalog).toBeDefined();
         // Owned parts carry a real name in both locales (the UI used to fall back to the raw
         // part code because the inventory response had no name at all).
@@ -528,7 +529,7 @@ describe('parts and ships API (S4.3)', () => {
   });
 
   describe('assemble', () => {
-    it('saves a layout with a part behind the engine (free placement) and reports it as a flight problem', async () => {
+    it('saves a layout with a part behind the engine (free placement) and reports it as a flight warning', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
       const onboarded = await onboard(token, 'luna');
@@ -538,7 +539,9 @@ describe('parts and ships API (S4.3)', () => {
         data: { location: 'INVENTORY', shipId: null },
       });
       await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
-      const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: seeded.player.id } });
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
       const idOf = (partType: string): string => parts.find((p) => p.partType === partType)!.id;
       // bridge west of the engine, the engine facing W (rot 0): the bridge is behind its exhaust
       const layout = [
@@ -557,10 +560,18 @@ describe('parts and ships API (S4.3)', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ layout });
       expect(preview.status).toBe(200);
-      const viability = (preview.body as { viability: { viable: boolean; problems: { code: string }[] } })
-        .viability;
-      expect(viability.viable).toBe(false);
-      expect(viability.problems.map((p) => p.code)).toContain('EXHAUST_BLOCKED');
+      const viability = (
+        preview.body as {
+          viability: {
+            viable: boolean;
+            problems: { code: string }[];
+            warnings: { code: string }[];
+          };
+        }
+      ).viability;
+      // a warning, not a block: the ship flies, with that engine giving no thrust
+      expect(viability.problems.map((p) => p.code)).not.toContain('EXHAUST_BLOCKED');
+      expect(viability.warnings.map((p) => p.code)).toContain('EXHAUST_BLOCKED');
 
       // turned to face away, the same parts are fine
       const turned = [layout[0]!, { ...layout[1]!, rot: 180 }];
@@ -568,10 +579,33 @@ describe('parts and ships API (S4.3)', () => {
         .post(`/v1/ships/${shipId}/preview`)
         .set('Authorization', `Bearer ${token}`)
         .send({ layout: turned });
-      const codes = (ok.body as { viability: { problems: { code: string }[] } }).viability.problems.map(
-        (p) => p.code,
-      );
+      const codes = (
+        ok.body as { viability: { warnings: { code: string }[] } }
+      ).viability.warnings.map((p) => p.code);
       expect(codes).not.toContain('EXHAUST_BLOCKED');
+    });
+
+    it('taking the tank off the ship empties it: the fuel never exceeds what the tanks can hold', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
+      await prisma.ship.update({ where: { id: shipId }, data: { fuel: 25 } });
+      const tank = await prisma.partInstance.findFirstOrThrow({
+        where: { ownerPlayerId: seeded.player.id, partCatalog: { partClass: 'TANK' } },
+      });
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
+      const layout = (ship.layout as unknown as { partInstanceId: string }[]).filter(
+        (placement) => placement.partInstanceId !== tank.id,
+      );
+
+      const saved = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(saved.status).toBe(200);
+      expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(0);
     });
 
     it('POST /v1/ships/:id/assemble with a valid layout updates the ship and parts', async () => {
@@ -968,6 +1002,43 @@ describe('parts and ships API (S4.3)', () => {
       ).toEqual(before.map((p) => ({ id: p.id, location: p.location, shipId: p.shipId })).sort());
     });
 
+    it('compares an owned part against the ship as it stands, without re-packing the layout', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await assembleStarterKit(httpServer(testApp.app), token, shipId);
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
+      const layout = ship.layout as Array<{ partInstanceId: string }>;
+      const spare = await prisma.partInstance.create({
+        data: {
+          partType: 'hull',
+          ownerPlayerId: seeded.player.id,
+          condition: 100,
+          location: 'INVENTORY',
+        },
+      });
+      const before = await request(httpServer(testApp.app))
+        .get(`/v1/ships/${shipId}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      const response = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ partInstanceIds: [...layout.map((p) => p.partInstanceId), spare.id] });
+
+      expect(response.status).toBe(200);
+      const preview = asPreview(response);
+      // Every real placement is where it was, and nothing that was connected got cut off.
+      expect(preview.layout.slice(0, layout.length)).toEqual(layout);
+      expect((preview as unknown as { disconnectedPartIds: string[] }).disconnectedPartIds).toEqual(
+        [],
+      );
+      expect(preview.omittedPartInstanceIds).toEqual([]);
+      expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 30);
+      expect(preview.sheet.fuelCap).toBe(asShip(before).sheet.fuelCap);
+    });
+
     describe('with a virtual (not-yet-owned) part', () => {
       it('swaps a virtual candidate in for the installed part of the same class', async () => {
         await freshSeededApp();
@@ -998,9 +1069,9 @@ describe('parts and ships API (S4.3)', () => {
 
         expect(response.status).toBe(200);
         const preview = asPreview(response);
-        // hull partHp 20 -> hull_uncommon partHp 26: the sheet's hp goes up by exactly the gap,
+        // hull partHp 30 -> hull_uncommon partHp 39: the sheet's hp goes up by exactly the gap,
         // nothing else about the ship (still using the real installed set otherwise) changes it.
-        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 6);
+        expect(preview.sheet.hp).toBe(asShip(before).sheet.hp + 9);
         // The endpoint never mutates anything: this is a read.
         const after = await prisma.partInstance.findUnique({ where: { id: hull!.id } });
         expect(after?.partType).toBe('hull');

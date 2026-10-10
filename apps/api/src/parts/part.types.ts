@@ -24,6 +24,12 @@ export interface PartCatalog {
   batInput: number;
   pressurized: boolean;
   lifeSupport: boolean;
+  /** Shield parts: points of shield recovered per combat round (paid for with combat energy). */
+  shieldRegen?: number;
+  /** Weapon/shield/mining rig: power it keeps drawing while idle (0/absent = the default). */
+  idlePower?: number;
+  /** Weapon whose hits ignore the armor's flat cut (shield and armor pool still count). */
+  armorPiercing?: boolean;
 }
 
 export interface PartInstance {

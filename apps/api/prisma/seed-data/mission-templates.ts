@@ -1,6 +1,6 @@
 import type { MissionType, Prisma, PrismaClient } from '@prisma/client';
 
-const TEMPLATES: {
+export const TEMPLATES: {
   id: string;
   displayName: { en: string; 'pt-BR': string };
   description: { en: string; 'pt-BR': string };
@@ -187,13 +187,13 @@ const TEMPLATES: {
     id: 'delivery_luna_freight',
     displayName: { en: 'Bulk Freight', 'pt-BR': 'Frete a Granel' },
     description: {
-      en: 'Haul a heavy container shipment for a corporate buyer. Needs a lot of cargo space and pays for it.',
+      en: 'Haul a heavy container shipment for a corporate buyer. A fixed load that fills a lot of cargo space, and pays for it.',
       'pt-BR':
-        'Transporte um grande lote de contêineres para um comprador corporativo. Exige muito espaço de carga e paga por isso.',
+        'Transporte um grande lote de contêineres para um comprador corporativo. Uma carga fixa que ocupa muito espaço de carga, e paga por isso.',
     },
     type: 'DELIVERY',
     factionId: 'luna',
-    requirements: { originFactions: ['luna'], cargo: 10 },
+    requirements: { originFactions: ['luna'], cargo: 10, cargoMode: 'fixed' },
   },
   {
     id: 'delivery_luna_parcel',
@@ -211,8 +211,9 @@ const TEMPLATES: {
     id: 'delivery_sun_rations',
     displayName: { en: 'Field Rations', 'pt-BR': 'Rações de Campo' },
     description: {
-      en: 'Carry rations and water to a garrison running low. Steady, honest work.',
-      'pt-BR': 'Leve rações e água a uma guarnição com pouco estoque. Trabalho firme e honesto.',
+      en: 'Carry rations and water to a garrison running low. Steady, honest work: take as much as your hold carries and the extra is paid by the unit.',
+      'pt-BR':
+        'Leve rações e água a uma guarnição com pouco estoque. Trabalho firme e honesto: leve o quanto o porão aguentar e o excedente é pago por unidade.',
     },
     type: 'DELIVERY',
     factionId: 'sun',
@@ -220,30 +221,37 @@ const TEMPLATES: {
       originFactions: ['sun'],
       originTypes: ['garrison', 'port', 'junction'],
       cargo: 3,
+      cargoMode: 'open',
     },
   },
   {
     id: 'delivery_sun_ammo',
     displayName: { en: 'Ammunition Run', 'pt-BR': 'Carregamento de Munição' },
     description: {
-      en: 'Move crates of ammunition between Alliance posts. Heavy and a target for raiders.',
-      'pt-BR': 'Leve caixas de munição entre postos da Aliança. Pesado e alvo de saqueadores.',
+      en: 'Move a fixed load of ammunition crates between Alliance posts. Heavy and a target for raiders.',
+      'pt-BR':
+        'Leve uma carga fixa de caixas de munição entre postos da Aliança. Pesado e alvo de saqueadores.',
     },
     type: 'DELIVERY',
     factionId: 'sun',
-    requirements: { originFactions: ['sun'], cargo: 6 },
+    requirements: { originFactions: ['sun'], cargo: 6, cargoMode: 'fixed' },
   },
   {
     id: 'delivery_explorers_parts',
     displayName: { en: 'Spare Parts', 'pt-BR': 'Peças de Reposição' },
     description: {
-      en: 'Bring spare parts to an outpost far from any shipyard. They will thank you.',
+      en: 'Bring spare parts to an outpost far from any shipyard. They will thank you, and pay for every extra unit you can carry.',
       'pt-BR':
-        'Leve peças de reposição a um posto longe de qualquer estaleiro. Eles vão agradecer.',
+        'Leve peças de reposição a um posto longe de qualquer estaleiro. Eles vão agradecer e pagar por cada unidade extra que você levar.',
     },
     type: 'DELIVERY',
     factionId: 'explorers',
-    requirements: { originFactions: ['explorers'], originTypes: ['outpost', 'frontier'], cargo: 2 },
+    requirements: {
+      originFactions: ['explorers'],
+      originTypes: ['outpost', 'frontier'],
+      cargo: 2,
+      cargoMode: 'open',
+    },
   },
   {
     id: 'delivery_explorers_beacon',

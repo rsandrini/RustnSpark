@@ -6,6 +6,7 @@ export type ConfigGroup =
   | 'detection'
   | 'economy'
   | 'encounter'
+  | 'engine'
   | 'escape'
   | 'escort'
   | 'failure'
@@ -14,6 +15,7 @@ export type ConfigGroup =
   | 'missions'
   | 'onboarding'
   | 'parts'
+  | 'power'
   | 'race'
   | 'rescue'
   | 'scavenging'
@@ -37,6 +39,9 @@ export type ConfigKey =
   | 'combat.pierce_ratio'
   | 'combat.retreat_hp_ratio'
   | 'combat.shield_regen'
+  | 'combat.armor_pool_factor'
+  | 'combat.armor_reduction'
+  | 'combat.armor_reduction_max_share'
   | 'detection.ambush_cap'
   | 'detection.ambush_per_sen_point'
   | 'economy.combat_loss_penalty'
@@ -46,17 +51,18 @@ export type ConfigKey =
   | 'economy.fuel_price'
   | 'economy.isolation_mult'
   | 'economy.maintenance_per_tier'
-  | 'economy.mood_max'
-  | 'economy.mood_min'
   | 'economy.payout_floor_integrity'
-  | 'economy.rarity_base_price'
   | 'economy.market_rarity_chance'
+  | 'economy.market_rarity_by_bridge'
   | 'economy.repair_factor'
   | 'economy.repair_price'
   | 'economy.repair_price_ref'
   | 'economy.repair_min_base_price'
   | 'economy.repair_seconds_per_point'
   | 'economy.rescue_cost'
+  | 'economy.rescue_distance_price'
+  | 'economy.rescue_wait_fraction'
+  | 'economy.rescue_wait_seconds'
   | 'economy.rescue_fuel_fraction'
   | 'economy.reward_base'
   | 'economy.reward_danger_divisor'
@@ -67,8 +73,22 @@ export type ConfigKey =
   | 'economy.sell_min_condition'
   | 'economy.sell_ratio'
   | 'economy.start_credits'
-  | 'economy.upgrade_costs'
+  | 'economy.ship_tier_thresholds'
   | 'economy.part_upgrade_price_multiplier'
+  | 'economy.upgrade_materials'
+  | 'economy.core_fragments'
+  | 'economy.core_drops'
+  | 'engine.chem_level_max'
+  | 'engine.fuel_push_exponent'
+  | 'engine.ion_level_max'
+  | 'engine.ion_power_exponent'
+  | 'engine.mishap_at_max'
+  | 'engine.mishap_curve'
+  | 'engine.mishap_fuel'
+  | 'engine.mishap_wear'
+  | 'engine.mishap_wear_weight'
+  | 'engine.push_battery_share'
+  | 'engine.push_wear'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
   | 'encounter.pirate_min_hp'
@@ -89,27 +109,38 @@ export type ConfigKey =
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
   | 'mining.job_duration_seconds'
-  | 'mining.material_price'
   | 'mining.rarity'
   | 'mining.richness'
-  | 'missions.active_max'
   | 'missions.board_min_per_location'
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_zone'
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
   | 'missions.hold_max'
+  | 'missions.open_cargo_unit_pay'
   | 'missions.time_scale'
   | 'onboarding.home_locations'
   | 'onboarding.starter_parts'
-  | 'parts.restart_condition_max'
+  | 'parts.replacement_condition'
+  | 'parts.replacement_types'
   | 'parts.starter_condition'
+  | 'power.life_support_min'
+  | 'power.pump_engine_factor'
+  | 'power.pump_fuel_factor'
+  | 'power.combat_demand_factor'
+  | 'power.idle_demand'
+  | 'power.success_curve'
+  | 'power.tiers'
   | 'race.competitors_max'
   | 'race.competitors_min'
   | 'race.min_mobility'
   | 'race.prize_share_1'
   | 'race.prize_share_2'
   | 'race.prize_share_3'
+  | 'race.mishap_penalty'
+  | 'race.mishap_chance'
+  | 'race.field_follow'
+  | 'race.form_spread'
   | 'race.reference_mob'
   | 'race.speed_spread'
   | 'race.time_jitter'
@@ -119,16 +150,23 @@ export type ConfigKey =
   | 'scavenging.chance'
   | 'scavenging.cooldown_seconds'
   | 'scavenging.duration_seconds'
+  | 'scavenging.foot_duration_seconds'
+  | 'scavenging.foot_factor'
   | 'scavenging.scrap_share'
   | 'scavenging.zone_quality_bonus'
   | 'scavenging.zone_rarity_bias'
+  | 'scavenging.nothing_chance'
+  | 'scavenging.tier_min_zone'
+  | 'scavenging.handicap_factor'
   | 'scavenging.quality_max'
   | 'scavenging.quality_min'
   | 'ship_class.cargo_share'
   | 'ship_class.combat_share'
   | 'ship_class.pressurized_share'
   | 'ship.fuel_mass_per_unit'
+  | 'ship.spare_part_slots'
   | 'ship.mob_factor'
+  | 'ship.stat_display_scale'
   | 'stance.neutral_attack_ratio'
   | 'stance.rating_armor_weight'
   | 'wear.base_max'
@@ -145,6 +183,9 @@ export type ConfigKey =
   | 'wear.defense_wear_bonus'
   | 'wear.env_multiplier'
   | 'wear.other_exposed_wear_factor'
+  | 'wear.mining_wear_factor'
+  | 'wear.environment_damage_factor'
+  | 'wear.hull_to_condition'
   | 'wear.overload_max'
   | 'wear.overload_min'
   | 'wear.performance_floor'
@@ -154,6 +195,21 @@ export type ConfigKey =
   | 'wear.system_base_min'
   | 'wear.system_defeat_share'
   | 'world.seed';
+
+/** One material an upgrade asks for. `material` is a material id, or 'scrap' for any scrap. `gap` mode:
+    ceil(√(price gap to the next tier) ÷ k); `size` mode: k × a factor of the part's cells. */
+export interface UpgradeMaterialRule {
+  readonly material: string;
+  readonly mode: 'gap' | 'size';
+  readonly k: number;
+}
+
+/** A find: `chance` (0–1) of `quantity` units of `material`. */
+export interface CoreDrop {
+  readonly material: string;
+  readonly chance: number;
+  readonly quantity: number;
+}
 
 export type GameRulesAdmin = Readonly<{
   /**
@@ -188,11 +244,21 @@ export type GameRules = Readonly<{
     pierce_min_pdf: number;
     pierce_ratio: number;
     retreat_hp_ratio: number;
+    /** Shield points a shield with no regen stat of its own recovers per round (legacy shields). */
     shield_regen: number;
+    /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */
+    armor_pool_factor: number;
+    /** Armor cuts every hit that gets past the shield by this much per point of armor rating it
+        still has (a pool point is `armor_pool_factor` of rating), before the pool soaks the rest. */
+    armor_reduction: number;
+    /** ...but never more than this share of the hit, so nothing is immune. */
+    armor_reduction_max_share: number;
   }>;
   ship: Readonly<{
     mob_factor: number;
+    stat_display_scale: number;
     fuel_mass_per_unit: number;
+    spare_part_slots: number;
   }>;
   wear: Readonly<{
     performance_floor: number;
@@ -224,6 +290,12 @@ export type GameRules = Readonly<{
     // other exposed class absorbs correspondingly less while at least one is installed.
     defense_wear_bonus: number;
     other_exposed_wear_factor: number;
+    /** Share of the ambient wear a MINING mission's parts take (1 = same as any other trip). */
+    mining_wear_factor: number;
+    /** Size of the journey's own damage hit per leg (see `partAmbientWear` history). */
+    environment_damage_factor: number;
+    /** Share of lost hull points that becomes condition lost on every part after a run. */
+    hull_to_condition: number;
   }>;
   economy: Readonly<{
     fuel_price: number;
@@ -240,12 +312,26 @@ export type GameRules = Readonly<{
     combat_win_base: number;
     combat_win_per_tier: number;
     combat_loss_penalty: number;
-    upgrade_costs: Readonly<Record<string, number>>;
+    ship_tier_thresholds: Readonly<Record<string, number>>;
     /** Multiplier on the base-price gap to the next rarity tier, keyed by the part's current
         rarity (round 5 upgrade mechanic; round 7: grows with rarity, not flat). */
     part_upgrade_price_multiplier: Readonly<Record<string, number>>;
+    /** What an upgrade asks for besides money, by the part's CURRENT rarity (see upgrade-materials.ts). */
+    upgrade_materials: Readonly<Record<string, readonly UpgradeMaterialRule[]>>;
+    /** Core fragments needed to craft each core. */
+    core_fragments: Readonly<Record<string, number>>;
+    /** Cores and fragments found: by source (scavenge / mission), then by zone. */
+    core_drops: Readonly<Record<string, Readonly<Record<string, readonly CoreDrop[]>>>>;
     start_credits: number;
+    /** Reference tow price. Waiting for a rescue costs this times `rescue_wait_fraction`. */
     rescue_cost: number;
+    /** Rescuing a floating ship NOW costs the waiting price plus this per unit of distance to the
+        nearest base. */
+    rescue_distance_price: number;
+    /** Share of `rescue_cost` paid when the pilot waits for the rescue instead of calling it now. */
+    rescue_wait_fraction: number;
+    /** How long a waiting rescue takes to arrive (mission time). */
+    rescue_wait_seconds: number;
     rescue_fuel_fraction: number;
     /** Cheap parts (the bridge) are repaired as if they cost at least this much. */
     repair_min_base_price: number;
@@ -254,13 +340,40 @@ export type GameRules = Readonly<{
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;
-    mood_min: number;
-    mood_max: number;
-    rarity_base_price: Readonly<Record<string, number>>;
     /** Daily chance (0-1) a catalog listing of this rarity is actually in a port's new-parts shelf. */
     market_rarity_chance: Readonly<Record<string, number>>;
+    /** The same chance by the rarity of the pilot's bridge (what the player's shelf is built from). */
+    market_rarity_by_bridge: Readonly<Record<string, Readonly<Record<string, number>>>>;
     payout_floor_integrity: number;
     repair_seconds_per_point: Readonly<Record<string, number>>;
+  }>;
+  /** Engine tuning: how hard the pilot runs the chemical and the ion engines, and what it costs. */
+  engine: Readonly<{
+    /** Range of the chemical engines' level (1 = as listed; below saves fuel, above pushes). */
+    chem_level_max: number;
+    /** Range of the ion engines' level. */
+    ion_level_max: number;
+    /** Chemical fuel burned grows with the level to this power above 1 (below 1 it is linear). */
+    fuel_push_exponent: number;
+    /** An ion engine's power draw grows with the level to this power. */
+    ion_power_exponent: number;
+    /** Chance of an engine failure per leg at the highest level of an engine group. */
+    mishap_at_max: number;
+    /** How steeply that chance rises between level 1 (none) and the highest level. */
+    mishap_curve: number;
+    /** A worn engine fails more: up to this much more at zero condition (0.5 = +50%). */
+    mishap_wear_weight: number;
+    /** Condition points the group's engines lose on a failure; each failure of the run costs more
+        (the Nth failure costs N times this). */
+    mishap_wear: number;
+    /** Extra fuel burned that leg after a failure, as a share of the leg's burn. */
+    mishap_fuel: number;
+    /** Wear from pushing, with or without a failure: condition points each engine of a pushed
+        group loses per leg at the highest level (less at lower levels, none at level 1). */
+    push_wear: number;
+    /** Pushing the ion engines also wears the batteries (they feed the extra draw): this share of
+        the engines' wear. */
+    push_battery_share: number;
   }>;
   encounter: Readonly<{
     chance_divisor: number;
@@ -299,11 +412,28 @@ export type GameRules = Readonly<{
   mining: Readonly<{
     richness: Readonly<Record<string, number>>;
     rarity: Readonly<Record<string, number>>;
-    material_price: Readonly<Record<string, number>>;
     attempts_per_stop: number;
     /** An independent mining job at a minable location (round 10): like a scavenging job,
         fixed duration scaled by `missions.time_scale`, same place in and out. */
     job_duration_seconds: number;
+  }>;
+  /** Power sharing: who gets electricity when there is not enough, and what that does. */
+  power: Readonly<{
+    /** Success chance of a system by the share of its own need it receives: [share, chance] points,
+        interpolated; below the last point the system does not work. */
+    success_curve: readonly (readonly [number, number])[];
+    /** Power a context system (weapon, shield, mining rig) keeps drawing while idle. */
+    idle_demand: number;
+    /** A weapon or shield in a fight draws this many times its listed power. */
+    combat_demand_factor: number;
+    /** Life support (and the cabin) needs at least this share of its power or the quest fails. */
+    life_support_min: number;
+    /** A tank pump that fails makes the engines generate this share of their power for the leg. */
+    pump_engine_factor: number;
+    /** ... and burns this much more fuel that leg. */
+    pump_fuel_factor: number;
+    /** Priority order of the context-dependent systems per situation; the rest are secondary. */
+    tiers: Readonly<Record<string, readonly string[]>>;
   }>;
   /** RACE missions: rival ships and how the finishing place pays. */
   race: Readonly<{
@@ -321,6 +451,13 @@ export type GameRules = Readonly<{
     prize_share_1: number;
     prize_share_2: number;
     prize_share_3: number;
+    /** A rival's form on the day: its speed varies ±this share around its listed speed. */
+    field_follow: number;
+    form_spread: number;
+    /** Chance a rival has trouble in the race and loses time (the player's engine failures come from the engine tuning). */
+    mishap_chance: number;
+    /** Time lost to trouble, as a share of the finishing time. */
+    mishap_penalty: number;
   }>;
   rescue: Readonly<{
     reference_mob: number;
@@ -338,7 +475,7 @@ export type GameRules = Readonly<{
   }>;
   missions: Readonly<{
     hold_max: number;
-    active_max: number;
+    open_cargo_unit_pay: number;
     duration_k: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
@@ -353,16 +490,27 @@ export type GameRules = Readonly<{
     cooldown_seconds: number;
     /** How long a scavenging job takes (like a mission: scaled by `missions.time_scale`). */
     duration_seconds: number;
+    /** How long a scavenging job on foot takes (same scale as `duration_seconds`). */
+    foot_duration_seconds: number;
     /** In scrap places (scrap fields, dead zones, relays) the share of finds that are scrap. */
     scrap_share: number;
     /** Condition points added to the quality range per zone: riskier places, better finds. */
     zone_quality_bonus: number;
     /** Extra weight of the rarer drop tiers per zone (0 = none). */
     zone_rarity_bias: number;
+    /** Chance a run finds nothing, by zone (index = zone, the last entry covers higher zones). */
+    nothing_chance: readonly number[];
+    /** Lowest zone each drop tier can appear in (a tier not listed has no limit). */
+    tier_min_zone: Readonly<Record<string, number>>;
+    /** Share of the usual chance to find anything kept by a ship that is not flight-ready. */
+    handicap_factor: number;
+    /** Share of the usual chance to find anything kept when scavenging on foot (no ship). */
+    foot_factor: number;
   }>;
   parts: Readonly<{
     starter_condition: number;
-    restart_condition_max: number;
+    replacement_condition: number;
+    replacement_types: Readonly<Record<string, string>>;
   }>;
   onboarding: Readonly<{
     starter_parts: readonly string[];

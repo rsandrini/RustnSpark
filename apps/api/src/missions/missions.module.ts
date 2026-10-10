@@ -1,3 +1,4 @@
+import { EnginePreviewService } from './engine-preview.service.js';
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { EnvModule, EnvService } from '../common/env/env.module.js';
@@ -59,6 +60,7 @@ import { TravelService } from './travel.service.js';
     BoardService,
     MissionsService,
     DispatchService,
+    EnginePreviewService,
     MissionProducer,
     MissionResolveService,
     TravelService,

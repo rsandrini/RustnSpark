@@ -30,12 +30,16 @@ export const MISSION_EVENT_TYPES = [
   'mission_payout',
   'pirate_demand',
   'scavenge_find',
+  'core_drop',
   'race_result',
   'pvp_encounter',
   'mining',
+  'mining_cargo_full',
   'mining_paid',
   'mining_partial_failure',
   'motor',
+  'engine_push',
+  'engine_tuning',
   'battery',
   'tank',
   'shield',
@@ -96,10 +100,16 @@ export interface MissionCombatRound {
   readonly damage: number;
   /** What armor (BLI) deflected (0 on a miss). */
   readonly armorAbsorbed: number;
+  /** Layered model: the part of `armorAbsorbed` the armor cut outright (its pool did not pay). */
+  readonly armorReduced?: number;
   /** What the shield (ESC) absorbed (0 on a miss, or an empty shield). */
   readonly shieldAbsorbed: number;
-  /** What actually reached the defender's hull: damage minus shieldAbsorbed (0 on a miss). */
+  /** What actually reached the defender's hull (0 on a miss). */
   readonly hullDamage: number;
+  /** Layered model only: the player ship's shield and armor pools after this attack, so the
+      report can show how much each layer has left. */
+  readonly shieldAfter?: number;
+  readonly armorAfter?: number;
 }
 
 /** Who an event touched. `enemy` is the generated pirate (D23 — no NPC table);
@@ -123,6 +133,23 @@ export interface MissionEventEffects {
   /** Signed credit effect; failure events are always 0 (D13 / GDD §12). */
   readonly credits: number;
   readonly loot: readonly MissionLoot[];
+}
+
+/**
+ * How the pilot ran one engine group on one leg (engine tuning): the level as a percent (250 =
+ * pushed to x2.5, 50 = throttled to x0.5), the chance it had of failing that leg, and what came
+ * of it: `held` (pushed, no failure), `failed` (pushed, an engine overheated) or `eased` (throttled
+ * down, so slower and thriftier, no risk).
+ */
+export interface MissionEngineTuning {
+  readonly group: 'chem' | 'ion';
+  readonly levelPct: number;
+  readonly chancePct: number;
+  readonly outcome: 'held' | 'failed' | 'eased';
+  /** Condition points each engine of the group lost to the push this leg (pushed legs only). */
+  readonly wear?: number;
+  /** The batteries wore too (pushed ion engines feed their extra draw from them). */
+  readonly batteries?: boolean;
 }
 
 export interface MissionEvent {
@@ -162,8 +189,12 @@ export interface MissionEvent {
       readonly mobility: number;
       readonly seconds: number;
       readonly you: boolean;
+      /** What went wrong for this ship on the day, if anything. */
+      readonly trouble?: 'mishap' | 'overheat';
     }[];
   };
+  /** v2, `engine_tuning` only: how an engine group was run this leg (see `MissionEngineTuning`). */
+  readonly tuning?: MissionEngineTuning;
   /** v2, `scavenge_find` only: what the search turned up. */
   readonly found?: {
     readonly kind: 'part' | 'scrap';
@@ -213,6 +244,7 @@ export function missionEvent(input: {
   stolen?: readonly string[];
   found?: { kind: 'part' | 'scrap'; partType: string; condition: number };
   race?: MissionEvent['race'];
+  tuning?: MissionEngineTuning;
 }): MissionEvent {
   return {
     leg: input.leg,
@@ -250,8 +282,11 @@ export function missionEvent(input: {
             hit: round.hit,
             damage: roundInt(round.damage),
             armorAbsorbed: roundInt(round.armorAbsorbed),
+            ...(round.armorReduced !== undefined ? { armorReduced: roundInt(round.armorReduced) } : {}),
             shieldAbsorbed: roundInt(round.shieldAbsorbed),
             hullDamage: roundInt(round.hullDamage),
+            ...(round.shieldAfter !== undefined ? { shieldAfter: roundInt(round.shieldAfter) } : {}),
+            ...(round.armorAfter !== undefined ? { armorAfter: roundInt(round.armorAfter) } : {}),
           })),
         }
       : {}),
@@ -272,7 +307,20 @@ export function missionEvent(input: {
               mobility: Math.round(standing.mobility * 100) / 100,
               seconds: roundInt(standing.seconds),
               you: standing.you,
+              ...(standing.trouble !== undefined ? { trouble: standing.trouble } : {}),
             })),
+          },
+        }
+      : {}),
+    ...(input.tuning !== undefined
+      ? {
+          tuning: {
+            group: input.tuning.group,
+            levelPct: roundInt(input.tuning.levelPct),
+            chancePct: roundInt(input.tuning.chancePct),
+            outcome: input.tuning.outcome,
+            ...(input.tuning.wear !== undefined ? { wear: roundInt(input.tuning.wear) } : {}),
+            ...(input.tuning.batteries === true ? { batteries: true } : {}),
           },
         }
       : {}),

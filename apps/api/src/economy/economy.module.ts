@@ -1,3 +1,4 @@
+import { ShipsModule } from '../ships/ships.module.js';
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { Clock } from '../common/clock/clock.js';
@@ -32,6 +33,7 @@ import { ScavengingService } from './scavenging.service.js';
   imports: [
     ConfigModule,
     PartsModule,
+    ShipsModule,
     EnvModule,
     BullModule.forRootAsync({
       imports: [EnvModule],

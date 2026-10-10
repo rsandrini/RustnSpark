@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma, TuningRevision } from '@prisma/client';
-import { withConfigOverride } from '../../config/candidate-rules.js';
 import { CONFIG_REGISTRY, getRegistryEntry } from '../../config/config-registry.js';
 import { GameConfigRepository } from '../../config/game-config.repository.js';
 import { GameConfigService } from '../../config/game-config.service.js';
@@ -8,7 +7,6 @@ import { validateConfigValue } from '../../config/game-rules.schema.js';
 import {
   GameConfigValidationError,
   type ConfigRegistryEntry,
-  type GameRules,
 } from '../../config/game-config.types.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ConfigReferenceValidator } from './config-reference.validator.js';
@@ -87,10 +85,6 @@ export class ConfigTuningService {
     const entry = this.resolveEntry(key);
     const validated = validateConfigValue(key, dto.value);
     await this.references.assertReferences(key, validated);
-    // Cross-key invariant: check against the ruleset as this one key would leave it, so
-    // raising restart_condition_max or lowering rescue_cost is rejected here rather than
-    // reopening the rescue → kit → sell loop (S8.6).
-    await this.references.assertRestartKitEconomy(this.candidateRules(key, validated), key);
 
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
@@ -116,7 +110,6 @@ export class ConfigTuningService {
     const validated = validateConfigValue(key, factoryDefault);
     await this.references.assertReferences(key, validated);
     // Same invariant as update(), evaluated on the post-reset ruleset.
-    await this.references.assertRestartKitEconomy(this.candidateRules(key, validated), key);
 
     const revision = await this.prisma.$transaction(async (tx) => {
       await this.assertExpectedRevision(dto.expectedRevision, tx);
@@ -144,14 +137,6 @@ export class ConfigTuningService {
       ]);
     }
     return entry;
-  }
-
-  // The live ruleset with this key overridden — what the world would look like after the
-  // update lands. Keys whose dotted path doesn't exist in rules are left out of the copy
-  // (withConfigOverride then writes into a throwaway object); the invariant still runs on
-  // the rest of the ruleset.
-  private candidateRules(key: string, value: unknown): GameRules {
-    return withConfigOverride(this.gameConfigService.snapshot().rules, key, value);
   }
 
   private async assertExpectedRevision(

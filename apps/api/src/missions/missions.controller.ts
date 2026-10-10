@@ -18,6 +18,8 @@ import { OwnershipGuard } from '../common/guards/ownership.guard.js';
 import { AcceptMissionDto } from './dto/accept.dto.js';
 import { DispatchMissionDto } from './dto/dispatch.dto.js';
 import { DispatchService } from './dispatch.service.js';
+import { EnginePreviewDto } from './dto/engine-preview.dto.js';
+import { EnginePreviewService } from './engine-preview.service.js';
 import { MissionsService } from './missions.service.js';
 
 // Default-deny (R28): no @Public() anywhere, the player comes from token claims.
@@ -27,6 +29,7 @@ export class MissionsController {
   constructor(
     private readonly missions: MissionsService,
     private readonly dispatchService: DispatchService,
+    private readonly enginePreview: EnginePreviewService,
   ) {}
 
   @Get('locations/:id/missions')
@@ -65,6 +68,18 @@ export class MissionsController {
   @HttpCode(HttpStatus.OK)
   releaseHold(@CurrentUser() user: CurrentUserPayload, @Param('id') missionId: string) {
     return this.missions.release(missionId, user.playerId);
+  }
+
+  @Post('ships/:id/engine-preview')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OwnershipGuard)
+  @OwnedResource({ type: 'ship', param: 'id' })
+  previewEngines(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') shipId: string,
+    @Body() dto: EnginePreviewDto,
+  ) {
+    return this.enginePreview.preview(shipId, user.playerId, dto);
   }
 
   @Post('ships/:id/dispatch')

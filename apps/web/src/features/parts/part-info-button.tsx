@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
@@ -10,10 +10,13 @@ export interface PartInfoButtonProps {
       Hangar tray (an owned part) and Market/Store (a virtual swap or addition) both set this;
       omitted only where there's no ship context to compare against at all. */
   compare?: PartCompareContext;
+  /** More to read in the same popup, under the part itself (the Upgrade tab puts the next tier
+      here, so a card has ONE "i" for everything about it). */
+  extra?: ReactNode;
 }
 
 // The "i" next to a part: opens the full explanation (description, why you need it, stats).
-export function PartInfoButton({ part, compare }: PartInfoButtonProps) {
+export function PartInfoButton({ part, compare, extra }: PartInfoButtonProps) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const name = pickLocalized(part.displayName, i18n.language);
@@ -40,6 +43,7 @@ export function PartInfoButton({ part, compare }: PartInfoButtonProps) {
         onClose={() => setOpen(false)}
       >
         <PartDetail part={part} compare={compare} />
+        {extra}
       </Popup>
     </>
   );

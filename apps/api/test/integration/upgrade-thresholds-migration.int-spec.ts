@@ -24,6 +24,12 @@ describe('lower upgrade cost thresholds migration', () => {
   beforeEach(async () => {
     await resetDatabase(prisma);
     await seedGameConfig(prisma);
+    // The key was renamed to economy.ship_tier_thresholds after this migration ran; recreate the row
+    // as it was then so the old migration is still exercised on its own terms.
+    await prisma.gameConfig.update({
+      where: { key: 'economy.ship_tier_thresholds' },
+      data: { key: 'economy.upgrade_costs' },
+    });
   });
 
   afterAll(async () => {

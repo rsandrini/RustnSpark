@@ -87,7 +87,7 @@ export class PricingService {
     return sellPrice(this.priceInput(context, catalog, part.condition), context.rules);
   }
 
-  // Plan S8.7: `material.basePrice × isolation × faction × mood × sell_ratio`.
+  // Plan S8.7: `material.basePrice × place × mood × sell_ratio`, place and mood capped at 1 (see sellPrice).
   sellMaterial(
     context: MarketContext,
     material: Pick<Material, 'basePrice'> & { fixedPrice?: boolean },

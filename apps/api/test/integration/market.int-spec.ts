@@ -200,7 +200,7 @@ describe('market API (S8.2)', () => {
     expect(instance.ownerPlayerId).toBe(player.seeded.player.id);
   });
 
-  it('shows a listing\'s generated connectors before buying and stores exactly those on purchase', async () => {
+  it("shows a listing's generated connectors before buying and stores exactly those on purchase", async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     // The fresh seed gives every part type factory-default rules (fill-if-null seeding).
@@ -222,7 +222,7 @@ describe('market API (S8.2)', () => {
     expect(row.connectors).toEqual({ cells: listing!.connectors });
   });
 
-  it('a used listing\'s connectors are the ones the bought instance stores', async () => {
+  it("a used listing's connectors are the ones the bought instance stores", async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const board = await getMarket(player.token, 'ceres');
@@ -240,7 +240,9 @@ describe('market API (S8.2)', () => {
     const row = await prisma.partInstance.findUniqueOrThrow({
       where: { id: (response.body as { partInstanceId: string }).partInstanceId },
     });
-    expect(row.connectors).toEqual(used!.connectors.length > 0 ? { cells: used!.connectors } : null);
+    expect(row.connectors).toEqual(
+      used!.connectors.length > 0 ? { cells: used!.connectors } : null,
+    );
   });
 
   it('lists empty connectors and stores null (universal fallback) when the type has no rules', async () => {
@@ -457,6 +459,36 @@ describe('market API (S8.2)', () => {
     expect(bought).toBe(1);
   });
 
+  it('a new (catalog) part is one item too: after it is bought it leaves the shelf for the day', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const fresh = (board.body as MarketListingBody).listings.find(
+      (entry) => entry.kind === 'catalog',
+    )!;
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: fresh.price * 3 },
+    });
+
+    const first = await buy(player.token, randomUUID(), {
+      listingId: fresh.listingId,
+      expectedPrice: fresh.price,
+    });
+    expect(first.status).toBe(200);
+
+    const after = await getMarket(player.token, 'ceres');
+    expect((after.body as MarketListingBody).listings.map((l) => l.listingId)).not.toContain(
+      fresh.listingId,
+    );
+    const again = await buy(player.token, randomUUID(), {
+      listingId: fresh.listingId,
+      expectedPrice: fresh.price,
+    });
+    expect(again.status).toBe(409);
+    expect(again.body).toMatchObject({ message: { error: 'LISTING_SOLD' } });
+  });
+
   it('a part below the sell threshold gets no quote and cannot be sold; discard destroys it (W5)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -508,7 +540,7 @@ describe('market API (S8.2)', () => {
     expect(again.body).toEqual({ discarded: 0 });
   });
 
-  it('parallel buys cannot overspend: exactly floor(balance/price) succeed', async () => {
+  it('parallel buys of one listing: exactly one succeeds, the rest see LISTING_SOLD, debited once', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const board = await getMarket(player.token, 'ceres');
@@ -518,42 +550,65 @@ describe('market API (S8.2)', () => {
     expect(listing).toBeDefined();
     const price = listing!.price;
     expect(price).toBeGreaterThan(0);
-
-    // Balance buys exactly two: the conditional debit (credits >= price) must let
-    // two through and reject the rest, however the requests interleave.
     await prisma.player.update({
       where: { id: player.seeded.player.id },
-      data: { credits: price * 2 },
+      data: { credits: price * 5 },
     });
 
     const responses = await Promise.all(
       Array.from({ length: 6 }, () =>
-        buy(player.token, randomUUID(), {
-          listingId: listing!.listingId,
-          expectedPrice: price,
-        }),
+        buy(player.token, randomUUID(), { listingId: listing!.listingId, expectedPrice: price }),
       ),
     );
-    const succeeded = responses.filter((response) => response.status === 200);
-    const rejected = responses.filter((response) => response.status === 409);
-    expect(succeeded).toHaveLength(2);
-    expect(rejected).toHaveLength(4);
-    for (const response of rejected) {
-      expect(response.body).toMatchObject({
-        statusCode: 409,
-        message: { error: 'INSUFFICIENT_FUNDS' },
-      });
+    expect(responses.filter((response) => response.status === 200)).toHaveLength(1);
+    for (const response of responses.filter((r) => r.status !== 200)) {
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({ message: { error: 'LISTING_SOLD' } });
     }
-
     const after = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },
       select: { credits: true },
     });
-    expect(after.credits).toBe(0);
-    const parts = await prisma.partInstance.count({
-      where: { ownerPlayerId: player.seeded.player.id, partType: 'hull', location: 'INVENTORY' },
+    expect(after.credits).toBe(price * 4);
+  });
+
+  it('parallel buys of different listings cannot overspend the wallet', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const board = await getMarket(player.token, 'ceres');
+    const listings = (board.body as MarketListingBody).listings
+      .filter((entry) => entry.kind === 'catalog' && entry.price > 0)
+      .sort((x, y) => x.price - y.price)
+      .slice(0, 5);
+    expect(listings.length).toBeGreaterThanOrEqual(4);
+    // The balance covers the two cheapest but not all of them: the conditional debit must reject
+    // whatever does not fit, however the requests interleave.
+    const balance = listings[0]!.price + listings[1]!.price;
+    await prisma.player.update({
+      where: { id: player.seeded.player.id },
+      data: { credits: balance },
     });
-    expect(parts).toBe(2);
+
+    const responses = await Promise.all(
+      listings.map((entry) =>
+        buy(player.token, randomUUID(), { listingId: entry.listingId, expectedPrice: entry.price }),
+      ),
+    );
+    const paid = responses.reduce(
+      (sum, response, index) => (response.status === 200 ? sum + listings[index]!.price : sum),
+      0,
+    );
+    for (const response of responses.filter((r) => r.status !== 200)) {
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({ message: { error: 'INSUFFICIENT_FUNDS' } });
+    }
+    const after = await prisma.player.findUniqueOrThrow({
+      where: { id: player.seeded.player.id },
+      select: { credits: true },
+    });
+    expect(after.credits).toBeGreaterThanOrEqual(0);
+    expect(after.credits).toBe(balance - paid);
+    expect(paid).toBeGreaterThan(0);
   });
 
   it('parallel sells of the same part credit once; losers 404, never 500 (review item 7)', async () => {
@@ -794,6 +849,53 @@ describe('market API (S8.2)', () => {
     } finally {
       at.mockRestore();
     }
+  });
+
+  it('the shelf follows the bridge: a common bridge sees mostly common parts, a better one sees more', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const count = async (rarity: string): Promise<number> => {
+      const board = await getMarket(player.token, 'ceres');
+      return (board.body as MarketListingBody).listings.filter(
+        (entry) => entry.kind === 'catalog' && entry.rarity === rarity,
+      ).length;
+    };
+    const total = async (): Promise<number> => {
+      const board = await getMarket(player.token, 'ceres');
+      return (board.body as MarketListingBody).listings.filter((entry) => entry.kind === 'catalog')
+        .length;
+    };
+
+    const bridge = await prisma.partCatalog.findFirstOrThrow({
+      where: { partClass: 'BRIDGE', active: true },
+    });
+    expect(bridge.rarity).toBe('COMMON');
+    const commonShelf = {
+      common: await count('COMMON'),
+      uncommon: await count('UNCOMMON'),
+      rare: await count('RARE'),
+      all: await total(),
+    };
+    expect(commonShelf.common).toBeGreaterThan(0);
+    // about 80% common with the shipped catalog: far from the old "every uncommon on sale"
+    expect(commonShelf.common / commonShelf.all).toBeGreaterThan(0.6);
+    // a few rare parts slip in (4.5% each of ~45 rare rows); the count grows with the catalog
+    expect(commonShelf.rare).toBeLessThanOrEqual(6);
+    expect(await count('LEGENDARY')).toBe(0);
+
+    await prisma.partCatalog.update({
+      where: { partType: bridge.partType },
+      data: { rarity: 'LEGENDARY' },
+    });
+    const richShelf = {
+      uncommon: await count('UNCOMMON'),
+      rare: await count('RARE'),
+      all: await total(),
+    };
+    // the same pilot, a legendary bridge: every uncommon and most rares are on sale
+    expect(richShelf.uncommon).toBeGreaterThan(commonShelf.uncommon);
+    expect(richShelf.rare).toBeGreaterThan(commonShelf.rare);
+    expect(richShelf.all).toBeGreaterThan(commonShelf.all);
   });
 
   describe('rarity-gated new-parts shelf (round-5 backlog: scarce rare/epic, no legendary)', () => {

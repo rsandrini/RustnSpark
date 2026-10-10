@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
+import { setShipStatus } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -51,7 +52,25 @@ describe('map (S10.5)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('shows each node\'s risk band on its own core fill, independent of the faction-colored ring', async () => {
+  it('a ship out of fuel floats between two places: no "you are here", a floating marker mid-route', async () => {
+    setShipStatus('ADRIFT');
+    try {
+      const { svg } = await renderMap();
+      const marker = await waitFor(() => {
+        const found = svg.querySelector('.ship-marker.floating');
+        if (found === null) throw new Error('floating marker missing');
+        return found;
+      });
+      expect(marker).toHaveAttribute('aria-label', 'Your ship is floating here');
+      // the tag that would say "you are here" on the port is gone (the legend still names it)
+      expect(svg.querySelectorAll('.you-tag text')).toHaveLength(1);
+      expect(svg.querySelector('.you-tag text')?.textContent).toBe('Floating in space');
+    } finally {
+      setShipStatus('IN_PORT');
+    }
+  });
+
+  it("shows each node's risk band on its own core fill, independent of the faction-colored ring", async () => {
     const { svg } = await renderMap();
 
     // Porto Ceres is low risk, Campo Drift-9 is high risk (test fixture) — the ring still
@@ -283,6 +302,53 @@ describe('map (S10.5)', () => {
     expect(svg.querySelector('polyline.flight-path')).not.toBeNull();
     expect(svg.querySelector('[aria-label="Your ship"]')).not.toBeNull();
     expect(svg.querySelector('.you-tag')).toBeNull();
+  });
+
+  it.each([
+    ['SCAVENGE', 'Scavenging'],
+    ['MINING', 'Mining'],
+  ])('a %s job is done at the place: the ship stays there with a tag saying what it does, no flight path', async (type, tag) => {
+    const now = Date.now();
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([
+          {
+            id: 'm-scav',
+            templateId: 'job_template',
+            type,
+            factionId: 'luna',
+            originId: 'ceres',
+            destinationId: 'ceres',
+            legs: [],
+            cargo: {},
+            reward: 0,
+            expiresAt: new Date(now + 3_600_000).toISOString(),
+            status: 'IN_TRANSIT',
+            playerId: 'player-1',
+            privatePlayerId: null,
+            shipId: 'ship-1',
+            acceptedAt: new Date(now - 60_000).toISOString(),
+            arrivalAt: new Date(now + 600_000).toISOString(),
+            deadlineAt: null,
+            seed: 's',
+            version: 1,
+            legWindows: [
+              {
+                legIndex: 0,
+                routeId: 'ceres-gate',
+                from: new Date(now - 300_000).toISOString(),
+                to: new Date(now + 300_000).toISOString(),
+              },
+            ],
+          },
+        ]),
+      ),
+    );
+    const { svg } = await renderMap();
+    await waitFor(() => expect(svg.querySelector('[aria-label*="You are here"]')).not.toBeNull());
+    expect(svg.querySelector('polyline.flight-path')).toBeNull();
+    expect(svg.querySelector('[aria-label="Your ship"]')).toBeNull();
+    expect(svg.querySelector('.you-tag')).toHaveTextContent(tag);
   });
 
   it('highlights corridors from the server hot flag, with no threshold of its own', async () => {

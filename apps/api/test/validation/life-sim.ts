@@ -265,6 +265,7 @@ function sweepCombatRules() {
     armor_cap: CB.bli_teto,
     pierce_ratio: CB.fura,
     shield_regen: CB.esc_regen,
+    armor_pool_factor: 5,
     kite_factor: CB.kite,
     first_strike_bonus: CB.inic,
     max_rounds: CB.max_rounds,
@@ -273,6 +274,9 @@ function sweepCombatRules() {
     damage_die: 6,
     dc_base: 10,
     pierce_min_pdf: 8,
+    // (the legacy flat-armor model: the layered armor cut does not apply)
+    armor_reduction: 0,
+    armor_reduction_max_share: 0,
   } as const;
 }
 

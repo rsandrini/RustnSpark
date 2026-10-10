@@ -63,8 +63,7 @@ export interface DirectionViolation {
 
 /**
  * Half-plane rule (literal): an ENGINE (exhaust) or WEAPON (firing line) may have no other part's
- * cell beyond its facing edge, anywhere across the ship. Project every cell onto the facing
- * direction; any other part's projection above this part's own maximum is a violation.
+ * cell right behind its facing edge (one step out, in the rows or columns it occupies).
  * Mirrors apps/api/src/ships/direction.ts — both pinned by
  * packages/contract/fixtures/direction-vectors.json.
  */
@@ -78,14 +77,21 @@ export function directionViolations(
     if (catalog === undefined) continue;
     if (catalog.partClass !== 'ENGINE' && catalog.partClass !== 'WEAPON') continue;
     const f = FACING_VECTOR[facingOf(placement.rot)];
-    const project = (cell: { x: number; y: number }) => cell.x * f.x + cell.y * f.y;
-    const limit = Math.max(...cellsOf(placement, catalog).map(project));
+    const ownCells = cellsOf(placement, catalog);
+    const ownKeys = new Set(ownCells.map((cell) => `${cell.x},${cell.y}`));
+    // Only the cells right behind the facing edge (one step out) can plug the exhaust / muzzle.
+    const muzzle = new Set(
+      ownCells
+        .map((cell) => ({ x: cell.x + f.x, y: cell.y + f.y }))
+        .filter((cell) => !ownKeys.has(`${cell.x},${cell.y}`))
+        .map((cell) => `${cell.x},${cell.y}`),
+    );
     const blockers = new Set<string>();
     for (const other of layout) {
       if (other.partInstanceId === placement.partInstanceId) continue;
       const otherCatalog = catalogById.get(other.partInstanceId);
       if (otherCatalog === undefined) continue;
-      if (cellsOf(other, otherCatalog).some((cell) => project(cell) > limit)) {
+      if (cellsOf(other, otherCatalog).some((cell) => muzzle.has(`${cell.x},${cell.y}`))) {
         blockers.add(other.partInstanceId);
       }
     }

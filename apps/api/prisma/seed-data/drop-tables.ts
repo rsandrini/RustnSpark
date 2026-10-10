@@ -5,9 +5,9 @@ const DROP_TABLES = [
     id: 'scavenging_common',
     source: 'scavenging',
     tiers: [
-      { tier: 'COMMON', chance: 0.6 },
-      { tier: 'UNCOMMON', chance: 0.3 },
-      { tier: 'RARE', chance: 0.1 },
+      { tier: 'COMMON', chance: 0.8 },
+      { tier: 'UNCOMMON', chance: 0.17 },
+      { tier: 'RARE', chance: 0.03 },
     ],
   },
   {

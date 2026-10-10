@@ -30,10 +30,19 @@ const FAILURE_CONSEQUENCE_VALUES = [
   'next_hit_bypasses_shield',
   'weapon_skips_half_attacks',
   'guaranteed_ambush',
+  'engine_overheat',
 ] as const satisfies readonly FailureConsequence[];
 
 /** Part-failure event types (the six choke categories). */
-const PART_FAILURE_TYPES = ['motor', 'battery', 'tank', 'shield', 'weapon', 'sensor'] as const;
+const PART_FAILURE_TYPES = [
+  'motor',
+  'engine_push',
+  'battery',
+  'tank',
+  'shield',
+  'weapon',
+  'sensor',
+] as const;
 
 /** Combat events carry the GDD §15 layer split from S9.0 on. */
 const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'] as const;
@@ -54,12 +63,16 @@ const CATEGORY_OF = {
   mission_payout: 'payment',
   pirate_demand: 'failure',
   scavenge_find: 'loot',
+  core_drop: 'loot',
   race_result: 'transit',
   pvp_encounter: 'combat',
   mining: 'loot',
+  mining_cargo_full: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',
+  engine_push: 'failure',
+  engine_tuning: 'transit',
   battery: 'failure',
   tank: 'failure',
   shield: 'failure',
@@ -142,8 +155,11 @@ function eventMembers(
                 hit: z.boolean(),
                 damage: num,
                 armorAbsorbed: num,
+                armorReduced: num.optional(),
                 shieldAbsorbed: num,
                 hullDamage: num,
+                shieldAfter: num.optional(),
+                armorAfter: num.optional(),
               }),
             )
             .optional();
@@ -154,6 +170,10 @@ function eventMembers(
             partType: z.string().min(1),
             condition: num,
           });
+        }
+        if (type === 'mission_wear') {
+          // The journey's own damage, split by the layer that took it (layered model only).
+          extras['cascade'] = object({ shield: num, armor: num, hp: num }).optional();
         }
         if (type === 'race_result') {
           extras['race'] = object({
@@ -166,8 +186,19 @@ function eventMembers(
                 mobility: z.number(),
                 seconds: num,
                 you: z.boolean(),
+                trouble: z.enum(['mishap', 'overheat']).optional(),
               }),
             ),
+          });
+        }
+        if (type === 'engine_tuning') {
+          extras['tuning'] = object({
+            group: z.enum(['chem', 'ion']),
+            levelPct: num,
+            chancePct: num,
+            outcome: z.enum(['held', 'failed', 'eased']),
+            wear: num.optional(),
+            batteries: z.boolean().optional(),
           });
         }
         if (type === 'pirate_demand') {

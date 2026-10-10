@@ -1,0 +1,6 @@
+{
+  "variants": [
+    "Among the salvage you pulled out {quantity} × {material}.",
+    "Sorting what was left, you kept {quantity} × {material}."
+  ]
+}

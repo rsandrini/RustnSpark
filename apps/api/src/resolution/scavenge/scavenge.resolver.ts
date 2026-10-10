@@ -26,6 +26,11 @@ export interface ScavengeContext {
   /** A scrap place (scrap field, dead zone, relay): some finds are scrap instead of parts. */
   readonly scrapPlace: boolean;
   readonly tiers: readonly ScavengeDropTier[];
+  /** The ship was not flight-ready (problems or warnings): the run keeps only a share of the
+      usual chance to find anything (`scavenging.handicap_factor`). */
+  readonly handicapped?: boolean;
+  /** Done on foot, without the ship: keeps only `scavenging.foot_factor` of the usual chance. */
+  readonly onFoot?: boolean;
   readonly catalog: readonly ScavengeCatalogEntry[];
 }
 
@@ -49,6 +54,20 @@ export function rollScavengeFinds(
   const cfg = rules.scavenging;
   if (context.catalog.length === 0) return [];
 
+  // The run may come back empty: often at a safe place, rarely in a dangerous one, and more
+  // often when the ship is not flight-ready (the pilot searches by hand).
+  const zoneIndex = Math.min(Math.max(0, context.zone), Math.max(0, cfg.nothing_chance.length - 1));
+  const baseNothing = cfg.nothing_chance[zoneIndex] ?? 0;
+  // On foot there is no ship to judge, so the foot share replaces the handicap, never stacks.
+  const share =
+    context.onFoot === true
+      ? cfg.foot_factor
+      : context.handicapped === true
+        ? cfg.handicap_factor
+        : 1;
+  const nothing = 1 - (1 - baseNothing) * share;
+  if (rng.float() < nothing) return [];
+
   // Finds: always one, plus an extra roll per slot at the place's own chance (pirate-held debris
   // fields are generous, ordinary ports are not).
   const extraChance = cfg.chance[context.fieldType] ?? 0;
@@ -59,9 +78,13 @@ export function rollScavengeFinds(
 
   const zone = Math.max(0, context.zone);
   const bias = 1 + zone * cfg.zone_rarity_bias;
+  // A rarer tier only turns up from its minimum zone on; below it its weight is zero.
   const weighted = context.tiers.map((entry) => ({
     tier: entry.tier,
-    weight: entry.chance * (RARE_TIERS.has(entry.tier) ? bias : 1),
+    weight:
+      zone < (cfg.tier_min_zone[entry.tier] ?? 0)
+        ? 0
+        : entry.chance * (RARE_TIERS.has(entry.tier) ? bias : 1),
   }));
   const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
   const qualityMin = Math.min(MAX_CONDITION, cfg.quality_min + zone * cfg.zone_quality_bonus);
@@ -72,14 +95,13 @@ export function rollScavengeFinds(
 
   const finds: ScavengeFind[] = [];
   for (let index = 0; index < count; index += 1) {
-    let picked = weighted.at(-1)?.tier ?? FALLBACK_RARITY;
+    let picked = FALLBACK_RARITY;
     let roll = rng.float() * totalWeight;
     for (const entry of weighted) {
+      if (entry.weight <= 0) continue;
+      picked = entry.tier;
       roll -= entry.weight;
-      if (roll < 0) {
-        picked = entry.tier;
-        break;
-      }
+      if (roll < 0) break;
     }
     let pool = context.catalog.filter((entry) => entry.rarity === picked);
     if (pool.length === 0)

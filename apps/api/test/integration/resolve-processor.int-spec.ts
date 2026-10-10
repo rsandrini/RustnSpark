@@ -439,8 +439,25 @@ describe('mission resolve processor (S7.3)', () => {
 
   it('adrift when fuel runs out: mission FAILED, ship ADRIFT, no payout', async () => {
     const player = await authFor(testApp.app);
-    // 0.01 fuel against a multi-credit first-leg burn: the fuel gate trips → adrift.
+    // Dispatch itself refuses a route the tank cannot cover, so the ship leaves with enough and
+    // loses it on the way (a leak): 0.01 fuel against the first leg's burn trips the fuel gate.
     const mission = await createAcceptedMission(player, 's7.3-adrift-seed', [150, 100]);
+    // Legs on real routes out of the origin, so the stranded ship has a place to float.
+    const out = await prisma.route.findFirstOrThrow({
+      where: { OR: [{ nodeAId: 'ceres' }, { nodeBId: 'ceres' }] },
+    });
+    await prisma.missionInstance.update({
+      where: { id: mission.id },
+      data: {
+        legs: [150, 100].map((distance) => ({
+          routeId: out.id,
+          distance,
+          danger: 0,
+          zone: 0,
+          env: { id: 'open', level: 1, fuelMult: 1 },
+        })),
+      },
+    });
     const creditsBefore = await prisma.player.findUniqueOrThrow({
       where: { id: player.seeded.player.id },
     });
@@ -448,7 +465,11 @@ describe('mission resolve processor (S7.3)', () => {
     const payoutsBefore = await prisma.playerEvent.count({
       where: { playerId: player.seeded.player.id, type: 'wallet.credit' },
     });
-    const job = await dispatchedJob(player, mission, 0.01);
+    const dispatched = await dispatchedJob(player, mission, 10_000);
+    const job = {
+      ...dispatched,
+      data: { ...dispatched.data, snapshot: { ...dispatched.data.snapshot, fuel: 0.01 } },
+    } as Job<DispatchJobData>;
 
     const result = await processor.process(job);
     expect(result.status).toBe('FAILED');
@@ -458,6 +479,11 @@ describe('mission resolve processor (S7.3)', () => {
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
     expect(ship.status).toBe('ADRIFT');
     expect(ship.currentLocationId).toBe('ceres');
+    // ...and it floats on the route of the leg it could not finish, a little way out of the port.
+    expect(ship.floatRouteId).toBe(out.id);
+    expect(ship.floatFromId).toBe('ceres');
+    expect(ship.floatProgress).toBeGreaterThan(0);
+    expect(ship.floatProgress).toBeLessThan(1);
 
     const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId: mission.id } });
     expect(log.outcome).toBe('adrift');

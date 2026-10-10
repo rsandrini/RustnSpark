@@ -62,6 +62,157 @@ describe('transit (S10.7)', () => {
     server.use(onboarded());
   });
 
+  it('dispatch waits for a slider change that is not saved yet: the levels go first, then the launch', async () => {
+    const order: string[] = [];
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([mission({ type: 'DELIVERY' })], { status: 200 }),
+      ),
+      http.post('/v1/ships/:id/engine-levels', async ({ request }) => {
+        const body = (await request.json()) as { chem: number; ion: number };
+        order.push(`levels ${body.chem}/${body.ion}`);
+        return HttpResponse.json({ id: 'ship-1', engineLevels: body }, { status: 200 });
+      }),
+      http.post('/v1/ships/:id/dispatch', () => {
+        order.push('dispatch');
+        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(60_000), serverTime: iso(0) });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const tuning = await screen.findByTestId('engine-tuning');
+    const slider = await within(tuning).findByRole('slider', { name: 'Ion engines' });
+    fireEvent.change(slider, { target: { value: '2.5' } });
+    // launched at once, well before the slider's own delayed save would fire
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await waitFor(() => expect(order).toContain('dispatch'));
+    expect(order[0]).toBe('levels 1/2.5');
+    expect(order.indexOf('dispatch')).toBeGreaterThan(order.indexOf('levels 1/2.5'));
+  });
+
+  it('the accepted mission shows the engine levels the trip will fly with', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: { en: 'Deliver.', 'pt-BR': 'Entregar.' },
+                legCount: 1,
+                totalDistance: 400,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: { durationSeconds: 100, fuelNeeded: 4 },
+                material: null,
+                requirements: [],
+                race: null,
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    expect(await screen.findByTestId('mcard-engines')).toHaveTextContent(
+      'Engines: chemical x1 · ion x1',
+    );
+  });
+
+  it('an accepted mission keeps all its details: what it is, how long, the fuel, what it demands', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: {
+                  en: 'Deliver cargo from Ceres to Hedus.',
+                  'pt-BR': 'Entregar carga de Ceres para Hedus.',
+                },
+                legCount: 2,
+                totalDistance: 700,
+                peakDanger: 3,
+                peakZone: 1,
+                estimate: { durationSeconds: 150, fuelNeeded: 12 },
+                material: null,
+                requirements: [
+                  { code: 'CARGO_TYPE', message: 'cargo', met: true },
+                  { code: 'WEAPONS', message: 'weapons', met: false },
+                ],
+                race: null,
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+    const details = await screen.findByText('Ceres run');
+    const card = details.closest('article') as HTMLElement;
+    // the mission type, its description in plain sight (not only on hover), and the figures
+    expect(within(card).getByText('Delivery')).toBeInTheDocument();
+    expect(within(card).getByText('Deliver cargo from Ceres to Hedus.')).toBeInTheDocument();
+    expect(within(card).getByText('2m 30s')).toBeInTheDocument();
+    expect(within(card).getByText('700')).toBeInTheDocument();
+    // what it demands, with what is met and what is not
+    expect(within(card).getByText(/Cargo capacity for this load/)).toBeInTheDocument();
+    expect(within(card).getByText(/At least one installed weapon/)).toBeInTheDocument();
+    // fuel against what the ship carries
+    expect(within(card).getByRole('progressbar', { name: 'Fuel needed' })).toBeInTheDocument();
+    // the start deadline, and no "can you take it" verdict (it is already taken)
+    expect(within(card).getByText(/Start before/)).toBeInTheDocument();
+    expect(within(card).queryByText('Eligible')).not.toBeInTheDocument();
+  });
+
+  describe('where the accepted mission is shown', () => {
+    const withInfo = () =>
+      mission({
+        info: {
+          title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+          description: { en: 'Deliver cargo from Ceres to Hedus.', 'pt-BR': 'Entregar.' },
+          legCount: 1,
+          totalDistance: 400,
+          peakDanger: 1,
+          peakZone: 0,
+          estimate: { durationSeconds: 100, fuelNeeded: 4 },
+          material: null,
+          requirements: [],
+          race: null,
+        },
+      });
+
+    it('on the Port tabs there is no mission summary above the lists', async () => {
+      server.use(
+        http.get('/v1/missions/active', () => HttpResponse.json([withInfo()], { status: 200 })),
+      );
+      renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+      await screen.findByRole('tab', { name: 'Market' });
+      expect(screen.queryByText('Ceres run')).not.toBeInTheDocument();
+    });
+
+    it('on the Board it appears once (pinned), not twice', async () => {
+      server.use(
+        http.get('/v1/missions/active', () => HttpResponse.json([withInfo()], { status: 200 })),
+      );
+      renderWithRouter(routes, { initialEntries: ['/hangar/board'] });
+      await screen.findByTestId('board-active-mission');
+      expect(screen.getAllByText('Ceres run')).toHaveLength(1);
+    });
+
+    it('on the Ship tab it is the My Ship summary', async () => {
+      server.use(
+        http.get('/v1/missions/active', () => HttpResponse.json([withInfo()], { status: 200 })),
+      );
+      renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      expect(await screen.findByText('Ceres run')).toBeInTheDocument();
+      expect(screen.getAllByText('Ceres run')).toHaveLength(1);
+    });
+  });
+
   it('embedded on My Ship, shows nothing at all when there is no active mission or last report', async () => {
     // Home is gone and Transit is embedded now (round-3): with nothing active and no report
     // yet, the host's own idle ActiveShipStage scene already says "docked" — the old
@@ -118,8 +269,63 @@ describe('transit (S10.7)', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     const rivals = await screen.findByTestId('race-rivals');
-    const items = within(rivals).getAllByRole('listitem').map((item) => item.textContent);
-    expect(items).toEqual(['Vega Dart — speed 4.1', 'Comet Runner — speed 2.4']);
+    const items = within(rivals)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+    expect(items).toEqual(['Vega Dart — speed 41', 'Comet Runner — speed 24']);
+  });
+
+  it("an accepted mission shows the engine tuning with this trip's time and fuel; dispatch sends only the mission", async () => {
+    let body: Record<string, unknown> | null = null;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'RACE',
+              cargo: { race: { competitors: [{ id: 'r1', name: 'Comet Runner', mobility: 2.4 }] } },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.post('/v1/ships/:id/dispatch', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(60_000), serverTime: iso(0) });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const tuning = await screen.findByTestId('engine-tuning');
+    expect(await within(tuning).findByTestId('engine-trip-time')).toHaveTextContent(
+      'This trip takes',
+    );
+    expect(within(tuning).getByTestId('engine-trip-fuel')).toHaveTextContent(
+      'needs 20, you carry 25',
+    );
+    expect(within(tuning).getByTestId('engine-clean')).toHaveTextContent('100%');
+    // where the thrust comes from, so fuel and ion can be balanced against the trip
+    const thrust = within(tuning).getByTestId('engine-thrust');
+    expect(within(thrust).getByTestId('engine-thrust-chem')).toHaveTextContent('Chemical engines');
+    expect(within(thrust).getByTestId('engine-thrust-ion')).toHaveTextContent('Ion engines');
+    expect(within(thrust).getByRole('img')).toHaveAccessibleName(
+      /Chemical 63% · Ion 38% of the thrust/,
+    );
+    // pushing the chemical engines changes the figures and the odds, before anything is sent
+    fireEvent.change(within(tuning).getByRole('slider', { name: 'Chemical engines' }), {
+      target: { value: '1.5' },
+    });
+    await waitFor(() =>
+      expect(within(tuning).getByTestId('engine-clean')).toHaveTextContent('80%'),
+    );
+    expect(within(tuning).getByTestId('engine-trip-fuel')).toHaveTextContent('needs 30');
+    // pushing costs wear even when nothing fails: the panel says how much per leg
+    expect(within(tuning).getByTestId('engine-wear')).toHaveTextContent('chemical engines −2');
+    expect(await within(tuning).findByRole('alert')).toHaveTextContent(
+      'more fuel than the ship carries',
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await waitFor(() => expect(body).not.toBeNull());
+    expect(body).toEqual({ missionId: 'm-1' });
   });
 
   it('dispatches the accepted mission and flips to the in-transit view', async () => {
@@ -130,7 +336,10 @@ describe('transit (S10.7)', () => {
 
     const view = await screen.findByTestId('in-transit');
     expect(view).toBeInTheDocument();
-    expect(screen.getByTestId('transit-scene')).toHaveClass('moving');
+    // the trip column carries the scene: it moves while the ship is under way
+    expect(within(screen.getByTestId('transit-aside')).getByTestId('transit-scene')).toHaveClass(
+      'moving',
+    );
     expect(screen.getByTestId('briefing')).toBeInTheDocument();
     expect(screen.getAllByRole('timer').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Leg 1 of 2')).toBeInTheDocument();
@@ -199,7 +408,12 @@ describe('transit (S10.7)', () => {
               shipId: 'ship-1',
               arrivalAt: iso(30 * 60 * 1000),
               legWindows: [
-                { legIndex: 0, routeId: 'ceres-gate', from: iso(-1 * 60 * 1000), to: iso(30 * 60 * 1000) },
+                {
+                  legIndex: 0,
+                  routeId: 'ceres-gate',
+                  from: iso(-1 * 60 * 1000),
+                  to: iso(30 * 60 * 1000),
+                },
               ],
             }),
           ],
@@ -210,7 +424,9 @@ describe('transit (S10.7)', () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
 
     const inTransit = await screen.findByTestId('in-transit');
-    expect(within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/)).toBeInTheDocument();
+    expect(
+      within(inTransit).getByText(/Now flying Porto Ceres → Portão Kessler/),
+    ).toBeInTheDocument();
     expect(within(inTransit).getByText(/Arrives in/)).toBeInTheDocument();
     expect(within(inTransit).getByRole('timer')).toBeInTheDocument();
     // No itinerary list at all: one leg has nothing left to itemize.

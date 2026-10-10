@@ -263,7 +263,7 @@ describe('admin analytics: dashboard, economy, world (S11.3)', () => {
     // Tier 1 = bare ship; tier 5 = installed catalog value at/above the rules threshold.
     await makeShip(p1.player.id);
     const rules = testApp.app.get(GameConfigService).snapshot().rules;
-    const tier5Value = (rules.economy.upgrade_costs as Record<string, number>)['5'];
+    const tier5Value = (rules.economy.ship_tier_thresholds as Record<string, number>)['5'];
     expect(tier5Value).toBeGreaterThan(0);
     await makeShip(p2.player.id, { installedValue: tier5Value });
 

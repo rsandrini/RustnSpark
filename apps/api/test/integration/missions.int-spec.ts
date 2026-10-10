@@ -280,7 +280,15 @@ describe('missions accept/hold API (S6.4)', () => {
     // never dropped just because the ship already clears it.
     const deliveryRequirements = byId.get(delivery.id)?.info.requirements ?? [];
     expect(deliveryRequirements).toEqual([
-      { code: 'CARGO_TYPE', message: expect.any(String), met: true },
+      // with the real numbers: what the ship has against what the mission needs
+      {
+        code: 'CARGO_TYPE',
+        message: expect.any(String),
+        met: true,
+        unit: 'cargo',
+        needed: expect.any(Number),
+        actual: expect.any(Number),
+      },
     ]);
 
     // Ineligible mining: MINER is met: false, matching eligibility.reasons' MINER entry.

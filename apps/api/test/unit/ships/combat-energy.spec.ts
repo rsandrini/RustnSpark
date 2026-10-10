@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { combatEnergyDraw } from '../../../src/ships/combat-energy.js';
+import { combatEnergyDraw, pierceShare } from '../../../src/ships/combat-energy.js';
 import type { InstalledPart, PartCatalog } from '../../../src/parts/part.types.js';
 
 function baseCatalog(): PartCatalog {
@@ -72,5 +72,20 @@ describe('combatEnergyDraw', () => {
       weaponEnergyDraw: 0,
       shieldEnergyDraw: 0,
     });
+  });
+});
+
+describe('pierceShare', () => {
+  it('is the pdf-weighted share of armor-piercing weapons, 0 with none', () => {
+    expect(pierceShare([])).toBe(0);
+    expect(pierceShare([part({ catalog: { pdf: 4 } })])).toBe(0);
+    expect(pierceShare([part({ catalog: { pdf: 4, armorPiercing: true } })])).toBe(1);
+    expect(
+      pierceShare([
+        part({ catalog: { pdf: 6, armorPiercing: true } }),
+        part({ catalog: { pdf: 2 } }),
+        part({ catalog: { partClass: 'DEFENSE', pdf: 9 } }),
+      ]),
+    ).toBeCloseTo(0.75, 10);
   });
 });

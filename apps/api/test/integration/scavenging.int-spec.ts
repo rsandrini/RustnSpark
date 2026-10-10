@@ -122,8 +122,56 @@ describe('scavenging job (W8)', () => {
     expect((await start(player.token, 'nowhere')).status).toBe(404);
   });
 
+  it('a ship that cannot fly can still scavenge by hand — marked handicapped for the roll', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    // every part back in the hold: no bridge, no engine — a ship that could not fly a mission
+    await prisma.partInstance.updateMany({
+      where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+      data: { location: 'INVENTORY', shipId: null },
+    });
+    await prisma.ship.update({ where: { id: player.shipId }, data: { layout: [] } });
+
+    const response = await start(player.token, 'ceres');
+    expect(response.status).toBe(200);
+    const mission = await prisma.missionInstance.findUniqueOrThrow({
+      where: { id: (response.body as { missionId: string }).missionId },
+    });
+    expect(mission.type).toBe('SCAVENGE');
+    // a mission needs a bridge to fly, but this one never leaves port
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('ON_MISSION');
+  });
+
+  it('on foot: its own (shorter) time, mode validated, and the dispatch is marked on foot', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+
+    const bad = await start(player.token, 'ceres').send({ mode: 'swim' });
+    expect(bad.status).toBe(400);
+
+    const response = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(response.status).toBe(200);
+    const body = response.body as { missionId: string; durationSeconds?: number };
+    const rules = configService.snapshot().rules.scavenging;
+    expect(Math.abs((body.durationSeconds ?? 0) - rules.foot_duration_seconds)).toBeLessThanOrEqual(5);
+    expect(rules.foot_duration_seconds).toBeLessThan(rules.duration_seconds);
+    const mission = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    expect(mission.type).toBe('SCAVENGE');
+  });
+
+  it('a chemical ship with an empty tank can still scavenge (it never flies)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 0 } });
+    expect((await start(player.token, 'ceres')).status).toBe(200);
+  });
+
   it('resolves into a report: used parts in the inventory (or scrap), no payment, ship back in the same port', async () => {
     await freshSeededApp();
+    // a run can come back empty (covered by the resolver's own tests): here, always find something
+    await prisma.gameConfig.update({ where: { key: 'scavenging.nothing_chance' }, data: { value: [0] } });
+    await configService.refresh();
     const player = await onboardPlayer();
     const before = await prisma.partInstance.count({
       where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
@@ -180,7 +228,8 @@ describe('scavenging job (W8)', () => {
       fieldType: 'pirate',
       zone: 3,
       scrapPlace: true,
-      durationSeconds: 300,
+      durationSeconds: 600,
+      footDurationSeconds: 300,
       retryAfterSeconds: 0,
     });
     const safe = await request(httpServer(testApp.app))
