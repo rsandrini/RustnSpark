@@ -1,6 +1,7 @@
 # Rust and Spark — Game Design Document (v0.1)
 
-> **Idle espacial multiplayer assíncrono.** Você monta uma nave a partir de peças, a
+> **Jogo de estratégia espacial de logística e montagem de naves, assíncrono e multiplayer.**
+> Você monta uma nave a partir de peças, planeja a viagem (montagem, motores, carga, rota), a
 > despacha em missões que processam em tempo real, e volta para ler — narrado como um
 > RPG de texto — o que aconteceu. Outros jogadores habitam o mesmo mundo persistente.
 >

@@ -1,7 +1,8 @@
 # Rust and Spark
 
-> **Asynchronous multiplayer space idle game.** You assemble a ship from parts, dispatch it
-> on missions that resolve in real time, and come back to read — narrated like a text RPG —
+> **A space logistics and ship-building strategy game, asynchronous and multiplayer.** You
+> assemble a ship from parts, plan the run (build, engines, cargo, route), dispatch it on
+> missions that resolve in real time, and come back to read — narrated like a text RPG —
 > what happened. Other players inhabit the same persistent world.
 > Tone: *The Expanse* + *Euro Truck Simulator*.
 

@@ -1,4 +1,4 @@
-# Teste de Mesa — Jogo Idle Espacial v0.1
+# Teste de Mesa — Jogo de Estratégia Espacial v0.1
 
 > Livro de regras jogável para testar o loop NO PAPEL antes de codar. Números
 > **provisórios**: o objetivo é rodar turnos, ver onde dói, e ajustar. Resolve-se
@@ -19,7 +19,7 @@
 
 **Para que NÃO serve:**
 - Não prova que o jogo é **divertido** — isso só com pessoas jogando.
-- Não valida UX, ritmo idle real (tempo de espera), nem sensação de progressão de
+- Não valida UX, ritmo real de espera (tempo de espera), nem sensação de progressão de
   longo prazo.
 - Os números são chutes calibrados, não verdade final.
 

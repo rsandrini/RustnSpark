@@ -4,7 +4,7 @@
 
 **Status:** APPROVED (2026-09-21). All decisions in §2 (D1–D35) are closed and a review pass fixed 14 defects (§2.1). Decisions D33–D35 (Admin owns all tunable data, applied immediately; Admin tuning UI available right after Step 3) were applied in a second pass. Step 1 may start.
 
-**Goal:** Build the v0.1 playable loop of Rust and Spark (asynchronous idle space game): assemble a ship from parts, dispatch it on missions that resolve in real time on the server, read a narrated report, trade/repair/refuel, plus the admin tools to operate and tune it.
+**Goal:** Build the v0.1 playable loop of Rust and Spark (an asynchronous space logistics and ship-building strategy game): assemble a ship from parts, dispatch it on missions that resolve in real time on the server, read a narrated report, trade/repair/refuel, plus the admin tools to operate and tune it.
 
 **Architecture:** Authoritative NestJS server (client sends intentions only). PostgreSQL is the source of truth. BullMQ delayed jobs resolve missions and repairs; a repeatable reconciliation job is the safety net. Game rules live in pure, I/O-free, seeded-RNG modules (`resolution`, `economy`, `ships`, `parts`) that take a typed `GameRules` snapshot (loaded from the `GameConfig` table) as an argument. React SPA is a window onto server state.
 

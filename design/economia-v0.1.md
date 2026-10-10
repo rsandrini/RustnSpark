@@ -123,7 +123,7 @@ melhores. `recompensa_base = 250 + tier×180`, modulada por distância, perigo e
 performance (condição). Ganhos crescem com custos → curva saudável.
 
 ### Custos de upgrade (degraus) e curva resultante
-| Tier | Custo | Missões p/ alcançar | ~Tempo idle (15min/missão) |
+| Tier | Custo | Missões p/ alcançar | ~Tempo de espera (15min/missão) |
 |---|---|---|---|
 | 2 | 2.500 | 5 | ~1h |
 | 3 | 7.000 | 18 (+13) | ~4h |

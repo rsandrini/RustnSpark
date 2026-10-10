@@ -1,4 +1,4 @@
-# Jogo Idle Espacial — Escopo v0.1
+# Jogo de Estratégia Espacial — Escopo v0.1
 
 > Documento de trabalho. Organiza as decisões em núcleo (o que o MVP precisa),
 > visão (documentado para fases futuras) e decisões em aberto.
@@ -7,7 +7,7 @@
 
 ## 1. A fantasia central
 
-Não é "mais um idle de nave". É um **ecossistema espacial vivo e compartilhado**:
+Não é "mais um jogo de nave de clicar e esperar". É um **ecossistema espacial vivo e compartilhado**:
 você monta uma nave a partir de peças, a despacha em missões que processam em tempo
 real, e volta para ler o que aconteceu. Outros jogadores habitam o mesmo mundo
 persistente. Identidade (transponders), facção e risco criam conflito emergente.
