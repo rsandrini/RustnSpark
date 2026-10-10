@@ -234,7 +234,8 @@
       "FACING_CONNECTOR": "An engine or weapon has a connector on its facing side: it will not work. Turn it.",
       "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent.",
       "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation.",
-      "HOLD_OVER_CAPACITY": "The spare parts and ore do not fit the ship's cargo space."
+      "HOLD_OVER_CAPACITY": "The ore and the mission's cargo do not fit the ship's cargo space.",
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -331,9 +332,10 @@
       "confirm": "Empty the ship"
     },
     "hold": {
-      "line": "Carried: {{cells}} cells of spare parts ({{slots}} free on the bridge), {{ore}} ore. Cargo space used: {{used}} of {{capacity}}.",
-      "over": "Too much to depart: sell or leave something first.",
-      "hint": "Spare parts and ore travel with the ship. The bridge carries some spare parts for free; the rest, and every unit of ore, takes cargo space."
+      "line": "Carried: {{parts}} of {{slots}} spare-part slots, {{ore}} ore. Cargo space used: {{used}} of {{capacity}}.",
+      "partsOver": "Too many spare parts to depart: sell or leave some.",
+      "cargoOver": "Too much cargo to depart: sell some ore first.",
+      "hint": "Spare parts ride free in the bridge slots (one slot per part, any size or rarity). Ore and the cargo a mission loads take cargo space."
     }
   },
   "home": {
@@ -1231,7 +1233,8 @@
       "NO_FUEL_CAPACITY": "No fuel capacity",
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded",
-      "HOLD_OVER_CAPACITY": "The spare parts and ore do not fit the ship's cargo space."
+      "HOLD_OVER_CAPACITY": "The ore and the mission's cargo do not fit the ship's cargo space.",
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",
@@ -1289,7 +1292,11 @@
     "yourMission": "Your mission",
     "startBefore": "Start before",
     "goToShip": "Open on My Ship",
-    "engineLevels": "Engines: chemical x{{chem}} · ion x{{ion}}"
+    "engineLevels": "Engines: chemical x{{chem}} · ion x{{ion}}",
+    "cargo": {
+      "fixed": "Fixed load: {{need}} units of cargo, taking that much of your cargo space.",
+      "open": "Open load: at least {{need}} units, and you take as much as your cargo space has left. Every unit beyond {{need}} pays {{pay}} ¢."
+    }
   },
   "map": {
     "title": "Sector map",

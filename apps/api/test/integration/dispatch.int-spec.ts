@@ -12,6 +12,7 @@ import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { AppModule } from '../../src/app.module.js';
 import { EnvService } from '../../src/common/env/env.module.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
@@ -442,14 +443,14 @@ describe('ship dispatch API (S7.2)', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('refuses a ship whose spare parts and ore do not fit its free slots plus cargo space', async () => {
+  it('refuses a ship with more spare parts than the bridge has slots for, however small they are', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const mission = await createMission(player, [40]);
-    // 40 loose hulls (2 cells each) far past the bridge's free slots and the starter cargo space
+    const slots = GAME_CONFIG_DEFAULTS.ship.spare_part_slots;
     await prisma.partInstance.createMany({
-      data: Array.from({ length: 40 }, () => ({
-        partType: 'hull',
+      data: Array.from({ length: slots + 1 }, () => ({
+        partType: 'cargo',
         ownerPlayerId: player.seeded.player.id,
         condition: 100,
         location: 'INVENTORY' as const,
@@ -461,14 +462,60 @@ describe('ship dispatch API (S7.2)', () => {
     expect(refused.body).toMatchObject({ message: { error: 'SHIP_NOT_VIABLE' } });
     const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
       .problems;
-    expect(problems.map((problem) => problem.code)).toContain('HOLD_OVER_CAPACITY');
+    expect(problems.map((problem) => problem.code)).toContain('HOLD_PARTS_OVER');
 
-    // selling (here: dropping) the surplus lets the same ship depart
-    await prisma.partInstance.deleteMany({
+    // one part fewer and the ship flies
+    const extra = await prisma.partInstance.findFirstOrThrow({
       where: { ownerPlayerId: player.seeded.player.id, location: 'INVENTORY' },
     });
+    await prisma.partInstance.delete({ where: { id: extra.id } });
     const ok = await dispatch(player.token, player.shipId, mission.id);
     expect(ok.status).toBe(200);
+  });
+
+  it('a fixed-cargo delivery takes its units out of the cargo space the ore also uses', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    // the starter hold is 5: a fixed load of 5 fills it
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 5, cargoMode: 'fixed' } },
+    });
+    await prisma.playerMaterial.create({
+      data: { playerId: player.seeded.player.id, materialId: 'common_ore', quantity: 1 },
+    });
+
+    const refused = await dispatch(player.token, player.shipId, mission.id);
+    expect(refused.status).toBe(400);
+    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('HOLD_OVER_CAPACITY');
+
+    await prisma.playerMaterial.deleteMany({ where: { playerId: player.seeded.player.id } });
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    expect(stored.cargo).toMatchObject({ load: { mode: 'fixed', units: 5, need: 5 } });
+  });
+
+  it('an open-cargo delivery loads all the room the ship has left', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionTemplate.update({
+      where: { id: mission.templateId },
+      data: { requirements: { cargo: 2, cargoMode: 'open', unitPay: 30 } },
+    });
+    await prisma.playerMaterial.create({
+      data: { playerId: player.seeded.player.id, materialId: 'common_ore', quantity: 1 },
+    });
+
+    const ok = await dispatch(player.token, player.shipId, mission.id);
+    expect(ok.status).toBe(200);
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    // starter hold 5, 1 ore aboard: 4 units loaded, 2 of them beyond the minimum
+    expect(stored.cargo).toMatchObject({ load: { mode: 'open', units: 4, need: 2, unitPay: 30 } });
   });
 
   it('a blocked engine does not ground the ship: it flies, with no thrust from that engine (slower)', async () => {

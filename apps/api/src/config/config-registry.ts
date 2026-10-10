@@ -233,6 +233,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'ship.spare_part_slots',
+    group: 'ship',
+    type: 'integer',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship.spare_part_slots),
+    description: {
+      en: 'How many loose parts the bridge carries for free, one slot per part whatever its size or rarity. A ship holding more cannot depart.',
+      'pt-BR':
+        'Quantas peças soltas a ponte leva de graça, um espaço por peça seja qual for o tamanho ou a raridade. Uma nave com mais que isso não pode partir.',
+    },
+  },
+  {
     key: 'wear.performance_floor',
     group: 'wear',
     type: 'number',
@@ -1684,6 +1697,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Maximum number of missions a player can place on hold.',
       'pt-BR': 'Número máximo de missões que um jogador pode deixar em espera.',
+    },
+  },
+  {
+    key: 'missions.open_cargo_unit_pay',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 10000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.open_cargo_unit_pay),
+    description: {
+      en: 'Credits paid for each unit of cargo carried beyond the minimum on an open-cargo delivery (a mission template may set its own unitPay).',
+      'pt-BR':
+        'Créditos pagos por cada unidade de carga levada além do mínimo em uma entrega de carga aberta (um modelo de missão pode definir seu próprio unitPay).',
     },
   },
   {

@@ -47,8 +47,6 @@ type SeedPart = {
     shieldRegen?: number;
     /** Power a context system (weapon, shield, mining rig) keeps drawing while idle (default 1). */
     idlePower?: number;
-    /** Bridge: cells of loose parts the ship carries for free (the rest takes cargo space). */
-    storageSlots?: number;
     /** A weapon whose hits ignore the armor's flat cut (the shield and the armor pool still count). */
     armorPiercing?: boolean;
   };
@@ -110,7 +108,6 @@ const FAMILIES: Family[] = [
         scrapValue: 0,
         partHp: 30,
         energyCont: -1,
-        specialProp: { storageSlots: 4 },
       },
       {
         rarity: 'UNCOMMON',
@@ -120,7 +117,6 @@ const FAMILIES: Family[] = [
         scrapValue: 150,
         partHp: 38,
         energyCont: -1,
-        specialProp: { storageSlots: 6 },
         name: { en: 'Command Bridge II', 'pt-BR': 'Ponte de Comando II' },
         description: {
           en: 'An improved command core with a larger structure budget and tougher casing. Better avionics fit in the same compact frame.',
@@ -136,7 +132,6 @@ const FAMILIES: Family[] = [
         scrapValue: 600,
         partHp: 55,
         energyCont: -1,
-        specialProp: { storageSlots: 8 },
         name: { en: 'Command Bridge III', 'pt-BR': 'Ponte de Comando III' },
         description: {
           en: 'A hardened command core for ambitious ships. Offers a much larger structure budget without growing heavier or hungrier.',
@@ -152,7 +147,6 @@ const FAMILIES: Family[] = [
         scrapValue: 1500,
         partHp: 75,
         energyCont: -1,
-        specialProp: { storageSlots: 12 },
         name: { en: 'Command Bridge IV', 'pt-BR': 'Ponte de Comando IV' },
         description: {
           en: 'A capital-grade command core. The structure budget is doubled compared to a basic bridge, yet the frame stays compact.',
@@ -168,7 +162,6 @@ const FAMILIES: Family[] = [
         scrapValue: 3500,
         partHp: 100,
         energyCont: -1,
-        specialProp: { storageSlots: 16 },
         name: { en: 'Apex Command Core', 'pt-BR': 'Núcleo de Comando Apex' },
         description: {
           en: 'A near-mythical command core. Its compact shell houses enough structure budget for a small fleet, and the pilot capsule can survive almost anything.',

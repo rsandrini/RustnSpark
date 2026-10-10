@@ -231,7 +231,7 @@ export class TravelService {
         catalogForConnectivity,
         connectorsByInstance,
       ),
-      await loadHold(this.prisma, playerId, installedConnected, sheet.crg),
+      await loadHold(this.prisma, playerId, rules.ship.spare_part_slots, sheet.crg),
     );
 
     const [active, repairing] = await Promise.all([

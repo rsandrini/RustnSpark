@@ -70,6 +70,8 @@ export interface MissionInput {
   readonly client: EscortClient | null;
   /** Present on mining legs/stops (D30). */
   readonly mining?: { readonly stop: MiningStop; readonly miner: MinerRig };
+  /** Open-cargo deliveries: what the units beyond the minimum add to the pay (credits). */
+  readonly cargoExtra?: number;
   readonly contractedMining?: {
     readonly materialId: string;
     readonly requiredQuantity: number;
@@ -245,15 +247,16 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       (peak, leg) => (leg.danger > peak ? leg.danger : peak),
       0,
     );
-    const base = rewardBase(
-      {
-        tier: input.mission.tier,
-        danger: maxDanger,
-        distance: totalDistance,
-        missionType: input.mission.type ?? 'delivery',
-      },
-      input.rules,
-    );
+    const base =
+      rewardBase(
+        {
+          tier: input.mission.tier,
+          danger: maxDanger,
+          distance: totalDistance,
+          missionType: input.mission.type ?? 'delivery',
+        },
+        input.rules,
+      ) + (input.mission.cargoExtra ?? 0);
 
     if (input.mission.contractedMining !== undefined) {
       const mined = loot

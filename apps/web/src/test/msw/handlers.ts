@@ -1449,7 +1449,7 @@ const boardOffer = (
 });
 
 const boardState: MissionOffer[] = [
-  boardOffer({ id: 'b-1' }),
+  boardOffer({ id: 'b-1' }, { cargo: { mode: 'open', need: 3, unitPay: 20 } }),
   boardOffer({
     id: 'b-2',
     type: 'TRANSPORT',

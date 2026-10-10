@@ -23,6 +23,7 @@ import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
+import { cargoTermsOf } from './cargo-mode.js';
 import { rawMobility } from '../ships/sheet.deriver.js';
 import { raceWindow } from '../resolution/race/race.resolver.js';
 import { BoardService, type BoardMission } from './board.service.js';
@@ -92,6 +93,8 @@ export interface OfferInfo {
       failure reasons — so the board can show what a mission demands even when the viewer's
       ship already clears it. Empty when there is no ship to check against. */
   readonly requirements: readonly RequirementCheck[];
+  /** Deliveries: how the cargo space is used (minimum, fixed load or open load) and what it pays. */
+  readonly cargo: { readonly mode: 'min' | 'fixed' | 'open'; readonly need: number; readonly unitPay: number } | null;
   /** Race offers: the rival field, the entry minimum and the 1st/2nd/3rd prize shares. */
   readonly race: {
     readonly rivals: readonly {
@@ -870,6 +873,7 @@ function offerInfo(
             quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
           },
     requirements,
+    cargo: cargoTermsOf(row.type, requirementsJson, rules),
     race:
       row.type === 'RACE'
         ? {

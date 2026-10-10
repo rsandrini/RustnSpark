@@ -29,6 +29,7 @@ const shipSchema = z.object({
   mob_factor: z.number().min(0.1).max(5.0),
   stat_display_scale: z.number().min(1).max(100),
   fuel_mass_per_unit: z.number().min(0).max(1),
+  spare_part_slots: z.number().int().min(0).max(100),
 });
 
 const wearSchema = z.object({
@@ -202,6 +203,7 @@ const shipClassSchema = z.object({
 
 const missionsSchema = z.object({
   hold_max: z.number().int().min(0).max(10),
+  open_cargo_unit_pay: z.number().min(0).max(10000),
   duration_k: z.number().min(0.1).max(10),
   duration_class_cutoffs: z.record(z.string(), z.number().min(60).max(86400)),
   time_scale: z.number().min(0.001).max(100),

@@ -234,7 +234,8 @@
       "FACING_CONNECTOR": "Um motor ou arma tem um conector no lado que aponta: ele não funciona. Gire-o.",
       "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
       "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
-      "HOLD_OVER_CAPACITY": "As peças sobressalentes e o minério não cabem no espaço de carga da nave."
+      "HOLD_OVER_CAPACITY": "O minério e a carga da missão não cabem no espaço de carga da nave.",
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -331,9 +332,10 @@
       "confirm": "Esvaziar a nave"
     },
     "hold": {
-      "line": "Carregado: {{cells}} células de peças sobressalentes ({{slots}} livres na ponte), {{ore}} de minério. Espaço de carga usado: {{used}} de {{capacity}}.",
-      "over": "Carga demais para partir: venda ou deixe algo antes.",
-      "hint": "Peças sobressalentes e minério viajam com a nave. A ponte leva algumas peças de graça; o resto, e cada unidade de minério, ocupa espaço de carga."
+      "line": "Carregado: {{parts}} de {{slots}} espaços de peças sobressalentes, {{ore}} de minério. Espaço de carga usado: {{used}} de {{capacity}}.",
+      "partsOver": "Peças sobressalentes demais para partir: venda ou deixe algumas.",
+      "cargoOver": "Carga demais para partir: venda parte do minério antes.",
+      "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). O minério e a carga que uma missão embarca ocupam espaço de carga."
     }
   },
   "home": {
@@ -1231,7 +1233,8 @@
       "NO_FUEL_CAPACITY": "Sem capacidade de combustível",
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
-      "HOLD_OVER_CAPACITY": "As peças sobressalentes e o minério não cabem no espaço de carga da nave."
+      "HOLD_OVER_CAPACITY": "O minério e a carga da missão não cabem no espaço de carga da nave.",
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",
@@ -1289,7 +1292,11 @@
     "yourMission": "Sua missão",
     "startBefore": "Iniciar até",
     "goToShip": "Abrir em Minha Nave",
-    "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}"
+    "engineLevels": "Motores: químicos x{{chem}} · íons x{{ion}}",
+    "cargo": {
+      "fixed": "Carga fixa: {{need}} unidades, ocupando esse tanto do seu espaço de carga.",
+      "open": "Carga aberta: no mínimo {{need}} unidades, e você leva o quanto o espaço de carga ainda tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
+    }
   },
   "map": {
     "title": "Mapa do setor",

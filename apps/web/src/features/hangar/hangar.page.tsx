@@ -797,13 +797,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     title={t('hangar.hold.hint')}
                   >
                     {t('hangar.hold.line', {
-                      cells: ship.hold.partCells,
+                      parts: ship.hold.parts,
                       slots: ship.hold.slots,
                       ore: ship.hold.ore,
                       used: ship.hold.used,
                       capacity: ship.hold.capacity,
                     })}
-                    {ship.hold.over && ` ${t('hangar.hold.over')}`}
+                    {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
+                    {ship.hold.cargoOver && ` ${t('hangar.hold.cargoOver')}`}
                   </p>
                 )}
                 {disconnectedPartIds.size > 0 && (

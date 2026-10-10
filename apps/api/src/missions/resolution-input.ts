@@ -307,6 +307,11 @@ export function buildResolveInput(args: {
           },
         }
       : {}),
+    ...(snapshot.cargo?.mode === 'open'
+      ? {
+          cargoExtra: Math.max(0, snapshot.cargo.units - snapshot.cargo.need) * snapshot.cargo.unitPay,
+        }
+      : {}),
     ...(context.contractedMining ? { contractedMining: context.contractedMining } : {}),
     ...(context.scavenge ? { scavenge: context.scavenge } : {}),
     ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),

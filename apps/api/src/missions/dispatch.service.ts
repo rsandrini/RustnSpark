@@ -24,6 +24,7 @@ import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem } from '../ships/hold.js';
+import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
@@ -70,6 +71,13 @@ export interface DispatchSnapshot {
   readonly onFoot?: boolean;
   /** The levels the engines ran at (engine tuning on the bridge). */
   readonly engine?: EngineLevels;
+  /** What a delivery loaded (fixed or open cargo): the units aboard and the terms they are paid on. */
+  readonly cargo?: {
+    readonly mode: 'fixed' | 'open';
+    readonly units: number;
+    readonly need: number;
+    readonly unitPay: number;
+  };
   /** Resolved with the layered damage model (shield → armor → hull → parts). Older runs lack it. */
   readonly layered?: boolean;
 }
@@ -169,8 +177,15 @@ export async function rebuildDispatchData(
       storage: rows
         .filter((part) => part.location === 'INVENTORY')
         .map((part) => ({ id: part.id, partType: part.partType })),
+      ...(loadedCargoOf(mission) !== undefined ? { cargo: loadedCargoOf(mission) } : {}),
     },
   };
+}
+
+/** The cargo a delivery loaded at dispatch, as kept on the mission row. */
+function loadedCargoOf(mission: MissionInstance): DispatchSnapshot['cargo'] | undefined {
+  const load = (mission.cargo as { load?: DispatchSnapshot['cargo'] } | null)?.load;
+  return load !== undefined && typeof load.units === 'number' ? load : undefined;
 }
 
 const MS_PER_SECOND = 1000;
@@ -288,7 +303,21 @@ export class DispatchService {
       // which is manual work at the current place: the ship never travels, so nothing points anywhere.
       const flightViability = checkViability(sheet, installedConnected, rules);
       // The spare parts and the ore travel with the ship: they must fit the free slots plus the cargo space.
-      const hold = await loadHold(tx, playerId, installedConnected, sheet.crg);
+      // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space too.
+      const template = await tx.missionTemplate.findUnique({
+        where: { id: mission.templateId },
+        select: { requirements: true },
+      });
+      const terms = cargoTermsOf(mission.type, template?.requirements, rules);
+      const oreHeld = (await loadHold(tx, playerId, 0, sheet.crg)).ore;
+      const load = terms === null ? null : cargoLoadFor(terms, sheet.crg, oreHeld);
+      const hold = await loadHold(
+        tx,
+        playerId,
+        rules.ship.spare_part_slots,
+        sheet.crg,
+        load?.units ?? 0,
+      );
       const viability =
         mission.type === 'SCAVENGE'
           ? flightViability
@@ -390,12 +419,22 @@ export class DispatchService {
         ...(handicapped ? { handicapped: true } : {}),
         ...(onFoot ? { onFoot: true } : {}),
         ...(engineLevels !== undefined ? { engine: engineLevels } : {}),
+        ...(terms !== null && load !== null && terms.mode !== 'min'
+          ? { cargo: { mode: terms.mode, units: load.units, need: terms.need, unitPay: terms.unitPay } }
+          : {}),
         layered: true,
       };
 
       const missionUpdate = await tx.missionInstance.updateMany({
         where: { id: mission.id, status: 'ACCEPTED', playerId, shipId },
-        data: { status: 'IN_TRANSIT', arrivalAt },
+        data: {
+          status: 'IN_TRANSIT',
+          arrivalAt,
+          // what the delivery loaded, kept on the row so a rebuilt job pays the same
+          ...(snapshot.cargo !== undefined
+            ? { cargo: { ...((mission.cargo as object) ?? {}), load: snapshot.cargo } }
+            : {}),
+        },
       });
       if (missionUpdate.count === 0) {
         throw new ConflictException({ error: 'MISSION_NOT_ACCEPTED' });

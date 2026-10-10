@@ -18,6 +18,8 @@ export type ViabilityProblemCode =
   | 'STRUCTURE_EXCEEDED'
   // The loose parts and the ore the ship carries do not fit its free slots plus its cargo space.
   | 'HOLD_OVER_CAPACITY'
+  // More loose parts than the bridge has slots for.
+  | 'HOLD_PARTS_OVER'
   // Part direction rules (ships/direction.ts): reported like any other flight problem — saving a
   // layout is never blocked by them (a refit needs free placement), flying with them is.
   | 'EXHAUST_BLOCKED'

@@ -672,10 +672,8 @@ export class ShipsService implements OnModuleInit {
       _sum: { quantity: true },
     });
     const hold = computeHold({
-      slots: installedConnected.reduce((sum, part) => sum + (part.catalog.storageSlots ?? 0), 0),
-      partCells: parts
-        .filter((part) => part.location === 'INVENTORY')
-        .reduce((sum, part) => sum + part.partCatalog.w * part.partCatalog.h, 0),
+      slots: rules.ship.spare_part_slots,
+      parts: parts.filter((part) => part.location === 'INVENTORY').length,
       ore: held._sum.quantity ?? 0,
       capacity: sheet.crg,
     });

@@ -115,7 +115,7 @@ export class MiningJobService {
         connectorsByInstance,
         { strict: true },
       ),
-      await loadHold(this.prisma, playerId, installedConnected, sheet.crg),
+      await loadHold(this.prisma, playerId, rules.ship.spare_part_slots, sheet.crg),
     );
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

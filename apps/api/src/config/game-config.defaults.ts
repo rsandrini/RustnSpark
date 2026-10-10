@@ -26,6 +26,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     mob_factor: 1.6,
     stat_display_scale: 10,
     fuel_mass_per_unit: 0,
+    // Loose parts the bridge carries for free (one slot per part, whatever its size or rarity); a
+    // ship holding more cannot depart.
+    spare_part_slots: 8,
   },
   wear: {
     performance_floor: 0.5,
@@ -231,6 +234,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   missions: {
     hold_max: 1,
+    // Open-cargo deliveries pay this much for each unit carried beyond the minimum (a template may set its own).
+    open_cargo_unit_pay: 20,
     duration_k: 2.25,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,

@@ -28,8 +28,6 @@ export interface PartCatalog {
   shieldRegen?: number;
   /** Weapon/shield/mining rig: power it keeps drawing while idle (0/absent = the default). */
   idlePower?: number;
-  /** Bridge: how many cells of loose parts the ship carries for free (the rest takes cargo space). */
-  storageSlots?: number;
   /** Weapon whose hits ignore the armor's flat cut (shield and armor pool still count). */
   armorPiercing?: boolean;
 }

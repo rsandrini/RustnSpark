@@ -185,6 +185,17 @@ export function MissionCard({
         )}
       </div>
 
+      {offer.info.cargo != null && offer.info.cargo.mode !== 'min' && (
+        <p className="mcard-cargo sub" data-testid="mcard-cargo">
+          {offer.info.cargo.mode === 'fixed'
+            ? t('board.cargo.fixed', { need: offer.info.cargo.need })
+            : t('board.cargo.open', {
+                need: offer.info.cargo.need,
+                pay: offer.info.cargo.unitPay,
+              })}
+        </p>
+      )}
+
       {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
           text has no room in a narrow 1/4-width grid cell) and placed after what the mission
           needs, as its own full-width row. */}

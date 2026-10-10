@@ -446,11 +446,7 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
         zone: 0,
         env: { id: 'open', level: 1, fuelMult: 1 },
       }));
-      return resolve(
-        seed,
-        snapshot({ parts }),
-        mission({ legs: route, engine: { chem, ion: 1 } }),
-      );
+      return resolve(seed, snapshot({ parts }), mission({ legs: route, engine: { chem, ion: 1 } }));
     };
     const failures = (out: ReturnType<typeof resolve>) =>
       out.events.filter((event) => event.type === 'engine_push');
@@ -504,12 +500,19 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
         expect(['held', 'failed']).toContain(event.tuning!.outcome);
       }
       // a failed leg says so, and also records the engine failure itself
-      const failedLegs = tunings(pushed).filter((event) => event.tuning!.outcome === 'failed').length;
+      const failedLegs = tunings(pushed).filter(
+        (event) => event.tuning!.outcome === 'failed',
+      ).length;
       expect(failures(pushed)).toHaveLength(failedLegs);
       // eased: a line per leg, no chance of failing
       const eased = tuned(0.6, 'log-2', 2);
       expect(tunings(eased)).toHaveLength(2);
-      expect(tunings(eased)[0]!.tuning).toMatchObject({ group: 'chem', levelPct: 60, chancePct: 0, outcome: 'eased' });
+      expect(tunings(eased)[0]!.tuning).toMatchObject({
+        group: 'chem',
+        levelPct: 60,
+        chancePct: 0,
+        outcome: 'eased',
+      });
       // as listed: nothing to report
       expect(tunings(tuned(1, 'log-3', 2))).toHaveLength(0);
     });
@@ -519,7 +522,9 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
       const safe: GameRules = { ...rules, engine: { ...rules.engine, mishap_at_max: 0 } };
       const flown = (group: 'chem' | 'ion', level: number) => {
         const parts = PARTS.map((part) =>
-          part.id === 'engine-1' ? { ...part, condition: 100, engineGroup: group } : { ...part, condition: 100 },
+          part.id === 'engine-1'
+            ? { ...part, condition: 100, engineGroup: group }
+            : { ...part, condition: 100 },
         );
         const route = Array.from({ length: 3 }, () => ({
           distance: 100,
@@ -530,7 +535,10 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
         const out = resolveMission({
           seed: 'wear-seed',
           snapshot: snapshot({ parts }),
-          mission: mission({ legs: route, engine: { chem: group === 'chem' ? level : 1, ion: group === 'ion' ? level : 1 } }),
+          mission: mission({
+            legs: route,
+            engine: { chem: group === 'chem' ? level : 1, ion: group === 'ion' ? level : 1 },
+          }),
           rules: safe,
         });
         return { out, last: out.legs.at(-1)!.ship.parts };
@@ -545,7 +553,9 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
       it('a pushed chemical group wears its engine, nothing else (the batteries are not involved)', () => {
         const { out, last } = flown('chem', rules.engine.chem_level_max);
         expect(out.events.some((event) => event.type === 'engine_push')).toBe(false);
-        expect(cond(base, 'engine-1') - cond(last, 'engine-1')).toBeGreaterThan(rules.engine.push_wear * 2);
+        expect(cond(base, 'engine-1') - cond(last, 'engine-1')).toBeGreaterThan(
+          rules.engine.push_wear * 2,
+        );
         expect(cond(last, 'battery-1')).toBeCloseTo(cond(base, 'battery-1'));
       });
 
@@ -559,7 +569,8 @@ describe('round-2 playtest fix — wear tracks danger, and passive parts wear fa
       });
 
       it('wears more the harder it is pushed, and not at all as listed or throttled down', () => {
-        const loss = (level: number) => cond(base, 'engine-1') - cond(flown('chem', level).last, 'engine-1');
+        const loss = (level: number) =>
+          cond(base, 'engine-1') - cond(flown('chem', level).last, 'engine-1');
         expect(loss(1.5)).toBeGreaterThan(loss(1.2));
         expect(loss(1.2)).toBeGreaterThan(0);
         expect(loss(1)).toBeCloseTo(0);
@@ -643,10 +654,31 @@ describe('RACE missions', () => {
       race: { ...rules.race, time_jitter: 0, form_spread: 0, mishap_chance: 0 },
     };
     const prize = (mob: number): number =>
-      resolveMission({ seed: 'prizes', snapshot: withMobility(mob), mission: raceMission(), rules: calm }).events.find(
-        (event) => event.type === 'mission_payout',
-      )?.effects.credits ?? 0;
+      resolveMission({
+        seed: 'prizes',
+        snapshot: withMobility(mob),
+        mission: raceMission(),
+        rules: calm,
+      }).events.find((event) => event.type === 'mission_payout')?.effects.credits ?? 0;
     expect(prize(8)).toBeGreaterThan(prize(2.8));
     expect(prize(2.8)).toBeGreaterThan(prize(2.2));
+  });
+});
+
+describe('open-cargo deliveries', () => {
+  it('the units beyond the minimum add to the pay, on top of the listed reward', () => {
+    const payoutOf = (cargoExtra?: number) => {
+      const out = resolve(
+        'cargo-open',
+        snapshot(),
+        mission(cargoExtra === undefined ? {} : { cargoExtra }),
+      );
+      expect(out.status).toBe('success');
+      return out.events.find((event) => event.type === 'mission_payout')?.effects.credits ?? 0;
+    };
+    const plain = payoutOf();
+    expect(plain).toBeGreaterThan(0);
+    expect(payoutOf(0)).toBe(plain);
+    expect(payoutOf(100)).toBeGreaterThan(plain);
   });
 });

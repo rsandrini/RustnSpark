@@ -114,6 +114,7 @@ export type ConfigKey =
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
   | 'missions.hold_max'
+  | 'missions.open_cargo_unit_pay'
   | 'missions.time_scale'
   | 'onboarding.home_locations'
   | 'onboarding.starter_parts'
@@ -158,6 +159,7 @@ export type ConfigKey =
   | 'ship_class.combat_share'
   | 'ship_class.pressurized_share'
   | 'ship.fuel_mass_per_unit'
+  | 'ship.spare_part_slots'
   | 'ship.mob_factor'
   | 'ship.stat_display_scale'
   | 'stance.neutral_attack_ratio'
@@ -236,6 +238,7 @@ export type GameRules = Readonly<{
     mob_factor: number;
     stat_display_scale: number;
     fuel_mass_per_unit: number;
+    spare_part_slots: number;
   }>;
   wear: Readonly<{
     performance_floor: number;
@@ -445,6 +448,7 @@ export type GameRules = Readonly<{
   }>;
   missions: Readonly<{
     hold_max: number;
+    open_cargo_unit_pay: number;
     duration_k: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;

@@ -110,6 +110,13 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('A mining rig installed')).toHaveLength(1);
   });
 
+  it('an open-cargo delivery says what the extra units pay', async () => {
+    await renderBoard();
+    const line = await screen.findByTestId('mcard-cargo');
+    expect(line).toHaveTextContent('at least 3 units');
+    expect(line).toHaveTextContent('beyond 3 pays 20');
+  });
+
   it('only shows eligible offers by default, and the toggle brings the rest back', async () => {
     await renderBoard();
     // Default fixture: 3 eligible offers (b-1, b-2, b-4-held-but-mine-eligible) + 1 blocked

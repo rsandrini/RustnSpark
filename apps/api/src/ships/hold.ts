@@ -1,40 +1,56 @@
-import type { InstalledPart } from '../parts/part.types.js';
 import type { Prisma } from '@prisma/client';
 import type { ViabilityReport } from './viability.js';
 
 /**
- * What the ship carries besides its installed parts. The loose parts in the inventory travel with
- * the ship: the bridge gives a number of free slots (cells), what goes past them takes cargo
- * space, and so does every unit of ore or scrap held. A ship whose load does not fit its cargo
- * space cannot depart.
+ * What the ship carries besides its installed parts.
+ * - Spare parts: the bridge carries a number of loose parts for free, one slot per part whatever its
+ *   size or rarity (`ship.spare_part_slots`). More than that and the ship cannot depart.
+ * - Cargo space: every unit of ore or scrap held takes one, and so does the cargo a mission has the
+ *   ship carry (a fixed load, or an open one filling what is left).
  */
 export interface HoldState {
-  /** Free cells the bridge gives to loose parts. */
+  /** Loose parts the bridge carries for free. */
   readonly slots: number;
-  /** Cells the loose parts take (width × height each). */
-  readonly partCells: number;
+  /** Loose parts held. */
+  readonly parts: number;
   /** Units of ore and scrap held. */
   readonly ore: number;
+  /** Cargo the mission puts aboard (0 outside a mission with a load). */
+  readonly missionCargo: number;
   /** The ship's cargo space. */
   readonly capacity: number;
-  /** Cargo space the load takes: the loose parts past the free slots, plus the ore. */
+  /** Cargo space taken: the ore and the mission's cargo. */
   readonly used: number;
   readonly free: number;
+  /** More loose parts than the bridge has slots for. */
+  readonly partsOver: boolean;
+  /** Ore and mission cargo do not fit the cargo space. */
+  readonly cargoOver: boolean;
   readonly over: boolean;
 }
 
 export function computeHold(input: {
   readonly slots: number;
-  readonly partCells: number;
+  readonly parts: number;
   readonly ore: number;
   readonly capacity: number;
+  readonly missionCargo?: number;
 }): HoldState {
-  const used = Math.max(0, input.partCells - input.slots) + input.ore;
+  const missionCargo = input.missionCargo ?? 0;
+  const used = input.ore + missionCargo;
+  const partsOver = input.parts > input.slots;
+  const cargoOver = used > input.capacity;
   return {
-    ...input,
+    slots: input.slots,
+    parts: input.parts,
+    ore: input.ore,
+    missionCargo,
+    capacity: input.capacity,
     used,
     free: Math.max(0, input.capacity - used),
-    over: used > input.capacity,
+    partsOver,
+    cargoOver,
+    over: partsOver || cargoOver,
   };
 }
 
@@ -42,36 +58,32 @@ export function computeHold(input: {
 export async function loadHold(
   prisma: Pick<Prisma.TransactionClient, 'partInstance' | 'playerMaterial'>,
   playerId: string,
-  installed: readonly InstalledPart[],
+  slots: number,
   capacity: number,
+  missionCargo = 0,
 ): Promise<HoldState> {
-  const [loose, held] = await Promise.all([
-    prisma.partInstance.findMany({
-      where: { ownerPlayerId: playerId, location: 'INVENTORY' },
-      select: { partCatalog: { select: { w: true, h: true } } },
-    }),
+  const [parts, held] = await Promise.all([
+    prisma.partInstance.count({ where: { ownerPlayerId: playerId, location: 'INVENTORY' } }),
     prisma.playerMaterial.aggregate({ where: { playerId }, _sum: { quantity: true } }),
   ]);
-  return computeHold({
-    slots: installed.reduce((sum, part) => sum + (part.catalog.storageSlots ?? 0), 0),
-    partCells: loose.reduce((sum, part) => sum + part.partCatalog.w * part.partCatalog.h, 0),
-    ore: held._sum.quantity ?? 0,
-    capacity,
-  });
+  return computeHold({ slots, parts, ore: held._sum.quantity ?? 0, capacity, missionCargo });
 }
 
-/** The viability report with the hold problem added when the load does not fit. */
+/** The viability report with the hold problems added when the load does not fit. */
 export function withHoldProblem(report: ViabilityReport, hold: HoldState): ViabilityReport {
   if (!hold.over) return report;
-  return {
-    ...report,
-    viable: false,
-    problems: [
-      ...report.problems,
-      {
-        code: 'HOLD_OVER_CAPACITY',
-        message: `The load does not fit: ${hold.used} cargo space needed for the spare parts and ore, ${hold.capacity} available.`,
-      },
-    ],
-  };
+  const problems = [...report.problems];
+  if (hold.partsOver) {
+    problems.push({
+      code: 'HOLD_PARTS_OVER',
+      message: `Too many spare parts: ${hold.parts} held, the bridge carries ${hold.slots}.`,
+    });
+  }
+  if (hold.cargoOver) {
+    problems.push({
+      code: 'HOLD_OVER_CAPACITY',
+      message: `The load does not fit: ${hold.used} cargo space needed for the ore and the mission's cargo, ${hold.capacity} available.`,
+    });
+  }
+  return { ...report, viable: false, problems };
 }

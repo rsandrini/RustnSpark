@@ -277,16 +277,19 @@ export const ShipResponseSchema = z.object({
   energyMode: EnergyModeSchema,
   /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
   engineLevels: z.object({ chem: z.number(), ion: z.number() }),
-  /** What the ship carries besides its installed parts: loose parts (the bridge's free slots, then
-      cargo space) and ore. Over capacity = the ship cannot depart. */
+  /** What the ship carries besides its installed parts: loose parts (one bridge slot each) and ore
+      (cargo space). Over capacity = the ship cannot depart. */
   hold: z
     .object({
       slots: z.number(),
-      partCells: z.number(),
+      parts: z.number(),
       ore: z.number(),
+      missionCargo: z.number(),
       capacity: z.number(),
       used: z.number(),
       free: z.number(),
+      partsOver: z.boolean(),
+      cargoOver: z.boolean(),
       over: z.boolean(),
     })
     .optional(),
@@ -554,6 +557,12 @@ export const OfferInfoSchema = z.object({
     .nullable(),
   /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
   requirements: z.array(RequirementCheckSchema),
+  /** Deliveries: how the cargo space is used (min = needs this much space, fixed = loads exactly this
+      many units, open = loads what fits, paid per unit beyond the minimum); null on other types. */
+  cargo: z
+    .object({ mode: z.enum(['min', 'fixed', 'open']), need: z.number(), unitPay: z.number() })
+    .nullable()
+    .optional(),
   /** Race offers: the rival ships (speed + time over this route), the entry minimum and the prize
       shares for 1st/2nd/3rd (of the winner's board figure's base). null on every other type. */
   race: z
