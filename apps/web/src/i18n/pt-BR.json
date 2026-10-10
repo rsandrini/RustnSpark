@@ -1264,6 +1264,7 @@
       "MINING": "uma Plataforma de Mineração e espaço de carga para o minério.",
       "RESCUE": "uma nave rápida (mobilidade) e espaço para os sobreviventes.",
       "TRAVEL": "nada especial: combustível para a viagem.",
+      "SCAVENGE": "nada especial: qualquer nave pode vasculhar um lugar, uma pronta para voar encontra mais.",
       "RACE": "uma nave rápida: precisa superar a velocidade de entrada, e quanto mais rápida melhor."
     },
     "mining": {

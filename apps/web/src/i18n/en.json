@@ -1264,6 +1264,7 @@
       "MINING": "a Mining Rig and cargo space for the ore.",
       "RESCUE": "a fast ship (mobility) and room for the survivors.",
       "TRAVEL": "nothing special: fuel for the trip.",
+      "SCAVENGE": "nothing special: any ship can search a place, a flight-ready one finds more.",
       "RACE": "a fast ship: it must beat the entry speed, and the faster the better."
     },
     "mining": {
