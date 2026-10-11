@@ -27,7 +27,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout, extendLayout } from './auto-layout.js';
 import { computeHold, type HoldState } from './hold.js';
-import { applyConnectivity } from './connectivity.js';
+import { applyConnectivity, conductiveCatalog } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
 import { connectedPartIds, validateLayout } from './geometry.js';
@@ -208,7 +208,13 @@ export class ShipsService implements OnModuleInit {
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
 
     if (virtualPart !== undefined) {
-      return this.previewWithVirtualPart(ship, rules, playerParts, virtualPart, replacePartInstanceId);
+      return this.previewWithVirtualPart(
+        ship,
+        rules,
+        playerParts,
+        virtualPart,
+        replacePartInstanceId,
+      );
     }
 
     let installed: InstalledPart[];
@@ -250,7 +256,11 @@ export class ShipsService implements OnModuleInit {
     const connectorsByInstance = new Map(
       playerParts.map((p) => [p.id, p.connectors as ConnectorLayout | null]),
     );
-    const connectedIds = connectedPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance);
+    const connectedIds = connectedPartIds(
+      effectiveLayout,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
+      connectorsByInstance,
+    );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
     const viability = withDirectionProblems(
@@ -267,7 +277,10 @@ export class ShipsService implements OnModuleInit {
       rules,
     );
     const pools = startingPools(
-      installedConnected.map((part) => ({ condition: part.instance.condition, catalog: part.catalog })),
+      installedConnected.map((part) => ({
+        condition: part.instance.condition,
+        catalog: part.catalog,
+      })),
       rules,
     );
     return {
@@ -376,13 +389,15 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
-  async listFormats(playerId: string): Promise<Array<{
-    id: string;
-    displayName: unknown;
-    description: unknown;
-    cells: [number, number][];
-    minRarity: string;
-  }>> {
+  async listFormats(playerId: string): Promise<
+    Array<{
+      id: string;
+      displayName: unknown;
+      description: unknown;
+      cells: [number, number][];
+      minRarity: string;
+    }>
+  > {
     const ship = await this.prisma.ship.findFirst({ where: { ownerPlayerId: playerId } });
     const bridgeRarity = await this.currentBridgeRarity(ship);
     const rarityRank = RARITY_ORDER.indexOf(bridgeRarity);
@@ -467,7 +482,9 @@ export class ShipsService implements OnModuleInit {
     return ship;
   }
 
-  private async loadShipWithRules(shipId: string): Promise<{ ship: ShipWithFormat; rules: GameRules }> {
+  private async loadShipWithRules(
+    shipId: string,
+  ): Promise<{ ship: ShipWithFormat; rules: GameRules }> {
     const ship = await this.loadShip(shipId);
     const rules = this.configService.snapshot().rules;
     return { ship, rules };
@@ -598,7 +615,11 @@ export class ShipsService implements OnModuleInit {
     const connectors = new Map(
       rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
     );
-    const connected = connectedPartIds(layout, catalog, connectors);
+    const connected = connectedPartIds(
+      layout,
+      conductiveCatalog(catalog, installed, rules),
+      connectors,
+    );
     return deriveSheet(applyConnectivity(installed, connected), rules).fuelCap;
   }
 
@@ -664,7 +685,11 @@ export class ShipsService implements OnModuleInit {
     const connectorsByInstance = new Map(
       installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
     );
-    const connectedIds = connectedPartIds(shipLayout, catalogForConnectivity, connectorsByInstance);
+    const connectedIds = connectedPartIds(
+      shipLayout,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
+      connectorsByInstance,
+    );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
     const hold = computeHold({
@@ -713,7 +738,10 @@ export class ShipsService implements OnModuleInit {
       sheet,
       routes.map((route) => ({
         distance: route.distance,
-        envFuelMult: Math.max(1, ...route.routeEnvironments.map((link) => link.environment.fuelMult)),
+        envFuelMult: Math.max(
+          1,
+          ...route.routeEnvironments.map((link) => link.environment.fuelMult),
+        ),
       })),
     );
   }

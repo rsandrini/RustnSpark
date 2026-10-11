@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { PartsService } from '../../parts/parts.service.js';
 import { MissionResolveService } from '../../missions/resolve.service.js';
 import { RepairService } from '../../economy/repair.service.js';
+import { GameConfigService } from '../../config/game-config.service.js';
 import { rebuildDispatchData } from '../../missions/dispatch.service.js';
 import type { DispatchJobData } from '../../missions/dispatch.service.js';
 import { MISSION_QUEUE_NAME, RECONCILE_QUEUE_NAME, REPAIR_QUEUE_NAME } from '../queues.js';
@@ -55,6 +56,7 @@ export class ReconcileProcessor extends WorkerHost {
     private readonly resolveService: MissionResolveService,
     private readonly parts: PartsService,
     private readonly repairService: RepairService,
+    private readonly config: GameConfigService,
   ) {
     super();
   }
@@ -193,7 +195,7 @@ export class ReconcileProcessor extends WorkerHost {
 
   private async reconcileMission(mission: MissionInstance): Promise<unknown> {
     const job = await this.missions.getJob(mission.id);
-    const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission));
+    const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission, this.config.snapshot().rules));
     await job?.remove().catch(() => undefined);
     return this.resolveService.resolve(data);
   }

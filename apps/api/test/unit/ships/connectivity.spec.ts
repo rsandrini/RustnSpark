@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import { applyConnectivity } from '../../../src/ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../../../src/ships/connectivity.js';
+import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
+import type { GameRules } from '../../../src/config/game-config.types.js';
 import type { InstalledPart } from '../../../src/parts/part.types.js';
 
 function part(id: string, overrides: Partial<InstalledPart['catalog']> = {}): InstalledPart {
@@ -91,5 +93,22 @@ describe('applyConnectivity', () => {
     const [resultA, resultB] = applyConnectivity([a, b], new Set(['a']));
     expect(resultA!.catalog.pot).toBe(7);
     expect(resultB!.catalog.pot).toBe(0);
+  });
+});
+
+describe('conductiveCatalog: a broken part no longer carries a connection', () => {
+  const rules = GAME_CONFIG_DEFAULTS as unknown as GameRules;
+  const broken = (id: string, partClass = 'DEFENSE'): InstalledPart => {
+    const p = part(id, { partClass: partClass as InstalledPart['catalog']['partClass'] });
+    return { ...p, instance: { ...p.instance, condition: 0 } };
+  };
+
+  it('leaves out the dead parts, keeps the live ones and always keeps the bridge', () => {
+    const parts = [part('live'), broken('hull'), broken('bridge', 'BRIDGE')];
+    const catalog = new Map(parts.map((p) => [p.instance.id, p.catalog]));
+    const live = conductiveCatalog(catalog, parts, rules);
+    expect([...live.keys()].sort()).toEqual(['bridge', 'live']);
+    // the original map is untouched (other checks still need the dead part's data)
+    expect(catalog.size).toBe(3);
   });
 });

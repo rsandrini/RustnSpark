@@ -8,7 +8,7 @@ import { isDead } from '../parts/condition.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability, type ViabilityProblem } from '../ships/viability.js';
@@ -105,6 +105,7 @@ export class InventoryService {
     tx: Prisma.TransactionClient,
     shipId: string,
   ): Promise<InstalledPart[]> {
+    const { rules } = this.config.snapshot();
     const [rows, ship] = await Promise.all([
       tx.partInstance.findMany({
         where: { shipId, location: 'INSTALLED' },
@@ -123,7 +124,7 @@ export class InventoryService {
     );
     const connectedIds = connectedPartIds(
       (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
       connectorsByInstance,
     );
     return applyConnectivity(installed, connectedIds);

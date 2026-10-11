@@ -12,7 +12,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { refuelCost } from './fuel-cost.calculator.js';
@@ -209,7 +209,7 @@ export class RefuelService {
     );
     const connectedIds = connectedPartIds(
       (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
       connectorsByInstance,
     );
     const installedConnected = applyConnectivity(installed, connectedIds);

@@ -223,7 +223,7 @@ export class EncounterService {
     let defenderShipId: string;
     let usesDispatchSnapshot: boolean;
     try {
-      const rebuilt = await rebuildDispatchData(this.prisma, this.parts, missionB);
+      const rebuilt = await rebuildDispatchData(this.prisma, this.parts, missionB, rules);
       defenderShipId = rebuilt.snapshot.shipId;
       usesDispatchSnapshot = true;
     } catch {

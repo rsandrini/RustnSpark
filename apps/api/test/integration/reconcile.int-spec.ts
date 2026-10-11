@@ -80,6 +80,7 @@ describe('reconciliation tick (S7.4)', () => {
       testApp.app.get(MissionResolveService),
       testApp.app.get(PartsService),
       testApp.app.get(RepairService),
+      configService,
     );
   });
 

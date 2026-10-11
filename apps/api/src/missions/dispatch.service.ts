@@ -15,11 +15,12 @@ import {
 import type { MissionInstance } from '@prisma/client';
 import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import type { GameRules } from '../config/game-config.types.js';
 import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -130,6 +131,7 @@ export async function rebuildDispatchData(
   prisma: PrismaService,
   parts: PartsService,
   mission: MissionInstance,
+  rules: GameRules,
 ): Promise<DispatchJobData> {
   if (!mission.shipId || !mission.playerId) {
     throw new Error(`mission ${mission.id} has no ship/player — cannot rebuild dispatch data`);
@@ -152,7 +154,7 @@ export async function rebuildDispatchData(
   );
   const connectedIds = connectedPartIds(
     (ship.layout as unknown as Placement[]) ?? [],
-    catalogForConnectivity,
+    conductiveCatalog(catalogForConnectivity, installed, rules),
     connectorsByInstance,
   );
   const installedConnected = applyConnectivity(installed, connectedIds);
@@ -294,7 +296,7 @@ export class DispatchService {
       );
       const connectedIds = connectedPartIds(
         (ship.layout as unknown as Placement[]) ?? [],
-        catalogForConnectivity,
+        conductiveCatalog(catalogForConnectivity, installed, rules),
         connectorsByInstance,
       );
       const installedConnected = applyConnectivity(installed, connectedIds);

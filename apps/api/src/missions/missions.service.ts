@@ -18,7 +18,7 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import type { InstalledPart, Placement } from '../parts/part.types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -378,7 +378,7 @@ export class MissionsService implements OnModuleInit {
     for (const mission of due) {
       try {
         const job = await this.missionQueue.getJob(mission.id);
-        const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission));
+        const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission, this.config.snapshot().rules));
         await this.resolveService.resolve(data);
       } catch (error) {
         this.logger.warn(
@@ -561,7 +561,7 @@ export class MissionsService implements OnModuleInit {
     );
     const connectedIds = connectedPartIds(
       (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installedRaw, rules),
       connectorsByInstance,
     );
     const installed = applyConnectivity(installedRaw, connectedIds);
@@ -637,6 +637,7 @@ export class MissionsService implements OnModuleInit {
   // first ship — the same selection that sizes rewardEstimate, so eligibility and the
   // displayed reward describe the same vessel.
   private async viewerContext(playerId: string, locationId: string): Promise<ViewerContext> {
+    const { rules } = this.config.snapshot();
     const ships = await this.prisma.ship.findMany({
       where: { ownerPlayerId: playerId },
       orderBy: { id: 'asc' },
@@ -659,7 +660,7 @@ export class MissionsService implements OnModuleInit {
     );
     const connectedIds = connectedPartIds(
       (ship?.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installedRaw, rules),
       connectorsByInstance,
     );
     const installed = applyConnectivity(installedRaw, connectedIds);

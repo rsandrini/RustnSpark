@@ -11,7 +11,7 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { loadHold, withHoldProblem } from '../ships/hold.js';
@@ -219,7 +219,7 @@ export class TravelService {
     );
     const connectedIds = connectedPartIds(
       (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
       connectorsByInstance,
     );
     const installedConnected = applyConnectivity(installed, connectedIds);

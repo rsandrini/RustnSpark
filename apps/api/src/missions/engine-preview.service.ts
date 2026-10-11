@@ -16,7 +16,7 @@ import {
   type EngineLevels,
 } from '../resolution/engine/engine.js';
 import { allocatePower, powerPartOf } from '../resolution/power/power.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { flightShip } from '../ships/penalties.js';
 import { deriveSheet, rawMobility } from '../ships/sheet.deriver.js';
@@ -94,7 +94,7 @@ export class EnginePreviewService {
       installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
     );
     const placements = (ship.layout as unknown as Placement[]) ?? [];
-    const connectedIds = connectedPartIds(placements, catalogForConnectivity, connectorsByInstance);
+    const connectedIds = connectedPartIds(placements, conductiveCatalog(catalogForConnectivity, installed, rules), connectorsByInstance);
     const connected = applyConnectivity(installed, connectedIds);
     const flight = flightShip(connected, placements, catalogForConnectivity, connectorsByInstance, rules);
 

@@ -1,3 +1,5 @@
+import { isDead } from '../parts/condition.js';
+import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart, PartCatalog } from '../parts/part.types.js';
 
 /** The spec's own exhaustive functional-stat list (2026-10-02-connectors-v1-design.md) — a
@@ -41,4 +43,23 @@ export function applyConnectivity(
     }
     return { ...part, catalog };
   });
+}
+
+/**
+ * The catalog the connection flood-fill walks: a broken (dead) part no longer carries a
+ * connection, so whatever hangs off it only through it is cut off until it is repaired or
+ * replaced. The bridge always stays: it is where the fill starts.
+ */
+export function conductiveCatalog(
+  catalog: ReadonlyMap<string, PartCatalog>,
+  parts: readonly InstalledPart[],
+  rules: GameRules,
+): Map<string, PartCatalog> {
+  const live = new Map(catalog);
+  for (const part of parts) {
+    if (part.catalog.partClass !== 'BRIDGE' && isDead(part.instance.condition, rules)) {
+      live.delete(part.instance.id);
+    }
+  }
+  return live;
 }

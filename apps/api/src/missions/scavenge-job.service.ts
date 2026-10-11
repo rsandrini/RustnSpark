@@ -10,7 +10,7 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity } from '../ships/connectivity.js';
+import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
@@ -80,7 +80,7 @@ export class ScavengeJobService {
     );
     const connectedIds = connectedPartIds(
       (ship.layout as unknown as Placement[]) ?? [],
-      catalogForConnectivity,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
       connectorsByInstance,
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
