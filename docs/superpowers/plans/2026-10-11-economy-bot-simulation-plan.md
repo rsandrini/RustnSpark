@@ -29,6 +29,8 @@ project). The simulation calls the game's real pure functions so it cannot drift
 
 ```
 apps/api/sim/                      # new — the simulation (not part of the Nest build)
+  store/                           # SQLite: schema.sql, writer, queries
+  analysis/queries/                # canned analyses (.sql) + their tests
   snapshot/
     export-snapshot.ts             # DB -> JSON (the only file that touches Prisma)
     load-snapshot.ts               # JSON -> typed Snapshot
@@ -61,6 +63,7 @@ Prerequisite chores (do these first, in a single small commit):
 3. In `apps/api/src/economy/repair.service.ts` **export** `repairSecondsPerPoint` (it is private
    today). Nothing else changes.
 4. Add npm scripts in `apps/api/package.json`: `"sim": "tsx sim/cli.ts"`.
+5. Add `better-sqlite3` and `@types/better-sqlite3` as devDependencies of `apps/api` (`pnpm --filter ./apps/api add -D ...`) and check it loads on the host (Node 20).
 
 The existing one-mission script `apps/api/scripts/economy-sim.ts` is a useful reference for how to
 build a `DispatchSnapshot` and call `resolveMission(buildResolveInput(...))`; keep it, do not extend it.
@@ -289,8 +292,10 @@ Tasks
    (`levelReachedAt[1..5]`), missions to each level, calendar days at `hoursPerDay`, ledger totals,
    success rate, time per action type, `stalled`. Use worker threads only if a cell takes more than
    a few minutes; correctness first.
-5. `cli.ts`: `experiment --runs 100 --hours-per-day 2` prints the matrix and writes
-   `sim-data/report-<timestamp>.json`; it also prints the **total real (simulated) time played**.
+5. `cli.ts`: `experiment --runs 100 --hours-per-day 2` prints the matrix and writes every run to the
+   SQLite store (see "Data kept for future balancing"); it also prints the **total real (simulated)
+   time played**. Build the store (`sim/store`) in this phase, but start writing `runs`, `levels`,
+   `missions` from Phase 1 so no data is lost while the later phases are built.
 
 Tests: each temperament picks the expected offer on a fixed board; each playstyle filters types
 correctly and falls back; the runner is deterministic for a base seed; per-run records have all the
@@ -333,40 +338,83 @@ config edit; validation numbers are in the README; commit.
 
 ---
 
-## Data kept for future balancing (required from Phase 1 on)
+## Data kept for future balancing — SQLite (required from Phase 1 on)
 
-Every experiment writes a folder `apps/api/sim-data/experiments/<timestamp>-<name>/` (git-ignored):
+Everything the simulation does is stored in **one SQLite database**, `apps/api/sim-data/sim.db`
+(git-ignored), shared by all experiments, so any two experiments can be compared with a plain SQL
+join. The point of the store is the analysis listed below: design the tables so those questions are
+a single query, and record the data they need *as typed columns*, not as JSON blobs.
 
-- `manifest.json` — what produced the data, so it can be reproduced and compared later: git commit
-  sha, the experiment arguments (runs, base seed, hours per day, cells), the snapshot's `takenAt`
-  and a hash of the snapshot and of any edit file, the simulation's own version number, the
-  assumptions list (no market stock, layout abstracted, simplified mission types).
-- `runs.jsonl` — one line per simulated player: cell, seed, final level, `stalled`, seconds / days /
-  missions to each level, ledger totals by category, counters (missions, scavenges, mining jobs,
-  repairs, refuels, upgrades, purchases, sales), success rate.
-- `events.jsonl.gz` — one line per action, in order, for every run (or a sample, see below):
-  `{ run, t (seconds), day, action, locationId, walletBefore, walletAfter, fuelBefore, fuelAfter,
-  avgCondition, minCondition, shipLevel, shipValue }` plus the action's own fields:
-  - **mission:** offer id, type, template, origin, destination, distance, max danger, zone, reward
-    offered and paid, requirements and whether met, status, integrity, fuel burned, wear per part,
-    combat (fights, wins, losses), loot, found parts/scrap, the duration, the bridge level used;
-  - **fuel / repair:** port, units or points, price paid, the port's cheap/expensive flag;
-  - **scavenge / mining:** place, what was found, condition of found parts;
-  - **buy / sell / upgrade:** part type and rarity, price, materials used;
-  - **decision:** why the bot chose it (the offer ranking, the reason it waited, the spending
-    rule's choice) — short, so a surprising result can be explained afterwards.
-- `levels.jsonl` — one line each time a run reaches a level (run, level, t, wallet, ship value).
-- `summary.json` — the cell tables that the terminal prints.
+**Library.** `better-sqlite3` as a devDependency of `apps/api` (the host runs Node 20, which has no
+built-in SQLite). Open with `journal_mode = WAL`. SQLite has one writer: worker threads send their
+rows to the main thread in batches, and the main thread inserts them inside transactions of ~10,000
+rows. The schema lives in `sim/store/schema.sql`, with a `schema_version` table; a change to the
+schema is a new numbered SQL file, never an edit of an old one.
 
-Options: `--keep-events all|sample|none` (default `sample`: all events for the first 10 runs of each
-cell, summaries for every run). The size is small: about 2,000 actions per game is some 2 million
-events for 1,000 games, around 50 MB compressed, so `all` is affordable when wanted.
+### Tables
 
-Commands (Phase 5): `pnpm sim export-csv <experiment>` writes `runs.csv`, `missions.csv`,
-`cashflow.csv` for a spreadsheet or SQL tool; `pnpm sim compare <experimentA> <experimentB>` prints
-the A/B difference between two stored experiments, so old results stay comparable when the game
-changes. Tests: a stored experiment can be re-read and its totals match the `runs.jsonl` ledger;
-the same seed and manifest reproduce the same events byte for byte.
+| Table | One row per | Main columns |
+|---|---|---|
+| `experiments` | experiment | `id`, `name`, `created_at`, `git_sha`, `args_json`, `snapshot_taken_at`, `snapshot_hash`, `edit_hash`, `edit_json`, `sim_version`, `assumptions` |
+| `runs` | simulated player | `id`, `experiment_id`, `cell`, `temperament`, `playstyle`, `hours_per_day`, `seed`, `final_level`, `stalled`, `stall_reason`, `total_seconds`, `total_missions`, `success_rate`, and the ledger totals `reward`, `combat`, `scavenge_sale`, `ore_sale`, `fuel`, `repair`, `upgrade`, `purchase`, `sale` |
+| `levels` | level reached | `run_id`, `level`, `t`, `day`, `missions`, `wallet`, `ship_value` |
+| `actions` | every action | `run_id`, `seq`, `t`, `day`, `kind` (mission, fuel, repair, scavenge, mining, buy, sell, upgrade, travel, wait), `location_id`, `seconds`, `wallet_before`, `wallet_after`, `fuel_before`, `fuel_after`, `avg_condition`, `min_condition`, `ship_level`, `ship_value`, `reason` |
+| `missions` | mission taken | `run_id`, `seq`, `offer_id`, `type`, `template_id`, `origin`, `destination`, `distance`, `max_danger`, `zone`, `reward_offered`, `reward_paid`, `status`, `integrity`, `fuel_burned`, `wear_points`, `fights`, `wins`, `losses`, `duration_s`, `bridge_level`, `ship_tier`, `scrap_found`, `parts_found` |
+| `offers_seen` | offer on a board when the bot decided | `run_id`, `seq`, `offer_id`, `type`, `template_id`, `reward`, `distance`, `max_danger`, `qualified`, `blocked_by` (cargo, mobility, firepower, mining_rig, cabin), `chosen`, `rank` |
+| `part_wear` | part per mission | `run_id`, `seq`, `part_type`, `part_class`, `rarity`, `loss` |
+| `trades` | buy / sell / upgrade | `run_id`, `seq`, `kind`, `part_type`, `rarity`, `price`, `port_cheap`, `materials_json` |
+| `service` | fuel or repair done | `run_id`, `seq`, `kind`, `location_id`, `units_or_points`, `price`, `port_cheap`, `forced` (no cheaper way) |
+
+Indexes: `runs(experiment_id, cell)`, `actions(run_id, seq)`, `missions(run_id)`,
+`missions(template_id)`, `missions(type, bridge_level)`, `offers_seen(run_id, seq)`,
+`levels(run_id, level)`, `service(run_id, kind)`.
+
+Views to ship in the schema (so analyses are short): `v_cashflow_by_level` (money in/out per run,
+level and category), `v_mission_net` (a mission's reward minus its fuel and its share of the
+repairs that followed), `v_time_by_kind` (seconds per action kind per run).
+
+### Analyses the data must support (each one is a test query)
+
+Write one canned query per item in `sim/analysis/queries/*.sql`, run through
+`pnpm sim analyze <experiment> <name>`, and a unit test per query against a tiny fixture database.
+
+1. **Pace.** Days / missions to each level per cell: median, p10, p90 (a window or a custom
+   percentile function in JS, since SQLite has none).
+2. **Net profit per mission** by level and by mission type (reward − fuel − repair share).
+3. **Best work per hour:** reward per hour by type and template at each level; which templates are
+   never worth taking.
+4. **Where income comes from** per level: rewards vs scavenging vs ore vs sales; what share of the
+   money pays for fuel, repairs and upgrades.
+5. **Fuel and wear economics:** fuel cost vs reward by distance and zone; wear and repair cost by
+   part class and rarity; which parts cost the most to keep.
+6. **Risk:** failure and loss rate by zone, danger and level; how often the safe bot beats the greedy
+   one in net per hour.
+7. **Bottlenecks:** where runs stall (level, wallet, which material or requirement was missing);
+   time waiting for scrap / crystals / cores; time with nothing qualifying on the board.
+8. **Requirement blocking:** how often the best-paying offers were not taken because of cargo,
+   mobility or firepower, by level (what the bridge-level scaling will push on).
+9. **Time budget:** seconds by action kind (travel, repair, scavenging, waiting) per level.
+10. **Style dominance:** the ratio between the fastest and slowest playstyle, and whether Random is
+    close to the careful bots (a sign the economy is too generous).
+11. **What-if comparison:** the same cell in two experiments, side by side (`compare A B` is a
+    saved query joining `runs` on `cell` and `seed`).
+12. **Upgrade path:** which route the spending rule took per slot (fit a loose part / buy / upgrade
+    in place) and what each cost.
+
+### Keeping size under control
+
+`--keep-events all|sample|none` (default `sample`): `runs`, `levels`, `missions`, `trades` and
+`service` are always written for every run (they are small); `actions`, `offers_seen` and
+`part_wear` are written for every run only with `all`, and for the first 10 runs of each cell with
+`sample`. Around 2,000 actions per game means ~2 million `actions` rows for 1,000 games (a few
+hundred MB at worst); `VACUUM` and `pnpm sim prune <experiment>` (drops the event tables of an
+experiment, keeps the summaries) are provided.
+
+Commands (Phase 5): `pnpm sim sql "<query>"` (read-only, prints a table), `pnpm sim analyze <exp>
+<name>`, `pnpm sim compare <expA> <expB>`, `pnpm sim export-csv <exp> <table>`, `pnpm sim list`.
+Tests: the store round-trips a run (insert then read the same totals); the canned queries return
+the expected numbers on a fixture database built by the test; the same seed and manifest reproduce
+identical rows.
 
 ---
 

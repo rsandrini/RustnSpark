@@ -120,7 +120,9 @@ Per run: game time, calendar days at `H` hours per day, and mission count to rea
 income and spending by category; success rate; the time spent per action type.
 Per experiment cell (100 runs): median and the 10th / 90th percentile of each of the above.
 Across cells: the spread between playstyles, and the A/B difference between two settings. The
-report is a table in the terminal plus a JSON file for further analysis, and prints the real time
+report is a table in the terminal, and everything the bots did (runs, missions, every action, trades,
+repairs, fuel, the offers they saw) is stored in a SQLite database shared by all experiments, so later
+analysis and A/B comparisons are plain SQL. It also prints the real time
 the simulated players spent.
 
 ## Checks before trusting it
