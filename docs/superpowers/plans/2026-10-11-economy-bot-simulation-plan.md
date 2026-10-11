@@ -333,6 +333,43 @@ config edit; validation numbers are in the README; commit.
 
 ---
 
+## Data kept for future balancing (required from Phase 1 on)
+
+Every experiment writes a folder `apps/api/sim-data/experiments/<timestamp>-<name>/` (git-ignored):
+
+- `manifest.json` — what produced the data, so it can be reproduced and compared later: git commit
+  sha, the experiment arguments (runs, base seed, hours per day, cells), the snapshot's `takenAt`
+  and a hash of the snapshot and of any edit file, the simulation's own version number, the
+  assumptions list (no market stock, layout abstracted, simplified mission types).
+- `runs.jsonl` — one line per simulated player: cell, seed, final level, `stalled`, seconds / days /
+  missions to each level, ledger totals by category, counters (missions, scavenges, mining jobs,
+  repairs, refuels, upgrades, purchases, sales), success rate.
+- `events.jsonl.gz` — one line per action, in order, for every run (or a sample, see below):
+  `{ run, t (seconds), day, action, locationId, walletBefore, walletAfter, fuelBefore, fuelAfter,
+  avgCondition, minCondition, shipLevel, shipValue }` plus the action's own fields:
+  - **mission:** offer id, type, template, origin, destination, distance, max danger, zone, reward
+    offered and paid, requirements and whether met, status, integrity, fuel burned, wear per part,
+    combat (fights, wins, losses), loot, found parts/scrap, the duration, the bridge level used;
+  - **fuel / repair:** port, units or points, price paid, the port's cheap/expensive flag;
+  - **scavenge / mining:** place, what was found, condition of found parts;
+  - **buy / sell / upgrade:** part type and rarity, price, materials used;
+  - **decision:** why the bot chose it (the offer ranking, the reason it waited, the spending
+    rule's choice) — short, so a surprising result can be explained afterwards.
+- `levels.jsonl` — one line each time a run reaches a level (run, level, t, wallet, ship value).
+- `summary.json` — the cell tables that the terminal prints.
+
+Options: `--keep-events all|sample|none` (default `sample`: all events for the first 10 runs of each
+cell, summaries for every run). The size is small: about 2,000 actions per game is some 2 million
+events for 1,000 games, around 50 MB compressed, so `all` is affordable when wanted.
+
+Commands (Phase 5): `pnpm sim export-csv <experiment>` writes `runs.csv`, `missions.csv`,
+`cashflow.csv` for a spreadsheet or SQL tool; `pnpm sim compare <experimentA> <experimentB>` prints
+the A/B difference between two stored experiments, so old results stay comparable when the game
+changes. Tests: a stored experiment can be re-read and its totals match the `runs.jsonl` ledger;
+the same seed and manifest reproduce the same events byte for byte.
+
+---
+
 ## Open points to confirm with the owner while implementing
 
 - The *cheap port* tolerance (10%) and the repair thresholds (70% average, 40% key part).
