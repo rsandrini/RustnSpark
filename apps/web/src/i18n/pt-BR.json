@@ -1017,7 +1017,8 @@
     "upgradeBlockedTop": "{{count}} peça já está na raridade máxima.",
     "upgradeBlockedTop_other": "{{count}} peças já estão na raridade máxima.",
     "upgradeBlockedNoTier": "{{count}} peça não tem próxima raridade para evoluir.",
-    "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir."
+    "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir.",
+    "upgradePriceCredits": "Créditos: {{cost}} (você tem {{have}})"
   },
   "inventory": {
     "title": "Inventário",

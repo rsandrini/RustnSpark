@@ -62,6 +62,8 @@ interface UpgradeConfirm {
   rarity: string;
   nextRarity: string;
   cost: number;
+  /** What the upgrade also asks for besides credits, against what the pilot holds. */
+  materials: { materialId: string; name: string; have: number; needed: number }[];
 }
 
 interface RepairTarget {
@@ -1145,7 +1147,7 @@ export function PortPage({
                           )
                         }
                         actions={
-                          <>
+                          <div className="upgrade-actions">
                             <span className="sub">{fromTo}</span>
                             {(quote.materials ?? []).length > 0 && (
                               <ul className="upgrade-materials" data-testid="upgrade-materials">
@@ -1179,12 +1181,18 @@ export function PortPage({
                                   rarity: item.rarity,
                                   nextRarity: quote.nextRarity ?? item.rarity,
                                   cost: quote.cost ?? 0,
+                                  materials: (quote.materials ?? []).map((need) => ({
+                                    materialId: need.materialId,
+                                    name: pickLocalized(need.displayName, i18n.language),
+                                    have: need.have,
+                                    needed: need.needed,
+                                  })),
                                 })
                               }
                             >
                               {t('port.upgrade')}
                             </button>
-                          </>
+                          </div>
                         }
                       />
                     );
@@ -1432,13 +1440,37 @@ export function PortPage({
                 }}
               />
             </p>
+            <ul className="upgrade-price" data-testid="upgrade-price">
+              <li className={wallet >= upgradeConfirm.cost ? 'req-met' : 'req-unmet'}>
+                {t('port.upgradePriceCredits', {
+                  cost: money(upgradeConfirm.cost),
+                  have: money(wallet),
+                })}
+              </li>
+              {upgradeConfirm.materials.map((need) => (
+                <li
+                  key={need.materialId}
+                  className={need.have >= need.needed ? 'req-met' : 'req-unmet'}
+                >
+                  {t('port.upgradeMaterial', {
+                    name: need.name,
+                    have: need.have,
+                    needed: need.needed,
+                  })}
+                </li>
+              ))}
+            </ul>
             {!upgradePart.isPending && wallet < upgradeConfirm.cost && (
               <p className="error-text">{t('port.insufficient')}</p>
             )}
             <button
               type="button"
               className="btn primary"
-              disabled={upgradePart.isPending || wallet < upgradeConfirm.cost}
+              disabled={
+                upgradePart.isPending ||
+                wallet < upgradeConfirm.cost ||
+                upgradeConfirm.materials.some((need) => need.have < need.needed)
+              }
               onClick={() => upgradePart.mutate(upgradeConfirm.partInstanceId)}
             >
               {t('port.upgradeConfirm')}

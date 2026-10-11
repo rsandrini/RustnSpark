@@ -720,6 +720,10 @@ describe('port (S10.9)', () => {
     fireEvent.click(rowButton('Plated Hull'));
     const popup = await screen.findByRole('dialog', { name: 'Upgrade for 115 ¢?' });
     expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
+    // The whole price: credits and what else it asks for, against what the pilot holds.
+    const price = within(popup).getByTestId('upgrade-price');
+    expect(price).toHaveTextContent('Credits: 115 ¢ (you have');
+    expect(price).toHaveTextContent('Scrap (any part): 5 of 2');
     // Both names wear their rarity's colour: what it is now, and what it becomes.
     expect(within(popup).getByText('Plated Hull')).toHaveClass('rarity-name', 'rarity-common');
     expect(within(popup).getByText('Reinforced Hull')).toHaveClass(

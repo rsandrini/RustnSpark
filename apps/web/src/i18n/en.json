@@ -1017,7 +1017,8 @@
     "upgradeBlockedTop": "{{count}} part is already at the top rarity.",
     "upgradeBlockedTop_other": "{{count}} parts are already at the top rarity.",
     "upgradeBlockedNoTier": "{{count}} part has no next tier to upgrade to.",
-    "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to."
+    "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to.",
+    "upgradePriceCredits": "Credits: {{cost}} (you have {{have}})"
   },
   "inventory": {
     "title": "Inventory",
