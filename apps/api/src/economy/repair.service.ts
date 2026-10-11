@@ -52,7 +52,7 @@ function parseTargets(raw: unknown): StoredTarget[] {
   });
 }
 
-function repairSecondsPerPoint(rules: GameRules, zone: number): number {
+export function repairSecondsPerPoint(rules: GameRules, zone: number): number {
   const table = rules.economy.repair_seconds_per_point;
   const key = zone <= 1 ? 'hub' : 'outpost';
   return table[key] ?? table['hub'] ?? 0;

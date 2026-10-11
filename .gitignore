@@ -20,3 +20,6 @@ backups/
 
 # local TLS certificates
 certs/
+
+# economy simulation output: snapshot + reports (regenerate with `pnpm sim export`)
+apps/api/sim-data/
