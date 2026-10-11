@@ -151,6 +151,27 @@ Tasks
    - the clock advances by `missionDuration(...)` using the ship's mobility (`mobility` from
      `rawMobility`), not by a made-up number; the player's location becomes the destination.
    Return a small result record for the report (status, reward, duration, fuel burned, wear).
+
+   How to fill the pieces correctly (read these before writing the code):
+   - **Context.** Build the `ResolutionContext` with `contextFromLive(...)` from
+     `missions/resolution-input.ts` (it maps an offer row to escort client, race competitors, mining
+     material, scavenge context). See `missions/resolve.service.ts` (around line 127) for what it is
+     fed: the offer's `cargo` and `encounterPolicy`, the employer faction's relations, the player's
+     faction and the destination's isolation. Races, escorts and rescues work the same way — the
+     offer row already carries their data.
+   - **Accept and dispatch rules.** Mirror `missions/missions.service.ts` (accept) and
+     `missions/dispatch.service.ts` (dispatch): requirements met, fuel enough for the trip
+     (`fuelUnits`), the ship at the offer's origin and not busy, the reward finalized at accept.
+   - **The ship must stay viable.** After any change to the parts call `deriveSheet`,
+     `checkViability(sheet, parts, rules)` (`ships/viability.ts`: mobility ≥ 1, structure used within
+     the bridge's budget, a working bridge/engine/tank...) and `allocatePower`
+     (`resolution/power/power.ts`). A ship that is not viable cannot take missions. Parts of a higher
+     rarity change structure cost, mass and energy, so this matters when upgrading. The layout grid
+     itself is *not* simulated; connectivity is assumed fine.
+   - **Offers over time.** A board offer lives 6–40 minutes (`expiresAt`); new ones are generated
+     lazily with the epoch counter of the location (`missions/board.service.ts → topUp`). A new
+     player gets the private start-safe offer first (`starter_guarantee_max_completed`). Model both,
+     and let the bot wait (advance the clock) when nothing qualifies.
 8. `bots/bot.ts` (first version): pick a random qualifying offer; if none, skip time forward until
    the board changes (offers live 6–40 minutes). Between missions the ship is restored for free.
 9. `cli.ts` `run --seed N --missions 50` prints each mission and the totals.
@@ -215,10 +236,21 @@ Tasks
    - **Scavenge** after at least 75% of missions when the cooldown allows (track the ratio over
      the last 20 missions); **mining** on at least 50% of missions where the ship has a rig and the
      place is minable (use the same template eligibility as `isMiningEligible`).
-   - **Spending:** keep a reserve (enough for one full refuel plus one expected repair). Then buy
-     the improvement with the best *gain per credit*, where gain is the rise of the ship's weakest
-     rarity step toward the next level: options are a higher-rarity part from the market, an
-     in-place upgrade (money + materials), or fitting a scavenged part of a higher rarity.
+   - **Spending (an exact rule, so runs are comparable):**
+     1. Keep a reserve: one full refuel plus the repair the bot expects to need (the average repair
+        bill of its last 5 repairs; a constant until it has any).
+     2. Find the installed part with the **lowest rarity** (ties: the cheapest to improve). That is
+        the next target — a level is only reached when every part is at that rarity.
+     3. For that slot compute three ways to get the next rarity and take the cheapest *net* one the
+        wallet allows (the reserve stays untouched):
+        a. fit a loose part (scavenged or bought earlier) of the target type and next rarity:
+           cost 0, but the old part goes to storage (sell it later);
+        b. buy the next-rarity part at the best reachable port: `buyPrice − sellPrice(old part)`;
+        c. upgrade in place: `partUpgradeCost` plus the materials of `upgradeNeeds`, counting
+           scrap/crystals/cores held as free and missing ones as not possible (don't buy materials).
+     4. If nothing is affordable, do nothing and keep earning.
+     Fitting a part must keep the ship viable (structure budget, power); if it breaks viability,
+     skip it and try the next option.
    - **Selling:** sell what is not part of the target ship and not needed for the next upgrade
      (loose parts under a threshold of use, ore, surplus scrap beyond the upgrade needs).
 5. **Ship level.** `shipLevel(ship)` = the lowest rarity among all installed parts, bridge included.
@@ -281,8 +313,12 @@ Tasks
    `{"economy.reward_per_tier": 200}` or a reward multiplier table by bridge level) with
    `withEdits`, runs the same matrix, and prints the A/B difference against the unedited snapshot.
    The bridge-level scaling is **not** implemented in the game yet; model it in the sim as an
-   optional `bridgeScaling` hook in `takeMission` (reward multiplier and requirement multipliers by
-   the ship's bridge rarity, read from a JSON file), so we can tune it before building it.
+   optional `bridgeScaling` hook in `takeMission`, read from a JSON file of this shape:
+   `{ "reward": [1,1,1,1,1], "cargo": [1,1,1,1,1], "firepower": [1,1,1,1,1], "mobility": [1,1,1,1,1] }`
+   (five numbers each, one per bridge rarity from common to legendary). The hook multiplies the
+   offer's reward and its numeric requirements (cargo needed, firepower needed for escorts, mobility
+   needed for escorts/races/rescues) by the entry for the ship's bridge rarity. All ones is the
+   baseline (today's game). This lets us tune the table before building it in the game.
 3. Validation:
    - **Against real play.** Export a few real missions of the owner's player from the database
      (`MissionLog` rows: reward, fuel burned, wear per part) and replay the same ship and legs in
