@@ -277,6 +277,8 @@ function sweepCombatRules() {
     // (the legacy flat-armor model: the layered armor cut does not apply)
     armor_reduction: 0,
     armor_reduction_max_share: 0,
+    scrap_win_min: 0,
+    scrap_win_max: 0,
   } as const;
 }
 

@@ -179,7 +179,7 @@ export class PartsService {
       location: row.location,
       shipId: row.shipId,
       catalog: pickCatalogStats(row.partCatalog),
-      connectors: ((row.connectors as { cells: ConnectorCell[] } | null)?.cells) ?? [],
+      connectors: (row.connectors as { cells: ConnectorCell[] } | null)?.cells ?? [],
     }));
   }
 
@@ -197,6 +197,27 @@ export class PartsService {
       });
       if (rows.length === 0) return 0;
       await tx.partInstance.deleteMany({ where: { id: { in: rows.map((row) => row.id) } } });
+      // What is left of each part is scrap of its own type (when that part has scrap at all).
+      const perPart = this.config.snapshot().rules.economy.discard_scrap_per_part;
+      if (perPart > 0) {
+        const scrapIds = await tx.material.findMany({
+          where: { id: { in: rows.map((row) => `scrap_${row.partType}`) } },
+          select: { id: true },
+        });
+        const known = new Set(scrapIds.map((material) => material.id));
+        const gained = new Map<string, number>();
+        for (const row of rows) {
+          const id = `scrap_${row.partType}`;
+          if (known.has(id)) gained.set(id, (gained.get(id) ?? 0) + perPart);
+        }
+        for (const [materialId, quantity] of gained) {
+          await tx.playerMaterial.upsert({
+            where: { playerId_materialId: { playerId, materialId } },
+            create: { playerId, materialId, quantity },
+            update: { quantity: { increment: quantity } },
+          });
+        }
+      }
       await tx.playerEvent.create({
         data: {
           playerId,

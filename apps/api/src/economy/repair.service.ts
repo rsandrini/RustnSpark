@@ -323,6 +323,7 @@ export class RepairService {
           data: { condition: target.toCondition },
         });
       }
+      await this.giveScrap(tx, job.playerId, targets);
       await this.events.record(
         {
           playerId: job.playerId,
@@ -338,5 +339,58 @@ export class RepairService {
       return true;
     });
     return { applied };
+  }
+
+  /**
+   * A finished repair leaves a little scrap: one piece per `economy.repair_points_per_scrap`
+   * condition points restored (the most `economy.repair_scrap_max`), each of a repaired part's own
+   * type, in turn. Small repairs give none, so splitting a repair never pays more.
+   */
+  private async giveScrap(
+    tx: Prisma.TransactionClient,
+    playerId: string,
+    targets: readonly StoredTarget[],
+  ): Promise<void> {
+    const { repair_points_per_scrap: per, repair_scrap_max: most } =
+      this.config.snapshot().rules.economy;
+    if (most <= 0 || per <= 0) return;
+    const restored = targets.filter((target) => target.toCondition > target.fromCondition);
+    const points = restored.reduce(
+      (sum, target) => sum + (target.toCondition - target.fromCondition),
+      0,
+    );
+    const count = Math.min(most, Math.floor(points / per));
+    if (count <= 0) return;
+    const parts = await tx.partInstance.findMany({
+      where: { id: { in: restored.map((target) => target.partInstanceId) } },
+      select: { id: true, partType: true },
+    });
+    const typeOf = new Map(parts.map((part) => [part.id, part.partType]));
+    const types = restored.flatMap((target) => {
+      const partType = typeOf.get(target.partInstanceId);
+      return partType === undefined ? [] : [partType];
+    });
+    if (types.length === 0) return;
+    const gained = new Map<string, number>();
+    for (let piece = 0; piece < count; piece += 1) {
+      const id = `scrap_${types[piece % types.length]!}`;
+      gained.set(id, (gained.get(id) ?? 0) + 1);
+    }
+    const known = new Set(
+      (
+        await tx.material.findMany({
+          where: { id: { in: [...gained.keys()] } },
+          select: { id: true },
+        })
+      ).map((material) => material.id),
+    );
+    for (const [materialId, quantity] of gained) {
+      if (!known.has(materialId)) continue;
+      await tx.playerMaterial.upsert({
+        where: { playerId_materialId: { playerId, materialId } },
+        create: { playerId, materialId, quantity },
+        update: { quantity: { increment: quantity } },
+      });
+    }
   }
 }

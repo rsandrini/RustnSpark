@@ -31,6 +31,8 @@ import { resolveRace, type RaceCompetitor } from '../race/race.resolver.js';
 export type MissionStatus = 'success' | 'failed' | 'adrift' | 'partial_failure';
 
 export interface MissionSnapshot {
+  /** Part types of the ship's own parts (bridge excluded): what a won fight's scrap is made of. */
+  readonly scrapTypes?: readonly string[];
   readonly shipId: string;
   readonly parts: LegShipState['parts'];
   readonly sheet: LegShipState['sheet'];
@@ -256,6 +258,34 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           loot: [drop],
         }),
       );
+    }
+  }
+
+  // A won fight leaves a little scrap behind (of one of the ship's own part types): its own stream,
+  // so it never moves any other roll. Dropped like a scavenging find.
+  const scrapTypes = input.snapshot.scrapTypes ?? [];
+  const { scrap_win_min: winLeast, scrap_win_max: winMost } = input.rules.combat;
+  if (winMost > 0 && scrapTypes.length > 0) {
+    const scrapRng = root.child('combat-scrap');
+    const low = Math.max(0, Math.min(winLeast, winMost));
+    for (const win of events.filter((event) => event.type === 'combat_win')) {
+      const count = low + Math.floor(scrapRng.float() * (winMost - low + 1));
+      for (let piece = 0; piece < count; piece += 1) {
+        const partType =
+          scrapTypes[
+            Math.min(scrapTypes.length - 1, Math.floor(scrapRng.float() * scrapTypes.length))
+          ]!;
+        events.push(
+          missionEvent({
+            leg: win.leg,
+            category: 'loot',
+            type: 'scavenge_find',
+            actors,
+            magnitude: 0,
+            found: { kind: 'scrap', partType, condition: 0 },
+          }),
+        );
+      }
     }
   }
 

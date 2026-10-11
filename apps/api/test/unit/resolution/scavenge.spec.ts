@@ -6,7 +6,9 @@ import {
   type ScavengeContext,
 } from '../../../src/resolution/scavenge/scavenge.resolver.js';
 
-const rules = GAME_CONFIG_DEFAULTS;
+const defaults = GAME_CONFIG_DEFAULTS;
+// The part-finding rolls are tested with the guaranteed scrap off (its own tests are at the end).
+const rules = { ...defaults, scavenging: { ...defaults.scavenging, scrap_min: 0, scrap_max: 0 } };
 const CATALOG = [
   { partType: 'cargo', rarity: 'COMMON' },
   { partType: 'hull', rarity: 'COMMON' },
@@ -19,7 +21,8 @@ const TIERS = [
   { tier: 'UNCOMMON', chance: 0.3 },
   { tier: 'RARE', chance: 0.1 },
 ];
-const nonEmpty = (runs: ReturnType<typeof rollScavengeFinds>[]) => runs.filter((finds) => finds.length > 0);
+const nonEmpty = (runs: ReturnType<typeof rollScavengeFinds>[]) =>
+  runs.filter((finds) => finds.length > 0);
 const place = (over: Partial<ScavengeContext> = {}): ScavengeContext => ({
   zone: 0,
   fieldType: 'common',
@@ -101,9 +104,19 @@ describe('scavenging finds (W8)', () => {
 
   it('rare drops are for dangerous places: none below their minimum zone', () => {
     const rareFinds = (zone: number) =>
-      many(place({ zone, tiers: [{ tier: 'COMMON', chance: 0.5 }, { tier: 'RARE', chance: 0.5 }] }), 1500)
+      many(
+        place({
+          zone,
+          tiers: [
+            { tier: 'COMMON', chance: 0.5 },
+            { tier: 'RARE', chance: 0.5 },
+          ],
+        }),
+        1500,
+      )
         .flat()
-        .filter((find) => CATALOG.find((c) => c.partType === find.partType)?.rarity === 'RARE').length;
+        .filter((find) => CATALOG.find((c) => c.partType === find.partType)?.rarity === 'RARE')
+        .length;
     expect(rareFinds(0)).toBe(0);
     expect(rareFinds(1)).toBe(0);
     expect(rareFinds(2)).toBeGreaterThan(0);
@@ -127,5 +140,46 @@ describe('scavenging finds (W8)', () => {
     expect(foot).toBeGreaterThan(0);
     // Same run, handicapped or not: on foot there is no ship to judge.
     expect(found({ onFoot: true, handicapped: true })).toBe(foot);
+  });
+});
+
+describe('scavenging: the scrap every run brings back', () => {
+  const withScrap = (least: number, most: number) => ({
+    ...defaults,
+    scavenging: { ...defaults.scavenging, scrap_min: least, scrap_max: most },
+  });
+  const scrapOf = (finds: ReturnType<typeof rollScavengeFinds>) =>
+    finds.filter((find) => find.kind === 'scrap');
+
+  it('always brings 1 or 2 scrap by default, even from an empty search and a safe port', () => {
+    const runs = Array.from({ length: 400 }, (_, seed) =>
+      rollScavengeFinds(place({ zone: 0 }), defaults, createRng(`g-${seed}`)),
+    );
+    const counts = runs.map((finds) => scrapOf(finds).length);
+    expect(Math.min(...counts)).toBe(1);
+    expect(Math.max(...counts)).toBe(2);
+    // some of those runs found no part at all: the scrap is still there
+    expect(runs.some((finds) => finds.every((find) => find.kind === 'scrap'))).toBe(true);
+  });
+
+  it('is made of the cheapest tier, and turns off at 0', () => {
+    for (let seed = 0; seed < 50; seed += 1) {
+      for (const find of scrapOf(rollScavengeFinds(place(), defaults, createRng(`c-${seed}`)))) {
+        expect(['cargo', 'hull']).toContain(find.partType);
+      }
+      expect(scrapOf(rollScavengeFinds(place(), withScrap(0, 0), createRng(`c-${seed}`)))).toEqual(
+        [],
+      );
+    }
+  });
+
+  it('does not move the part finds: same seed, same parts as without it', () => {
+    for (let seed = 0; seed < 100; seed += 1) {
+      const without = rollScavengeFinds(place(), withScrap(0, 0), createRng(`p-${seed}`));
+      const parts = rollScavengeFinds(place(), defaults, createRng(`p-${seed}`)).filter(
+        (find) => find.kind === 'part',
+      );
+      expect(parts).toEqual(without.filter((find) => find.kind === 'part'));
+    }
   });
 });

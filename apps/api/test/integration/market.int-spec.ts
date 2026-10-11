@@ -526,6 +526,12 @@ describe('market API (S8.2)', () => {
       .set(auth(player.token));
     expect(discarded.status).toBe(200);
     expect(discarded.body).toEqual({ discarded: 1 });
+    // what is left of the wreck is scrap of its own type
+    expect(
+      await prisma.playerMaterial.findUnique({
+        where: { playerId_materialId: { playerId, materialId: 'scrap_cargo' } },
+      }),
+    ).toMatchObject({ quantity: 1 });
     expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).toBeNull();
     expect(await prisma.partInstance.findUnique({ where: { id: worn.id } })).not.toBeNull();
     expect(

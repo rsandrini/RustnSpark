@@ -17,6 +17,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     armor_pool_factor: 8,
     armor_reduction: 0.5,
     armor_reduction_max_share: 0.7,
+    scrap_win_min: 1,
+    scrap_win_max: 2,
     kite_factor: 0.2,
     first_strike_bonus: 2,
     max_rounds: 40,
@@ -149,6 +151,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     rescue_fuel_fraction: 0.25,
     repair_min_base_price: 50,
     sell_min_condition: 15,
+    discard_scrap_per_part: 1,
+    repair_points_per_scrap: 50,
+    repair_scrap_max: 3,
     sell_ratio: 0.6,
     isolation_mult: { 0: 0.9, 1: 1.0, 2: 1.4, 3: 2.0 },
     faction_mult: { ally: 0.8, neutral: 1.0, hostile: 2.5 },
@@ -316,6 +321,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // On foot (no ship involved: no pirates, no wear, no fuel) finds less: this share of the
     // usual chance to find anything.
     foot_factor: 0.5,
+    scrap_min: 1,
+    scrap_max: 2,
   },
   parts: {
     starter_condition: 85,

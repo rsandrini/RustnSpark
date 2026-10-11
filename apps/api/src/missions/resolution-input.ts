@@ -270,6 +270,9 @@ export function buildResolveInput(args: {
         }
       : {}),
     storage: snapshot.storage ?? [],
+    scrapTypes: snapshot.parts
+      .filter((part) => part.catalog.partClass !== 'BRIDGE')
+      .map((part) => part.partType),
   };
 
   // D29: accept finalizes the board reward from the accepting ship's tier; the resolution rates
@@ -316,7 +319,8 @@ export function buildResolveInput(args: {
       : {}),
     ...(snapshot.cargo?.mode === 'open'
       ? {
-          cargoExtra: Math.max(0, snapshot.cargo.units - snapshot.cargo.need) * snapshot.cargo.unitPay,
+          cargoExtra:
+            Math.max(0, snapshot.cargo.units - snapshot.cargo.need) * snapshot.cargo.unitPay,
         }
       : {}),
     ...(context.unpaid ? { unpaid: true } : {}),

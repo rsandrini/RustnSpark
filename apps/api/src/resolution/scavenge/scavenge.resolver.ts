@@ -51,6 +51,30 @@ export function rollScavengeFinds(
   rules: GameRules,
   rng: Rng,
 ): ScavengeFind[] {
+  // The scrap is rolled after everything else, so it never moves the other rolls of the run.
+  return [...rollPartFinds(context, rules, rng), ...rollGuaranteedScrap(context, rules, rng)];
+}
+
+/**
+ * Every run brings back a little scrap whatever else it finds (even an empty search): between
+ * `scavenging.scrap_min` and `scrap_max` pieces, of the cheapest tier so it stays a small bonus.
+ */
+function rollGuaranteedScrap(context: ScavengeContext, rules: GameRules, rng: Rng): ScavengeFind[] {
+  const { scrap_min: least, scrap_max: most } = rules.scavenging;
+  if (!(most > 0) || context.catalog.length === 0) return [];
+  const pool = context.catalog.filter((entry) => entry.rarity === FALLBACK_RARITY);
+  const source = pool.length > 0 ? pool : context.catalog;
+  const low = Math.max(0, Math.min(least, most));
+  const count = low + Math.floor(rng.float() * (most - low + 1));
+  const scrap: ScavengeFind[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const part = source[Math.min(source.length - 1, Math.floor(rng.float() * source.length))]!;
+    scrap.push({ kind: 'scrap', partType: part.partType, condition: 0 });
+  }
+  return scrap;
+}
+
+function rollPartFinds(context: ScavengeContext, rules: GameRules, rng: Rng): ScavengeFind[] {
   const cfg = rules.scavenging;
   if (context.catalog.length === 0) return [];
 

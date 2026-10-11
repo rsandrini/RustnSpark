@@ -326,6 +326,40 @@ describe('S5.9 — escort client destroyed fails the mission', () => {
   });
 });
 
+describe('a won fight leaves scrap behind', () => {
+  const hostile = mission({
+    relation: 'HOSTILE',
+    stance: 'AGGRESSIVE',
+    legs: [{ distance: 800, danger: 10, zone: 3, env: { id: 'debris', level: 3, fuelMult: 1.1 } }],
+  });
+  const withScrap = (most: number): GameRules => ({
+    ...rules,
+    combat: { ...rules.combat, scrap_win_min: 1, scrap_win_max: most },
+  });
+  const scrapEvents = (events: ReturnType<typeof resolve>['events']) =>
+    events.filter((event) => event.type === 'scavenge_find' && event.found?.kind === 'scrap');
+
+  it("drops 1 to 2 pieces of the ship's own part types per win, and nothing when turned off", () => {
+    const snap = snapshot({ fuel: 800, scrapTypes: ['engine_chem_small', 'cargo'] });
+    let wins = 0;
+    for (let seed = 0; seed < 300 && wins < 5; seed += 1) {
+      const on = resolveMission({ seed, snapshot: snap, mission: hostile, rules: withScrap(2) });
+      const winCount = on.events.filter((event) => event.type === 'combat_win').length;
+      if (winCount === 0) continue;
+      wins += 1;
+      const pieces = scrapEvents(on.events);
+      expect(pieces.length).toBeGreaterThanOrEqual(winCount);
+      expect(pieces.length).toBeLessThanOrEqual(winCount * 2);
+      for (const piece of pieces) {
+        expect(['engine_chem_small', 'cargo']).toContain(piece.found?.partType);
+      }
+      const off = resolveMission({ seed, snapshot: snap, mission: hostile, rules: withScrap(0) });
+      expect(scrapEvents(off.events)).toHaveLength(0);
+    }
+    expect(wins).toBeGreaterThan(0);
+  });
+});
+
 describe('S9.0 — event enrichment (schemaVersion 2)', () => {
   it('combat_win / combat_loss carry the {shield, armor, hp} layer split (GDD §15)', () => {
     const hostile = mission({

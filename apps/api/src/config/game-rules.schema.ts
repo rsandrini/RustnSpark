@@ -19,6 +19,8 @@ const combatSchema = z.object({
   armor_pool_factor: z.number().min(0).max(50),
   armor_reduction: z.number().min(0).max(10),
   armor_reduction_max_share: z.number().min(0).max(1),
+  scrap_win_min: z.number().int().min(0).max(20).default(0),
+  scrap_win_max: z.number().int().min(0).max(20).default(0),
   kite_factor: z.number().min(0).max(1),
   first_strike_bonus: z.number().int().min(0).max(10),
   max_rounds: z.number().int().min(1).max(200),
@@ -115,6 +117,9 @@ const economySchema = z.object({
   rescue_fuel_fraction: z.number().min(0).max(1),
   repair_min_base_price: z.number().min(0).max(1000),
   sell_min_condition: z.number().min(0).max(100),
+  discard_scrap_per_part: z.number().int().min(0).max(10).default(0),
+  repair_points_per_scrap: z.number().int().min(1).max(100).default(50),
+  repair_scrap_max: z.number().int().min(0).max(20).default(0),
   sell_ratio: z.number().min(0).max(1),
   isolation_mult: z.record(z.string(), z.number().min(0).max(10)),
   faction_mult: z.record(z.string(), z.number().min(0).max(10)),
@@ -253,6 +258,8 @@ const scavengingSchema = z.object({
   tier_min_zone: z.record(z.string(), z.number().int().min(0).max(10)),
   handicap_factor: z.number().min(0).max(1),
   foot_factor: z.number().min(0).max(1),
+  scrap_min: z.number().int().min(0).max(10).default(0),
+  scrap_max: z.number().int().min(0).max(10).default(0),
 });
 
 const partsSchema = z.object({

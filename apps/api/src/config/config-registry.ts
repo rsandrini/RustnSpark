@@ -113,6 +113,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.scrap_win_min',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.scrap_win_min),
+    description: {
+      en: 'Scrap dropped by each won fight: the least (a random whole number between this and the most).',
+      'pt-BR': 'Sucata solta por cada combate vencido: o mínimo (um inteiro sorteado entre este e o máximo).',
+    },
+  },
+  {
+    key: 'combat.scrap_win_max',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.scrap_win_max),
+    description: {
+      en: 'Scrap dropped by each won fight: the most. 0 turns the drop off.',
+      'pt-BR': 'Sucata solta por cada combate vencido: o máximo. 0 desliga a queda.',
+    },
+  },
+  {
     key: 'combat.armor_reduction_max_share',
     group: 'combat',
     type: 'number',
@@ -838,6 +862,42 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: 'Repair price base for cheap parts: a part worth less than this is repaired as if it were worth this (keeps the bridge from being repaired for free).',
       'pt-BR':
         'Base do preço de reparo para peças baratas: uma peça que vale menos que isso é reparada como se valesse isso (impede reparar a ponte de graça).',
+    },
+  },
+  {
+    key: 'economy.discard_scrap_per_part',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.discard_scrap_per_part),
+    description: {
+      en: 'Scrap given back for each damaged part cleared with "Discard damaged" (of that part\'s own type). 0 gives nothing.',
+      'pt-BR': 'Sucata devolvida por cada peça danificada descartada em "Descartar danificadas" (do próprio tipo da peça). 0 não devolve nada.',
+    },
+  },
+  {
+    key: 'economy.repair_points_per_scrap',
+    group: 'economy',
+    type: 'number',
+    min: 1,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_points_per_scrap),
+    description: {
+      en: "A repair gives one scrap (of a repaired part's type) per this many condition points restored, up to the most below.",
+      'pt-BR': 'Um reparo dá uma sucata (do tipo de uma peça reparada) a cada tantos pontos de condição restaurados, até o máximo abaixo.',
+    },
+  },
+  {
+    key: 'economy.repair_scrap_max',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_scrap_max),
+    description: {
+      en: 'The most scrap one repair can give. 0 turns the drop off.',
+      'pt-BR': 'O máximo de sucata que um reparo pode dar. 0 desliga a queda.',
     },
   },
   {
@@ -2000,6 +2060,30 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'A ship that cannot fly (or flies with warnings) can still scavenge by hand, but only keeps this share of the usual chance to find anything.',
       'pt-BR': 'Uma nave que não voa (ou voa com avisos) ainda pode fazer buscas à mão, mas só mantém esta fração da chance normal de achar algo.',
+    },
+  },
+  {
+    key: 'scavenging.scrap_min',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_min),
+    description: {
+      en: 'Scrap every scavenging run brings back whatever else it finds (even an empty search): the least.',
+      'pt-BR': 'Sucata que toda busca traz, achando ou não outras coisas (mesmo uma busca vazia): o mínimo.',
+    },
+  },
+  {
+    key: 'scavenging.scrap_max',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_max),
+    description: {
+      en: 'Scrap every scavenging run brings back: the most (a random whole number between the least and this). 0 turns the guaranteed scrap off.',
+      'pt-BR': 'Sucata que toda busca traz: o máximo (um inteiro sorteado entre o mínimo e este). 0 desliga a sucata garantida.',
     },
   },
   {

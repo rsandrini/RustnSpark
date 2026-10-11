@@ -42,6 +42,8 @@ export type ConfigKey =
   | 'combat.armor_pool_factor'
   | 'combat.armor_reduction'
   | 'combat.armor_reduction_max_share'
+  | 'combat.scrap_win_min'
+  | 'combat.scrap_win_max'
   | 'detection.ambush_cap'
   | 'detection.ambush_per_sen_point'
   | 'economy.combat_loss_penalty'
@@ -71,6 +73,9 @@ export type ConfigKey =
   | 'economy.reward_per_tier'
   | 'economy.reward_type_bonus'
   | 'economy.sell_min_condition'
+  | 'economy.discard_scrap_per_part'
+  | 'economy.repair_points_per_scrap'
+  | 'economy.repair_scrap_max'
   | 'economy.sell_ratio'
   | 'economy.start_credits'
   | 'economy.ship_tier_thresholds'
@@ -152,6 +157,8 @@ export type ConfigKey =
   | 'scavenging.duration_seconds'
   | 'scavenging.foot_duration_seconds'
   | 'scavenging.foot_factor'
+  | 'scavenging.scrap_min'
+  | 'scavenging.scrap_max'
   | 'scavenging.scrap_share'
   | 'scavenging.zone_quality_bonus'
   | 'scavenging.zone_rarity_bias'
@@ -254,6 +261,8 @@ export type GameRules = Readonly<{
     armor_reduction: number;
     /** ...but never more than this share of the hit, so nothing is immune. */
     armor_reduction_max_share: number;
+    scrap_win_min: number;
+    scrap_win_max: number;
   }>;
   ship: Readonly<{
     mob_factor: number;
@@ -339,6 +348,9 @@ export type GameRules = Readonly<{
     repair_min_base_price: number;
     /** Parts below this condition (%) cannot be sold: no port takes them, even for nothing. */
     sell_min_condition: number;
+    discard_scrap_per_part: number;
+    repair_points_per_scrap: number;
+    repair_scrap_max: number;
     sell_ratio: number;
     isolation_mult: Readonly<Record<string, number>>;
     faction_mult: Readonly<Record<string, number>>;
@@ -508,6 +520,8 @@ export type GameRules = Readonly<{
     handicap_factor: number;
     /** Share of the usual chance to find anything kept when scavenging on foot (no ship). */
     foot_factor: number;
+    scrap_min: number;
+    scrap_max: number;
   }>;
   parts: Readonly<{
     starter_condition: number;
