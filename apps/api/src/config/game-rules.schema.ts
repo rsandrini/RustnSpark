@@ -240,6 +240,7 @@ const missionsSchema = z.object({
   duration_class_cutoffs: z.record(z.string(), z.number().min(60).max(86400)),
   time_scale: z.number().min(0.001).max(100),
   board_min_per_location: z.number().int().min(0).max(20),
+  board_max_same_type: z.number().int().min(1).max(20).default(2),
   starter_guarantee_max_completed: z.number().int().min(0).max(50),
   starter_max_zone: z.number().int().min(0).max(3),
 });

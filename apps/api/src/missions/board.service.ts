@@ -10,6 +10,14 @@ import {
   type MissionDraft,
 } from './generator/template.filler.js';
 import { missionReward } from './mission.reward.js';
+import {
+  ANYTHING_GOES,
+  SAME_JOB_ONLY,
+  STRICT,
+  isVariedEnough,
+  type OfferShape,
+  type Strictness,
+} from './board-variety.js';
 
 // Two-int advisory-lock namespace for board top-ups (class | hashtext(locationId)),
 // so board locks can never collide with future advisory users in other domains.
@@ -18,8 +26,10 @@ const BOARD_LOCK_CLASS = 6200;
 const STARTER_LOCK_CLASS = 6201;
 // Seeds tried before giving up on finding a mission this player's ship can take.
 const STARTER_ATTEMPTS = 12;
-// Reseeds tried to make a new board offer differ from the live ones.
-const DEDUPE_ATTEMPTS = 8;
+// Reseeds tried to make a new board offer differ from the live ones: the first half under both
+// variety rules, the second half only under the "same type and destination" rule, then anything.
+const STRICT_ATTEMPTS = 12;
+const VARIETY_ATTEMPTS = 24;
 
 export type BoardMission = MissionInstance & { readonly rewardEstimate: number };
 
@@ -252,34 +262,24 @@ export class BoardService {
 
     const worldTables = await world();
     let epoch = await tx.missionInstance.count({ where: { originId: locationId } });
-    // A board of four identical offers is not a board: a new offer must differ from the live
-    // ones in template or destination. A few reseeds are tried; if the world is too small to
-    // differ, the duplicate is accepted rather than leaving the board short.
-    const live = await tx.missionInstance.findMany({
+    // A board of four identical offers is not a board: a new offer must differ from the live ones
+    // (see board-variety.ts). A few reseeds are tried; if the world is too small to differ, the
+    // rules loosen rather than leaving the board short.
+    const live: OfferShape[] = await tx.missionInstance.findMany({
       where: {
         originId: locationId,
         status: 'AVAILABLE',
         expiresAt: { gt: now },
         privatePlayerId: null,
       },
-      select: { templateId: true, destinationId: true },
+      select: { type: true, destinationId: true, cargo: true },
     });
-    const seen = new Set(live.map((row) => `${row.templateId}>${row.destinationId}`));
+    const maxSameType = rules.missions.board_max_same_type;
     while (available < boardMin) {
       try {
-        let draft = fillMission({
-          seed: missionSeed({ locationId, epoch, configVersion }),
-          origin: location,
-          world: worldTables,
-          rules,
-          now,
-        });
-        for (
-          let retry = 0;
-          retry < DEDUPE_ATTEMPTS && seen.has(`${draft.templateId}>${draft.destinationId}`);
-          retry += 1
-        ) {
-          epoch += 1;
+        let draft: MissionDraft;
+        let attempt = 0;
+        for (;;) {
           draft = fillMission({
             seed: missionSeed({ locationId, epoch, configVersion }),
             origin: location,
@@ -287,8 +287,17 @@ export class BoardService {
             rules,
             now,
           });
+          const strictness: Strictness =
+            attempt < STRICT_ATTEMPTS
+              ? STRICT
+              : attempt < VARIETY_ATTEMPTS
+                ? SAME_JOB_ONLY
+                : ANYTHING_GOES;
+          if (isVariedEnough(draft, live, maxSameType, strictness)) break;
+          attempt += 1;
+          epoch += 1;
         }
-        seen.add(`${draft.templateId}>${draft.destinationId}`);
+        live.push({ type: draft.type, destinationId: draft.destinationId, cargo: draft.cargo });
         await tx.missionInstance.create({ data: draft });
       } catch (error) {
         // S3.4 guarantees every seeded location can serve a template; if the data

@@ -116,6 +116,7 @@ export type ConfigKey =
   | 'mining.job_duration_seconds'
   | 'mining.rarity'
   | 'mining.richness'
+  | 'missions.board_max_same_type'
   | 'missions.board_min_per_location'
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_zone'
@@ -494,6 +495,7 @@ export type GameRules = Readonly<{
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;
+    board_max_same_type: number;
     starter_guarantee_max_completed: number;
     starter_max_zone: number;
   }>;

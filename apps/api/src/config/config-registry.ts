@@ -1900,6 +1900,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.board_max_same_type',
+    group: 'missions',
+    type: 'integer',
+    min: 1,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_max_same_type),
+    description: {
+      en: 'The most offers of one type (delivery, escort, race...) on a location board. Two offers of the same type for the same destination are never posted together unless the world is too small to avoid it.',
+      'pt-BR':
+        'O máximo de ofertas de um mesmo tipo (entrega, escolta, corrida...) no quadro de um local. Duas ofertas do mesmo tipo para o mesmo destino nunca são publicadas juntas, a não ser que o mundo seja pequeno demais para evitar.',
+    },
+  },
+  {
     key: 'missions.board_min_per_location',
     group: 'missions',
     type: 'integer',

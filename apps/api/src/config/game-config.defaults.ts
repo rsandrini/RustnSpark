@@ -290,6 +290,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.
     board_min_per_location: 4,
+    // No more than this many offers of one type on a board (and never two of the same type for the
+    // same destination), so a board is a mix and not four of the same job.
+    board_max_same_type: 2,
     // D43: while a player has completed fewer than this many missions and nothing on their
     // board is takeable, a private start-safe mission is offered. 0 turns the guarantee off.
     starter_guarantee_max_completed: 3,

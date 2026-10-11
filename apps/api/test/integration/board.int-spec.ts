@@ -63,6 +63,29 @@ describe('mission board (S6.2)', () => {
     expect(stored).toBe(rows.length);
   });
 
+  it('boards are a mix: no two offers of one type for one destination, and at most 2 of a type, over many refreshes', async () => {
+    const locations = ['ceres', 'vesta', 'hedus', 'marsa', 'cair', 'tycho'];
+    for (let round = 0; round < 25; round += 1) {
+      for (const locationId of locations) {
+        const rows = await board!.getBoard(locationId, 1);
+        expect(rows.length).toBe(4);
+        const keys = rows.map(
+          (row) =>
+            `${row.type}>${row.destinationId}>${(row.cargo as { materialId?: string } | null)?.materialId ?? ''}`,
+        );
+        expect(new Set(keys).size).toBe(keys.length);
+        const perType = new Map<string, number>();
+        for (const row of rows) perType.set(row.type, (perType.get(row.type) ?? 0) + 1);
+        expect(Math.max(...perType.values())).toBeLessThanOrEqual(2);
+      }
+      // let every offer run out, so the next read posts a fresh board
+      await prisma.missionInstance.updateMany({
+        where: { status: 'AVAILABLE' },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+    }
+  });
+
   it('is idempotent: a second read adds nothing and returns the same offers', async () => {
     const first = await board!.getBoard('ceres', 1);
     const second = await board!.getBoard('ceres', 1);
