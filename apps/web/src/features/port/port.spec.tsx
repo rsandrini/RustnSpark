@@ -776,7 +776,7 @@ describe('port (S10.9)', () => {
               displayName: { en: 'Core Fragment', 'pt-BR': 'Fragmento de Núcleo' },
               rarity: 'EPIC',
               quantity: 6,
-              unitPrice: 1,
+              unitPrice: 60,
             },
           ],
         }),

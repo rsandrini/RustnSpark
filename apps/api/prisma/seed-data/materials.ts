@@ -32,42 +32,43 @@ const MATERIALS = [
     rarity: 'RARE' as const,
     basePrice: 200,
   },
-  // Upgrade pieces: found in dangerous places, never dug up, worth next to nothing if sold (their
-  // value is what they unlock). A core is crafted from fragments at a port.
+  // Upgrade pieces: found in dangerous places, never dug up. A core is crafted from fragments at a
+  // port. They sell at a fixed price matching their recipe (a prototype core is worth five
+  // fragments, an ancient core fifteen), so crafting breaks even and their value is what they unlock.
   {
     id: 'core_fragment',
     displayName: { en: 'Core Fragment', 'pt-BR': 'Fragmento de Núcleo' },
     description: {
-      en: 'A shard of an old ship core. Several of them craft a whole core. Worth nothing if sold.',
+      en: 'A shard of an old ship core. Several of them craft a whole core. Sells for a fixed price at any port.',
       'pt-BR':
-        'Um estilhaço de um núcleo antigo de nave. Vários deles fabricam um núcleo inteiro. Não vale nada se vendido.',
+        'Um estilhaço de um núcleo antigo de nave. Vários deles fabricam um núcleo inteiro. Vende por preço fixo em qualquer porto.',
     },
     rarity: 'EPIC' as const,
-    basePrice: 1,
+    basePrice: 60,
     fixedPrice: true,
   },
   {
     id: 'prototype_core',
     displayName: { en: 'Prototype Core', 'pt-BR': 'Núcleo Protótipo' },
     description: {
-      en: 'An experimental core. Upgrading a rare part to epic needs it. Worth nothing if sold.',
+      en: 'An experimental core. Upgrading a rare part to epic needs it. Sells for a fixed price at any port.',
       'pt-BR':
-        'Um núcleo experimental. Melhorar uma peça rara para épica exige um. Não vale nada se vendido.',
+        'Um núcleo experimental. Melhorar uma peça rara para épica exige um. Vende por preço fixo em qualquer porto.',
     },
     rarity: 'EPIC' as const,
-    basePrice: 1,
+    basePrice: 300,
     fixedPrice: true,
   },
   {
     id: 'ancient_core',
     displayName: { en: 'Ancient Core', 'pt-BR': 'Núcleo Ancestral' },
     description: {
-      en: 'A core from before the sector was settled. Upgrading an epic part to legendary needs it. Worth nothing if sold.',
+      en: 'A core from before the sector was settled. Upgrading an epic part to legendary needs it. Sells for a fixed price at any port.',
       'pt-BR':
-        'Um núcleo de antes de o setor ser colonizado. Melhorar uma peça épica para lendária exige um. Não vale nada se vendido.',
+        'Um núcleo de antes do setor ser colonizado. Melhorar uma peça épica para lendária exige um. Vende por preço fixo em qualquer porto.',
     },
     rarity: 'LEGENDARY' as const,
-    basePrice: 1,
+    basePrice: 900,
     fixedPrice: true,
   },
 ];
