@@ -1362,22 +1362,84 @@ a {
 svg .block {
   fill: var(--yard-panel2);
   stroke: var(--steel-lt);
-  stroke-width: 0.05;
+  stroke-width: 0.035;
   cursor: grab;
 }
 
 svg .block.bridge {
   stroke: var(--amber);
-  stroke-width: 0.1;
+  stroke-width: 0.06;
 }
 
+/* Selection is shown by a soft halo behind the block plus a thicker spark outline. */
 svg .block.selected {
   stroke: var(--spark);
+  stroke-width: 0.07;
 }
 
-svg .block.floating {
-  stroke: var(--bad);
-  stroke-dasharray: 0.2 0.12;
+svg .block-halo {
+  fill: rgba(240, 165, 0, 0.1);
+  stroke: var(--spark);
+  stroke-width: 0.04;
+  stroke-dasharray: 0.14 0.1;
+  pointer-events: none;
+}
+
+/* A dragged part leaves its origin behind as a dim placeholder while the ghost floats above. */
+svg .block.ghosting {
+  fill-opacity: 0.2;
+  stroke-opacity: 0.4;
+  stroke-dasharray: 0.14 0.1;
+}
+
+/* A part being spun: a bright pulsing outline so the rotation is visibly happening. */
+svg .block.rotating {
+  stroke: var(--spark);
+  stroke-width: 0.09;
+  animation: rotating-pulse 0.7s ease-in-out infinite;
+}
+
+@keyframes rotating-pulse {
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg .block.rotating {
+    animation: none;
+  }
+}
+
+/* The floating ghost of a dragged part: it rides on top of every block until released. */
+svg .yard-ghost .ghost-body {
+  fill-opacity: 0.5;
+  stroke-width: 0.06;
+  stroke-dasharray: 0.16 0.1;
+}
+
+svg .yard-ghost .ghost-cell {
+  fill: none;
+  stroke-width: 0.04;
+  stroke-dasharray: 0.1 0.08;
+}
+
+svg .yard-ghost .ghost-body.ok,
+svg .yard-ghost .ghost-cell.ok {
+  fill: rgba(80, 200, 120, 0.22);
+  stroke: #48c078;
+}
+
+svg .yard-ghost .ghost-body.bad,
+svg .yard-ghost .ghost-cell.bad {
+  fill: rgba(230, 70, 70, 0.22);
+  stroke: #e64646;
+}
+
+/* The carried content stays legible over the ghost body. */
+svg .yard-ghost .ghost-label {
+  fill: #fff;
+  fill-opacity: 0.95;
 }
 
 /* A part that is not wired to the bridge does nothing: dim its fill and blink a yellow border. */
@@ -2158,6 +2220,81 @@ svg .block.disconnected {
 
 .yard-tools .btn {
   padding: 4px 10px;
+}
+
+/* hangar: one-line action row under the yard (Rotate · Remove | Save · Auto · Clear · Format). */
+.hangar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.hangar-actions-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--line);
+}
+
+/* A single small rotate button overlaid on the yard, pinned to the hovered part's top-right
+   corner. It is a real HTML element (not SVG) so it keeps a fixed on-screen size at any zoom. */
+.yard-rotate-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.yard-rotate-icon {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--spark);
+  background: var(--bg);
+  color: var(--spark);
+  cursor: grab;
+  pointer-events: auto;
+  transition: transform 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+.yard-rotate-icon:hover {
+  background: var(--spark);
+  color: var(--bg);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.yard-rotate-icon:active {
+  cursor: grabbing;
+}
+
+.yard-rotate-icon svg {
+  width: 7px;
+  height: 7px;
+  display: block;
+}
+
+/* A quick clockwise flourish when the part turns, so the rotation is visibly acknowledged. */
+.yard-rotate-icon.rotating {
+  color: #fff;
+  border-color: #fff;
+  animation: rotate-icon-spin 320ms ease;
+}
+
+@keyframes rotate-icon-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
 }
 
 .yard-zoom {

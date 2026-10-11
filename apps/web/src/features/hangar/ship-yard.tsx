@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import type {
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react';
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks } from './connectors';
-import { directionViolations, facingOf, footprint } from './hangar.geometry';
+import { directionViolations, facingOf, footprint, placementIssue, type Rot } from './hangar.geometry';
 
 const MIN_SPAN = 4;
 const FIT_MARGIN = 2;
 const ZOOM_STEP = 1.4;
 // Pointer travel (px) below which a press is a click, not the start of a pan.
 const PAN_THRESHOLD = 5;
+// A part carries a single small rotate button pinned to its top-right corner (owner: one little
+// icon with a left→right arrow, not four on every border). It is a real HTML button overlaid on
+// the yard, so its size is fixed in pixels and can never balloon with the zoom.
 // Zoom-out overshoot: the yard can shrink to 80% of the window so there is always empty
 // slack around it to pan into (owner: movement was locked the moment the view was fully fit).
 const VIEW_OVERSHOOT = 1.25;
@@ -136,6 +142,24 @@ function FacingArrow({
   );
 }
 
+/** The little "turn" glyph drawn inside the top-right rotate button: an arrow pointing left→right
+ *  (the direction the part turns when clicked). */
+function RotateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 12h15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M13 6l6 6-6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export interface PartLook {
   readonly rarity: string;
   /** Condition in percent (0..100). */
@@ -161,11 +185,19 @@ export interface ShipYardProps {
   draggingId: string | null;
   onSelect: (partInstanceId: string | null) => void;
   onCellClick: (gx: number, gy: number) => void;
-  onCellHover: (gx: number, gy: number) => void;
   onDragStart: (partInstanceId: string) => void;
   onDragEnd: () => void;
+  /** Release of a ghost-dragged block: commit it at (gx, gy); an invalid drop is ignored by the
+      owner, which leaves the part where the drag started. */
+  onDropPart?: (partInstanceId: string, gx: number, gy: number) => void;
   /** Hovering a placed block (owner request): a small stats-only card, not the full popup. */
   onHoverPart?: (partInstanceId: string | null) => void;
+  /** Hovering a block's border reveals a small rotate badge; clicking it turns the part in place. */
+  onRotate?: (partInstanceId: string) => void;
+  /** Press-and-drag on the rotate badge spins the part live to the given orientation (0/90/180/270). */
+  onRotateLive?: (partInstanceId: string, rot: Rot) => void;
+  /** When false the ship is out on a mission: no rotate button, no drag, no rotation. */
+  editable?: boolean;
 }
 
 // The assembly yard. Cells are transparent rects (data-gx/gy) so placement and drag feedback
@@ -184,13 +216,17 @@ export function ShipYard({
   draggingId,
   onSelect,
   onCellClick,
-  onCellHover,
   onDragStart,
   onDragEnd,
+  onDropPart,
   onHoverPart,
+  onRotate,
+  onRotateLive,
+  editable = true,
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
   // Ports are always on (spec decision 3); the dragged block is already live in `layout` while it
   // hovers, so its marks double as the placement preview.
   // Engines/weapons with parts behind their facing edge: outlined red (direction rules are
@@ -269,9 +305,77 @@ export function ShipYard({
   }, [layout, catalogById, cellCount, clampView, centerX, centerY]);
 
   const [colorBy, setColorBy] = useState<'rarity' | 'condition'>('rarity');
+  // The part whose four rotate buttons are currently shown (hovered, or the selection).
+  const [hoveredPartId, setHoveredPartId] = useState<string | null>(null);
+  // The part currently mid-spin (drag on a rotate button): it gets a bright, animated clue.
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
+  // An active press-and-drag on a rotate button. The pivot is the part's centre and rotation
+  // is angle-tracking: release snaps to the nearest 90°; a click without movement is one turn.
+  type RotateDrag = {
+    partInstanceId: string;
+    pivotX: number;
+    pivotY: number;
+    startAngle: number;
+    startRot: Rot;
+    moved: boolean;
+  };
+  const rotateDrag = useRef<RotateDrag | null>(null);
+  // Set when a press is finalised on pointer-up so the trailing click (same gesture) is eaten
+  // instead of rotating twice.
+  const suppressRotateClick = useRef<string | null>(null);
+  // Pulsing a part right after it turns (owner: "a feedback that was rotated"), then auto-clears.
+  const flashTimer = useRef<number | null>(null);
+  const flashRotate = useCallback((partInstanceId: string) => {
+    setRotatingId(partInstanceId);
+    if (flashTimer.current !== null) window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => {
+      flashTimer.current = null;
+      setRotatingId((current) => (current === partInstanceId ? null : current));
+    }, 700);
+  }, []);
+  // A part being dragged across the board as a floating ghost: it hovers on the top layer,
+  // free of the grid (green when the cell under it would fit, red when it would not) and only
+  // commits (or falls back to where it started) on release.
+  type Ghost = {
+    partInstanceId: string;
+    rot: Rot;
+    width: number;
+    height: number;
+    originX: number;
+    originY: number;
+    grabX: number;
+    grabY: number;
+    x: number;
+    y: number;
+    targetGx: number;
+    targetGy: number;
+    valid: boolean;
+  };
+  const [ghost, setGhost] = useState<Ghost | null>(null);
   const [view, setView] = useState<View>(() => clampView({ cx: centerX, cy: centerY, span: 20 }));
   const viewRef = useRef(view);
   viewRef.current = view;
+
+  // Where the yard svg sits inside the scene, so the HTML rotate buttons (positioned in screen
+  // pixels) can line up with a part's borders. Measured from the live layout, redrawn on resize
+  // and on every zoom.
+  const [box, setBox] = useState({ left: 0, top: 0, width: 0, height: 0 });
+  useEffect(() => {
+    const svg = svgRef.current;
+    const scene = sceneRef.current;
+    if (svg === null || scene === null) return undefined;
+    const measure = () => {
+      const s = svg.getBoundingClientRect();
+      const c = scene.getBoundingClientRect();
+      setBox({ left: s.left - c.left, top: s.top - c.top, width: s.width, height: s.height });
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(svg);
+    observer.observe(scene);
+    return () => observer.disconnect();
+  }, [view.span]);
 
   // Frame the ship the first time it has parts (the page seeds the layout after loading).
   const fitted = useRef(false);
@@ -330,12 +434,50 @@ export function ShipYard({
     pinchDistance: null,
   });
 
+  const cellSet = useMemo(() => new Set(cells.map(([x, y]) => `${x},${y}`)), [cells]);
+
+  /** A client position in yard cells (the same mapping the wheel-zoom anchor uses). */
+  const pointerToCells = (clientX: number, clientY: number): { x: number; y: number } => {
+    const svg = svgRef.current;
+    const current = viewRef.current;
+    if (svg === null) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    const unit = current.span / Math.max(rect.width, 1);
+    return {
+      x: current.cx - current.span / 2 + (clientX - rect.left) * unit,
+      y: current.cy - current.span / 2 + (clientY - rect.top) * unit,
+    };
+  };
+
   const handleBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
+    setHoveredPartId(null);
+    rotateDrag.current = null;
+    suppressRotateClick.current = null;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.current.size === 1) gesture.current.moved = false;
   };
 
   const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    // A part being dragged floats as a ghost on the top layer; it does not snap until release.
+    if (ghost !== null) {
+      const point = pointerToCells(event.clientX, event.clientY);
+      const x = point.x - ghost.grabX;
+      const y = point.y - ghost.grabY;
+      const targetGx = Math.round(x);
+      const targetGy = Math.round(y);
+      const valid =
+        placementIssue(
+          layout,
+          catalogById,
+          ghost.partInstanceId,
+          targetGx,
+          targetGy,
+          ghost.rot,
+          cellSet,
+        ) === null;
+      setGhost({ ...ghost, x, y, targetGx, targetGy, valid });
+      return;
+    }
     const previous = pointers.current.get(event.pointerId);
     if (previous === undefined || draggingId !== null) return;
     const svg = svgRef.current;
@@ -380,6 +522,17 @@ export function ShipYard({
   };
 
   const handlePointerEnd = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (ghost !== null) {
+      // Drop where it fits, and only if it actually moved; a drop on the origin (or an invalid
+      // cell) just leaves the part exactly where it started.
+      if (
+        ghost.valid &&
+        (ghost.targetGx !== ghost.originX || ghost.targetGy !== ghost.originY)
+      ) {
+        onDropPart?.(ghost.partInstanceId, ghost.targetGx, ghost.targetGy);
+      }
+      setGhost(null);
+    }
     pointers.current.delete(event.pointerId);
     if (pointers.current.size < 2) gesture.current.pinchDistance = null;
     onDragEnd();
@@ -388,9 +541,129 @@ export function ShipYard({
   const cellList = cells.map(([gx, gy]) => ({ gx, gy }));
 
   const handleBlockDown = (event: ReactPointerEvent<SVGRectElement>, placement: Placement) => {
+    // Out on a mission the layout is frozen: a press on a part just selects it.
+    if (!editable) {
+      onSelect(placement.partInstanceId);
+      event.stopPropagation();
+      return;
+    }
+    if (rotateDrag.current !== null) return;
+    suppressRotateClick.current = null;
+    setHoveredPartId(placement.partInstanceId);
+    const catalog = catalogById.get(placement.partInstanceId);
+    const svg = svgRef.current;
+    if (catalog !== undefined && svg !== null) {
+      const { width, height } = footprint(catalog, placement.rot);
+      const point = pointerToCells(event.clientX, event.clientY);
+      try {
+        svg.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer already released — nothing to capture.
+      }
+      setGhost({
+        partInstanceId: placement.partInstanceId,
+        rot: placement.rot,
+        width,
+        height,
+        originX: placement.gx,
+        originY: placement.gy,
+        grabX: point.x - placement.gx,
+        grabY: point.y - placement.gy,
+        x: placement.gx,
+        y: placement.gy,
+        targetGx: placement.gx,
+        targetGy: placement.gy,
+        valid: true,
+      });
+    }
     onSelect(placement.partInstanceId);
     onDragStart(placement.partInstanceId);
     event.stopPropagation();
+  };
+
+  // Press-and-drag a border rotate button: anchor the pointer's angle around the part's centre
+  // (the pivot uses the footprint at press time, so a 2×1→1×2 swing stays centered on the same
+  // spot). A press without movement is a single quarter turn.
+  const handleRotateDown = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    placement: Placement,
+  ) => {
+    if (!editable) return;
+    const catalog = catalogById.get(placement.partInstanceId);
+    const svg = svgRef.current;
+    if (catalog === undefined || svg === null) return;
+    event.stopPropagation();
+    const { width, height } = footprint(catalog, placement.rot);
+    const point = pointerToCells(event.clientX, event.clientY);
+    const pivotX = placement.gx + width / 2;
+    const pivotY = placement.gy + height / 2;
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer already released — nothing to capture.
+    }
+    rotateDrag.current = {
+      partInstanceId: placement.partInstanceId,
+      pivotX,
+      pivotY,
+      startAngle: Math.atan2(point.y - pivotY, point.x - pivotX),
+      startRot: placement.rot,
+      moved: false,
+    };
+    setRotatingId(placement.partInstanceId);
+    setHoveredPartId(placement.partInstanceId);
+    onSelect(placement.partInstanceId);
+  };
+
+  // Live spin: as the pointer orbits the part's centre, snap the rotation to the nearest 90°.
+  const handleRotateMove = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    placement: Placement,
+  ) => {
+    const rotate = rotateDrag.current;
+    if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
+    const point = pointerToCells(event.clientX, event.clientY);
+    const angle = Math.atan2(point.y - rotate.pivotY, point.x - rotate.pivotX);
+    const delta = Math.atan2(
+      Math.sin(angle - rotate.startAngle),
+      Math.cos(angle - rotate.startAngle),
+    );
+    const turns = Math.round(((delta * 180) / Math.PI) / 90);
+    if (turns !== 0) rotate.moved = true;
+    const target = ((((rotate.startRot + turns * 90) % 360) + 360) % 360) as Rot;
+    const current = layout.find((p) => p.partInstanceId === rotate.partInstanceId);
+    if (current !== undefined && current.rot !== target) {
+      onRotateLive?.(rotate.partInstanceId, target);
+    }
+  };
+
+  const handleRotateEnd = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    placement: Placement,
+  ) => {
+    const rotate = rotateDrag.current;
+    if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
+    if (!rotate.moved) onRotate?.(placement.partInstanceId);
+    suppressRotateClick.current = placement.partInstanceId;
+    rotateDrag.current = null;
+    flashRotate(placement.partInstanceId);
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer already released — nothing to release.
+    }
+  };
+
+  // A click that was not a spin (a press-without-move is finalised in handleRotateEnd, which
+  // hands the single turn off to onRotate): eat the trailing click so it cannot rotate twice.
+  const handleRotateClick = (event: ReactMouseEvent<HTMLButtonElement>, placement: Placement) => {
+    event.stopPropagation();
+    if (suppressRotateClick.current === placement.partInstanceId) {
+      suppressRotateClick.current = null;
+      return;
+    }
+    onRotate?.(placement.partInstanceId);
+    flashRotate(placement.partInstanceId);
   };
 
   const zoom = cellCount / view.span;
@@ -399,9 +672,16 @@ export function ShipYard({
   // yard the player is building on, whatever is installed right now.
   const areaFactor = labelAreaFactor(cells.length);
   const labelFont = (LABEL_FONT * areaFactor) / labelBoost;
+  // Which part shows its four border rotate buttons: the hovered one (or the selection / a part
+  // mid-spin), never while a drag ghost is in flight. Buttons are hidden outside this.
+  const iconSourceId = ghost !== null ? null : rotatingId ?? hoveredPartId ?? selectedId;
+  const iconPlacement =
+    iconSourceId === null
+      ? null
+      : layout.find((p) => p.partInstanceId === iconSourceId) ?? null;
 
   return (
-    <div className="stage hangar-scene">
+    <div className="stage hangar-scene" ref={sceneRef}>
       <div className="yard-tools" role="group" aria-label={t('hangar.zoom.label')}>
         <button
           type="button"
@@ -461,12 +741,18 @@ export function ShipYard({
             y={cell.gy}
             width={1}
             height={1}
+            onPointerEnter={() => {
+              // Empty ground: the rotate buttons follow the part the pointer is over, so clear
+              // them here rather than on the block's leave (the buttons sit on top of the block
+              // and would otherwise blink out as the pointer crosses the border between them).
+              setHoveredPartId(null);
+              onHoverPart?.(null);
+            }}
             onClick={() => {
               // A drag that panned the view is not a click on the cell it ended over.
               if (gesture.current.moved) return;
               onCellClick(cell.gx, cell.gy);
             }}
-            onPointerEnter={() => onCellHover(cell.gx, cell.gy)}
           />
         ))}
         {layout.map((placement) => {
@@ -476,11 +762,25 @@ export function ShipYard({
           const name = nameById.get(placement.partInstanceId) ?? catalog.partType;
           const lines = labelLines(name, width, height, zoom, areaFactor);
           const look = lookById?.get(placement.partInstanceId);
+          // The origin block of a live ghost drag: it stays dimmed in place while the ghost floats.
+          const isGhosting = ghost?.partInstanceId === placement.partInstanceId;
+          const isRotating = rotatingId === placement.partInstanceId;
           const lineHeight = labelFont * 1.15;
           // Nudged up so the condition bar along the bottom edge never sits on the text.
           const firstY = placement.gy + height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
+          const { gx, gy } = placement;
           return (
             <g key={placement.partInstanceId} className="yard-block">
+              {selectedId === placement.partInstanceId && !isGhosting && (
+                <rect
+                  className="block-halo"
+                  x={gx - 0.06}
+                  y={gy - 0.06}
+                  width={width + 0.12}
+                  height={height + 0.12}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
               <rect
                 data-part-id={placement.partInstanceId}
                 data-gx={placement.gx}
@@ -497,7 +797,8 @@ export function ShipYard({
                       : `cond-${conditionTone(look.condition)}`,
                   catalog.partClass === 'BRIDGE' ? 'bridge' : '',
                   selectedId === placement.partInstanceId ? 'selected' : '',
-                  draggingId === placement.partInstanceId ? 'floating' : '',
+                  isGhosting ? 'ghosting' : '',
+                  isRotating ? 'rotating' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -506,10 +807,13 @@ export function ShipYard({
                 width={width - 0.08}
                 height={height - 0.08}
                 style={
-                  draggingId === placement.partInstanceId ? { pointerEvents: 'none' } : undefined
+                  isGhosting ? { pointerEvents: 'none' } : undefined
                 }
                 onPointerDown={(event) => handleBlockDown(event, placement)}
-                onPointerEnter={() => onHoverPart?.(placement.partInstanceId)}
+                onPointerEnter={() => {
+                  setHoveredPartId(placement.partInstanceId);
+                  onHoverPart?.(placement.partInstanceId);
+                }}
                 onPointerLeave={() => onHoverPart?.(null)}
               />
               <title>
@@ -597,7 +901,108 @@ export function ShipYard({
             </g>
           );
         })}
+        {/* The dragged part as a free-floating ghost, rendered last so it rides above every block.
+            It carries the part's own content (name + ports) so you drag what you see, and reads
+            green when the nearest cell would accept it, red when releasing would revert it. */}
+        {ghost !== null &&
+          (() => {
+            const origin = layout.find((p) => p.partInstanceId === ghost.partInstanceId);
+            const dx = origin === undefined ? 0 : ghost.x - origin.gx;
+            const dy = origin === undefined ? 0 : ghost.y - origin.gy;
+            const ghostName = nameById.get(ghost.partInstanceId) ?? '';
+            const lines = labelLines(ghostName, ghost.width, ghost.height, zoom, areaFactor);
+            const lineHeight = labelFont * 1.15;
+            const firstY =
+              ghost.y + ghost.height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
+            return (
+              <g className="yard-ghost" style={{ pointerEvents: 'none' }}>
+                <rect
+                  className={`ghost-cell ${ghost.valid ? 'ok' : 'bad'}`}
+                  x={ghost.targetGx}
+                  y={ghost.targetGy}
+                  width={ghost.width}
+                  height={ghost.height}
+                  rx={0.08}
+                />
+                <rect
+                  className={`ghost-body ${ghost.valid ? 'ok' : 'bad'}`}
+                  x={ghost.x + 0.04}
+                  y={ghost.y + 0.04}
+                  width={ghost.width - 0.08}
+                  height={ghost.height - 0.08}
+                  rx={0.06}
+                />
+                {portMarks
+                  .filter((mark) => mark.partInstanceId === ghost.partInstanceId)
+                  .map((mark) => (
+                    <PortGlyph
+                      key={`g-${mark.x},${mark.y},${mark.side}`}
+                      x={mark.x + dx}
+                      y={mark.y + dy}
+                      side={mark.side}
+                      kind={mark.kind}
+                      state={mark.state}
+                    />
+                  ))}
+                <text
+                  className="block-label ghost-label"
+                  x={ghost.x + ghost.width / 2}
+                  style={{ fontSize: `${labelFont}px` }}
+                >
+                  {lines.map((line, index) => (
+                    <tspan
+                      key={line + String(index)}
+                      x={ghost.x + ghost.width / 2}
+                      y={firstY + index * lineHeight + labelFont * 0.35}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })()}
       </svg>
+      {/* A single small rotate button pinned to the part's top-right corner, drawn as real HTML
+          so it keeps a fixed on-screen size at any zoom (owner: one little arrow icon, not a big
+          circle). Click it for one left→right quarter turn; press and drag to spin freely. */}
+      {editable &&
+        iconPlacement !== null &&
+        (() => {
+          const iconCatalog = catalogById.get(iconPlacement.partInstanceId);
+          if (iconCatalog === undefined) return null;
+          const { width } = footprint(iconCatalog, iconPlacement.rot);
+          const scale =
+            box.width > 0 && box.height > 0 ? Math.min(box.width, box.height) / view.span : 0;
+          const offX = (box.width - view.span * scale) / 2;
+          const offY = (box.height - view.span * scale) / 2;
+          const left0 = view.cx - view.span / 2;
+          const top0 = view.cy - view.span / 2;
+          const sx = (x: number) => box.left + offX + (x - left0) * scale;
+          const sy = (y: number) => box.top + offY + (y - top0) * scale;
+          const spinning = rotatingId === iconPlacement.partInstanceId;
+          return (
+            <div className="yard-rotate-icons">
+              <button
+                type="button"
+                className={`yard-rotate-icon${spinning ? ' rotating' : ''}`}
+                data-part-id={iconPlacement.partInstanceId}
+                aria-label={t('hangar.actions.rotate')}
+                title={t('hangar.actions.rotate')}
+                style={{
+                  left: `${sx(iconPlacement.gx + width)}px`,
+                  top: `${sy(iconPlacement.gy)}px`,
+                }}
+                onPointerDown={(event) => handleRotateDown(event, iconPlacement)}
+                onPointerMove={(event) => handleRotateMove(event, iconPlacement)}
+                onPointerUp={(event) => handleRotateEnd(event, iconPlacement)}
+                onClick={(event) => handleRotateClick(event, iconPlacement)}
+              >
+                <RotateIcon />
+              </button>
+            </div>
+          );
+        })()}
     </div>
   );
 }

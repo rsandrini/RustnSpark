@@ -693,6 +693,230 @@ describe('hangar (S10.4)', () => {
     expect(dims[3]![1]).toBeCloseTo(height, 3);
   });
 
+  it('hovering a block shows one corner rotate button; clicking it turns the part in place', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const beforeWidth = Number(cargo.getAttribute('width'));
+    const beforeHeight = Number(cargo.getAttribute('height'));
+
+    // No rotate button until the part is hovered or selected.
+    expect(container.querySelectorAll('button.yard-rotate-icon')).toHaveLength(0);
+
+    // Hover (not press) reveals the button; hovering alone does not select the part.
+    fireEvent.pointerEnter(cargo);
+    expect(container.querySelector('rect.block-halo')).toBeNull();
+    const icons = container.querySelectorAll(
+      'button.yard-rotate-icon[data-part-id="part-cargo-a"]',
+    );
+    expect(icons).toHaveLength(1);
+
+    fireEvent.click(icons[0] as Element);
+
+    const rotated = block(container, 'part-cargo-a');
+    // 2×1 cargo turns to a 1×2 footprint, in place.
+    expect(Number(rotated?.getAttribute('width'))).toBeCloseTo(beforeHeight, 3);
+    expect(Number(rotated?.getAttribute('height'))).toBeCloseTo(beforeWidth, 3);
+    // Turning selects the part, which shows the selection halo behind the block.
+    expect(container.querySelector('rect.block-halo')).not.toBeNull();
+  });
+
+  it('freezes the layout while the ship is out on a mission: no rotate button, no drag', async () => {
+    server.use(
+      onboarded(),
+      http.get('/v1/ships', () =>
+        HttpResponse.json([
+          {
+            id: 'ship-1',
+            ownerPlayerId: 'player-1',
+            name: 'luna starter',
+            fuel: 40,
+            status: 'ON_MISSION',
+            currentLocationId: 'ceres',
+            stance: 'NEUTRAL',
+            layout: [{ partInstanceId: 'part-cargo-a', gx: 2, gy: 2, rot: 0 }],
+            sheet: testSheet,
+            shipClass: 'MULTIROLE',
+            yard: { cells: classicSquareCells() },
+            activity: { kind: 'idle', until: null, missionId: null },
+          },
+        ]),
+      ),
+    );
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+
+    // Hovering shows no rotate button while the ship is flying.
+    fireEvent.pointerEnter(cargo);
+    expect(container.querySelector('button.yard-rotate-icon')).toBeNull();
+
+    // Dragging from the part's middle floats no ghost either.
+    const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    const toClient = (px: number, py: number) => ({
+      clientX: (px - vb[0]!) / vb[2]!,
+      clientY: (py - vb[1]!) / vb[2]!,
+    });
+    fireEvent.pointerDown(cargo, toClient(2.5, 2.5));
+    fireEvent.pointerMove(svg, toClient(6, 4));
+    expect(container.querySelector('g.yard-ghost')).toBeNull();
+  });
+
+  it('pressing the corner rotate button and dragging spins the part to the dragged orientation', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const beforeWidth = Number(cargo.getAttribute('width'));
+    const beforeHeight = Number(cargo.getAttribute('height'));
+
+    fireEvent.pointerEnter(cargo);
+    const handle = container.querySelector(
+      'button.yard-rotate-icon[data-part-id="part-cargo-a"]',
+    ) as Element;
+    expect(handle).not.toBeNull();
+
+    const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    const zx = vb[0]!;
+    const zy = vb[1]!;
+    const span = vb[2]!;
+    // The button sits at cargo-a's top-right corner (2×1 at (2,2)): pivot (3, 2.5), button (4, 2).
+    // Drag the pointer clockwise from the corner down to the right: a +90° spin.
+    const toClient = (px: number, py: number) => ({
+      clientX: (px - zx) / span,
+      clientY: (py - zy) / span,
+    });
+    fireEvent.pointerDown(handle, toClient(4, 2));
+    fireEvent.pointerMove(handle, toClient(3.5, 3.5));
+    fireEvent.pointerUp(handle, toClient(3.5, 3.5));
+
+    const rotated = block(container, 'part-cargo-a');
+    expect(Number(rotated?.getAttribute('width'))).toBeCloseTo(beforeHeight, 3);
+    expect(Number(rotated?.getAttribute('height'))).toBeCloseTo(beforeWidth, 3);
+  });
+
+  it('dragging a block floats a ghost above the board and drops it on an empty cell', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+
+    const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    const zx = vb[0]!;
+    const zy = vb[1]!;
+    const span = vb[2]!;
+    const toClient = (px: number, py: number) => ({
+      clientX: (px - zx) / span,
+      clientY: (py - zy) / span,
+    });
+
+    // Press the MIDDLE of cargo-a (2×1 at (2,2)) — the drag affordance — then float it to (5,4).
+    fireEvent.pointerDown(cargo, toClient(3, 2.5));
+    fireEvent.pointerMove(svg, toClient(6, 4.5));
+
+    const ghost = container.querySelector('g.yard-ghost');
+    expect(ghost).not.toBeNull();
+    expect(ghost?.querySelector('.ghost-body.ok')).not.toBeNull();
+    // The carried content rides along: the part's own name is drawn on the ghost.
+    expect(ghost?.querySelector('.ghost-label')?.textContent ?? '').not.toBe('');
+
+    fireEvent.pointerUp(svg, toClient(6, 4.5));
+
+    const dropped = block(container, 'part-cargo-a');
+    expect(dropped?.getAttribute('data-gx')).toBe('5');
+    expect(dropped?.getAttribute('data-gy')).toBe('4');
+    expect(container.querySelector('g.yard-ghost')).toBeNull();
+  });
+
+  it('an invalid ghost drop reverts the part to where it started', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+
+    const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    const toClient = (px: number, py: number) => ({
+      clientX: (px - vb[0]!) / vb[2]!,
+      clientY: (py - vb[1]!) / vb[2]!,
+    });
+
+    // Float cargo-a from its middle straight onto the bridge at (0,0): it cannot fit, so the
+    // ghost reads bad and releasing leaves the part where it began.
+    fireEvent.pointerDown(cargo, toClient(3, 2.5));
+    fireEvent.pointerMove(svg, toClient(1, 0.5));
+    expect(container.querySelector('.ghost-body.bad')).not.toBeNull();
+
+    fireEvent.pointerUp(svg, toClient(1, 0.5));
+
+    const reverted = block(container, 'part-cargo-a');
+    expect(reverted?.getAttribute('data-gx')).toBe('2');
+    expect(reverted?.getAttribute('data-gy')).toBe('2');
+  });
+
+  it('rotate buttons turn the part but never start a drag (middle = drag, border = rotate)', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    const beforeWidth = Number(cargo.getAttribute('width'));
+    const beforeHeight = Number(cargo.getAttribute('height'));
+
+    const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    const toClient = (px: number, py: number) => ({
+      clientX: (px - vb[0]!) / vb[2]!,
+      clientY: (py - vb[1]!) / vb[2]!,
+    });
+
+    fireEvent.pointerEnter(cargo);
+    const icon = container.querySelector(
+      'button.yard-rotate-icon[data-part-id="part-cargo-a"]',
+    ) as Element;
+
+    // Pressing and dragging from the rotate button must NOT start a ghost drag.
+    fireEvent.pointerDown(icon, toClient(4, 2));
+    fireEvent.pointerMove(icon, toClient(5, 4));
+    expect(container.querySelector('g.yard-ghost')).toBeNull();
+    fireEvent.pointerUp(icon, toClient(5, 4));
+
+    // A plain click on the rotate button turns the part in place.
+    fireEvent.click(container.querySelector(
+      'button.yard-rotate-icon[data-part-id="part-cargo-a"]',
+    ) as Element);
+    const rotated = block(container, 'part-cargo-a');
+    expect(Number(rotated?.getAttribute('width'))).toBeCloseTo(beforeHeight, 3);
+    expect(Number(rotated?.getAttribute('height'))).toBeCloseTo(beforeWidth, 3);
+  });
+
   it('saves the edited layout through assemble', async () => {
     server.use(onboarded());
     const assembled: Array<{ layout: Placement[] }> = [];

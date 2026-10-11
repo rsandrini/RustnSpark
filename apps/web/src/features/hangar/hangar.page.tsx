@@ -429,17 +429,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     }
   };
 
-  const handleCellHover = (gx: number, gy: number) => {
-    if (draggingId !== null) placePart(draggingId, gx, gy);
-  };
-
   // Rotate turns the part IN PLACE (clockwise quarter turn, same top-left cell) — its ports turn
   // with it, so even a 1×1 part changes which sides face which neighbours. It never moves the
   // part: if the turned footprint would overlap a neighbour or leave the format, say so.
-  const rotateSelected = () => {
-    if (selectedId === null || modifyBlocked) return;
-    const existing = effectiveLayout.find((placement) => placement.partInstanceId === selectedId);
-    if (existing === undefined || catalogById.get(selectedId) === undefined) return;
+  const rotatePart = (partInstanceId: string) => {
+    if (modifyBlocked) return;
+    const existing = effectiveLayout.find((placement) => placement.partInstanceId === partInstanceId);
+    if (existing === undefined || catalogById.get(partInstanceId) === undefined) return;
     // A quarter turn first; if a long part has no room to swing sideways here, turn it twice
     // instead (a half turn keeps its footprint, so it always fits where it already sits).
     const quarter = nextRot(existing.rot);
@@ -448,7 +444,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       placementIssue(
         effectiveLayout,
         catalogById,
-        selectedId,
+        partInstanceId,
         existing.gx,
         existing.gy,
         rot,
@@ -460,9 +456,51 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       return;
     }
     setRotateHint(turned === quarter ? null : t('hangar.rotate.twice'));
+    setSelectedId(partInstanceId);
     setLayout(
       effectiveLayout.map((placement) =>
-        placement.partInstanceId === selectedId ? { ...placement, rot: turned } : placement,
+        placement.partInstanceId === partInstanceId ? { ...placement, rot: turned } : placement,
+      ),
+    );
+    setSaved(false);
+  };
+
+  const rotateSelected = () => {
+    if (selectedId === null) return;
+    rotatePart(selectedId);
+  };
+
+  // Live spin from the yard's rotate badge: the part keeps its anchor cell and only turns (to an
+  // orientation that still fits) while the pointer drags around it. onRotate/onRotateLive share
+  // the same in-place behaviour — the badge's click-without-drag path hands off to rotatePart.
+  const rotatePartLive = (partInstanceId: string, rot: Rot) => {
+    if (modifyBlocked) return;
+    const existing = effectiveLayout.find(
+      (placement) => placement.partInstanceId === partInstanceId,
+    );
+    if (existing === undefined) return;
+    const target = (((rot % 360) + 360) % 360) as Rot;
+    if (target === existing.rot) return;
+    if (
+      placementIssue(
+        effectiveLayout,
+        catalogById,
+        partInstanceId,
+        existing.gx,
+        existing.gy,
+        target,
+        yardCellSet,
+      ) !== null
+    ) {
+      return;
+    }
+    setRotateHint(null);
+    setSelectedId(partInstanceId);
+    setLayout(
+      effectiveLayout.map((placement) =>
+        placement.partInstanceId === partInstanceId
+          ? { ...placement, rot: target }
+          : placement,
       ),
     );
     setSaved(false);
@@ -678,10 +716,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   setPendingPartId(null);
                 }}
                 onCellClick={handleCellClick}
-                onCellHover={handleCellHover}
+                onDropPart={(id, gx, gy) => placePart(id, gx, gy)}
                 onDragStart={setDraggingId}
                 onDragEnd={() => setDraggingId(null)}
                 onHoverPart={setHoveredId}
+                onRotate={rotatePart}
+                onRotateLive={rotatePartLive}
+                editable={!modifyBlocked}
               />
               {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —
               the full popup now opens only from the (i) button on a tray/store row). */}
@@ -690,7 +731,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   <PartStatsCard part={hoveredPart} />
                 </div>
               )}
-              <div className="stack" style={{ marginTop: 10 }}>
+              <div className="hangar-actions">
                 <button
                   type="button"
                   className="btn"
@@ -707,7 +748,64 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 >
                   {t('hangar.actions.remove')}
                 </button>
+                <span className="hangar-actions-sep" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={!dirty || save.isPending || modifyBlocked}
+                  onClick={() => {
+                    setSaved(false);
+                    setSaveError(null);
+                    save.mutate();
+                  }}
+                >
+                  {save.isPending ? t('hangar.state.saving') : t('hangar.actions.save')}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={auto.isPending || modifyBlocked}
+                  onClick={() => {
+                    setSaved(false);
+                    setSaveError(null);
+                    auto.mutate();
+                  }}
+                >
+                  {t('hangar.actions.auto')}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
+                  onClick={() => setClearOpen(true)}
+                >
+                  {t('hangar.actions.clear')}
+                </button>
+                <span className="hangar-actions-sep" aria-hidden="true" />
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setFormatPickerOpen((v) => !v)}
+                >
+                  {t('hangar.format.button')}
+                </button>
               </div>
+              {formatPickerOpen && (
+                <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
+                  {(formatsQuery.data ?? []).map((format) => (
+                    <li key={format.id}>
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={setFormat.isPending}
+                        onClick={() => setFormatPreview(format)}
+                      >
+                        {pickLocalized(format.displayName, i18n.language)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {rotateHint !== null && (
                 <p className="sub" role="status" data-testid="rotate-hint">
                   {rotateHint}
@@ -734,40 +832,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               )}
               {saved && <p className="muted">{t('hangar.state.saved')}</p>}
 
-              <div className="stack" style={{ marginTop: 10 }}>
-                <button
-                  type="button"
-                  className="btn primary block"
-                  disabled={!dirty || save.isPending || modifyBlocked}
-                  onClick={() => {
-                    setSaved(false);
-                    setSaveError(null);
-                    save.mutate();
-                  }}
-                >
-                  {save.isPending ? t('hangar.state.saving') : t('hangar.actions.save')}
-                </button>
-                <button
-                  type="button"
-                  className="btn block"
-                  disabled={auto.isPending || modifyBlocked}
-                  onClick={() => {
-                    setSaved(false);
-                    setSaveError(null);
-                    auto.mutate();
-                  }}
-                >
-                  {t('hangar.actions.auto')}
-                </button>
-                <button
-                  type="button"
-                  className="btn block"
-                  disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
-                  onClick={() => setClearOpen(true)}
-                >
-                  {t('hangar.actions.clear')}
-                </button>
-              </div>
               <Popup
                 open={clearOpen}
                 title={t('hangar.clear.title')}
@@ -790,31 +854,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               >
                 <p>{t('hangar.clear.body', { count: effectiveLayout.length })}</p>
               </Popup>
-              <div className="format-picker">
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setFormatPickerOpen((v) => !v)}
-                >
-                  {t('hangar.format.button')}
-                </button>
-                {formatPickerOpen && (
-                  <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
-                    {(formatsQuery.data ?? []).map((format) => (
-                      <li key={format.id}>
-                        <button
-                          type="button"
-                          className="btn"
-                          disabled={setFormat.isPending}
-                          onClick={() => setFormatPreview(format)}
-                        >
-                          {pickLocalized(format.displayName, i18n.language)}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
               <Popup
                 open={formatPreview !== null}
                 title={

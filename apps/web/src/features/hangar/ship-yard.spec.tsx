@@ -60,7 +60,6 @@ describe('ShipYard port marks', () => {
     draggingId: null,
     onSelect: () => undefined,
     onCellClick: () => undefined,
-    onCellHover: () => undefined,
     onDragStart: () => undefined,
     onDragEnd: () => undefined,
   };
@@ -111,7 +110,6 @@ describe('ShipYard facing arrow', () => {
     draggingId: null,
     onSelect: () => undefined,
     onCellClick: () => undefined,
-    onCellHover: () => undefined,
     onDragStart: () => undefined,
     onDragEnd: () => undefined,
   };
