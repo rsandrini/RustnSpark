@@ -8,6 +8,20 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **BUG: scavenging dispatches a mission "on ship" without a ship.** The scavenge start does not
+  validate that there is a ship to send, and the mission is dispatched anyway. *Likely cause (to
+  confirm):* `ScavengeJobService.start` only checks that a `Ship` row exists at the location and
+  is idle (`SHIP_NOT_AT_LOCATION`, `SHIP_ON_MISSION`, `SHIP_NOT_IN_PORT`); it has no viability
+  gate on purpose ("scavenging is manual work"), so a ship with **no installed parts** (an emptied
+  ship, or a ship that lost its parts) still passes and is sent as a "ship" job with an empty
+  sheet. Expected: the "with the ship" mode needs a ship with at least a bridge (and parts); with
+  no usable ship the only option should be **on foot**, with a clear message in the Scavenging tab.
+  Check the web side too (the "with the ship" card should be disabled and explain why).
+  *Where:* `apps/api/src/missions/scavenge-job.service.ts` (`start`), the dispatch it calls
+  (`dispatch.service.ts`, the `handicapped` rule for SCAVENGE), and the Scavenging tab in
+  `apps/web/src/features/port/port.page.tsx`. Add a regression test with a ship that has no
+  installed parts.
+
 - [ ] **Destroyed bridge = destroyed ship.** If the bridge is destroyed, the ship is destroyed and
   every part is lost. The pilot then restarts with a **new starter pack** but **keeps the current
   money**. *Needs design:* what destroys a bridge (condition reaching the dead threshold, in a
