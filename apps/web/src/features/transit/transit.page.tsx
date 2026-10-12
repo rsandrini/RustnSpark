@@ -333,7 +333,9 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                 ? { side: tripMap }
                 : {})}
               actions={mission.status === 'ACCEPTED' ? acceptedActions : null}
-              {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+              {...(ship !== undefined
+                ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap, fuelUse: ship.sheet.fuelUse }
+                : {})}
               {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
               {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
             />

@@ -218,7 +218,9 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                 {t('board.goToShip')}
               </button>
             }
-            {...(ship !== undefined ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap } : {})}
+            {...(ship !== undefined
+              ? { fuelHave: ship.fuel, fuelCap: ship.sheet.fuelCap, fuelUse: ship.sheet.fuelUse }
+              : {})}
             {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
             {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
           />
@@ -251,6 +253,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               )}
               fuelHave={ship?.fuel}
               fuelCap={ship?.sheet.fuelCap}
+              fuelUse={ship?.sheet.fuelUse}
               world={worldQuery.data}
               mine={mine}
               actions={

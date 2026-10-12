@@ -28,6 +28,8 @@ export interface MissionCardProps {
   fuelHave?: number;
   /** Tank size, to draw the fuel-aboard bar the trip's cost is carved out of. */
   fuelCap?: number;
+  /** The sheet's fuel burn: 0 = pure ion, no fuel at all — the fuel row is then left out. */
+  fuelUse?: number;
   mine: boolean;
   actions: ReactNode;
   /** The sector map, for the route drawing (the card reads it itself when not given). */
@@ -61,6 +63,7 @@ export function MissionCard({
   destination,
   fuelHave,
   fuelCap,
+  fuelUse,
   mine,
   actions,
   world,
@@ -98,6 +101,9 @@ export function MissionCard({
   );
   const notEnoughFuel =
     info.estimate !== null && fuelHave !== undefined && info.estimate.fuelNeeded > fuelHave;
+  // A pure-ion ship (no chemical engine) burns no fuel at all: the fuel row, its bar and the
+  // "not enough" note would all say nothing. Unknown sheet (fuelUse not passed) keeps the row.
+  const burnsFuel = fuelUse === undefined || fuelUse > 0;
 
   return (
     <article
@@ -207,7 +213,7 @@ export function MissionCard({
         {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
           text has no room in a narrow 1/4-width grid cell) and placed after what the mission
           needs, as its own full-width row. */}
-        {info.estimate !== null && (
+        {info.estimate !== null && burnsFuel && (
           <div className={`mcard-fuel${notEnoughFuel ? ' bad' : ''}`}>
             <span className="k">{t('board.facts.fuel')}</span>
             {fuelHave !== undefined && fuelCap !== undefined && fuelCap > 0 ? (
@@ -234,7 +240,7 @@ export function MissionCard({
             )}
           </div>
         )}
-        {notEnoughFuel && info.estimate !== null && (
+        {burnsFuel && notEnoughFuel && info.estimate !== null && (
           <p className="error-text">
             {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap
               ? t('board.lowFuelCapacity', {

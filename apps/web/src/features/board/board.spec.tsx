@@ -264,6 +264,37 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText(/your tanks hold only 3/).length).toBeGreaterThan(0);
   });
 
+  it('a pure-ion ship (no fuel burn) gets no fuel row at all on the cards', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'luna starter',
+              fuel: 0,
+              status: 'IN_PORT',
+              currentLocationId: 'ceres',
+              stance: 'NEUTRAL',
+              layout: [],
+              sheet: { fuelCap: 0, fuelUse: 0 },
+              shipClass: 'MULTIROLE',
+              yard: { cells: classicSquareCells() },
+              activity: { kind: 'idle', until: null, missionId: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    expect(document.querySelectorAll('.mcard-fuel')).toHaveLength(0);
+    expect(screen.queryAllByRole('progressbar', { name: 'Fuel needed' })).toHaveLength(0);
+    expect(screen.queryAllByText(/uses \d/)).toHaveLength(0);
+  });
+
   it('shows the mission already taken at the top of the board, with all its details', async () => {
     const iso = (offset: number) => new Date(Date.now() + offset).toISOString();
     server.use(
