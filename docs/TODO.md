@@ -56,28 +56,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   (the on-foot card must stay enabled). Add tests: on foot with a pending repair, with an empty
   ship, and with a ship that is not viable.
 
-- [ ] **BUG: the mission progress bar only updates when I click something.** The trip progress (the
-  bar on the transit / My Ship mission card, and the ship's position on the map) does not advance
-  by itself; it moves only after an interaction. It should tick on its own, for example from a
-  timer that recomputes the progress from the departure and arrival times (the countdowns already
-  use `Countdown`), and refetch when the arrival time passes. *Where:*
-  `apps/web/src/features/transit/transit.page.tsx` (`progress` is computed on render, with nothing
-  to re-render it), `apps/web/src/ui/RouteMap.tsx`, the active-mission query's refetch interval.
-
-- [ ] **A new pilot's fuel tank starts empty; it should start full.** The initial tank must have
-  fuel. *Where:* onboarding / the starter kit (`apps/api/src/players/onboarding.service.ts`, the ship's
-  `fuel` field, `STARTER_PARTS` in `apps/api/prisma/seed-data/starter-kit.ts`) and the reset-player
-  CLI. Note the earlier planned "tank full" in the starter-kit design; check what the ship's fuel is
-  set to when the starter kit is assembled (the tank only counts once it is installed and
-  connected), and that a rescue / restart kit does the same.
-
-- [ ] **The first mission should be short and quick.** The private start-safe mission a new pilot
-  gets (D43) should be a short trip: a nearby destination and a low trip time, so the first
-  result comes fast. *Where:* `apps/api/src/missions/board.service.ts` (the starter offer) and the
-  filler's starter constraint (`STARTER_NEAREST_DESTINATIONS = 3` and `starter.maxZone` in
-  `apps/api/src/missions/generator/template.filler.ts`): pick the nearest destination, not one of
-  the nearest three, and cap the distance / duration with a config value.
-
 - [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
   difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
   reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
@@ -141,20 +119,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `apps/web/src/features/port/port.page.tsx`, the part-class labels (`hangar.partClasses` in the
   i18n files). A display-only grouping is the safe first step.
 
-- [ ] **BUG: scavenging dispatches a mission "on ship" without a ship.** The scavenge start does not
-  validate that there is a ship to send, and the mission is dispatched anyway. *Likely cause (to
-  confirm):* `ScavengeJobService.start` only checks that a `Ship` row exists at the location and
-  is idle (`SHIP_NOT_AT_LOCATION`, `SHIP_ON_MISSION`, `SHIP_NOT_IN_PORT`); it has no viability
-  gate on purpose ("scavenging is manual work"), so a ship with **no installed parts** (an emptied
-  ship, or a ship that lost its parts) still passes and is sent as a "ship" job with an empty
-  sheet. Expected: the "with the ship" mode needs a ship with at least a bridge (and parts); with
-  no usable ship the only option should be **on foot**, with a clear message in the Scavenging tab.
-  Check the web side too (the "with the ship" card should be disabled and explain why).
-  *Where:* `apps/api/src/missions/scavenge-job.service.ts` (`start`), the dispatch it calls
-  (`dispatch.service.ts`, the `handicapped` rule for SCAVENGE), and the Scavenging tab in
-  `apps/web/src/features/port/port.page.tsx`. Add a regression test with a ship that has no
-  installed parts.
-
 - [ ] **Destroyed bridge = destroyed ship.** If the bridge is destroyed, the ship is destroyed and
   every part is lost. The pilot then restarts with a **new starter pack** but **keeps the current
   money**. *Needs design:* what destroys a bridge (condition reaching the dead threshold, in a
@@ -168,13 +132,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   (`apps/api/src/players/onboarding.service.ts`, `STARTER_PARTS` in `prisma/seed-data/starter-kit.ts`);
   the reset-player CLI (`apps/api/src/admin/cli/reset-player.cli.ts`) is a similar "fresh run" flow
   that keeps faction and history.
-
-- [ ] **Hide fuel when the ship has no fuel use.** Fuel indicators in quests (the requirement
-  checklist and the "fuel needed" bar on the mission card) and on the mission board must be hidden
-  when the ship is 100% ion thrust (no chemical engine, so no fuel).
-  *Where:* `apps/web/src/features/board/mission-card.tsx` (fuel bar, `fuelHave`/`fuelCap`),
-  the board and transit pages that pass them; the ship sheet's `fuelUse` / `fuelCap` say whether
-  the ship burns fuel at all.
 
 - [ ] **Bridges 2×2 and 4×4 with more structure.** An epic 1×1 bridge is still a small ship; larger
   bridges are needed so bigger ships can exist. *Needs design:* sizes per rarity, structure budgets
@@ -200,14 +157,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   materials screen instead of its own place. *Where:* the craft cores UI (`.craft-core` in
   `apps/web/src/styles/index.css`, the port page / materials page that renders it).
 
-- [ ] **Rework "discard damaged".** Discarding parts at 15% or less is strange. Change it to
-  "discard 1% or less" (parts that are basically dead), say on the screen that they will be turned
-  into scrap, and add an option to **auto-sell the scrap** (when it is worth something).
-  *Where:* `PartsService.discardDamaged` and `economy.sell_min_condition` (15 today) in
-  `apps/api/src/parts/parts.service.ts` and the config; the discard button and text in the port
-  page; scrap is `scrap_<partType>` materials, sold at their fixed price. Note the discard already
-  gives scrap back (`economy.discard_scrap_per_part`).
-
 - [ ] **Mining animation.** The mining job and its screen need an animation (like the ship scene
   for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
   the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
@@ -225,3 +174,34 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 - 2026-10-12 — A part not connected to the bridge, or with an incorrect port, keeps the ship on the
   ground (blocking problem; saving the layout stays allowed). Upgrades keep the part's ports.
+
+- 2026-10-12 — Scavenging no longer dispatches a "with the ship" mission without a usable ship
+  (commit `9e00119`). The start now requires full flight viability (the same gate dispatch uses
+  for SCAVENGE); a ship that cannot fly is refused with `SHIP_NOT_VIABLE` and its problems, and
+  on-foot keeps no ship-quality restrictions. The web disables the "With the ship" card, falls
+  back to on foot, and shows a `scavenge-no-ship` notice.
+
+- 2026-10-12 — A new pilot's fuel tank already starts full (fixed earlier by `264e811`; verified
+  live through onboarding + auto-assemble, fuel 300/300). The rescue/ration path keeps its
+  deliberate `economy.rescue_fuel_fraction`.
+
+- 2026-10-12 — Fuel indicators are hidden for a pure-ion ship (commit `0b92d6f`). `MissionCard`
+  takes an optional `fuelUse` prop; when it is 0 the fuel row, gauge and low-fuel note are
+  dropped, and the board/transit pages pass it from the ship sheet.
+
+- 2026-10-12 — The first mission is short and quick (commit `64345e2`). A new tunable,
+  `missions.starter_max_distance` (default 600, 0 = off), caps the starter trip and the filler
+  now picks the **nearest** safe destination deterministically (falling back to the nearest when
+  the cap excludes everything).
+
+- 2026-10-12 — The trip progress bar and the ship on the map tick on their own (commit `6eeec45`).
+  `TransitPage` drives progress from the existing `useNow` ticker while a flight is under way and
+  the arrival `Countdown`s refetch the active mission on zero; a regression test advances fake
+  timers with no interaction and asserts `aria-valuenow` climbs.
+
+- 2026-10-12 — "Rework discard damaged" (commits `6c3dd6d`, `479a3e1`). `economy.sell_min_condition`
+  drops 15 → 1, so discard is for genuinely dead parts and ordinary used parts stay sellable.
+  `POST /v1/inventory/discard` takes `{ sellScrap }` (default false) and, when set, sells the
+  freshly-granted `scrap_<type>` back to the ship's port in the same transaction at its fixed
+  price (guarded like any material sale); the response gains `scrapSold`/`credits`. The port
+  dialog has a "Sell the scrap" checkbox, on by default.
