@@ -13,14 +13,19 @@ import {
   type MissionContext,
 } from '../actions/mission.js';
 import { refuel, refuelQuote } from '../actions/fuel.js';
-import { repair } from '../actions/repair.js';
+import { repair, repairQuote } from '../actions/repair.js';
 import { rescue, rescueQuote } from '../actions/rescue.js';
-import { travel } from '../actions/travel.js';
+import { travel, travelOffer } from '../actions/travel.js';
+import { canMine, mine, miningOffer } from '../actions/mining.js';
+import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../actions/scavenge.js';
+import { buyPart, fitPart, sellMaterial, sellPart } from '../actions/market.js';
+import { upgrade } from '../actions/upgrade.js';
 import { calendarDays, createClock, DEFAULT_BUDGET, type PlayTimeBudget } from '../core/clock.js';
 import { createRng } from '../core/rng.js';
 import {
   catalogIndex,
   installedParts,
+  shipLevel,
   shipValue,
   starterPlayer,
   type PlayerState,
@@ -28,13 +33,23 @@ import {
 import { boardAt, buildFillerWorld, createBoard, type Offer } from '../core/world.js';
 import type { CatalogRow, Snapshot } from '../snapshot/types.js';
 import {
-  cheapestReachablePort,
   canTravelTo,
+  cheapestReachablePort,
   decideDanger,
   decideFuel,
   decideRepair,
+  MINE_RATIO_MIN,
+  MAX_SHIP_LEVEL,
   missionFuelNeed,
+  PLAYTIME_CAP_SECONDS,
+  PROGRESS_STALL_MISSIONS,
+  atOrBelowTarget,
+  RATIO_WINDOW,
   repositionOffer,
+  SCAVENGE_RATIO_MIN,
+  sellList,
+  spendPlan,
+  type SpendAction,
 } from './policy.js';
 
 /** Consecutive board turns with nothing takeable before the run is declared stalled. */
@@ -98,9 +113,15 @@ export interface RunResult {
   readonly finalLevel: number;
   readonly stalled: boolean;
   readonly stallReason: string | null;
+  /** Why the run stopped: `missions` budget, `ship-level`, `playtime`, or a stall kind. */
+  readonly endReason: string;
   readonly startWallet: number;
   readonly finalWallet: number;
   readonly ledgerTotals: ReturnType<PlayerState['ledger']['totals']>;
+  /** Scavenge jobs flown (not missions — the report shows them separately). */
+  readonly scavengesDone: number;
+  /** Free mining jobs flown. */
+  readonly miningDone: number;
   readonly levels: LevelRecord[];
   readonly missions: MissionOutcomeRecord[];
   readonly log: string[];
@@ -133,7 +154,7 @@ function levelRecord(
   budget: PlayTimeBudget,
 ): LevelRecord {
   return {
-    level: bridgeLevelOf(state, catalogByType),
+    level: shipLevel(state.ship, catalogByType),
     t: state.clock.now(),
     day: calendarDays(state.clock.now(), budget),
     missions: state.missionsDone,
@@ -274,9 +295,129 @@ export function playRun(input: PlayRunInput): RunResult {
   let stallReason: string | null = null;
   let emptyRounds = 0;
   let rescuesTaken = 0;
+  // Phase 3: ratio windows over mission opportunities, the repair bills the reserve averages,
+  // and the wallet trail the progress-stall detector compares against.
+  const scavengeFlags: boolean[] = [];
+  const mineFlags: boolean[] = [];
+  const recentRepairBills: number[] = [];
+  const walletTrail: { mission: number; wallet: number }[] = [
+    { mission: 0, wallet: state.wallet },
+  ];
+  let lastLevel = levels[0]?.level ?? 1;
+  let levelChangeAt = 0;
+  let endReason = 'missions';
+
+  /** Execute the spending plan: fit, buy, upgrade, or hop to the cheaper port first. */
+  function executeSpend(action: SpendAction, nowMs: number): boolean {
+    switch (action.kind) {
+      case 'none':
+        return false;
+      case 'fit': {
+        const out = fitPart(
+          state,
+          ctx.rules,
+          catalogByType,
+          action.storageId,
+          action.replaceId ?? undefined,
+        );
+        if (out.ok) {
+          state.log.push(`fitted ${action.storageId} (${action.reason})`);
+        }
+        return false;
+      }
+      case 'buy': {
+        const out = buyPart(
+          state,
+          snapshot,
+          ctx.rules,
+          catalogByType,
+          action.partType,
+          action.locationId,
+        );
+        if (!out.ok || out.partId === undefined || out.price === undefined) return false;
+        const fit = fitPart(
+          state,
+          ctx.rules,
+          catalogByType,
+          out.partId,
+          action.replaceId ?? undefined,
+        );
+        state.log.push(
+          `bought ${action.partType} at ${action.locationId} for ${out.price} ` +
+            `(wallet ${state.wallet})${fit.ok ? '' : ' — kept in the hold'}`,
+        );
+        return false;
+      }
+      case 'upgrade': {
+        const out = upgrade(state, snapshot, ctx.rules, catalogByType, action.partId);
+        if (out.ok) {
+          state.log.push(`upgraded to ${out.partType} for ${out.cost} (wallet ${state.wallet})`);
+        }
+        return false;
+      }
+      case 'travel-to-buy': {
+        const target = action.locationId;
+        const hop = travelOffer({ snapshot, world, state, destinationId: target, nowMs });
+        if (hop === null || !canTakeMission(state, hop, ctx).ok) return false;
+        const need = missionFuelNeed(state, hop, { rules: ctx.rules, catalogByType });
+        const shortfall = need - state.ship.fuel;
+        if (shortfall > 0) {
+          const quote = refuelQuote(
+            state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
+          );
+          if (quote.cost <= state.wallet) {
+            refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
+          }
+        }
+        if (state.ship.fuel < need) return false;
+        const from = state.locationId;
+        const trip = travel(state, ctx, world, target, nowMs);
+        if (trip === null) return false;
+        state.missionsDone -= 1;
+        state.clock.advance(budget.humanPauseSeconds);
+        state.log.push(
+          `hopped ${from} -> ${target} to buy ${action.targetBase} (wallet ${state.wallet})`,
+        );
+        return true;
+      }
+      default:
+        return false;
+    }
+  }
+
+  /** A hull left ADRIFT by anything — mission, scavenge or dig — gets the real tow (rescue
+   *  charges the fee and tops the tank with the emergency ration; the ship keeps every part). */
+  function towIfAdrift(shipStatus: 'ON_MISSION' | 'ADRIFT', label: string): void {
+    if (shipStatus !== 'ADRIFT') return;
+    const tow = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
+    state.log.push(
+      `adrift after ${label} — towed for ${tow.cost} ` +
+        `(ration +${tow.rationAdded}, wallet ${state.wallet})`,
+    );
+  }
 
   while (state.missionsDone < missions) {
+    if (state.clock.now() >= PLAYTIME_CAP_SECONDS) {
+      endReason = 'playtime';
+      state.log.push('playtime cap reached (400h of game time)');
+      break;
+    }
     const nowMs = baseMs + state.clock.now() * 1000;
+
+    // Port economy before looking for work: sell what the target ship does not need, then
+    // spend what the reserve-adjusted plan allows (both re-run every turn, so the sell's cash
+    // is available to the buy that follows).
+    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds);
+    for (const partId of sells.partIds) {
+      sellPart(state, snapshot, ctx.rules, partId);
+    }
+    for (const material of sells.materials) {
+      sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
+    }
+    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    if (executeSpend(plan.action, nowMs)) continue;
+
     const picked = pickOffer(state, ctx, world, board, rng, nowMs);
     const { offer, offers } = picked;
 
@@ -298,6 +439,7 @@ export function playRun(input: PlayRunInput): RunResult {
         stalled = true;
         stallReason = `nothing takeable for ${emptyRounds} board turns @ ${state.locationId}` +
           `: ${diagnoseBoard(offers, state, ctx)}`;
+        endReason = 'board-stall';
         state.log.push(stallReason);
         break;
       }
@@ -356,14 +498,24 @@ export function playRun(input: PlayRunInput): RunResult {
         if (state.ship.fuel >= need) {
           const from = state.locationId;
           const trip = travel(state, ctx, world, hop.destinationId, nowMs);
-          state.missionsDone -= 1;
-          state.clock.advance(budget.humanPauseSeconds);
-          state.log.push(
-            `hopped ${from} -> ${trip?.destinationId ?? hop.destinationId} for work ` +
-              `(wallet ${state.wallet})`,
-          );
-          emptyRounds = 0;
-          continue;
+          if (trip === null) {
+            // The pilot cannot actually leave (power, requirements, viability): count the turn
+            // and say why — a fake success here would hop forever without moving and reset the
+            // stall detector every round.
+            const check = canTakeMission(state, hop, ctx);
+            state.log.push(
+              `cannot hop ${from} -> ${hop.destinationId}: ` +
+                `${check.reasons.join(',') || 'refused'}`,
+            );
+          } else {
+            state.missionsDone -= 1;
+            state.clock.advance(budget.humanPauseSeconds);
+            state.log.push(
+              `hopped ${from} -> ${trip.destinationId} for work (wallet ${state.wallet})`,
+            );
+            emptyRounds = 0;
+            continue;
+          }
         }
       }
       // A rescue is how a stranded pilot gets back to safety: a tow to the nearest base, at the
@@ -397,25 +549,45 @@ export function playRun(input: PlayRunInput): RunResult {
     emptyRounds = 0;
 
     // Before flying: decide whether to repair and where (the plan's "buy at the right port" rule).
+    // A bill the wallet cannot cover is deferred, not thrown: the pilot earns it next mission —
+    // unless the hull cannot fly at all, in which case the board stays empty and the stall says so.
     const repairDecision = decideRepair(state, snapshot, ctx.rules, catalogByType);
     if (repairDecision.shouldRepair) {
-      repair(state, snapshot, ctx.rules, catalogByType, state.locationId);
-      state.clock.advance(budget.humanPauseSeconds);
+      const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
+      if (quote.cost > state.wallet) {
+        state.log.push(
+          `repair deferred at ${state.locationId}: costs ${quote.cost}, wallet ${state.wallet}`,
+        );
+      } else {
+        const bill = repair(state, snapshot, ctx.rules, catalogByType, state.locationId);
+        if (bill.cost > 0) recentRepairBills.push(bill.cost);
+        state.clock.advance(budget.humanPauseSeconds);
+      }
     } else if (repairDecision.reason === 'travel-to-cheap-repair') {
       const target = cheapestReachablePort(state, snapshot, ctx.rules, catalogByType);
       if (target !== null && canTravelTo(state, ctx, world, target, nowMs)) {
-        travel(state, ctx, world, target, nowMs);
-        state.missionsDone -= 1;
-        state.clock.advance(budget.humanPauseSeconds);
-        repair(state, snapshot, ctx.rules, catalogByType, target);
-        continue;
+        const trip = travel(state, ctx, world, target, nowMs);
+        if (trip !== null) {
+          state.missionsDone -= 1;
+          state.clock.advance(budget.humanPauseSeconds);
+          const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, target);
+          if (quote.cost <= state.wallet) {
+            const bill = repair(state, snapshot, ctx.rules, catalogByType, target);
+            if (bill.cost > 0) recentRepairBills.push(bill.cost);
+          }
+          continue;
+        }
+        // The trip was refused: stay put and fly what the board here offers instead of
+        // pretending to be at the cheaper port.
       }
     }
 
-    // Before flying: decide whether to refuel, and how much (the plan's exact rule).
+    // Before flying: decide whether to refuel, and how much (the plan's exact rule). The offer
+    // was already taken as-is — its fuel fits the tank — so a top-up the wallet cannot pay for
+    // is skipped; only the mission's own fuel is mandatory, and pickOffer guaranteed that.
     const fuelDecision = decideFuel(state, snapshot, ctx.rules, catalogByType, offer);
     if (fuelDecision.shouldRefuel) {
-      refuel(
+      const quote = refuelQuote(
         state,
         snapshot,
         ctx.rules,
@@ -423,27 +595,108 @@ export function playRun(input: PlayRunInput): RunResult {
         state.locationId,
         fuelDecision.units,
       );
-      state.clock.advance(budget.humanPauseSeconds);
+      if (quote.cost > state.wallet) {
+        state.log.push(
+          `refuel skipped at ${state.locationId}: ${quote.units} units cost ${quote.cost}, ` +
+            `wallet ${state.wallet}`,
+        );
+      } else {
+        refuel(
+          state,
+          snapshot,
+          ctx.rules,
+          catalogByType,
+          state.locationId,
+          fuelDecision.units,
+        );
+        state.clock.advance(budget.humanPauseSeconds);
+      }
     }
 
-    const beforeLevel = bridgeLevelOf(state, catalogByType);
     const result = takeMission(state, offer, ctx);
     state.clock.advance(budget.humanPauseSeconds);
+    towIfAdrift(result.shipStatus, result.type);
+    records.push(recordOutcome(state, ctx, budget, result));
 
-    // Fuel ran out mid-route: the live game leaves the hull ADRIFT until a rescue tows it to a
-    // base — a debit that may go negative, plus the emergency ration (rescue.service.ts). Phase 1
-    // towed adrift ships for free; that restore is gone now that rescue has landed.
-    if (result.shipStatus === 'ADRIFT') {
-      const tow = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
-      state.log.push(
-        `adrift after ${result.type} — towed for ${tow.cost} ` +
-          `(ration +${tow.rationAdded}, wallet ${state.wallet})`,
-      );
+    // --- Opportunistic jobs between missions (Phase 3). ---
+    const afterMs = baseMs + state.clock.now() * 1000;
+    // Scavenge on at least 75% of missions when the cooldown and the danger rule allow it.
+    const scavengeJob = scavengeOffer({ snapshot, world, state, nowMs: afterMs });
+    if (
+      scavengeJob !== null &&
+      scavengeCooldownLeft(state, ctx.rules, afterMs) === 0 &&
+      canTakeMission(state, scavengeJob, ctx).ok &&
+      decideDanger(state, catalogByType, scavengeJob).accept
+    ) {
+      if (atOrBelowTarget(scavengeFlags, SCAVENGE_RATIO_MIN)) {
+        const job = scavenge(state, ctx, world, afterMs);
+        if (job.ok) {
+          scavengeFlags.push(true);
+          towIfAdrift(job.shipStatus, 'scavenge');
+          state.log.push(
+            `scavenged ${state.locationId}: +${job.partsFound} parts +${job.scrapFound} scrap ` +
+              `in ${job.durationSeconds}s (wallet ${state.wallet})`,
+          );
+        }
+      } else {
+        scavengeFlags.push(false);
+      }
+      if (scavengeFlags.length > RATIO_WINDOW) scavengeFlags.shift();
+    }
+    // Mine on at least 50% of missions where a rig and a minable place line up.
+    const mineGate = canMine(state, ctx, world);
+    const mineJob = mineGate.ok ? miningOffer({ snapshot, world, state, nowMs: afterMs }) : null;
+    if (
+      mineJob !== null &&
+      canTakeMission(state, mineJob, ctx).ok &&
+      decideDanger(state, catalogByType, mineJob).accept
+    ) {
+      if (atOrBelowTarget(mineFlags, MINE_RATIO_MIN)) {
+        const job = mine(state, ctx, world, afterMs);
+        if (job.ok) {
+          mineFlags.push(true);
+          towIfAdrift(job.shipStatus, 'mining');
+          state.log.push(
+            `mined ${state.locationId}: ${job.materialId} (${job.status}) ` +
+              `in ${job.durationSeconds}s (wallet ${state.wallet})`,
+          );
+        }
+      } else {
+        mineFlags.push(false);
+      }
+      if (mineFlags.length > RATIO_WINDOW) mineFlags.shift();
     }
 
-    records.push(recordOutcome(state, ctx, budget, result));
-    if (bridgeLevelOf(state, catalogByType) > beforeLevel) {
+    // The run's level is the lowest rarity on the hull; record each step up after the phases
+    // (a free fit can raise it too), then watch the two exhaustion ends: no progress for
+    // `PROGRESS_STALL_MISSIONS` missions with a flat wallet, or the top of the ladder.
+    const levelNow = shipLevel(state.ship, catalogByType);
+    if (levelNow > lastLevel) {
+      lastLevel = levelNow;
       levels.push(levelRecord(state, catalogByType, budget));
+      levelChangeAt = state.missionsDone;
+    }
+    walletTrail.push({ mission: state.missionsDone, wallet: state.wallet });
+    const windowStart = walletTrail.find(
+      (entry) => entry.mission <= state.missionsDone - PROGRESS_STALL_MISSIONS,
+    );
+    if (
+      state.missionsDone - levelChangeAt >= PROGRESS_STALL_MISSIONS &&
+      windowStart !== undefined &&
+      state.wallet <= windowStart.wallet
+    ) {
+      stalled = true;
+      stallReason =
+        `no level change and no wallet growth across ${PROGRESS_STALL_MISSIONS} missions ` +
+        `@ ${state.locationId}`;
+      endReason = 'progress-stall';
+      state.log.push(stallReason);
+      break;
+    }
+    if (lastLevel >= MAX_SHIP_LEVEL) {
+      endReason = 'ship-level';
+      state.log.push('target ship reached level 5');
+      break;
     }
   }
 
@@ -465,6 +718,9 @@ export function playRun(input: PlayRunInput): RunResult {
     startWallet,
     finalWallet: state.wallet,
     ledgerTotals: state.ledger.totals(),
+    endReason,
+    scavengesDone: state.scavengesDone,
+    miningDone: state.miningDone,
     levels,
     missions: records,
     log: state.log,

@@ -79,6 +79,8 @@ export interface PortFacts {
   readonly factionId: string;
   /** The employer's view of the player's faction, as `contextFromLive` wants it. */
   readonly factionRelation: string;
+  /** Local market mood — the buy/sell multiplier `PricingService.priceInput` reads off the row. */
+  readonly mood: number;
 }
 
 interface BoardLocationState {
@@ -166,6 +168,7 @@ export function portFactsOf(
     isolation: row.isolation,
     factionId: row.factionId,
     factionRelation,
+    mood: row.mood,
   };
 }
 

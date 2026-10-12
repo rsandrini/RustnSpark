@@ -63,7 +63,11 @@ export function canTakeMission(
   const installed = installedParts(state.ship, ctx.catalogByType);
   const sheet = deriveSheet(installed, ctx.rules);
   const viability = checkViability(sheet, installed, ctx.rules);
-  if (!viability.viable) reasons.push('SHIP_NOT_VIABLE');
+  // Scavenging is manual work at the current place, not a trip flown with the ship: the live
+  // dispatch skips the viability and power gates for it too (`dispatch.service.ts`), marking
+  // the job handicapped instead (the resolver then halves its find chance).
+  const isScavengeJob = offer.type === 'SCAVENGE';
+  if (!isScavengeJob && !viability.viable) reasons.push('SHIP_NOT_VIABLE');
   const requirement = checkMissionRequirements(
     { missionType: offer.type, requirements: offer.requirements, sheet, parts: installed },
     ctx.rules,
@@ -76,7 +80,7 @@ export function canTakeMission(
     powerPartOf(part.instance.id, part.catalog, ctx.rules.power.idle_demand),
   );
   const cruise = allocatePower(power, 'cruise', ctx.rules);
-  if (cruise.demand > cruise.supply) reasons.push('POWER_SHORTFALL');
+  if (!isScavengeJob && cruise.demand > cruise.supply) reasons.push('POWER_SHORTFALL');
   return { ok: reasons.length === 0, reasons };
 }
 
@@ -144,13 +148,21 @@ export function takeMission(
     installed.map((part) => ({ basePrice: part.catalog.basePrice })),
     rules,
   );
-  // `missionReward` reads only `legs` (distances/dangers) and `type` off a mission row; the
-  // offer's legs are the same shape the filler stored, so the cast is structural, not blind.
-  const rewardOffered = missionReward(
-    { legs: offer.legs as unknown as Parameters<typeof missionReward>[0]['legs'], type: offer.type },
-    tier,
-    rules,
-  );
+  // Board offers carry a provisional figure that accept re-prices (D29). The player's own jobs
+  // (scavenge, free mining) are created already-ACCEPTED with reward 0 — exactly what the two
+  // job services store — so they stay unpaid and the resolver takes its `unpaid` path: no
+  // payout line, no minimum yield, the finds/ore are the whole result.
+  const rewardOffered =
+    offer.reward === 0
+      ? 0
+      : missionReward(
+          {
+            legs: offer.legs as unknown as Parameters<typeof missionReward>[0]['legs'],
+            type: offer.type,
+          },
+          tier,
+          rules,
+        );
 
   const legs: DispatchLeg[] = offer.legs.map((leg) => ({
     routeId: leg.routeId,
@@ -207,7 +219,15 @@ export function takeMission(
     destinationIsolation: destination.isolation,
     materialRarity: materialRarityOf(snapshot, cargo),
     reward: rewardOffered,
-    scavenge: offer.type === 'SCAVENGE' ? scavengeContextOf(snapshot, offer.originId) : null,
+    scavenge:
+      offer.type === 'SCAVENGE'
+        ? {
+            ...scavengeContextOf(snapshot, offer.originId),
+            // A ship that cannot fly still scavenges, at `scavenging.handicap_factor` of the
+            // finds — the same flag dispatch sets when it dispatches a non-viable hull.
+            handicapped: !checkViability(sheet, installed, rules).viable,
+          }
+        : null,
   });
 
   const outcome = resolveMission(
@@ -252,10 +272,12 @@ export function takeMission(
     const found = event.found;
     if (found.kind === 'part') {
       partsFound += 1;
+      state.partSeq += 1;
       state.storage.push({
-        id: `found-${state.missionsDone}-${state.storage.length}`,
+        id: `scavenged-${state.partSeq}`,
         partType: found.partType,
         condition: found.condition,
+        source: 'scavenge',
       });
     } else {
       scrapFound += 1;

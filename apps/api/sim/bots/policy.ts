@@ -1,23 +1,39 @@
 /**
- * Where to buy fuel and when to repair — the two decisions that turn "net profit per mission"
- * from a fake number into a real one. A port is *cheap* when its location factor is within 10% of
- * the cheapest port the ship can reach on its current tank; otherwise it is *expensive*.
+ * Where to buy fuel, when to repair, and what to buy, sell and upgrade between missions — the
+ * decisions that turn "net profit per mission" from a fake number into a real one. A port is
+ * *cheap* when its location factor is within 10% of the cheapest port the ship can reach on its
+ * current tank; otherwise it is *expensive*. The spending plan is the plan's own rule: reserve a
+ * full refuel plus the expected repair bill, find the lowest-rarity slot of the target ship, and
+ * take the cheapest net way to raise it the wallet allows.
  */
 import type { GameRules } from '../../src/config/game-config.types.js';
 import { fuelUnits } from '../../src/economy/fuel-cost.calculator.js';
+import { buyPrice, sellPrice } from '../../src/economy/price.calculator.js';
+import { basePartTypeOf, nextTierPartTypeOf } from '../../src/economy/part-upgrade.calculator.js';
+import { upgradeNeeds, type MaterialNeed } from '../../src/economy/upgrade-materials.js';
 import type { FillerWorld } from '../../src/missions/generator/template.filler.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
 import { canTakeMission } from '../actions/mission.js';
 import { travelOffer } from '../actions/travel.js';
+import { refuelQuote } from '../actions/fuel.js';
+import { fitWouldBeViable, priceInputAt } from '../actions/market.js';
+import { retentionFor, upgradeQuote } from '../actions/upgrade.js';
 import {
   averageConditionOf,
+  FULL_CONDITION,
   fuelCapOf,
   minConditionOf,
   minKeyConditionOf,
   portFactor,
   reachablePorts,
 } from '../core/fleet.js';
-import { installedParts, type PlayerState } from '../core/state.js';
+import {
+  installedParts,
+  RARITY_ORDER,
+  shipLevel,
+  type PlayerState,
+  type ShipPartState,
+} from '../core/state.js';
 import type { Offer } from '../core/world.js';
 import type { CatalogRow, Snapshot } from '../snapshot/types.js';
 
@@ -294,4 +310,494 @@ export function canTravelTo(
   const offer = travelOffer({ snapshot: ctx.snapshot, world, state, destinationId, nowMs });
   if (offer === null) return false;
   return canTakeMission(state, offer, ctx).ok;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: scavenging, mining, selling and spending between missions.
+// ---------------------------------------------------------------------------
+
+/** Scavenge on at least this share of missions when the cooldown allows (plan task 4). */
+export const SCAVENGE_RATIO_MIN = 0.75;
+/** Mine on at least this share of missions where the ship can (rig + minable place). */
+export const MINE_RATIO_MIN = 0.5;
+/** The trailing window both ratios are measured over. */
+export const RATIO_WINDOW = 20;
+/** Repair bills this run has paid; until the first one, the reserve uses the fallback. */
+export const REPAIR_BILL_FALLBACK_CREDITS = 500;
+/** How many recent repair bills average into the reserve. */
+export const REPAIR_SAMPLE = 5;
+/** Playtime cap: 400 hours of game time (the spec's exhaustion end). */
+export const PLAYTIME_CAP_SECONDS = 400 * 3600;
+/** The spec's top ship level (LEGENDARY everywhere). */
+export const MAX_SHIP_LEVEL = 5;
+/** No level change and no wallet growth across this many missions → the run is stalled. */
+export const PROGRESS_STALL_MISSIONS = 200;
+
+/**
+ * The 12-part target ship (spec §the build): the starter kit grown to the full hull. Slots the
+ * starter does not have yet are bought at the current ship level, so filling them never lowers
+ * the level, and extra parts (a second tank, a scavenged rig) are allowed alongside.
+ */
+export const TARGET_KIT_BASES: readonly string[] = [
+  'bridge',
+  'engine_chem_medium',
+  'engine_chem_small',
+  'tank_medium',
+  'battery_large',
+  'cargo_large',
+  'cargo',
+  'hull',
+  'weapon_laser',
+  'shield_basic',
+  'sensor_radar',
+  'reactor_solar',
+];
+
+const RARITY_SUFFIX: Readonly<Record<string, string>> = {
+  COMMON: '',
+  UNCOMMON: '_uncommon',
+  RARE: '_rare',
+  EPIC: '_epic',
+  LEGENDARY: '_legendary',
+};
+
+function rarityIndex(rarity: string): number {
+  const index = RARITY_ORDER.indexOf(rarity as (typeof RARITY_ORDER)[number]);
+  return index === -1 ? 0 : index;
+}
+
+/**
+ * Does this behaviour still need to run? True while the window's share is at or under its
+ * target (an empty window starts the behaviour: there is no evidence against it). Firing at
+ * equality rather than strictly below is what holds the *long-run* share up: with a 20-entry
+ * window a strict `<` dips to 14/20 on every correction and converges near 71%, while `<=`
+ * sustains ~76% — the plan asks for at least 75% over a long run.
+ */
+export function atOrBelowTarget(history: readonly boolean[], min: number): boolean {
+  if (history.length === 0) return true;
+  let yes = 0;
+  for (const flag of history) if (flag) yes += 1;
+  return yes / history.length <= min;
+}
+
+/** The family name a part belongs to (`hull_rare` → `hull`), straight off the naming convention. */
+function familyBaseOf(row: CatalogRow): string {
+  return basePartTypeOf(row.partType, row.rarity);
+}
+
+export type SpendAction =
+  | { readonly kind: 'none'; readonly reason: string }
+  | {
+      readonly kind: 'fit';
+      readonly storageId: string;
+      readonly replaceId: string | null;
+      readonly targetBase: string;
+      readonly reason: string;
+    }
+  | {
+      readonly kind: 'buy';
+      readonly partType: string;
+      readonly locationId: string;
+      readonly price: number;
+      readonly replaceId: string | null;
+      readonly targetBase: string;
+      readonly reason: string;
+    }
+  | {
+      readonly kind: 'travel-to-buy';
+      readonly locationId: string;
+      readonly targetBase: string;
+      readonly reason: string;
+    }
+  | {
+      readonly kind: 'upgrade';
+      readonly partId: string;
+      readonly nextPartType: string;
+      readonly reason: string;
+    };
+
+export interface SpendPlan {
+  readonly action: SpendAction;
+  /** What the target slot's in-place upgrade asks for — the surplus pass sells around it. */
+  readonly keepNeeds: readonly MaterialNeed[];
+}
+
+interface SpendTarget {
+  /** Slot rarity, 0-based: an installed part's tier, or the current level for a missing slot. */
+  readonly rarityIdx: number;
+  readonly base: string;
+  /** The installed part to raise, or null for a missing kit slot (a fill). */
+  readonly replaceId: string | null;
+  readonly nextRow: CatalogRow;
+  readonly currentRow: CatalogRow | null;
+  readonly currentCondition: number | null;
+}
+
+interface SpendOption {
+  readonly net: number;
+  readonly cash: number;
+  readonly action: Exclude<SpendAction, { readonly kind: 'none' }>;
+}
+
+/** What filling or raising this slot's upgrade would ask for in materials (no wallet in it). */
+function keepNeedsOf(target: SpendTarget, rules: GameRules): readonly MaterialNeed[] {
+  if (target.currentRow === null || target.replaceId === null) return [];
+  return upgradeNeeds(
+    target.currentRow.rarity,
+    target.nextRow.basePrice - target.currentRow.basePrice,
+    target.currentRow.w * target.currentRow.h,
+    rules,
+  );
+}
+
+/** The port, among those a full tank can reach, that charges least for `partType` (ties: here). */
+function bestBuyPort(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  partType: string,
+): { locationId: string; price: number } | null {
+  const row = catalogByType.get(partType);
+  if (row === undefined || !row.active) return null;
+  const fullTank = fuelCapOf(state, catalogByType, rules);
+  const reachable = reachablePorts(state, snapshot, rules, catalogByType, fullTank);
+  const ordered = [state.locationId, ...reachable.filter((id) => id !== state.locationId).sort()];
+  let best: { locationId: string; price: number } | null = null;
+  for (const locationId of ordered) {
+    const price = buyPrice(
+      priceInputAt(snapshot, state.factionId, locationId, row.basePrice, FULL_CONDITION),
+      rules,
+    );
+    if (best === null || price < best.price) best = { locationId, price };
+  }
+  return best;
+}
+
+function optionsFor(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  target: SpendTarget,
+): SpendOption[] {
+  const options: SpendOption[] = [];
+  // (a) Fit a loose part of the family at the needed rarity or better — free, if one is held.
+  let bestLoose: ShipPartState | null = null;
+  let bestLooseIdx = -1;
+  for (const candidate of state.storage) {
+    const row = catalogByType.get(candidate.partType);
+    if (row === undefined || !row.active) continue;
+    if (familyBaseOf(row) !== target.base) continue;
+    const idx = rarityIndex(row.rarity);
+    if (idx < target.rarityIdx) continue;
+    if (idx > bestLooseIdx) {
+      bestLoose = candidate;
+      bestLooseIdx = idx;
+    }
+  }
+  if (
+    bestLoose !== null &&
+    fitWouldBeViable(
+      state,
+      rules,
+      catalogByType,
+      bestLoose,
+      target.replaceId ?? undefined,
+    )
+  ) {
+    options.push({
+      net: 0,
+      cash: 0,
+      action: {
+        kind: 'fit',
+        storageId: bestLoose.id,
+        replaceId: target.replaceId,
+        targetBase: target.base,
+        reason: 'fit-loose',
+      },
+    });
+  }
+  // (b) Buy the tier at the cheapest reachable port, net of what the old part sells for — only
+  // when the bought part would actually fly in this slot (same power/viability gate as a fit:
+  // a part that cannot be fitted is money the reserve just lit on fire).
+  const buy = bestBuyPort(state, snapshot, rules, catalogByType, target.nextRow.partType);
+  if (
+    buy !== null &&
+    fitWouldBeViable(
+      state,
+      rules,
+      catalogByType,
+      { id: 'phantom-buy', partType: target.nextRow.partType, condition: FULL_CONDITION },
+      target.replaceId ?? undefined,
+    )
+  ) {
+    const oldSell =
+      target.currentRow !== null && target.currentCondition !== null
+        ? sellPrice(
+            priceInputAt(
+              snapshot,
+              state.factionId,
+              buy.locationId,
+              target.currentRow.basePrice,
+              target.currentCondition,
+            ),
+            rules,
+          )
+        : 0;
+    const net = buy.price - oldSell;
+    if (buy.locationId === state.locationId) {
+      options.push({
+        net,
+        cash: buy.price,
+        action: {
+          kind: 'buy',
+          partType: target.nextRow.partType,
+          locationId: buy.locationId,
+          price: buy.price,
+          replaceId: target.replaceId,
+          targetBase: target.base,
+          reason: 'buy-next-tier',
+        },
+      });
+    } else {
+      options.push({
+        net,
+        cash: buy.price,
+        action: {
+          kind: 'travel-to-buy',
+          locationId: buy.locationId,
+          targetBase: target.base,
+          reason: 'hop-to-buy',
+        },
+      });
+    }
+  }
+  // (c) Upgrade in place: full condition, materials counted as free (missing = not an option
+  // at all, per the plan), and the raised part must still fly — same gate as (a) and (b).
+  if (target.replaceId !== null && target.currentCondition === FULL_CONDITION) {
+    const quote = upgradeQuote(state, snapshot, rules, catalogByType, target.replaceId);
+    const nextPartType = quote.nextPartType ?? target.nextRow.partType;
+    if (
+      quote.ok &&
+      quote.cost !== undefined &&
+      fitWouldBeViable(
+        state,
+        rules,
+        catalogByType,
+        { id: target.replaceId, partType: nextPartType, condition: FULL_CONDITION },
+        target.replaceId,
+      )
+    ) {
+      options.push({
+        net: quote.cost,
+        cash: quote.cost,
+        action: {
+          kind: 'upgrade',
+          partId: target.replaceId,
+          nextPartType,
+          reason: 'upgrade-in-place',
+        },
+      });
+    }
+  }
+  return options;
+}
+
+function spendTargetsOf(
+  state: PlayerState,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+): SpendTarget[] {
+  const targets: SpendTarget[] = [];
+  // Raise the installed parts to their next tier.
+  for (const part of state.ship.parts) {
+    const row = catalogByType.get(part.partType);
+    if (row === undefined) continue;
+    const idx = rarityIndex(row.rarity);
+    if (idx >= RARITY_ORDER.length - 1) continue;
+    const nextType = nextTierPartTypeOf(part.partType, row.rarity);
+    if (nextType === null) continue;
+    const nextRow = catalogByType.get(nextType);
+    if (nextRow === undefined || !nextRow.active) continue;
+    // An upgrade is rarity and stats, never a different footprint.
+    if (nextRow.w !== row.w || nextRow.h !== row.h) continue;
+    targets.push({
+      rarityIdx: idx,
+      base: familyBaseOf(row),
+      replaceId: part.id,
+      nextRow,
+      currentRow: row,
+      currentCondition: part.condition,
+    });
+  }
+  // Fill the kit slots the ship does not have yet, at its current level (never below it).
+  const level = shipLevel(state.ship, catalogByType);
+  const fillIdx = level - 1;
+  const covered = new Set(
+    state.ship.parts.map((part) => {
+      const row = catalogByType.get(part.partType);
+      return row === undefined ? part.partType : familyBaseOf(row);
+    }),
+  );
+  const fillRarity = RARITY_ORDER[fillIdx];
+  const fillSuffix = fillRarity === undefined ? null : RARITY_SUFFIX[fillRarity] ?? '';
+  for (const base of TARGET_KIT_BASES) {
+    if (fillSuffix === null) break;
+    if (covered.has(base)) continue;
+    const wantedType = `${base}${fillSuffix}`;
+    const wantedRow = catalogByType.get(wantedType);
+    if (wantedRow === undefined || !wantedRow.active) continue;
+    targets.push({
+      rarityIdx: fillIdx,
+      base,
+      replaceId: null,
+      nextRow: wantedRow,
+      currentRow: null,
+      currentCondition: null,
+    });
+  }
+  return targets;
+}
+
+/**
+ * The plan's spending rule (task 4): reserve a full refuel here plus the expected repair bill
+ * (the average of the last five, or the named fallback until any bill exists), then find the
+ * target ship's lowest-rarity slot — ties broken by the cheapest way up — and take the cheapest
+ * net option the reserve-adjusted wallet allows. Nothing affordable → do nothing and keep
+ * earning. A loose mining rig is fitted first when the ship has none: it is free, and both the
+ * mining policy and the board's MINING contracts need it (an extra part a mission requirement
+ * asks for).
+ */
+export function spendPlan(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  recentRepairBills: readonly number[],
+): SpendPlan {
+  const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
+  if (sheet.min < 1) {
+    const rig = state.storage.find((part) => {
+      const row = catalogByType.get(part.partType);
+      return row !== undefined && familyBaseOf(row) === 'mining_rig' && row.active;
+    });
+    if (rig !== undefined && fitWouldBeViable(state, rules, catalogByType, rig)) {
+      return {
+        action: {
+          kind: 'fit',
+          storageId: rig.id,
+          replaceId: null,
+          targetBase: 'mining_rig',
+          reason: 'fit-mining-rig',
+        },
+        keepNeeds: [],
+      };
+    }
+  }
+  const refill = refuelQuote(state, snapshot, rules, catalogByType, state.locationId);
+  const bills = recentRepairBills.slice(-REPAIR_SAMPLE);
+  const expectedRepair =
+    bills.length === 0
+      ? REPAIR_BILL_FALLBACK_CREDITS
+      : bills.reduce((sum, bill) => sum + bill, 0) / bills.length;
+  const available = state.wallet - refill.cost - expectedRepair;
+  const keepNeedsOfTarget = (target: SpendTarget): readonly MaterialNeed[] =>
+    keepNeedsOf(target, rules);
+  if (available < 1) {
+    const first = spendTargetsOf(state, catalogByType)[0];
+    return {
+      action: { kind: 'none', reason: 'reserve' },
+      keepNeeds: first === undefined ? [] : keepNeedsOfTarget(first),
+    };
+  }
+  const ranked = spendTargetsOf(state, catalogByType)
+    .map((target) => {
+      const options = optionsFor(state, snapshot, rules, catalogByType, target);
+      const minNet =
+        options.length === 0
+          ? Number.POSITIVE_INFINITY
+          : Math.min(...options.map((option) => option.net));
+      return { target, options, minNet };
+    })
+    .sort(
+      (left, right) =>
+        left.target.rarityIdx - right.target.rarityIdx || left.minNet - right.minNet,
+    );
+  for (const rankedOne of ranked) {
+    if (rankedOne.options.length === 0) continue;
+    const affordable = rankedOne.options
+      .filter((option) => option.cash <= available)
+      .sort((left, right) => left.net - right.net);
+    const chosen = affordable[0];
+    if (chosen !== undefined) {
+      return { action: chosen.action, keepNeeds: keepNeedsOfTarget(rankedOne.target) };
+    }
+    // The target is clear but out of reach: save for it rather than chasing a prouder slot.
+    return {
+      action: { kind: 'none', reason: 'saving' },
+      keepNeeds: keepNeedsOfTarget(rankedOne.target),
+    };
+  }
+  return { action: { kind: 'none', reason: 'no-target' }, keepNeeds: [] };
+}
+
+export interface SellList {
+  readonly partIds: readonly string[];
+  readonly materials: readonly { readonly materialId: string; readonly quantity: number }[];
+}
+
+function rankBetter(left: ShipPartState, right: ShipPartState, catalogByType: ReadonlyMap<string, CatalogRow>): boolean {
+  const leftRow = catalogByType.get(left.partType);
+  const rightRow = catalogByType.get(right.partType);
+  const leftIdx = leftRow === undefined ? -1 : rarityIndex(leftRow.rarity);
+  const rightIdx = rightRow === undefined ? -1 : rarityIndex(rightRow.rarity);
+  if (leftIdx !== rightIdx) return leftIdx > rightIdx;
+  if (left.condition !== right.condition) return left.condition > right.condition;
+  return left.id < right.id;
+}
+
+/**
+ * What the surplus pass sells: every loose part that is not the ship's best candidate for a
+ * target-ship slot (or its only mining rig while it has none), and every material unit above
+ * what the next upgrade is counting on. Too damaged to sell is never offered. This is the plan's
+ * "sell what is not part of the target ship and not needed for the next upgrade".
+ */
+export function sellList(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  keepNeeds: readonly MaterialNeed[],
+): SellList {
+  const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
+  const keepParts = new Map<string, ShipPartState>();
+  const partIds: string[] = [];
+  for (const part of state.storage) {
+    const row = catalogByType.get(part.partType);
+    if (row === undefined) continue;
+    const base = familyBaseOf(row);
+    const worthKeeping =
+      TARGET_KIT_BASES.includes(base) ||
+      (base === 'mining_rig' && sheet.min < 1 && row.active);
+    if (!worthKeeping) {
+      if (part.condition >= rules.economy.sell_min_condition) partIds.push(part.id);
+      continue;
+    }
+    const current = keepParts.get(base);
+    if (current === undefined || rankBetter(part, current, catalogByType)) {
+      if (current !== undefined && current.condition >= rules.economy.sell_min_condition) {
+        partIds.push(current.id);
+      }
+      keepParts.set(base, part);
+    } else if (part.condition >= rules.economy.sell_min_condition) {
+      partIds.push(part.id);
+    }
+  }
+  const retention = retentionFor(state, snapshot, keepNeeds);
+  const materials: { materialId: string; quantity: number }[] = [];
+  for (const [materialId, held] of state.materials) {
+    const kept = Math.min(held, retention.get(materialId) ?? 0);
+    if (held - kept > 0) materials.push({ materialId, quantity: held - kept });
+  }
+  return { partIds, materials };
 }

@@ -16,6 +16,8 @@ export interface ShipPartState {
   id: string;
   partType: string;
   condition: number;
+  /** How the run got it: scavenge finds sell through the `scavengeSale` ledger line. */
+  source?: 'scavenge';
 }
 
 export interface ShipState {
@@ -25,6 +27,22 @@ export interface ShipState {
   fuel: number;
   stance: string;
   energyMode: string;
+}
+
+/** Rarity ladder, lowest first — `shipLevel` and the market policy both rank by it. */
+export const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] as const;
+
+/** One-based index on the rarity ladder: COMMON → 1 … LEGENDARY → 5 (unknown → 1). */
+export function rarityLevelOf(rarity: string): number {
+  const index = RARITY_ORDER.indexOf(rarity as (typeof RARITY_ORDER)[number]);
+  return index === -1 ? 1 : index + 1;
+}
+
+/** Per-location scavenge attempt counter (`ScavengeCounter` in the game). */
+export interface ScavengeAttempt {
+  count: number;
+  /** Simulated ms of the last attempt — the cooldown counts from it. */
+  lastAtMs: number;
 }
 
 export interface PlayerState {
@@ -43,6 +61,10 @@ export interface PlayerState {
   miningDone: number;
   /** Simulated second of the last scavenging job (policy hooks read it later). */
   lastScavengeAt: number | null;
+  /** locationId → attempt count and last attempt time (the scavenge cooldown). */
+  scavengeAttempts: Map<string, ScavengeAttempt>;
+  /** Monotonic id source for parts the run acquires (scavenge finds, market buys). */
+  partSeq: number;
   log: string[];
 }
 
@@ -123,8 +145,27 @@ export function starterPlayer(
     scavengesDone: 0,
     miningDone: 0,
     lastScavengeAt: null,
+    scavengeAttempts: new Map(),
+    partSeq: 0,
     log: [],
   };
+}
+
+/**
+ * The ship's level: the lowest rarity among its installed parts (the plan's `shipLevel` —
+ * a level is only reached when every installed part is at that rarity or better).
+ */
+export function shipLevel(
+  ship: ShipState,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+): number {
+  let level: number = RARITY_ORDER.length;
+  for (const part of ship.parts) {
+    const row = catalogByType.get(part.partType);
+    if (row === undefined) continue;
+    level = Math.min(level, rarityLevelOf(row.rarity));
+  }
+  return ship.parts.length === 0 ? 1 : level;
 }
 
 /** Total condition points the installed parts lost (the mission's wear). */

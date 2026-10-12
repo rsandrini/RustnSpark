@@ -16,6 +16,7 @@ const LEDGER_COLUMNS = [
   'oreSale',
   'fuel',
   'repair',
+  'rescue',
   'upgrade',
   'purchase',
   'sale',
@@ -55,6 +56,10 @@ function printTotals(result: RunResult): void {
       `seconds ${Math.round(result.totalSeconds)}  final level ${result.finalLevel}  ` +
       `faction ${result.factionId}\n`,
   );
+  process.stdout.write(
+    `jobs: scavenge ${result.scavengesDone}  mining ${result.miningDone}  ` +
+      `ended: ${result.endReason}\n`,
+  );
   const totals = result.ledgerTotals;
   const parts = LEDGER_COLUMNS.map(
     (category) => `${category} ${Math.round(totals[category])}`,
@@ -69,7 +74,14 @@ function printTotals(result: RunResult): void {
       line.includes('stranded') ||
       line.includes('hopped') ||
       line.includes('refuelled') ||
-      line.includes('towed'),
+      line.includes('towed') ||
+      line.includes('scavenged') ||
+      line.includes('mined ') ||
+      line.includes('bought ') ||
+      line.includes('fitted ') ||
+      line.includes('upgraded ') ||
+      line.includes('level 5') ||
+      line.includes('playtime cap'),
   );
   for (const event of events) {
     process.stdout.write(`  ${event}\n`);
