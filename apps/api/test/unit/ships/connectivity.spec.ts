@@ -1,5 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
-import { applyConnectivity, conductiveCatalog } from '../../../src/ships/connectivity.js';
+import {
+  applyConnectivity,
+  conductiveCatalog,
+  withConnectionProblem,
+} from '../../../src/ships/connectivity.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import type { InstalledPart } from '../../../src/parts/part.types.js';
@@ -110,5 +114,29 @@ describe('conductiveCatalog: a broken part no longer carries a connection', () =
     expect([...live.keys()].sort()).toEqual(['bridge', 'live']);
     // the original map is untouched (other checks still need the dead part's data)
     expect(catalog.size).toBe(3);
+  });
+});
+
+describe('withConnectionProblem: a disconnected part keeps the ship on the ground', () => {
+  const ok = { viable: true, problems: [], warnings: [] };
+
+  it('leaves a fully connected ship alone', () => {
+    const parts = [part('a'), part('b')];
+    expect(withConnectionProblem(ok, parts, new Set(['a', 'b']))).toBe(ok);
+  });
+
+  it('adds one blocking problem when any part is not connected, naming how many', () => {
+    const parts = [part('a'), part('b'), part('c')];
+    const report = withConnectionProblem(ok, parts, new Set(['a']));
+    expect(report.viable).toBe(false);
+    expect(report.problems).toHaveLength(1);
+    expect(report.problems[0]!.code).toBe('PART_DISCONNECTED');
+    expect(report.problems[0]!.message).toContain('2 installed part(s)');
+  });
+
+  it('does not repeat itself', () => {
+    const parts = [part('a'), part('b')];
+    const once = withConnectionProblem(ok, parts, new Set(['a']));
+    expect(withConnectionProblem(once, parts, new Set(['a'])).problems).toHaveLength(1);
   });
 });

@@ -16,6 +16,10 @@ export type ViabilityProblemCode =
   | 'NO_LIFE_SUPPORT'
   | 'LIFE_SUPPORT_UNPOWERED'
   | 'STRUCTURE_EXCEEDED'
+  // An installed part is not connected to the bridge (wrong connectors or no way through): it is
+  // dead weight, so the ship stays in port until it is connected or removed. Saving the layout is
+  // never blocked by it.
+  | 'PART_DISCONNECTED'
   // The loose parts and the ore the ship carries do not fit its free slots plus its cargo space.
   | 'HOLD_OVER_CAPACITY'
   // More loose parts than the bridge has slots for.

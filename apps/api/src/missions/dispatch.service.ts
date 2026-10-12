@@ -1,8 +1,4 @@
-import {
-  applyEngineLevels,
-  clampLevels,
-  type EngineLevels,
-} from '../resolution/engine/engine.js';
+import { applyEngineLevels, clampLevels, type EngineLevels } from '../resolution/engine/engine.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { randomUUID } from 'node:crypto';
 import {
@@ -20,7 +16,11 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
+import {
+  applyConnectivity,
+  conductiveCatalog,
+  withConnectionProblem,
+} from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -303,7 +303,11 @@ export class DispatchService {
       const sheet = deriveSheet(installedConnected, rules);
       // Part direction rules apply to every dispatch that flies the ship — except a scavenging job,
       // which is manual work at the current place: the ship never travels, so nothing points anywhere.
-      const flightViability = checkViability(sheet, installedConnected, rules);
+      const flightViability = withConnectionProblem(
+        checkViability(sheet, installedConnected, rules),
+        installed,
+        connectedIds,
+      );
       // The spare parts travel with the ship: they must fit the bridge's slots; the mission's cargo, the cargo space.
       // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space.
       const template = await tx.missionTemplate.findUnique({
@@ -421,7 +425,14 @@ export class DispatchService {
         ...(onFoot ? { onFoot: true } : {}),
         ...(engineLevels !== undefined ? { engine: engineLevels } : {}),
         ...(terms !== null && load !== null && terms.mode !== 'min'
-          ? { cargo: { mode: terms.mode, units: load.units, need: terms.need, unitPay: terms.unitPay } }
+          ? {
+              cargo: {
+                mode: terms.mode,
+                units: load.units,
+                need: terms.need,
+                unitPay: terms.unitPay,
+              },
+            }
           : {}),
         layered: true,
       };

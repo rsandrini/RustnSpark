@@ -12,7 +12,11 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
+import {
+  applyConnectivity,
+  conductiveCatalog,
+  withConnectionProblem,
+} from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -130,7 +134,11 @@ export class MiningJobService {
     // engine's exhaust / a weapon's firing line) apply, like dispatch and travel.
     const viability = withHoldProblem(
       withDirectionProblems(
-        checkViability(sheet, installedConnected, rules),
+        withConnectionProblem(
+          checkViability(sheet, installedConnected, rules),
+          installed,
+          connectedIds,
+        ),
         (ship.layout as unknown as Placement[]) ?? [],
         catalogForConnectivity,
         connectorsByInstance,

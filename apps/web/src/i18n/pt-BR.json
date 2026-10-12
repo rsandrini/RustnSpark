@@ -235,7 +235,8 @@
       "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
       "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
-      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
+      "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -1273,7 +1274,8 @@
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
-      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto."
+      "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
+      "PART_DISCONNECTED": "Peça desconectada"
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",

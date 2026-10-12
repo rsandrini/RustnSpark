@@ -27,7 +27,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { autoLayout, extendLayout } from './auto-layout.js';
 import { computeHold, type HoldState } from './hold.js';
-import { applyConnectivity, conductiveCatalog } from './connectivity.js';
+import { applyConnectivity, conductiveCatalog, withConnectionProblem } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
 import { connectedPartIds, validateLayout } from './geometry.js';
@@ -264,7 +264,11 @@ export class ShipsService implements OnModuleInit {
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
     const viability = withDirectionProblems(
-      checkViability(sheet, installedConnected, rules),
+      withConnectionProblem(
+        checkViability(sheet, installedConnected, rules),
+        installed,
+        connectedIds,
+      ),
       effectiveLayout,
       catalogForConnectivity,
       connectorsByInstance,

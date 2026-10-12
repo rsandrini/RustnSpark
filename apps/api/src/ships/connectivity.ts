@@ -1,6 +1,7 @@
 import { isDead } from '../parts/condition.js';
 import type { GameRules } from '../config/game-config.types.js';
 import type { InstalledPart, PartCatalog } from '../parts/part.types.js';
+import type { ViabilityReport } from './viability.js';
 
 /** The spec's own exhaustive functional-stat list (2026-10-02-connectors-v1-design.md) — a
     disconnected part stops contributing exactly these, and nothing else. An earlier version of
@@ -62,4 +63,31 @@ export function conductiveCatalog(
     }
   }
   return live;
+}
+
+/**
+ * Folds the connection state into a viability report: an installed part with no connection back to
+ * the bridge keeps the ship on the ground (it weighs the ship down and does nothing). Only the
+ * flight checks use it; saving a layout is never blocked, so a refit can pass through that state.
+ */
+export function withConnectionProblem(
+  report: ViabilityReport,
+  installed: readonly InstalledPart[],
+  connectedIds: ReadonlySet<string>,
+): ViabilityReport {
+  const loose = installed.filter((part) => !connectedIds.has(part.instance.id)).length;
+  if (loose === 0 || report.problems.some((problem) => problem.code === 'PART_DISCONNECTED')) {
+    return report;
+  }
+  return {
+    viable: false,
+    problems: [
+      ...report.problems,
+      {
+        code: 'PART_DISCONNECTED',
+        message: `${loose} installed part(s) are not connected to the bridge: fix their connectors or remove them.`,
+      },
+    ],
+    warnings: report.warnings,
+  };
 }

@@ -235,7 +235,8 @@
       "SHIELD_ENERGY_LOW": "If the shield is in use it can run short of energy once the battery and the ship's spare power are spent.",
       "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation.",
       "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
-      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
+      "PART_DISCONNECTED": "A part is not connected to the bridge: fix its connectors or remove it. You can still save the layout."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -1273,7 +1274,8 @@
       "NO_LIFE_SUPPORT": "No life support",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded",
       "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
-      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many."
+      "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
+      "PART_DISCONNECTED": "Part not connected"
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",
