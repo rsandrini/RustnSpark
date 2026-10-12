@@ -12,6 +12,7 @@ import {
   type PlayTimeBudget,
 } from '../core/clock.js';
 import type { ExperimentCell } from './cells.js';
+import type { BridgeScaling } from './scaling.js';
 
 /** One game's worth of what the matrix compares. */
 export interface RunSummary {
@@ -87,6 +88,7 @@ export function runCell(
   runs: number,
   baseSeed: number,
   missions: number,
+  bridgeScaling?: BridgeScaling,
 ): CellResult {
   const budget: PlayTimeBudget = {
     hoursPerDay: cell.hoursPerDay,
@@ -102,6 +104,7 @@ export function runCell(
         budget,
         temperament: cell.temperament,
         playstyle: cell.playstyle,
+        ...(bridgeScaling === undefined ? {} : { bridgeScaling }),
       }),
     );
   }

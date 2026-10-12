@@ -48,6 +48,7 @@ import {
   playstyleOf,
   type Playstyle,
 } from './playstyle.js';
+import type { BridgeScaling } from '../experiment/scaling.js';
 import {
   canTravelTo,
   cheapestReachablePort,
@@ -153,6 +154,10 @@ export interface PlayRunInput {
   readonly budget?: PlayTimeBudget;
   readonly temperament?: string;
   readonly playstyle?: string;
+  /** The what-if table: rewards and numeric requirements scale by bridge rarity. */
+  readonly bridgeScaling?: BridgeScaling;
+  /** Sanity bot: never sells, buys, fits, upgrades or repairs — it must stagnate. */
+  readonly noSpend?: boolean;
 }
 
 function bridgeLevelOf(state: PlayerState, catalogByType: ReadonlyMap<string, CatalogRow>): number {
@@ -301,7 +306,10 @@ export function playRun(input: PlayRunInput): RunResult {
   const budget = input.budget ?? DEFAULT_BUDGET;
   const temperament = temperamentOf(input.temperament ?? 'random');
   const playstyle = playstyleOf(input.playstyle ?? 'generalist');
-  const ctx = missionContext(snapshot);
+  const ctx = missionContext(snapshot, input.bridgeScaling);
+  const noSpend = input.noSpend ?? false;
+  /** The sanity bot's switch: off, it never touches the market, the pump or the tow. */
+  const spend = !noSpend;
   // Every second the clock moves is attributed to the action that moved it, so the experiment
   // report can show where a cell's pilots spent their playtime.
   const actionSeconds: Record<string, number> = {};
@@ -484,12 +492,14 @@ export function playRun(input: PlayRunInput): RunResult {
     // is available to the buy that follows).
     const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
     currentAction = 'market';
-    const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds);
-    for (const partId of sells.partIds) {
-      sellPart(state, snapshot, ctx.rules, partId);
-    }
-    for (const material of sells.materials) {
-      sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
+    if (spend) {
+      const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds);
+      for (const partId of sells.partIds) {
+        sellPart(state, snapshot, ctx.rules, partId);
+      }
+      for (const material of sells.materials) {
+        sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
+      }
     }
     const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
     if (process.env['SIM_DEBUG'] === '1') {
@@ -508,7 +518,7 @@ export function playRun(input: PlayRunInput): RunResult {
         `[plan] @${state.locationId} wallet=${state.wallet} ${action.kind} ${detail}\n`,
       );
     }
-    if (executeSpend(plan.action, nowMs)) continue;
+    if (spend && executeSpend(plan.action, nowMs)) continue;
 
     const picked = pickOffer(state, ctx, world, board, rng, nowMs, temperament, playstyle);
     const { offer, offers } = picked;
@@ -576,7 +586,7 @@ export function playRun(input: PlayRunInput): RunResult {
               `problems=${viability.problems.map((p) => p.code).join('+')}\n`,
           );
         }
-        if (targets.length > 0 && quote.points > 0 && quote.cost <= state.wallet) {
+        if (spend && targets.length > 0 && quote.points > 0 && quote.cost <= state.wallet) {
           const bill = repair(
             state,
             snapshot,
@@ -614,7 +624,7 @@ export function playRun(input: PlayRunInput): RunResult {
         .filter(({ need }) => need > state.ship.fuel)
         .sort((left, right) => left.need - right.need);
       const cheapestUnlock = unlockable[0];
-      if (cheapestUnlock !== undefined) {
+      if (cheapestUnlock !== undefined && spend) {
         const shortfall = cheapestUnlock.need - state.ship.fuel;
         const quote = refuelQuote(
           state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
@@ -640,7 +650,7 @@ export function playRun(input: PlayRunInput): RunResult {
       if (hop !== null) {
         const need = missionFuelNeed(state, hop, { rules: ctx.rules, catalogByType });
         const shortfall = need - state.ship.fuel;
-        if (shortfall > 0) {
+        if (shortfall > 0 && spend) {
           const quote = refuelQuote(
             state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
           );
@@ -680,8 +690,8 @@ export function playRun(input: PlayRunInput): RunResult {
       // the tow buys a way home, not a new build. It fires only when the pilot cannot reach any
       // other port, or has bought their way as far as they can and still has no work.
       const dry = state.ship.fuel < rescueRationOf(state, ctx);
-      if (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
-          (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry)) {
+      if (spend && (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
+          (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry))) {
         currentAction = 'rescue';
         const out = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
         state.log.push(
@@ -709,9 +719,11 @@ export function playRun(input: PlayRunInput): RunResult {
     // Before flying: decide whether to repair and where (the plan's "buy at the right port" rule).
     // A bill the wallet cannot cover is deferred, not thrown: the pilot earns it next mission —
     // unless the hull cannot fly at all, in which case the board stays empty and the stall says so.
-    const repairDecision = decideRepair(state, snapshot, ctx.rules, catalogByType);
+    const repairDecision = spend
+      ? decideRepair(state, snapshot, ctx.rules, catalogByType)
+      : null;
     currentAction = 'repair';
-    if (repairDecision.shouldRepair) {
+    if (repairDecision !== null && repairDecision.shouldRepair) {
       const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
       if (quote.cost > state.wallet) {
         state.log.push(
@@ -722,7 +734,7 @@ export function playRun(input: PlayRunInput): RunResult {
         if (bill.cost > 0) recentRepairBills.push(bill.cost);
         state.clock.advance(budget.humanPauseSeconds);
       }
-    } else if (repairDecision.reason === 'travel-to-cheap-repair') {
+    } else if (repairDecision?.reason === 'travel-to-cheap-repair') {
       const target = cheapestReachablePort(state, snapshot, ctx.rules, catalogByType);
       if (target !== null && canTravelTo(state, ctx, world, target, nowMs)) {
         currentAction = 'travel';

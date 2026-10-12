@@ -28,15 +28,32 @@ import {
   type ShipPartState,
 } from '../core/state.js';
 import { scavengeContextOf, type Offer } from '../core/world.js';
+import {
+  bridgeRarityIndex,
+  NO_SCALING,
+  rewardMultiplier,
+  scaleOffer,
+  type BridgeScaling,
+} from '../experiment/scaling.js';
 
 export interface MissionContext {
   readonly snapshot: Snapshot;
   readonly rules: GameRules;
   readonly catalogByType: ReadonlyMap<string, CatalogRow>;
+  /** The what-if table (Phase 5): when present, rewards and numeric requirements scale. */
+  readonly bridgeScaling?: BridgeScaling;
 }
 
-export function missionContext(snapshot: Snapshot): MissionContext {
-  return { snapshot, rules: snapshot.rules, catalogByType: catalogIndex(snapshot) };
+export function missionContext(
+  snapshot: Snapshot,
+  bridgeScaling?: BridgeScaling,
+): MissionContext {
+  return {
+    snapshot,
+    rules: snapshot.rules,
+    catalogByType: catalogIndex(snapshot),
+    ...(bridgeScaling === undefined ? {} : { bridgeScaling }),
+  };
 }
 
 export interface TakeCheck {
@@ -68,8 +85,12 @@ export function canTakeMission(
   // the job handicapped instead (the resolver then halves its find chance).
   const isScavengeJob = offer.type === 'SCAVENGE';
   if (!isScavengeJob && !viability.viable) reasons.push('SHIP_NOT_VIABLE');
+  // The what-if hook: a bridge's rarity can scale the numeric requirements (and the reward,
+  // at take time) — the game does not do this yet, so it only fires when a table is set.
+  const scaling = ctx.bridgeScaling ?? NO_SCALING;
+  const scaled = scaleOffer(offer, scaling, bridgeRarityIndex(state, ctx.catalogByType));
   const requirement = checkMissionRequirements(
-    { missionType: offer.type, requirements: offer.requirements, sheet, parts: installed },
+    { missionType: offer.type, requirements: scaled.requirements, sheet, parts: installed },
     ctx.rules,
   );
   if (!requirement.eligible) reasons.push(...requirement.reasons.map((reason) => reason.code));
@@ -163,6 +184,10 @@ export function takeMission(
           tier,
           rules,
         );
+  // The what-if hook, pay side: the bridge's rarity multiplies the accept-time figure, and the
+  // resolver is paid from it — all ones is today's game.
+  const rewardMult = rewardMultiplier(ctx.bridgeScaling ?? NO_SCALING, bridgeRarityIndex(state, catalogByType));
+  const scaledReward = Math.round(rewardOffered * rewardMult);
 
   const legs: DispatchLeg[] = offer.legs.map((leg) => ({
     routeId: leg.routeId,
@@ -218,7 +243,7 @@ export function takeMission(
     playerFactionId: state.factionId,
     destinationIsolation: destination.isolation,
     materialRarity: materialRarityOf(snapshot, cargo),
-    reward: rewardOffered,
+    reward: scaledReward,
     scavenge:
       offer.type === 'SCAVENGE'
         ? {
@@ -338,7 +363,7 @@ export function takeMission(
     distance: totalDistance,
     maxDanger: legs.reduce((peak, leg) => Math.max(peak, leg.danger), 0),
     zone: legs.reduce((peak, leg) => Math.max(peak, leg.zone), 0),
-    rewardOffered,
+    rewardOffered: scaledReward,
     rewardPaid: Math.round(paid),
     status: outcome.status,
     shipStatus: outcome.shipStatus,

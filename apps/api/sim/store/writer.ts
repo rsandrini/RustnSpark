@@ -11,7 +11,7 @@ import { openStore, type Store } from './store.js';
 import { SIM_DB_PATH } from '../paths.js';
 
 /** What this build simplifies, stored with the experiment so a report can print it. */
-const SIM_ASSUMPTIONS = [
+export const SIM_ASSUMPTIONS = [
   'phase 2: fuel and repair are bought at real prices between missions (no free restore)',
   'phase 2: adrift ships pay the real rescue tow (flat rescue price + emergency ration)',
   'phase 2: rescue sells nothing — the ship keeps every installed part',
