@@ -8,6 +8,24 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **Review the scavenging drops: they are absurd.** On the first attempt, in a zone 2 region,
+  one scavenging run dropped a RARE solar panel AND an uncommon 4x4 nuclear reactor. *What the code
+  does today (found by reading it):* the rarity of a find comes from the drop table by zone (RARE
+  can drop from zone 2, EPIC and LEGENDARY from zone 3: `scavenging.tier_min_zone`), and then the
+  part is picked **uniformly from every catalog part of that rarity**, regardless of its size or
+  price (`rollPartFinds` in `apps/api/src/resolution/scavenge/scavenge.resolver.ts`). So a 4x4
+  nuclear reactor (base price now 76,400 common and 152,800 uncommon after the repricing) is as
+  likely as a small cargo hold, and a run can have up to 4 finds (one, plus extra rolls at the
+  place's chance). Together with the guaranteed scrap added on 2026-10-11 this is far too generous
+  for an early run. *Needs design:* weight the pick by price / size (cheap and small parts common,
+  big and expensive ones very rare), cap the value of one run, make the large and nuclear families
+  drop only from the dangerous zones or from quests / mining, and keep the zone 2 outcome useful but
+  not game-breaking. Measure with the economy simulation (value of an average run per zone vs the
+  reward of a mission) before and after. *Where:* the same resolver, the drop table
+  (`DropTable` rows, `scavenging` source), `scavenging.chance`, `tier_min_zone`, `quality_*` in
+  `apps/api/src/config/game-config.defaults.ts`, and the catalog pool built in
+  `apps/api/src/missions/scavenge-context.ts`.
+
 - [ ] **Scavenging on foot must work without a working ship, and while the ship is being repaired.**
   On foot there is no ship involved (no fuel, no wear, no pirates), so it should be available when
   the ship is broken, empty, not ready to fly, or in the workshop. Today `ScavengeJobService.start`
