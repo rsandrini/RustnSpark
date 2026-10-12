@@ -8,9 +8,12 @@
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+export { parseFlags, intFlag, stringFlag } from './flags.js';
+
 const USAGE = `usage: pnpm sim <command> [flags]
 
   export                          read the live database into sim-data/snapshot.json
+  run --seed N --missions M       play one game with the Phase 1 bot (random, free restore)
 `;
 
 type Command = (args: string[]) => Promise<void>;
@@ -23,51 +26,13 @@ const COMMANDS: Record<string, () => Promise<Command>> = {
       await exportSnapshot();
     };
   },
+  run: async () => {
+    const { runCommand } = await import('./run-command.js');
+    return runCommand;
+  },
 };
 
-/** `--missions 50` / `--missions=50` → 50; a named fallback when the flag is absent. */
-export function intFlag(
-  flags: ReadonlyMap<string, string | boolean>,
-  name: string,
-  fallback: number,
-): number {
-  const raw = flags.get(name);
-  if (raw === undefined || typeof raw !== 'string') return fallback;
-  const value = Number.parseInt(raw, 10);
-  if (!Number.isFinite(value)) {
-    throw new Error(`--${name} must be a number, got "${raw}"`);
-  }
-  return value;
-}
-
-export function stringFlag(
-  flags: ReadonlyMap<string, string | boolean>,
-  name: string,
-  fallback: string,
-): string {
-  const raw = flags.get(name);
-  return typeof raw === 'string' ? raw : fallback;
-}
-
-export function parseFlags(args: readonly string[]): Map<string, string | boolean> {
-  const flags = new Map<string, string | boolean>();
-  for (let index = 0; index < args.length; index += 1) {
-    const token = args[index]!;
-    if (!token.startsWith('--')) continue;
-    const [name, inline] = token.slice(2).split('=', 2);
-    const next = args[index + 1];
-    if (inline !== undefined) {
-      flags.set(name!, inline);
-    } else if (next !== undefined && !next.startsWith('--')) {
-      flags.set(name!, next);
-      index += 1;
-    } else {
-      flags.set(name!, true);
-    }
-  }
-  return flags;
-}
-
+/** Runs one command; returns the process exit code. */
 export async function main(argv: readonly string[]): Promise<number> {
   const [name, ...rest] = argv;
   if (name === undefined || name === '--help' || name === '-h' || name === 'help') {
