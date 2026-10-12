@@ -8,6 +8,29 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **BUG: "Reset ship" in the admin fails with a 500.** Find the failing request and its server
+  error (api container logs), fix it, and add a regression test. *Where to look:* the admin
+  player/ship screens in `apps/web/src/admin` and the matching admin endpoints in
+  `apps/api/src/admin`; the CLI `apps/api/src/admin/cli/reset-player.cli.ts` is a similar "fresh
+  run" flow that works, so compare what it does (starter kit, ship row, layout, parts).
+
+- [ ] **Combat: almost every fight ends in 40 rounds as a draw or a flee; no losses, wins are rare.**
+  Investigate why and improve the combat. The round cap is `combat.max_rounds` (40) and the flee
+  threshold `combat.retreat_hp_ratio` (0.2). *Start by measuring, not guessing:* from the owner's
+  mission logs (`MissionLog.legs` events `combat_win` / `combat_loss` / `combat_draw` / flee, with
+  the per-round `rounds` data: roll, DC, hit, damage, shield / armor / hull absorbed) compute the hit
+  rate, the damage per hit and per round for the player and the pirate, and how the shield, armor
+  cut and armor pool soak the hits. Likely suspects to test: the player's armor and shield absorb
+  nearly everything (armor cut + pool + shield regeneration per round), the pirates' firepower
+  (`pirate_min_pdf`, strength by zone) is too low to hurt a strong ship while the player's own
+  firepower is too low to kill (pirate hp / armor), and fights where neither side can break the
+  other run out the 40 rounds. Then decide the fix (damage curve, a soft cap that ends stalemates,
+  pirate scaling with the ship's tier or level, a reason for fights to end in a result), simulate it
+  in `apps/api/test/unit/resolution/danger-balance.spec.ts`-style runs, and confirm with the
+  economy simulation. *Where:* `apps/api/src/resolution/combat/combat.resolver.ts`,
+  `resolution/damage/layers.ts`, `resolution/encounter/pirate.generator.ts`, the `combat` and
+  `encounter` sections of `game-config.defaults.ts`. *Needs design* once the numbers are in.
+
 - [ ] **Split the Defense items in the shop better.** There are too many kinds of parts under
   Defense (hull frames, armor plates, shields, in five rarities and several sizes), so a part is
   hard to find. Split the class into clearer groups, for example Hull, Armor and Shields, with
