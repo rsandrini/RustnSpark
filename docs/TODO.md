@@ -8,6 +8,21 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **BUG: an expired mission can still be started.** The mission card shows it as expired (an
+  "Expired" label next to the faction, seen on an ACCEPTED starter mission in the My Ship screen)
+  but Dispatch still works and the mission runs. Expected: once the offer's time is up it cannot be
+  dispatched, the card says so, and the buttons are disabled. *Check both cases:* (1) the **offer
+  deadline** (`expiresAt`: the server refuses `accept`/`hold` and dispatch with `MISSION_EXPIRED`,
+  `apps/api/src/missions/missions.service.ts` around lines 400-525, so find which path lets an
+  already ACCEPTED mission through, for example a mission accepted before it expired whose dispatch
+  does not re-check it); (2) the **start deadline** (`deadlineAt`, "start before" shown in the My
+  Ship briefing: `transit.startDeadline`), which should block Dispatch and expire the mission when
+  it passes. The web card computes the label on render, so it also needs a timer that re-checks
+  it (same cause as the progress bar that does not tick). *Where:* `missions.service.ts` (accept,
+  dispatch, the expiry flips), `apps/web/src/features/board/mission-card.tsx` (the "Expired"
+  label), `apps/web/src/features/transit/transit.page.tsx` (the Dispatch button for an ACCEPTED
+  mission). Add a test that dispatching an expired accepted mission returns `MISSION_EXPIRED`.
+
 - [ ] **Review the scavenging drops: they are absurd.** On the first attempt, in a zone 2 region,
   one scavenging run dropped a RARE solar panel AND an uncommon 4x4 nuclear reactor. *What the code
   does today (found by reading it):* the rarity of a find comes from the drop table by zone (RARE
