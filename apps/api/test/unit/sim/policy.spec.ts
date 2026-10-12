@@ -27,6 +27,7 @@ import {
   decideFuel,
   decideRepair,
   hasDefensePart,
+  isShipGrounded,
   needsRepair,
   repositionOffer,
 } from '../../../sim/bots/policy.js';
@@ -185,6 +186,38 @@ describe('needsRepair (the plan thresholds)', () => {
     expect(averageConditionOf(state)).toBeGreaterThanOrEqual(REPAIR_AVG_THRESHOLD);
     expect(minConditionOf(state)).toBe(REPAIR_KEY_THRESHOLD - 1);
     expect(needsRepair(state, catalogByType)).toBe(true);
+  });
+});
+
+describe('isShipGrounded (the board’s own refusal)', () => {
+  it('leaves a healthy ship alone', () => {
+    const state = starterPlayer(snapshot, 'luna');
+    expect(isShipGrounded(state, rules, catalogByType)).toBe(false);
+  });
+
+  it('grounds a hull whose tank is dead — condition 1, above the old <= 0 line', () => {
+    // dead_at_or_below is 1: a tank worn to 1 holds no fuel, so the derived sheet loses its
+    // fuel capacity and the resolver refuses every mission with SHIP_NOT_VIABLE. The old
+    // condition-only rule (minCondition <= 0) never fired, so the repair policy never ran and
+    // the run sat grounded until the rescue cap — this is the exact failure it caused.
+    const state = starterPlayer(snapshot, 'luna');
+    const tank = state.ship.parts.find((part) => part.partType === 'tank_small');
+    if (tank === undefined) throw new Error('fixture ship has no tank');
+    tank.condition = 1;
+    expect(minConditionOf(state)).toBe(1);
+    expect(isShipGrounded(state, rules, catalogByType)).toBe(true);
+  });
+
+  it('grounds a hull that cannot move or a key part near dead, whatever the rest looks like', () => {
+    const noEngine = starterPlayer(snapshot, 'luna');
+    noEngine.ship.parts = noEngine.ship.parts.filter((part) => part.partType !== 'engine_chem_small');
+    expect(isShipGrounded(noEngine, rules, catalogByType)).toBe(true);
+
+    const wornKey = starterPlayer(snapshot, 'luna');
+    const engine = wornKey.ship.parts.find((part) => part.partType === 'engine_chem_small');
+    if (engine === undefined) throw new Error('fixture ship has no engine');
+    engine.condition = 3;
+    expect(isShipGrounded(wornKey, rules, catalogByType)).toBe(true);
   });
 });
 

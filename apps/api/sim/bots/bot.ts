@@ -6,6 +6,9 @@
  * pure calculators. When nothing qualifies, the clock waits for the board to turn over.
  */
 import { shipTier } from '../../src/ships/ship-tier.js';
+import { deriveSheet } from '../../src/ships/sheet.deriver.js';
+import { checkViability } from '../../src/ships/viability.js';
+import { isDead } from '../../src/parts/condition.js';
 import {
   canTakeMission,
   missionContext,
@@ -18,7 +21,7 @@ import { rescue, rescueQuote } from '../actions/rescue.js';
 import { travel, travelOffer } from '../actions/travel.js';
 import { canMine, mine, miningOffer } from '../actions/mining.js';
 import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../actions/scavenge.js';
-import { buyPart, fitPart, sellMaterial, sellPart } from '../actions/market.js';
+import { buyListing, fitPart, sellMaterial, sellPart } from '../actions/market.js';
 import { upgrade } from '../actions/upgrade.js';
 import { calendarDays, createClock, DEFAULT_BUDGET, type PlayTimeBudget } from '../core/clock.js';
 import { createRng } from '../core/rng.js';
@@ -322,17 +325,20 @@ export function playRun(input: PlayRunInput): RunResult {
         );
         if (out.ok) {
           state.log.push(`fitted ${action.storageId} (${action.reason})`);
+        } else if (process.env['SIM_DEBUG'] === '1') {
+          process.stderr.write(
+            `[fit] ${action.storageId} -> ${action.replaceId ?? 'slot'} failed: ${out.reason}\n`,
+          );
         }
         return false;
       }
       case 'buy': {
-        const out = buyPart(
+        const out = buyListing(
           state,
           snapshot,
           ctx.rules,
           catalogByType,
-          action.partType,
-          action.locationId,
+          action.listingId,
         );
         if (!out.ok || out.partId === undefined || out.price === undefined) return false;
         const fit = fitPart(
@@ -342,8 +348,9 @@ export function playRun(input: PlayRunInput): RunResult {
           out.partId,
           action.replaceId ?? undefined,
         );
+        const used = out.condition !== undefined && out.condition < 100 ? ` used@${out.condition}` : '';
         state.log.push(
-          `bought ${action.partType} at ${action.locationId} for ${out.price} ` +
+          `bought ${action.partType} at ${action.locationId} for ${out.price}${used} ` +
             `(wallet ${state.wallet})${fit.ok ? '' : ' — kept in the hold'}`,
         );
         return false;
@@ -358,8 +365,14 @@ export function playRun(input: PlayRunInput): RunResult {
       case 'travel-to-buy': {
         const target = action.locationId;
         const hop = travelOffer({ snapshot, world, state, destinationId: target, nowMs });
-        if (hop === null || !canTakeMission(state, hop, ctx).ok) return false;
+        if (hop === null) return false;
+        // A buy port is not worth a fight the pilot would refuse as a mission: same danger rule
+        // as work, checked before a credit is spent on the tank.
+        if (!decideDanger(state, catalogByType, hop).accept) return false;
         const need = missionFuelNeed(state, hop, { rules: ctx.rules, catalogByType });
+        // Pay for the shortfall *before* judging the hop: the refusal the plan is answering is
+        // NOT_ENOUGH_FUEL, and gating on it first made this refuel unreachable — the buy port
+        // had to wait for some other errand to fill the tank.
         const shortfall = need - state.ship.fuel;
         if (shortfall > 0) {
           const quote = refuelQuote(
@@ -367,14 +380,41 @@ export function playRun(input: PlayRunInput): RunResult {
           );
           if (quote.cost <= state.wallet) {
             refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
+          } else if (process.env['SIM_DEBUG'] === '1') {
+            process.stderr.write(
+              `[hop2buy] refuel blocked: shortfall ${shortfall} costs ${quote.cost} > wallet ${state.wallet}\n`,
+            );
           }
         }
+        const take = canTakeMission(state, hop, ctx);
+        if (process.env['SIM_DEBUG'] === '1') {
+          process.stderr.write(
+            `[hop2buy] @${state.locationId} -> ${target} hop=ok ` +
+              `take=${take.ok ? 'ok' : take.reasons.join('+')} ` +
+              `fuel=${state.ship.fuel} need=${need} wallet=${state.wallet}\n`,
+          );
+        }
+        if (!take.ok) return false;
         if (state.ship.fuel < need) return false;
         const from = state.locationId;
         const trip = travel(state, ctx, world, target, nowMs);
         if (trip === null) return false;
         state.missionsDone -= 1;
         state.clock.advance(budget.humanPauseSeconds);
+        // A trip that failed to arrive is not a hop: the hull stays put (adrift, until the tow
+        // below brings it back) and the plan gets to try again next turn.
+        towIfAdrift(trip.shipStatus, 'buy-hop');
+        const arrived =
+          (trip.status === 'success' || trip.status === 'partial_failure') &&
+          trip.shipStatus !== 'ADRIFT';
+        if (!arrived) {
+          if (process.env['SIM_DEBUG'] === '1') {
+            process.stderr.write(
+              `[hop2buy] trip failed: status=${trip.status} shipStatus=${trip.shipStatus}\n`,
+            );
+          }
+          return false;
+        }
         state.log.push(
           `hopped ${from} -> ${target} to buy ${action.targetBase} (wallet ${state.wallet})`,
         );
@@ -416,6 +456,22 @@ export function playRun(input: PlayRunInput): RunResult {
       sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
     }
     const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    if (process.env['SIM_DEBUG'] === '1') {
+      const action = plan.action;
+      const detail =
+        action.kind === 'none'
+          ? action.reason
+          : action.kind === 'fit'
+            ? `${action.targetBase} ${action.reason}`
+            : action.kind === 'buy'
+              ? `${action.partType}@${action.locationId} ${action.price} ${action.reason}`
+              : action.kind === 'travel-to-buy'
+                ? `${action.targetBase}->${action.locationId} ${action.reason}`
+                : `${action.partId} ${action.nextPartType} ${action.reason}`;
+      process.stderr.write(
+        `[plan] @${state.locationId} wallet=${state.wallet} ${action.kind} ${detail}\n`,
+      );
+    }
     if (executeSpend(plan.action, nowMs)) continue;
 
     const picked = pickOffer(state, ctx, world, board, rng, nowMs);
@@ -442,6 +498,61 @@ export function playRun(input: PlayRunInput): RunResult {
         endReason = 'board-stall';
         state.log.push(stallReason);
         break;
+      }
+      // A viability-failed ship has no takeable offer at all, so decideRepair never runs and a
+      // fuel buy-out cannot help a hull the resolver will not launch — that is the deadlock.
+      // The condition-driven failure is a dead fuel holder: the sheet drops it from fuelCap and
+      // the hull cannot launch. Repair *those parts* — a full overhaul costs more than a late
+      // run has left, and the remaining problems are catalog setup no workshop can fix. Ordinary
+      // wear is not grounds: a quiet board says nothing about the thresholds decideRepair weighs.
+      const viabilityParts = installedParts(state.ship, ctx.catalogByType);
+      const viability = checkViability(
+        deriveSheet(viabilityParts, ctx.rules),
+        viabilityParts,
+        ctx.rules,
+      );
+      if (!viability.viable) {
+        const targets = viabilityParts
+          .filter(
+            (part) =>
+              isDead(part.instance.condition, ctx.rules) &&
+              (part.catalog.fuelCap ?? 0) > 0,
+          )
+          .map((part) => ({ partId: part.instance.id }));
+        const quote = repairQuote(
+          state,
+          snapshot,
+          ctx.rules,
+          catalogByType,
+          state.locationId,
+          targets,
+        );
+        if (process.env['SIM_DEBUG'] === '1') {
+          process.stderr.write(
+            `[ground] @${state.locationId} fuel=${state.ship.fuel} wallet=${state.wallet} ` +
+              `points=${quote.points} cost=${quote.cost} empty=${emptyRounds} ` +
+              `problems=${viability.problems.map((p) => p.code).join('+')}\n`,
+          );
+        }
+        if (targets.length > 0 && quote.points > 0 && quote.cost <= state.wallet) {
+          const bill = repair(
+            state,
+            snapshot,
+            ctx.rules,
+            catalogByType,
+            state.locationId,
+            targets,
+          );
+          if (bill.cost > 0) recentRepairBills.push(bill.cost);
+          state.clock.advance(budget.humanPauseSeconds);
+          emptyRounds = 0;
+          state.log.push(`repaired ${bill.points} points to fly again (wallet ${state.wallet})`);
+          continue;
+        }
+        state.log.push(
+          `grounded at ${state.locationId}: repair ${quote.points} points costs ${quote.cost}, ` +
+            `wallet ${state.wallet}`,
+        );
       }
       // The board has work the pilot can afford but cannot fly: fuel is the only rejection.
       // Buying the shortfall for the cheapest such job turns a rejection into a takeoff — the
@@ -700,6 +811,17 @@ export function playRun(input: PlayRunInput): RunResult {
     }
   }
 
+  if (process.env['SIM_DEBUG'] === '1') {
+    const kit = state.ship.parts
+      .map(
+        (part) =>
+          `${part.partType}:${catalogByType.get(part.partType)?.rarity ?? '?'}@${part.condition}`,
+      )
+      .join(' ');
+    process.stderr.write(
+      `[final] level=${shipLevel(state.ship, catalogByType)} wallet=${state.wallet} parts=${kit}\n`,
+    );
+  }
   const successes = records.filter(
     (record) => record.status === 'success' || record.status === 'partial_failure',
   ).length;

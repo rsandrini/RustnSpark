@@ -65,6 +65,10 @@ export interface PlayerState {
   scavengeAttempts: Map<string, ScavengeAttempt>;
   /** Monotonic id source for parts the run acquires (scavenge finds, market buys). */
   partSeq: number;
+  /** Listing ids bought today: one physical item per port per shelf, gone until the day rolls. */
+  soldListings: Set<string>;
+  /** The shelf day `soldListings` belongs to; a new day clears it (live's buy-event window). */
+  soldDay: string;
   log: string[];
 }
 
@@ -147,6 +151,8 @@ export function starterPlayer(
     lastScavengeAt: null,
     scavengeAttempts: new Map(),
     partSeq: 0,
+    soldListings: new Set(),
+    soldDay: '',
     log: [],
   };
 }

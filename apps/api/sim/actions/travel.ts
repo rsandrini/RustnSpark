@@ -73,6 +73,7 @@ export interface TravelResult {
   readonly fuelBurned: number;
   readonly wearPoints: number;
   readonly status: string;
+  readonly shipStatus: 'ON_MISSION' | 'ADRIFT';
 }
 
 /**
@@ -96,5 +97,6 @@ export function travel(
     fuelBurned: result.fuelBurned,
     wearPoints: result.wearPoints,
     status: result.status,
+    shipStatus: result.shipStatus,
   };
 }

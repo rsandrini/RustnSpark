@@ -8,15 +8,16 @@
  */
 import type { GameRules } from '../../src/config/game-config.types.js';
 import { fuelUnits } from '../../src/economy/fuel-cost.calculator.js';
-import { buyPrice, sellPrice } from '../../src/economy/price.calculator.js';
+import { sellPrice } from '../../src/economy/price.calculator.js';
 import { basePartTypeOf, nextTierPartTypeOf } from '../../src/economy/part-upgrade.calculator.js';
 import { upgradeNeeds, type MaterialNeed } from '../../src/economy/upgrade-materials.js';
 import type { FillerWorld } from '../../src/missions/generator/template.filler.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
+import { checkViability } from '../../src/ships/viability.js';
 import { canTakeMission } from '../actions/mission.js';
 import { travelOffer } from '../actions/travel.js';
 import { refuelQuote } from '../actions/fuel.js';
-import { fitWouldBeViable, priceInputAt } from '../actions/market.js';
+import { fitWouldBeViable, marketShelf, priceInputAt } from '../actions/market.js';
 import { retentionFor, upgradeQuote } from '../actions/upgrade.js';
 import {
   averageConditionOf,
@@ -116,12 +117,21 @@ export function needsRepair(
   );
 }
 
-/** Is the ship too worn to fly safely (a key part near dead)? */
+/**
+ * Is the ship too worn to fly? The condition rules (a part worn out, a key part near dead) and
+ * the board's own gate: the resolver derives the sheet from living parts only, so a dead tank is
+ * no tank — fuel capacity and with it `checkViability`'s fuel rule are gone while the part still
+ * sits at condition 1, above the old `<= 0` line. Grounded now means what the mission board
+ * means by it, or the repair policy never fires for the one failure that grounds a ship.
+ */
 export function isShipGrounded(
   state: PlayerState,
+  rules: GameRules,
   catalogByType: ReadonlyMap<string, CatalogRow>,
 ): boolean {
-  return minConditionOf(state) <= 0 || minKeyConditionOf(state, catalogByType) <= 5;
+  if (minConditionOf(state) <= 0 || minKeyConditionOf(state, catalogByType) <= 5) return true;
+  const installed = installedParts(state.ship, catalogByType);
+  return !checkViability(deriveSheet(installed, rules), installed, rules).viable;
 }
 
 export interface CheapPortChoice {
@@ -245,7 +255,7 @@ export function decideRepair(
 ): RepairDecision {
   const { current, cheapest } = cheapPortsOf(state, snapshot, rules, catalogByType);
   const needs = needsRepair(state, catalogByType);
-  const grounded = isShipGrounded(state, catalogByType);
+  const grounded = isShipGrounded(state, rules, catalogByType);
 
   // At a cheap port, repair when the thresholds say so.
   if (current.isCheap && needs) {
@@ -396,6 +406,7 @@ export type SpendAction =
     }
   | {
       readonly kind: 'buy';
+      readonly listingId: string;
       readonly partType: string;
       readonly locationId: string;
       readonly price: number;
@@ -450,26 +461,32 @@ function keepNeedsOf(target: SpendTarget, rules: GameRules): readonly MaterialNe
   );
 }
 
-/** The port, among those a full tank can reach, that charges least for `partType` (ties: here). */
+/**
+ * Among the ports a full tank can reach, the cheapest listing of `partType` on today's shelf —
+ * new or used, real stock only: a rarity the bridge's chance kept off the shelf cannot be bought
+ * at any price, and the day's sold set already rules out what has been taken. Ties prefer here.
+ */
 function bestBuyPort(
   state: PlayerState,
   snapshot: Snapshot,
   rules: GameRules,
   catalogByType: ReadonlyMap<string, CatalogRow>,
   partType: string,
-): { locationId: string; price: number } | null {
+): { locationId: string; listingId: string; price: number; condition: number } | null {
   const row = catalogByType.get(partType);
   if (row === undefined || !row.active) return null;
   const fullTank = fuelCapOf(state, catalogByType, rules);
   const reachable = reachablePorts(state, snapshot, rules, catalogByType, fullTank);
   const ordered = [state.locationId, ...reachable.filter((id) => id !== state.locationId).sort()];
-  let best: { locationId: string; price: number } | null = null;
+  let best: { locationId: string; listingId: string; price: number; condition: number } | null =
+    null;
   for (const locationId of ordered) {
-    const price = buyPrice(
-      priceInputAt(snapshot, state.factionId, locationId, row.basePrice, FULL_CONDITION),
-      rules,
-    );
-    if (best === null || price < best.price) best = { locationId, price };
+    for (const listing of marketShelf(state, snapshot, rules, catalogByType, locationId)) {
+      if (listing.partType !== partType) continue;
+      if (best === null || listing.price < best.price) {
+        best = { locationId, listingId: listing.listingId, price: listing.price, condition: listing.condition };
+      }
+    }
   }
   return best;
 }
@@ -482,15 +499,18 @@ function optionsFor(
   target: SpendTarget,
 ): SpendOption[] {
   const options: SpendOption[] = [];
-  // (a) Fit a loose part of the family at the needed rarity or better — free, if one is held.
+  // (a) Fit a loose part of the family at the *target* tier or better — free, if one is held.
+  // Only progress counts: an equal-rarity swap is worth nothing to the ship's level, and a net-0
+  // option outranking every buy would have the pilot ping-ponging parts forever.
   let bestLoose: ShipPartState | null = null;
   let bestLooseIdx = -1;
+  const neededIdx = rarityIndex(target.nextRow.rarity);
   for (const candidate of state.storage) {
     const row = catalogByType.get(candidate.partType);
     if (row === undefined || !row.active) continue;
     if (familyBaseOf(row) !== target.base) continue;
     const idx = rarityIndex(row.rarity);
-    if (idx < target.rarityIdx) continue;
+    if (idx < neededIdx) continue;
     if (idx > bestLooseIdx) {
       bestLoose = candidate;
       bestLooseIdx = idx;
@@ -552,6 +572,7 @@ function optionsFor(
         cash: buy.price,
         action: {
           kind: 'buy',
+          listingId: buy.listingId,
           partType: target.nextRow.partType,
           locationId: buy.locationId,
           price: buy.price,

@@ -18,16 +18,24 @@ import {
 } from '../../../sim/actions/scavenge.js';
 import { canMine, mine, miningEligible, miningOffer } from '../../../sim/actions/mining.js';
 import {
-  buyPart,
+  buyListing,
   fitPart,
+  marketShelf,
   priceInputAt,
   sellMaterial,
   sellPart,
+  shelfDayAt,
 } from '../../../sim/actions/market.js';
+import {
+  catalogListingId,
+  dayKey,
+  USED_OFFER_COUNT,
+  usedListingId,
+} from '../../../src/economy/used-offers.js';
 import { heldForNeed, retentionFor, upgrade, upgradeQuote } from '../../../sim/actions/upgrade.js';
 import { catalogIndex, installedParts, shipLevel, starterPlayer } from '../../../sim/core/state.js';
 import { buildFillerWorld } from '../../../sim/core/world.js';
-import { atOrBelowTarget, sellList, spendPlan } from '../../../sim/bots/policy.js';
+import { atOrBelowTarget, sellList, spendPlan, type SpendAction } from '../../../sim/bots/policy.js';
 import { playRun } from '../../../sim/bots/bot.js';
 import { fixtureSnapshot } from './fixture.js';
 import type { CatalogRow, Snapshot } from '../../../sim/snapshot/types.js';
@@ -66,13 +74,22 @@ function row(overrides: Partial<CatalogRow> & Pick<CatalogRow, 'partType' | 'par
   };
 }
 
-/** The fixture plus an upgrade chain, a mining rig and scrap rows (a clone, never the fixture). */
+/**
+ * The fixture plus an upgrade chain, a mining rig and scrap rows (a clone, never the fixture).
+ * The clone's bridge is LEGENDARY so the shelf rolls from `market_rarity_by_bridge.LEGENDARY`:
+ * COMMON and UNCOMMON are always in stock, which makes the buy-side tests deterministic (the
+ * fixture's own COMMON bridge keeps its 14% UNCOMMON / 4.5% RARE / 0% above — the shelf tests
+ * use it where "forbidden rarity" is the point).
+ */
 function econSnapshot(): Snapshot {
   const base = fixtureSnapshot();
+  const bridge = base.catalog.find((candidate) => candidate.partType === 'bridge');
+  if (bridge === undefined) throw new Error('fixture catalog has no bridge row');
   return {
     ...base,
     catalog: [
-      ...base.catalog,
+      ...base.catalog.filter((candidate) => candidate.partType !== 'bridge'),
+      { ...bridge, rarity: 'LEGENDARY' },
       row({
         partType: 'hull_uncommon',
         partClass: 'DEFENSE',
@@ -312,8 +329,8 @@ describe('market: buying', () => {
   it('debits buyPrice at the port and files the part pristine in the hold', () => {
     const state = starterPlayer(snapshot, 'luna');
     const price = buyPrice(priceInputAt(snapshot, 'luna', 'ceres', 100, 100), ctx.rules);
-    const out = buyPart(state, snapshot, ctx.rules, ctx.catalogByType, 'hull', 'ceres');
-    expect(out).toEqual({ ok: true, price, partId: 'bought-1' });
+    const out = buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull');
+    expect(out).toEqual({ ok: true, price, partId: 'bought-1', condition: 100 });
     expect(state.wallet).toBe(200 - price);
     expect(state.ledger.total('purchase')).toBe(-price);
     expect(state.storage).toEqual([{ id: 'bought-1', partType: 'hull', condition: 100 }]);
@@ -321,25 +338,170 @@ describe('market: buying', () => {
 
   it('refuses what the wallet cannot pay and changes nothing', () => {
     const state = starterPlayer(snapshot, 'luna');
-    const out = buyPart(state, snapshot, ctx.rules, ctx.catalogByType, 'shield_basic', 'ceres');
+    const out = buyListing(
+      state,
+      snapshot,
+      ctx.rules,
+      ctx.catalogByType,
+      'catalog:ceres:shield_basic',
+    );
     expect(out).toEqual({ ok: false, reason: 'INSUFFICIENT_FUNDS' });
     expect(state.wallet).toBe(200);
     expect(state.ledger.total('purchase')).toBe(0);
     expect(state.storage).toEqual([]);
   });
 
-  it('refuses a buy away from the ship and an unknown listing', () => {
+  it('refuses a buy away from the ship, a malformed id, and an off-shelf part', () => {
     const state = starterPlayer(snapshot, 'luna');
     state.locationId = 'tycho';
-    expect(buyPart(state, snapshot, ctx.rules, ctx.catalogByType, 'hull', 'ceres')).toEqual({
+    expect(
+      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull'),
+    ).toEqual({ ok: false, reason: 'SHIP_NOT_AT_LOCATION' });
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'garbage')).toEqual({
       ok: false,
-      reason: 'SHIP_NOT_AT_LOCATION',
+      reason: 'INVALID_LISTING',
     });
-    expect(buyPart(state, snapshot, ctx.rules, ctx.catalogByType, 'hull_x', 'tycho')).toEqual({
-      ok: false,
-      reason: 'LISTING_NOT_FOUND',
-    });
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:tycho:hull_x')).toEqual(
+      { ok: false, reason: 'NOT_ON_SHELF' },
+    );
     expect(state.wallet).toBe(200);
+  });
+});
+
+describe('market: the shelf', () => {
+  it('lists today’s board: every active row new at 100, six used slots from the same pool', () => {
+    const snapshot = fixtureSnapshot();
+    const ctx = missionContext(snapshot);
+    const state = starterPlayer(snapshot, 'luna');
+    const shelf = marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, 'ceres');
+    const fresh = shelf.filter((listing) => listing.kind === 'catalog');
+    const used = shelf.filter((listing) => listing.kind === 'used');
+    // The COMMON bridge's fallback: COMMON is always in stock, and these rows are all common.
+    expect(fresh.map((listing) => listing.partType).sort()).toEqual([
+      'bridge',
+      'cargo',
+      'engine_chem_small',
+      'hull',
+      'shield_basic',
+      'tank_small',
+    ]);
+    expect(fresh.every((listing) => listing.condition === 100)).toBe(true);
+    expect(used).toHaveLength(USED_OFFER_COUNT);
+    // The used slots draw from the in-stock pool and price at their own worn condition.
+    for (const listing of used) {
+      expect(listing.condition).toBeGreaterThanOrEqual(40);
+      expect(listing.condition).toBeLessThanOrEqual(90);
+      const row = ctx.catalogByType.get(listing.partType);
+      if (row === undefined) throw new Error(`unknown used part ${listing.partType}`);
+      expect(listing.price).toBe(
+        buyPrice(
+          priceInputAt(snapshot, 'luna', 'ceres', row.basePrice, listing.condition),
+          ctx.rules,
+        ),
+      );
+    }
+    expect(state.soldListings.size).toBe(0);
+  });
+
+  it('never lists nor sells a rarity the bridge’s chance forbids', () => {
+    const base = fixtureSnapshot();
+    // COMMON bridge → market_rarity_by_bridge.COMMON gives LEGENDARY a 0 chance.
+    const snapshot: Snapshot = {
+      ...base,
+      catalog: [
+        ...base.catalog,
+        row({
+          partType: 'hull_legendary',
+          partClass: 'DEFENSE',
+          rarity: 'LEGENDARY',
+          w: 2,
+          h: 1,
+          basePrice: 900,
+        }),
+      ],
+    };
+    const ctx = missionContext(snapshot);
+    const state = starterPlayer(snapshot, 'luna');
+    const shelf = marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, 'ceres');
+    expect(shelf.some((listing) => listing.partType === 'hull_legendary')).toBe(false);
+    expect(
+      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull_legendary'),
+    ).toEqual({ ok: false, reason: 'NOT_ON_SHELF' });
+    expect(state.wallet).toBe(200);
+    expect(state.storage).toEqual([]);
+  });
+
+  it('stocks what the upgraded bridge allows, and the first buyer takes it for the day', () => {
+    const snapshot = econSnapshot(); // LEGENDARY bridge → UNCOMMON chance 1
+    const ctx = missionContext(snapshot);
+    const state = starterPlayer(snapshot, 'luna');
+    state.wallet = 10_000;
+    const listingId = catalogListingId('ceres', 'hull_uncommon');
+    const listed = marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, 'ceres').find(
+      (listing) => listing.listingId === listingId,
+    );
+    expect(listed).toBeDefined();
+    expect(listed?.condition).toBe(100);
+
+    const out = buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId);
+    expect(out).toMatchObject({ ok: true, price: listed?.price, condition: 100 });
+    expect(state.storage).toEqual([{ id: 'bought-1', partType: 'hull_uncommon', condition: 100 }]);
+    expect(state.wallet).toBe(10_000 - (listed?.price ?? 0));
+
+    // One physical item: gone from the board and un-buyable until the day rolls.
+    expect(
+      marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, 'ceres').some(
+        (listing) => listing.listingId === listingId,
+      ),
+    ).toBe(false);
+    expect(
+      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId),
+    ).toEqual({ ok: false, reason: 'LISTING_SOLD' });
+  });
+
+  it('restocks on the day roll and rejects a used listing minted on another day', () => {
+    const snapshot = econSnapshot();
+    const ctx = missionContext(snapshot);
+    const state = starterPlayer(snapshot, 'luna');
+    state.wallet = 10_000;
+    const listingId = catalogListingId('ceres', 'hull_uncommon');
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId).ok).toBe(true);
+
+    state.clock.advance(24 * 3600);
+    expect(shelfDayAt(state, snapshot)).toBe(dayKey(new Date(Date.parse(snapshot.takenAt) + 86_400_000)));
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId).ok).toBe(true);
+    expect(state.storage).toHaveLength(2);
+
+    // Yesterday's used ids are stale: the board only sells today's roll.
+    const stale = usedListingId('ceres', '2026-10-11', 0, 'hull');
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, stale)).toEqual({
+      ok: false,
+      reason: 'INVALID_LISTING',
+    });
+  });
+
+  it('buys a used slot at its worn condition and then it is sold too', () => {
+    const snapshot = fixtureSnapshot();
+    const ctx = missionContext(snapshot);
+    const state = starterPlayer(snapshot, 'luna');
+    state.wallet = 10_000;
+    const used = marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, 'ceres').find(
+      (listing) => listing.kind === 'used',
+    );
+    if (used === undefined) throw new Error('the used shelf is empty');
+    const out = buyListing(state, snapshot, ctx.rules, ctx.catalogByType, used.listingId);
+    expect(out).toMatchObject({
+      ok: true,
+      price: used.price,
+      condition: used.condition,
+    });
+    expect(state.storage).toEqual([
+      { id: 'bought-1', partType: used.partType, condition: used.condition },
+    ]);
+    expect(state.ledger.total('purchase')).toBe(-used.price);
+    expect(
+      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, used.listingId),
+    ).toEqual({ ok: false, reason: 'LISTING_SOLD' });
   });
 });
 
@@ -658,36 +820,66 @@ describe('spending plan', () => {
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
     const quote = upgradeQuote(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     const hullRow = ctx.catalogByType.get('hull');
-    const nextRow = ctx.catalogByType.get('hull_uncommon');
-    if (hullRow === undefined || nextRow === undefined) throw new Error('missing hull rows');
-    // What buying at the cheapest port would net after selling the old part, computed the same
-    // way `bestBuyPort` does: every port, keep the lowest price.
+    if (hullRow === undefined) throw new Error('missing hull row');
     const ports = snapshot.locations.map((location) => location.id);
-    const bestBuy = Math.min(
-      ...ports.map((locationId) =>
-        buyPrice(priceInputAt(snapshot, 'luna', locationId, nextRow.basePrice, 100), ctx.rules),
-      ),
+    const sellOldAt = (locationId: string): number =>
+      sellPrice(priceInputAt(snapshot, 'luna', locationId, hullRow.basePrice, 100), ctx.rules);
+
+    // Every way up, recomputed from today's shelf the way the policy ranks them: the cheapest
+    // hull_uncommon listing at any port (new or used) net of the old hull's sale, the fill of
+    // the missing rig slot, and the in-place upgrade quote.
+    const hullNets = ports.flatMap((locationId) =>
+      marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, locationId)
+        .filter((listing) => listing.partType === 'hull_uncommon')
+        .map((listing) => listing.price - sellOldAt(locationId)),
     );
-    const sellOld = sellPrice(
-      priceInputAt(snapshot, 'luna', state.locationId, hullRow.basePrice, 100),
-      ctx.rules,
+    const rigNets = ports.flatMap((locationId) =>
+      marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, locationId)
+        .filter((listing) => listing.partType === 'mining_rig')
+        .map((listing) => listing.price),
     );
-    const buyNet = bestBuy - sellOld;
-    expect(quote.cost).toBeDefined();
-    if ((quote.cost ?? Number.POSITIVE_INFINITY) < buyNet) {
-      expect(plan.action).toMatchObject({ kind: 'upgrade', partId: hullId });
+    expect(hullNets.length).toBeGreaterThan(0); // the LEGENDARY bridge stocks UNCOMMON
+    const cheapest = Math.min(quote.cost ?? Number.POSITIVE_INFINITY, ...hullNets, ...rigNets);
+
+    // The chosen action really is that cheapest option — resolved back to its net.
+    const netOf = (action: SpendAction): number => {
+      switch (action.kind) {
+        case 'upgrade':
+          return quote.cost ?? Number.POSITIVE_INFINITY;
+        case 'buy':
+          return action.price - (action.targetBase === 'hull' ? sellOldAt(action.locationId) : 0);
+        case 'travel-to-buy': {
+          // The policy shops for the target's exact next row — for the hull slot that is
+          // hull_uncommon, not a used hull of the very tier we are trying to leave.
+          const wanted =
+            action.targetBase === 'hull' ? 'hull_uncommon' : action.targetBase;
+          const price = Math.min(
+            ...marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, action.locationId)
+              .filter((listing) => listing.partType === wanted)
+              .map((listing) => listing.price),
+          );
+          return price - (action.targetBase === 'hull' ? sellOldAt(action.locationId) : 0);
+        }
+        case 'fit':
+          return 0;
+        default:
+          return Number.POSITIVE_INFINITY;
+      }
+    };
+    expect(netOf(plan.action)).toBe(cheapest);
+    if (plan.action.kind === 'upgrade') {
+      expect(plan.action.partId).toBe(hullId);
     } else {
-      expect(plan.action).toMatchObject({
-        kind: 'buy',
-        partType: 'hull_uncommon',
-        replaceId: hullId,
-      });
+      expect(['buy', 'travel-to-buy']).toContain(plan.action.kind);
     }
     // The reserve (a full refuel here — the tank is full, so 0 — plus the standing repair
     // fallback of 500) is never touched by the chosen action's cash.
-    const cash = plan.action.kind === 'buy' || plan.action.kind === 'upgrade'
-      ? plan.action.kind === 'buy' ? plan.action.price : quote.cost ?? 0
-      : 0;
+    const cash =
+      plan.action.kind === 'buy'
+        ? plan.action.price
+        : plan.action.kind === 'upgrade'
+          ? quote.cost ?? 0
+          : 0;
     expect(cash).toBeLessThanOrEqual(10_000 - 500);
   });
 
@@ -695,12 +887,27 @@ describe('spending plan', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
     const state = starterPlayer(snapshot, 'luna');
-    state.wallet = 600; // 600 − the 500 reserve leaves 100: under every option's cash
     const hull = state.ship.parts.find((part) => part.partType === 'hull');
     if (hull !== undefined) hull.condition = 100;
+    // One credit under the dearest thing the plan could do — today's own cheapest listing
+    // (the used shelf really has one) or the upgrade quote — so the reserve (the refill: the
+    // tank is full, 0 — plus the standing repair fallback of 500) leaves nothing affordable.
+    const quote = upgradeQuote(state, snapshot, ctx.rules, ctx.catalogByType, hullIdOf(snapshot));
+    const cheapestCash = Math.min(
+      quote.cost ?? Number.POSITIVE_INFINITY,
+      ...snapshot.locations.flatMap((location) =>
+        marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, location.id)
+          .filter(
+            (listing) => listing.partType === 'hull_uncommon' || listing.partType === 'mining_rig',
+          )
+          .map((listing) => listing.price),
+      ),
+    );
+    expect(Number.isFinite(cheapestCash)).toBe(true);
+    state.wallet = 500 + cheapestCash - 1; // available = cheapestCash − 1 → no option fits
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
     expect(plan.action).toEqual({ kind: 'none', reason: 'saving' });
-    expect(state.wallet).toBe(600);
+    expect(state.wallet).toBe(500 + cheapestCash - 1);
   });
 });
 
