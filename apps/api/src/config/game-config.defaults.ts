@@ -150,7 +150,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
     rescue_fuel_fraction: 0.25,
     repair_min_base_price: 50,
-    sell_min_condition: 15,
+    // Parts below this condition (%) are refused at every port AND are what "discard"
+    // destroys (they cannot be sold, only scrapped). 1 = only a dead (0%) part qualifies.
+    sell_min_condition: 1,
     discard_scrap_per_part: 1,
     repair_points_per_scrap: 50,
     repair_scrap_max: 3,

@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type PartCatalog as PartCatalogRow } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
 import { localizeDisplayName } from '../common/locale/localize.js';
 import { resolveRequestLocale } from '../common/locale/request-locale.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import { MATERIAL_SELL_EVENT } from '../economy/materials.service.js';
+import { type MarketContext, PricingService } from '../economy/pricing.service.js';
+import { PlayerEventService } from '../players/player-event.service.js';
+import { WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ConnectorCell } from './connectors.js';
 import type { PartCatalog } from './part.types.js';
@@ -101,6 +105,9 @@ export class PartsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: GameConfigService,
+    private readonly pricing: PricingService,
+    private readonly wallet: WalletService,
+    private readonly events: PlayerEventService,
   ) {}
 
   // An explicit ?locale= wins; otherwise the player's saved locale, then the
@@ -187,25 +194,50 @@ export class PartsService {
    * Destroys every part in storage that is too damaged to sell (below `economy.sell_min_condition`):
    * no port takes them, so this is the way to clear them out. Installed parts are never touched.
    * Naturally idempotent: a second call finds nothing.
+   *
+   * Each destroyed part yields `economy.discard_scrap_per_part` of its own `scrap_<type>`
+   * material. Passing `sellScrap` sells exactly that freshly-granted scrap back to the port at
+   * its fixed price in the same transaction — a port action, so the ship must exist and be off
+   * a mission (GDD §13, same guards as a material sale). Without `sellScrap` no ship is needed:
+   * clearing out ashore (restart-kit salvage) must still work.
    */
-  async discardDamaged(playerId: string): Promise<{ discarded: number }> {
+  async discardDamaged(
+    playerId: string,
+    options: { sellScrap?: boolean } = {},
+  ): Promise<{ discarded: number; scrapSold: number; credits: number }> {
     const threshold = this.config.snapshot().rules.economy.sell_min_condition;
-    const events = await this.prisma.$transaction(async (tx) => {
+
+    // Auto-sell prices scrap at the ship's current port, so resolve that context up front
+    // (before any destruction) and refuse outright if the ship cannot trade.
+    let context: MarketContext | null = null;
+    if (options.sellScrap === true) {
+      const ship = await this.prisma.ship.findFirst({
+        where: { ownerPlayerId: playerId },
+        orderBy: { id: 'asc' },
+        select: { status: true, currentLocationId: true },
+      });
+      if (!ship) throw new NotFoundException('player has no ship');
+      if (ship.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+      context = await this.pricing.contextForLocation(ship.currentLocationId, playerId);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
       const rows = await tx.partInstance.findMany({
         where: { ownerPlayerId: playerId, location: 'INVENTORY', condition: { lt: threshold } },
         select: { id: true, partType: true },
       });
-      if (rows.length === 0) return 0;
+      if (rows.length === 0) return { discarded: 0, scrapSold: 0, credits: 0 };
       await tx.partInstance.deleteMany({ where: { id: { in: rows.map((row) => row.id) } } });
+
       // What is left of each part is scrap of its own type (when that part has scrap at all).
       const perPart = this.config.snapshot().rules.economy.discard_scrap_per_part;
+      const gained = new Map<string, number>();
       if (perPart > 0) {
         const scrapIds = await tx.material.findMany({
           where: { id: { in: rows.map((row) => `scrap_${row.partType}`) } },
           select: { id: true },
         });
         const known = new Set(scrapIds.map((material) => material.id));
-        const gained = new Map<string, number>();
         for (const row of rows) {
           const id = `scrap_${row.partType}`;
           if (known.has(id)) gained.set(id, (gained.get(id) ?? 0) + perPart);
@@ -218,16 +250,60 @@ export class PartsService {
           });
         }
       }
+
+      // Auto-sell the scrap we just granted, at the port's price (scrap is fixedPrice, so
+      // this is its basePrice and never zero). Each stack is decremented conditionally, the
+      // same shape as a manual material sale, so a concurrent sale cannot double-sell.
+      let scrapSold = 0;
+      let credits = 0;
+      if (context !== null && gained.size > 0) {
+        const materials = await tx.material.findMany({ where: { id: { in: [...gained.keys()] } } });
+        for (const material of materials) {
+          const quantity = gained.get(material.id) ?? 0;
+          if (quantity <= 0) continue;
+          const unitPrice = this.pricing.sellMaterial(context, material);
+          const price = unitPrice * quantity;
+          const remaining = await tx.$queryRaw<Array<{ quantity: number }>>`
+            UPDATE "PlayerMaterial" SET quantity = quantity - ${quantity}
+            WHERE "playerId" = ${playerId} AND "materialId" = ${material.id}
+              AND quantity >= ${quantity}
+            RETURNING quantity
+          `;
+          if (remaining[0] === undefined) continue;
+          if (remaining[0].quantity === 0) {
+            await tx.playerMaterial.delete({
+              where: { playerId_materialId: { playerId, materialId: material.id } },
+            });
+          }
+          if (price > 0) {
+            await this.wallet.credit(playerId, price, `${MATERIAL_SELL_EVENT}:${material.id}`, tx);
+            await this.events.record(
+              {
+                playerId,
+                type: MATERIAL_SELL_EVENT,
+                payload: { materialId: material.id, quantity, unitPrice, price },
+              },
+              tx,
+            );
+          }
+          scrapSold += quantity;
+          credits += price;
+        }
+      }
+
       await tx.playerEvent.create({
         data: {
           playerId,
           type: 'inventory.discard',
-          payload: { count: rows.length, partTypes: rows.map((row) => row.partType) },
+          payload: {
+            count: rows.length,
+            partTypes: rows.map((row) => row.partType),
+            ...(scrapSold > 0 ? { scrapSold, credits } : {}),
+          },
         },
       });
-      return rows.length;
+      return { discarded: rows.length, scrapSold, credits };
     });
-    return { discarded: events };
   }
 
   // Ship assembly operates on a player's parts; this returns them with catalog stats attached.

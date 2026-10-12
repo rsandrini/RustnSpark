@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -34,8 +34,13 @@ export class PartsController {
 
   @Post('inventory/discard')
   @HttpCode(HttpStatus.OK)
-  discard(@CurrentUser() user: CurrentUserPayload): Promise<{ discarded: number }> {
-    return this.partsService.discardDamaged(user.playerId);
+  discard(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() body: { sellScrap?: boolean } | undefined,
+  ): Promise<{ discarded: number; scrapSold: number; credits: number }> {
+    return this.partsService.discardDamaged(user.playerId, {
+      sellScrap: body?.sellScrap === true,
+    });
   }
 
   @Get('inventory')

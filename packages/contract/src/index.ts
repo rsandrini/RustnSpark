@@ -743,9 +743,7 @@ export const ReportStatsSchema = z.object({
   /** Wear from the journey itself: condition points lost across parts, and how many parts. */
   travelWear: z.object({ points: z.number(), parts: z.number() }),
   /** Where the journey's own damage went: the shield, the armor, the hull. */
-  travelLayers: z
-    .object({ shield: z.number(), armor: z.number(), hull: z.number() })
-    .optional(),
+  travelLayers: z.object({ shield: z.number(), armor: z.number(), hull: z.number() }).optional(),
   /** Whether the dispatched ship had a shield at all (a DEFENSE part with ESC > 0). */
   hasShield: z.boolean(),
   /** How the engines were run (engine tuning), per group; empty when run as listed. */
@@ -895,7 +893,14 @@ export const MarketResponseSchema = z.object({
 });
 export type MarketResponse = z.infer<typeof MarketResponseSchema>;
 
-export const DiscardResponseSchema = z.object({ discarded: z.number() });
+// Discarding destroys parts below `sellMinCondition` and returns their scrap; when the
+// caller asks to auto-sell that scrap (`sellScrap`), the port buys it back at its fixed
+// price in the same call, so `scrapSold`/`credits` are 0 unless it was requested.
+export const DiscardResponseSchema = z.object({
+  discarded: z.number(),
+  scrapSold: z.number(),
+  credits: z.number(),
+});
 export type DiscardResponse = z.infer<typeof DiscardResponseSchema>;
 
 export const BuyResponseSchema = z.object({
