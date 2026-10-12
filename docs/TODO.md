@@ -8,6 +8,21 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **Scavenging on foot must work without a working ship, and while the ship is being repaired.**
+  On foot there is no ship involved (no fuel, no wear, no pirates), so it should be available when
+  the ship is broken, empty, not ready to fly, or in the workshop. Today `ScavengeJobService.start`
+  refuses it with `SHIP_REPAIRING` when the ship has a pending repair, and requires an idle ship
+  at the place (`SHIP_NOT_AT_LOCATION`, `SHIP_NOT_IN_PORT`), even for the on-foot mode. Related to
+  the bug above ("scavenging dispatches without a ship"): together they say that **"with the ship"
+  needs a ready ship, and "on foot" needs nothing but the pilot being at the place**. *Open points:*
+  can the pilot scavenge on foot while the ship is away on a mission (probably yes, it is the pilot
+  who searches, but check `ACTIVE_MISSION_EXISTS`), and what ship the job is dispatched with when
+  none can fly (the dispatch needs a ship id; the job may need to run on the pilot instead).
+  *Where:* `apps/api/src/missions/scavenge-job.service.ts` (`start`, the on-foot branch),
+  `dispatch.service.ts` (`onFoot`), and the Scavenging tab in `apps/web/src/features/port/port.page.tsx`
+  (the on-foot card must stay enabled). Add tests: on foot with a pending repair, with an empty
+  ship, and with a ship that is not viable.
+
 - [ ] **BUG: the mission progress bar only updates when I click something.** The trip progress (the
   bar on the transit / My Ship mission card, and the ship's position on the map) does not advance
   by itself; it moves only after an interaction. It should tick on its own, for example from a
