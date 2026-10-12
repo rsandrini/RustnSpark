@@ -1,5 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
-import { cellKey, connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import {
+  cellKey,
+  connectedPartIds,
+  incorrectPortPartIds,
+  validateLayout,
+} from '../../../src/ships/geometry.js';
 import { directionErrors } from '../../../src/ships/direction.js';
 import type { ConnectorLayout } from '../../../src/parts/connectors.js';
 import type { PartCatalog, Placement } from '../../../src/parts/part.types.js';
@@ -187,7 +192,12 @@ describe('validateLayout — format cell bounds', () => {
   });
 
   it('accepts every arm of the cross', () => {
-    for (const [gx, gy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+    for (const [gx, gy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
       const placements: Placement[] = [{ partInstanceId: 'p-bridge', gx, gy, rot: 0 }];
       expect(validateLayout(placements, bridgeOnly, CROSS_CELLS, noConnectors)).toEqual([]);
     }
@@ -396,9 +406,30 @@ describe('cellKey', () => {
 
 describe('direction rules are not part of validateLayout (free placement) but of flight viability', () => {
   const base: PartCatalog = {
-    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 0, structureCost: 0, partHp: 0, basePrice: 0,
-    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
-    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+    partType: 'x',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 0,
+    structureCost: 0,
+    partHp: 0,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   };
   const catalog = new Map<string, PartCatalog>([
     ['e', { ...base, partClass: 'ENGINE' }],
@@ -430,9 +461,81 @@ describe('direction rules are not part of validateLayout (free placement) but of
   it('treats 180 as a non-swapping rotation for footprints', () => {
     const wide = new Map<string, PartCatalog>([['w', { ...base, w: 2, h: 1 }]]);
     const cells = new Set(['0,0', '1,0']);
-    expect(validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 180 }], wide, cells)).toEqual([]);
+    expect(validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 180 }], wide, cells)).toEqual(
+      [],
+    );
     expect(
-      validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 90 }], wide, cells).map((e) => e.code),
+      validateLayout([{ partInstanceId: 'w', gx: 0, gy: 0, rot: 90 }], wide, cells).map(
+        (e) => e.code,
+      ),
     ).toEqual(['OUT_OF_BOUNDS']);
+  });
+});
+
+describe('incorrectPortPartIds (the red ports of the ship yard)', () => {
+  const POD: PartCatalog = {
+    partType: 'pod',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 0,
+    structureCost: 0,
+    partHp: 0,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
+  };
+  const catalog = new Map([
+    ['a', POD],
+    ['b', POD],
+  ]);
+  // a at (0,0), b at (1,0): a's E side touches b's W side
+  const placements: Placement[] = [
+    { partInstanceId: 'a', gx: 0, gy: 0, rot: 0 },
+    { partInstanceId: 'b', gx: 1, gy: 0, rot: 0 },
+  ];
+  const ports = (a: ConnectorLayout | null, b: ConnectorLayout | null) =>
+    incorrectPortPartIds(
+      placements,
+      catalog,
+      new Map<string, ConnectorLayout | null>([
+        ['a', a],
+        ['b', b],
+      ]),
+    );
+  const side = (s: 'N' | 'E' | 'S' | 'W', kind: 'central' | 'split' | 'universal') => ({
+    cells: [{ dx: 0, dy: 0, side: s, kind }],
+  });
+
+  it('a compatible pair is correct', () => {
+    expect(ports(side('E', 'central'), side('W', 'central'))).toEqual(new Set());
+    expect(ports(side('E', 'universal'), side('W', 'split'))).toEqual(new Set());
+  });
+
+  it('a central against a split is incorrect, on the part that carries the connector', () => {
+    expect(ports(side('E', 'central'), side('W', 'split'))).toEqual(new Set(['a', 'b']));
+  });
+
+  it('a connector against a blank wall is incorrect; the blank side is not', () => {
+    expect(ports(side('E', 'central'), { cells: [] })).toEqual(new Set(['a']));
+  });
+
+  it('an open port with nothing in front is fine, and so is a part with no stored layout', () => {
+    expect(ports(side('N', 'central'), side('N', 'central'))).toEqual(new Set());
+    expect(ports(null, side('W', 'central'))).toEqual(new Set());
   });
 });

@@ -236,7 +236,8 @@
       "LIFE_SUPPORT_UNPOWERED": "Life support does not get enough power to run: passengers would not survive. Add power generation.",
       "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
       "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
-      "PART_DISCONNECTED": "A part is not connected to the bridge: fix its connectors or remove it. You can still save the layout."
+      "PART_DISCONNECTED": "A part is not connected to the bridge: fix its connectors or remove it. You can still save the layout.",
+      "PORT_INCORRECT": "Some connectors press against a part they do not fit (the red ports): move or rotate those parts. You can still save the layout."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -1275,7 +1276,8 @@
       "STRUCTURE_EXCEEDED": "Structure budget exceeded",
       "HOLD_OVER_CAPACITY": "The mission's cargo does not fit the ship's cargo space.",
       "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
-      "PART_DISCONNECTED": "Part not connected"
+      "PART_DISCONNECTED": "Part not connected",
+      "PORT_INCORRECT": "Incorrect connection"
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",

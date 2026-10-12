@@ -67,27 +67,32 @@ export function conductiveCatalog(
 
 /**
  * Folds the connection state into a viability report: an installed part with no connection back to
- * the bridge keeps the ship on the ground (it weighs the ship down and does nothing). Only the
- * flight checks use it; saving a layout is never blocked, so a refit can pass through that state.
+ * the bridge, or with a connector pressed against one that does not fit, keeps the ship on the
+ * ground. Only the flight checks use it; saving a layout is never blocked, so a refit can pass
+ * through that state.
  */
 export function withConnectionProblem(
   report: ViabilityReport,
   installed: readonly InstalledPart[],
   connectedIds: ReadonlySet<string>,
+  incorrectIds: ReadonlySet<string> = new Set(),
 ): ViabilityReport {
   const loose = installed.filter((part) => !connectedIds.has(part.instance.id)).length;
-  if (loose === 0 || report.problems.some((problem) => problem.code === 'PART_DISCONNECTED')) {
-    return report;
+  const wrong = installed.filter((part) => incorrectIds.has(part.instance.id)).length;
+  const problems = [...report.problems];
+  const has = (code: string): boolean => problems.some((problem) => problem.code === code);
+  if (loose > 0 && !has('PART_DISCONNECTED')) {
+    problems.push({
+      code: 'PART_DISCONNECTED',
+      message: `${loose} installed part(s) are not connected to the bridge: fix their connectors or remove them.`,
+    });
   }
-  return {
-    viable: false,
-    problems: [
-      ...report.problems,
-      {
-        code: 'PART_DISCONNECTED',
-        message: `${loose} installed part(s) are not connected to the bridge: fix their connectors or remove them.`,
-      },
-    ],
-    warnings: report.warnings,
-  };
+  if (wrong > 0 && !has('PORT_INCORRECT')) {
+    problems.push({
+      code: 'PORT_INCORRECT',
+      message: `${wrong} installed part(s) have a connector against one that does not fit: move or rotate them.`,
+    });
+  }
+  if (problems.length === report.problems.length) return report;
+  return { viable: false, problems, warnings: report.warnings };
 }

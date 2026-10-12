@@ -30,7 +30,7 @@ import { computeHold, type HoldState } from './hold.js';
 import { applyConnectivity, conductiveCatalog, withConnectionProblem } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
-import { connectedPartIds, validateLayout } from './geometry.js';
+import { connectedPartIds, incorrectPortPartIds, validateLayout } from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
@@ -268,6 +268,7 @@ export class ShipsService implements OnModuleInit {
         checkViability(sheet, installedConnected, rules),
         installed,
         connectedIds,
+        incorrectPortPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance),
       ),
       effectiveLayout,
       catalogForConnectivity,

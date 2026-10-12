@@ -221,3 +221,57 @@ export function connectedPartIds(
 
   return connectedParts;
 }
+
+/**
+ * Parts with an incorrect port: a part's connector (any side of any of its cells that carries a
+ * connector) pressed against another part whose facing side is not compatible — a different kind,
+ * or a blank wall. A port with nothing in front of it is simply open, and a part's own adjacent
+ * cells never need a connector. Parts without a stored connector layout have no ports. This is the
+ * same rule the ship yard draws in red, so the screen and the server cannot disagree.
+ */
+export function incorrectPortPartIds(
+  placements: readonly Placement[],
+  catalog: ReadonlyMap<string, PartCatalog>,
+  connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null>,
+): Set<string> {
+  const occupied = new Map<string, OccupiedCell>();
+  const rotByInstance = new Map<string, number>();
+  for (const placement of placements) {
+    const part = catalog.get(placement.partInstanceId);
+    if (part === undefined) continue;
+    rotByInstance.set(placement.partInstanceId, placement.rot);
+    for (const { x, y, dx, dy } of footprintCells(placement, part)) {
+      occupied.set(cellKey(x, y), { partInstanceId: placement.partInstanceId, dx, dy });
+    }
+  }
+  const kindAt = (cell: OccupiedCell, side: 'N' | 'E' | 'S' | 'W') => {
+    const rot = rotByInstance.get(cell.partInstanceId) ?? 0;
+    const part = catalog.get(cell.partInstanceId);
+    const authored =
+      part === undefined
+        ? { dx: cell.dx, dy: cell.dy }
+        : worldToAuthoredCell(cell.dx, cell.dy, part.w, part.h, rot);
+    return sideKindAt(
+      connectorsByInstance.get(cell.partInstanceId) ?? null,
+      authored.dx,
+      authored.dy,
+      authoredSideAt(side, rot),
+    );
+  };
+
+  const incorrect = new Set<string>();
+  for (const [key, cell] of occupied) {
+    if ((connectorsByInstance.get(cell.partInstanceId) ?? null) === null) continue;
+    const [xRaw, yRaw] = key.split(',');
+    const x = Number(xRaw);
+    const y = Number(yRaw);
+    for (const offset of NEIGHBOR_OFFSETS) {
+      const here = kindAt(cell, offset.from);
+      if (here === 'none') continue;
+      const neighbor = occupied.get(cellKey(x + offset.dx, y + offset.dy));
+      if (neighbor === undefined || neighbor.partInstanceId === cell.partInstanceId) continue;
+      if (!compatible(here, kindAt(neighbor, offset.to))) incorrect.add(cell.partInstanceId);
+    }
+  }
+  return incorrect;
+}

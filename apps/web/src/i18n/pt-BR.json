@@ -236,7 +236,8 @@
       "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
-      "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout."
+      "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout.",
+      "PORT_INCORRECT": "Alguns conectores encostam em uma peça com a qual não encaixam (as portas vermelhas): mova ou gire essas peças. Você ainda pode salvar o layout."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -1275,7 +1276,8 @@
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
-      "PART_DISCONNECTED": "Peça desconectada"
+      "PART_DISCONNECTED": "Peça desconectada",
+      "PORT_INCORRECT": "Conexão incorreta"
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",

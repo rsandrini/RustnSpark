@@ -20,6 +20,9 @@ export type ViabilityProblemCode =
   // dead weight, so the ship stays in port until it is connected or removed. Saving the layout is
   // never blocked by it.
   | 'PART_DISCONNECTED'
+  // A connector pressed against a neighbour that does not fit it (the red ports in the ship yard):
+  // part of the puzzle of making the ship viable. Saving the layout is never blocked by it.
+  | 'PORT_INCORRECT'
   // The loose parts and the ore the ship carries do not fit its free slots plus its cargo space.
   | 'HOLD_OVER_CAPACITY'
   // More loose parts than the bridge has slots for.

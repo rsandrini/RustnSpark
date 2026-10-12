@@ -272,6 +272,10 @@ describe('part upgrade API (round 5)', () => {
     // start at 100 — 63 used to be a valid pre-upgrade condition here, proving the value carried
     // over unchanged; that specific case is now covered instead by the NOT_FULL_CONDITION tests.
     const partId = await addLoosePart(player.seeded.player.id, 'hull', 100);
+    // The ports belong to the instance: an upgrade must never change them (the puzzle of the
+    // ship's connections is solved once per part, not once per rarity).
+    const ports = { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'split' }] };
+    await prisma.partInstance.update({ where: { id: partId }, data: { connectors: ports } });
     await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
     const quote = await quoteUpgrade(player.token, partId);
     const cost = (quote.body as { cost: number }).cost;
@@ -290,6 +294,7 @@ describe('part upgrade API (round 5)', () => {
     const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: partId } });
     expect(stored.partType).toBe('hull_uncommon');
     expect(stored.condition).toBe(100);
+    expect(stored.connectors).toEqual(ports);
 
     const events = await prisma.playerEvent.findMany({
       where: { playerId: player.seeded.player.id, type: 'part.upgraded' },

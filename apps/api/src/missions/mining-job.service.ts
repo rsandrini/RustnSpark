@@ -18,7 +18,7 @@ import {
   withConnectionProblem,
 } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
-import { connectedPartIds } from '../ships/geometry.js';
+import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
@@ -138,6 +138,11 @@ export class MiningJobService {
           checkViability(sheet, installedConnected, rules),
           installed,
           connectedIds,
+          incorrectPortPartIds(
+            (ship.layout as unknown as Placement[]) ?? [],
+            catalogForConnectivity,
+            connectorsByInstance,
+          ),
         ),
         (ship.layout as unknown as Placement[]) ?? [],
         catalogForConnectivity,

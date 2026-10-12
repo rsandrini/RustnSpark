@@ -22,7 +22,7 @@ import {
   withConnectionProblem,
 } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
-import { connectedPartIds } from '../ships/geometry.js';
+import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
@@ -307,6 +307,11 @@ export class DispatchService {
         checkViability(sheet, installedConnected, rules),
         installed,
         connectedIds,
+        incorrectPortPartIds(
+          (ship.layout as unknown as Placement[]) ?? [],
+          catalogForConnectivity,
+          connectorsByInstance,
+        ),
       );
       // The spare parts travel with the ship: they must fit the bridge's slots; the mission's cargo, the cargo space.
       // What a delivery loads (a fixed load, or all the room an open one has): it takes cargo space.
