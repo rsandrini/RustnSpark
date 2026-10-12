@@ -11,11 +11,7 @@ import { missionDuration } from '../../../src/missions/duration.calculator.js';
 import { buyPrice, sellPrice } from '../../../src/economy/price.calculator.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { missionContext } from '../../../sim/actions/mission.js';
-import {
-  scavenge,
-  scavengeCooldownLeft,
-  scavengeOffer,
-} from '../../../sim/actions/scavenge.js';
+import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../../../sim/actions/scavenge.js';
 import { canMine, mine, miningEligible, miningOffer } from '../../../sim/actions/mining.js';
 import {
   buyListing,
@@ -35,7 +31,12 @@ import {
 import { heldForNeed, retentionFor, upgrade, upgradeQuote } from '../../../sim/actions/upgrade.js';
 import { catalogIndex, installedParts, shipLevel, starterPlayer } from '../../../sim/core/state.js';
 import { buildFillerWorld } from '../../../sim/core/world.js';
-import { atOrBelowTarget, sellList, spendPlan, type SpendAction } from '../../../sim/bots/policy.js';
+import {
+  atOrBelowTarget,
+  sellList,
+  spendPlan,
+  type SpendAction,
+} from '../../../sim/bots/policy.js';
 import { playRun } from '../../../sim/bots/bot.js';
 import { fixtureSnapshot } from './fixture.js';
 import type { CatalogRow, Snapshot } from '../../../sim/snapshot/types.js';
@@ -44,7 +45,9 @@ const TAKEN_AT_MS = Date.parse(fixtureSnapshot().takenAt);
 const FIRST_MS = TAKEN_AT_MS;
 const SCAVENGE_COOLDOWN_MS = 600_000;
 
-function row(overrides: Partial<CatalogRow> & Pick<CatalogRow, 'partType' | 'partClass'>): CatalogRow {
+function row(
+  overrides: Partial<CatalogRow> & Pick<CatalogRow, 'partType' | 'partClass'>,
+): CatalogRow {
   return {
     rarity: 'COMMON',
     w: 1,
@@ -199,7 +202,9 @@ describe('scavenge job', () => {
     expect(out.ok).toBe(true);
     if (!out.ok) return;
     expect(out.durationSeconds).toBe(durationSeconds);
-    expect(Math.abs(out.durationSeconds - snapshot.rules.scavenging.duration_seconds)).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs(out.durationSeconds - snapshot.rules.scavenging.duration_seconds),
+    ).toBeLessThanOrEqual(2);
     expect(state.clock.now()).toBe(out.durationSeconds);
     // A job is work at the dock, not contract work: the run's tally stays put.
     expect(state.missionsDone).toBe(0);
@@ -248,8 +253,13 @@ describe('scavenge job', () => {
     const strandedCtx = missionContext(stranded);
     const strandedWorld = buildFillerWorld(stranded);
     const state = starterPlayer(stranded, 'luna');
-    expect(scavengeOffer({ snapshot: stranded, world: strandedWorld, state, nowMs: FIRST_MS })).toBeNull();
-    expect(scavenge(state, strandedCtx, strandedWorld, FIRST_MS)).toEqual({ ok: false, reason: 'NO_ROUTE' });
+    expect(
+      scavengeOffer({ snapshot: stranded, world: strandedWorld, state, nowMs: FIRST_MS }),
+    ).toBeNull();
+    expect(scavenge(state, strandedCtx, strandedWorld, FIRST_MS)).toEqual({
+      ok: false,
+      reason: 'NO_ROUTE',
+    });
   });
 });
 
@@ -303,7 +313,9 @@ describe('mining job', () => {
     if (!out.ok) return;
     expect(out.materialId).toBe('ore_iron');
     expect(out.durationSeconds).toBe(durationSeconds);
-    expect(Math.abs(out.durationSeconds - ctx.rules.mining.job_duration_seconds)).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs(out.durationSeconds - ctx.rules.mining.job_duration_seconds),
+    ).toBeLessThanOrEqual(2);
     expect(state.missionsDone).toBe(0);
     expect(state.miningDone).toBe(1);
     expect(state.ledger.total('reward')).toBe(0);
@@ -316,8 +328,18 @@ describe('mining job', () => {
   });
 
   it('is deterministic: the same port and millisecond dig the same material', () => {
-    const first = mine(starterPlayer(econSnapshot(), 'luna'), missionContext(econSnapshot()), buildFillerWorld(econSnapshot()), FIRST_MS);
-    const second = mine(starterPlayer(econSnapshot(), 'luna'), missionContext(econSnapshot()), buildFillerWorld(econSnapshot()), FIRST_MS);
+    const first = mine(
+      starterPlayer(econSnapshot(), 'luna'),
+      missionContext(econSnapshot()),
+      buildFillerWorld(econSnapshot()),
+      FIRST_MS,
+    );
+    const second = mine(
+      starterPlayer(econSnapshot(), 'luna'),
+      missionContext(econSnapshot()),
+      buildFillerWorld(econSnapshot()),
+      FIRST_MS,
+    );
     expect(second).toEqual(first);
   });
 });
@@ -354,16 +376,16 @@ describe('market: buying', () => {
   it('refuses a buy away from the ship, a malformed id, and an off-shelf part', () => {
     const state = starterPlayer(snapshot, 'luna');
     state.locationId = 'tycho';
-    expect(
-      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull'),
-    ).toEqual({ ok: false, reason: 'SHIP_NOT_AT_LOCATION' });
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull')).toEqual(
+      { ok: false, reason: 'SHIP_NOT_AT_LOCATION' },
+    );
     expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'garbage')).toEqual({
       ok: false,
       reason: 'INVALID_LISTING',
     });
-    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:tycho:hull_x')).toEqual(
-      { ok: false, reason: 'NOT_ON_SHELF' },
-    );
+    expect(
+      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:tycho:hull_x'),
+    ).toEqual({ ok: false, reason: 'NOT_ON_SHELF' });
     expect(state.wallet).toBe(200);
   });
 });
@@ -454,9 +476,10 @@ describe('market: the shelf', () => {
         (listing) => listing.listingId === listingId,
       ),
     ).toBe(false);
-    expect(
-      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId),
-    ).toEqual({ ok: false, reason: 'LISTING_SOLD' });
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId)).toEqual({
+      ok: false,
+      reason: 'LISTING_SOLD',
+    });
   });
 
   it('restocks on the day roll and rejects a used listing minted on another day', () => {
@@ -468,7 +491,9 @@ describe('market: the shelf', () => {
     expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId).ok).toBe(true);
 
     state.clock.advance(24 * 3600);
-    expect(shelfDayAt(state, snapshot)).toBe(dayKey(new Date(Date.parse(snapshot.takenAt) + 86_400_000)));
+    expect(shelfDayAt(state, snapshot)).toBe(
+      dayKey(new Date(Date.parse(snapshot.takenAt) + 86_400_000)),
+    );
     expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, listingId).ok).toBe(true);
     expect(state.storage).toHaveLength(2);
 
@@ -499,9 +524,10 @@ describe('market: the shelf', () => {
       { id: 'bought-1', partType: used.partType, condition: used.condition },
     ]);
     expect(state.ledger.total('purchase')).toBe(-used.price);
-    expect(
-      buyListing(state, snapshot, ctx.rules, ctx.catalogByType, used.listingId),
-    ).toEqual({ ok: false, reason: 'LISTING_SOLD' });
+    expect(buyListing(state, snapshot, ctx.rules, ctx.catalogByType, used.listingId)).toEqual({
+      ok: false,
+      reason: 'LISTING_SOLD',
+    });
   });
 });
 
@@ -511,7 +537,7 @@ describe('market: selling', () => {
 
   it('refuses a part worn below sell_min_condition', () => {
     const state = starterPlayer(snapshot, 'luna');
-    state.storage.push({ id: 'wreck', partType: 'hull', condition: 10 });
+    state.storage.push({ id: 'wreck', partType: 'hull', condition: 0 });
     const out = sellPart(state, snapshot, ctx.rules, 'wreck');
     expect(out).toEqual({ ok: false, reason: 'TOO_DAMAGED_TO_SELL' });
     expect(state.storage).toHaveLength(1);
@@ -636,7 +662,9 @@ describe('upgrade', () => {
     const bareCtx = missionContext(bare);
     const bareState = starterPlayer(bare, 'luna');
     const bareHull = bareState.ship.parts.find((part) => part.partType === 'hull');
-    expect(upgrade(bareState, bare, bareCtx.rules, bareCtx.catalogByType, bareHull?.id ?? '')).toEqual({
+    expect(
+      upgrade(bareState, bare, bareCtx.rules, bareCtx.catalogByType, bareHull?.id ?? ''),
+    ).toEqual({
       ok: false,
       reason: 'NO_NEXT_TIER',
     });
@@ -802,7 +830,11 @@ describe('spending plan', () => {
     const state = starterPlayer(snapshot, 'luna');
     state.storage.push({ id: 'rig-9', partType: 'mining_rig', condition: 100 });
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
-    expect(plan.action).toMatchObject({ kind: 'fit', storageId: 'rig-9', reason: 'fit-mining-rig' });
+    expect(plan.action).toMatchObject({
+      kind: 'fit',
+      storageId: 'rig-9',
+      reason: 'fit-mining-rig',
+    });
     expect(state.wallet).toBe(200);
     expect(state.ship.parts.some((part) => part.id === 'rig-9')).toBe(false);
   });
@@ -851,8 +883,7 @@ describe('spending plan', () => {
         case 'travel-to-buy': {
           // The policy shops for the target's exact next row — for the hull slot that is
           // hull_uncommon, not a used hull of the very tier we are trying to leave.
-          const wanted =
-            action.targetBase === 'hull' ? 'hull_uncommon' : action.targetBase;
+          const wanted = action.targetBase === 'hull' ? 'hull_uncommon' : action.targetBase;
           const price = Math.min(
             ...marketShelf(state, snapshot, ctx.rules, ctx.catalogByType, action.locationId)
               .filter((listing) => listing.partType === wanted)
@@ -878,7 +909,7 @@ describe('spending plan', () => {
       plan.action.kind === 'buy'
         ? plan.action.price
         : plan.action.kind === 'upgrade'
-          ? quote.cost ?? 0
+          ? (quote.cost ?? 0)
           : 0;
     expect(cash).toBeLessThanOrEqual(10_000 - 500);
   });
@@ -919,7 +950,7 @@ describe('sell list', () => {
     state.storage = [
       { id: 'hull-good', partType: 'hull', condition: 100 },
       { id: 'hull-worn', partType: 'hull', condition: 40 },
-      { id: 'hull-broken', partType: 'hull', condition: 10 }, // below sell_min_condition
+      { id: 'hull-broken', partType: 'hull', condition: 0 }, // below sell_min_condition
       { id: 'tank-loose', partType: 'tank_small', condition: 100 }, // not in the target kit
       { id: 'rig-loose', partType: 'mining_rig', condition: 100 },
     ];

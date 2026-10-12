@@ -418,12 +418,24 @@ export function PortPage({
   });
 
   const [discardOpen, setDiscardOpen] = useState(false);
+  // Owner TODO ("rework discard damaged"): the confirm dialog offers to sell the scrap the
+  // discard produces, right there in the same call, instead of leaving it in storage.
+  const [discardSellScrap, setDiscardSellScrap] = useState(true);
   const discard = useMutation({
-    mutationFn: () => client.post<DiscardResponse>('/v1/inventory/discard', {}),
+    mutationFn: () =>
+      client.post<DiscardResponse>('/v1/inventory/discard', { sellScrap: discardSellScrap }),
     onSuccess: (response) => {
       setDiscardOpen(false);
       setActionError(null);
-      setNotice(t('port.discarded', { count: response.discarded }));
+      setNotice(
+        response.scrapSold > 0
+          ? t('port.discardedSold', {
+              count: response.discarded,
+              scrap: response.scrapSold,
+              credits: money(response.credits),
+            })
+          : t('port.discarded', { count: response.discarded }),
+      );
       afterTrade();
     },
     onError: (error) => {
@@ -565,7 +577,7 @@ export function PortPage({
   const repairTotalSeconds = repairQuote?.durationSeconds ?? 0;
   const repairOver = repairTotalCost > wallet;
   // Parts under the threshold are refused at every port; they can be repaired or discarded.
-  const sellMin = marketQuery.data?.sellMinCondition ?? 15;
+  const sellMin = marketQuery.data?.sellMinCondition ?? 1;
   const damagedCount = partsOnSale.filter((item) => item.condition < sellMin).length;
   const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
@@ -1503,6 +1515,14 @@ export function PortPage({
       >
         <div className="stack">
           <p>{t('port.discardConfirmBody', { min: sellMin })}</p>
+          <label className="row" style={{ gap: '0.5rem', alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              checked={discardSellScrap}
+              onChange={(event) => setDiscardSellScrap(event.target.checked)}
+            />
+            {t('port.discardSellScrap')}
+          </label>
           <button
             type="button"
             className="btn danger"

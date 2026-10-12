@@ -396,7 +396,8 @@ export function addWreck(): void {
     displayName: partNameOf('cargo'),
     description: partDescriptionOf('cargo'),
     rarity: 'COMMON',
-    condition: 6,
+    // Dead (0%): the only thing the port refuses to buy, so it is what "discard" destroys.
+    condition: 0,
     broken: false,
     location: 'INVENTORY',
     shipId: null,
@@ -515,6 +516,9 @@ const UPGRADE_TIERS: Record<
 function ok<T>(body: T): Response {
   return HttpResponse.json(body as never, { status: 200 });
 }
+
+/** The mock's fixed scrap price: the discard auto-sell credits this per scrap unit. */
+const SCRAP_UNIT_PRICE = 4;
 
 export const handlers = [
   http.post('/v1/auth/login', () => ok<LoginResponse>({ accessToken })),
@@ -841,9 +845,9 @@ export const handlers = [
     ok<MarketResponse>({
       locationId: String(params.id),
       listings: marketListings,
-      sellMinCondition: 15,
+      sellMinCondition: 1,
       sellOffers: inventoryState
-        .filter((entry) => entry.location === 'INVENTORY' && entry.condition >= 15)
+        .filter((entry) => entry.location === 'INVENTORY' && entry.condition >= 1)
         .map((entry) => ({ partInstanceId: entry.id, price: sellQuote(entry) })),
     }),
   ),
@@ -995,12 +999,17 @@ export const handlers = [
       space,
     });
   }),
-  http.post('/v1/inventory/discard', () => {
+  http.post('/v1/inventory/discard', async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { sellScrap?: boolean };
     const before = inventoryState.length;
     inventoryState = inventoryState.filter(
-      (entry) => !(entry.location === 'INVENTORY' && entry.condition < 15),
+      (entry) => !(entry.location === 'INVENTORY' && entry.condition < 1),
     );
-    return ok<DiscardResponse>({ discarded: before - inventoryState.length });
+    const discarded = before - inventoryState.length;
+    // Mirrors the server: scrap is only sold in the same call when the pilot asked for it.
+    const scrapSold = body.sellScrap === true ? discarded : 0;
+    const credits = scrapSold * SCRAP_UNIT_PRICE;
+    return ok<DiscardResponse>({ discarded, scrapSold, credits });
   }),
 
   http.post('/v1/parts/:id/upgrade/quote', ({ params }) => {

@@ -494,7 +494,7 @@ describe('market API (S8.2)', () => {
     const player = await onboardPlayer();
     const playerId = player.seeded.player.id;
     const wreck = await prisma.partInstance.create({
-      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 9, location: 'INVENTORY' },
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 0, location: 'INVENTORY' },
     });
     const worn = await prisma.partInstance.create({
       data: { partType: 'cargo', ownerPlayerId: playerId, condition: 40, location: 'INVENTORY' },
@@ -504,7 +504,7 @@ describe('market API (S8.2)', () => {
       sellOffers: Array<{ partInstanceId: string }>;
       sellMinCondition: number;
     };
-    expect(board.sellMinCondition).toBe(15);
+    expect(board.sellMinCondition).toBe(1);
     const quoted = board.sellOffers.map((offer) => offer.partInstanceId);
     expect(quoted).not.toContain(wreck.id);
     expect(quoted).toContain(worn.id);
@@ -521,17 +521,31 @@ describe('market API (S8.2)', () => {
     const installedBefore = await prisma.partInstance.count({
       where: { ownerPlayerId: playerId, location: 'INSTALLED' },
     });
+    const creditsBefore = (
+      await prisma.player.findUniqueOrThrow({
+        where: { id: playerId },
+        select: { credits: true },
+      })
+    ).credits;
     const discarded = await request(httpServer(testApp.app))
       .post('/v1/inventory/discard')
       .set(auth(player.token));
     expect(discarded.status).toBe(200);
-    expect(discarded.body).toEqual({ discarded: 1 });
-    // what is left of the wreck is scrap of its own type
+    expect(discarded.body).toEqual({ discarded: 1, scrapSold: 0, credits: 0 });
+    // By default the scrap stays in storage: what is left of the wreck is scrap of its own type.
     expect(
       await prisma.playerMaterial.findUnique({
         where: { playerId_materialId: { playerId, materialId: 'scrap_cargo' } },
       }),
     ).toMatchObject({ quantity: 1 });
+    expect(
+      (
+        await prisma.player.findUniqueOrThrow({
+          where: { id: playerId },
+          select: { credits: true },
+        })
+      ).credits,
+    ).toBe(creditsBefore);
     expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).toBeNull();
     expect(await prisma.partInstance.findUnique({ where: { id: worn.id } })).not.toBeNull();
     expect(
@@ -543,7 +557,53 @@ describe('market API (S8.2)', () => {
     const again = await request(httpServer(testApp.app))
       .post('/v1/inventory/discard')
       .set(auth(player.token));
-    expect(again.body).toEqual({ discarded: 0 });
+    expect(again.body).toEqual({ discarded: 0, scrapSold: 0, credits: 0 });
+  });
+
+  it('discard with sellScrap turns the dead parts into scrap and credits the port price for it', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const playerId = player.seeded.player.id;
+    const wreck = await prisma.partInstance.create({
+      data: { partType: 'cargo', ownerPlayerId: playerId, condition: 0, location: 'INVENTORY' },
+    });
+    const scrapValue = (await prisma.material.findUniqueOrThrow({ where: { id: 'scrap_cargo' } }))
+      .basePrice;
+    expect(scrapValue).toBeGreaterThan(0);
+    const creditsBefore = (
+      await prisma.player.findUniqueOrThrow({
+        where: { id: playerId },
+        select: { credits: true },
+      })
+    ).credits;
+
+    const discarded = await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token))
+      .send({ sellScrap: true });
+    expect(discarded.status).toBe(200);
+    expect(discarded.body).toEqual({ discarded: 1, scrapSold: 1, credits: scrapValue });
+    // The scrap never lands in storage: it is sold in the same call, at its fixed price.
+    expect(
+      await prisma.playerMaterial.findUnique({
+        where: { playerId_materialId: { playerId, materialId: 'scrap_cargo' } },
+      }),
+    ).toBeNull();
+    expect(
+      (
+        await prisma.player.findUniqueOrThrow({
+          where: { id: playerId },
+          select: { credits: true },
+        })
+      ).credits,
+    ).toBe(creditsBefore + scrapValue);
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).toBeNull();
+    // The sale is forensically recorded the same way a manual material sale is.
+    await expect(
+      prisma.playerEvent.findFirst({
+        where: { playerId, type: 'market.sell_material' },
+      }),
+    ).resolves.not.toBeNull();
   });
 
   it('parallel buys of one listing: exactly one succeeds, the rest see LISTING_SOLD, debited once', async () => {

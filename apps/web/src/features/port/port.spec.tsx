@@ -633,16 +633,33 @@ describe('port (S10.9)', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 5 units for 15 ¢.');
   });
 
-  it('a too-damaged loose part cannot be sold; discard asks first, then destroys it', async () => {
+  it('a too-damaged loose part cannot be sold; discard asks first, then destroys it and sells the scrap', async () => {
     addWreck();
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
     const note = await screen.findByTestId('discard-note');
-    expect(note).toHaveTextContent('under 15% condition');
+    expect(note).toHaveTextContent('under 1% condition');
     expect(screen.getByText('Too damaged to sell')).toBeInTheDocument();
 
     fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
     const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
+    // Selling the scrap is on by default, so the notice reports the credits it earned.
+    expect(within(popup).getByRole('checkbox', { name: /Sell the scrap/ })).toBeChecked();
+    fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Discarded 1 damaged part(s), turning them into 1 scrap and selling it for 4 ¢.',
+    );
+    await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
+  });
+
+  it('unchecking "sell the scrap" destroys the parts and keeps the scrap in storage', async () => {
+    addWreck();
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const note = await screen.findByTestId('discard-note');
+    fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
+    const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
+    fireEvent.click(within(popup).getByRole('checkbox', { name: /Sell the scrap/ }));
     fireEvent.click(within(popup).getByRole('button', { name: 'Destroy them' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Discarded 1 damaged part(s).');
     await waitFor(() => expect(screen.queryByTestId('discard-note')).toBeNull());
