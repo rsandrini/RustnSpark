@@ -8,6 +8,20 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **Destroyed bridge = destroyed ship.** If the bridge is destroyed, the ship is destroyed and
+  every part is lost. The pilot then restarts with a **new starter pack** but **keeps the current
+  money**. *Needs design:* what destroys a bridge (condition reaching the dead threshold, in a
+  fight or by wear) and what happens during a mission; what is kept (credits, materials, history,
+  faction, reputation?) and what is lost (installed parts, loose parts, ship); where the new ship
+  starts; a clear warning and a report of the loss; and whether a protected state (repair warning,
+  a grace period) is needed. Interacts with the Hull Frame tanking hull wear and with a dead part
+  cutting connections (a dead bridge is the root of every connection). *Where:* the bridge is
+  exempt from the "dead part drops out of the connections" rule today
+  (`conductiveCatalog` in `apps/api/src/ships/connectivity.ts`); onboarding creates the starter kit
+  (`apps/api/src/players/onboarding.service.ts`, `STARTER_PARTS` in `prisma/seed-data/starter-kit.ts`);
+  the reset-player CLI (`apps/api/src/admin/cli/reset-player.cli.ts`) is a similar "fresh run" flow
+  that keeps faction and history.
+
 - [ ] **Hide fuel when the ship has no fuel use.** Fuel indicators in quests (the requirement
   checklist and the "fuel needed" bar on the mission card) and on the mission board must be hidden
   when the ship is 100% ion thrust (no chemical engine, so no fuel).
