@@ -45,7 +45,7 @@ export interface TakeCheck {
   readonly reasons: readonly string[];
 }
 
-function totalFuelNeeded(legs: readonly DispatchLeg[], fuelUse: number): number {
+export function totalFuelNeeded(legs: readonly DispatchLeg[], fuelUse: number): number {
   return legs.reduce(
     (sum, leg) => sum + fuelUnits({ fuelUse, distance: leg.distance, envFuelMult: leg.env.fuelMult }),
     0,
@@ -288,8 +288,8 @@ export function takeMission(
   state.ledger.record('reward', Math.round(paid));
   state.ledger.record('combat', Math.round(combat));
 
-  // A ship that came back docks at the destination; one adrift stays where it started (the free
-  // Phase 1 tow puts it back in port — rescue itself lands with a later phase).
+  // A ship that came back docks at the destination; one adrift stays where it started, still
+  // floating — the caller (the bot loop) pays the real rescue tow to bring it back to a base.
   const done = outcome.status === 'success' || outcome.status === 'partial_failure';
   if (done && !adrift) {
     state.locationId = offer.destinationId;

@@ -11,14 +11,16 @@ import { openStore, type Store } from './store.js';
 import { SIM_DB_PATH } from '../paths.js';
 
 /** What this build simplifies, stored with the experiment so a report can print it. */
-const PHASE1_ASSUMPTIONS = [
-  'phase 1: free refuel and repair between missions',
-  'phase 1: adrift ships are towed back to port for free',
-  'phase 1: layout grid abstracted (connectivity assumed)',
-  'phase 1: random qualifying bot, generalist playstyle',
+const PHASE2_ASSUMPTIONS = [
+  'phase 2: fuel and repair are bought at real prices between missions (no free restore)',
+  'phase 2: adrift ships pay the real rescue tow (flat rescue price + emergency ration)',
+  'phase 2: rescue sells nothing — the ship keeps every installed part',
+  'phase 2: unarmed ships (no esc>0 defense) only accept danger <= 5 offers',
+  'phase 2: layout grid abstracted (connectivity assumed)',
+  'phase 2: random qualifying bot, generalist playstyle',
 ].join('; ');
 
-const SIM_VERSION = 'phase-1';
+const SIM_VERSION = 'phase-2';
 
 export function snapshotHashOf(snapshot: Snapshot): string {
   return createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
@@ -63,7 +65,7 @@ export function writeRunResult(
       editHash: '',
       editJson: '[]',
       simVersion: SIM_VERSION,
-      assumptions: options.assumptions ?? PHASE1_ASSUMPTIONS,
+      assumptions: options.assumptions ?? PHASE2_ASSUMPTIONS,
     });
     const totals = result.ledgerTotals;
     const runId = store.insertRun({

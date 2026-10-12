@@ -90,6 +90,22 @@ export const STARTER_CATALOG: CatalogRow[] = [
     basePrice: 100,
     partHp: 30,
   }),
+  // Catalog-only: the danger tests install it, the starter ship does not fly with it. Real
+  // `shield_basic` COMMON numbers from `prisma/seed-data/parts.ts` (the row that gives esc > 0).
+  catalogRow({
+    partType: 'shield_basic',
+    partClass: 'DEFENSE',
+    w: 1,
+    h: 1,
+    mass: 5.3,
+    structureCost: 8,
+    basePrice: 400,
+    scrapValue: 100,
+    partHp: 18,
+    esc: 11,
+    energyCont: -2,
+    energyCombat: -7,
+  }),
 ];
 
 export function fixtureSnapshot(): Snapshot {

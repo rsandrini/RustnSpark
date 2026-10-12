@@ -1,8 +1,8 @@
 /**
- * A trip the pilot asked for: an ordinary TRAVEL mission (no cargo, no pay — only the fuel it
- * burns), built exactly like `missions/travel.service.ts` builds one: shortest path by distance,
- * legs from `legForRoute`, dispatched through the same resolver. The Phase 1 bot uses it to get
- * home when the port it sits at can only offer work its ship cannot do.
+ * Repositioning: a bare `TRAVEL` mission (no cargo, no pay — only the fuel it burns and the wear
+ * it inflicts), built exactly like `missions/travel.service.ts` builds one — shortest path by
+ * distance, legs from `legForRoute`, resolved through the same `resolveMission` pipeline. The bot
+ * uses this to reach a cheaper port when the one it sits at is too expensive.
  */
 import {
   buildAdjacency,
@@ -13,6 +13,7 @@ import type { FillerWorld } from '../../src/missions/generator/template.filler.j
 import type { Snapshot } from '../snapshot/types.js';
 import type { PlayerState } from '../core/state.js';
 import type { Offer } from '../core/world.js';
+import { canTakeMission, takeMission, type MissionContext } from './mission.js';
 
 /** The game's travel template id (`missions/travel.service.ts`). */
 export const TRAVEL_TEMPLATE_ID = 'travel_generic';
@@ -64,5 +65,36 @@ export function travelOffer(input: TravelOfferInput): Offer | null {
     starter: false,
     requirements: template?.requirements ?? {},
     encounterPolicy: template?.encounterPolicy ?? {},
+  };
+}
+
+export interface TravelResult {
+  readonly destinationId: string;
+  readonly fuelBurned: number;
+  readonly wearPoints: number;
+  readonly status: string;
+}
+
+/**
+ * Fly a repositioning trip to `destinationId`. Returns null when the ship cannot get there on its
+ * current tank (the caller decides whether to refuel first).
+ */
+export function travel(
+  state: PlayerState,
+  ctx: MissionContext,
+  world: FillerWorld,
+  destinationId: string,
+  nowMs: number,
+): TravelResult | null {
+  const offer = travelOffer({ snapshot: ctx.snapshot, world, state, destinationId, nowMs });
+  if (offer === null) return null;
+  const check = canTakeMission(state, offer, ctx);
+  if (!check.ok) return null;
+  const result = takeMission(state, offer, ctx);
+  return {
+    destinationId,
+    fuelBurned: result.fuelBurned,
+    wearPoints: result.wearPoints,
+    status: result.status,
   };
 }

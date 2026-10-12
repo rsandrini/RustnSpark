@@ -63,6 +63,17 @@ function printTotals(result: RunResult): void {
   if (result.stalled) {
     process.stdout.write(`STALLED: ${result.stallReason ?? 'unknown'}\n`);
   }
+  const events = result.log.filter(
+    (line) =>
+      line.includes('rescued') ||
+      line.includes('stranded') ||
+      line.includes('hopped') ||
+      line.includes('refuelled') ||
+      line.includes('towed'),
+  );
+  for (const event of events) {
+    process.stdout.write(`  ${event}\n`);
+  }
 }
 
 export function runCommand(args: readonly string[]): Promise<void> {
