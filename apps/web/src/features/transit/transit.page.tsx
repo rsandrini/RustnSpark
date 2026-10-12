@@ -16,6 +16,7 @@ import { RescueBanner } from '../rescue/rescue-banner';
 import { journeyNodeIds } from './journey';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
+import { useNow } from '../../ui/useNow';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
 import { ActiveShipStage } from '../ship/active-ship-stage';
@@ -80,6 +81,10 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 
   const missions = activeQuery.data ?? [];
   const mission = missions[0] ?? null;
+  // The trip bar and the ship on the map must advance on their own (owner report: they only
+  // moved after a click — the poll's identical payload never re-rendered the page). The ticker
+  // re-reads the server clock while a flight is under way, like the map already does.
+  const now = useNow(mission?.status === 'IN_TRANSIT');
 
   // A pilot watching this screen when the mission ends is taken to its report: remember the flight
   // being watched, and once the active list is empty and the newest report is that mission, go.
@@ -203,7 +208,6 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 
   const routeLabel = `${locationName(mission.originId)} → ${locationName(mission.destinationId)}`;
   const windows = mission.legWindows;
-  const now = serverNow();
   const currentIndex = windows.findIndex((window) => Date.parse(window.to) > now);
   const firstFrom = windows[0] === undefined ? null : Date.parse(windows[0].from);
   const lastTo =
@@ -465,7 +469,11 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                 <p className="sub">
                   {t('transit.arrivesIn')}{' '}
                   {(mission.arrivalAt ?? '') !== '' && (
-                    <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+                    <Countdown
+                      until={mission.arrivalAt ?? ''}
+                      serverTime={dispatchServerTime}
+                      onElapsed={() => void activeQuery.refetch()}
+                    />
                   )}
                 </p>
               ) : (
@@ -476,7 +484,11 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                   {legSeparator}
                   {t('transit.arrivesIn')}{' '}
                   {(mission.arrivalAt ?? '') !== '' && (
-                    <Countdown until={mission.arrivalAt ?? ''} serverTime={dispatchServerTime} />
+                    <Countdown
+                      until={mission.arrivalAt ?? ''}
+                      serverTime={dispatchServerTime}
+                      onElapsed={() => void activeQuery.refetch()}
+                    />
                   )}
                 </p>
               )}

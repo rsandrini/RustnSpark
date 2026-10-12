@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -392,6 +392,55 @@ describe('transit (S10.7)', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument();
     expect(screen.getByText('Porto Ceres → Portão Kessler')).toBeInTheDocument();
     expect(within(inTransit).getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('the trip progress bar advances on its own, without any interaction', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      // Freeze the trip window relative to a fixed base: the active-mission poll refetches this
+      // endpoint, and re-deriving `iso()` from Date.now() on each hit would recenter the window
+      // on "now" and pin the bar at ~50% no matter how far the clock advanced.
+      const base = Date.now();
+      const at = (offsetMs: number) => new Date(base + offsetMs).toISOString();
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json(
+            [
+              mission({
+                status: 'IN_TRANSIT',
+                shipId: 'ship-1',
+                arrivalAt: at(30 * 1000),
+                // A one-minute window centred on the base time: the bar sits at ~50% and must
+                // walk up as the ticker advances the clock past it.
+                legWindows: [
+                  {
+                    legIndex: 0,
+                    routeId: 'ceres-gate',
+                    from: at(-30 * 1000),
+                    to: at(30 * 1000),
+                  },
+                ],
+              }),
+            ],
+            { status: 200 },
+          ),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+      const inTransit = await screen.findByTestId('in-transit');
+      const before = Number(
+        within(inTransit).getByRole('progressbar').getAttribute('aria-valuenow'),
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      const after = Number(
+        within(inTransit).getByRole('progressbar').getAttribute('aria-valuenow'),
+      );
+      expect(after).toBeGreaterThan(before);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // Round-10 owner follow-up: "the quest panels... is too big, they too much space and
