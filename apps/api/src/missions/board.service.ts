@@ -202,7 +202,11 @@ export class BoardService {
             world,
             rules,
             now,
-            starter: { types: input.types, maxZone: rules.missions.starter_max_zone },
+            starter: {
+              types: input.types,
+              maxZone: rules.missions.starter_max_zone,
+              maxDistance: rules.missions.starter_max_distance,
+            },
           });
         } catch (error) {
           if (error instanceof MissionGenerationError) return false;

@@ -298,6 +298,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     starter_guarantee_max_completed: 3,
     // Highest zone (0-3) a start-safe mission may cross: 0-1 is the safe core (no PvP, GDD §2).
     starter_max_zone: 1,
+    // The first mission is a short trip: the private starter offer only goes to a destination
+    // within this path distance (0 = off). The filler picks the nearest one inside the cap.
+    starter_max_distance: 600,
   },
   scavenging: {
     // Round-8 rebalance (owner: "the drop of items on scavenging is too high... investigate if

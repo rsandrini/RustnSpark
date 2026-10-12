@@ -119,6 +119,7 @@ export type ConfigKey =
   | 'missions.board_max_same_type'
   | 'missions.board_min_per_location'
   | 'missions.starter_guarantee_max_completed'
+  | 'missions.starter_max_distance'
   | 'missions.starter_max_zone'
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
@@ -497,6 +498,7 @@ export type GameRules = Readonly<{
     board_min_per_location: number;
     board_max_same_type: number;
     starter_guarantee_max_completed: number;
+    starter_max_distance: number;
     starter_max_zone: number;
   }>;
   scavenging: Readonly<{

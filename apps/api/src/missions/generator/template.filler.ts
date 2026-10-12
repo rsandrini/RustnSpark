@@ -45,9 +45,6 @@ export interface FillerLocation {
   readonly factionId: string;
 }
 
-/** A new pilot's guaranteed first mission picks among this many nearest safe destinations. */
-const STARTER_NEAREST_DESTINATIONS = 3;
-
 export interface FillerRoute {
   readonly id: string;
   readonly nodeAId: string;
@@ -93,12 +90,15 @@ export interface FillerWorld {
  * D43 start-safe constraint: only these mission types, and only routes whose every leg stays
  * within `max(maxZone, origin.zone)` — the safe core, but never stricter than the port the
  * player already lives in (Sun's home, Hedus, is itself in zone 2, so a hard "zone ≤ 1" would
- * leave Sun with no route at all). Everything else about generation is unchanged, so a starter
- * mission is an ordinary mission that happens to be easy to take and hard to lose.
+ * leave Sun with no route at all). `maxDistance` caps the first mission's path length (0 = off);
+ * when even the nearest destination is longer, the nearest still goes — a long first mission
+ * beats no first mission. Everything else about generation is unchanged, so a starter mission
+ * is an ordinary mission that happens to be easy to take and hard to lose.
  */
 export interface StarterConstraint {
   readonly types: readonly MissionType[];
   readonly maxZone: number;
+  readonly maxDistance: number;
 }
 
 export interface FillMissionInput {
@@ -343,21 +343,29 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       return candidatePath !== null && withinStarterZone(candidatePath);
     })
     .sort(byId);
-  // A first mission is a short one: of everywhere reachable inside the safe zones, only the
-  // few nearest destinations are offered (the usual board keeps the whole map in play).
+  // A first mission is a short one: of everywhere reachable inside the safe zones, the NEAREST
+  // destination within the distance cap is offered — deterministic, so the first result comes
+  // fast and from the same nearby place every time (the usual board keeps the whole map in play
+  // and picks freely).
   const pathLength = (locationId: string): number =>
     (shortestPath(origin.id, locationId, adjacency) ?? []).reduce(
       (sum, route) => sum + route.distance,
       0,
     );
-  const destinations =
-    input.starter === undefined
-      ? reachable
-      : [...reachable]
-          .sort((x, y) => pathLength(x.id) - pathLength(y.id) || byId(x, y))
-          .slice(0, STARTER_NEAREST_DESTINATIONS);
-  const destination =
-    destinations.length > 0 ? rng.child('destination').pick(destinations) : undefined;
+  const byDistance = (x: FillerLocation, y: FillerLocation): number =>
+    pathLength(x.id) - pathLength(y.id) || byId(x, y);
+  let destination: FillerLocation | undefined;
+  if (input.starter === undefined) {
+    destination = reachable.length > 0 ? rng.child('destination').pick(reachable) : undefined;
+  } else {
+    const { maxDistance } = input.starter;
+    const sorted = [...reachable].sort(byDistance);
+    const withinCap =
+      maxDistance > 0
+        ? sorted.filter((location) => pathLength(location.id) <= maxDistance)
+        : sorted;
+    destination = (withinCap.length > 0 ? withinCap : sorted)[0];
+  }
   if (destination === undefined) {
     throw new MissionGenerationError(`No reachable destination from location ${origin.id}`);
   }

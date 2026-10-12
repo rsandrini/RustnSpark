@@ -286,14 +286,19 @@ describe('S6.2 — template filler (pure generation)', () => {
   });
 
   describe('D43 start-safe constraint', () => {
-    const starter = (seed: string, maxZone: number, origin: FillerLocation = LOC_ALPHA) =>
+    const starter = (
+      seed: string,
+      maxZone: number,
+      origin: FillerLocation = LOC_ALPHA,
+      maxDistance = 0,
+    ) =>
       fillMission({
         seed,
         origin,
         world: world(),
         rules,
         now: NOW,
-        starter: { types: ['DELIVERY'], maxZone },
+        starter: { types: ['DELIVERY'], maxZone, maxDistance },
       });
 
     it('only ever yields a DELIVERY whose legs all stay inside the allowed zones', () => {
@@ -335,9 +340,57 @@ describe('S6.2 — template filler (pure generation)', () => {
           world: world(),
           rules,
           now: NOW,
-          starter: { types: ['ESCORT'], maxZone: 1 },
+          starter: { types: ['ESCORT'], maxZone: 1, maxDistance: 0 },
         }),
       ).toThrow(MissionGenerationError);
+    });
+
+    // alpha—delta (300, zone 1) is nearer than alpha—beta (500, zone 1).
+    const LOC_DELTA: FillerLocation = { id: 'delta', type: 'outpost', zone: 1, factionId: 'luna' };
+    const worldWithDelta = (function () {
+      const base = world();
+      const route: FillerRoute = {
+        id: 'alpha-delta',
+        nodeAId: 'alpha',
+        nodeBId: 'delta',
+        distance: 300,
+        danger: 2,
+      };
+      return {
+        ...base,
+        locations: [...base.locations, LOC_DELTA],
+        routes: [...base.routes, route],
+        routeEnvironments: [
+          ...base.routeEnvironments,
+          { routeId: 'alpha-delta', environmentId: 'open', order: 0 },
+        ],
+      };
+    })();
+    const starterIn = (seed: string, world: FixtureWorld, maxDistance: number) =>
+      fillMission({
+        seed,
+        origin: LOC_ALPHA,
+        world,
+        rules,
+        now: NOW,
+        starter: { types: ['DELIVERY'], maxZone: 1, maxDistance },
+      });
+
+    it('picks the NEAREST safe destination, not one of a few at random', () => {
+      // Every epoch goes to delta, the closest place the starter kit can reach (the first
+      // result comes fast), never a random pick among the nearest three.
+      for (let epoch = 0; epoch < 20; epoch += 1) {
+        const draft = starterIn(`starter|p1|alpha|${epoch}`, worldWithDelta, 0);
+        expect(draft.destinationId).toBe('delta');
+      }
+    });
+
+    it('the distance cap keeps the first mission short, and never empties the choice', () => {
+      // 500 to beta is over the cap of 400: only delta (300) qualifies.
+      expect(starterIn('starter|p1|alpha|0', worldWithDelta, 400).destinationId).toBe('delta');
+      // When even the nearest is longer than the cap, the nearest still goes — a long first
+      // mission beats no first mission.
+      expect(starterIn('starter|p1|alpha|0', worldWithDelta, 100).destinationId).toBe('delta');
     });
 
     it('does not change ordinary generation (no constraint, same seed, same result)', () => {
@@ -368,7 +421,7 @@ describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => 
     expect(isMiningEligible(LOC_GAMMA, [{ ...MINING_EXPLORERS, type: 'DELIVERY' }])).toBe(false);
   });
 
-  it('a RACE offer carries 3-5 rival ships frozen in its cargo, and its board reward is the winner\'s prize', () => {
+  it("a RACE offer carries 3-5 rival ships frozen in its cargo, and its board reward is the winner's prize", () => {
     const RACE_LUNA: FillerTemplate = {
       id: 'race_luna',
       type: 'RACE',
@@ -379,7 +432,9 @@ describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => 
     const counts = new Set<number>();
     for (let n = 0; n < 40; n += 1) {
       const draft = fill(`alpha|race|${n}`, LOC_ALPHA, [RACE_LUNA]);
-      const cargo = draft.cargo as { race?: { competitors: { id: string; name: string; mobility: number }[] } };
+      const cargo = draft.cargo as {
+        race?: { competitors: { id: string; name: string; mobility: number }[] };
+      };
       expect(draft.type).toBe('RACE');
       const rivals = cargo.race?.competitors ?? [];
       counts.add(rivals.length);

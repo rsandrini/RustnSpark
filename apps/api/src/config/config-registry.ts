@@ -109,7 +109,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.armor_reduction),
     description: {
       en: 'Armor cuts every hit that gets past the shield by this much per point of armor rating it still has, before its pool soaks the rest (worn or used-up armor cuts less).',
-      'pt-BR': 'A armadura corta todo golpe que passa do escudo em tanto por ponto de blindagem que ainda tem, antes de o reservatório absorver o resto (armadura gasta ou esgotada corta menos).',
+      'pt-BR':
+        'A armadura corta todo golpe que passa do escudo em tanto por ponto de blindagem que ainda tem, antes de o reservatório absorver o resto (armadura gasta ou esgotada corta menos).',
     },
   },
   {
@@ -121,7 +122,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.scrap_win_min),
     description: {
       en: 'Scrap dropped by each won fight: the least (a random whole number between this and the most).',
-      'pt-BR': 'Sucata solta por cada combate vencido: o mínimo (um inteiro sorteado entre este e o máximo).',
+      'pt-BR':
+        'Sucata solta por cada combate vencido: o mínimo (um inteiro sorteado entre este e o máximo).',
     },
   },
   {
@@ -157,7 +159,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.armor_pool_factor),
     description: {
       en: 'Armor is a pool: every armor point is worth this much absorbed damage in a fight, after the shield and before the hull.',
-      'pt-BR': 'A blindagem é uma reserva: cada ponto de blindagem vale esta quantidade de dano absorvido numa luta, depois do escudo e antes do casco.',
+      'pt-BR':
+        'A blindagem é uma reserva: cada ponto de blindagem vale esta quantidade de dano absorvido numa luta, depois do escudo e antes do casco.',
     },
   },
   {
@@ -241,7 +244,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.ship.stat_display_scale),
     description: {
       en: 'Display multiplier for mobility (and the speeds compared with it: mission requirements, race rivals). Only what the player reads changes, not the game maths.',
-      'pt-BR': 'Multiplicador de exibição da mobilidade (e das velocidades comparadas com ela: requisitos de missão, rivais de corrida). Só muda o que o jogador lê, não a matemática do jogo.',
+      'pt-BR':
+        'Multiplicador de exibição da mobilidade (e das velocidades comparadas com ela: requisitos de missão, rivais de corrida). Só muda o que o jogador lê, não a matemática do jogo.',
     },
   },
   {
@@ -550,7 +554,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.environment_damage_factor),
     description: {
       en: 'Size of the damage the journey itself deals each leg (space, radiation, debris). It goes through shield, armor and hull like a weapon hit.',
-      'pt-BR': 'Tamanho do dano que a própria viagem causa a cada trecho (espaço, radiação, detritos). Passa por escudo, blindagem e casco como um tiro.',
+      'pt-BR':
+        'Tamanho do dano que a própria viagem causa a cada trecho (espaço, radiação, detritos). Passa por escudo, blindagem e casco como um tiro.',
     },
   },
   {
@@ -562,7 +567,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.hull_to_condition),
     description: {
       en: 'How much of the hull lost in a run becomes wear on every part afterwards (1 = a hull at 80% leaves all parts 20% worn).',
-      'pt-BR': 'Quanto do casco perdido numa missão vira desgaste em todas as peças depois (1 = casco a 80% deixa todas as peças 20% gastas).',
+      'pt-BR':
+        'Quanto do casco perdido numa missão vira desgaste em todas as peças depois (1 = casco a 80% deixa todas as peças 20% gastas).',
     },
   },
   {
@@ -587,7 +593,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.mining_wear_factor),
     description: {
       en: 'Share of the ambient wear that parts take on a mining run (1 = same as any other trip, 0.5 = half).',
-      'pt-BR': 'Fração do desgaste ambiente que as peças sofrem numa missão de mineração (1 = igual a qualquer viagem, 0.5 = metade).',
+      'pt-BR':
+        'Fração do desgaste ambiente que as peças sofrem numa missão de mineração (1 = igual a qualquer viagem, 0.5 = metade).',
     },
   },
   {
@@ -795,7 +802,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_cost),
     description: {
       en: 'Reference price of a tow for a floating ship. Waiting for the rescue costs this times economy.rescue_wait_fraction; calling it now adds a charge per distance to the nearest base.',
-      'pt-BR': 'Preço de referência do reboque de uma nave à deriva. Esperar o resgate custa isto vezes economy.rescue_wait_fraction; chamar já soma uma cobrança por distância até a base mais próxima.',
+      'pt-BR':
+        'Preço de referência do reboque de uma nave à deriva. Esperar o resgate custa isto vezes economy.rescue_wait_fraction; chamar já soma uma cobrança por distância até a base mais próxima.',
     },
   },
   {
@@ -808,7 +816,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_wait_fraction),
     description: {
       en: 'Share of economy.rescue_cost paid when the pilot waits for the rescue instead of calling it now.',
-      'pt-BR': 'Fração de economy.rescue_cost paga quando o piloto espera o resgate em vez de chamá-lo já.',
+      'pt-BR':
+        'Fração de economy.rescue_cost paga quando o piloto espera o resgate em vez de chamá-lo já.',
     },
   },
   {
@@ -821,7 +830,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_wait_seconds),
     description: {
       en: 'How long a waiting rescue takes to arrive, in mission time (scaled by missions.time_scale).',
-      'pt-BR': 'Quanto tempo leva um resgate em espera, em tempo de missão (escalado por missions.time_scale).',
+      'pt-BR':
+        'Quanto tempo leva um resgate em espera, em tempo de missão (escalado por missions.time_scale).',
     },
   },
   {
@@ -834,7 +844,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_distance_price),
     description: {
       en: 'Extra charge for calling the rescue NOW, per unit of distance from the floating ship to the nearest base.',
-      'pt-BR': 'Cobrança extra por chamar o resgate JÁ, por unidade de distância da nave à deriva até a base mais próxima.',
+      'pt-BR':
+        'Cobrança extra por chamar o resgate JÁ, por unidade de distância da nave à deriva até a base mais próxima.',
     },
   },
   {
@@ -873,7 +884,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.discard_scrap_per_part),
     description: {
       en: 'Scrap given back for each damaged part cleared with "Discard damaged" (of that part\'s own type). 0 gives nothing.',
-      'pt-BR': 'Sucata devolvida por cada peça danificada descartada em "Descartar danificadas" (do próprio tipo da peça). 0 não devolve nada.',
+      'pt-BR':
+        'Sucata devolvida por cada peça danificada descartada em "Descartar danificadas" (do próprio tipo da peça). 0 não devolve nada.',
     },
   },
   {
@@ -885,7 +897,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_points_per_scrap),
     description: {
       en: "A repair gives one scrap (of a repaired part's type) per this many condition points restored, up to the most below.",
-      'pt-BR': 'Um reparo dá uma sucata (do tipo de uma peça reparada) a cada tantos pontos de condição restaurados, até o máximo abaixo.',
+      'pt-BR':
+        'Um reparo dá uma sucata (do tipo de uma peça reparada) a cada tantos pontos de condição restaurados, até o máximo abaixo.',
     },
   },
   {
@@ -1010,8 +1023,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 1,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.market_rarity_by_bridge),
     description: {
-      en: 'What a pilot\'s shelf shows, by the rarity of their bridge: for each bridge rarity, the daily chance (0-1) that a part of each rarity is on sale. A common bridge sees mostly common parts; better bridges see more of the rare ones.',
-      'pt-BR': 'O que a prateleira de um piloto mostra, pela raridade da ponte dele: para cada raridade de ponte, a chance diária (0-1) de uma peça de cada raridade estar à venda. Ponte comum vê quase só peças comuns; pontes melhores veem mais das raras.',
+      en: "What a pilot's shelf shows, by the rarity of their bridge: for each bridge rarity, the daily chance (0-1) that a part of each rarity is on sale. A common bridge sees mostly common parts; better bridges see more of the rare ones.",
+      'pt-BR':
+        'O que a prateleira de um piloto mostra, pela raridade da ponte dele: para cada raridade de ponte, a chance diária (0-1) de uma peça de cada raridade estar à venda. Ponte comum vê quase só peças comuns; pontes melhores veem mais das raras.',
     },
   },
   {
@@ -1171,7 +1185,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.chem_level_max),
     description: {
       en: 'Highest level of the chemical engines: above 1 they push for speed, burning more fuel and risking failures.',
-      'pt-BR': 'Maior nível dos motores químicos: acima de 1 eles forçam por velocidade, gastando mais combustível e arriscando falhas.',
+      'pt-BR':
+        'Maior nível dos motores químicos: acima de 1 eles forçam por velocidade, gastando mais combustível e arriscando falhas.',
     },
   },
   {
@@ -1183,7 +1198,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.ion_level_max),
     description: {
       en: 'Highest level of the ion engines: more thrust for more power drawn, with a risk of failures.',
-      'pt-BR': 'Maior nível dos motores de íons: mais empuxo por mais energia consumida, com risco de falhas.',
+      'pt-BR':
+        'Maior nível dos motores de íons: mais empuxo por mais energia consumida, com risco de falhas.',
     },
   },
   {
@@ -1195,7 +1211,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.fuel_push_exponent),
     description: {
       en: 'Fuel burned by the chemical engines grows with their level to this power above level 1 (below 1 it is proportional).',
-      'pt-BR': 'O combustível gasto pelos motores químicos cresce com o nível elevado a esta potência acima do nível 1 (abaixo de 1 é proporcional).',
+      'pt-BR':
+        'O combustível gasto pelos motores químicos cresce com o nível elevado a esta potência acima do nível 1 (abaixo de 1 é proporcional).',
     },
   },
   {
@@ -1207,7 +1224,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.ion_power_exponent),
     description: {
       en: "An ion engine's power draw grows with its level to this power.",
-      'pt-BR': 'O consumo de energia de um motor de íons cresce com o nível elevado a esta potência.',
+      'pt-BR':
+        'O consumo de energia de um motor de íons cresce com o nível elevado a esta potência.',
     },
   },
   {
@@ -1219,7 +1237,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.mishap_at_max),
     description: {
       en: 'Chance of an engine failure per leg when a group runs at its highest level (none at level 1).',
-      'pt-BR': 'Chance de falha de motor por trecho quando um grupo roda no nível máximo (nenhuma no nível 1).',
+      'pt-BR':
+        'Chance de falha de motor por trecho quando um grupo roda no nível máximo (nenhuma no nível 1).',
     },
   },
   {
@@ -1231,7 +1250,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.mishap_curve),
     description: {
       en: 'How steeply the failure chance rises from level 1 (none) to the highest level (higher = most of the risk sits near the top).',
-      'pt-BR': 'Quão rápido a chance de falha sobe do nível 1 (nenhuma) ao nível máximo (maior = o risco fica perto do topo).',
+      'pt-BR':
+        'Quão rápido a chance de falha sobe do nível 1 (nenhuma) ao nível máximo (maior = o risco fica perto do topo).',
     },
   },
   {
@@ -1255,7 +1275,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.mishap_wear),
     description: {
       en: "Condition points the group's engines lose on a failure; the Nth failure of a run costs N times this, so repeated failures hurt more.",
-      'pt-BR': 'Pontos de condição que os motores do grupo perdem numa falha; a N-ésima falha da viagem custa N vezes isto, então falhas repetidas doem mais.',
+      'pt-BR':
+        'Pontos de condição que os motores do grupo perdem numa falha; a N-ésima falha da viagem custa N vezes isto, então falhas repetidas doem mais.',
     },
   },
   {
@@ -1267,7 +1288,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.mishap_fuel),
     description: {
       en: "Extra fuel burned on the leg after an engine failure, as a share of the leg's burn.",
-      'pt-BR': 'Combustível extra gasto no trecho após uma falha de motor, como fração do gasto do trecho.',
+      'pt-BR':
+        'Combustível extra gasto no trecho após uma falha de motor, como fração do gasto do trecho.',
     },
   },
   {
@@ -1279,7 +1301,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.push_battery_share),
     description: {
       en: "Pushing the ion engines also wears the batteries (they feed the extra draw): this share of the engines' wear per leg.",
-      'pt-BR': 'Forçar os motores de íons também desgasta as baterias (elas alimentam o consumo extra): esta fração do desgaste dos motores por trecho.',
+      'pt-BR':
+        'Forçar os motores de íons também desgasta as baterias (elas alimentam o consumo extra): esta fração do desgaste dos motores por trecho.',
     },
   },
   {
@@ -1291,7 +1314,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.engine.push_wear),
     description: {
       en: 'Wear from pushing, even when nothing fails: condition points each engine of a pushed group loses per leg at the highest level (less at lower levels, none at level 1).',
-      'pt-BR': 'Desgaste por forçar, mesmo sem falha: pontos de condição que cada motor de um grupo forçado perde por trecho no nível máximo (menos em níveis menores, nenhum no nível 1).',
+      'pt-BR':
+        'Desgaste por forçar, mesmo sem falha: pontos de condição que cada motor de um grupo forçado perde por trecho no nível máximo (menos em níveis menores, nenhum no nível 1).',
     },
   },
   {
@@ -1484,7 +1508,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.power.success_curve),
     description: {
       en: 'How likely a power-starved system is to work, by the share of its own need it receives: [share, chance] points, interpolated. Below the last point it does not work.',
-      'pt-BR': 'Quão provável é um sistema com pouca energia funcionar, pela fração da própria necessidade que recebe: pontos [fração, chance], interpolados. Abaixo do último ponto ele não funciona.',
+      'pt-BR':
+        'Quão provável é um sistema com pouca energia funcionar, pela fração da própria necessidade que recebe: pontos [fração, chance], interpolados. Abaixo do último ponto ele não funciona.',
     },
   },
   {
@@ -1496,7 +1521,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.power.idle_demand),
     description: {
       en: 'Power a weapon, shield or mining rig keeps drawing while idle (a part can override it with its own idle power).',
-      'pt-BR': 'Energia que uma arma, escudo ou plataforma de mineração continua gastando parada (a peça pode ter o próprio valor).',
+      'pt-BR':
+        'Energia que uma arma, escudo ou plataforma de mineração continua gastando parada (a peça pode ter o próprio valor).',
     },
   },
   {
@@ -1520,7 +1546,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.power.life_support_min),
     description: {
       en: 'Life support (and the passenger cabin) needs at least this share of its power, or the quest that needs it fails.',
-      'pt-BR': 'O suporte de vida (e a cabine) precisa de pelo menos esta fração da energia, ou a missão que depende dele falha.',
+      'pt-BR':
+        'O suporte de vida (e a cabine) precisa de pelo menos esta fração da energia, ou a missão que depende dele falha.',
     },
   },
   {
@@ -1556,7 +1583,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.power.tiers),
     description: {
       en: 'Which systems are primary in each situation (cruise, combat, mining), in priority order. Any other system that draws power is secondary.',
-      'pt-BR': 'Quais sistemas são primários em cada situação (cruzeiro, combate, mineração), em ordem de prioridade. Qualquer outro sistema que gaste energia é secundário.',
+      'pt-BR':
+        'Quais sistemas são primários em cada situação (cruzeiro, combate, mineração), em ordem de prioridade. Qualquer outro sistema que gaste energia é secundário.',
     },
   },
   {
@@ -1580,7 +1608,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.competitors_max),
     description: {
       en: 'Most rival ships generated for a race mission (the field is drawn between min and max).',
-      'pt-BR': 'Maior número de naves rivais geradas para uma missão de corrida (o grid é sorteado entre mín e máx).',
+      'pt-BR':
+        'Maior número de naves rivais geradas para uma missão de corrida (o grid é sorteado entre mín e máx).',
     },
   },
   {
@@ -1689,7 +1718,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.form_spread),
     description: {
       en: "A rival's form on the day: its speed varies by up to this share around its listed speed (0.1 = ±10%).",
-      'pt-BR': 'A forma de um rival no dia: sua velocidade varia até esta fração em torno da velocidade listada (0.1 = ±10%).',
+      'pt-BR':
+        'A forma de um rival no dia: sua velocidade varia até esta fração em torno da velocidade listada (0.1 = ±10%).',
     },
   },
   {
@@ -1701,7 +1731,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.mishap_chance),
     description: {
       en: "Chance a rival in a race has trouble and loses time (the player's own engine failures come from the engine tuning).",
-      'pt-BR': 'Chance de uma nave numa corrida ter problemas e perder tempo (só rivais; as falhas de motor do jogador vêm do ajuste dos motores).',
+      'pt-BR':
+        'Chance de uma nave numa corrida ter problemas e perder tempo (só rivais; as falhas de motor do jogador vêm do ajuste dos motores).',
     },
   },
   {
@@ -1888,6 +1919,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.starter_max_distance',
+    group: 'missions',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.starter_max_distance),
+    description: {
+      en: 'The first mission only goes to a destination within this path distance (0 = off); the nearest one inside the cap is picked.',
+      'pt-BR':
+        'A primeira missão só vai a um destino dentro desta distância de rota (0 = desligado); escolhe-se o mais próximo dentro do limite.',
+    },
+  },
+  {
     key: 'missions.starter_max_zone',
     group: 'missions',
     type: 'integer',
@@ -2048,7 +2092,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.nothing_chance),
     description: {
       en: 'Chance a scavenging run finds nothing at all, by zone (first number = zone 0, the safest). Higher zones reuse the last number.',
-      'pt-BR': 'Chance de uma busca não achar nada, por zona (primeiro número = zona 0, a mais segura). Zonas maiores usam o último número.',
+      'pt-BR':
+        'Chance de uma busca não achar nada, por zona (primeiro número = zona 0, a mais segura). Zonas maiores usam o último número.',
     },
   },
   {
@@ -2060,7 +2105,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.tier_min_zone),
     description: {
       en: 'The lowest zone each drop tier can appear in: rarer finds only turn up in more dangerous places.',
-      'pt-BR': 'A menor zona em que cada faixa de drop pode aparecer: achados mais raros só surgem em lugares mais perigosos.',
+      'pt-BR':
+        'A menor zona em que cada faixa de drop pode aparecer: achados mais raros só surgem em lugares mais perigosos.',
     },
   },
   {
@@ -2072,7 +2118,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.handicap_factor),
     description: {
       en: 'A ship that cannot fly (or flies with warnings) can still scavenge by hand, but only keeps this share of the usual chance to find anything.',
-      'pt-BR': 'Uma nave que não voa (ou voa com avisos) ainda pode fazer buscas à mão, mas só mantém esta fração da chance normal de achar algo.',
+      'pt-BR':
+        'Uma nave que não voa (ou voa com avisos) ainda pode fazer buscas à mão, mas só mantém esta fração da chance normal de achar algo.',
     },
   },
   {
@@ -2084,7 +2131,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_min),
     description: {
       en: 'Scrap every scavenging run brings back whatever else it finds (even an empty search): the least.',
-      'pt-BR': 'Sucata que toda busca traz, achando ou não outras coisas (mesmo uma busca vazia): o mínimo.',
+      'pt-BR':
+        'Sucata que toda busca traz, achando ou não outras coisas (mesmo uma busca vazia): o mínimo.',
     },
   },
   {
@@ -2096,7 +2144,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.scrap_max),
     description: {
       en: 'Scrap every scavenging run brings back: the most (a random whole number between the least and this). 0 turns the guaranteed scrap off.',
-      'pt-BR': 'Sucata que toda busca traz: o máximo (um inteiro sorteado entre o mínimo e este). 0 desliga a sucata garantida.',
+      'pt-BR':
+        'Sucata que toda busca traz: o máximo (um inteiro sorteado entre o mínimo e este). 0 desliga a sucata garantida.',
     },
   },
   {
@@ -2108,7 +2157,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.foot_factor),
     description: {
       en: 'Scavenging on foot (no ship: no pirates, no wear, no fuel) only keeps this share of the usual chance to find anything.',
-      'pt-BR': 'Saque a pé (sem a nave: sem piratas, sem desgaste, sem combustível) só mantém esta fração da chance normal de achar algo.',
+      'pt-BR':
+        'Saque a pé (sem a nave: sem piratas, sem desgaste, sem combustível) só mantém esta fração da chance normal de achar algo.',
     },
   },
   {

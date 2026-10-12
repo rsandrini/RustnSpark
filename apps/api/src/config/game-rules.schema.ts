@@ -189,9 +189,7 @@ const engineSchema = z.object({
 });
 
 const powerSchema = z.object({
-  success_curve: z
-    .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
-    .min(2),
+  success_curve: z.array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)])).min(2),
   idle_demand: z.number().min(0).max(10),
   combat_demand_factor: z.number().min(1).max(10),
   life_support_min: z.number().min(0).max(1),
@@ -242,6 +240,7 @@ const missionsSchema = z.object({
   board_min_per_location: z.number().int().min(0).max(20),
   board_max_same_type: z.number().int().min(1).max(20).default(2),
   starter_guarantee_max_completed: z.number().int().min(0).max(50),
+  starter_max_distance: z.number().int().min(0).max(100000),
   starter_max_zone: z.number().int().min(0).max(3),
 });
 

@@ -9,7 +9,12 @@
  * `starter_guarantee_max_completed` missions, a takeable starter DELIVERY is kept live for them.
  */
 import type { GameRules } from '../../src/config/game-config.types.js';
-import { ANYTHING_GOES, isVariedEnough, SAME_JOB_ONLY, STRICT } from '../../src/missions/board-variety.js';
+import {
+  ANYTHING_GOES,
+  isVariedEnough,
+  SAME_JOB_ONLY,
+  STRICT,
+} from '../../src/missions/board-variety.js';
 import type { Strictness } from '../../src/missions/board-variety.js';
 import type { DispatchLeg } from '../../src/missions/dispatch.service.js';
 import {
@@ -30,7 +35,13 @@ import { missionSeed } from '../../src/missions/generator/mission.generator.js';
 import { checkMissionRequirements } from '../../src/missions/requirements.checker.js';
 import type { ScavengeContext } from '../../src/resolution/scavenge/scavenge.resolver.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
-import type { Json, JsonObject, LocationRow, MissionTypeName, Snapshot } from '../snapshot/types.js';
+import type {
+  Json,
+  JsonObject,
+  LocationRow,
+  MissionTypeName,
+  Snapshot,
+} from '../snapshot/types.js';
 import type { CatalogRow } from '../snapshot/types.js';
 import { catalogIndex, installedParts, type PlayerState } from './state.js';
 
@@ -161,7 +172,8 @@ export function portFactsOf(
   const relations = factionRelationsOf(snapshot, row.factionId) as Record<string, unknown>;
   const raw = relations[playerFactionId];
   const normalized = typeof raw === 'string' ? raw.toLowerCase() : 'neutral';
-  const factionRelation = normalized === 'ally' || normalized === 'hostile' ? normalized : 'neutral';
+  const factionRelation =
+    normalized === 'ally' || normalized === 'hostile' ? normalized : 'neutral';
   return {
     locationId,
     zone: row.zone,
@@ -242,7 +254,11 @@ function fillOne(args: {
   readonly origin: FillerLocation;
   readonly seed: string;
   readonly nowMs: number;
-  readonly starter?: { readonly types: readonly MissionTypeName[]; readonly maxZone: number };
+  readonly starter?: {
+    readonly types: readonly MissionTypeName[];
+    readonly maxZone: number;
+    readonly maxDistance: number;
+  };
 }): MissionDraft {
   return fillMission({
     seed: args.seed,
@@ -252,7 +268,13 @@ function fillOne(args: {
     now: new Date(args.nowMs),
     ...(args.starter === undefined
       ? {}
-      : { starter: { types: args.starter.types, maxZone: args.starter.maxZone } }),
+      : {
+          starter: {
+            types: args.starter.types,
+            maxZone: args.starter.maxZone,
+            maxDistance: args.starter.maxDistance,
+          },
+        }),
   });
 }
 
@@ -311,8 +333,7 @@ export function boardAt(input: BoardAtInput): Offer[] {
   if (origin === undefined) return live;
 
   // D43: the start-safe offer is private to this player and refreshed while they qualify.
-  const qualifiesForStarter =
-    state.missionsDone <= rules.missions.starter_guarantee_max_completed;
+  const qualifiesForStarter = state.missionsDone <= rules.missions.starter_guarantee_max_completed;
   if (!qualifiesForStarter) {
     boardState.starterOffer = null;
   } else if (boardState.starterOffer === null || boardState.starterOffer.expiresAtMs <= nowMs) {
@@ -388,7 +409,11 @@ function draftStarterOffer(args: {
         origin,
         seed: `starter|sim|${origin.id}|${boardState.starterDrafts + attempt}`,
         nowMs,
-        starter: { types: ['DELIVERY'], maxZone: rules.missions.starter_max_zone },
+        starter: {
+          types: ['DELIVERY'],
+          maxZone: rules.missions.starter_max_zone,
+          maxDistance: rules.missions.starter_max_distance,
+        },
       });
     } catch (error) {
       if (error instanceof MissionGenerationError) return null;
