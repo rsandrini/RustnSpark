@@ -8,6 +8,17 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **Split the Defense items in the shop better.** There are too many kinds of parts under
+  Defense (hull frames, armor plates, shields, in five rarities and several sizes), so a part is
+  hard to find. Split the class into clearer groups, for example Hull, Armor and Shields, with
+  sub-filters (size, rarity) and sorting, in the market and the Hangar's Store tab. The same may
+  be worth doing for other crowded classes (weapons, engines). *Needs design:* the groups and
+  whether the split is a new part class (`DEFENSE` is one `PartClass` shared by hull frames, armor
+  plates and shields, and the wear rules key on it) or only a display grouping. *Where:*
+  `apps/web/src/features/hangar/hangar.page.tsx` (store tabs / class chips), the port market in
+  `apps/web/src/features/port/port.page.tsx`, the part-class labels (`hangar.partClasses` in the
+  i18n files). A display-only grouping is the safe first step.
+
 - [ ] **BUG: scavenging dispatches a mission "on ship" without a ship.** The scavenge start does not
   validate that there is a ship to send, and the mission is dispatched anyway. *Likely cause (to
   confirm):* `ScavengeJobService.start` only checks that a `Ship` row exists at the location and
