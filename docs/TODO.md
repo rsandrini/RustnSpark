@@ -8,6 +8,18 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **BUG: Auto layout does not work.** Reproduce it in the Hangar (what happens: an error, parts
+  left out, or a layout that is not ready to fly?) and fix it. *Possible link to check first:* the
+  new flight rules (a disconnected part, `PART_DISCONNECTED`, and a connector against a part it does
+  not fit, `PORT_INCORRECT`) were added on 2026-10-12, and auto layout only places parts so that
+  they reach the bridge (`connectedPartIds` in `apps/api/src/ships/auto-layout.ts`); it does not
+  avoid incorrect ports, so it can leave the ship "not ready". Auto layout should aim for a ship
+  with no red ports and no disconnected parts when a solution exists, and say which parts it could
+  not place correctly when it does not. *Where:* `apps/api/src/ships/auto-layout.ts`, the
+  `auto-assemble` endpoint in `apps/api/src/ships/ships.service.ts`, the Auto layout button in
+  `apps/web/src/features/hangar/hangar.page.tsx`. Add a regression test with a ship of rolled
+  (non-kit) parts.
+
 - [ ] **BUG: "Reset ship" in the admin fails with a 500.** Find the failing request and its server
   error (api container logs), fix it, and add a regression test. *Where to look:* the admin
   player/ship screens in `apps/web/src/admin` and the matching admin endpoints in
