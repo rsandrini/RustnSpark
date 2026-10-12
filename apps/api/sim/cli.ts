@@ -14,6 +14,7 @@ const USAGE = `usage: pnpm sim <command> [flags]
 
   export                          read the live database into sim-data/snapshot.json
   run --seed N --missions M       play one game with the Phase 1 bot (random, free restore)
+  experiment --runs N --missions  play the 10-cell matrix and print one table
 `;
 
 type Command = (args: string[]) => Promise<void>;
@@ -29,6 +30,10 @@ const COMMANDS: Record<string, () => Promise<Command>> = {
   run: async () => {
     const { runCommand } = await import('./run-command.js');
     return runCommand;
+  },
+  experiment: async () => {
+    const { experimentCommand } = await import('./experiment/experiment-command.js');
+    return experimentCommand;
   },
 };
 

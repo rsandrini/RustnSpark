@@ -23,7 +23,13 @@ import { canMine, mine, miningOffer } from '../actions/mining.js';
 import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../actions/scavenge.js';
 import { buyListing, fitPart, sellMaterial, sellPart } from '../actions/market.js';
 import { upgrade } from '../actions/upgrade.js';
-import { calendarDays, createClock, DEFAULT_BUDGET, type PlayTimeBudget } from '../core/clock.js';
+import {
+  calendarDays,
+  createClock,
+  DEFAULT_BUDGET,
+  type Clock,
+  type PlayTimeBudget,
+} from '../core/clock.js';
 import { createRng } from '../core/rng.js';
 import {
   catalogIndex,
@@ -35,6 +41,13 @@ import {
 } from '../core/state.js';
 import { boardAt, buildFillerWorld, createBoard, type Offer } from '../core/world.js';
 import type { CatalogRow, Snapshot } from '../snapshot/types.js';
+import { chooseOffer, temperamentOf, type Temperament } from './temperament.js';
+import {
+  filterForPlaystyle,
+  playstyleAllowsJob,
+  playstyleOf,
+  type Playstyle,
+} from './playstyle.js';
 import {
   canTravelTo,
   cheapestReachablePort,
@@ -128,6 +141,8 @@ export interface RunResult {
   readonly levels: LevelRecord[];
   readonly missions: MissionOutcomeRecord[];
   readonly log: string[];
+  /** Simulated seconds attributed to each action kind (mission, scavenge, repair, ...). */
+  readonly actionSeconds: Readonly<Record<string, number>>;
 }
 
 export interface PlayRunInput {
@@ -207,7 +222,7 @@ function canReachAnywhereSafe(
   return anywhere;
 }
 
-/** Pick a random qualifying offer — the "random" temperament's only decision. */
+/** Pick a qualifying offer — the playstyle filters the board, the temperament orders it. */
 function pickOffer(
   state: PlayerState,
   ctx: MissionContext,
@@ -215,7 +230,9 @@ function pickOffer(
   board: ReturnType<typeof createBoard>,
   rng: ReturnType<typeof createRng>,
   nowMs: number,
-): { offer: Offer | null; offers: Offer[] } {
+  temperament: Temperament,
+  playstyle: Playstyle,
+): { offer: Offer | null; offers: Offer[]; fallback: boolean } {
   const offers = boardAt({
     board,
     snapshot: ctx.snapshot,
@@ -230,9 +247,10 @@ function pickOffer(
       canTakeMission(state, offer, ctx).ok &&
       decideDanger(state, ctx.catalogByType, offer).accept,
   );
-  if (qualifying.length === 0) return { offer: null, offers };
-  const offer = rng.child(`pick-${state.missionsDone}`).pick(qualifying);
-  return { offer, offers };
+  if (qualifying.length === 0) return { offer: null, offers, fallback: false };
+  const { kept, fallback } = filterForPlaystyle(playstyle, qualifying);
+  const offer = chooseOffer(temperament, kept, state, ctx, rng);
+  return { offer, offers, fallback };
 }
 
 function recordOutcome(
@@ -281,10 +299,22 @@ export function playRun(input: PlayRunInput): RunResult {
   const { snapshot, seed, missions } = input;
   const factionId = input.factionId ?? defaultFaction(snapshot);
   const budget = input.budget ?? DEFAULT_BUDGET;
-  const temperament = input.temperament ?? 'random';
-  const playstyle = input.playstyle ?? 'generalist';
+  const temperament = temperamentOf(input.temperament ?? 'random');
+  const playstyle = playstyleOf(input.playstyle ?? 'generalist');
   const ctx = missionContext(snapshot);
-  const state = starterPlayer(snapshot, factionId, { clock: createClock() });
+  // Every second the clock moves is attributed to the action that moved it, so the experiment
+  // report can show where a cell's pilots spent their playtime.
+  const actionSeconds: Record<string, number> = {};
+  let currentAction = 'idle';
+  const baseClock = createClock();
+  const attributedClock: Clock = {
+    now: () => baseClock.now(),
+    advance: (seconds: number) => {
+      actionSeconds[currentAction] = (actionSeconds[currentAction] ?? 0) + seconds;
+      baseClock.advance(seconds);
+    },
+  };
+  const state = starterPlayer(snapshot, factionId, { clock: attributedClock });
   const startWallet = state.wallet;
   const world = buildFillerWorld(snapshot);
   const board = createBoard();
@@ -316,6 +346,7 @@ export function playRun(input: PlayRunInput): RunResult {
       case 'none':
         return false;
       case 'fit': {
+        currentAction = 'market';
         const out = fitPart(
           state,
           ctx.rules,
@@ -333,6 +364,7 @@ export function playRun(input: PlayRunInput): RunResult {
         return false;
       }
       case 'buy': {
+        currentAction = 'market';
         const out = buyListing(
           state,
           snapshot,
@@ -356,6 +388,7 @@ export function playRun(input: PlayRunInput): RunResult {
         return false;
       }
       case 'upgrade': {
+        currentAction = 'market';
         const out = upgrade(state, snapshot, ctx.rules, catalogByType, action.partId);
         if (out.ok) {
           state.log.push(`upgraded to ${out.partType} for ${out.cost} (wallet ${state.wallet})`);
@@ -363,6 +396,7 @@ export function playRun(input: PlayRunInput): RunResult {
         return false;
       }
       case 'travel-to-buy': {
+        currentAction = 'travel';
         const target = action.locationId;
         const hop = travelOffer({ snapshot, world, state, destinationId: target, nowMs });
         if (hop === null) return false;
@@ -437,6 +471,7 @@ export function playRun(input: PlayRunInput): RunResult {
   }
 
   while (state.missionsDone < missions) {
+    currentAction = 'idle';
     if (state.clock.now() >= PLAYTIME_CAP_SECONDS) {
       endReason = 'playtime';
       state.log.push('playtime cap reached (400h of game time)');
@@ -448,6 +483,7 @@ export function playRun(input: PlayRunInput): RunResult {
     // spend what the reserve-adjusted plan allows (both re-run every turn, so the sell's cash
     // is available to the buy that follows).
     const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    currentAction = 'market';
     const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds);
     for (const partId of sells.partIds) {
       sellPart(state, snapshot, ctx.rules, partId);
@@ -474,8 +510,13 @@ export function playRun(input: PlayRunInput): RunResult {
     }
     if (executeSpend(plan.action, nowMs)) continue;
 
-    const picked = pickOffer(state, ctx, world, board, rng, nowMs);
+    const picked = pickOffer(state, ctx, world, board, rng, nowMs, temperament, playstyle);
     const { offer, offers } = picked;
+    if (picked.fallback) {
+      state.log.push(
+        `fallback: ${playstyle} found nothing takeable — flew ${offer?.type ?? 'any'}`,
+      );
+    }
 
     if (offer === null) {
       emptyRounds += 1;
@@ -512,6 +553,7 @@ export function playRun(input: PlayRunInput): RunResult {
         ctx.rules,
       );
       if (!viability.viable) {
+        currentAction = 'repair';
         const targets = viabilityParts
           .filter(
             (part) =>
@@ -577,7 +619,9 @@ export function playRun(input: PlayRunInput): RunResult {
         const quote = refuelQuote(
           state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
         );
+        currentAction = 'fuel';
         if (quote.cost <= state.wallet) {
+          currentAction = 'fuel';
           refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
           state.log.push(
             `refuelled ${quote.units} at ${state.locationId} for ${quote.cost} ` +
@@ -601,6 +645,7 @@ export function playRun(input: PlayRunInput): RunResult {
             state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
           );
           if (quote.cost <= state.wallet) {
+            currentAction = 'fuel';
             refuel(
               state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
             );
@@ -608,6 +653,7 @@ export function playRun(input: PlayRunInput): RunResult {
         }
         if (state.ship.fuel >= need) {
           const from = state.locationId;
+          currentAction = 'travel';
           const trip = travel(state, ctx, world, hop.destinationId, nowMs);
           if (trip === null) {
             // The pilot cannot actually leave (power, requirements, viability): count the turn
@@ -636,6 +682,7 @@ export function playRun(input: PlayRunInput): RunResult {
       const dry = state.ship.fuel < rescueRationOf(state, ctx);
       if (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
           (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry)) {
+        currentAction = 'rescue';
         const out = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
         state.log.push(
           `stranded at ${state.locationId} — rescued for ${out.cost} ` +
@@ -663,6 +710,7 @@ export function playRun(input: PlayRunInput): RunResult {
     // A bill the wallet cannot cover is deferred, not thrown: the pilot earns it next mission —
     // unless the hull cannot fly at all, in which case the board stays empty and the stall says so.
     const repairDecision = decideRepair(state, snapshot, ctx.rules, catalogByType);
+    currentAction = 'repair';
     if (repairDecision.shouldRepair) {
       const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
       if (quote.cost > state.wallet) {
@@ -677,10 +725,12 @@ export function playRun(input: PlayRunInput): RunResult {
     } else if (repairDecision.reason === 'travel-to-cheap-repair') {
       const target = cheapestReachablePort(state, snapshot, ctx.rules, catalogByType);
       if (target !== null && canTravelTo(state, ctx, world, target, nowMs)) {
+        currentAction = 'travel';
         const trip = travel(state, ctx, world, target, nowMs);
         if (trip !== null) {
           state.missionsDone -= 1;
           state.clock.advance(budget.humanPauseSeconds);
+          currentAction = 'repair';
           const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, target);
           if (quote.cost <= state.wallet) {
             const bill = repair(state, snapshot, ctx.rules, catalogByType, target);
@@ -697,6 +747,7 @@ export function playRun(input: PlayRunInput): RunResult {
     // was already taken as-is — its fuel fits the tank — so a top-up the wallet cannot pay for
     // is skipped; only the mission's own fuel is mandatory, and pickOffer guaranteed that.
     const fuelDecision = decideFuel(state, snapshot, ctx.rules, catalogByType, offer);
+    currentAction = 'fuel';
     if (fuelDecision.shouldRefuel) {
       const quote = refuelQuote(
         state,
@@ -724,6 +775,7 @@ export function playRun(input: PlayRunInput): RunResult {
       }
     }
 
+    currentAction = 'mission';
     const result = takeMission(state, offer, ctx);
     state.clock.advance(budget.humanPauseSeconds);
     towIfAdrift(result.shipStatus, result.type);
@@ -740,6 +792,7 @@ export function playRun(input: PlayRunInput): RunResult {
       decideDanger(state, catalogByType, scavengeJob).accept
     ) {
       if (atOrBelowTarget(scavengeFlags, SCAVENGE_RATIO_MIN)) {
+        currentAction = 'scavenge';
         const job = scavenge(state, ctx, world, afterMs);
         if (job.ok) {
           scavengeFlags.push(true);
@@ -758,11 +811,13 @@ export function playRun(input: PlayRunInput): RunResult {
     const mineGate = canMine(state, ctx, world);
     const mineJob = mineGate.ok ? miningOffer({ snapshot, world, state, nowMs: afterMs }) : null;
     if (
+      playstyleAllowsJob(playstyle, 'mining') &&
       mineJob !== null &&
       canTakeMission(state, mineJob, ctx).ok &&
       decideDanger(state, catalogByType, mineJob).accept
     ) {
       if (atOrBelowTarget(mineFlags, MINE_RATIO_MIN)) {
+        currentAction = 'mining';
         const job = mine(state, ctx, world, afterMs);
         if (job.ok) {
           mineFlags.push(true);
@@ -846,6 +901,7 @@ export function playRun(input: PlayRunInput): RunResult {
     levels,
     missions: records,
     log: state.log,
+    actionSeconds,
   };
 }
 
