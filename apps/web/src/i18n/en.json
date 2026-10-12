@@ -933,6 +933,7 @@
       "title": "Scavenge the wreckage",
       "nothing": "About {{percent}}% of searches here find nothing (the safer the place, the more often).",
       "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything.",
+      "noShip": "Your ship cannot fly — no usable bridge, engine or connected parts. Search on foot instead: it needs no ship.",
       "riskFoot": "The riskier the place (zone {{zone}}), the better and rarer the finds. On foot nothing can attack you. Rare parts only turn up in dangerous places.",
       "modeTitle": "How to search",
       "mode": {

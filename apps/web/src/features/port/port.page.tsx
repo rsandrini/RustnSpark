@@ -178,6 +178,9 @@ export function PortPage({
   const shipHandicapped =
     readinessQuery.data !== undefined &&
     (!readinessQuery.data.viability.viable || readinessQuery.data.viability.warnings.length > 0);
+  // "With the ship" needs a ship that can actually fly (same gate the API applies); while the
+  // preview is loading, assume usable so the card does not flash disabled.
+  const shipUsable = readinessQuery.data === undefined || readinessQuery.data.viability.viable;
   // The repair plan: only parts the pilot moved past their current condition are repaired.
   const damagedInstalled = useMemo(
     () =>
@@ -433,6 +436,10 @@ export function PortPage({
   // to the Transit screen, where the report arrives when it ends.
   const navigate = useNavigate();
   const [scavengeMode, setScavengeMode] = useState<'ship' | 'foot'>('ship');
+  // No usable ship: the ship card is disabled, so make sure the mode is not left on "ship".
+  useEffect(() => {
+    if (!shipUsable && scavengeMode === 'ship') setScavengeMode('foot');
+  }, [shipUsable, scavengeMode]);
   const scavenge = useMutation({
     mutationFn: () =>
       client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`, {
@@ -1272,6 +1279,7 @@ export function PortPage({
                   name="scavenge-mode"
                   value={mode}
                   checked={scavengeMode === mode}
+                  disabled={mode === 'ship' && !shipUsable}
                   onChange={() => setScavengeMode(mode)}
                 />
                 <ActionArt kind={mode === 'foot' ? 'scavenge-foot' : 'scavenge-ship'} />
@@ -1286,6 +1294,11 @@ export function PortPage({
               </label>
             ))}
           </fieldset>
+          {!shipUsable && (
+            <p className="notice warn" data-testid="scavenge-no-ship">
+              {t('port.scav.noShip')}
+            </p>
+          )}
           {scavengeMode === 'foot' && (
             <p className="notice warn" data-testid="scavenge-foot">
               {t('port.scav.footNotice', { percent: Math.round(display.scavengeFootFactor * 100) })}
@@ -1336,7 +1349,11 @@ export function PortPage({
             <button
               type="button"
               className="btn primary"
-              disabled={scavenge.isPending || (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0}
+              disabled={
+                scavenge.isPending ||
+                (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0 ||
+                (scavengeMode === 'ship' && !shipUsable)
+              }
               onClick={() => scavenge.mutate()}
             >
               {t(scavengeMode === 'foot' ? 'port.scavengeFoot' : 'port.scavenge')}

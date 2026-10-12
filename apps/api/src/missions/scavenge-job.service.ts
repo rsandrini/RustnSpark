@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,9 +11,14 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
-import { connectedPartIds } from '../ships/geometry.js';
+import {
+  applyConnectivity,
+  conductiveCatalog,
+  withConnectionProblem,
+} from '../ships/connectivity.js';
+import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
+import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { legForRoute, type FillerWorld } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
@@ -85,8 +91,26 @@ export class ScavengeJobService {
     );
     const installedConnected = applyConnectivity(installed, connectedIds);
     const sheet = deriveSheet(installedConnected, rules);
-    // No viability gate: scavenging is manual work at the current location, not a trip flown with
-    // the ship, so even a ship that cannot fly can do it (dispatch marks it handicapped).
+    // "With the ship" needs a ship that can actually fly — the same gate dispatch applies to a
+    // SCAVENGE job (checkViability plus connectivity and port fit, no direction/hold rules: the
+    // job never travels and never loads cargo). Soft problems (power, life support) stay
+    // warnings and the dispatch still runs it handicapped. On foot there is no ship involved,
+    // so no ship-quality gate at all.
+    if (!onFoot) {
+      const viability = withConnectionProblem(
+        checkViability(sheet, installedConnected, rules),
+        installed,
+        connectedIds,
+        incorrectPortPartIds(
+          (ship.layout as unknown as Placement[]) ?? [],
+          catalogForConnectivity,
+          connectorsByInstance,
+        ),
+      );
+      if (!viability.viable) {
+        throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });
+      }
+    }
 
     const now = this.clock.now();
     const counter = await this.prisma.scavengeCounter.upsert({

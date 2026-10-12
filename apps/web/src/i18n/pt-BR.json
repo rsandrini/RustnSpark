@@ -933,6 +933,7 @@
       "title": "Vasculhar os destroços",
       "nothing": "Cerca de {{percent}}% das buscas aqui não acham nada (quanto mais seguro o lugar, mais vezes).",
       "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: só {{percent}}% da chance normal de achar algo.",
+      "noShip": "Sua nave não pode voar — sem ponte, motor ou peças conectadas utilizáveis. Vasculhe a pé: não precisa de nave.",
       "riskFoot": "Quanto mais arriscado o lugar (zona {{zone}}), melhores e mais raros os achados. A pé, nada pode te atacar. Peças raras só aparecem em lugares perigosos.",
       "modeTitle": "Como buscar",
       "mode": {

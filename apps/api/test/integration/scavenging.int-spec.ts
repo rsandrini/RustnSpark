@@ -122,25 +122,39 @@ describe('scavenging job (W8)', () => {
     expect((await start(player.token, 'nowhere')).status).toBe(404);
   });
 
-  it('a ship that cannot fly can still scavenge by hand — marked handicapped for the roll', async () => {
+  it('a ship with no usable parts cannot scavenge with the ship (SHIP_NOT_VIABLE), but on foot works', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    // every part back in the hold: no bridge, no engine — a ship that could not fly a mission
+    // every part back in the hold: no bridge, no engine — a hull that could not fly a mission
     await prisma.partInstance.updateMany({
       where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
       data: { location: 'INVENTORY', shipId: null },
     });
     await prisma.ship.update({ where: { id: player.shipId }, data: { layout: [] } });
 
-    const response = await start(player.token, 'ceres');
-    expect(response.status).toBe(200);
+    const refused = await start(player.token, 'ceres');
+    expect(refused.status).toBe(400);
+    expect(refused.body).toMatchObject({
+      statusCode: 400,
+      message: { error: 'SHIP_NOT_VIABLE' },
+    });
+    const problems = (refused.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('NO_BRIDGE');
+    // nothing was dispatched: the ship stays in port and no mission exists
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('IN_PORT');
+    expect(
+      await prisma.missionInstance.count({ where: { playerId: player.seeded.player.id } }),
+    ).toBe(0);
+
+    // on foot involves no ship, so the same hull can still search
+    const onFoot = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(onFoot.status).toBe(200);
     const mission = await prisma.missionInstance.findUniqueOrThrow({
-      where: { id: (response.body as { missionId: string }).missionId },
+      where: { id: (onFoot.body as { missionId: string }).missionId },
     });
     expect(mission.type).toBe('SCAVENGE');
-    // a mission needs a bridge to fly, but this one never leaves port
-    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
-    expect(ship.status).toBe('ON_MISSION');
   });
 
   it('on foot: its own (shorter) time, mode validated, and the dispatch is marked on foot', async () => {
@@ -154,9 +168,13 @@ describe('scavenging job (W8)', () => {
     expect(response.status).toBe(200);
     const body = response.body as { missionId: string; durationSeconds?: number };
     const rules = configService.snapshot().rules.scavenging;
-    expect(Math.abs((body.durationSeconds ?? 0) - rules.foot_duration_seconds)).toBeLessThanOrEqual(5);
+    expect(Math.abs((body.durationSeconds ?? 0) - rules.foot_duration_seconds)).toBeLessThanOrEqual(
+      5,
+    );
     expect(rules.foot_duration_seconds).toBeLessThan(rules.duration_seconds);
-    const mission = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    const mission = await prisma.missionInstance.findUniqueOrThrow({
+      where: { id: body.missionId },
+    });
     expect(mission.type).toBe('SCAVENGE');
   });
 
@@ -170,7 +188,10 @@ describe('scavenging job (W8)', () => {
   it('resolves into a report: used parts in the inventory (or scrap), no payment, ship back in the same port', async () => {
     await freshSeededApp();
     // a run can come back empty (covered by the resolver's own tests): here, always find something
-    await prisma.gameConfig.update({ where: { key: 'scavenging.nothing_chance' }, data: { value: [0] } });
+    await prisma.gameConfig.update({
+      where: { key: 'scavenging.nothing_chance' },
+      data: { value: [0] },
+    });
     await configService.refresh();
     const player = await onboardPlayer();
     const before = await prisma.partInstance.count({
@@ -253,6 +274,12 @@ describe('scavenging job (W8)', () => {
       (first.body as { missionId: string }).missionId,
     )) as Job<DispatchJobData>;
     await processor.process(job);
+    // Job wear can leave the ship non-viable (a hull at 0 disconnects everything); restore the
+    // parts so the only thing blocking the next job is the cooldown this test is about.
+    await prisma.partInstance.updateMany({
+      where: { ownerPlayerId: player.seeded.player.id },
+      data: { condition: 100 },
+    });
     const again = await start(player.token, 'ceres');
     expect(again.status).toBe(409);
     expect(again.body).toMatchObject({ message: { error: 'SCAVENGE_COOL_DOWN' } });
