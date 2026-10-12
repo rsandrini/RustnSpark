@@ -8,6 +8,45 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
+- [ ] **BUG: the mission progress bar only updates when I click something.** The trip progress (the
+  bar on the transit / My Ship mission card, and the ship's position on the map) does not advance
+  by itself; it moves only after an interaction. It should tick on its own, for example from a
+  timer that recomputes the progress from the departure and arrival times (the countdowns already
+  use `Countdown`), and refetch when the arrival time passes. *Where:*
+  `apps/web/src/features/transit/transit.page.tsx` (`progress` is computed on render, with nothing
+  to re-render it), `apps/web/src/ui/RouteMap.tsx`, the active-mission query's refetch interval.
+
+- [ ] **A new pilot's fuel tank starts empty; it should start full.** The initial tank must have
+  fuel. *Where:* onboarding / the starter kit (`apps/api/src/players/onboarding.service.ts`, the ship's
+  `fuel` field, `STARTER_PARTS` in `apps/api/prisma/seed-data/starter-kit.ts`) and the reset-player
+  CLI. Note the earlier planned "tank full" in the starter-kit design; check what the ship's fuel is
+  set to when the starter kit is assembled (the tank only counts once it is installed and
+  connected), and that a rescue / restart kit does the same.
+
+- [ ] **The first mission should be short and quick.** The private start-safe mission a new pilot
+  gets (D43) should be a short trip: a nearby destination and a low trip time, so the first
+  result comes fast. *Where:* `apps/api/src/missions/board.service.ts` (the starter offer) and the
+  filler's starter constraint (`STARTER_NEAREST_DESTINATIONS = 3` and `starter.maxZone` in
+  `apps/api/src/missions/generator/template.filler.ts`): pick the nearest destination, not one of
+  the nearest three, and cap the distance / duration with a config value.
+
+- [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
+  difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
+  reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
+  100%, money, scrap / crystals / cores); how fuel, repair, scavenging, mining and missions work;
+  what ports, connectors and incorrect ports mean; what each mission type needs. *Needs design:*
+  in-game pages (a "Guide" route in the web app, bilingual en + pt-BR, no hard-coded strings) or
+  markdown rendered in the app; keep it in sync with the Admin-tunable numbers by reading values
+  from the API where it quotes them (for example the repair and upgrade rules), not hard-coding
+  them. The part descriptions (`hangar.partClasses`, the part-class help texts) are a starting point.
+
+- [ ] **A simple tutorial for newcomers.** Something short that shows, step by step: how to build a
+  ship (place parts, connect them, fix red ports), how to refuel, repair, scavenge and mine, and
+  how to get and accept tasks. *Needs design:* an in-game guided flow for a new pilot (a checklist
+  that ticks as the pilot does each thing, or a few highlighted steps), shown after onboarding and
+  skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
+  first mission) so the first minutes work. It can link to the wiki for details.
+
 - [ ] **BUG: Auto layout does not work.** Reproduce it in the Hangar (what happens: an error, parts
   left out, or a layout that is not ready to fly?) and fix it. *Possible link to check first:* the
   new flight rules (a disconnected part, `PART_DISCONNECTED`, and a connector against a part it does
