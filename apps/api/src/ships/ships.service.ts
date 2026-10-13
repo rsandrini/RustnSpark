@@ -43,6 +43,21 @@ import { checkViability, type ViabilityReport } from './viability.js';
 // ships.service.ts doesn't otherwise depend on economy/part-upgrade.calculator.ts.
 const RARITY_ORDER: readonly string[] = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
 
+/**
+ * Whether the bridge opens a format. Rarity and size are two orthogonal gates: the format's
+ * `minRarity` must be at or below the bridge's rarity, and the bridge footprint (both axes) must
+ * be at least the format's `minBridgeSize` — so a COMMON 2x2 unlocks the big grids while a RARE
+ * 1x1 stays on the small ones.
+ */
+function formatUnlocked(
+  format: { minRarity: string; minBridgeSize: number },
+  bridge: { rarity: string; w: number; h: number },
+): boolean {
+  const byRarity = RARITY_ORDER.indexOf(format.minRarity) <= RARITY_ORDER.indexOf(bridge.rarity);
+  const bySize = format.minBridgeSize <= bridge.w && format.minBridgeSize <= bridge.h;
+  return byRarity && bySize;
+}
+
 /** What the ship is doing now (drives the ship stage on the client). */
 export interface ShipActivity {
   readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
@@ -142,7 +157,7 @@ export class ShipsService implements OnModuleInit {
     const ships = await this.prisma.ship.findMany({
       where: { ownerPlayerId: playerId },
       orderBy: { id: 'asc' },
-      include: { format: { select: { cells: true } } },
+      include: { format: { select: { cells: true, minBridgeSize: true } } },
     });
     const rules = this.configService.snapshot().rules;
     return Promise.all(ships.map((ship) => this.toResponse(ship, rules)));
@@ -159,6 +174,7 @@ export class ShipsService implements OnModuleInit {
     this.assertCanModify(ship);
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
+    this.assertBridgeFitsFormat(layout, playerParts, ship);
     this.assertLayoutValid(layout, playerParts, ship);
 
     // Saving a layout never requires it to be flight-viable: a player mid-refit — say,
@@ -188,6 +204,7 @@ export class ShipsService implements OnModuleInit {
       });
     }
 
+    this.assertBridgeFitsFormat(layout, playerParts, ship);
     this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
@@ -365,7 +382,7 @@ export class ShipsService implements OnModuleInit {
     const updated = await this.prisma.ship.update({
       where: { id: shipId },
       data: { stance },
-      include: { format: { select: { cells: true } } },
+      include: { format: { select: { cells: true, minBridgeSize: true } } },
     });
     return this.toResponse(updated, rules);
   }
@@ -377,7 +394,7 @@ export class ShipsService implements OnModuleInit {
     const updated = await this.prisma.ship.update({
       where: { id: shipId },
       data: { energyMode },
-      include: { format: { select: { cells: true } } },
+      include: { format: { select: { cells: true, minBridgeSize: true } } },
     });
     return this.toResponse(updated, rules);
   }
@@ -389,7 +406,7 @@ export class ShipsService implements OnModuleInit {
     const updated = await this.prisma.ship.update({
       where: { id: shipId },
       data: { chemLevel: levels.chem, ionLevel: levels.ion },
-      include: { format: { select: { cells: true } } },
+      include: { format: { select: { cells: true, minBridgeSize: true } } },
     });
     return this.toResponse(updated, rules);
   }
@@ -401,20 +418,21 @@ export class ShipsService implements OnModuleInit {
       description: unknown;
       cells: [number, number][];
       minRarity: string;
+      minBridgeSize: number;
     }>
   > {
     const ship = await this.prisma.ship.findFirst({ where: { ownerPlayerId: playerId } });
-    const bridgeRarity = await this.currentBridgeRarity(ship);
-    const rarityRank = RARITY_ORDER.indexOf(bridgeRarity);
+    const bridge = await this.currentBridge(ship);
     const formats = await this.prisma.shipFormat.findMany({ where: { active: true } });
     return formats
-      .filter((format) => RARITY_ORDER.indexOf(format.minRarity) <= rarityRank)
+      .filter((format) => formatUnlocked(format, bridge))
       .map((format) => ({
         id: format.id,
         displayName: format.displayName,
         description: format.description,
         cells: format.cells as [number, number][],
         minRarity: format.minRarity,
+        minBridgeSize: format.minBridgeSize,
       }));
   }
 
@@ -426,8 +444,8 @@ export class ShipsService implements OnModuleInit {
     if (!target || !target.active) {
       throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
     }
-    const bridgeRarity = await this.currentBridgeRarity(ship);
-    if (RARITY_ORDER.indexOf(target.minRarity) > RARITY_ORDER.indexOf(bridgeRarity)) {
+    const bridge = await this.currentBridge(ship);
+    if (!formatUnlocked(target, bridge)) {
       throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
     }
 
@@ -469,19 +487,27 @@ export class ShipsService implements OnModuleInit {
     return this.toResponse(updated, rules);
   }
 
-  private async currentBridgeRarity(ship: Ship | null): Promise<string> {
-    if (ship === null) return 'COMMON';
+  /** The installed bridge's rarity and grid footprint; a ship with none reads as a 1x1 COMMON. */
+  private async currentBridge(
+    ship: Ship | null,
+  ): Promise<{ rarity: string; w: number; h: number }> {
+    if (ship === null) return { rarity: 'COMMON', w: 1, h: 1 };
     const bridgeInstalled = await this.prisma.partInstance.findFirst({
       where: { shipId: ship.id, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
       include: { partCatalog: true },
     });
-    return bridgeInstalled?.partCatalog.rarity ?? 'COMMON';
+    if (bridgeInstalled === null) return { rarity: 'COMMON', w: 1, h: 1 };
+    return {
+      rarity: bridgeInstalled.partCatalog.rarity,
+      w: bridgeInstalled.partCatalog.w,
+      h: bridgeInstalled.partCatalog.h,
+    };
   }
 
   private async loadShip(shipId: string): Promise<ShipWithFormat> {
     const ship = await this.prisma.ship.findUnique({
       where: { id: shipId },
-      include: { format: { select: { cells: true } } },
+      include: { format: { select: { cells: true, minBridgeSize: true } } },
     });
     if (!ship) throw new NotFoundException('ship not found');
     return ship;
@@ -498,6 +524,35 @@ export class ShipsService implements OnModuleInit {
   private assertCanModify(ship: Ship): void {
     if (ship.status === 'ON_MISSION') {
       throw new ConflictException({ error: 'SHIP_ON_MISSION' });
+    }
+  }
+
+  /**
+   * A format may only be left for a smaller bridge once the layout has already dropped to a
+   * bridge that still satisfies the current format's size floor — so a COMMON 2x2 can't be
+   * downswapped to a 1x1 while the ship still sits on a big (minBridgeSize 2) grid. The layout
+   * being saved carries the new bridge, so we check it against the format's requirement.
+   */
+  private assertBridgeFitsFormat(
+    layout: Placement[],
+    playerParts: PartInstanceWithCatalog[],
+    ship: ShipWithFormat,
+  ): void {
+    const required = ship.format.minBridgeSize;
+    if (required <= 1) return;
+    const catalogMap = buildCatalogMapFromPrisma(playerParts);
+    const bridge = layout.find((placement) => {
+      const part = catalogMap.get(placement.partInstanceId);
+      return part?.partClass === 'BRIDGE';
+    });
+    if (bridge === undefined) return; // no bridge in the layout: assertLayoutValid owns that case
+    const part = catalogMap.get(bridge.partInstanceId);
+    if (part === undefined) return;
+    const swapped = bridge.rot % HALF_TURN !== 0;
+    const w = swapped ? part.h : part.w;
+    const h = swapped ? part.w : part.h;
+    if (w < required || h < required) {
+      throw new ConflictException({ error: 'FORMAT_REQUIRES_BRIDGE' });
     }
   }
 
@@ -784,7 +839,7 @@ export class ShipsService implements OnModuleInit {
 type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog };
 
 type ShipWithFormat = Prisma.ShipGetPayload<{
-  include: { format: { select: { cells: true } } };
+  include: { format: { select: { cells: true, minBridgeSize: true } } };
 }>;
 
 const HALF_TURN = 180;

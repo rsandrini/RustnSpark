@@ -1424,6 +1424,7 @@
     "DISCONNECTED": "Algumas peças não estão conectadas à ponte.",
     "ENERGY_CRUISE_NEGATIVE": "A energia de cruzeiro está negativa — adicione energia.",
     "FORMAT_NOT_UNLOCKED": "Esse formato de nave não está desbloqueado para a ponte atual.",
+    "FORMAT_REQUIRES_BRIDGE": "Este formato exige uma ponte maior. Encaixe uma antes de trocar.",
     "FUEL_EMPTY": "O tanque está vazio.",
     "FUEL_INSUFFICIENT": "Esta rota precisa de mais combustível do que a nave tem: você ficaria sem no caminho. Reabasteça, aumente a capacidade dos tanques ou escolha uma rota mais curta.",
     "HOLD_LIMIT": "Você já está com uma missão reservada.",

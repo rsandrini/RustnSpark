@@ -755,6 +755,17 @@ const SHIP_FORMAT_FIELDS: EntitySchemaField[] = [
       'Raridade mínima de ponte que desbloqueia este formato',
     ),
   },
+  {
+    name: 'minBridgeSize',
+    type: 'integer',
+    required: true,
+    min: 1,
+    max: 4,
+    description: localeMap(
+      'Minimum bridge footprint (both axes) that unlocks this format',
+      'Tamanho mínimo da ponte (ambos os eixos) que desbloqueia este formato',
+    ),
+  },
 ];
 
 const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
