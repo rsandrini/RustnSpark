@@ -26,7 +26,7 @@ export const IDEMPOTENCY_KEY_TTL_MS = 24 * 60 * 60 * 1000;
 // The row is inserted BEFORE the handler runs so a concurrent same-key request loses the PK race
 // and gets 409 instead of executing twice (R21). Until the winner stores its response the row
 // carries this sentinel; a real HTTP status is always >= 100, so 0 can never be mistaken for one.
-const RESPONSE_PENDING_STATUS = 0;
+export const RESPONSE_PENDING_STATUS = 0;
 
 interface IdempotentRequest {
   method: string;
@@ -112,6 +112,10 @@ export class IdempotencyInterceptor implements NestInterceptor {
     }
 
     const statusCode = this.resolveStatusCode(context, request.method);
+    // The TTL the pending row in begin() was created with, so a recreate in complete() (after a
+    // handler wiped the player's idempotency history) keeps the same replay window as a normal
+    // stored response.
+    const expiresAt = new Date(Date.now() + IDEMPOTENCY_KEY_TTL_MS);
     return next.handle().pipe(
       catchError((error: unknown) =>
         // Handler-phase failure: free the pending row so a same-key retry re-executes instead of
@@ -122,7 +126,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
       ),
       mergeMap(async (result: unknown) => {
         const body = result === undefined || result === null ? '' : JSON.stringify(result);
-        await this.complete(user.playerId, route, key, statusCode, body);
+        await this.complete(user.playerId, route, key, requestHash, statusCode, body, expiresAt);
         return result;
       }),
     );
@@ -189,13 +193,38 @@ export class IdempotencyInterceptor implements NestInterceptor {
     playerId: string,
     route: string,
     key: string,
+    requestHash: string,
     responseStatus: number,
     responseBody: string,
+    expiresAt: Date,
   ): Promise<void> {
-    await this.prisma.idempotencyKey.update({
-      where: { playerId_route_key: { playerId, route, key } },
-      data: { responseStatus, responseBody },
-    });
+    try {
+      await this.prisma.idempotencyKey.update({
+        where: { playerId_route_key: { playerId, route, key } },
+        data: { responseStatus, responseBody },
+      });
+    } catch (error) {
+      // The handler succeeded, so the side effect already happened. A P2025 here means the
+      // row we inserted in begin() is gone — a handler that legitimately wipes this player's
+      // idempotency history (e.g. SupportService.reset, which targets the caller's own player
+      // when an admin resets their own account) deletes the in-flight row. Swallowing this
+      // would turn a successful reset into a 500 and drop the stored response; swallowing the
+      // real update failure would silently break replay. So distinguish the two: recreate the
+      // row when it is simply gone, rethrow any other error.
+      const gone = error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
+      if (!gone) throw error;
+      await this.prisma.idempotencyKey.create({
+        data: {
+          key,
+          playerId,
+          route,
+          requestHash,
+          responseStatus,
+          responseBody,
+          expiresAt,
+        },
+      });
+    }
   }
 
   private async abandon(playerId: string, route: string, key: string): Promise<void> {

@@ -11,6 +11,7 @@ import { OnboardingService } from '../../players/onboarding.service.js';
 import { WalletError, WalletService } from '../../players/wallet.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AccountStatusCache } from '../../common/guards/account-status.cache.js';
+import { RESPONSE_PENDING_STATUS } from '../../common/idempotency/idempotency.interceptor.js';
 import { AdminAuditService } from '../audit/admin-audit.service.js';
 
 // Support actions (GDD §17 screen D): grant/remove credits, unstick ship, clear negative
@@ -212,7 +213,15 @@ export class SupportService {
       await tx.playerMaterial.deleteMany({ where: { playerId } });
       await tx.repairJob.deleteMany({ where: { playerId } });
       await tx.scavengeCounter.deleteMany({ where: { playerId } });
-      await tx.idempotencyKey.deleteMany({ where: { playerId } });
+      // The pilot's replayable idempotency history goes with the fresh run, but never the
+      // pending row for THIS reset request: the IdempotencyInterceptor inserted it before the
+      // handler ran and updates it to the stored response after we commit. When an admin resets
+      // their own account the caller's playerId equals this target, so a blanket delete would
+      // wipe the in-flight row and turn a successful reset into a 500. Only completed rows
+      // (responseStatus >= 100) carry a stored response worth clearing.
+      await tx.idempotencyKey.deleteMany({
+        where: { playerId, responseStatus: { gt: RESPONSE_PENDING_STATUS } },
+      });
       const active = await tx.missionInstance.findMany({
         where: { playerId, status: { in: [...ACTIVE_MISSION_STATUSES] } },
         select: { id: true },

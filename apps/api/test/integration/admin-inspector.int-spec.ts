@@ -635,7 +635,10 @@ describe('admin player inspector (S11.4)', () => {
     const result = await request(server)
       .post(`/v1/admin/players/${player.playerId}/password`)
       .set(auth(admin.token))
-      .send({ password: 'a-brand-new-strong-password', reason: 'pilot locked out, verified over email' });
+      .send({
+        password: 'a-brand-new-strong-password',
+        reason: 'pilot locked out, verified over email',
+      });
     expect(result.status).toBe(200);
     expect(result.body).toEqual({
       action: 'SUPPORT_SET_PASSWORD',
@@ -800,6 +803,55 @@ describe('admin player inspector (S11.4)', () => {
     expect((audit.after as { reason: string }).reason).toBe(
       'pilot requested fresh start after corruption',
     );
+  });
+
+  it("an admin resetting their own account still returns the reset's idempotent response", async () => {
+    // The admin is both caller and target here, so the IdempotencyInterceptor's pending row
+    // (keyed on the caller's playerId) is exactly what reset's idempotency wipe would delete.
+    // It used to be deleted wholesale, so the interceptor's post-commit update missed the row
+    // (P2025) and the reset answered 500 despite committing. The wipe now leaves the pending
+    // row alone, and complete() recreates a missing row as a safety net.
+    const admin = await makeAdmin(prisma, testApp.app.get(PasswordService), server);
+    const credits = startCredits + 50;
+    await prisma.player.update({
+      where: { id: admin.playerId },
+      data: { credits },
+    });
+
+    const reset = await request(server)
+      .post(`/v1/admin/players/${admin.playerId}/reset`)
+      .set(auth(admin.token))
+      .send({ reason: 'owner wiping their own account' });
+    expect(reset.status).toBe(200);
+    expect(reset.body).toMatchObject({
+      action: 'SUPPORT_RESET',
+      target: admin.playerId,
+      after: { credits, activeMissions: 0 },
+    });
+
+    // The committed side effect is real, not just a 200.
+    const dbAdmin = await prisma.player.findUniqueOrThrow({ where: { id: admin.playerId } });
+    expect(dbAdmin.credits).toBe(credits);
+
+    // A same-key retry replays the stored response instead of re-running the reset. Clear the
+    // unkeyed reset's audit row first so the count isolates this keyed pair.
+    await prisma.adminAuditLog.deleteMany({ where: { actor: admin.accountId } });
+    const key = randomUUID();
+    const send = () =>
+      request(server)
+        .post(`/v1/admin/players/${admin.playerId}/reset`)
+        .set(auth(admin.token, key))
+        .send({ reason: 'owner wiping their own account' });
+    const first = await send();
+    const second = await send();
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(second.body).toEqual(first.body);
+    expect(
+      await prisma.adminAuditLog.count({
+        where: { actor: admin.accountId, action: 'SUPPORT_RESET' },
+      }),
+    ).toBe(1);
   });
 
   it('reset puts a merely HELD (reserved, not accepted) mission back on the board', async () => {

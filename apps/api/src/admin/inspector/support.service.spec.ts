@@ -353,7 +353,12 @@ describe('SupportService (S11.4)', () => {
     expect(f.materialDeleteMany).toHaveBeenCalledWith({ where: { playerId: 'player-1' } });
     expect(f.repairDeleteMany).toHaveBeenCalledWith({ where: { playerId: 'player-1' } });
     expect(f.scavengeDeleteMany).toHaveBeenCalledWith({ where: { playerId: 'player-1' } });
-    expect(f.idempotencyDeleteMany).toHaveBeenCalledWith({ where: { playerId: 'player-1' } });
+    // Completed rows only: the in-flight pending row (responseStatus 0) must survive so the
+    // IdempotencyInterceptor can store this reset's response when the admin resets their own
+    // account and the caller's playerId equals the target.
+    expect(f.idempotencyDeleteMany).toHaveBeenCalledWith({
+      where: { playerId: 'player-1', responseStatus: { gt: 0 } },
+    });
     expect(f.missionUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: 'EXPIRED', shipId: null, playerId: null } }),
     );
