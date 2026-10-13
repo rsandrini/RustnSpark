@@ -8,21 +8,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
 
 ### Added 2026-10-12
 
-- [ ] **BUG: an expired mission can still be started.** The mission card shows it as expired (an
-  "Expired" label next to the faction, seen on an ACCEPTED starter mission in the My Ship screen)
-  but Dispatch still works and the mission runs. Expected: once the offer's time is up it cannot be
-  dispatched, the card says so, and the buttons are disabled. *Check both cases:* (1) the **offer
-  deadline** (`expiresAt`: the server refuses `accept`/`hold` and dispatch with `MISSION_EXPIRED`,
-  `apps/api/src/missions/missions.service.ts` around lines 400-525, so find which path lets an
-  already ACCEPTED mission through, for example a mission accepted before it expired whose dispatch
-  does not re-check it); (2) the **start deadline** (`deadlineAt`, "start before" shown in the My
-  Ship briefing: `transit.startDeadline`), which should block Dispatch and expire the mission when
-  it passes. The web card computes the label on render, so it also needs a timer that re-checks
-  it (same cause as the progress bar that does not tick). *Where:* `missions.service.ts` (accept,
-  dispatch, the expiry flips), `apps/web/src/features/board/mission-card.tsx` (the "Expired"
-  label), `apps/web/src/features/transit/transit.page.tsx` (the Dispatch button for an ACCEPTED
-  mission). Add a test that dispatching an expired accepted mission returns `MISSION_EXPIRED`.
-
 - [ ] **Review the scavenging drops: they are absurd.** On the first attempt, in a zone 2 region,
   one scavenging run dropped a RARE solar panel AND an uncommon 4x4 nuclear reactor. *What the code
   does today (found by reading it):* the rarity of a find comes from the drop table by zone (RARE
@@ -40,21 +25,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   (`DropTable` rows, `scavenging` source), `scavenging.chance`, `tier_min_zone`, `quality_*` in
   `apps/api/src/config/game-config.defaults.ts`, and the catalog pool built in
   `apps/api/src/missions/scavenge-context.ts`.
-
-- [ ] **Scavenging on foot must work without a working ship, and while the ship is being repaired.**
-  On foot there is no ship involved (no fuel, no wear, no pirates), so it should be available when
-  the ship is broken, empty, not ready to fly, or in the workshop. Today `ScavengeJobService.start`
-  refuses it with `SHIP_REPAIRING` when the ship has a pending repair, and requires an idle ship
-  at the place (`SHIP_NOT_AT_LOCATION`, `SHIP_NOT_IN_PORT`), even for the on-foot mode. Related to
-  the bug above ("scavenging dispatches without a ship"): together they say that **"with the ship"
-  needs a ready ship, and "on foot" needs nothing but the pilot being at the place**. *Open points:*
-  can the pilot scavenge on foot while the ship is away on a mission (probably yes, it is the pilot
-  who searches, but check `ACTIVE_MISSION_EXISTS`), and what ship the job is dispatched with when
-  none can fly (the dispatch needs a ship id; the job may need to run on the pilot instead).
-  *Where:* `apps/api/src/missions/scavenge-job.service.ts` (`start`, the on-foot branch),
-  `dispatch.service.ts` (`onFoot`), and the Scavenging tab in `apps/web/src/features/port/port.page.tsx`
-  (the on-foot card must stay enabled). Add tests: on foot with a pending repair, with an empty
-  ship, and with a ship that is not viable.
 
 - [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
   difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
@@ -205,3 +175,18 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   freshly-granted `scrap_<type>` back to the ship's port in the same transaction at its fixed
   price (guarded like any material sale); the response gains `scrapSold`/`credits`. The port
   dialog has a "Sell the scrap" checkbox, on by default.
+
+- 2026-10-12 — An expired accepted mission can no longer be dispatched (commit `3dd8a9a`).
+  `DispatchService.dispatch` re-checks both the offer deadline (`expiresAt`) and the mission's own
+  start deadline (`deadlineAt`) before flying and rejects with `MISSION_EXPIRED` (the accept path
+  already refused them; dispatch was the path that let a stale ACCEPTED mission through). On the
+  web the transit page disables the Dispatch button and shows the reason once either deadline
+  passes, and the board's mission card ticks so an offer that expires while the board is open
+  flips to its "Expired" state on its own.
+
+- 2026-10-12 — On-foot scavenging works without a working ship and while the ship is being
+  repaired (commit `8574331`). "On foot" skips the ship-state gates that "with the ship" keeps
+  (`SHIP_REPAIRING`, `SHIP_NOT_IN_PORT`, `SHIP_NOT_AT_LOCATION`): it needs only the pilot being at
+  the place. "With the ship" still requires a ready, in-port ship at the place. The port's
+  Scavenging tab falls back to foot mode with a reason when the ship is under repair (as it already
+  did when the ship cannot fly), and the on-foot card stays enabled in every one of those cases.
