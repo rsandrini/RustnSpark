@@ -55,11 +55,7 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `apps/web/src/features/hangar/hangar.page.tsx`. Add a regression test with a ship of rolled
   (non-kit) parts.
 
-- [ ] **BUG: "Reset ship" in the admin fails with a 500.** Find the failing request and its server
-  error (api container logs), fix it, and add a regression test. *Where to look:* the admin
-  player/ship screens in `apps/web/src/admin` and the matching admin endpoints in
-  `apps/api/src/admin`; the CLI `apps/api/src/admin/cli/reset-player.cli.ts` is a similar "fresh
-  run" flow that works, so compare what it does (starter kit, ship row, layout, parts).
+
 
 - [ ] **Combat: almost every fight ends in 40 rounds as a draw or a flee; no losses, wins are rare.**
   Investigate why and improve the combat. The round cap is `combat.max_rounds` (40) and the flee
@@ -104,11 +100,26 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   that keeps faction and history.
 
 - [ ] **Bridges 2×2 and 4×4 with more structure.** An epic 1×1 bridge is still a small ship; larger
-  bridges are needed so bigger ships can exist. *Needs design:* sizes per rarity, structure budgets
-  (today 60 / 75 / 120 / 170 / 260 for the five rarities), price, mass, power, connectors, and how
-  the ship formats' grids fit them. *Where:* `apps/api/prisma/seed-data/parts.ts` (the `bridge`
-  family; sizes are separate families like the other parts), the catalog sync into the dev DB
-  (DB wins over the seed), the market and starter kit.
+  bridges are needed so bigger ships can exist. A COMMON `bridge_2x2` (2×2, 120 structure, base
+  price 10000) already exists in the catalog and is buyable in the shop (it rolls onto the shelf
+  like any catalog part), but **ship formats still unlock only by bridge rarity**, so the 2×2 buys
+  nothing new today. *Design decided 2026-10-13:* gate ship formats by **bridge size in addition
+  to rarity** — add `ShipFormat.minBridgeSize Int @default(1)` (per-axis: a format is unlocked only
+  when the installed bridge's `w` **and** `h` are both `>= minBridgeSize`; a 2×2 bridge has
+  footprint 2, so big formats get `minBridgeSize: 2`). Keep rarity and size as two **orthogonal**
+  axes (a RARE 1×1 stays small; the 2×2 is COMMON but large). Enforce the gate in **both**
+  `listFormats()` and `setFormat()` (`apps/api/src/ships/ships.service.ts`, alongside the existing
+  `RARITY_ORDER` / `minRarity` checks), expose `minBridgeSize` in the contract
+  (`ShipFormatSchema` in `packages/contract/src`) and in the admin `ship-formats` screen
+  (`SHIP_FORMAT_FIELDS` in `apps/api/src/admin/tuning/entity-schemas.ts`), and seed the big formats
+  to size 2 by migration. **Downswap rule (decided):** swapping to a *smaller* bridge while the
+  ship sits on a bigger format is **blocked** with a clear error (e.g. `FORMAT_REQUIRES_BRIDGE`)
+  until the pilot moves to an unlocked format — least surprising; no auto-kick. Still open: sizes
+  per rarity, structure budgets (today 60 / 75 / 120 / 170 / 260 for the five rarities), price,
+  mass, power, connectors, and the 4×4. *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`),
+  the two gate methods above, the contract + admin schema, a migration, and
+  `apps/api/prisma/seed-data/parts.ts` / the catalog sync (DB wins over the seed) for the bridge
+  parts themselves.
 
 - [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
   sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
@@ -190,3 +201,10 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   the place. "With the ship" still requires a ready, in-port ship at the place. The port's
   Scavenging tab falls back to foot mode with a reason when the ship is under repair (as it already
   did when the ship cannot fly), and the on-foot card stays enabled in every one of those cases.
+
+- 2026-10-13 — "Reset ship" in the admin no longer fails with a 500 (commit `aab5bd2`). The admin
+  resetting their own account (caller playerId = target) wiped the in-flight IdempotencyKey row, so
+  the interceptor's post-commit update missed it (P2025). Reset's wipe now skips the pending row,
+  and `complete()` recreates the row on P2025 as a safety net. Also fixed the worker boot (a
+  pre-existing DI gap since `6c3dd6d`: `PartsService` grew a `PricingService` dep that `JobsModule`
+  never registered).
