@@ -355,6 +355,21 @@ describe('transit (S10.7)', () => {
     expect(within(currentLeg).getByRole('timer')).toBeInTheDocument();
   });
 
+  it('flags an accepted mission whose start deadline has passed and refuses to dispatch it', async () => {
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json([mission({ deadlineAt: iso(-60 * 1000) })], { status: 200 }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+
+    await screen.findByTestId('transit-start-deadline-passed');
+    expect(screen.getByTestId('transit-start-deadline-passed')).toHaveTextContent(
+      'The start deadline has passed',
+    );
+    expect(screen.getByRole('button', { name: 'Dispatch' })).toBeDisabled();
+  });
+
   it('renders a mission that is already in transit with leg progress', async () => {
     server.use(
       http.get('/v1/missions/active', () =>

@@ -396,6 +396,53 @@ describe('ship dispatch API (S7.2)', () => {
     });
   });
 
+  // The offer's clock keeps running after accept (design ux §7): accept() already refuses an
+  // expired AVAILABLE/HELD offer, but a pilot who accepted before the deadline and dispatched
+  // after it used to get through — dispatch re-checks both clocks server-side.
+  it('rejects dispatch of an accepted mission whose offer has expired, and flips it to EXPIRED', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionInstance.update({
+      where: { id: mission.id },
+      data: { expiresAt: new Date(Date.now() - 60_000) },
+    });
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'MISSION_EXPIRED' },
+    });
+    // The row never sits as a stale ACCEPTED: it is released back to the board's expiry state.
+    const after = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    expect(after.status).toBe('EXPIRED');
+    expect(after.playerId).toBeNull();
+    // The ship never left port.
+    expect((await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } })).status).toBe(
+      'IN_PORT',
+    );
+  });
+
+  it('rejects dispatch past the mission start deadline (deadlineAt), even with offer time left', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    await prisma.missionInstance.update({
+      where: { id: mission.id },
+      data: { deadlineAt: new Date(Date.now() - 60_000) },
+    });
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'MISSION_EXPIRED' },
+    });
+    const after = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    expect(after.status).toBe('EXPIRED');
+  });
+
   it('rejects a chemical ship with an empty tank (GDD §7 balance 3)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -531,7 +578,10 @@ describe('ship dispatch API (S7.2)', () => {
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
     const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
     const engine = await prisma.partInstance.findFirstOrThrow({
-      where: { id: { in: layout.map((placement) => placement.partInstanceId) }, partCatalog: { partClass: 'ENGINE' } },
+      where: {
+        id: { in: layout.map((placement) => placement.partInstanceId) },
+        partCatalog: { partClass: 'ENGINE' },
+      },
     });
     const healthy = await request(httpServer(testApp.app))
       .get(`/v1/ships/${player.shipId}`)
@@ -543,7 +593,10 @@ describe('ship dispatch API (S7.2)', () => {
 
     // Universal ports on the engine (so turning it never disconnects it), then turn it until the
     // part next to it plugs its exhaust: that is the only thing wrong — a warning, not a problem.
-    await prisma.partInstance.update({ where: { id: engine.id }, data: { connectors: Prisma.DbNull } });
+    await prisma.partInstance.update({
+      where: { id: engine.id },
+      data: { connectors: Prisma.DbNull },
+    });
     let blocked = false;
     for (const rot of [0, 90, 180, 270]) {
       const candidate = layout.map((placement) =>

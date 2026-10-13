@@ -83,8 +83,17 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   const mission = missions[0] ?? null;
   // The trip bar and the ship on the map must advance on their own (owner report: they only
   // moved after a click — the poll's identical payload never re-rendered the page). The ticker
-  // re-reads the server clock while a flight is under way, like the map already does.
-  const now = useNow(mission?.status === 'IN_TRANSIT');
+  // re-reads the server clock while a flight is under way, and while an accepted mission is
+  // still on the ground: both its "start before" clock and the trip progress are pure functions
+  // of the clock, and neither re-renders on its own.
+  const now = useNow(mission?.status === 'IN_TRANSIT' || mission?.status === 'ACCEPTED');
+  // An accepted mission is only a flight the ship may still take while both of its clocks are
+  // ahead of now: the offer's `expiresAt` (accept already refuses this, dispatch re-checks it
+  // server-side) and its own "start before" `deadlineAt`. Past either, Dispatch is refused.
+  const startDeadlinePassed =
+    mission?.status === 'ACCEPTED' &&
+    ((mission.deadlineAt !== null && Date.parse(mission.deadlineAt) <= now) ||
+      Date.parse(mission.expiresAt) <= now);
 
   // A pilot watching this screen when the mission ends is taken to its report: remember the flight
   // being watched, and once the active list is empty and the newest report is that mission, go.
@@ -296,11 +305,16 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
         <button
           type="button"
           className="btn primary"
-          disabled={dispatch.isPending || ship === undefined}
+          disabled={dispatch.isPending || ship === undefined || startDeadlinePassed}
           onClick={() => dispatch.mutate()}
         >
           {t('transit.dispatch')}
         </button>
+        {startDeadlinePassed && (
+          <p className="sub" data-testid="transit-start-deadline-passed">
+            {t('transit.startDeadlinePassed')}
+          </p>
+        )}
         <button
           type="button"
           className="btn"

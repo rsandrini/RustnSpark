@@ -229,6 +229,21 @@ export class DispatchService {
       return { missionId, arrivalAt: arrivalOf(probe), serverTime: new Date() };
     }
 
+    // Expired-target handling lives outside any transaction: throwing from inside one would
+    // roll the EXPIRED flip back, and the row must stay flipped after the 409. The offer's
+    // clock keeps running after accept (design ux §7): an accepted mission whose offer or
+    // start deadline has passed is not a flight the ship may still take. accept() already
+    // refuses an expired AVAILABLE/HELD offer; this closes the window where the pilot accepted
+    // before the deadline and dispatched after it.
+    if (probe.expiresAt.getTime() <= Date.now()) {
+      await this.expireMission(probe.id, ['AVAILABLE', 'HELD', 'ACCEPTED']);
+      throw new ConflictException({ error: 'MISSION_EXPIRED' });
+    }
+    if (probe.deadlineAt !== null && probe.deadlineAt.getTime() <= Date.now()) {
+      await this.expireMission(probe.id, ['ACCEPTED']);
+      throw new ConflictException({ error: 'MISSION_EXPIRED' });
+    }
+
     const { rules } = this.config.snapshot();
     const serverTime = new Date();
     // Read once, outside the transaction: a plain per-account flag, not part of the ship/mission
@@ -267,19 +282,26 @@ export class DispatchService {
       if (!ship || ship.ownerPlayerId !== playerId) {
         throw new NotFoundException('ship not found');
       }
-      if (ship.status !== 'IN_PORT') {
-        throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
-      }
-      // S8.4: an in-flight repair holds the ship in port — dispatch waits for completion.
-      const repairing = await tx.repairJob.findFirst({
-        where: { shipId: ship.id, status: 'PENDING' },
-        select: { id: true },
-      });
-      if (repairing) {
-        throw new ConflictException({ error: 'SHIP_REPAIRING' });
-      }
-      if (ship.currentLocationId !== mission.originId) {
-        throw new ConflictException({ error: 'SHIP_NOT_AT_ORIGIN' });
+      // A scavenging job done on foot is manual work at the place: no ship flies, so a ship that
+      // is mid-refit, not in port, or not where the job was scoped still leaves the pilot free to
+      // search on their own. Every ship-state gate below is a ship-quality gate, and foot replaces
+      // it rather than stacking on top.
+      const onFoot = mission.type === 'SCAVENGE' && options.onFoot === true;
+      if (!onFoot) {
+        if (ship.status !== 'IN_PORT') {
+          throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+        }
+        // S8.4: an in-flight repair holds the ship in port — dispatch waits for completion.
+        const repairing = await tx.repairJob.findFirst({
+          where: { shipId: ship.id, status: 'PENDING' },
+          select: { id: true },
+        });
+        if (repairing) {
+          throw new ConflictException({ error: 'SHIP_REPAIRING' });
+        }
+        if (ship.currentLocationId !== mission.originId) {
+          throw new ConflictException({ error: 'SHIP_NOT_AT_ORIGIN' });
+        }
       }
 
       const rows = await this.parts.findPlayerParts(playerId, tx);
@@ -342,7 +364,6 @@ export class DispatchService {
             );
       // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
       // only finds less when the ship is not flight-ready.
-      const onFoot = mission.type === 'SCAVENGE' && options.onFoot === true;
       const handicapped =
         mission.type === 'SCAVENGE' &&
         !onFoot &&
@@ -457,12 +478,17 @@ export class DispatchService {
         throw new ConflictException({ error: 'MISSION_NOT_ACCEPTED' });
       }
 
-      const shipUpdate = await tx.ship.updateMany({
-        where: { id: ship.id, status: 'IN_PORT' },
-        data: { status: 'ON_MISSION' },
-      });
-      if (shipUpdate.count === 0) {
-        throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+      // Only a ship that actually flies is locked to the mission. A foot job leaves the ship's
+      // own state untouched — mid-refit, adrift, or docked elsewhere — since nothing about it
+      // moved, and resolve.service restores IN_PORT from the ship's live status for a foot run.
+      if (!onFoot) {
+        const shipUpdate = await tx.ship.updateMany({
+          where: { id: ship.id, status: 'IN_PORT' },
+          data: { status: 'ON_MISSION' },
+        });
+        if (shipUpdate.count === 0) {
+          throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+        }
       }
 
       // Presence windows split [serverTime, arrivalAt] pro-rata by leg distance.
@@ -527,5 +553,18 @@ export class DispatchService {
       durationSeconds: outcome.durationSeconds,
       durationClass: outcome.durationClass,
     };
+  }
+
+  // Releases an expired mission back to the board's expiry state. Only reachable for rows the
+  // caller has already probed as expired, so the status list is the set of states a mission can
+  // still be released FROM — a mission that raced into IN_TRANSIT is left alone.
+  private async expireMission(
+    missionId: string,
+    from: readonly ('AVAILABLE' | 'HELD' | 'ACCEPTED')[],
+  ): Promise<void> {
+    await this.prisma.missionInstance.updateMany({
+      where: { id: missionId, status: { in: [...from] } },
+      data: { status: 'EXPIRED', playerId: null },
+    });
   }
 }

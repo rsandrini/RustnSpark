@@ -15,7 +15,7 @@ import { Gauge } from '../../ui/Gauge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { factionName, useFactions } from '../../ui/factions';
-import { serverNow } from '../../api/client';
+import { useNow } from '../../ui/useNow';
 
 /** The game compares whole-number speeds: "needs 3" means 2.5 or more on the unrounded sheet. */
 const HALF = 0.5;
@@ -90,7 +90,11 @@ export function MissionCard({
             factionName(factions[location.factionId], i18n.language) ??
             t(`factions.${location.factionId}`, { defaultValue: t('factions.independent') }),
         });
-  const expired = Date.parse(offer.expiresAt) <= serverNow();
+  // The "Expired" label used to be computed once on render and never re-checked, so an offer
+  // that expired while the board was open kept its countdown. The ticker runs every second;
+  // once the label flips the server will also refuse the accept, so nothing else changes.
+  const now = useNow(true);
+  const expired = Date.parse(offer.expiresAt) <= now;
   // info.requirements is the full checklist (met + unmet); eligibility.reasons also carries
   // general blocking reasons (viability, no ship, already on a mission). Anything the
   // checklist already names is dropped from the old reasons list below, so neither duplicates
