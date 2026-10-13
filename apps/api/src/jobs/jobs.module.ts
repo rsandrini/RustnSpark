@@ -9,6 +9,10 @@ import { RoutePresenceService } from '../missions/encounters/route-presence.serv
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
 import { RepairService } from '../economy/repair.service.js';
+// PartsService depends on PricingService (scrap auto-sell prices in place); provided directly
+// here like the other PartsService deps so this standalone worker graph resolves without
+// importing EconomyModule.
+import { PricingService } from '../economy/pricing.service.js';
 import { MissionProcessor } from './processors/mission.processor.js';
 import { PingProcessor } from './processors/ping.processor.js';
 import { ReconcileProcessor } from './processors/reconcile.processor.js';
@@ -70,6 +74,7 @@ import {
     EncounterService,
     RoutePresenceService,
     PartsService,
+    PricingService,
     WalletService,
     PlayerEventService,
     RepairService,
