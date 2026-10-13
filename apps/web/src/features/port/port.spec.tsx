@@ -10,6 +10,7 @@ import {
   economyState,
   setWallet,
   resetEconomyState,
+  setShipActivity,
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
@@ -57,6 +58,7 @@ const repairSliders = () =>
 describe('port (S10.9)', () => {
   beforeEach(() => {
     resetEconomyState();
+    setShipActivity(null);
     server.use(onboarded());
   });
 
@@ -214,6 +216,17 @@ describe('port (S10.9)', () => {
     expect(notice).toHaveTextContent(/cannot fly/i);
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
     // The mode fell back to on foot, which needs no usable ship.
+    expect(screen.getByTestId('scavenge-foot')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
+  });
+
+  it('a ship under refit loses "with the ship" (the API would refuse it) and falls back to on foot', async () => {
+    setShipActivity({ kind: 'repairing', until: null, missionId: null });
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    const notice = await screen.findByTestId('scavenge-no-ship');
+    expect(notice).toHaveTextContent(/repair/i);
+    expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
     expect(screen.getByTestId('scavenge-foot')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
   });

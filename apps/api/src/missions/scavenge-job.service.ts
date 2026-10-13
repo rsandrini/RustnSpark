@@ -60,8 +60,15 @@ export class ScavengeJobService {
       where: { ownerPlayerId: playerId, currentLocationId: locationId },
     });
     if (!ship) throw new ConflictException({ error: 'SHIP_NOT_AT_LOCATION' });
+    // "With the ship" needs a ship that is actually here and free: locked to another mission,
+    // mid-refit, or not docked at this port, there is no ship to sail. On foot there is no ship
+    // involved — the pilot searches on their own — so those ship-state gates fall away. The one
+    // thing still needed either way is a ship to blame: the job is scoped to one location, the
+    // player owns exactly one, and the mission record carries its id.
     if (ship.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
-    if (ship.status !== 'IN_PORT') throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+    if (!onFoot && ship.status !== 'IN_PORT') {
+      throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+    }
 
     const [active, repairing] = await Promise.all([
       this.prisma.missionInstance.count({
@@ -70,7 +77,8 @@ export class ScavengeJobService {
       this.prisma.repairJob.count({ where: { shipId: ship.id, status: 'PENDING' } }),
     ]);
     if (active > 0) throw new ConflictException({ error: 'ACTIVE_MISSION_EXISTS' });
-    if (repairing > 0) throw new ConflictException({ error: 'SHIP_REPAIRING' });
+    // A refit holds the ship itself, never the pilot's own two feet.
+    if (!onFoot && repairing > 0) throw new ConflictException({ error: 'SHIP_REPAIRING' });
 
     const rows = await this.parts.findPlayerParts(playerId);
     const installedRows = rows.filter(

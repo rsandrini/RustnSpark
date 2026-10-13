@@ -45,6 +45,9 @@ import type {
 let wallet = 4820;
 let fuelState = 25;
 let shipStatus: ShipStatus = 'IN_PORT';
+// When set, overrides the derived activity so a spec can pin a scene the status alone cannot
+// express (e.g. a repairing ship that is still IN_PORT).
+let shipActivityOverride: ShipResponse['activity'] | null = null;
 // When a waiting rescue arrives (null = nobody called one).
 let rescueDueAt: string | null = null;
 // How long a waiting rescue takes in the mock (a test can make it nearly instant).
@@ -291,13 +294,14 @@ const ship = (): ShipResponse => ({
   // Reactive to dispatch/scavenge/repair (round-3: the Ship tab's ActiveShipStage is now the
   // ONLY place that shows the moving/repairing scene while embedded), not a static idle stub.
   activity:
-    shipStatus === 'ON_MISSION'
+    shipActivityOverride ??
+    (shipStatus === 'ON_MISSION'
       ? {
           kind: 'flying',
           until: activeState?.arrivalAt ?? null,
           missionId: activeState?.id ?? null,
         }
-      : { kind: 'idle', until: null, missionId: null },
+      : { kind: 'idle', until: null, missionId: null }),
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -410,6 +414,11 @@ export function addWreck(): void {
 export function setShipStatus(status: ShipStatus): void {
   shipStatus = status;
   rescueDueAt = null;
+}
+
+/** Pins the fixture ship's activity (e.g. repairing) for scenes the status alone cannot express. */
+export function setShipActivity(activity: ShipResponse['activity'] | null): void {
+  shipActivityOverride = activity;
 }
 
 /** How long the mock's waiting rescue takes (a test makes it short to watch it arrive). */

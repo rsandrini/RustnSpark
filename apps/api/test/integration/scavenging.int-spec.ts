@@ -185,6 +185,43 @@ describe('scavenging job (W8)', () => {
     expect((await start(player.token, 'ceres')).status).toBe(200);
   });
 
+  it('a ship under repair blocks ship-mode (SHIP_REPAIRING) but on foot still searches', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await prisma.repairJob.create({
+      data: {
+        shipId: player.shipId,
+        playerId: player.seeded.player.id,
+        targets: [],
+        cost: 0,
+        durationSeconds: 60,
+        status: 'PENDING',
+        completesAt: new Date(Date.now() + 60_000),
+      },
+    });
+
+    const refused = await start(player.token, 'ceres');
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({
+      statusCode: 409,
+      message: { error: 'SHIP_REPAIRING' },
+    });
+    expect(
+      await prisma.missionInstance.count({ where: { playerId: player.seeded.player.id } }),
+    ).toBe(0);
+
+    // a refit holds the ship, not the pilot's own two feet
+    const onFoot = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(onFoot.status).toBe(200);
+    const mission = await prisma.missionInstance.findUniqueOrThrow({
+      where: { id: (onFoot.body as { missionId: string }).missionId },
+    });
+    expect(mission.type).toBe('SCAVENGE');
+    // the ship never left its own state: still mid-refit, not ON_MISSION
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('IN_PORT');
+  });
+
   it('resolves into a report: used parts in the inventory (or scrap), no payment, ship back in the same port', async () => {
     await freshSeededApp();
     // a run can come back empty (covered by the resolver's own tests): here, always find something

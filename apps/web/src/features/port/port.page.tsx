@@ -178,9 +178,12 @@ export function PortPage({
   const shipHandicapped =
     readinessQuery.data !== undefined &&
     (!readinessQuery.data.viability.viable || readinessQuery.data.viability.warnings.length > 0);
-  // "With the ship" needs a ship that can actually fly (same gate the API applies); while the
-  // preview is loading, assume usable so the card does not flash disabled.
-  const shipUsable = readinessQuery.data === undefined || readinessQuery.data.viability.viable;
+  // "With the ship" needs a ship that can actually fly and is free of a refit (the same two gates
+  // the API applies to ship-mode); while the preview is loading, assume usable so the card does
+  // not flash disabled. On foot needs neither, so it stays selectable either way.
+  const shipUsable =
+    (readinessQuery.data === undefined || readinessQuery.data.viability.viable) &&
+    ship?.activity.kind !== 'repairing';
   // The repair plan: only parts the pilot moved past their current condition are repaired.
   const damagedInstalled = useMemo(
     () =>
@@ -1308,7 +1311,11 @@ export function PortPage({
           </fieldset>
           {!shipUsable && (
             <p className="notice warn" data-testid="scavenge-no-ship">
-              {t('port.scav.noShip')}
+              {t(
+                ship?.activity.kind === 'repairing'
+                  ? 'port.scav.shipRepairing'
+                  : 'port.scav.noShip',
+              )}
             </p>
           )}
           {scavengeMode === 'foot' && (
