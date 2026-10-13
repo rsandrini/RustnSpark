@@ -99,27 +99,38 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   the reset-player CLI (`apps/api/src/admin/cli/reset-player.cli.ts`) is a similar "fresh run" flow
   that keeps faction and history.
 
-- [ ] **Bridges 2×2 and 4×4 with more structure.** An epic 1×1 bridge is still a small ship; larger
-  bridges are needed so bigger ships can exist. A COMMON `bridge_2x2` (2×2, 120 structure, base
-  price 10000) already exists in the catalog and is buyable in the shop (it rolls onto the shelf
-  like any catalog part), but **ship formats still unlock only by bridge rarity**, so the 2×2 buys
-  nothing new today. *Design decided 2026-10-13:* gate ship formats by **bridge size in addition
-  to rarity** — add `ShipFormat.minBridgeSize Int @default(1)` (per-axis: a format is unlocked only
-  when the installed bridge's `w` **and** `h` are both `>= minBridgeSize`; a 2×2 bridge has
-  footprint 2, so big formats get `minBridgeSize: 2`). Keep rarity and size as two **orthogonal**
-  axes (a RARE 1×1 stays small; the 2×2 is COMMON but large). Enforce the gate in **both**
-  `listFormats()` and `setFormat()` (`apps/api/src/ships/ships.service.ts`, alongside the existing
-  `RARITY_ORDER` / `minRarity` checks), expose `minBridgeSize` in the contract
-  (`ShipFormatSchema` in `packages/contract/src`) and in the admin `ship-formats` screen
-  (`SHIP_FORMAT_FIELDS` in `apps/api/src/admin/tuning/entity-schemas.ts`), and seed the big formats
-  to size 2 by migration. **Downswap rule (decided):** swapping to a *smaller* bridge while the
-  ship sits on a bigger format is **blocked** with a clear error (e.g. `FORMAT_REQUIRES_BRIDGE`)
-  until the pilot moves to an unlocked format — least surprising; no auto-kick. Still open: sizes
-  per rarity, structure budgets (today 60 / 75 / 120 / 170 / 260 for the five rarities), price,
-  mass, power, connectors, and the 4×4. *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`),
-  the two gate methods above, the contract + admin schema, a migration, and
-  `apps/api/prisma/seed-data/parts.ts` / the catalog sync (DB wins over the seed) for the bridge
-  parts themselves.
+- [ ] **Bridges 2×2: sell them, and gate ship formats by bridge size.** An epic 1×1 bridge is still
+  a small ship; larger bridges are needed so bigger ships can exist. Three 2×2 bridges are already
+  in the catalog (owner, 2026-10-13): `bridge_2x2` (COMMON, 10000), `bridge_2x2_uncommon` (18000),
+  `bridge_2x2_rare` (32000), all structure 120. EPIC / LEGENDARY 2×2 to add later; **no 4×4 for
+  now.** *Why it does nothing today:* ship formats unlock **only by bridge rarity**, so a COMMON
+  2×2 unlocks the same formats as the starter 1×1 — and the shop **hides bridges from the UI**:
+  `market-panel.tsx:115-118` hard-filters `partClass !== 'BRIDGE'` ("a bridge is not something you
+  shop for"), a rule written when the only bridges were the free kit 1×1s. *Design decided
+  2026-10-13:* (1) **Size gate** — add `ShipFormat.minBridgeSize Int @default(1)`; a format is
+  unlocked only when the installed bridge's `w` **and** `h` are both `>= minBridgeSize` (per-axis).
+  Rarity and size stay **orthogonal** (a RARE 1×1 stays small; a COMMON 2×2 is large). Enforce in
+  **both** `listFormats()` and `setFormat()` (`apps/api/src/ships/ships.service.ts`, next to the
+  `RARITY_ORDER` checks), expose `minBridgeSize` in the contract (`ShipFormatSchema`) and the admin
+  `ship-formats` screen (`SHIP_FORMAT_FIELDS`), seed the big formats to size 2 by migration.
+  (2) **Shop** — make the BRIDGE exclusion conditional: show purchasable bridge upgrades (the
+  2×2s), keep hiding the free kit 1×1 (`market-panel.tsx`). (3) **Swap, not upgrade** — the upgrade
+  mechanic is rarity-up-only and **requires identical w/h** (`part-upgrade.service.ts:106`), so
+  1×1 → 2×2 must be a **replace** (old bridge → inventory), which the game already supports. No
+  trade-in / no new endpoint (the starter bridge is price 0, so "trade-in as payment" would be a
+  surrender requirement, not a discount, and it would fight the upgrade ladder). **Offer the format
+  switch at bridge-replace time** (prompt when the new bridge unlocks bigger formats).
+  **Downswap rule:** swapping to a *smaller* bridge while on a bigger format is **blocked** with
+  `FORMAT_REQUIRES_BRIDGE` until the pilot moves to an unlocked format — no auto-kick. *Naming
+  wrinkle:* the upgrade calculator strips the rarity suffix, so `bridge_2x2_*` is its **own**
+  upgrade family (`bridge_2x2` → `_uncommon` → `_rare` → `_epic` → `_legendary`) — the future
+  EPIC/LEGENDARY 2×2 **must** be named `bridge_2x2_epic` / `bridge_2x2_legendary` or the ladder
+  breaks. *Still open:* structure budgets / mass / power / connectors for the 2×2 line, and the
+  big format grids themselves (today every format assumes the bridge is one cell at the origin; a
+  2×2 bridge covers 4 cells, so format `cells` and auto-layout must treat the footprint as
+  multi-cell). *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`), the two gate methods, the
+  contract + admin schema, a migration, `apps/web/src/features/market/market-panel.tsx`, and the
+  bridge-replace flow in the hangar.
 
 - [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
   sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
