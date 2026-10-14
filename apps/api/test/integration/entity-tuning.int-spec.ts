@@ -109,6 +109,7 @@ function validShipFormatPayload(id: string): Record<string, unknown> {
     description: { en: 'A test format.', 'pt-BR': 'Um formato de teste.' },
     cells: [[0, 0], [1, 0]],
     minRarity: 'COMMON',
+    minBridgeSize: 1,
   };
 }
 
