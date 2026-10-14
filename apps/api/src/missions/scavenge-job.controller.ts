@@ -1,9 +1,10 @@
-import { BadRequestException, Body, Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
-import { ScavengeJobService, type ScavengeMode } from './scavenge-job.service.js';
+import { ScavengeJobDto } from './dto/scavenge.dto.js';
+import { ScavengeJobService } from './scavenge-job.service.js';
 
 // Starts a scavenging job at the ship's own port (a mission of type SCAVENGE). Body: only the
 // mode (`ship` by default, or `foot`, without the ship) — the
@@ -17,10 +18,8 @@ export class ScavengeJobController {
   start(
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') locationId: string,
-    @Body() body?: { mode?: unknown },
+    @Body() dto: ScavengeJobDto,
   ) {
-    const mode = body?.mode ?? 'ship';
-    if (mode !== 'ship' && mode !== 'foot') throw new BadRequestException('mode must be ship or foot');
-    return this.jobs.start(user.playerId, locationId, mode satisfies ScavengeMode);
+    return this.jobs.start(user.playerId, locationId, dto.mode ?? 'ship');
   }
 }

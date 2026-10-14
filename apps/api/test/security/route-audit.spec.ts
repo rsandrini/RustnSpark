@@ -60,18 +60,20 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
 
 /** Mutating routes with no @Body(): they act on the caller / a path param only. */
 const BODYLESS_MUTATIONS = new Set([
-  'POST /v1/inventory/discard',
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
-  'POST /v1/locations/:id/scavenge',
   'POST /v1/locations/:id/mine',
   'POST /v1/parts/:id/upgrade',
   'POST /v1/parts/:id/upgrade/quote',
   'POST /v1/missions/:id/abandon',
   'POST /v1/missions/:id/hold',
   'DELETE /v1/missions/:id/hold',
-  'POST /v1/ships/:id/rescue',
+  'POST /v1/ships/:id/rescue/settle',
   'POST /v1/admin/system/notices/:id/dismiss',
+  'POST /v1/admin/tuning/factions/:id/art/:slot',
+  'POST /v1/admin/tuning/locations/:id/art/:slot',
+  'DELETE /v1/admin/tuning/factions/:id/art/:slot',
+  'DELETE /v1/admin/tuning/locations/:id/art/:slot',
 ]);
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

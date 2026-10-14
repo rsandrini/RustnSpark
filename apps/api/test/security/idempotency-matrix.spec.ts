@@ -58,6 +58,15 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
   'POST /v1/admin/system/notices':
     'a repeat posts a second broadcast: visible and dismissable, no player harm',
   'POST /v1/admin/system/notices/:id/dismiss': 'dismissing a dismissed notice is a no-op',
+  'POST /v1/ships/:id/engine-levels': 'sets a value: repeating is the same state',
+  'POST /v1/ships/:id/engine-preview': 'read-shaped: no state change',
+  'POST /v1/ships/:id/rescue/settle':
+    'settle only succeeds while rescueAt is set; a repeat finds it cleared and is a 409 RESCUE_NOT_DUE with no second tow',
+  'POST /v1/admin/tuning/connector-rules/preview': 'read-shaped: samples a layout, changes nothing',
+  'POST /v1/admin/tuning/factions/:id/art/:slot': 'sets an image to a value: repeating is the same state',
+  'DELETE /v1/admin/tuning/factions/:id/art/:slot': 'resetting an already-reset slot is a no-op',
+  'POST /v1/admin/tuning/locations/:id/art/:slot': 'sets an image to a value: repeating is the same state',
+  'DELETE /v1/admin/tuning/locations/:id/art/:slot': 'resetting an already-reset slot is a no-op',
 };
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

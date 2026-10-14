@@ -3,6 +3,7 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
+import { DiscardInventoryDto } from './dto/discard.dto.js';
 import {
   PartsService,
   type CatalogDetail,
@@ -36,10 +37,10 @@ export class PartsController {
   @HttpCode(HttpStatus.OK)
   discard(
     @CurrentUser() user: CurrentUserPayload,
-    @Body() body: { sellScrap?: boolean } | undefined,
+    @Body() dto: DiscardInventoryDto,
   ): Promise<{ discarded: number; scrapSold: number; credits: number }> {
     return this.partsService.discardDamaged(user.playerId, {
-      sellScrap: body?.sellScrap === true,
+      sellScrap: dto.sellScrap === true,
     });
   }
 
