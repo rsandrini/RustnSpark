@@ -1,0 +1,3 @@
+# New rule keys default to the old behavior in the schema
+
+A mission log stores the rules it was played under and replays through the same engine. When a balance change adds a rule key, the rules schema gives it a default that reproduces the previous behavior (a draw at the cap, uniform scavenging picks), while the game's own defaults (`game-config.defaults.ts`) switch the new behavior on. Stored logs, the oracle tapes and the admin replay therefore keep producing the same events, and the new behavior reaches only runs played after the change. The cost is that the schema default and the shipped default differ on purpose, which looks like a bug until you read this.
