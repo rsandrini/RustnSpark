@@ -84,9 +84,8 @@ ships (the commit has the history). Raise questions before starting anything mar
   `docs/superpowers/plans/2026-10-11-economy-bot-simulation-plan.md`, code in `apps/api/sim`. First
   verify it against the plan (what is built, what is missing), then run it and report what it says
   about progression through the bridge rarities and the economy. *Known drift to fix first:* the
-  game now has one generic `scrap` material (the sim still models per-part scrap, `scrap_<type>`),
-  bridges are never sold and change size by Expand / Shrink, a destroyed bridge destroys the ship,
-  and the 2×2 bridge line exists.
+  game now has one generic `scrap` material, and the sim still models per-part scrap
+  (`scrap_<type>`).
 
 ## P3 — Missions
 
