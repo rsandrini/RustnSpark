@@ -1424,6 +1424,7 @@
     "DISCONNECTED": "Some parts are not connected to the bridge.",
     "ENERGY_CRUISE_NEGATIVE": "Cruise energy is negative — install a reactor, a bigger one, or fewer continuous-draw parts.",
     "FORMAT_NOT_UNLOCKED": "That ship format isn't unlocked for your current bridge.",
+    "FORMAT_REQUIRES_BRIDGE": "This format needs a bigger bridge. Fit one before switching.",
     "FUEL_EMPTY": "The tank is empty.",
     "FUEL_INSUFFICIENT": "This route needs more fuel than the ship carries: you would run dry on the way. Refuel, add tank capacity, or pick a shorter route.",
     "HOLD_LIMIT": "You already hold a mission.",

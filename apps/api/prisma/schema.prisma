@@ -562,14 +562,15 @@ model PartInstance {
 }
 
 model ShipFormat {
-  id          String   @id
-  displayName Json
-  description Json
-  cells       Json
-  cellTarget  Int?
-  minRarity   Rarity
-  active      Boolean  @default(true)
-  ships       Ship[]
+  id            String   @id
+  displayName   Json
+  description   Json
+  cells         Json
+  cellTarget    Int?
+  minRarity     Rarity
+  minBridgeSize Int      @default(1)
+  active        Boolean  @default(true)
+  ships         Ship[]
 }
 
 model Ship {

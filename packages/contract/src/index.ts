@@ -350,6 +350,7 @@ export const ShipFormatSchema = z.object({
   description: LocalizedTextSchema,
   cells: z.array(z.tuple([z.number(), z.number()])),
   minRarity: z.string(),
+  minBridgeSize: z.number().int(),
 });
 export type ShipFormat = z.infer<typeof ShipFormatSchema>;
 
