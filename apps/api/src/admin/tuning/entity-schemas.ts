@@ -10,6 +10,7 @@ export type EntityFieldType =
   | 'enum'
   | 'locale-map'
   | 'grid-cells'
+  | 'id-list'
   | 'connector-rules';
 
 export interface EntitySchemaField {
@@ -50,7 +51,9 @@ const gridCellsSchema = z
   })
   .refine(
     (cells) =>
-      cells.every(([x, y]) => Math.abs(x) <= GRID_CELLS_CEILING && Math.abs(y) <= GRID_CELLS_CEILING),
+      cells.every(
+        ([x, y]) => Math.abs(x) <= GRID_CELLS_CEILING && Math.abs(y) <= GRID_CELLS_CEILING,
+      ),
     { message: 'cells must stay within the +/-15 drawing ceiling' },
   );
 
@@ -64,6 +67,8 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
       return z.number();
     case 'boolean':
       return z.boolean();
+    case 'id-list':
+      return z.array(z.string().min(1)).min(1);
     case 'json':
       return z.record(z.string(), z.unknown());
     case 'enum':
@@ -564,6 +569,16 @@ const ROUTE_FIELDS: EntitySchemaField[] = [
     min: 0,
     max: 10,
     description: localeMap('Danger level', 'Nível de perigo'),
+  },
+  {
+    name: 'environmentIds',
+    type: 'id-list',
+    required: false,
+    references: 'environments',
+    description: localeMap(
+      "Environments along the route, in order. The first one sets the leg's fuel multiplier and danger. A new route needs at least one.",
+      'Ambientes ao longo da rota, em ordem. O primeiro define o multiplicador de combustível e o perigo do trecho. Uma rota nova precisa de pelo menos um.',
+    ),
   },
 ];
 

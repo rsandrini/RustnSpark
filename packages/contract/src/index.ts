@@ -1214,6 +1214,7 @@ export const EntityFieldTypeSchema = z.enum([
   'locale-map',
   'grid-cells',
   'connector-rules',
+  'id-list',
 ]);
 export type EntityFieldType = z.infer<typeof EntityFieldTypeSchema>;
 

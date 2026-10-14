@@ -45,6 +45,56 @@ function getEntityId(entity: string, row: Record<string, unknown>): string {
   return String(row[idField]);
 }
 
+// A route's environments live in their own table (RouteEnvironment, ordered). The Admin edits
+// them as one ordered list of environment ids on the route itself.
+const ROUTE_INCLUDE = { routeEnvironments: { orderBy: { order: 'asc' } } } as const;
+
+function includeFor(entity: string): { include?: typeof ROUTE_INCLUDE } {
+  return entity === 'routes' ? { include: ROUTE_INCLUDE } : {};
+}
+
+/** The row as the Admin sees it: a route carries `environmentIds` instead of the join rows. */
+function flattenRow(entity: string, row: Record<string, unknown>): Record<string, unknown> {
+  if (entity !== 'routes' || !('routeEnvironments' in row)) return row;
+  const { routeEnvironments, ...rest } = row;
+  const links = (routeEnvironments as Array<{ environmentId: string }> | undefined) ?? [];
+  return { ...rest, environmentIds: links.map((link) => link.environmentId) };
+}
+
+/** Splits the ordered environment list off a route payload (it is not a column). */
+function splitEnvironmentIds(
+  entity: string,
+  data: Record<string, unknown>,
+): { data: Record<string, unknown>; environmentIds: string[] | undefined } {
+  if (entity !== 'routes' || !('environmentIds' in data)) {
+    return { data, environmentIds: undefined };
+  }
+  const { environmentIds, ...rest } = data;
+  return { data: rest, environmentIds: environmentIds as string[] | undefined };
+}
+
+async function replaceRouteEnvironments(
+  tx: Prisma.TransactionClient,
+  routeId: string,
+  environmentIds: readonly string[],
+): Promise<void> {
+  const known = await tx.environment.findMany({
+    where: { id: { in: [...environmentIds] } },
+    select: { id: true },
+  });
+  const knownIds = new Set(known.map((environment) => environment.id));
+  const missing = environmentIds.find((id) => !knownIds.has(id));
+  if (missing !== undefined) {
+    throw new GameConfigValidationError(`Unknown environment: ${missing}`, [
+      { key: 'environmentIds', message: `Environment not found: ${missing}` },
+    ]);
+  }
+  await tx.routeEnvironment.deleteMany({ where: { routeId } });
+  await tx.routeEnvironment.createMany({
+    data: environmentIds.map((environmentId, order) => ({ routeId, environmentId, order })),
+  });
+}
+
 function rowToJson(row: unknown): Record<string, unknown> {
   return JSON.parse(JSON.stringify(row)) as Record<string, unknown>;
 }
@@ -115,8 +165,10 @@ export class EntityTuningService {
   async list(entity: string): Promise<Record<string, unknown>[]> {
     const schema = this.resolveSchema(entity);
     const delegate = this.getDelegate(entity);
-    const rows = (await delegate.findMany()) as unknown as Array<Record<string, unknown>>;
-    return rows.map((row) => this.serializeRow(row, schema));
+    const rows = (await delegate.findMany(includeFor(entity))) as unknown as Array<
+      Record<string, unknown>
+    >;
+    return rows.map((row) => this.serializeRow(flattenRow(entity, row), schema));
   }
 
   async getById(entity: string, id: string): Promise<Record<string, unknown> | null> {
@@ -125,8 +177,9 @@ export class EntityTuningService {
     const idField = getIdField(entity);
     const row = (await delegate.findUnique({
       where: { [idField]: id },
+      ...includeFor(entity),
     })) as Record<string, unknown> | null;
-    return row ? this.serializeRow(row, schema) : null;
+    return row ? this.serializeRow(flattenRow(entity, row), schema) : null;
   }
 
   async create(
@@ -138,11 +191,27 @@ export class EntityTuningService {
     const schema = this.resolveSchema(entity);
     const validated = this.validateData(schema, data, 'create');
     await this.validateEntityRules(entity, validated, 'create');
+    if (entity === 'routes' && (validated.environmentIds as string[] | undefined) === undefined) {
+      throw new GameConfigValidationError('A route needs at least one environment', [
+        { key: 'environmentIds', message: 'A route needs at least one environment' },
+      ]);
+    }
+    const split = splitEnvironmentIds(entity, validated);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const row = (await getDelegate(tx, entity).create({
-        data: validated,
+      const created = (await getDelegate(tx, entity).create({
+        data: split.data,
       })) as Record<string, unknown>;
+      if (split.environmentIds !== undefined) {
+        await replaceRouteEnvironments(tx, String(created.id), split.environmentIds);
+      }
+      const row = flattenRow(
+        entity,
+        (await getDelegate(tx, entity).findUnique({
+          where: { [getIdField(entity)]: getEntityId(entity, created) },
+          ...includeFor(entity),
+        })) as Record<string, unknown>,
+      );
       const revision = await this.createRevision(
         actor,
         entity,
@@ -179,20 +248,33 @@ export class EntityTuningService {
       this.assertCanRetire(entity, id);
     }
     await this.validateEntityRules(entity, validated, 'update', id);
+    const split = splitEnvironmentIds(entity, validated);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const before = (await getDelegate(tx, entity).findUnique({
+      const beforeRow = (await getDelegate(tx, entity).findUnique({
         where: { [idField]: id },
+        ...includeFor(entity),
       })) as Record<string, unknown> | null;
-      if (!before) {
+      if (!beforeRow) {
         throw new GameConfigValidationError(`${entity} not found: ${id}`, [
           { key: id, message: 'Not found' },
         ]);
       }
-      const row = (await getDelegate(tx, entity).update({
+      const before = flattenRow(entity, beforeRow);
+      await getDelegate(tx, entity).update({
         where: { [idField]: id },
-        data: validated,
-      })) as Record<string, unknown>;
+        data: split.data,
+      });
+      if (split.environmentIds !== undefined) {
+        await replaceRouteEnvironments(tx, id, split.environmentIds);
+      }
+      const row = flattenRow(
+        entity,
+        (await getDelegate(tx, entity).findUnique({
+          where: { [idField]: id },
+          ...includeFor(entity),
+        })) as Record<string, unknown>,
+      );
       const revision = await this.createRevision(
         actor,
         entity,
@@ -228,9 +310,11 @@ export class EntityTuningService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       const txDelegate = getDelegate(tx, entity);
-      const before = (await txDelegate.findUnique({
+      const beforeRow = (await txDelegate.findUnique({
         where: { [idField]: id },
+        ...includeFor(entity),
       })) as Record<string, unknown> | null;
+      const before = beforeRow === null ? null : flattenRow(entity, beforeRow);
       if (!before) {
         throw new GameConfigValidationError(`${entity} not found: ${id}`, [
           { key: id, message: 'Not found' },
@@ -299,19 +383,32 @@ export class EntityTuningService {
     );
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const current = (await getDelegate(tx, entity).findUnique({
+      const currentRow = (await getDelegate(tx, entity).findUnique({
         where: { [idField]: rowId },
+        ...includeFor(entity),
       })) as Record<string, unknown> | null;
+      const current = currentRow === null ? null : flattenRow(entity, currentRow);
       // Routes are hard-deleted on retirement, so reverting one recreates the row.
       await this.validateEntityRules(entity, restored, current ? 'update' : 'create', rowId);
       if (restored.active === false) {
         this.assertCanRetire(entity, rowId);
       }
-      const row = (
-        current
-          ? await getDelegate(tx, entity).update({ where: { [idField]: rowId }, data: restored })
-          : await getDelegate(tx, entity).create({ data: restored })
-      ) as Record<string, unknown>;
+      const split = splitEnvironmentIds(entity, restored);
+      if (current) {
+        await getDelegate(tx, entity).update({ where: { [idField]: rowId }, data: split.data });
+      } else {
+        await getDelegate(tx, entity).create({ data: split.data });
+      }
+      if (split.environmentIds !== undefined) {
+        await replaceRouteEnvironments(tx, rowId, split.environmentIds);
+      }
+      const row = flattenRow(
+        entity,
+        (await getDelegate(tx, entity).findUnique({
+          where: { [idField]: rowId },
+          ...includeFor(entity),
+        })) as Record<string, unknown>,
+      );
       const newRevision = await this.createRevision(
         actor,
         entity,

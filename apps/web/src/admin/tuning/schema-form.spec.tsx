@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../test/msw/server';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../test/utils';
 import { SchemaForm } from './SchemaForm';
@@ -143,5 +145,52 @@ describe('SchemaForm', () => {
         />,
       ),
     ).not.toThrow();
+  });
+
+  it('edits an ordered list of ids: add, pick, move and remove', async () => {
+    server.use(
+      http.get('/v1/admin/tuning/environments', () =>
+        HttpResponse.json([
+          { id: 'open', displayName: { en: 'Open space', 'pt-BR': 'Espaço aberto' } },
+          { id: 'debris', displayName: { en: 'Debris', 'pt-BR': 'Destroços' } },
+        ]),
+      ),
+    );
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    const fields: EntitySchemaField[] = [
+      {
+        name: 'environmentIds',
+        type: 'id-list',
+        required: false,
+        references: 'environments',
+        description: { en: 'Environments', 'pt-BR': 'Ambientes' },
+      },
+    ];
+    renderWithProviders(
+      <SchemaForm
+        entity="routes"
+        fields={fields}
+        initialData={{ environmentIds: ['open'] }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: /environments 1/i })).toHaveValue('open'),
+    );
+    await user.click(screen.getByRole('button', { name: /add environment/i }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('option', { name: /debris/i }).length).toBeGreaterThan(0),
+    );
+    await user.selectOptions(screen.getByRole('combobox', { name: /environments 2/i }), 'debris');
+    // Move the second entry up: the order is what travel uses.
+    await user.click(screen.getAllByRole('button', { name: /^up$/i })[1]!);
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ environmentIds: ['debris', 'open'] }),
+      expect.any(String),
+    );
   });
 });

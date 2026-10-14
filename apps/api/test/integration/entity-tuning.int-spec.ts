@@ -107,7 +107,10 @@ function validShipFormatPayload(id: string): Record<string, unknown> {
     id,
     displayName: { en: 'Test Format', 'pt-BR': 'Formato de Teste' },
     description: { en: 'A test format.', 'pt-BR': 'Um formato de teste.' },
-    cells: [[0, 0], [1, 0]],
+    cells: [
+      [0, 0],
+      [1, 0],
+    ],
     minRarity: 'COMMON',
     minBridgeSize: 1,
   };
@@ -120,6 +123,7 @@ function validRoutePayload(id: string, nodeAId: string, nodeBId: string): Record
     nodeBId,
     distance: 500,
     danger: 3,
+    environmentIds: ['open'],
   };
 }
 
@@ -534,7 +538,10 @@ describe('entity tuning (S3.8)', () => {
       const token = await loginAdmin(server, admin);
 
       const payload = validShipFormatPayload('no_origin');
-      payload.cells = [[1, 0], [2, 0]];
+      payload.cells = [
+        [1, 0],
+        [2, 0],
+      ];
       const response = await request(server)
         .post('/v1/admin/tuning/ship-formats')
         .set('Authorization', `Bearer ${token}`)
@@ -549,7 +556,10 @@ describe('entity tuning (S3.8)', () => {
       const token = await loginAdmin(server, admin);
 
       const payload = validShipFormatPayload('too_big');
-      payload.cells = [[0, 0], [20, 0]];
+      payload.cells = [
+        [0, 0],
+        [20, 0],
+      ];
       const response = await request(server)
         .post('/v1/admin/tuning/ship-formats')
         .set('Authorization', `Bearer ${token}`)
@@ -613,7 +623,7 @@ describe('entity tuning (S3.8)', () => {
       expect(response.status).toBe(400);
     });
 
-    it('previews rules for the editor: exact chances and sample layouts, from the server\'s own generator', async () => {
+    it("previews rules for the editor: exact chances and sample layouts, from the server's own generator", async () => {
       await seed(prisma);
       const server = httpServer(testApp.app);
       const admin = await createAdmin(prisma, passwordService);
@@ -622,7 +632,13 @@ describe('entity tuning (S3.8)', () => {
       const response = await request(server)
         .post('/v1/admin/tuning/connector-rules/preview')
         .set('Authorization', `Bearer ${token}`)
-        .send({ rules: { sides: sides('central'), oneKindPerPart: true }, w: 2, h: 1, partClass: 'CARGO', samples: 3 });
+        .send({
+          rules: { sides: sides('central'), oneKindPerPart: true },
+          w: 2,
+          h: 1,
+          partClass: 'CARGO',
+          samples: 3,
+        });
       expect(response.status).toBe(200);
       const body = response.body as {
         problem: string | null;
@@ -682,5 +698,85 @@ describe('entity tuning (S3.8)', () => {
         .send({ reason: 'undo price change' });
       expect(revertResponse.status).toBe(200);
     });
+  });
+
+  it('creates a route with its ordered environments, lists them and replaces them on update', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+    const auth = { Authorization: `Bearer ${token}` };
+    const ids = (await prisma.location.findMany({ orderBy: { id: 'asc' } })).map((l) => l.id);
+    const taken = new Set((await prisma.route.findMany()).map((r) => `${r.nodeAId}|${r.nodeBId}`));
+    const [a, b] = ids
+      .flatMap((x, i) => ids.slice(i + 1).map((y) => [x, y] as const))
+      .find(([x, y]) => !taken.has(`${x}|${y}`))!;
+
+    const created = await request(server)
+      .post('/v1/admin/tuning/routes')
+      .set(auth)
+      .send({
+        data: { ...validRoutePayload('env_route', a, b), environmentIds: ['radiation', 'debris'] },
+        reason: 'route with environments',
+      });
+    expect(created.status).toBe(201);
+    expect((created.body as EntityWriteResponse).row.environmentIds).toEqual([
+      'radiation',
+      'debris',
+    ]);
+    const stored = await prisma.routeEnvironment.findMany({
+      where: { routeId: 'env_route' },
+      orderBy: { order: 'asc' },
+    });
+    expect(stored.map((row) => row.environmentId)).toEqual(['radiation', 'debris']);
+
+    const updated = await request(server)
+      .patch('/v1/admin/tuning/routes/env_route')
+      .set(auth)
+      .send({ data: { environmentIds: ['debris'] }, reason: 'single environment' });
+    expect(updated.status).toBe(200);
+    expect((updated.body as EntityWriteResponse).row.environmentIds).toEqual(['debris']);
+
+    const untouched = await request(server)
+      .patch('/v1/admin/tuning/routes/env_route')
+      .set(auth)
+      .send({ data: { distance: 777 }, reason: 'only the distance' });
+    expect(untouched.status).toBe(200);
+    expect((untouched.body as EntityWriteResponse).row.environmentIds).toEqual(['debris']);
+
+    const listed = await request(server).get('/v1/admin/tuning/routes').set(auth);
+    const row = (listed.body as Array<Record<string, unknown>>).find(
+      (entry) => entry.id === 'env_route',
+    );
+    expect(row?.environmentIds).toEqual(['debris']);
+  });
+
+  it('refuses a new route with no environment, or with an unknown one', async () => {
+    await seed(prisma);
+    const server = httpServer(testApp.app);
+    const token = await loginAdmin(server, await createAdmin(prisma, passwordService));
+    const auth = { Authorization: `Bearer ${token}` };
+    const ids = (await prisma.location.findMany({ orderBy: { id: 'asc' } })).map((l) => l.id);
+    const taken = new Set((await prisma.route.findMany()).map((r) => `${r.nodeAId}|${r.nodeBId}`));
+    const [a, b] = ids
+      .flatMap((x, i) => ids.slice(i + 1).map((y) => [x, y] as const))
+      .find(([x, y]) => !taken.has(`${x}|${y}`))!;
+
+    const { environmentIds: _unused, ...withoutEnvironments } = validRoutePayload('no_env', a, b);
+    const none = await request(server)
+      .post('/v1/admin/tuning/routes')
+      .set(auth)
+      .send({ data: withoutEnvironments, reason: 'no environment' });
+    expect(none.status).toBe(400);
+    expect(await prisma.route.findUnique({ where: { id: 'no_env' } })).toBeNull();
+
+    const unknown = await request(server)
+      .post('/v1/admin/tuning/routes')
+      .set(auth)
+      .send({
+        data: { ...validRoutePayload('bad_env', a, b), environmentIds: ['nope'] },
+        reason: 'unknown environment',
+      });
+    expect(unknown.status).toBe(400);
+    expect(await prisma.route.findUnique({ where: { id: 'bad_env' } })).toBeNull();
   });
 });

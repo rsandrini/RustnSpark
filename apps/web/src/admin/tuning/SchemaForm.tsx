@@ -141,6 +141,76 @@ function ReferenceSelect({
   );
 }
 
+/** An ordered list of another entity's ids (a route's environments): one select per entry, with
+    add, remove and move up / down. The order is meaningful, so it is kept as typed. */
+function ReferenceList({
+  entity,
+  id,
+  value,
+  label,
+  onChange,
+}: {
+  entity: string;
+  id: string;
+  value: string[];
+  label: string;
+  onChange: (value: string[]) => void;
+}) {
+  const { t } = useTranslation();
+  const replace = (index: number, next: string) =>
+    onChange(value.map((current, position) => (position === index ? next : current)));
+  const move = (index: number, by: number) => {
+    const target = index + by;
+    if (target < 0 || target >= value.length) return;
+    const next = [...value];
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item as string);
+    onChange(next);
+  };
+  return (
+    <div className="stack" id={id} role="group" aria-label={label}>
+      {value.map((entry, index) => (
+        <div className="row" key={`${index}-${entry}`}>
+          <ReferenceSelect
+            entity={entity}
+            id={`${id}-${index}`}
+            value={entry}
+            required
+            label={`${label} ${index + 1}`}
+            onChange={(next) => replace(index, next)}
+          />
+          <button
+            type="button"
+            className="btn"
+            disabled={index === 0}
+            onClick={() => move(index, -1)}
+          >
+            {t('tuning.idList.up')}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={index === value.length - 1}
+            onClick={() => move(index, 1)}
+          >
+            {t('tuning.idList.down')}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => onChange(value.filter((_, position) => position !== index))}
+          >
+            {t('tuning.idList.remove')}
+          </button>
+        </div>
+      ))}
+      <button type="button" className="btn" onClick={() => onChange([...value, ''])}>
+        {t('tuning.idList.add')}
+      </button>
+    </div>
+  );
+}
+
 /** A titled group of fields in the details column (field names; any field not listed lands in a
     trailing untitled group so nothing is ever hidden). */
 export interface FormIssue {
@@ -186,6 +256,12 @@ function buildPayload(
   for (const field of fields) {
     const value = values[field.name];
     if (value === '' || value === null || value === undefined) continue;
+    // An empty list is "not set": it must not be sent (and so reject saves of other fields).
+    if (field.type === 'id-list') {
+      const ids = (value as string[]).filter((entry) => entry !== '');
+      if (ids.length > 0) payload[field.name] = ids;
+      continue;
+    }
     payload[field.name] = value;
   }
   return payload;
@@ -258,6 +334,10 @@ export function SchemaForm({
         initial[field.name] = { en: existing.en ?? '', 'pt-BR': existing['pt-BR'] ?? '' };
       } else if (field.type === 'boolean') {
         initial[field.name] = initialData[field.name] ?? false;
+      } else if (field.type === 'id-list') {
+        initial[field.name] = Array.isArray(initialData[field.name])
+          ? [...(initialData[field.name] as string[])]
+          : [];
       } else if (field.type === 'connector-rules' || field.type === 'grid-cells') {
         initial[field.name] = initialData[field.name] ?? undefined;
       } else {
@@ -450,6 +530,18 @@ export function SchemaForm({
           onChange={(event) => handleChange(field.name, parseValue(event.target.value, 'json'))}
           aria-label={getFieldLabel(field, locale)}
           rows={4}
+        />
+      );
+    }
+
+    if (field.type === 'id-list' && field.references !== undefined) {
+      return (
+        <ReferenceList
+          entity={field.references}
+          id={field.name}
+          value={Array.isArray(value) ? (value as string[]) : []}
+          label={getFieldLabel(field, locale)}
+          onChange={(next) => handleChange(field.name, next)}
         />
       );
     }

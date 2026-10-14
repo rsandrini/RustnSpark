@@ -822,7 +822,13 @@
     "duplicateConfirmBody": "A new row is created from the values in this form. \"{{id}}\" itself is not changed.",
     "duplicateNewId": "New id",
     "duplicateHint": "The id cannot be changed after it is created. The new row opens for editing right after.",
-    "duplicateConfirm": "Create the copy"
+    "duplicateConfirm": "Create the copy",
+    "idList": {
+      "add": "Add environment",
+      "remove": "Remove",
+      "up": "Up",
+      "down": "Down"
+    }
   },
   "factions": {
     "luna": "Luna Authority",
