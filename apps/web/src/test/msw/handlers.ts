@@ -755,6 +755,7 @@ export const handlers = [
         description: { en: 'The original grid.', 'pt-BR': 'A grade original.' },
         cells: classicSquareCells(),
         minRarity: 'COMMON',
+        minBridgeSize: 1,
       },
     ]),
   ),

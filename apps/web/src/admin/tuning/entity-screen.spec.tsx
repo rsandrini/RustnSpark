@@ -682,7 +682,6 @@ describe('EntityScreen', () => {
           { status: 200 },
         ),
       ),
-      http.put('/v1/admin/tuning/parts/:id', () => HttpResponse.json({}, { status: 200 })),
       http.patch('/v1/admin/tuning/parts/:id', () => HttpResponse.json({}, { status: 200 })),
     );
 
