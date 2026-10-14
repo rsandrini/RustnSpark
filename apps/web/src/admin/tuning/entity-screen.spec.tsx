@@ -642,6 +642,187 @@ describe('EntityScreen', () => {
     expect(screen.getByText('diamond')).toBeInTheDocument();
   });
 
+  it('keeps filters, search, sort and columns after a save round-trip (round 6)', async () => {
+    const partSchema = {
+      entity: 'parts',
+      fields: [
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part code', 'pt-BR': 'Código' },
+        },
+        {
+          name: 'mass',
+          type: 'integer',
+          required: true,
+          min: 0,
+          max: 1000,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+        {
+          name: 'rarity',
+          type: 'enum',
+          required: true,
+          enumValues: ['COMMON', 'RARE'],
+          description: { en: 'Rarity tier', 'pt-BR': 'Raridade' },
+        },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () =>
+        HttpResponse.json(partSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/parts', () =>
+        HttpResponse.json(
+          [
+            { partType: 'tank_small', mass: 7, rarity: 'RARE', active: true },
+            { partType: 'tank_big', mass: 30, rarity: 'RARE', active: true },
+          ],
+          { status: 200 },
+        ),
+      ),
+      http.put('/v1/admin/tuning/parts/:id', () => HttpResponse.json({}, { status: 200 })),
+      http.patch('/v1/admin/tuning/parts/:id', () => HttpResponse.json({}, { status: 200 })),
+    );
+
+    const user = userEvent.setup();
+    renderAt(
+      '/admin/tuning/entities/parts?f.rarity=RARE&q=tank&sort=mass&dir=desc&cols=partType,mass',
+    );
+
+    // the list reflects every piece of view state carried in the URL
+    expect(await screen.findByText('tank_big')).toBeInTheDocument();
+    // open the editor for the filtered row and save it
+    await user.click(screen.getByRole('link', { name: /edit tank_big/i }));
+    const save = await screen.findByRole('button', { name: /save/i });
+    await user.click(save);
+
+    // back on the list, all four pieces of state survived the round-trip
+    expect(await screen.findByText('tank_big')).toBeInTheDocument();
+    const search = screen.getByRole('searchbox', { name: /search/i });
+    expect(search).toHaveValue('tank');
+    const rarityGroup = screen.getByRole('group', { name: /rarity/i });
+    expect(within(rarityGroup).getByRole('button', { name: 'Rare' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // the chosen columns are the only headers shown; the sorted one carries its ▼ indicator
+    const headers = screen.getAllByRole('columnheader').map((th) => th.textContent);
+    expect(headers).toEqual(['Part code', 'Mass ▼', 'Actions']);
+    expect(headers.join(' ')).not.toContain('Rarity tier');
+    // mass sorted descending puts the heavier tank first
+    const firstRowCells = within(screen.getAllByRole('row')[1]!).getAllByRole('cell');
+    expect(firstRowCells[1]).toHaveTextContent('30');
+  });
+
+  it('sorts a column on click, toggling asc then desc (round 6)', async () => {
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(materialsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(mixedRarityRows, { status: 200 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/materials');
+
+    expect(await screen.findByText('iron')).toBeInTheDocument();
+    const priceHeader = screen.getByRole('button', { name: /sort by base price/i });
+
+    // ascending by price: iron (10) before diamond (500)
+    await user.click(priceHeader);
+    let ids = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.textContent);
+    expect(ids[0]).toContain('iron');
+    expect(ids[1]).toContain('diamond');
+
+    // toggle to descending
+    await user.click(screen.getByRole('button', { name: /sort by base price/i }));
+    ids = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.textContent);
+    expect(ids[0]).toContain('diamond');
+    expect(ids[1]).toContain('iron');
+  });
+
+  it('searches by readable value, not by JSON keys (round 6)', async () => {
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(materialsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(mixedRarityRows, { status: 200 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/materials');
+
+    expect(await screen.findByText('iron')).toBeInTheDocument();
+    const search = screen.getByRole('searchbox', { name: /search/i });
+
+    // a display name matches
+    await user.type(search, 'diam');
+    expect(screen.getByText('diamond')).toBeInTheDocument();
+    expect(screen.queryByText('iron')).not.toBeInTheDocument();
+
+    // a locale key ("pt-BR") must NOT match — the old JSON-dump search would have matched everything
+    await user.clear(search);
+    await user.type(search, 'pt-BR');
+    expect(screen.queryByText('iron')).not.toBeInTheDocument();
+    expect(screen.queryByText('diamond')).not.toBeInTheDocument();
+  });
+
+  it('picks which columns the list shows, persisted in the URL (round 6)', async () => {
+    // Six fields, so the default five-column view genuinely omits `mass` and the test can add it.
+    const wideSchema = {
+      ...materialsSchema,
+      fields: [
+        ...materialsSchema.fields,
+        {
+          name: 'mass',
+          type: 'integer',
+          required: false,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+      ],
+    };
+    server.use(
+      http.get('/v1/admin/tuning/schema/materials', () =>
+        HttpResponse.json(wideSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/materials', () =>
+        HttpResponse.json(materialsRows, { status: 200 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/materials');
+
+    expect(await screen.findByText('iron')).toBeInTheDocument();
+    // the default view shows the first five fields only — no Mass
+    expect(screen.queryByRole('columnheader', { name: /mass/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /columns/i }));
+    const dialog = await screen.findByRole('dialog');
+    // drop a default column, add the one the default left out
+    await user.click(within(dialog).getByRole('checkbox', { name: /base price/i }));
+    await user.click(within(dialog).getByRole('checkbox', { name: /^mass$/i }));
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+    const headers = screen.getAllByRole('columnheader').map((th) => th.textContent);
+    expect(headers.join(' ')).toContain('Mass');
+    expect(headers.join(' ')).not.toContain('Base price');
+    // and the choice lives in the URL, so it would survive a reload or a save round-trip
+    expect(screen.getByRole('columnheader', { name: /mass/i })).toBeInTheDocument();
+  });
+
   it('opens a create form generated from the schema', async () => {
     server.use(
       http.get('/v1/admin/tuning/schema/materials', () =>

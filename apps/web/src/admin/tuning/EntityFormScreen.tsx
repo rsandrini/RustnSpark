@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
@@ -58,10 +58,14 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
   const { t } = useTranslation();
   const { entity, id: rawId } = useParams<{ entity: string; id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const entityName = entity ?? '';
   const id = rawId === undefined ? undefined : decodeURIComponent(rawId);
   const listPath = `/admin/tuning/entities/${entityName}`;
+  // The list's filters/sort/columns live in its query string; carry it along every path back so
+  // saving a part returns to the same filtered list instead of a reset one (owner request).
+  const listHref = location.search === '' ? listPath : `${listPath}${location.search}`;
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [issues, setIssues] = useState<{ key: string; message: string }[]>([]);
   // A rejected write: field-level problems when the server named them, else its plain message.
@@ -98,7 +102,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         void navigate(`${listPath}/${encodeURIComponent(newId)}`);
         return;
       }
-      void navigate(listPath);
+      void navigate(listHref);
     },
     onError: (error) => {
       setDuplicating(null);
@@ -125,7 +129,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     return (
       <div>
         <p role="alert">{t('tuning.notFound', { id: id ?? '' })}</p>
-        <Link to={listPath}>{t('tuning.backToList')}</Link>
+        <Link to={listHref}>{t('tuning.backToList')}</Link>
       </div>
     );
   }
@@ -147,7 +151,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     if (mode === 'edit' && id !== undefined) {
       updateMutation.mutate(
         { id, body: { data, reason } },
-        { onSuccess: () => void navigate(listPath) },
+        { onSuccess: () => void navigate(listHref) },
       );
     } else {
       createMutation.mutate({ data, reason });
@@ -186,7 +190,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
   return (
     <div className="entity-form-page">
       <nav className="breadcrumb" aria-label={t('tuning.breadcrumb')}>
-        <Link to={listPath}>{entityLabel}</Link>
+        <Link to={listHref}>{entityLabel}</Link>
         <span aria-hidden="true">{BREADCRUMB_SEPARATOR}</span>
         <span>{mode === 'new' ? t('tuning.create') : (id ?? '')}</span>
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
@@ -203,7 +207,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         sections={SECTIONS[entityName]}
         initialData={initialData}
         onSubmit={handleSubmit}
-        onCancel={() => void navigate(listPath)}
+        onCancel={() => void navigate(listHref)}
         onDuplicate={mode === 'edit' ? startDuplicate : undefined}
         errors={formErrors}
         issues={issues}

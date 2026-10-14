@@ -542,6 +542,8 @@
     "currentValue": "Current value",
     "factoryDefault": "Factory default",
     "actions": "Actions",
+    "columns": "Columns",
+    "sortBy": "Sort by {{column}}",
     "modified": "modified",
     "save": "Save",
     "reset": "Reset",
