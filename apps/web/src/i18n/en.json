@@ -1051,8 +1051,6 @@
     "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to.",
     "upgradePriceCredits": "Credits: {{cost}} (you have {{have}})",
     "bridgeResize": {
-      "expand": "Expand",
-      "shrink": "Shrink",
       "expandDone": "Expanded: {{name}} is in your inventory. Install it in the hangar.",
       "shrinkDone": "Shrunk: {{name}} is in your inventory. Install it in the hangar.",
       "expandConfirmTitle": "Expand the bridge?",
@@ -1071,7 +1069,11 @@
         "FORMAT_REQUIRES_BRIDGE": "Your ship format needs a big bridge: switch to a smaller format first."
       },
       "expandRow": "Becomes {{target}} · costs {{cost}}",
-      "shrinkRow": "Becomes {{target}} · you get {{credit}}, the new bridge costs {{cost}}"
+      "shrinkRow": "Becomes {{target}} · you get {{credit}}, the new bridge costs {{cost}}",
+      "expandTo": "Expand to 2×2",
+      "shrinkTo": "Shrink to 1×1",
+      "expandHelp": "A bigger bridge unlocks bigger ship formats. Expanding turns this 1×1 bridge into the 2×2 one rarity level below it: you pay the full price, and this bridge is consumed.",
+      "shrinkHelp": "Shrinking sells this 2×2 bridge at the port's price and gives you the 1×1 bridge of the same rarity."
     },
     "sellAmount": "Amount",
     "sellAmountFor": "How many {{name}} to sell",

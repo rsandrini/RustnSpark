@@ -94,25 +94,17 @@ export function useBridgeResize({ parts, wallet, money, onChanged }: Options): {
       ? ''
       : pickLocalized(quote.targetDisplayName, i18n.language);
 
+  // What the (i) next to the button explains: what it becomes, what it costs, and why not.
+  const [info, setInfo] = useState<InventoryItem | null>(null);
+
   const actionsFor = (item: InventoryItem): ReactNode => {
     if (!isBridge(item)) return null;
     const action = actionOf(item);
     const quote = quotes.data?.get(item.id);
     const net = (quote?.cost ?? 0) - (quote?.credit ?? 0);
-    const line =
-      quote === undefined
-        ? t('loading')
-        : quote.eligible
-          ? t(`port.bridgeResize.${action}Row`, {
-              target: targetNameOf(quote),
-              cost: money(quote.cost ?? 0),
-              credit: money(quote.credit ?? 0),
-            })
-          : t(`port.bridgeResize.reason.${quote.reason ?? 'NO_TARGET'}`);
+    const name = pickLocalized(item.displayName, i18n.language);
     return (
       <div className="bridge-resize" data-testid={`bridge-resize-${item.id}`}>
-        <b>{t(`port.bridgeResize.${action}`)}</b>
-        <span className="sub">{line}</span>
         <button
           type="button"
           className="btn primary"
@@ -121,15 +113,49 @@ export function useBridgeResize({ parts, wallet, money, onChanged }: Options): {
           }
           onClick={() => setConfirm({ item, action })}
         >
-          {t(`port.bridgeResize.${action}`)}
+          {t(`port.bridgeResize.${action}To`)}
+        </button>
+        <button
+          type="button"
+          className="btn info-btn"
+          aria-label={`${t('parts.info')}: ${t(`port.bridgeResize.${action}To`)} (${name})`}
+          title={t('parts.info')}
+          onClick={() => setInfo(item)}
+        >
+          {t('parts.infoGlyph')}
         </button>
       </div>
     );
   };
 
+  const infoQuote = info === null ? undefined : quotes.data?.get(info.id);
+  const infoAction = info === null ? null : actionOf(info);
+
   const dialog = (
     <>
       {error !== null && <p className="error-text">{error}</p>}
+      <Popup
+        open={info !== null}
+        title={infoAction === null ? '' : t(`port.bridgeResize.${infoAction}To`)}
+        onClose={() => setInfo(null)}
+      >
+        {infoAction !== null && (
+          <div className="stack">
+            <p>{t(`port.bridgeResize.${infoAction}Help`)}</p>
+            <p>
+              {infoQuote === undefined
+                ? t('loading')
+                : infoQuote.eligible
+                  ? t(`port.bridgeResize.${infoAction}Row`, {
+                      target: targetNameOf(infoQuote),
+                      cost: money(infoQuote.cost ?? 0),
+                      credit: money(infoQuote.credit ?? 0),
+                    })
+                  : t(`port.bridgeResize.reason.${infoQuote.reason ?? 'NO_TARGET'}`)}
+            </p>
+          </div>
+        )}
+      </Popup>
       <Popup
         open={confirm !== null}
         title={confirm === null ? '' : t(`port.bridgeResize.${confirm.action}ConfirmTitle`)}

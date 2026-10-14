@@ -835,17 +835,21 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
   });
 
-  it('puts Expand / Shrink inside the bridge card in the Upgrade tab', async () => {
+  it('puts one Expand / Shrink button with an (i) inside the bridge card, and nothing else', async () => {
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
     const control = await screen.findByTestId(/^bridge-resize-/);
     // It lives in the bridge's own card, not in a block of its own on the page.
-    const card = control.closest('.pcard');
-    expect(card).not.toBeNull();
+    expect(control.closest('.pcard')).not.toBeNull();
+    const button = within(control).getByRole('button', { name: 'Shrink to 1×1' });
+    await waitFor(() => expect(button).toBeEnabled());
+    // No explanatory text next to it: the (i) holds what it becomes and what it pays.
+    expect(control).not.toHaveTextContent('you get');
+    fireEvent.click(within(control).getByRole('button', { name: /Details.*Shrink to 1×1/i }));
+    const popup = await screen.findByRole('dialog');
     await waitFor(() =>
-      expect(control).toHaveTextContent('you get 6,000 ¢, the new bridge costs 0 ¢'),
+      expect(popup).toHaveTextContent('you get 6,000 ¢, the new bridge costs 0 ¢'),
     );
-    expect(within(control).getByRole('button', { name: 'Shrink' })).toBeEnabled();
   });
 
   it('the upgrade card says what it asks for besides money, and blocks while something is missing', async () => {
