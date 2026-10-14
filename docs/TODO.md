@@ -104,11 +104,12 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   contract + admin schema, a migration, the market listing generator, the Upgrade tab (Expand / Shrink), and
   the hangar's mandatory format picker.
   *Built 2026-10-14:* the `minBridgeSize` gate, Expand / Shrink (`bridge-resize.service.ts`,
-  `POST /v1/parts/:id/expand|shrink[/quote]`), the Upgrade-tab panel, the 2×2 bridge seed family, and
-  the hangar's format picker after a bridge change (remembered per ship in the browser, offers only
-  the new bridge's own level). *Still open:* big format grids with a 2×2 footprint, EPIC / LEGENDARY
-  2×2 (a LEGENDARY 1×1 cannot expand yet), market listings excluding bridges, and the server-side
-  rule that a ship without a bridge cannot be dispatched.
+  `POST /v1/parts/:id/expand|shrink[/quote]`) with its controls inside the bridge's card, the 2×2
+  bridge seed family up to LEGENDARY, bridges never sold (shelf and buy), and the server-side
+  format pick after a bridge change (`FORMAT_CHANGE_REQUIRED`, own level only) in a card popup.
+  *Still open:* big format grids that treat a 2×2 bridge as a 4-cell footprint (not verified in the
+  hangar), tuning the 2×2 stats against the economy, and confirming that a ship with no bridge
+  is refused at dispatch (viability should, there is no test).
 
 - [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
   charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and
