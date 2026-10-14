@@ -591,17 +591,25 @@ def build_baselines() -> bytes:
                 "(first green run). Bands: sweep ALVOS where the tuned oracle satisfies them; "
                 "where the oracle itself sits outside ALVOS (bankruptcy 0 < 2, tier5 ~99 > 55, "
                 "median margin ~780 > 400) the band anchors to oracle-measured reality "
-                "(layer3). Drift is fixed by config (reward_base / pirate strength), not code (D13)."
+                "(layer3). Drift is fixed by config (reward_base / pirate strength), not code "
+                "(D13). Re-baselined 2026-10-14: b88e5b4 restored the pre-5358fce layer4 block "
+                "while reformatting this file, dropping the 2026-09-29 owner-accepted band "
+                "(median_margin up to 950). Restored it and re-recorded the aggregate after "
+                "009f7b1 synced the defaults with the Admin DB catalog (combat_win_base 100 to "
+                "150, fuel_price 1.5 to 1.1): median_margin 766.4 to 895.38, still capped below "
+                "runaway, tier2 median 10 to 9 and tier5 median 135 to 115. This block is the "
+                "fixture's single source of truth: --check byte-diffs it, and production-mode."
+                "spec.ts measures against it, so the two must be recorded together."
             ),
             "n_lives_per_config": 120,
             "baseline": {
                 "falencia_pct": 0,
-                "combat_winrate": 55.1,
-                "tier5_pct": 97.2,
-                "missions_tier2_median": 10,
-                "missions_tier5_median": 135,
-                "engasgo_pct": 2.33,
-                "median_margin": 766.4,
+                "combat_winrate": 55.44,
+                "tier5_pct": 96.94,
+                "missions_tier2_median": 9,
+                "missions_tier5_median": 115,
+                "engasgo_pct": 2.87,
+                "median_margin": 895.38,
             },
             "band": {
                 "falencia_pct": [0, 15],
@@ -610,7 +618,7 @@ def build_baselines() -> bytes:
                 "missions_tier2_median": [4, 10],
                 "missions_tier5_median": [60, 160],
                 "engasgo_pct": [2, 12],
-                "median_margin": [740, 850],
+                "median_margin": [740, 950],
             },
         },
     }
