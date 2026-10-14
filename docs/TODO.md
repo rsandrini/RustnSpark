@@ -1,12 +1,10 @@
 # To do
 
-The owner's backlog, newest first. Items are written as the owner asked for them, with a note on
-where the code lives so whoever picks one up can start quickly. Move an item to "Done" (with the
-commit) when it ships. Raise questions before starting anything marked *needs design*.
+The owner's backlog, by priority (P0 first). Items are written as the owner asked for them, with a
+note on where the code lives so whoever picks one up can start quickly. Delete an item when it
+ships (the commit has the history). Raise questions before starting anything marked *needs design*.
 
-## Open
-
-### Added 2026-10-12
+## P0
 
 - [ ] **Review the scavenging drops: they are absurd.** On the first attempt, in a zone 2 region,
   one scavenging run dropped a RARE solar panel AND an uncommon 4x4 nuclear reactor. *What the code
@@ -26,23 +24,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `apps/api/src/config/game-config.defaults.ts`, and the catalog pool built in
   `apps/api/src/missions/scavenge-context.ts`.
 
-- [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
-  difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
-  reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
-  100%, money, scrap / crystals / cores); how fuel, repair, scavenging, mining and missions work;
-  what ports, connectors and incorrect ports mean; what each mission type needs. *Needs design:*
-  in-game pages (a "Guide" route in the web app, bilingual en + pt-BR, no hard-coded strings) or
-  markdown rendered in the app; keep it in sync with the Admin-tunable numbers by reading values
-  from the API where it quotes them (for example the repair and upgrade rules), not hard-coding
-  them. The part descriptions (`hangar.partClasses`, the part-class help texts) are a starting point.
-
-- [ ] **A simple tutorial for newcomers.** Something short that shows, step by step: how to build a
-  ship (place parts, connect them, fix red ports), how to refuel, repair, scavenge and mine, and
-  how to get and accept tasks. *Needs design:* an in-game guided flow for a new pilot (a checklist
-  that ticks as the pilot does each thing, or a few highlighted steps), shown after onboarding and
-  skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
-  first mission) so the first minutes work. It can link to the wiki for details.
-
 - [ ] **Combat: almost every fight ends in 40 rounds as a draw or a flee; no losses, wins are rare.**
   Investigate why and improve the combat. The round cap is `combat.max_rounds` (40) and the flee
   threshold `combat.retreat_hp_ratio` (0.2). *Start by measuring, not guessing:* from the owner's
@@ -60,56 +41,81 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `resolution/damage/layers.ts`, `resolution/encounter/pirate.generator.ts`, the `combat` and
   `encounter` sections of `game-config.defaults.ts`. *Needs design* once the numbers are in.
 
-- [ ] **Bridges 2×2: Expand/Shrink in the Upgrade tab, and gate ship formats by bridge size.** An epic 1×1 bridge is still
-  a small ship; larger bridges are needed so bigger ships can exist. Three 2×2 bridges are already
-  in the catalog (owner, 2026-10-13): `bridge_2x2` (COMMON, 10000), `bridge_2x2_uncommon` (18000),
-  `bridge_2x2_rare` (32000), all structure 120. EPIC / LEGENDARY 2×2 to add later; **no 4×4 for
-  now.** *Why it does nothing today:* ship formats unlock **only by bridge rarity**, so a COMMON
-  2×2 unlocks the same formats as the starter 1×1 — and the shop **hides bridges from the UI**:
-  `market-panel.tsx:115-118` hard-filters `partClass !== 'BRIDGE'` ("a bridge is not something you
-  shop for"), a rule written when the only bridges were the free kit 1×1s. *Design decided
-  2026-10-13:* (1) **Size gate** — add `ShipFormat.minBridgeSize Int @default(1)`; a format is
-  unlocked only when the installed bridge's `w` **and** `h` are both `>= minBridgeSize` (per-axis).
-  Rarity and size stay **orthogonal** (a RARE 1×1 stays small; a COMMON 2×2 is large). Enforce in
-  **both** `listFormats()` and `setFormat()` (`apps/api/src/ships/ships.service.ts`, next to the
-  `RARITY_ORDER` checks), expose `minBridgeSize` in the contract (`ShipFormatSchema`) and the admin
-  `ship-formats` screen (`SHIP_FORMAT_FIELDS`), seed the big formats to size 2 by migration.
-  (2) **Shop stays closed to bridges** (revised 2026-10-14, supersedes the "show 2×2s in the shop"
-  idea): keep `market-panel.tsx` hiding BRIDGE **and** make sure market listing generation never
-  rolls a bridge, so there is no API back door to a 2×2. (3) **Expand / Shrink in the Upgrade tab,
-  port only** — the upgrade mechanic is rarity-up-only and requires identical w/h
-  (`part-upgrade.service.ts:106`), so size changes are their own operations next to Upgrade.
-  **Expand** (1×1 → 2×2, **one rarity level below** the current bridge, so a COMMON 1×1 cannot
-  expand until its first upgrade): pays the **full price of the target 2×2, money only, no credit
-  for the old bridge**; the old 1×1 is **consumed**; the new 2×2 lands in the **inventory at 100%
-  condition** and the ship is left **without a bridge** until the player installs it.
-  **Shrink** (2×2 → 1×1, **same rarity**): sells the 2×2 through the normal sell path (`sell_ratio`,
-  condition-aware) and buys the 1×1 of that rarity at catalog price, in one transaction. Never
-  discount Expand or hand-roll the Shrink refund: with full-price Expand and the market sell path,
-  every Expand → Shrink loop is a net money loss. **Format picker is mandatory** whenever the bridge
-  changes (Expand install, Shrink, rarity upgrade): the hangar forces a format choice and lists
-  **only the formats of the new bridge's own level**, not the whole unlocked history; parts that no
-  longer fit are re-seated by auto-layout and the rest go to inventory. **Downswap rule:** a ship
-  that is out on a mission cannot change bridge; swapping to a *smaller* bridge while on a bigger
-  format is **blocked** with `FORMAT_REQUIRES_BRIDGE` until the pilot moves to an unlocked format,
-  no auto-kick. A ship with **no bridge** cannot be dispatched (see the destroyed-bridge item
-  above for the viability check). *Naming
-  wrinkle:* the upgrade calculator strips the rarity suffix, so `bridge_2x2_*` is its **own**
-  upgrade family (`bridge_2x2` → `_uncommon` → `_rare` → `_epic` → `_legendary`) — the future
-  EPIC/LEGENDARY 2×2 **must** be named `bridge_2x2_epic` / `bridge_2x2_legendary` or the ladder
-  breaks. *Still open:* structure budgets / mass / power / connectors for the 2×2 line, and the
-  big format grids themselves (today every format assumes the bridge is one cell at the origin; a
-  2×2 bridge covers 4 cells, so format `cells` and auto-layout must treat the footprint as
-  multi-cell). *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`), the two gate methods, the
-  contract + admin schema, a migration, the market listing generator, the Upgrade tab (Expand / Shrink), and
-  the hangar's mandatory format picker.
-  *Built 2026-10-14:* the `minBridgeSize` gate, Expand / Shrink (`bridge-resize.service.ts`,
-  `POST /v1/parts/:id/expand|shrink[/quote]`) with its controls inside the bridge's card, the 2×2
-  bridge seed family up to LEGENDARY, bridges never sold (shelf and buy), and the server-side
-  format pick after a bridge change (`FORMAT_CHANGE_REQUIRED`, own level only) in a card popup.
-  *Still open:* big format grids that treat a 2×2 bridge as a 4-cell footprint (not verified in the
-  hangar), tuning the 2×2 stats against the economy, and confirming that a ship with no bridge
-  is refused at dispatch (viability should, there is no test).
+- [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
+  sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
+  design:* expand the map with harder and longer quests (farther zones) with better drops of rare
+  crystals and other rare materials, so the late game has its own content. Related: the economy
+  simulation (see below) can measure how long it takes to find the materials the upgrades need.
+  *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
+  (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
+
+- [ ] **Enforce the cargo hold for mining (and for any mission that collects cargo).** Today the UI
+  shows that a cargo hold is necessary but does not enforce it: a mission or mining run can leave
+  with no cargo space and then collects nothing. Block the dispatch / start with a clear error and
+  message (no cargo hold, or not enough cargo space) instead of letting the run go empty. *Decide:*
+  whether "no hold" is an error or a warning for missions that carry no cargo by design (delivery
+  cargo modes min / fixed / open already exist). *Where:* the mining job start, the mission
+  dispatch validation, and the matching warning in the web port / hangar screens.
+
+- [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
+  The items show no description in the UI, even though the seed has one
+  (`seed-data/materials.ts`), so the screen where they are listed is not rendering it. They also
+  read as extra inventory to track. *Improve:* show the description and what each core unlocks
+  (prototype: rare → epic, ancient: epic → legendary), where it drops and how fragments craft it,
+  and show it next to the upgrade that needs it rather than as a loose item. Consider whether the
+  separate fragment → core crafting step is worth keeping.
+
+## P1 — CI/CD
+
+- [ ] **Fix the CI/CD and keep it green.** Every push to `develop` must end with the aggregate `CI`
+  job green: quality, unit, web, integration (`test:cov` with the coverage thresholds and the
+  Prisma migration diff), compose-check, docker-lifecycle, security, oracle-fixtures-fresh and
+  browser-smoke. After the 2026-10-14 fixes (heap 8 GB, resolve transaction 30 s, connection pool
+  20, repair test flake) the last settled run was green; rapid pushes cancel each other, so
+  confirm one full run on the head before calling it done. Watch for: a CI-only failure is
+  reproduced with a full local `test:cov` (cross-suite state), after checking for a stray jest
+  process; the soak test prints the rejection reasons when it fails; never edit `baselines.json`
+  by hand (regenerate it with `tools/oracle/gen_fixtures.py`).
+
+## P2 — Simulations
+
+- [ ] **Check the simulations: is the economy bot simulation feature complete? Run it and get
+  insights.** Specs: `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`, plan:
+  `docs/superpowers/plans/2026-10-11-economy-bot-simulation-plan.md`, code in `apps/api/sim`. First
+  verify it against the plan (what is built, what is missing), then run it and report what it says
+  about progression through the bridge rarities and the economy. *Known drift to fix first:* the
+  game now has one generic `scrap` material (the sim still models per-part scrap, `scrap_<type>`),
+  bridges are never sold and change size by Expand / Shrink, a destroyed bridge destroys the ship,
+  and the 2×2 bridge line exists.
+
+## P3 — Missions
+
+- [ ] **Mission scaling by bridge rarity.** Reward, requirements, fuel and repairs scale with the
+  bridge level: requirements follow the capacity growth of each rarity, rewards follow the price
+  ladder. Waiting for the simulation's baseline (P2) before building.
+
+## P4
+
+- [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
+  difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
+  reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
+  100%, money, scrap / crystals / cores); how fuel, repair, scavenging, mining and missions work;
+  what ports, connectors and incorrect ports mean; what each mission type needs. *Needs design:*
+  in-game pages (a "Guide" route in the web app, bilingual en + pt-BR, no hard-coded strings) or
+  markdown rendered in the app; keep it in sync with the Admin-tunable numbers by reading values
+  from the API where it quotes them (for example the repair and upgrade rules), not hard-coding
+  them. The part descriptions (`hangar.partClasses`, the part-class help texts) are a starting point.
+
+- [ ] **A simple tutorial for newcomers.** Something short that shows, step by step: how to build a
+  ship (place parts, connect them, fix red ports), how to refuel, repair, scavenge and mine, and
+  how to get and accept tasks. *Needs design:* an in-game guided flow for a new pilot (a checklist
+  that ticks as the pilot does each thing, or a few highlighted steps), shown after onboarding and
+  skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
+  first mission) so the first minutes work. It can link to the wiki for details.
+
+- [ ] **Mining animation.** The mining job and its screen need an animation (like the ship scene
+  for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
+  the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
 
 - [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
   charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and
@@ -134,41 +140,11 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `entity-screen.spec.tsx` (regression: filters survive a save round-trip), and a new compare
   component beside `part-detail.tsx`'s compare tables.
 
-- [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
-  sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
-  design:* expand the map with harder and longer quests (farther zones) with better drops of rare
-  crystals and other rare materials, so the late game has its own content. Related: the economy
-  simulation (see below) can measure how long it takes to find the materials the upgrades need.
-  *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
-  (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
+## P5 — Look and feel
 
-- [ ] **Mining animation.** The mining job and its screen need an animation (like the ship scene
-  for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
-  the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
-
-### Added 2026-10-14
-
-- [ ] **Enforce the cargo hold for mining (and for any mission that collects cargo).** Today the UI
-  shows that a cargo hold is necessary but does not enforce it: a mission or mining run can leave
-  with no cargo space and then collects nothing. Block the dispatch / start with a clear error and
-  message (no cargo hold, or not enough cargo space) instead of letting the run go empty. *Decide:*
-  whether "no hold" is an error or a warning for missions that carry no cargo by design (delivery
-  cargo modes min / fixed / open already exist). *Where:* the mining job start, the mission
-  dispatch validation, and the matching warning in the web port / hangar screens.
-
-- [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
-  The items show no description in the UI, even though the seed has one
-  (`seed-data/materials.ts`), so the screen where they are listed is not rendering it. They also
-  read as extra inventory to track. *Improve:* show the description and what each core unlocks
-  (prototype: rare → epic, ancient: epic → legendary), where it drops and how fragments craft it,
-  and show it next to the upgrade that needs it rather than as a loose item. Consider whether the
-  separate fragment → core crafting step is worth keeping. Related to the scrap review above.
-
-### Already planned or in progress elsewhere
-
-- **Economy bot simulation** (another agent): `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`
-  and `docs/superpowers/plans/2026-10-11-economy-bot-simulation-plan.md`. Its results will calibrate
-  the mission scaling by bridge level (reward, requirements, fuel, repairs) described in the
-  conversation: requirements follow the capacity growth of each rarity, rewards follow the price
-  ladder.
-- **Mission scaling by bridge rarity**: waiting for the simulation's baseline before building.
+- [ ] **Upgrade the CSS to https://github.com/nutlope/hallmark: investigate first, to choose which
+  one will be used.** Today the styles are one hand-written sheet (`apps/web/src/styles/index.css`)
+  and the design tokens live in it. The investigation compares what hallmark offers with what the
+  game needs (the dark yard look, the rarity colours, the part cards, the popups and the Admin
+  screens), what the migration would touch, and what it costs; it ends with a recommendation to
+  pick the one to use. No code changes until that is decided.
