@@ -187,6 +187,33 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
   the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
 
+### Added 2026-10-14
+
+- [ ] **Enforce the cargo hold for mining (and for any mission that collects cargo).** Today the UI
+  shows that a cargo hold is necessary but does not enforce it: a mission or mining run can leave
+  with no cargo space and then collects nothing. Block the dispatch / start with a clear error and
+  message (no cargo hold, or not enough cargo space) instead of letting the run go empty. *Decide:*
+  whether "no hold" is an error or a warning for missions that carry no cargo by design (delivery
+  cargo modes min / fixed / open already exist). *Where:* the mining job start, the mission
+  dispatch validation, and the matching warning in the web port / hangar screens.
+
+- [ ] **Review the scrap system; it is confusing.** Every part has its own scrap with its own price,
+  but upgrades also consume scrap, and it is not clear whether that is the same thing, a random
+  piece, or has to come from the same part family being upgraded. Likely simplification: drop
+  per-part scrap and use a **single generic scrap** with a low price, used wherever scrap is needed
+  (upgrades, selling, crafting). *Decide:* how scavenging and selling a part pay out in generic
+  scrap, what the upgrade scrap cost becomes per tier, and the migration of existing player scrap
+  (the rarity-specific scrap IDs from the 2026-10-10 migration, `seed-data/materials.ts`, the
+  upgrade requirements, `materials.service.ts`). Tuning stays in Admin (DB wins over TS defaults).
+
+- [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
+  The items show no description in the UI, even though the seed has one
+  (`seed-data/materials.ts`), so the screen where they are listed is not rendering it. They also
+  read as extra inventory to track. *Improve:* show the description and what each core unlocks
+  (prototype: rare → epic, ancient: epic → legendary), where it drops and how fragments craft it,
+  and show it next to the upgrade that needs it rather than as a loose item. Consider whether the
+  separate fragment → core crafting step is worth keeping. Related to the scrap review above.
+
 ### Already planned or in progress elsewhere
 
 - **Economy bot simulation** (another agent): `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`
