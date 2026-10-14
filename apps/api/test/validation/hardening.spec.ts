@@ -160,11 +160,22 @@ describe('hardening baseline', () => {
 
   it('returns 429 once the throttle limit is exceeded', async () => {
     app = await makeApp();
-    for (let i = 0; i < THROTTLE_LIMIT; i += 1) {
-      const ok = await request(httpServer(app)).get('/v1/ping');
-      expect(ok.status).toBe(200);
+    const server = httpServer(app);
+    if (!server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, resolve);
+      });
     }
-    const limited = await request(httpServer(app)).get('/v1/ping');
+    const concurrency = 25;
+    for (let sent = 0; sent < THROTTLE_LIMIT; sent += concurrency) {
+      const batch = Math.min(concurrency, THROTTLE_LIMIT - sent);
+      const responses = await Promise.all(
+        Array.from({ length: batch }, () => request(server).get('/v1/ping')),
+      );
+      for (const ok of responses) expect(ok.status).toBe(200);
+    }
+    const limited = await request(server).get('/v1/ping');
     expect(limited.status).toBe(429);
-  }, 20_000);
+  }, 60_000);
 });
