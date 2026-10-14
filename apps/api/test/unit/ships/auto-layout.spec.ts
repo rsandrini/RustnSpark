@@ -1,11 +1,33 @@
 import { describe, expect, it } from '@jest/globals';
 import { autoLayout } from '../../../src/ships/auto-layout.js';
 import { defaultConnectorRules, generateConnectors } from '../../../src/parts/connector-rules.js';
-import { KIT_KINDS } from '../../../src/parts/connectors.js';
-import { connectedPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import { KIT_KINDS, type ConnectorLayout } from '../../../src/parts/connectors.js';
+import { connectedPartIds, incorrectPortPartIds, validateLayout } from '../../../src/ships/geometry.js';
 import { buildInstalled, catalogByInstanceId, CATALOG_BY_TYPE } from './fixtures/catalog.js';
 
 describe('autoLayout', () => {
+  /** A part type's admin-authored rules with no kit restriction — the sparse, typed layouts the
+      market hands out. The inverse of KIT_KINDS below: whole sides carry no port at all, so a
+      neighbour parked on one puts a port against a blank wall (PORT_INCORRECT). */
+  const rolled = (types: readonly string[], seed: string) =>
+    buildInstalled(types).map((part, index) => ({
+      ...part,
+      instance: {
+        ...part.instance,
+        connectors: generateConnectors(
+          defaultConnectorRules(part.catalog.partClass),
+          part.catalog.w,
+          part.catalog.h,
+          `${seed}-${index}`,
+        ),
+      },
+    }));
+
+  const connectorsOf = (parts: readonly { instance: { id: string; connectors?: unknown } }[]) =>
+    new Map<string, ConnectorLayout | null>(
+      parts.map((p) => [p.instance.id, p.instance.connectors as ConnectorLayout | null]),
+    );
+
   it('places a single part at the origin', () => {
     const parts = buildInstalled(['bridge']);
     const placements = autoLayout(parts, catalogByInstanceId(parts));
@@ -74,6 +96,61 @@ describe('autoLayout', () => {
       const placements = autoLayout(parts, catalog);
       expect(placements).toHaveLength(parts.length);
       expect(validateLayout(placements, catalog).map((e) => e.code)).toEqual([]);
+    }
+  });
+
+  it('never leaves a red port or a disconnected part for rolled (non-kit) connectors', () => {
+    const types = [
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'battery_small',
+      'cargo',
+      'hull',
+      'mining_rig',
+    ];
+    for (let seed = 0; seed < 50; seed += 1) {
+      const parts = rolled(types, `rolled-${seed}`);
+      const catalog = catalogByInstanceId(parts);
+      const connectors = connectorsOf(parts);
+      const placements = autoLayout(parts, catalog);
+
+      expect(validateLayout(placements, catalog)).toEqual([]);
+      expect(incorrectPortPartIds(placements, catalog, connectors).size).toBe(0);
+      expect(connectedPartIds(placements, catalog, connectors).size).toBe(placements.length);
+      // Every ship has a bridge, and the retry loop always reaches at least one neighbour.
+      expect(placements.length).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('fits the starter kit plus two rolled market parts as one connected ship', () => {
+    // What a fresh pilot actually assembles: the five onboarding kit parts (KIT_KINDS, every
+    // side ported) plus the two parts bought off the market, whose rolled layouts are not.
+    const kitTypes = ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'hull'];
+    for (let seed = 0; seed < 25; seed += 1) {
+      const kit = buildInstalled(kitTypes).map((part, index) => ({
+        ...part,
+        instance: {
+          ...part.instance,
+          connectors: generateConnectors(
+            defaultConnectorRules(part.catalog.partClass),
+            part.catalog.w,
+            part.catalog.h,
+            `kit-${seed}-${index}`,
+            KIT_KINDS,
+            true,
+          ),
+        },
+      }));
+      const parts = [...kit, ...rolled(['mining_rig', 'reactor_solar'], `market-${seed}`)];
+      const catalog = catalogByInstanceId(parts);
+      const connectors = connectorsOf(parts);
+      const placements = autoLayout(parts, catalog);
+
+      expect(placements).toHaveLength(parts.length);
+      expect(validateLayout(placements, catalog)).toEqual([]);
+      expect(incorrectPortPartIds(placements, catalog, connectors).size).toBe(0);
+      expect(connectedPartIds(placements, catalog, connectors).size).toBe(parts.length);
     }
   });
 });
