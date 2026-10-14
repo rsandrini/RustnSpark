@@ -9,7 +9,7 @@ const rules = GAME_CONFIG_DEFAULTS;
 describe('applyPenalties', () => {
   it('leaves a healthy ship untouched', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'hull']);
-    const result = applyPenalties(parts, [], rules);
+    const result = applyPenalties(parts, []);
     expect(result.penalties).toEqual([]);
     expect(deriveSheet(result.parts, rules)).toEqual(deriveSheet(parts, rules));
   });
@@ -17,11 +17,9 @@ describe('applyPenalties', () => {
   it('a blocked engine gives no thrust, so the ship cannot move', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small']);
     const engine = parts.find((part) => part.catalog.partClass === 'ENGINE')!;
-    const result = applyPenalties(
-      parts,
-      [{ code: 'EXHAUST_BLOCKED', partInstanceId: engine.instance.id, message: 'x' }],
-      rules,
-    );
+    const result = applyPenalties(parts, [
+      { code: 'EXHAUST_BLOCKED', partInstanceId: engine.instance.id, message: 'x' },
+    ]);
     expect(result.penalties).toEqual([
       { code: 'EXHAUST_BLOCKED', partInstanceIds: [engine.instance.id], kept: 0 },
     ]);
@@ -32,11 +30,9 @@ describe('applyPenalties', () => {
   it('a blocked weapon does not fire', () => {
     const parts = buildInstalled(['bridge', 'engine_chem_small', 'tank_small', 'weapon_ballistic']);
     const weapon = parts.find((part) => part.catalog.partClass === 'WEAPON')!;
-    const result = applyPenalties(
-      parts,
-      [{ code: 'FACING_BLOCKED', partInstanceId: weapon.instance.id, message: 'x' }],
-      rules,
-    );
+    const result = applyPenalties(parts, [
+      { code: 'FACING_BLOCKED', partInstanceId: weapon.instance.id, message: 'x' },
+    ]);
     expect(deriveSheet(result.parts, rules).pdf).toBe(0);
     expect(deriveSheet(parts, rules).pdf).toBeGreaterThan(0);
   });
@@ -48,7 +44,7 @@ describe('applyPenalties', () => {
         ? { ...part, catalog: { ...part.catalog, energyCont: -12 } }
         : part,
     );
-    const result = applyPenalties(parts, [], rules);
+    const result = applyPenalties(parts, []);
     expect(result.penalties).toEqual([]);
     expect(deriveSheet(result.parts, rules).pot).toBe(deriveSheet(parts, rules).pot);
   });

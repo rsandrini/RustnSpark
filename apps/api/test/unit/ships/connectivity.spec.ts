@@ -5,7 +5,6 @@ import {
   withConnectionProblem,
 } from '../../../src/ships/connectivity.js';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
-import type { GameRules } from '../../../src/config/game-config.types.js';
 import type { InstalledPart } from '../../../src/parts/part.types.js';
 
 function part(id: string, overrides: Partial<InstalledPart['catalog']> = {}): InstalledPart {
@@ -101,9 +100,9 @@ describe('applyConnectivity', () => {
 });
 
 describe('conductiveCatalog: a broken part no longer carries a connection', () => {
-  const rules = GAME_CONFIG_DEFAULTS as unknown as GameRules;
+  const rules = GAME_CONFIG_DEFAULTS;
   const broken = (id: string, partClass = 'DEFENSE'): InstalledPart => {
-    const p = part(id, { partClass: partClass as InstalledPart['catalog']['partClass'] });
+    const p = part(id, { partClass });
     return { ...p, instance: { ...p.instance, condition: 0 } };
   };
 

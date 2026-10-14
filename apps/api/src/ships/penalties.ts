@@ -29,7 +29,6 @@ export interface AppliedPenalty {
 export function applyPenalties(
   parts: readonly InstalledPart[],
   directionProblems: readonly LayoutError[],
-  rules: GameRules,
 ): { parts: InstalledPart[]; penalties: AppliedPenalty[] } {
   const penalties: AppliedPenalty[] = [];
   const zeroed = new Map<string, 'pot' | 'pdf'>();
@@ -66,6 +65,6 @@ export function flightShip(
   rules: GameRules,
 ): { parts: InstalledPart[]; sheet: ShipSheet; penalties: AppliedPenalty[] } {
   const direction = directionErrors(placements, catalog, connectorsByInstance);
-  const { parts, penalties } = applyPenalties(connected, direction, rules);
+  const { parts, penalties } = applyPenalties(connected, direction);
   return { parts, sheet: deriveSheet(parts, rules), penalties };
 }

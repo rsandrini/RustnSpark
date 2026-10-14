@@ -12,5 +12,5 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["src", "test", "prisma", "sim", "jest.config.ts"]
+  "include": ["src", "test", "prisma", "sim", "scripts", "jest.config.ts"]
 }

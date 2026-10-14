@@ -25,6 +25,11 @@ export default defineConfig(
       globals: { ...globals.node, ...globals.jest },
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
+    rules: {
+      // Destructuring to drop keys (`const { battery: _unused, ...rest } = x`) binds every
+      // omitted key to a name it never gets. Without this the omission idiom is unlintable.
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
   },
   {
     files: ['**/*.tsx'],

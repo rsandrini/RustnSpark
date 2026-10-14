@@ -50,7 +50,7 @@ function rulesFromDb(rows: { key: string; value: unknown }[]): GameRules {
   for (const row of rows) {
     const [group, name] = row.key.split('.');
     if (group !== undefined && name !== undefined && rules[group] !== undefined) {
-      rules[group]![name] = row.value;
+      rules[group][name] = row.value;
     }
   }
   return rules as unknown as GameRules;
@@ -90,10 +90,8 @@ async function main(): Promise<void> {
     const tier = shipTier(parts, rules);
     const next = KIT.map((base) => catalog.get(base + SUFFIX[level + 1]));
     const gapToNext = next.every((part) => part !== undefined)
-      ? (next as typeof parts).reduce(
-          (sum, part, index) => sum + part.basePrice - parts[index]!.basePrice,
-          0,
-        ) * (markup[rarityKey[level]!] ?? 1)
+      ? next.reduce((sum, part, index) => sum + part.basePrice - parts[index]!.basePrice, 0) *
+        (markup[rarityKey[level]!] ?? 1)
       : 0;
 
     let reward = 0;
@@ -121,7 +119,7 @@ async function main(): Promise<void> {
         parts: snapshotParts,
         legs,
         layered: true,
-      } as unknown as DispatchSnapshot;
+      };
       for (let run = 0; run < RUNS; run += 1) {
         const outcome = resolveMission(
           buildResolveInput({
