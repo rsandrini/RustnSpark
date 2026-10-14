@@ -6,13 +6,13 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## P0
 
-- [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
-  sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
-  design:* expand the map with harder and longer quests (farther zones) with better drops of rare
-  crystals and other rare materials, so the late game has its own content. Related: the economy
-  simulation (see below) can measure how long it takes to find the materials the upgrades need.
-  *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
-  (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
+- [ ] **Late-game content: the board is still weak once the ship is rare.** The three far deep
+  fields (Halcyon Reach, Obsidian Shoal, The Maw) exist and give rare crystals by mining, but only
+  as mining. Still to do: harder and longer *missions* (deliveries, races, escorts) that end in the
+  far fields and pay rare materials, and tuning the crystal yield there (the per-attempt chance is
+  `richness × (1 − 0.85) × MIN`) against how many crystals the upgrades ask for. Measure with the
+  economy simulation (P2). *Where:* `prisma/seed-data/far-zones.ts`, mission templates
+  (`destinationIds` / `destinationTypes` now exist), `mining.richness`, `economy.core_drops`.
 
 ## P1 — CI/CD
 
