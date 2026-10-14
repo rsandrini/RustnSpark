@@ -955,7 +955,9 @@ describe('hangar (S10.4)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
-    fireEvent.click(await screen.findByRole('button', { name: 'Empty the ship' }));
+    const emptyButton = await screen.findByRole('button', { name: 'Empty the ship' });
+    await waitFor(() => expect(emptyButton).toBeEnabled());
+    fireEvent.click(emptyButton);
     // nothing is sent until the pilot confirms
     expect(assembled).toHaveLength(0);
     const dialog = await screen.findByRole('dialog');
