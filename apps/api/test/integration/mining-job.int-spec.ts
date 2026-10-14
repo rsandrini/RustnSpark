@@ -190,6 +190,27 @@ describe('independent mining job (round 10)', () => {
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });
 
+  it('a far deep field holds only rare crystals: every job there digs them', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { currentLocationId: 'halcyon' },
+    });
+    const info = await request(httpServer(testApp.app))
+      .get('/v1/locations/halcyon/mine/info')
+      .set(auth(player.token));
+    expect(info.body).toEqual({ minable: true });
+
+    const response = await start(player.token, 'halcyon');
+    expect(response.status).toBe(200);
+    const job = await prisma.missionInstance.findUniqueOrThrow({
+      where: { id: (response.body as { missionId: string }).missionId },
+    });
+    expect((job.cargo as { materialId: string }).materialId).toBe('rare_crystals');
+  });
+
   // Part direction rules: mining flies the ship out, so an engine with a part behind its exhaust
   // keeps it in port; scavenging is manual work at the place (the ship never travels) and is not
   // held by the rule.

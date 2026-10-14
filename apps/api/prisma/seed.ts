@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { seedDropTables } from './seed-data/drop-tables.js';
 import { seedEnvironments } from './seed-data/environments.js';
 import { seedFactions } from './seed-data/factions.js';
+import { seedFarZones } from './seed-data/far-zones.js';
 import { seedGameConfig } from './seed-data/game-config.js';
 import { seedMaterials, seedScrapMaterials } from './seed-data/materials.js';
 import { seedMissionTemplates } from './seed-data/mission-templates.js';
@@ -22,6 +23,8 @@ export async function seed(prisma?: PrismaClient): Promise<void> {
     await seedMaterials(client);
     await seedScrapMaterials(client);
     await seedMissionTemplates(client);
+    // After the templates and the scrap: the far zones add a place, its routes and a mining offer.
+    await seedFarZones(client);
     await seedDropTables(client);
     await seedGameConfig(client);
   } finally {

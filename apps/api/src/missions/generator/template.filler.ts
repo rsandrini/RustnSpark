@@ -119,6 +119,8 @@ interface TemplateRequirements {
   readonly destinationTypes?: readonly string[];
   /** Where the mission may end: exactly one of these locations. */
   readonly destinationIds?: readonly string[];
+  /** A mining offer may only name these materials (a far field that only holds rare crystals). */
+  readonly materialIds?: readonly string[];
 }
 
 interface Adjacent {
@@ -138,6 +140,7 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
     originTypes?: unknown;
     destinationTypes?: unknown;
     destinationIds?: unknown;
+    materialIds?: unknown;
   };
   return {
     originFactions: Array.isArray(raw.originFactions)
@@ -150,7 +153,31 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
     destinationIds: Array.isArray(raw.destinationIds)
       ? (raw.destinationIds as string[])
       : undefined,
+    materialIds: Array.isArray(raw.materialIds) ? (raw.materialIds as string[]) : undefined,
   };
+}
+
+/**
+ * The materials a mining run at `origin` can dig. Every ore, unless the mining templates offered
+ * there pin some (`materialIds`): then only those, so a far field can hold nothing but rare crystals.
+ */
+export function miningMaterialsFor<M extends FillerMaterial>(
+  origin: FillerLocation,
+  templates: readonly FillerTemplate[],
+  materials: readonly M[],
+): M[] {
+  const pinned = new Set<string>();
+  let anyUnpinned = false;
+  for (const template of templates) {
+    if (!template.active || template.type !== 'MINING' || !matchesOrigin(origin, template))
+      continue;
+    const ids = requirementsOf(template).materialIds;
+    if (ids === undefined) anyUnpinned = true;
+    else for (const id of ids) pinned.add(id);
+  }
+  if (anyUnpinned || pinned.size === 0) return [...materials];
+  const narrowed = materials.filter((material) => pinned.has(material.id));
+  return narrowed.length > 0 ? narrowed : [...materials];
 }
 
 /** Whether `destination` is a place this template may end at (no condition = anywhere). */
@@ -315,6 +342,17 @@ export function legForRoute(
   };
 }
 
+/** The materials one mining template may name: its own pinned list, else every one. */
+function pinnedMaterials(
+  template: FillerTemplate,
+  materials: readonly FillerMaterial[],
+): readonly FillerMaterial[] {
+  const ids = requirementsOf(template).materialIds;
+  if (ids === undefined) return materials;
+  const narrowed = materials.filter((material) => ids.includes(material.id));
+  return narrowed.length > 0 ? narrowed : materials;
+}
+
 function miningCargo(
   rng: Rng,
   materials: readonly FillerMaterial[],
@@ -416,7 +454,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   // race, and the resolution plays against exactly those ships.
   const cargo =
     template.type === 'MINING'
-      ? miningCargo(rng, world.materials, rules)
+      ? miningCargo(rng, pinnedMaterials(template, world.materials), rules)
       : template.type === 'RACE'
         ? { race: { competitors: generateCompetitors(rng.child('race'), rules) } }
         : {};

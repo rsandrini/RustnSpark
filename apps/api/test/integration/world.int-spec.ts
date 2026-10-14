@@ -96,10 +96,10 @@ describe('world map API (S10.5)', () => {
     expect(response.status).toBe(200);
     const body = response.body as WorldResponseBody;
 
-    expect(body.locations).toHaveLength(12);
+    expect(body.locations).toHaveLength(15);
     expect(body.routes.length).toBeGreaterThanOrEqual(10);
     const ids = new Set(body.locations.map((location) => location.id));
-    expect(ids.size).toBe(12);
+    expect(ids.size).toBe(15);
     expect(ids.has('ceres')).toBe(true);
     expect(ids.has('cair')).toBe(true);
 

@@ -114,8 +114,8 @@ describe('database seed (S3.4)', () => {
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
     expect(counts.gameConfig).toBe(179);
-    expect(counts.locations).toBe(12);
-    expect(counts.routes).toBe(17);
+    expect(counts.locations).toBe(15);
+    expect(counts.routes).toBe(20);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
@@ -188,7 +188,8 @@ describe('database seed (S3.4)', () => {
       }
     }
 
-    expect(visited.size).toBe(12);
+    // The settled world (12) and the three far places beyond it, all one connected graph.
+    expect(visited.size).toBe(15);
   });
 
   it('has no duplicate routes between the same unordered node pair', async () => {
@@ -201,13 +202,22 @@ describe('database seed (S3.4)', () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
-    expect(seen.size).toBe(17);
+    expect(seen.size).toBe(20);
   });
 
   it('produces route distances in the 400–1,200 range', async () => {
     await seed(prisma);
 
-    const routes = await prisma.route.findMany({ select: { distance: true } });
+    // The settled world only: the far zones are long on purpose (2,000+).
+    const far = await prisma.location.findMany({
+      where: { type: 'deep_field' },
+      select: { id: true },
+    });
+    const farIds = far.map((place) => place.id);
+    const routes = await prisma.route.findMany({
+      where: { nodeAId: { notIn: farIds }, nodeBId: { notIn: farIds } },
+      select: { distance: true },
+    });
     for (const route of routes) {
       expect(route.distance).toBeGreaterThanOrEqual(400);
       expect(route.distance).toBeLessThanOrEqual(1200);
@@ -278,7 +288,8 @@ describe('database seed (S3.4)', () => {
       const description = row.description as { en: string; 'pt-BR': string };
       expect(description['pt-BR']).not.toBe(description.en);
       expect(description['pt-BR']).not.toMatch(new RegExp(`\\b${row.type}\\b`));
-      expect(description['pt-BR']).toMatch(/no setor\.$/);
+      // The generated places end their text the same way; the hand-written far places do not.
+      if (row.type !== 'deep_field') expect(description['pt-BR']).toMatch(/no setor\.$/);
     }
   });
 

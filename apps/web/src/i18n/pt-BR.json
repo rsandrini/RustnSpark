@@ -804,7 +804,8 @@
         "minMobility": "Velocidade de entrada da corrida",
         "minMobilityHelp": "Mobilidade mínima para entrar numa corrida (padrão: a configuração de Corrida).",
         "destinationTypes": "Termina nestes tipos de lugar",
-        "destinationIds": "Termina nestes lugares"
+        "destinationIds": "Termina nestes lugares",
+        "materialIds": "Uma oferta de mineração aqui escava só estes materiais"
       }
     },
     "art": {

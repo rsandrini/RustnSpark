@@ -26,6 +26,7 @@ import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import {
   isMiningEligible,
   legForRoute,
+  miningMaterialsFor,
   type FillerLocation,
   type FillerWorld,
 } from './generator/template.filler.js';
@@ -213,7 +214,13 @@ export class MiningJobService {
     };
 
     const seed = `mining|${playerId}|${locationId}|${now.getTime()}`;
-    const materialId = createRng(seed).child('mining-pick').pick(materials).id;
+    // A far field can hold only some ores (its mining templates pin them): dig from those.
+    const minable = miningMaterialsFor(
+      location,
+      await this.prisma.missionTemplate.findMany({ where: { type: 'MINING', active: true } }),
+      materials,
+    );
+    const materialId = createRng(seed).child('mining-pick').pick(minable).id;
 
     const player = await this.prisma.player.findUniqueOrThrow({
       where: { id: playerId },

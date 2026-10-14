@@ -3,6 +3,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
   fillMission,
+  miningMaterialsFor,
   isMiningEligible,
   MissionGenerationError,
   type FillMissionInput,
@@ -198,6 +199,57 @@ describe('S6.2 — template filler (pure generation)', () => {
     // With another template available, the unplayable one is simply skipped.
     const draft = fill('dest|1|v0', LOC_ALPHA, [nowhere, DELIVERY_LUNA]);
     expect(draft.templateId).toBe('delivery_luna');
+  });
+
+  it('a mining template can pin the materials it names, and a mining job there digs only those', () => {
+    const deep: FillerLocation = {
+      id: 'deep',
+      type: 'deep_field',
+      zone: 4,
+      factionId: 'explorers',
+    };
+    const pinned: FillerTemplate = {
+      id: 'mining_deep',
+      type: 'MINING',
+      factionId: 'explorers',
+      active: true,
+      requirements: { originTypes: ['deep_field'], materialIds: ['copper'] },
+    };
+    const route: FillerRoute = {
+      id: 'deep-gamma',
+      nodeAId: 'deep',
+      nodeBId: 'gamma',
+      distance: 2000,
+      danger: 6,
+    };
+    const input = (seed: string): FillMissionInput => ({
+      seed,
+      origin: deep,
+      world: {
+        locations: [LOC_GAMMA, deep],
+        routes: [route],
+        routeEnvironments: [{ routeId: 'deep-gamma', environmentId: 'open', order: 0 }],
+        environments: ENVELOPES,
+        templates: [pinned],
+        materials: MATERIALS,
+      },
+      rules,
+      now: NOW,
+    });
+    for (let epoch = 0; epoch < 10; epoch += 1) {
+      const cargo = fillMission(input(`pin|${epoch}`)).cargo as { materialId: string };
+      expect(cargo.materialId).toBe('copper');
+    }
+    // The independent mining job asks the same question of the templates of its place.
+    expect(miningMaterialsFor(deep, [pinned], MATERIALS).map((m) => m.id)).toEqual(['copper']);
+    // Another place, or a template with no pin, keeps every ore.
+    expect(miningMaterialsFor(LOC_GAMMA, [pinned], MATERIALS)).toHaveLength(MATERIALS.length);
+    const open: FillerTemplate = {
+      ...pinned,
+      id: 'open',
+      requirements: { originTypes: ['deep_field'] },
+    };
+    expect(miningMaterialsFor(deep, [pinned, open], MATERIALS)).toHaveLength(MATERIALS.length);
   });
 
   it('excludes inactive templates', () => {

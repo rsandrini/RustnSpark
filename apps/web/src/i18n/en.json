@@ -804,7 +804,8 @@
         "minMobility": "Race entry speed",
         "minMobilityHelp": "Minimum mobility to enter a race (default: the Race config).",
         "destinationTypes": "Ends at these kinds of places",
-        "destinationIds": "Ends at these places"
+        "destinationIds": "Ends at these places",
+        "materialIds": "A mining offer here digs only these materials"
       }
     },
     "art": {

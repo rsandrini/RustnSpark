@@ -35,7 +35,9 @@ function AdvancedJson({ value, onChange }: StructuredEditorProps) {
         onChange={(event) => {
           setText(event.target.value);
           try {
-            onChange(event.target.value.trim() === '' ? null : (JSON.parse(event.target.value) as unknown));
+            onChange(
+              event.target.value.trim() === '' ? null : (JSON.parse(event.target.value) as unknown),
+            );
             setInvalid(false);
           } catch {
             setInvalid(true);
@@ -47,10 +49,7 @@ function AdvancedJson({ value, onChange }: StructuredEditorProps) {
   );
 }
 
-function withAdvanced(
-  props: StructuredEditorProps,
-  body: React.ReactNode,
-): React.ReactElement {
+function withAdvanced(props: StructuredEditorProps, body: React.ReactNode): React.ReactElement {
   return (
     <div className="structured-editor">
       {body}
@@ -228,10 +227,16 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
     queryKey: ['tuning', 'entities', 'factions'],
     queryFn: () => tuningApi.listEntities('factions'),
   });
+  const materials = useQuery<Record<string, unknown>[]>({
+    queryKey: ['tuning', 'entities', 'materials'],
+    queryFn: () => tuningApi.listEntities('materials'),
+  });
   const types = [...new Set((locations.data ?? []).map((row) => String(row.type)))].sort();
   const factionOptions = (factions.data ?? []).map((row) => ({
     id: String(row.id),
-    label: pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) || String(row.id),
+    label:
+      pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) ||
+      String(row.id),
   }));
   const locationOptions = (locations.data ?? []).map((row) => ({
     id: String(row.id),
@@ -259,7 +264,9 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
       <ChoiceGroup
         legend={t('tuning.structured.requirements.originFactions')}
         options={factionOptions}
-        chosen={Array.isArray(current.originFactions) ? (current.originFactions as string[]) : undefined}
+        chosen={
+          Array.isArray(current.originFactions) ? (current.originFactions as string[]) : undefined
+        }
         onChange={(next) => set({ originFactions: next })}
         testPrefix="req-faction"
       />
@@ -267,7 +274,9 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
         legend={t('tuning.structured.requirements.destinationTypes')}
         options={types.map((id) => ({ id, label: id }))}
         chosen={
-          Array.isArray(current.destinationTypes) ? (current.destinationTypes as string[]) : undefined
+          Array.isArray(current.destinationTypes)
+            ? (current.destinationTypes as string[])
+            : undefined
         }
         onChange={(next) => set({ destinationTypes: next })}
         testPrefix="req-dest-type"
@@ -281,6 +290,24 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
         onChange={(next) => set({ destinationIds: next })}
         testPrefix="req-dest-location"
       />
+      <ChoiceGroup
+        legend={t('tuning.structured.requirements.materialIds')}
+        options={(materials.data ?? [])
+          .filter((row) => row.fixedPrice !== true)
+          .map((row) => ({
+            id: String(row.id),
+            label:
+              row.displayName === undefined || row.displayName === null
+                ? String(row.id)
+                : pickLocalized(
+                    row.displayName as { en: string; 'pt-BR': string },
+                    i18n.language,
+                  ) || String(row.id),
+          }))}
+        chosen={Array.isArray(current.materialIds) ? (current.materialIds as string[]) : undefined}
+        onChange={(next) => set({ materialIds: next })}
+        testPrefix="req-material"
+      />
       <div className="structured-numbers">
         {NUMBER_HINTS.map((key) => (
           <label key={key} title={t(`tuning.structured.requirements.${key}Help`)}>
@@ -291,7 +318,7 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
               step="any"
               data-testid={`req-${key}`}
               placeholder={t('tuning.structured.default')}
-              value={typeof current[key] === 'number' ? (current[key]) : ''}
+              value={typeof current[key] === 'number' ? current[key] : ''}
               onChange={(event) =>
                 set({ [key]: event.target.value === '' ? undefined : Number(event.target.value) })
               }
@@ -378,7 +405,8 @@ export function TiersEditor(props: StructuredEditorProps) {
   const rows: TierRow[] = Array.isArray(props.value)
     ? (props.value as TierRow[]).filter((row) => typeof row?.tier === 'string')
     : [];
-  const total = Math.round(rows.reduce((sum, row) => sum + (row.chance || 0), 0) * PERCENT * 100) / 100;
+  const total =
+    Math.round(rows.reduce((sum, row) => sum + (row.chance || 0), 0) * PERCENT * 100) / 100;
   const update = (next: TierRow[]) => props.onChange(next);
   return withAdvanced(
     props,
@@ -422,7 +450,9 @@ export function TiersEditor(props: StructuredEditorProps) {
       ))}
       <button
         type="button"
-        onClick={() => update([...rows, { tier: TIERS[Math.min(rows.length, TIERS.length - 1)]!, chance: 0 }])}
+        onClick={() =>
+          update([...rows, { tier: TIERS[Math.min(rows.length, TIERS.length - 1)]!, chance: 0 }])
+        }
       >
         {t('tuning.structured.addTier')}
       </button>
@@ -462,7 +492,10 @@ export function RelationsEditor(props: StructuredEditorProps) {
           const id = String(row.id);
           return (
             <tr key={id}>
-              <td>{pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) || id}</td>
+              <td>
+                {pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) ||
+                  id}
+              </td>
               <td>
                 <select
                   aria-label={`${t('tuning.relation')} ${id}`}
@@ -485,7 +518,10 @@ export function RelationsEditor(props: StructuredEditorProps) {
 }
 
 /** Which structured editor (if any) a json field gets, by `entity.field`. */
-export const STRUCTURED_EDITORS: Record<string, (props: StructuredEditorProps) => React.ReactElement> = {
+export const STRUCTURED_EDITORS: Record<
+  string,
+  (props: StructuredEditorProps) => React.ReactElement
+> = {
   'locations.services': ServicesEditor,
   'parts.specialProp': SpecialPropEditor,
   'mission-templates.requirements': MissionRequirementsEditor,
