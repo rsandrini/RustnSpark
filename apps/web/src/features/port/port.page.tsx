@@ -41,6 +41,7 @@ import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
+import { BridgeResizePanel } from './bridge-resize-panel';
 import type { PartInfoData } from '../parts/part-detail';
 
 const PORT_TABS = [
@@ -1047,6 +1048,16 @@ export function PortPage({
               <li>{t('port.upgradeRule3')}</li>
             </ol>
           </div>
+          <BridgeResizePanel
+            parts={upgradeCandidates}
+            wallet={wallet}
+            money={money}
+            onChanged={(message) => {
+              setActionError(null);
+              setNotice(message);
+              afterTrade();
+            }}
+          />
           {(() => {
             const quotes = upgradeQuotesQuery.data;
             // Why a part is NOT on the list: said plainly, with the way out.

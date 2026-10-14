@@ -110,7 +110,8 @@
       "apply": "Apply format",
       "cancel": "Cancel",
       "droppedWarning": "{{count}} placed part outside this format will return to your available parts.",
-      "droppedWarning_other": "{{count}} placed parts outside this format will return to your available parts."
+      "droppedWarning_other": "{{count}} placed parts outside this format will return to your available parts.",
+      "required": "You changed your bridge: pick a ship format for it."
     },
     "connectors": {
       "disconnectedCount": "{{count}} part disconnected",
@@ -1026,7 +1027,33 @@
     "upgradeBlockedTop_other": "{{count}} parts are already at the top rarity.",
     "upgradeBlockedNoTier": "{{count}} part has no next tier to upgrade to.",
     "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to.",
-    "upgradePriceCredits": "Credits: {{cost}} (you have {{have}})"
+    "upgradePriceCredits": "Credits: {{cost}} (you have {{have}})",
+    "bridgeResize": {
+      "title": "Bridge size",
+      "help": "A bigger bridge unlocks bigger ship formats. Expand turns a 1×1 bridge into the 2×2 one rarity level below it (you pay the full price; the old bridge is consumed). Shrink sells a 2×2 bridge and gives you the 1×1 of the same rarity.",
+      "expand": "Expand",
+      "shrink": "Shrink",
+      "expandDone": "Expanded: {{name}} is in your inventory. Install it in the hangar.",
+      "shrinkDone": "Shrunk: {{name}} is in your inventory. Install it in the hangar.",
+      "expandConfirmTitle": "Expand the bridge?",
+      "shrinkConfirmTitle": "Shrink the bridge?",
+      "expandConfirmBody": "{{name}} will be consumed and you get {{target}}.",
+      "shrinkConfirmBody": "{{name}} will be sold and you get {{target}}.",
+      "noBridgeWarning": "The new bridge goes to your inventory and your ship has no bridge until you install it. You will then pick a ship format.",
+      "confirm": "Confirm",
+      "reason": {
+        "NOT_A_BRIDGE": "Not a bridge.",
+        "NOT_EXPANDABLE": "Already a big bridge.",
+        "NOT_SHRINKABLE": "Not a big bridge.",
+        "RARITY_TOO_LOW": "Upgrade this bridge first: there is no 2×2 bridge below its rarity.",
+        "NO_TARGET": "No bridge of the target size exists for this rarity yet.",
+        "TOO_DAMAGED_TO_SELL": "Too damaged to sell: repair it first.",
+        "FORMAT_REQUIRES_BRIDGE": "Your ship format needs a big bridge: switch to a smaller format first."
+      },
+      "expandRow": "{{name}} → {{target}} · costs {{cost}}",
+      "shrinkRow": "{{name}} → {{target}} · you get {{credit}}, the new bridge costs {{cost}}",
+      "blockedRow": "{{name}} · {{reason}}"
+    }
   },
   "inventory": {
     "title": "Inventory",

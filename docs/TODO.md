@@ -43,7 +43,7 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
   first mission) so the first minutes work. It can link to the wiki for details.
 
-- [ ] **BUG: Auto layout does not work.** Reproduce it in the Hangar (what happens: an error, parts
+- [x] **BUG: Auto layout does not work.** Reproduce it in the Hangar (what happens: an error, parts
   left out, or a layout that is not ready to fly?) and fix it. *Possible link to check first:* the
   new flight rules (a disconnected part, `PART_DISCONNECTED`, and a connector against a part it does
   not fit, `PORT_INCORRECT`) were added on 2026-10-12, and auto layout only places parts so that
@@ -142,6 +142,12 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   multi-cell). *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`), the two gate methods, the
   contract + admin schema, a migration, the market listing generator, the Upgrade tab (Expand / Shrink), and
   the hangar's mandatory format picker.
+  *Built 2026-10-14:* the `minBridgeSize` gate, Expand / Shrink (`bridge-resize.service.ts`,
+  `POST /v1/parts/:id/expand|shrink[/quote]`), the Upgrade-tab panel, the 2×2 bridge seed family, and
+  the hangar's format picker after a bridge change (remembered per ship in the browser, offers only
+  the new bridge's own level). *Still open:* big format grids with a 2×2 footprint, EPIC / LEGENDARY
+  2×2 (a LEGENDARY 1×1 cannot expand yet), market listings excluding bridges, and the server-side
+  rule that a ship without a bridge cannot be dispatched.
 
 - [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
   charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and

@@ -1035,6 +1035,47 @@ export const PartUpgradeResponseSchema = z.object({
 });
 export type PartUpgradeResponse = z.infer<typeof PartUpgradeResponseSchema>;
 
+/** Changing a bridge's size (Expand 1x1 -> 2x2 one rarity below, Shrink 2x2 -> 1x1 same rarity). */
+export const BridgeResizeQuoteResponseSchema = z.object({
+  partInstanceId: z.string(),
+  action: z.enum(['expand', 'shrink']),
+  eligible: z.boolean(),
+  reason: z
+    .enum([
+      'NOT_A_BRIDGE',
+      'NOT_EXPANDABLE',
+      'NOT_SHRINKABLE',
+      'RARITY_TOO_LOW',
+      'NO_TARGET',
+      'TOO_DAMAGED_TO_SELL',
+      'FORMAT_REQUIRES_BRIDGE',
+    ])
+    .optional(),
+  targetPartType: z.string().optional(),
+  targetDisplayName: LocalizedTextSchema.optional(),
+  targetRarity: z.string().optional(),
+  /** Expand: the full price of the target bridge. Shrink: the price of the new, smaller bridge. */
+  cost: z.number().optional(),
+  /** Shrink only: what the port pays for the bridge handed in. */
+  credit: z.number().optional(),
+});
+export type BridgeResizeQuoteResponse = z.infer<typeof BridgeResizeQuoteResponseSchema>;
+
+export const BridgeResizeResponseSchema = z.object({
+  action: z.enum(['expand', 'shrink']),
+  removedPartInstanceId: z.string(),
+  /** The new bridge, loose in the inventory: the pilot installs it. */
+  partInstanceId: z.string(),
+  partType: z.string(),
+  displayName: LocalizedTextSchema,
+  rarity: z.string(),
+  condition: z.number(),
+  /** Money paid (negative when the shrink paid out). */
+  cost: z.number(),
+  credits: z.number(),
+});
+export type BridgeResizeResponse = z.infer<typeof BridgeResizeResponseSchema>;
+
 export const ScavengeInfoSchema = z.object({
   locationId: z.string(),
   fieldType: z.enum(['common', 'mission', 'pirate']),

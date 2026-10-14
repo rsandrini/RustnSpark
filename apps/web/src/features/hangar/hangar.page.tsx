@@ -33,6 +33,7 @@ import {
 } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
 import { EngineTuning } from './engine-tuning';
+import { formatsForBridge } from './bridge-format';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
@@ -304,6 +305,45 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
   const [formatPreview, setFormatPreview] = useState<ShipFormat | null>(null);
+  // Whenever the installed bridge changes (a new size or rarity, so other formats open or close),
+  // the pilot has to pick a format again, from the new bridge's own level. The last bridge the
+  // pilot picked a format for is remembered per ship in this browser.
+  const [formatRequired, setFormatRequired] = useState(false);
+  const installedBridge = useMemo(
+    () =>
+      parts.find(
+        (item) =>
+          item.location === 'INSTALLED' &&
+          item.shipId === ship?.id &&
+          item.catalog.partClass === 'BRIDGE',
+      ),
+    [parts, ship?.id],
+  );
+  const bridgeKey = installedBridge?.partType ?? null;
+  const bridgeStorageKey = ship === undefined ? null : `rs.hangar.bridge.${ship.id}`;
+  useEffect(() => {
+    if (bridgeStorageKey === null || bridgeKey === null || !inventoryQuery.isSuccess) return;
+    try {
+      const remembered = window.localStorage.getItem(bridgeStorageKey);
+      if (remembered === null) {
+        window.localStorage.setItem(bridgeStorageKey, bridgeKey);
+      } else if (remembered !== bridgeKey) {
+        setFormatRequired(true);
+        setFormatPickerOpen(true);
+      }
+    } catch {
+      // Storage unavailable: the picker is then only a button, as before.
+    }
+  }, [bridgeStorageKey, bridgeKey, inventoryQuery.isSuccess]);
+  const pickableFormats = useMemo(() => {
+    const unlocked = formatsQuery.data ?? [];
+    if (!formatRequired || installedBridge === undefined) return unlocked;
+    return formatsForBridge(unlocked, {
+      rarity: installedBridge.rarity,
+      w: installedBridge.catalog.w,
+      h: installedBridge.catalog.h,
+    });
+  }, [formatsQuery.data, formatRequired, installedBridge]);
   const setFormat = useMutation({
     mutationFn: (formatId: string) =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/format`, { formatId }),
@@ -315,6 +355,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setPendingPartId(null);
       setFormatPickerOpen(false);
       setFormatPreview(null);
+      setFormatRequired(false);
+      try {
+        if (bridgeStorageKey !== null && bridgeKey !== null) {
+          window.localStorage.setItem(bridgeStorageKey, bridgeKey);
+        }
+      } catch {
+        // Storage unavailable: nothing to remember.
+      }
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
@@ -434,7 +482,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // part: if the turned footprint would overlap a neighbour or leave the format, say so.
   const rotatePart = (partInstanceId: string) => {
     if (modifyBlocked) return;
-    const existing = effectiveLayout.find((placement) => placement.partInstanceId === partInstanceId);
+    const existing = effectiveLayout.find(
+      (placement) => placement.partInstanceId === partInstanceId,
+    );
     if (existing === undefined || catalogById.get(partInstanceId) === undefined) return;
     // A quarter turn first; if a long part has no room to swing sideways here, turn it twice
     // instead (a half turn keeps its footprint, so it always fits where it already sits).
@@ -498,9 +548,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     setSelectedId(partInstanceId);
     setLayout(
       effectiveLayout.map((placement) =>
-        placement.partInstanceId === partInstanceId
-          ? { ...placement, rot: target }
-          : placement,
+        placement.partInstanceId === partInstanceId ? { ...placement, rot: target } : placement,
       ),
     );
     setSaved(false);
@@ -790,9 +838,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {t('hangar.format.button')}
                 </button>
               </div>
+              {formatPickerOpen && formatRequired && (
+                <p className="sub" role="status" data-testid="format-required">
+                  {t('hangar.format.required')}
+                </p>
+              )}
               {formatPickerOpen && (
                 <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
-                  {(formatsQuery.data ?? []).map((format) => (
+                  {pickableFormats.map((format) => (
                     <li key={format.id}>
                       <button
                         type="button"

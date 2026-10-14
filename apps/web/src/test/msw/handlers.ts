@@ -16,6 +16,7 @@ import type {
   MaterialsResponse,
   MissionOffer,
   Placement,
+  BridgeResizeQuoteResponse,
   PartUpgradeQuoteResponse,
   PartUpgradeResponse,
   PlayerProfileResponse,
@@ -1051,6 +1052,28 @@ export const handlers = [
       nextCatalog: tier.nextCatalog,
     });
   }),
+  // Bridge size changes: the fixture's bridge is COMMON, so Expand is blocked (no rarity below);
+  // Shrink answers for a 2x2 only.
+  http.post('/v1/parts/:id/expand/quote', ({ params }) =>
+    ok<BridgeResizeQuoteResponse>({
+      partInstanceId: String(params.id),
+      action: 'expand',
+      eligible: false,
+      reason: 'RARITY_TOO_LOW',
+    }),
+  ),
+  http.post('/v1/parts/:id/shrink/quote', ({ params }) =>
+    ok<BridgeResizeQuoteResponse>({
+      partInstanceId: String(params.id),
+      action: 'shrink',
+      eligible: true,
+      targetPartType: 'bridge',
+      targetDisplayName: { en: 'Bridge', 'pt-BR': 'Ponte de Comando' },
+      targetRarity: 'COMMON',
+      cost: 0,
+      credit: 6000,
+    }),
+  ),
   http.post('/v1/parts/:id/upgrade', ({ params, request }) => {
     const rejected = missingKey(request);
     if (rejected !== null) return rejected;

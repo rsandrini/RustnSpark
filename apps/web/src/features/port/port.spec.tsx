@@ -819,6 +819,16 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
   });
 
+  it('lists the bridge with what a shrink pays and costs', async () => {
+    await renderPort();
+    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    const panel = await screen.findByTestId('bridge-resize');
+    await waitFor(() =>
+      expect(panel).toHaveTextContent('you get 6,000 ¢, the new bridge costs 0 ¢'),
+    );
+    expect(within(panel).getByRole('button', { name: 'Shrink' })).toBeEnabled();
+  });
+
   it('the upgrade card says what it asks for besides money, and blocks while something is missing', async () => {
     server.use(
       http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>

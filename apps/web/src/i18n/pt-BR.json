@@ -110,7 +110,8 @@
       "apply": "Aplicar formato",
       "cancel": "Cancelar",
       "droppedWarning": "{{count}} parte instalada fora deste formato voltará para suas peças disponíveis.",
-      "droppedWarning_other": "{{count}} partes instaladas fora deste formato voltarão para suas peças disponíveis."
+      "droppedWarning_other": "{{count}} partes instaladas fora deste formato voltarão para suas peças disponíveis.",
+      "required": "Você trocou a ponte: escolha um formato de nave para ela."
     },
     "connectors": {
       "disconnectedCount": "{{count}} peça desconectada",
@@ -1026,7 +1027,33 @@
     "upgradeBlockedTop_other": "{{count}} peças já estão na raridade máxima.",
     "upgradeBlockedNoTier": "{{count}} peça não tem próxima raridade para evoluir.",
     "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir.",
-    "upgradePriceCredits": "Créditos: {{cost}} (você tem {{have}})"
+    "upgradePriceCredits": "Créditos: {{cost}} (você tem {{have}})",
+    "bridgeResize": {
+      "title": "Tamanho da ponte",
+      "help": "Uma ponte maior libera formatos de nave maiores. Expandir transforma uma ponte 1×1 na 2×2 de uma raridade abaixo (você paga o preço cheio; a ponte antiga é consumida). Reduzir vende uma ponte 2×2 e entrega a 1×1 da mesma raridade.",
+      "expand": "Expandir",
+      "shrink": "Reduzir",
+      "expandDone": "Expandida: {{name}} está no seu inventário. Instale no hangar.",
+      "shrinkDone": "Reduzida: {{name}} está no seu inventário. Instale no hangar.",
+      "expandConfirmTitle": "Expandir a ponte?",
+      "shrinkConfirmTitle": "Reduzir a ponte?",
+      "expandConfirmBody": "{{name}} será consumida e você recebe {{target}}.",
+      "shrinkConfirmBody": "{{name}} será vendida e você recebe {{target}}.",
+      "noBridgeWarning": "A nova ponte vai para o inventário e sua nave fica sem ponte até você instalá-la. Depois você escolhe um formato de nave.",
+      "confirm": "Confirmar",
+      "reason": {
+        "NOT_A_BRIDGE": "Não é uma ponte.",
+        "NOT_EXPANDABLE": "Já é uma ponte grande.",
+        "NOT_SHRINKABLE": "Não é uma ponte grande.",
+        "RARITY_TOO_LOW": "Evolua esta ponte primeiro: não existe ponte 2×2 abaixo da raridade dela.",
+        "NO_TARGET": "Ainda não existe ponte do tamanho de destino para esta raridade.",
+        "TOO_DAMAGED_TO_SELL": "Danificada demais para vender: repare primeiro.",
+        "FORMAT_REQUIRES_BRIDGE": "O formato da sua nave exige uma ponte grande: troque para um formato menor primeiro."
+      },
+      "expandRow": "{{name}} → {{target}} · custa {{cost}}",
+      "shrinkRow": "{{name}} → {{target}} · você recebe {{credit}}, a nova ponte custa {{cost}}",
+      "blockedRow": "{{name}} · {{reason}}"
+    }
   },
   "inventory": {
     "title": "Inventário",
