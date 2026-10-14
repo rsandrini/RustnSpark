@@ -11,10 +11,27 @@ import type { ShipSheet } from '../../api/generated';
 // convention hangar.spec.tsx already uses for its own compare tests — the "before" side of the
 // comparison in these tests always comes from that real default, never a value we invent here.
 const defaultSheet: ShipSheet = {
-  pot: 25, pdf: 0, bli: 12, esc: 0, sen: 2, crg: 10, min: 0, hp: 40, mass: 24,
-  energyCont: 8, energyCombat: 0, batCharge: 4, batOutput: 10, batInput: 8,
-  fuelCap: 40, fuelUse: 1, structureUsed: 18, structureBudget: 40,
-  autonomy: 40, mob: 2, condition: 1,
+  pot: 25,
+  pdf: 0,
+  bli: 12,
+  esc: 0,
+  sen: 2,
+  crg: 10,
+  min: 0,
+  hp: 40,
+  mass: 24,
+  energyCont: 8,
+  energyCombat: 0,
+  batCharge: 4,
+  batOutput: 10,
+  batInput: 8,
+  fuelCap: 40,
+  fuelUse: 1,
+  structureUsed: 18,
+  structureBudget: 40,
+  autonomy: 40,
+  mob: 2,
+  condition: 1,
 };
 
 const onboarded = () =>
@@ -67,7 +84,10 @@ describe('market panel: descriptions and filters', () => {
     // The description/"why you need it" prose is a hover tag next to the name now, not
     // always-on text (owner request); it's still there, just behind a title attribute.
     const whyTag = within(dialog).getByRole('button', { name: /Why you need it: Plated Hull/ });
-    expect(whyTag).toHaveAttribute('title', expect.stringContaining('what it does, why you need it'));
+    expect(whyTag).toHaveAttribute(
+      'title',
+      expect.stringContaining('what it does, why you need it'),
+    );
     // The stats are a real table.
     expect(within(dialog).getByRole('table')).toBeInTheDocument();
   });
@@ -78,7 +98,9 @@ describe('market panel: descriptions and filters', () => {
     const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     const total = list().length;
 
-    fireEvent.click(screen.getByRole('button', { name: 'Defense' }));
+    // Defense is split by kind: the Plated Hull sits under Hull, not under a Defense chip.
+    expect(screen.queryByRole('button', { name: 'Defense' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Hull' }));
     expect(list()).toHaveLength(1);
     expect(within(panel()).queryByText('Cargo Rack')).toBeNull();
 
@@ -93,6 +115,29 @@ describe('market panel: descriptions and filters', () => {
     fireEvent.change(screen.getByLabelText('Search parts'), { target: { value: 'zzz' } });
     expect(list()).toHaveLength(0);
     expect(screen.getByText('No parts match these filters.')).toBeInTheDocument();
+  });
+
+  it('narrows the list by rarity and by size', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
+    const total = list().length;
+
+    const rarity = screen.getByLabelText('Rarity');
+    const options = within(rarity)
+      .getAllByRole('option')
+      .map((option) => option.getAttribute('value'));
+    const picked = options.find((value) => value !== 'all');
+    fireEvent.change(rarity, { target: { value: picked } });
+    expect(list().length).toBeGreaterThan(0);
+    expect(list().length).toBeLessThanOrEqual(total);
+
+    fireEvent.change(rarity, { target: { value: 'all' } });
+    const size = screen.getByLabelText('Size');
+    fireEvent.change(size, { target: { value: '9x9' } });
+    expect(list()).toHaveLength(0);
+    fireEvent.change(size, { target: { value: 'all' } });
+    expect(list()).toHaveLength(total);
   });
 
   it('shows the pilot balance in the Hangar store', async () => {

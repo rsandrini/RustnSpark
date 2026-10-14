@@ -338,6 +338,16 @@
       "line": "Carregado: {{parts}} de {{slots}} espaços de peças sobressalentes. Seus bens (minério, sucata) ficam em terra e não ocupam espaço.",
       "partsOver": "Peças sobressalentes demais para partir: venda ou deixe algumas.",
       "hint": "Peças sobressalentes viajam de graça nos espaços da ponte (um por peça, qualquer tamanho ou raridade). Só a carga que uma missão embarca ocupa espaço de carga."
+    },
+    "partGroups": {
+      "HULL": "Casco",
+      "ARMOR": "Blindagem",
+      "SHIELD": "Escudo",
+      "ENGINE_CHEM": "Motor químico",
+      "ENGINE_ION": "Motor iônico",
+      "WEAPON_BALLISTIC": "Balística",
+      "WEAPON_LASER": "Laser",
+      "WEAPON_MISSILE": "Míssil"
     }
   },
   "home": {
@@ -1699,7 +1709,11 @@
     "sortCondition": "Melhor condição",
     "noMatches": "Nenhuma peça combina com esses filtros.",
     "used": "Usada",
-    "youPay": "Você paga"
+    "youPay": "Você paga",
+    "rarity": "Raridade",
+    "rarityAll": "Qualquer raridade",
+    "size": "Tamanho",
+    "sizeAll": "Qualquer tamanho"
   },
   "ship": {
     "empty": {

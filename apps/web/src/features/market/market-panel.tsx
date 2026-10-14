@@ -11,6 +11,7 @@ import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
+import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
 
 interface ConfirmBuy {
   name: string;
@@ -63,6 +64,8 @@ export function MarketPanel({
   const [search, setSearch] = useState('');
   const [condition, setCondition] = useState<Condition>('all');
   const [sort, setSort] = useState<SortKey>('name');
+  const [rarity, setRarity] = useState<string>('all');
+  const [size, setSize] = useState<string>('all');
 
   useEffect(() => {
     setPartClass(presetClass);
@@ -118,8 +121,33 @@ export function MarketPanel({
     () => (marketQuery.data?.listings ?? []).filter((l) => l.catalog.partClass !== 'BRIDGE'),
     [marketQuery.data],
   );
+  // The chips are the shop groups (a class split into its kinds where it holds several), in
+  // class order; rarity and size narrow the list further.
   const classes = useMemo(
-    () => Array.from(new Set(listings.map((listing) => listing.catalog.partClass))).sort(),
+    () =>
+      Array.from(
+        new Set(
+          listings.map((listing) =>
+            partGroupOf(listing.catalog.partType, listing.catalog.partClass),
+          ),
+        ),
+      ).sort((a, b) => classOfGroup(a).localeCompare(classOfGroup(b)) || a.localeCompare(b)),
+    [listings],
+  );
+  const sizeOf = (listing: MarketListing) => `${listing.catalog.w}x${listing.catalog.h}`;
+  const rarities = useMemo(
+    () => Array.from(new Set(listings.map((listing) => listing.rarity))),
+    [listings],
+  );
+  const sizes = useMemo(
+    () =>
+      Array.from(
+        new Set(listings.map((listing) => `${listing.catalog.w}x${listing.catalog.h}`)),
+      ).sort((a, b) => {
+        const area = (value: string) =>
+          value.split('x').reduce((product, side) => product * Number(side), 1);
+        return area(a) - area(b) || a.localeCompare(b);
+      }),
     [listings],
   );
 
@@ -127,7 +155,11 @@ export function MarketPanel({
     const needle = search.trim().toLowerCase();
     const nameOf = (listing: MarketListing) => pickLocalized(listing.displayName, i18n.language);
     const filtered = listings.filter((listing) => {
-      if (partClass !== null && listing.catalog.partClass !== partClass) return false;
+      if (!matchesPartGroup(listing.catalog.partType, listing.catalog.partClass, partClass)) {
+        return false;
+      }
+      if (rarity !== 'all' && listing.rarity !== rarity) return false;
+      if (size !== 'all' && sizeOf(listing) !== size) return false;
       if (condition === 'new' && listing.kind !== 'catalog') return false;
       if (condition === 'used' && listing.kind !== 'used') return false;
       if (needle === '') return true;
@@ -141,7 +173,7 @@ export function MarketPanel({
       condition: (a, b) => b.condition - a.condition,
     };
     return [...filtered].sort(compare[sort]);
-  }, [listings, partClass, condition, search, sort, i18n.language]);
+  }, [listings, partClass, rarity, size, condition, search, sort, i18n.language]);
 
   const insufficient = confirm !== null && wallet < confirm.price;
 
@@ -197,7 +229,7 @@ export function MarketPanel({
               aria-pressed={partClass === cls}
               onClick={() => setPartClass(cls)}
             >
-              {t(`hangar.partClasses.${cls}`)}
+              {t(`hangar.partGroups.${cls}`, { defaultValue: t(`hangar.partClasses.${cls}`) })}
             </button>
           ))}
         </div>
@@ -210,6 +242,32 @@ export function MarketPanel({
             aria-label={t('market.search')}
             onChange={(event) => setSearch(event.target.value)}
           />
+          <select
+            className="input"
+            value={rarity}
+            aria-label={t('market.rarity')}
+            onChange={(event) => setRarity(event.target.value)}
+          >
+            <option value="all">{t('market.rarityAll')}</option>
+            {rarities.map((value) => (
+              <option key={value} value={value}>
+                {t(`parts.rarities.${value}`, { defaultValue: value })}
+              </option>
+            ))}
+          </select>
+          <select
+            className="input"
+            value={size}
+            aria-label={t('market.size')}
+            onChange={(event) => setSize(event.target.value)}
+          >
+            <option value="all">{t('market.sizeAll')}</option>
+            {sizes.map((value) => (
+              <option key={value} value={value}>
+                {value.replace('x', '×')}
+              </option>
+            ))}
+          </select>
           <select
             className="input"
             value={condition}

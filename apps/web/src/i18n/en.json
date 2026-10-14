@@ -338,6 +338,16 @@
       "line": "Carried: {{parts}} of {{slots}} spare-part slots. Your goods (ore, scrap) are kept ashore and take no space.",
       "partsOver": "Too many spare parts to depart: sell or leave some.",
       "hint": "Spare parts ride free in the bridge slots (one slot per part, any size or rarity). Only the cargo a mission loads takes cargo space."
+    },
+    "partGroups": {
+      "HULL": "Hull",
+      "ARMOR": "Armor",
+      "SHIELD": "Shield",
+      "ENGINE_CHEM": "Chemical engine",
+      "ENGINE_ION": "Ion engine",
+      "WEAPON_BALLISTIC": "Ballistic",
+      "WEAPON_LASER": "Laser",
+      "WEAPON_MISSILE": "Missile"
     }
   },
   "home": {
@@ -1699,7 +1709,11 @@
     "sortCondition": "Best condition",
     "noMatches": "No parts match these filters.",
     "used": "Used",
-    "youPay": "You pay"
+    "youPay": "You pay",
+    "rarity": "Rarity",
+    "rarityAll": "Any rarity",
+    "size": "Size",
+    "sizeAll": "Any size"
   },
   "ship": {
     "empty": {
