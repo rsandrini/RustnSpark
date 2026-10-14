@@ -145,6 +145,11 @@ export function hasShieldOf(snapshot: unknown): boolean {
   );
 }
 
+function readShipDestroyed(payload: unknown): boolean {
+  if (typeof payload !== 'object' || payload === null) return false;
+  return (payload as { shipDestroyed?: unknown }).shipDestroyed === true;
+}
+
 function readBalanceAfter(payload: unknown): number | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;
   const value = (payload as { balanceAfter?: unknown }).balanceAfter;
@@ -205,7 +210,11 @@ export class ReportsService {
       // schemaVersion this build can't read must never break the whole history, so this parse
       // is lenient here on purpose (credits still has the wallet event as its real source either
       // way; hadCombat has no such fallback, so an unreadable row just reads as no combat).
-      const events = this.parseStoredEventsLeniently(row.missionId, row.schemaVersion, stored.events);
+      const events = this.parseStoredEventsLeniently(
+        row.missionId,
+        row.schemaVersion,
+        stored.events,
+      );
       const credits = resolved?.creditsDelta ?? sumStoredCredits(events);
       return {
         missionId: row.missionId,
@@ -314,6 +323,7 @@ export class ReportsService {
       partsBefore: partsBeforeOf(log.shipSnapshot),
       credits: resolved?.creditsDelta ?? sumStoredCredits(events),
       ...(balanceAfter !== undefined ? { balanceAfter } : {}),
+      ...(readShipDestroyed(resolved?.payload) ? { shipDestroyed: true } : {}),
     };
   }
 

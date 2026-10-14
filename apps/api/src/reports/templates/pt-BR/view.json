@@ -22,7 +22,8 @@
   },
   "summary": {
     "result": "{outcome}",
-    "resultBalance": "{outcome} — saldo {balance} ¢"
+    "resultBalance": "{outcome} — saldo {balance} ¢",
+    "shipLost": "A ponte foi destruída: a nave e todas as peças foram perdidas. Você recomeça com um novo kit inicial e mantém seu dinheiro."
   },
   "chapter": "Perna {leg} — {status}",
   "effects": {

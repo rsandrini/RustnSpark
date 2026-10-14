@@ -278,6 +278,63 @@ describe('mission resolve processor (S7.3)', () => {
     );
   }, 30_000);
 
+  it('a destroyed bridge destroys the ship: every part is lost, a new starter pack arrives, money and goods stay', async () => {
+    const player = await authFor(testApp.app);
+    const playerId = player.seeded.player.id;
+    const mission = await createAcceptedMission(player, 's-bridge-lost', [150]);
+    const job = await dispatchedJob(player, mission, 10_000);
+
+    const owned = await prisma.partInstance.findMany({ where: { ownerPlayerId: playerId } });
+    const oldIds = new Set(owned.map((part) => part.id));
+    await prisma.partInstance.create({
+      data: { partType: 'hull', ownerPlayerId: playerId, condition: 80, location: 'INVENTORY' },
+    });
+    await prisma.playerMaterial.create({
+      data: { playerId, materialId: 'common_ore', quantity: 4 },
+    });
+    const before = await prisma.player.findUniqueOrThrow({ where: { id: playerId } });
+
+    // The run ends with the bridge dead.
+    const parts = job.data.snapshot.parts.map((part) =>
+      part.catalog.partClass === 'BRIDGE' ? { ...part, condition: 0 } : part,
+    );
+    const result = await processor.process(
+      fakeJob(mission.id, { ...job.data, snapshot: { ...job.data.snapshot, parts } }),
+    );
+    expect(result.skipped).toBe(false);
+
+    const after = await prisma.partInstance.findMany({ where: { ownerPlayerId: playerId } });
+    // Nothing the pilot owned survives, loose parts included: only the new kit is left.
+    expect(after.every((part) => !oldIds.has(part.id))).toBe(true);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((part) => part.location === 'INVENTORY' && part.shipId === null)).toBe(true);
+    expect(after.some((part) => part.partType === 'bridge')).toBe(true);
+
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.layout).toEqual([]);
+    expect(ship.status).toBe('IN_PORT');
+    expect(ship.formatBridgeType).toBeNull();
+    expect(ship.fuel).toBeGreaterThan(0);
+
+    // Money is kept (the payout of the run included), and so are the goods in storage.
+    const credits = await prisma.player.findUniqueOrThrow({ where: { id: playerId } });
+    expect(credits.credits).toBeGreaterThanOrEqual(before.credits);
+    const ore = await prisma.playerMaterial.findUnique({
+      where: { playerId_materialId: { playerId, materialId: 'common_ore' } },
+    });
+    expect(ore?.quantity).toBe(4);
+
+    const destroyed = await prisma.playerEvent.findFirst({
+      where: { playerId, type: 'ship.destroyed' },
+    });
+    expect(destroyed).not.toBeNull();
+    expect((destroyed?.payload as { missionId: string }).missionId).toBe(mission.id);
+    const resolved = await prisma.playerEvent.findFirst({
+      where: { playerId, type: 'mission.resolved' },
+    });
+    expect((resolved?.payload as { shipDestroyed?: boolean }).shipDestroyed).toBe(true);
+  }, 30_000);
+
   it('pirates take parts from STORAGE (never installed ones) in the resolve transaction, and the log names them', async () => {
     const player = await authFor(testApp.app);
     const playerId = player.seeded.player.id;
@@ -553,7 +610,11 @@ describe('mission resolve processor (S7.3)', () => {
       },
     });
     const installedBefore = await prisma.partInstance.findMany({
-      where: { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED', shipId: player.shipId },
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INSTALLED',
+        shipId: player.shipId,
+      },
       select: { id: true },
     });
     const autoAssembleResponse = await request(httpServer(testApp.app))

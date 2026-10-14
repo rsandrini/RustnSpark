@@ -36,6 +36,8 @@ export interface ReportLog {
   readonly credits: number;
   /** D37: balance after the payout; absent on pre-S9.0 PlayerEvents. */
   readonly balanceAfter?: number;
+  /** The bridge was destroyed in this run: the ship and every part were lost. */
+  readonly shipDestroyed?: boolean;
   /**
    * True when the dispatched ship had at least one shield-providing DEFENSE part (`catalog.esc >
    * 0`, the same test `failureCategory` uses). The debrief must not report "shield took 0
@@ -55,7 +57,11 @@ export interface ReportViewChrome {
   readonly categories: Readonly<Record<string, string>>;
   readonly outcomes: Readonly<Record<string, string>>;
   readonly legStatuses: Readonly<Record<string, string>>;
-  readonly summary: { readonly result: string; readonly resultBalance: string };
+  readonly summary: {
+    readonly result: string;
+    readonly resultBalance: string;
+    readonly shipLost?: string;
+  };
   readonly chapter: string;
   readonly effects: Readonly<
     Record<'credits' | 'damage' | 'condition' | 'wear' | 'loot' | 'distance' | 'none', string>

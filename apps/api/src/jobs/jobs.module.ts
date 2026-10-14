@@ -4,6 +4,7 @@ import { EnvModule, EnvService } from '../common/env/env.module.js';
 import { ConfigModule } from '../config/config.module.js';
 import { PartsService } from '../parts/parts.service.js';
 import { MissionResolveService } from '../missions/resolve.service.js';
+import { ShipLossService } from '../missions/ship-loss.service.js';
 import { EncounterService } from '../missions/encounters/encounter.service.js';
 import { RoutePresenceService } from '../missions/encounters/route-presence.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
@@ -71,6 +72,7 @@ import {
     RepairProcessor,
     ReconcileScheduler,
     MissionResolveService,
+    ShipLossService,
     EncounterService,
     RoutePresenceService,
     PartsService,

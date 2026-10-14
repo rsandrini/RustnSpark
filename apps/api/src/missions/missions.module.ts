@@ -21,6 +21,7 @@ import { RoutePresenceService } from './encounters/route-presence.service.js';
 import { MissionsController } from './missions.controller.js';
 import { MissionsService } from './missions.service.js';
 import { MissionResolveService } from './resolve.service.js';
+import { ShipLossService } from './ship-loss.service.js';
 import { MiningJobController } from './mining-job.controller.js';
 import { MiningJobService } from './mining-job.service.js';
 import { ScavengeJobController } from './scavenge-job.controller.js';
@@ -63,6 +64,7 @@ import { TravelService } from './travel.service.js';
     EnginePreviewService,
     MissionProducer,
     MissionResolveService,
+    ShipLossService,
     TravelService,
     ScavengeJobService,
     MiningJobService,

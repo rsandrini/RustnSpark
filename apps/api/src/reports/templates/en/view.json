@@ -22,7 +22,8 @@
   },
   "summary": {
     "result": "{outcome}",
-    "resultBalance": "{outcome} — balance {balance} ¢"
+    "resultBalance": "{outcome} — balance {balance} ¢",
+    "shipLost": "The bridge was destroyed: the ship and every part were lost. You start again with a new starter pack and keep your money."
   },
   "chapter": "Leg {leg} — {status}",
   "effects": {

@@ -18,6 +18,7 @@ import { EncounterService } from './encounters/encounter.service.js';
 // schema its version selects before it is written.
 import { toJsonInput } from '../common/prisma-json.js';
 import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-type.js';
+import { ShipLossService } from './ship-loss.service.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 
@@ -65,6 +66,7 @@ export class MissionResolveService {
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
     private readonly encounters: EncounterService,
+    private readonly shipLoss: ShipLossService,
   ) {}
 
   async resolve(data: DispatchJobData): Promise<ResolveJobResult> {
@@ -244,6 +246,11 @@ export class MissionResolveService {
           }
         }
         const finalCondition = new Map(outcome.parts.map((part) => [part.id, part.condition]));
+        const bridgeDead = snapshot.parts.some(
+          (part) =>
+            part.catalog.partClass === 'BRIDGE' &&
+            isDead(Math.round(finalCondition.get(part.id) ?? part.condition), rules),
+        );
         const fuelCapAfter = snapshot.parts
           .filter((part) => part.connected)
           .filter(
@@ -347,10 +354,21 @@ export class MissionResolveService {
               outcome: outcome.status,
               integrity: outcome.integrity,
               balanceAfter,
+              ...(bridgeDead ? { shipDestroyed: true } : {}),
             },
           },
           tx,
         );
+        // A destroyed bridge is a destroyed ship: everything the pilot owned goes with it and a
+        // new starter pack is handed over. Money, goods, faction and history stay.
+        if (bridgeDead) {
+          await this.shipLoss.destroy(tx, {
+            playerId: mission.playerId!,
+            shipId: snapshot.shipId,
+            missionId,
+            rules,
+          });
+        }
         await tx.missionInstance.update({
           where: { id: missionId },
           data: { status: finalStatus },

@@ -53,8 +53,14 @@ export function renderSummary(log: ReportLog, locale: Locale, names: EntityNames
     )
     .slice(0, topEventCount);
 
+  const shipLostLine =
+    log.shipDestroyed === true && chrome.summary.shipLost !== undefined
+      ? [substituteTokens(chrome.summary.shipLost, {})]
+      : [];
+
   return [
     resultLine,
+    ...shipLostLine,
     ...ranked.map(({ event, storedIndex }) =>
       renderEventLine(event, storedIndex, log.seed, locale, names),
     ),
