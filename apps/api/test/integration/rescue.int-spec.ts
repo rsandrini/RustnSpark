@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
+import { Prisma } from '@prisma/client';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
@@ -91,8 +92,52 @@ describe('rescue API (S8.6)', () => {
       .set(auth(token))
       .send({ faction: 'luna' });
     expect(onboarded.status).toBe(200);
-    await assembleStarterKit(httpServer(testApp.app), token, (onboarded.body as { id: string }).id);
-    return { seeded, token, shipId: (onboarded.body as { id: string }).id };
+    const shipId = (onboarded.body as { id: string }).id;
+    await assembleStarterKit(httpServer(testApp.app), token, shipId);
+    await pinStarterLayout(shipId);
+    return { seeded, token, shipId };
+  }
+
+  /**
+   * The starter kit is laid out by `auto-assemble`, whose order follows the parts' random ids and
+   * whose positions follow a connector roll that may leave a side bare — so which side of the
+   * engine the tank ends up on changes from run to run. A dead or removed part stops conducting
+   * (ships/connectivity.ts), and `provideReplacements` reads a part's stats through that filter:
+   * a tank hanging off the engine is treated as missing when the engine dies, and the engine looks
+   * fuel-less when the tank goes. Both readings are correct; letting the fixture decide is not.
+   *
+   * This parks the engine, the tank and the hull each straight on the bridge and clears the parts'
+   * connectors to the universal fallback, so adjacency alone decides and neither can cut the
+   * other off.
+   */
+  async function pinStarterLayout(shipId: string): Promise<void> {
+    const spot: Readonly<Record<string, { gx: number; gy: number; rot: number }>> = {
+      bridge: { gx: 0, gy: 0, rot: 0 },
+      engine_chem_small: { gx: 1, gy: 0, rot: 0 },
+      tank_small: { gx: 0, gy: 1, rot: 0 },
+      cargo: { gx: 0, gy: -1, rot: 0 },
+      // 2x1: covers (-2, 0) and (-1, 0), reaching the bridge from the left.
+      hull: { gx: -2, gy: 0, rot: 0 },
+    };
+    const parts = await prisma.partInstance.findMany({
+      where: { shipId, location: 'INSTALLED' },
+      select: { id: true, partType: true },
+    });
+    const layout = parts.map((part) => {
+      const at = spot[part.partType];
+      if (at === undefined) {
+        throw new Error(`pinStarterLayout: no pinned spot for starter part "${part.partType}"`);
+      }
+      return { partInstanceId: part.id, ...at };
+    });
+    await prisma.$transaction([
+      prisma.ship.update({ where: { id: shipId }, data: { layout } }),
+      prisma.partInstance.updateMany({
+        where: { id: { in: parts.map((part) => part.id) } },
+        // SQL NULL reads back as `null`, the universal-fallback layout.
+        data: { connectors: Prisma.DbNull },
+      }),
+    ]);
   }
 
   const auth = (token: string): { Authorization: string } => ({
