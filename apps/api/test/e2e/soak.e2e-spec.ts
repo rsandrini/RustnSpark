@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import { getQueueToken } from '@nestjs/bullmq';
 import type { MissionInstance } from '@prisma/client';
-import type { Queue } from 'bullmq';
+import type { Job, Queue } from 'bullmq';
 import request from 'supertest';
 import type { DispatchJobData } from '../../src/missions/dispatch.service.js';
 import { MissionResolveService } from '../../src/missions/resolve.service.js';
@@ -360,16 +360,42 @@ describe('concurrency soak (S12.3)', () => {
         .send({ missionId: mission.id })
         .expect(200);
     }
-    const jobs = await queue.getJobs(['delayed', 'waiting']);
+    // The in-process worker (JobsModule's MissionProcessor) can take the dispatch job before we
+    // look at the queue — it does on a slow CI runner — so look in every state the job can be in
+    // and wait for it: the point is to race resolutions, not to inspect BullMQ's internal state.
+    const wanted = new Set(missions.map((mission) => mission.id));
+    const missionIdOf = (job: Job): string => (job.data as DispatchJobData).missionId;
+    let jobs: Job[] = [];
+    for (let attempt = 0; attempt < 100 && jobs.length < wanted.size; attempt += 1) {
+      jobs = (await queue.getJobs(['delayed', 'waiting', 'active', 'completed', 'failed'])).filter(
+        (job) => wanted.has(missionIdOf(job)),
+      );
+      if (jobs.length < wanted.size) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     const resolver = world.app.get(MissionResolveService);
 
-    await Promise.allSettled(
-      jobs.flatMap((job) =>
-        Array.from({ length: 3 }, () => resolver.resolve(job.data as DispatchJobData)),
-      ),
-    );
-    expect(await world.prisma.missionLog.count()).toBe(2);
+    if (jobs.length > 0) {
+      const settled = await Promise.allSettled(
+        jobs.flatMap((job) =>
+          Array.from({ length: 3 }, () => resolver.resolve(job.data as DispatchJobData)),
+        ),
+      );
+      // Losers of the race are rejected by the MissionLog unique key or short-circuit as skipped;
+      // what must hold is that somebody committed effects.
+      expect(settled.some((entry) => entry.status === 'fulfilled')).toBe(true);
+    } else {
+      // The job is gone without a trace: the only acceptable reason is that the worker already
+      // resolved it, in which case the world must say so.
+      expect(await world.prisma.missionLog.count()).toBe(wanted.size);
+    }
+    // Whoever won the race may still be mid-commit, so wait for the world to catch up.
+    let logs = 0;
+    for (let attempt = 0; attempt < 100 && logs !== wanted.size; attempt += 1) {
+      logs = await world.prisma.missionLog.count();
+      if (logs !== wanted.size) await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    expect(logs).toBe(wanted.size);
     expect(await world.prisma.encounter.count()).toBeGreaterThan(0);
     await assertWorldInvariants();
-  }, 15000);
+  }, 30000);
 });
