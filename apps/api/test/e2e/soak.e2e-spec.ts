@@ -29,6 +29,7 @@ import { GameConfigService } from '../../src/config/game-config.service.js';
 // Requires the compose `test` profile (pnpm test:e2e).
 
 const PARALLEL = 25;
+const UNITS = 3;
 
 describe('concurrency soak (S12.3)', () => {
   let world: SecurityWorld;
@@ -153,36 +154,42 @@ describe('concurrency soak (S12.3)', () => {
   it('parallel buys: exactly as many succeed as the balance affords, and the ledger balances', async () => {
     const player = await world.makePlayer();
     const market = await request(base).get('/v1/locations/ceres/market').set(bearer(player.token));
-    const listing = (
+    // One listing is one physical item per port per day, so three units need three listings:
+    // three racing buyers of the same listing would be capped at one by the shelf itself.
+    const wanted = (
       market.body as { listings: Array<{ listingId: string; kind: string; price: number }> }
-    ).listings.find((entry) => entry.kind === 'catalog')!;
+    ).listings.filter((entry) => entry.kind === 'catalog');
+    expect(wanted.length).toBeGreaterThanOrEqual(UNITS);
+    const targets = wanted.slice(0, UNITS);
+    const budget = targets.reduce((sum, listing) => sum + listing.price, 0);
 
     // Start from an exact budget for three units so "how many may win" has one right answer.
     const current = await credits(player);
-    if (current > listing.price * 3) {
-      await wallet.debit(player.playerId, current - listing.price * 3, 'soak.trim');
+    if (current > budget) {
+      await wallet.debit(player.playerId, current - budget, 'soak.trim');
     } else {
-      await fund(player, listing.price * 3 - current);
+      await fund(player, budget - current);
     }
     const partsBefore = await world.prisma.partInstance.count({
       where: { ownerPlayerId: player.playerId },
     });
 
     const results = await Promise.all(
-      Array.from({ length: PARALLEL }, () =>
-        request(base)
+      Array.from({ length: PARALLEL }, (_, index) => {
+        const listing = targets[index % UNITS]!;
+        return request(base)
           .post('/v1/market/buy')
           .set(bearer(player.token))
-          .send({ listingId: listing.listingId, expectedPrice: listing.price }),
-      ),
+          .send({ listingId: listing.listingId, expectedPrice: listing.price });
+      }),
     );
     const wins = results.filter((response) => response.status === 200).length;
-    expect(wins).toBe(3);
+    expect(wins).toBe(UNITS);
     expect(results.filter((response) => response.status >= 500)).toEqual([]);
     expect(await credits(player)).toBe(0);
     expect(
       await world.prisma.partInstance.count({ where: { ownerPlayerId: player.playerId } }),
-    ).toBe(partsBefore + 3);
+    ).toBe(partsBefore + UNITS);
     await assertWorldInvariants();
   });
 
