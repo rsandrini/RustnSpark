@@ -373,15 +373,19 @@ describe('concurrency soak (S12.3)', () => {
       if (jobs.length < wanted.size) await new Promise((resolve) => setTimeout(resolve, 50));
     }
     const resolver = world.app.get(MissionResolveService);
+    let rejections: string[] = [];
 
     if (jobs.length > 0) {
       // Losers of the race are rejected by the MissionLog unique key or short-circuit as skipped,
       // and when the in-process worker got there first every call is rejected; none of that is an
       // assertion by itself, so the convergence check below is what proves the outcome.
-      await Promise.allSettled(
+      const settled = await Promise.allSettled(
         jobs.flatMap((job) =>
           Array.from({ length: 3 }, () => resolver.resolve(job.data as DispatchJobData)),
         ),
+      );
+      rejections = settled.flatMap((entry) =>
+        entry.status === 'rejected' ? [String(entry.reason)] : [],
       );
     } else {
       // The job is gone without a trace: the only acceptable reason is that the worker already
@@ -394,7 +398,13 @@ describe('concurrency soak (S12.3)', () => {
       logs = await world.prisma.missionLog.count();
       if (logs !== wanted.size) await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    expect(logs).toBe(wanted.size);
+    if (logs !== wanted.size) {
+      throw new Error(
+        `expected ${wanted.size} mission logs, found ${logs}; ${jobs.length} jobs (${jobs
+          .map((job) => job.id + ':' + (job.finishedOn ? 'finished' : 'open'))
+          .join(',')}); rejections: ${rejections.join(' | ') || 'none'}`,
+      );
+    }
     expect(await world.prisma.encounter.count()).toBeGreaterThan(0);
     await assertWorldInvariants();
   }, 30000);

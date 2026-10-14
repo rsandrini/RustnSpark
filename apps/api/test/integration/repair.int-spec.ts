@@ -104,6 +104,8 @@ describe('repair job API (S8.4)', () => {
         ownerPlayerId: player.seeded.player.id,
         location: 'INSTALLED',
         shipId: player.shipId,
+        // A bridge leaves no scrap, so which part a test damages must not depend on random ids.
+        partCatalog: { partClass: { not: 'BRIDGE' } },
       },
       orderBy: { id: 'asc' },
     });
