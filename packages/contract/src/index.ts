@@ -286,6 +286,8 @@ export const ShipResponseSchema = z.object({
   energyMode: EnergyModeSchema,
   /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
   engineLevels: z.object({ chem: z.number(), ion: z.number() }),
+  /** The ship's current assembly yard (ship format). */
+  formatId: z.string(),
   /** The bridge changed: a ship format has to be picked again (from the new bridge's own level)
       before the ship can leave port. Kept on the server. */
   formatChangeRequired: z.boolean(),

@@ -82,6 +82,8 @@ export interface ShipResponse {
   /** The spare parts the ship carries against the bridge's slots (and a mission's cargo against its space). */
   hold: HoldState;
   layout: Placement[];
+  /** The ship's current assembly yard (ship format). */
+  formatId: string;
   /** The bridge changed: a format has to be picked again (from the new bridge's level) before leaving port. */
   formatChangeRequired: boolean;
   sheet: ShipSheet;
@@ -818,6 +820,7 @@ export class ShipsService implements OnModuleInit {
       energyMode: ship.energyMode,
       engineLevels: { chem: ship.chemLevel, ion: ship.ionLevel },
       hold,
+      formatId: ship.formatId,
       formatChangeRequired: formatChangePending(
         ship.formatBridgeType,
         installedRows.find((part) => part.partCatalog.partClass === 'BRIDGE')?.partType ?? null,

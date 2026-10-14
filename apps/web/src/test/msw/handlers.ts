@@ -271,6 +271,7 @@ const ship = (): ShipResponse => ({
   stance: 'NEUTRAL',
   energyMode: 'FULL',
   engineLevels: { chem: 1, ion: 1 },
+  formatId: 'classic_square',
   formatChangeRequired: false,
   float:
     shipStatus === 'ADRIFT'
@@ -569,6 +570,7 @@ export const handlers = [
       stance: 'NEUTRAL',
       energyMode: 'FULL',
       engineLevels: { chem: 1, ion: 1 },
+      formatId: 'classic_square',
       formatChangeRequired: false,
       float: null,
       rescue: null,
@@ -756,6 +758,14 @@ export const handlers = [
         id: 'classic_square',
         displayName: { en: 'Classic Square', 'pt-BR': 'Quadrado Clássico' },
         description: { en: 'The original grid.', 'pt-BR': 'A grade original.' },
+        cells: classicSquareCells(),
+        minRarity: 'COMMON',
+        minBridgeSize: 1,
+      },
+      {
+        id: 'classic_round',
+        displayName: { en: 'Classic Round', 'pt-BR': 'Redondo Clássico' },
+        description: { en: 'A rounder grid.', 'pt-BR': 'Uma grade mais redonda.' },
         cells: classicSquareCells(),
         minRarity: 'COMMON',
         minBridgeSize: 1,

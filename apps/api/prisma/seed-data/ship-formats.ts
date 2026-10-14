@@ -94,7 +94,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'rocket', 'pt-BR': 'foguete' },
     description: { en: 'Rocket format', 'pt-BR': 'formato de foguete' },
     minRarity: 'UNCOMMON',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 30,
     cells: [
@@ -135,7 +135,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'rocket 2', 'pt-BR': 'foguete 2' },
     description: { en: 'Rocket format', 'pt-BR': 'formato de foguete' },
     minRarity: 'UNCOMMON',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 30,
     cells: [
@@ -176,7 +176,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'rocket 3', 'pt-BR': 'foguete 3' },
     description: { en: 'Rocket format', 'pt-BR': 'formato de foguete' },
     minRarity: 'UNCOMMON',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 30,
     cells: [
@@ -217,7 +217,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'modelo raro 1', 'pt-BR': 'modelo raro 1' },
     description: { en: 'Rare model 1', 'pt-BR': 'Modelo raro 1' },
     minRarity: 'RARE',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 45,
     cells: [
@@ -273,7 +273,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'modelo raro 2', 'pt-BR': 'modelo raro 2' },
     description: { en: 'Rare model 2', 'pt-BR': 'Modelo raro 2' },
     minRarity: 'RARE',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 45,
     cells: [
@@ -329,7 +329,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'modelo epic 1', 'pt-BR': 'modelo epic 2' },
     description: { en: 'Epic model 1', 'pt-BR': 'Modelo epico 1' },
     minRarity: 'EPIC',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 60,
     cells: [
@@ -400,7 +400,7 @@ export const SHIP_FORMATS: SeedShipFormat[] = [
     displayName: { en: 'modelo epic 2', 'pt-BR': 'modelo epic 2' },
     description: { en: 'Epic model 2', 'pt-BR': 'Modelo epico 2' },
     minRarity: 'EPIC',
-    minBridgeSize: 2,
+    minBridgeSize: 1,
     active: true,
     cellTarget: 60,
     cells: [

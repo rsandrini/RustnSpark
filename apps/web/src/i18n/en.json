@@ -111,7 +111,11 @@
       "cancel": "Cancel",
       "droppedWarning": "{{count}} placed part outside this format will return to your available parts.",
       "droppedWarning_other": "{{count}} placed parts outside this format will return to your available parts.",
-      "required": "You changed your bridge: pick a ship format for it."
+      "required": "You changed your bridge: pick a ship format for it.",
+      "needsBridge": "Needs a {{size}}×{{size}} bridge",
+      "current": "Current",
+      "pickHint": "Pick a format to see its shape and apply it.",
+      "cardMeta": "{{count}} cells · {{rarity}}"
     },
     "connectors": {
       "disconnectedCount": "{{count}} part disconnected",

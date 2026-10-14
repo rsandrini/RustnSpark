@@ -788,35 +788,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {t('hangar.actions.clear')}
                 </button>
                 <span className="hangar-actions-sep" aria-hidden="true" />
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => setFormatPickerOpen((v) => !v)}
-                >
+                <button type="button" className="btn" onClick={() => setFormatPickerOpen(true)}>
                   {t('hangar.format.button')}
                 </button>
               </div>
-              {formatPickerOpen && formatRequired && (
-                <p className="sub" role="status" data-testid="format-required">
-                  {t('hangar.format.required')}
-                </p>
-              )}
-              {formatPickerOpen && (
-                <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
-                  {(formatsQuery.data ?? []).map((format) => (
-                    <li key={format.id}>
-                      <button
-                        type="button"
-                        className="btn"
-                        disabled={setFormat.isPending}
-                        onClick={() => setFormatPreview(format)}
-                      >
-                        {pickLocalized(format.displayName, i18n.language)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
               {rotateHint !== null && (
                 <p className="sub" role="status" data-testid="rotate-hint">
                   {rotateHint}
@@ -866,22 +841,33 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 <p>{t('hangar.clear.body', { count: effectiveLayout.length })}</p>
               </Popup>
               <Popup
-                open={formatPreview !== null}
-                title={
-                  formatPreview === null
-                    ? ''
-                    : pickLocalized(formatPreview.displayName, i18n.language)
-                }
-                onClose={() => setFormatPreview(null)}
+                open={formatPickerOpen}
+                title={t('hangar.format.label')}
+                className="format-picker-popup"
+                onClose={() => {
+                  setFormatPickerOpen(false);
+                  setFormatPreview(null);
+                }}
                 actions={
                   <>
-                    <button type="button" className="btn" onClick={() => setFormatPreview(null)}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => {
+                        setFormatPickerOpen(false);
+                        setFormatPreview(null);
+                      }}
+                    >
                       {t('hangar.format.cancel')}
                     </button>
                     <button
                       type="button"
-                      className="btn"
-                      disabled={setFormat.isPending || formatPreview === null}
+                      className="btn primary"
+                      disabled={
+                        setFormat.isPending ||
+                        formatPreview === null ||
+                        formatPreview.id === ship?.formatId
+                      }
                       onClick={() => {
                         if (formatPreview !== null) setFormat.mutate(formatPreview.id);
                       }}
@@ -891,18 +877,65 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   </>
                 }
               >
-                {formatPreview !== null && (
-                  <>
+                {formatRequired && (
+                  <p className="sub" role="status" data-testid="format-required">
+                    {t('hangar.format.required')}
+                  </p>
+                )}
+                <ul className="format-grid" aria-label={t('hangar.format.label')}>
+                  {(formatsQuery.data ?? []).map((format) => {
+                    const name = pickLocalized(format.displayName, i18n.language);
+                    const selected = formatPreview?.id === format.id;
+                    const current = format.id === ship?.formatId;
+                    return (
+                      <li key={format.id}>
+                        <button
+                          type="button"
+                          aria-label={name}
+                          aria-pressed={selected}
+                          disabled={setFormat.isPending}
+                          className={`format-card${selected ? ' on' : ''}${current ? ' current' : ''}`}
+                          onClick={() => setFormatPreview(format)}
+                        >
+                          <FormatCellsPreview cells={format.cells} name={name} thumb />
+                          <span className="format-card-name">{name}</span>
+                          <span className="format-card-meta">
+                            {t('hangar.format.cardMeta', {
+                              count: format.cells.length,
+                              rarity: t(`parts.rarities.${format.minRarity}`, {
+                                defaultValue: format.minRarity,
+                              }),
+                            })}
+                          </span>
+                          {(format.minBridgeSize ?? 1) > 1 && (
+                            <span className="format-card-meta">
+                              {t('hangar.format.needsBridge', { size: format.minBridgeSize })}
+                            </span>
+                          )}
+                          {current && (
+                            <span className="format-card-tag">{t('hangar.format.current')}</span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {formatPreview === null ? (
+                  <p className="sub">{t('hangar.format.pickHint')}</p>
+                ) : (
+                  <section className="format-detail" aria-live="polite">
+                    <h3>{pickLocalized(formatPreview.displayName, i18n.language)}</h3>
                     <FormatCellsPreview
                       cells={formatPreview.cells}
                       name={pickLocalized(formatPreview.displayName, i18n.language)}
                     />
+                    <p className="sub">{pickLocalized(formatPreview.description, i18n.language)}</p>
                     {formatDropped.length > 0 && (
                       <p className="format-drop-warning" role="status">
                         {t('hangar.format.droppedWarning', { count: formatDropped.length })}
                       </p>
                     )}
-                  </>
+                  </section>
                 )}
               </Popup>
             </section>
@@ -1056,7 +1089,16 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
 // Format thumbnail for the confirm popup — same visual language as the admin list preview:
 // painted cells in spark, the bridge anchor [0,0] in bad.
-function FormatCellsPreview({ cells, name }: { cells: readonly [number, number][]; name: string }) {
+function FormatCellsPreview({
+  cells,
+  name,
+  thumb = false,
+}: {
+  cells: readonly [number, number][];
+  name: string;
+  /** A small card thumbnail: decorative, the card already carries the name. */
+  thumb?: boolean;
+}) {
   if (cells.length === 0) return null;
   const xs = cells.map(([x]) => x);
   const ys = cells.map(([, y]) => y);
@@ -1068,10 +1110,9 @@ function FormatCellsPreview({ cells, name }: { cells: readonly [number, number][
   const height = maxY - minY + 1;
   return (
     <svg
-      className="format-preview"
+      className={thumb ? 'format-preview format-preview-thumb' : 'format-preview'}
       viewBox={`${minX - 0.2} ${minY - 0.2} ${width + 0.4} ${height + 0.4}`}
-      role="img"
-      aria-label={name}
+      {...(thumb ? { 'aria-hidden': true } : { role: 'img', 'aria-label': name })}
     >
       {cells.map(([x, y]) => (
         <rect

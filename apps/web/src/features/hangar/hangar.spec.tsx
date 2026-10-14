@@ -89,8 +89,7 @@ describe('hangar (S10.4)', () => {
     expect(block(container, 'part-cargo-b')).toBeNull();
     // HP/condition percent is printed small, right on the bar itself (owner request).
     expect(
-      block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')
-        ?.textContent,
+      block(container, 'part-bridge')?.closest('g')?.querySelector('text.cond-label')?.textContent,
     ).toBe('1%');
   });
 
@@ -104,7 +103,7 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
   });
 
-  it('portals Port\'s own tab row above the ship animation, not below it (owner request)', async () => {
+  it("portals Port's own tab row above the ship animation, not below it (owner request)", async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
     await screen.findByRole('tab', { name: 'Refuel' });
@@ -130,7 +129,6 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
   });
 
-
   it('hides the ship animation behind a toggle, persisted across a reload (owner request: extra screen space)', async () => {
     server.use(onboarded());
     const { container, unmount } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
@@ -153,7 +151,9 @@ describe('hangar (S10.4)', () => {
     ).toBeNull();
     // Docked and ready has nothing left to say that the top bar's own ship status doesn't
     // already say on every screen (owner request, round 10) — no placeholder caption at all.
-    expect(container.querySelector('.ship-stage-overlay-host [data-testid="stage-caption"]')).toBeNull();
+    expect(
+      container.querySelector('.ship-stage-overlay-host [data-testid="stage-caption"]'),
+    ).toBeNull();
     expect(window.localStorage.getItem('rs.hangar.stageCollapsed')).toBe('1');
 
     unmount();
@@ -178,11 +178,15 @@ describe('hangar (S10.4)', () => {
     await screen.findByRole('heading', { name: 'My Ship' });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Format' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Classic Square' }));
-
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('img', { name: 'Classic Square' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: /apply/i })).toBeInTheDocument();
+    // The ship's own format is marked, and applying it again is not offered.
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Classic Square' }));
+    expect(within(dialog).getByText('Current')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /apply/i })).toBeDisabled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Classic Round' }));
+    expect(within(dialog).getByRole('img', { name: 'Classic Round' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /apply/i })).toBeEnabled();
     // Nothing applied yet — the popup is a gate, not a shortcut.
     expect(formatCalls).toBe(0);
 
@@ -214,9 +218,9 @@ describe('hangar (S10.4)', () => {
     await screen.findByRole('heading', { name: 'My Ship' });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Format' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Tiny Square' }));
-
     const dialog = await screen.findByRole('dialog');
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Tiny Square' }));
+
     expect(within(dialog).getByRole('img', { name: 'Tiny Square' })).toBeInTheDocument();
     // Starter layout has parts at (2,0)/(3,0)/(2,1)/(0,2)/(2,2) — all outside [[0,0]].
     expect(within(dialog).getByText(/[5-6] placed parts? outside this format/)).toBeInTheDocument();
@@ -318,7 +322,7 @@ describe('hangar (S10.4)', () => {
 
   // Round-10 owner request: "add the rarity of the ship, top right of the ship sheet — the
   // lowest rarity part that is installed."
-  it('shows the ship\'s own rarity (lowest among installed parts) next to the Ship Sheet heading', async () => {
+  it("shows the ship's own rarity (lowest among installed parts) next to the Ship Sheet heading", async () => {
     server.use(onboarded());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
@@ -378,7 +382,7 @@ describe('hangar (S10.4)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it("shows what installing a loose part would do to the ship, next to its own stats", async () => {
+  it('shows what installing a loose part would do to the ship, next to its own stats', async () => {
     server.use(
       onboarded(),
       http.post('/v1/ships/:id/preview', async ({ request }) => {
@@ -663,9 +667,7 @@ describe('hangar (S10.4)', () => {
     fireEvent.click(trayButton);
     fireEvent.click(cell(container, behindX, behindY));
     expect(block(container, 'part-cargo-b')).not.toBeNull();
-    await waitFor(() =>
-      expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull(),
-    );
+    await waitFor(() => expect(container.querySelector('rect.block.dir-blocked')).not.toBeNull());
   });
 
   it('rotate cycles four quarter turns: the footprint swaps, swaps back, and ends where it began', async () => {
@@ -909,9 +911,9 @@ describe('hangar (S10.4)', () => {
     fireEvent.pointerUp(icon, toClient(5, 4));
 
     // A plain click on the rotate button turns the part in place.
-    fireEvent.click(container.querySelector(
-      'button.yard-rotate-icon[data-part-id="part-cargo-a"]',
-    ) as Element);
+    fireEvent.click(
+      container.querySelector('button.yard-rotate-icon[data-part-id="part-cargo-a"]') as Element,
+    );
     const rotated = block(container, 'part-cargo-a');
     expect(Number(rotated?.getAttribute('width'))).toBeCloseTo(beforeHeight, 3);
     expect(Number(rotated?.getAttribute('height'))).toBeCloseTo(beforeWidth, 3);
@@ -965,7 +967,9 @@ describe('hangar (S10.4)', () => {
     expect(assembled).toHaveLength(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Empty the ship' }));
-    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Empty the ship' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Empty the ship' }),
+    );
     await waitFor(() => expect(assembled).toHaveLength(1));
     expect(assembled[0]?.layout).toEqual([]);
   });

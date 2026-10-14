@@ -111,7 +111,11 @@
       "cancel": "Cancelar",
       "droppedWarning": "{{count}} parte instalada fora deste formato voltará para suas peças disponíveis.",
       "droppedWarning_other": "{{count}} partes instaladas fora deste formato voltarão para suas peças disponíveis.",
-      "required": "Você trocou a ponte: escolha um formato de nave para ela."
+      "required": "Você trocou a ponte: escolha um formato de nave para ela.",
+      "needsBridge": "Exige ponte {{size}}×{{size}}",
+      "current": "Atual",
+      "pickHint": "Escolha um formato para ver o desenho e aplicar.",
+      "cardMeta": "{{count}} células · {{rarity}}"
     },
     "connectors": {
       "disconnectedCount": "{{count}} peça desconectada",
