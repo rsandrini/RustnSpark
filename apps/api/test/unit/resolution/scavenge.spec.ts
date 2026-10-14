@@ -81,6 +81,58 @@ describe('scavenging finds (W8)', () => {
     expect(share).toBeLessThan(rules.scavenging.scrap_share + 0.08);
   });
 
+  describe('the P0 review rules: a run is a bonus, not a salary', () => {
+    // A cheap and an expensive part of every rarity: only price tells them apart.
+    const PRICED = [
+      { partType: 'cheap', rarity: 'COMMON', basePrice: 100 },
+      { partType: 'dear', rarity: 'COMMON', basePrice: 10000 },
+      { partType: 'huge', rarity: 'COMMON', basePrice: 80000 },
+    ];
+    const run = (context: ScavengeContext, runs = 800) => many(context, runs).flat();
+
+    it('never brings more part finds than the cap, whatever the place gives', () => {
+      const generous = place({ fieldType: 'pirate', catalog: PRICED });
+      for (const finds of many(generous, 400)) {
+        expect(finds.filter((find) => find.kind === 'part').length).toBeLessThanOrEqual(
+          defaults.scavenging.max_part_finds,
+        );
+      }
+    });
+
+    it('a cheap part comes far more often than an expensive one', () => {
+      const finds = run(place({ zone: 3, catalog: PRICED }));
+      const count = (type: string) => finds.filter((find) => find.partType === type).length;
+      expect(count('cheap')).toBeGreaterThan(count('dear') * 10);
+      expect(count('dear')).toBeGreaterThanOrEqual(count('huge'));
+    });
+
+    it('below zone 3 nothing above the zone cap turns up, and zone 3 has no cap', () => {
+      const cap = defaults.scavenging.find_price_cap['2'] ?? 0;
+      expect(cap).toBeGreaterThan(0);
+      const early = run(place({ zone: 2, catalog: PRICED }));
+      expect(early.length).toBeGreaterThan(0);
+      expect(early.every((find) => (find.partType === 'cheap' ? true : false))).toBe(true);
+      const deep = run(place({ zone: 3, catalog: PRICED }), 4000);
+      expect(deep.some((find) => find.partType === 'dear' || find.partType === 'huge')).toBe(true);
+    });
+
+    it('a log stored with the old rules (no price in the catalog, defaults off) rolls as before', () => {
+      const legacyRules = {
+        ...rules,
+        scavenging: {
+          ...rules.scavenging,
+          max_part_finds: 4,
+          price_weight_power: 0,
+          find_price_cap: {},
+        },
+      };
+      const context = place({ zone: 2, fieldType: 'pirate' });
+      const finds = rollScavengeFinds(context, legacyRules, createRng('legacy-seed'));
+      const again = rollScavengeFinds(context, legacyRules, createRng('legacy-seed'));
+      expect(finds).toEqual(again);
+    });
+  });
+
   it('is deterministic for a seed', () => {
     const context = place({ zone: 2, scrapPlace: true, fieldType: 'pirate' });
     expect(rollScavengeFinds(context, rules, createRng('same'))).toEqual(

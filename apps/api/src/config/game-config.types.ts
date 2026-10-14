@@ -161,6 +161,9 @@ export type ConfigKey =
   | 'scavenging.scrap_min'
   | 'scavenging.scrap_max'
   | 'scavenging.scrap_share'
+  | 'scavenging.max_part_finds'
+  | 'scavenging.price_weight_power'
+  | 'scavenging.find_price_cap'
   | 'scavenging.zone_quality_bonus'
   | 'scavenging.zone_rarity_bias'
   | 'scavenging.nothing_chance'
@@ -524,6 +527,12 @@ export type GameRules = Readonly<{
     foot_factor: number;
     scrap_min: number;
     scrap_max: number;
+    /** The most part finds one run can bring back (the guaranteed scrap is separate). */
+    max_part_finds: number;
+    /** A find is picked with weight 1 / price^this among the parts of its rarity (0 = all equally likely). */
+    price_weight_power: number;
+    /** By zone: no find above this base price (0 or missing = no cap). */
+    find_price_cap: Readonly<Record<string, number>>;
   }>;
   parts: Readonly<{
     starter_condition: number;

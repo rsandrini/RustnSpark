@@ -15,6 +15,8 @@ export interface ScavengeDropTier {
 export interface ScavengeCatalogEntry {
   readonly partType: string;
   readonly rarity: string;
+  /** Catalog base price: what price weighting and the zone cap read (absent in older logs). */
+  readonly basePrice?: number;
 }
 
 export type ScavengeFieldType = 'common' | 'mission' | 'pirate';
@@ -74,6 +76,28 @@ function rollGuaranteedScrap(context: ScavengeContext, rules: GameRules, rng: Rn
   return scrap;
 }
 
+/**
+ * One entry of `pool` for a roll in [0, 1): uniformly when `power` is 0 (or a price is missing),
+ * else with weight 1 / price^power, so cheap parts are much more common than expensive ones.
+ */
+function pickWeighted(
+  pool: readonly ScavengeCatalogEntry[],
+  power: number,
+  roll: number,
+): ScavengeCatalogEntry {
+  if (power <= 0 || pool.some((entry) => entry.basePrice === undefined || entry.basePrice <= 0)) {
+    return pool[Math.min(pool.length - 1, Math.floor(roll * pool.length))]!;
+  }
+  const weights = pool.map((entry) => 1 / Math.pow(entry.basePrice ?? 1, power));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let left = roll * total;
+  for (let index = 0; index < pool.length; index += 1) {
+    left -= weights[index]!;
+    if (left < 0) return pool[index]!;
+  }
+  return pool[pool.length - 1]!;
+}
+
 function rollPartFinds(context: ScavengeContext, rules: GameRules, rng: Rng): ScavengeFind[] {
   const cfg = rules.scavenging;
   if (context.catalog.length === 0) return [];
@@ -99,6 +123,8 @@ function rollPartFinds(context: ScavengeContext, rules: GameRules, rng: Rng): Sc
   for (let extra = 0; extra < MAX_EXTRA_FINDS; extra += 1) {
     if (rng.float() < extraChance) count += 1;
   }
+  // The rolls above are always made (so the run's stream is the same), then the cap applies.
+  count = Math.min(count, Math.max(1, cfg.max_part_finds ?? MAX_EXTRA_FINDS + 1));
 
   const zone = Math.max(0, context.zone);
   const bias = 1 + zone * cfg.zone_rarity_bias;
@@ -131,7 +157,18 @@ function rollPartFinds(context: ScavengeContext, rules: GameRules, rng: Rng): Sc
     if (pool.length === 0)
       pool = context.catalog.filter((entry) => entry.rarity === FALLBACK_RARITY);
     if (pool.length === 0) pool = [...context.catalog];
-    const part = pool[Math.min(pool.length - 1, Math.floor(rng.float() * pool.length))]!;
+    // The zone's price cap: nothing above it turns up (when everything of the rarity is above it,
+    // the cheapest part is what is left).
+    const cap = cfg.find_price_cap?.[String(context.zone)] ?? 0;
+    if (cap > 0 && pool.every((entry) => entry.basePrice !== undefined)) {
+      const within = pool.filter((entry) => (entry.basePrice ?? 0) <= cap);
+      if (within.length > 0) pool = within;
+      else {
+        const cheapest = Math.min(...pool.map((entry) => entry.basePrice ?? 0));
+        pool = pool.filter((entry) => (entry.basePrice ?? 0) === cheapest);
+      }
+    }
+    const part = pickWeighted(pool, cfg.price_weight_power ?? 0, rng.float());
     const scrap = context.scrapPlace && rng.float() < cfg.scrap_share;
     if (scrap) {
       finds.push({ kind: 'scrap', partType: part.partType, condition: 0 });

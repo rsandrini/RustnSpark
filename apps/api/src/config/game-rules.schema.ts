@@ -259,6 +259,12 @@ const scavengingSchema = z.object({
   foot_factor: z.number().min(0).max(1),
   scrap_min: z.number().int().min(0).max(10).default(0),
   scrap_max: z.number().int().min(0).max(10).default(0),
+  // The defaults below are the OLD behavior (every part of the rolled rarity equally likely, up to
+  // four finds, no price cap), so a mission log stored before them replays unchanged; the game's
+  // own defaults (game-config.defaults.ts) switch the new rules on.
+  max_part_finds: z.number().int().min(1).max(4).default(4),
+  price_weight_power: z.number().min(0).max(3).default(0),
+  find_price_cap: z.record(z.string(), z.number().int().min(0)).default({}),
 });
 
 const partsSchema = z.object({

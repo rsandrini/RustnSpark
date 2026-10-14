@@ -2136,6 +2136,44 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'scavenging.max_part_finds',
+    group: 'scavenging',
+    type: 'integer',
+    min: 1,
+    max: 4,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.max_part_finds),
+    description: {
+      en: 'The most part finds one scavenging run can bring back (the guaranteed scrap comes on top).',
+      'pt-BR': 'O máximo de peças que uma busca pode trazer (a sucata garantida vem além disso).',
+    },
+  },
+  {
+    key: 'scavenging.price_weight_power',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 3,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.price_weight_power),
+    description: {
+      en: 'Among the parts of the rolled rarity, a part is picked with weight 1 / price to this power: 0 = all equally likely, 1 = a part twice as expensive is half as likely.',
+      'pt-BR':
+        'Entre as peças da raridade sorteada, a peça é escolhida com peso 1 / preço elevado a este valor: 0 = todas igualmente prováveis, 1 = peça com o dobro do preço tem metade da chance.',
+    },
+  },
+  {
+    key: 'scavenging.find_price_cap',
+    group: 'scavenging',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.find_price_cap),
+    description: {
+      en: 'By zone: no scavenged part is worth more than this base price (0 or a missing zone = no cap).',
+      'pt-BR':
+        'Por zona: nenhuma peça achada vale mais do que este preço base (0 ou zona ausente = sem limite).',
+    },
+  },
+  {
     key: 'scavenging.foot_factor',
     group: 'scavenging',
     type: 'number',

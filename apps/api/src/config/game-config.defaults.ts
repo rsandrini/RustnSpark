@@ -329,6 +329,13 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     foot_factor: 0.5,
     scrap_min: 1,
     scrap_max: 2,
+    // P0 review (2026-10-14): a run is a bonus, not a salary. At most two part finds; among the
+    // parts of the rolled rarity the cheap and small ones come far more often (weight 1 / price);
+    // and in the safe and middle zones nothing above a few times a mission's reward turns up (zone 3
+    // has no cap: the big and expensive parts can drop there, at a very low weight).
+    max_part_finds: 2,
+    price_weight_power: 1,
+    find_price_cap: { 0: 600, 1: 1200, 2: 2500, 3: 0 },
   },
   parts: {
     starter_condition: 85,

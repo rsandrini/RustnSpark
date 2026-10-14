@@ -23,7 +23,7 @@ export async function loadScavengeContext(
       // A bridge is never something you turn up in the wreckage (every ship has its own).
       where: { active: true, partClass: { not: 'BRIDGE' } },
       orderBy: { partType: 'asc' },
-      select: { partType: true, rarity: true },
+      select: { partType: true, rarity: true, basePrice: true },
     }),
   ]);
   const tiers = Array.isArray(table?.tiers)
