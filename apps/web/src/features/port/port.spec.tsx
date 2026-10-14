@@ -882,38 +882,9 @@ describe('port (S10.9)', () => {
     expect(rowButton('Plated Hull')).toBeDisabled();
   });
 
-  it('crafts a core from fragments in the goods tab, only when there are enough', async () => {
-    const crafted: string[] = [];
-    server.use(
-      http.get('/v1/materials', () =>
-        HttpResponse.json({
-          locationId: 'ceres',
-          materials: [
-            {
-              materialId: 'core_fragment',
-              displayName: { en: 'Core Fragment', 'pt-BR': 'Fragmento de Núcleo' },
-              rarity: 'EPIC',
-              quantity: 6,
-              unitPrice: 60,
-            },
-          ],
-        }),
-      ),
-      http.post('/v1/market/craft-core', async ({ request }) => {
-        crafted.push(((await request.json()) as { core: string }).core);
-        return HttpResponse.json({ core: 'prototype_core', fragmentsUsed: 5, quantity: 1 });
-      }),
-    );
+  it('shows what each material is: its description sits on its card', async () => {
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
-    // Crafting is its own tab of the materials area, with a badge for what can be crafted now.
-    expect(screen.queryByTestId('craft-prototype_core')).toBeNull();
-    fireEvent.click(await screen.findByRole('tab', { name: /^Craft cores/ }));
-    expect(screen.getByRole('tab', { name: /^Craft cores/ })).toHaveTextContent('1');
-    const prototype = await screen.findByTestId('craft-prototype_core');
-    expect(prototype).toHaveTextContent('Prototype Core: 6 of 5 core fragments');
-    expect(within(screen.getByTestId('craft-ancient_core')).getByRole('button')).toBeDisabled();
-    fireEvent.click(within(prototype).getByRole('button', { name: 'Craft' }));
-    await waitFor(() => expect(crafted).toEqual(['prototype_core']));
+    expect(await screen.findByText('Common iron ore.')).toBeInTheDocument();
   });
 });

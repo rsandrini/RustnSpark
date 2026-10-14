@@ -49,14 +49,6 @@ ships (the commit has the history). Raise questions before starting anything mar
   *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
   (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
 
-- [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
-  The items show no description in the UI, even though the seed has one
-  (`seed-data/materials.ts`), so the screen where they are listed is not rendering it. They also
-  read as extra inventory to track. *Improve:* show the description and what each core unlocks
-  (prototype: rare → epic, ancient: epic → legendary), where it drops and how fragments craft it,
-  and show it next to the upgrade that needs it rather than as a loose item. Consider whether the
-  separate fragment → core crafting step is worth keeping.
-
 ## P1 — CI/CD
 
 - [ ] **Fix the CI/CD and keep it green.** Every push to `develop` must end with the aggregate `CI`

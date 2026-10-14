@@ -12,8 +12,9 @@ describe('core drops', () => {
     expect(dropsAtZone('mission', 2, rules).map((drop) => drop.material)).toEqual([
       'core_fragment',
     ]);
-    expect(dropsAtZone('scavenge', 3, rules).map((drop) => drop.material)).toContain(
-      'prototype_core',
+    // Only fragments are found: a bigger find is a bigger quantity of them.
+    expect(new Set(dropsAtZone('scavenge', 3, rules).map((drop) => drop.material))).toEqual(
+      new Set(['core_fragment']),
     );
     // a zone above the highest listed one keeps using the highest
     expect(dropsAtZone('mission', 7, rules)).toEqual(dropsAtZone('mission', 3, rules));
@@ -26,15 +27,16 @@ describe('core drops', () => {
     expect(rollCoreDrops('mission', 1, rules, createRng('s'))).toEqual([]);
   });
 
-  it('over many runs the chances show up, and an ancient core stays rarer than a prototype core', () => {
-    const counts = new Map<string, number>();
+  it('over many runs fragments show up, and the big stacks come rarer than the small ones', () => {
+    const bySize = new Map<number, number>();
     for (let seed = 0; seed < 4000; seed += 1) {
       for (const found of rollCoreDrops('mission', 3, rules, createRng(`run-${seed}`))) {
-        counts.set(found.materialId, (counts.get(found.materialId) ?? 0) + found.quantity);
+        expect(found.materialId).toBe('core_fragment');
+        bySize.set(found.quantity, (bySize.get(found.quantity) ?? 0) + 1);
       }
     }
-    expect(counts.get('core_fragment') ?? 0).toBeGreaterThan(counts.get('prototype_core') ?? 0);
-    expect(counts.get('prototype_core') ?? 0).toBeGreaterThan(counts.get('ancient_core') ?? 0);
-    expect(counts.get('ancient_core') ?? 0).toBeGreaterThan(0);
+    expect(bySize.get(2) ?? 0).toBeGreaterThan(bySize.get(5) ?? 0);
+    expect(bySize.get(5) ?? 0).toBeGreaterThan(bySize.get(15) ?? 0);
+    expect(bySize.get(15) ?? 0).toBeGreaterThan(0);
   });
 });

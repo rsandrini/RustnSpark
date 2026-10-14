@@ -40,9 +40,3 @@ export class SellMaterialDto {
   @Min(0)
   expectedPrice!: number;
 }
-
-export class CraftCoreDto {
-  @IsString()
-  @IsNotEmpty()
-  core!: string;
-}

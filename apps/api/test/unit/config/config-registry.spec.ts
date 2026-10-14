@@ -34,7 +34,6 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.combat_win_base',
   'economy.combat_win_per_tier',
   'economy.core_drops',
-  'economy.core_fragments',
   'economy.discard_scrap_per_part',
   'economy.faction_mult',
   'economy.fuel_price',

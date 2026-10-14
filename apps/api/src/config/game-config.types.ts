@@ -81,7 +81,6 @@ export type ConfigKey =
   | 'economy.ship_tier_thresholds'
   | 'economy.part_upgrade_price_multiplier'
   | 'economy.upgrade_materials'
-  | 'economy.core_fragments'
   | 'economy.core_drops'
   | 'engine.chem_level_max'
   | 'engine.fuel_push_exponent'
@@ -332,7 +331,6 @@ export type GameRules = Readonly<{
     /** What an upgrade asks for besides money, by the part's CURRENT rarity (see upgrade-materials.ts). */
     upgrade_materials: Readonly<Record<string, readonly UpgradeMaterialRule[]>>;
     /** Core fragments needed to craft each core. */
-    core_fragments: Readonly<Record<string, number>>;
     /** Cores and fragments found: by source (scavenge / mission), then by zone. */
     core_drops: Readonly<Record<string, Readonly<Record<string, readonly CoreDrop[]>>>>;
     start_credits: number;

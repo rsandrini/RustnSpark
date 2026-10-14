@@ -1029,13 +1029,6 @@
     "scavengeFoot": "Vasculhar a pé",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
-    "craftLine": "{{name}}: {{have}} de {{needed}} fragmentos de núcleo",
-    "craft": "Fabricar",
-    "craftDone": "Fabricado: {{name}}.",
-    "cores": {
-      "prototype_core": "Núcleo Protótipo",
-      "ancient_core": "Núcleo Ancestral"
-    },
     "refuelAddValue": "+{{units}}",
     "refuelAfterValue": "{{after}} / {{cap}}",
     "upgradeRulesTitle": "Como funciona o upgrade",
@@ -1079,10 +1072,7 @@
     },
     "sellAmount": "Quantidade",
     "sellAmountFor": "Quantas unidades de {{name}} vender",
-    "sellSome": "Vender {{count}}",
-    "materialsSell": "Materiais",
-    "materialsCraft": "Fabricar núcleos",
-    "craftHelp": "Fragmentos de núcleo fabricam um núcleo inteiro, tudo ou nada. Núcleos liberam as melhorias épicas e lendárias."
+    "sellSome": "Vender {{count}}"
   },
   "inventory": {
     "title": "Inventário",

@@ -113,14 +113,14 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(179);
+    expect(counts.gameConfig).toBe(178);
     expect(counts.locations).toBe(15);
     expect(counts.routes).toBe(20);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
-    // 3 ores + the 3 upgrade pieces (fragment, prototype core, ancient core) + the one generic scrap.
-    expect(counts.materials).toBe(3 + 3 + 1);
+    // 3 ores + the core fragment (the one upgrade piece) + the one generic scrap.
+    expect(counts.materials).toBe(3 + 1 + 1);
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
 

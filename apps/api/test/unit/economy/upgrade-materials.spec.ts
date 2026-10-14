@@ -15,13 +15,14 @@ describe('upgrade materials', () => {
     expect(upgradeNeeds('COMMON', 3500, 16, rules)).toEqual([{ material: 'scrap', quantity: 12 }]);
   });
 
-  it('the rarer the step, the more it asks for: crystals, then a core, then two kinds of core', () => {
-    const rare = upgradeNeeds('RARE', 600, 1, rules).map((need) => need.material);
-    expect(rare).toEqual(['prototype_core', 'rare_crystals']);
-    const epic = upgradeNeeds('EPIC', 1200, 4, rules);
-    expect(epic).toEqual([
-      { material: 'ancient_core', quantity: 2 },
-      { material: 'prototype_core', quantity: 4 },
+  it('the rarer the step, the more it asks for: crystals, then fragments, then many more fragments', () => {
+    expect(upgradeNeeds('RARE', 600, 1, rules)).toEqual([
+      { material: 'core_fragment', quantity: 5 },
+      { material: 'rare_crystals', quantity: 5 },
+    ]);
+    // 4 cells is size step 2: 25 x 2 fragments (what an ancient core and two prototype cores were).
+    expect(upgradeNeeds('EPIC', 1200, 4, rules)).toEqual([
+      { material: 'core_fragment', quantity: 50 },
       { material: 'rare_crystals', quantity: 6 },
     ]);
   });

@@ -359,6 +359,7 @@ let materialsState: MaterialHolding[] = [
   {
     materialId: 'iron',
     displayName: { en: 'Iron', 'pt-BR': 'Ferro' },
+    description: { en: 'Common iron ore.', 'pt-BR': 'Minério de ferro comum.' },
     rarity: 'common',
     quantity: 6,
     unitPrice: 4,
@@ -458,6 +459,7 @@ export function resetEconomyState(): void {
     {
       materialId: 'iron',
       displayName: { en: 'Iron', 'pt-BR': 'Ferro' },
+      description: { en: 'Common iron ore.', 'pt-BR': 'Minério de ferro comum.' },
       rarity: 'common',
       quantity: 6,
       unitPrice: 4,
@@ -682,7 +684,6 @@ export const handlers = [
       shieldRegen: 2,
       armorPoolFactor: 5,
       armorReduction: 0.25,
-      coreFragments: { prototype_core: 5, ancient_core: 15 },
     }),
   ),
   http.get('/v1/places/art', () => ok({ places: {} })),

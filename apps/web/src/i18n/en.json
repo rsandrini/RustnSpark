@@ -1029,13 +1029,6 @@
     "scavengeFoot": "Go scavenging on foot",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
-    "craftLine": "{{name}}: {{have}} of {{needed}} core fragments",
-    "craft": "Craft",
-    "craftDone": "Crafted: {{name}}.",
-    "cores": {
-      "prototype_core": "Prototype Core",
-      "ancient_core": "Ancient Core"
-    },
     "refuelAddValue": "+{{units}}",
     "refuelAfterValue": "{{after}} / {{cap}}",
     "upgradeRulesTitle": "How upgrading works",
@@ -1079,10 +1072,7 @@
     },
     "sellAmount": "Amount",
     "sellAmountFor": "How many {{name}} to sell",
-    "sellSome": "Sell {{count}}",
-    "materialsSell": "Materials",
-    "materialsCraft": "Craft cores",
-    "craftHelp": "Core fragments craft into a whole core, all or nothing. Cores unlock the epic and legendary upgrades."
+    "sellSome": "Sell {{count}}"
   },
   "inventory": {
     "title": "Inventory",

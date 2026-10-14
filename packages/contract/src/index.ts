@@ -237,7 +237,6 @@ export const DisplayResponseSchema = z.object({
   armorPoolFactor: z.number(),
   armorReduction: z.number(),
   /** Core fragments needed to craft each core (at a port). */
-  coreFragments: z.record(z.string(), z.number()),
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
@@ -928,6 +927,7 @@ export type SellResponse = z.infer<typeof SellResponseSchema>;
 export const MaterialHoldingSchema = z.object({
   materialId: z.string(),
   displayName: LocalizedTextSchema,
+  description: LocalizedTextSchema,
   rarity: z.string(),
   quantity: z.number(),
   unitPrice: z.number(),

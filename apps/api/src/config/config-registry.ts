@@ -977,19 +977,6 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'economy.core_fragments',
-    group: 'economy',
-    type: 'json',
-    min: 0,
-    max: 0,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.core_fragments),
-    description: {
-      en: 'Core fragments needed to craft each core (at a port, from the goods).',
-      'pt-BR':
-        'Fragmentos de núcleo necessários para fabricar cada núcleo (num porto, a partir dos bens).',
-    },
-  },
-  {
     key: 'economy.core_drops',
     group: 'economy',
     type: 'json',
@@ -997,9 +984,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 0,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.core_drops),
     description: {
-      en: 'Cores and fragments found, by source (scavenge, mission) and by the highest zone crossed: a list of {material, chance, quantity}.',
+      en: 'Core fragments found, by source (scavenge, mission) and by the highest zone crossed: a list of {material, chance, quantity}.',
       'pt-BR':
-        'Núcleos e fragmentos encontrados, por fonte (scavenge, mission) e pela maior zona cruzada: uma lista de {material, chance, quantity}.',
+        'Fragmentos de núcleo encontrados, por fonte (scavenge, mission) e pela maior zona cruzada: uma lista de {material, chance, quantity}.',
     },
   },
   {

@@ -455,49 +455,28 @@ describe('part upgrade API (round 5)', () => {
     expect(await held(player.seeded.player.id, 'common_ore')).toBe(3);
   });
 
-  it('a rare step asks for a prototype core and rare crystals, and an epic one for the ancient core too', async () => {
+  it('a rare step asks for fragments and rare crystals, and an epic one for many more fragments', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const rare = await addLoosePart(player.seeded.player.id, 'hull_rare');
     const epic = await addLoosePart(player.seeded.player.id, 'hull_epic');
-    const needed = async (partId: string) =>
+    const needs = async (partId: string) =>
       (
         (await quoteUpgrade(player.token, partId)).body as {
-          materials: Array<{ materialId: string }>;
+          materials: Array<{ materialId: string; needed: number }>;
         }
-      ).materials.map((material) => material.materialId);
-    expect(await needed(rare)).toEqual(['prototype_core', 'rare_crystals']);
-    expect(await needed(epic)).toEqual(['ancient_core', 'prototype_core', 'rare_crystals']);
-  });
-
-  it('crafts a core from fragments, all or nothing', async () => {
-    await freshSeededApp();
-    const player = await onboardPlayer();
-    const cost = configService.snapshot().rules.economy.core_fragments['prototype_core']!;
-    await giveMaterial(player.seeded.player.id, 'core_fragment', cost - 1);
-    const craft = (key: string) =>
-      request(httpServer(testApp.app))
-        .post('/v1/market/craft-core')
-        .set(auth(player.token))
-        .set('Idempotency-Key', key)
-        .send({ core: 'prototype_core' });
-
-    const short = await craft(randomUUID());
-    expect(short.status).toBe(400);
-    expect(await held(player.seeded.player.id, 'core_fragment')).toBe(cost - 1);
-    expect(await held(player.seeded.player.id, 'prototype_core')).toBe(0);
-
-    await giveMaterial(player.seeded.player.id, 'core_fragment', cost + 2);
-    const ok = await craft(randomUUID());
-    expect(ok.status).toBe(200);
-    expect(await held(player.seeded.player.id, 'core_fragment')).toBe(2);
-    expect(await held(player.seeded.player.id, 'prototype_core')).toBe(1);
-
-    const unknown = await request(httpServer(testApp.app))
-      .post('/v1/market/craft-core')
-      .set(auth(player.token))
-      .set('Idempotency-Key', randomUUID())
-      .send({ core: 'no_such_core' });
-    expect(unknown.status).toBe(400);
+      ).materials;
+    const rareNeeds = await needs(rare);
+    const epicNeeds = await needs(epic);
+    expect(rareNeeds.map((material) => material.materialId)).toEqual([
+      'core_fragment',
+      'rare_crystals',
+    ]);
+    expect(epicNeeds.map((material) => material.materialId)).toEqual([
+      'core_fragment',
+      'rare_crystals',
+    ]);
+    // The epic step costs more fragments (an ancient core's worth plus two prototype cores').
+    expect(epicNeeds[0]!.needed).toBeGreaterThan(rareNeeds[0]!.needed);
   });
 });

@@ -95,7 +95,6 @@ const economySchema = z.object({
       }),
     ),
   ),
-  core_fragments: z.record(z.string(), z.number().int().min(1).max(1000)),
   core_drops: z.record(
     z.string(),
     z.record(
