@@ -1,12 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import type { ShipFormat } from '../../api/generated';
-import { formatsForBridge } from './bridge-format';
+import { describe, expect, it } from '@jest/globals';
+import { formatsForBridge } from '../../../src/ships/bridge-format.js';
 
-const format = (id: string, minRarity: string, minBridgeSize = 1): ShipFormat => ({
+const format = (id: string, minRarity: string, minBridgeSize = 1) => ({
   id,
-  displayName: { en: id, 'pt-BR': id },
-  description: { en: '', 'pt-BR': '' },
-  cells: [[0, 0]],
   minRarity,
   minBridgeSize,
 });
@@ -19,7 +15,7 @@ const ALL = [
   format('huge', 'RARE', 2),
 ];
 
-const ids = (list: ShipFormat[]) => list.map((entry) => entry.id).sort();
+const ids = (list: Array<{ id: string }>) => list.map((entry) => entry.id).sort();
 
 describe('formatsForBridge', () => {
   it('offers only the formats of the bridge own rarity and size', () => {

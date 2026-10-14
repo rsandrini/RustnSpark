@@ -22,6 +22,7 @@ import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import { legForRoute, type FillerWorld } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
+import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export type ScavengeMode = 'ship' | 'foot';
 export const SCAVENGE_TEMPLATE_ID = 'scavenge_generic';
@@ -79,6 +80,9 @@ export class ScavengeJobService {
     if (active > 0) throw new ConflictException({ error: 'ACTIVE_MISSION_EXISTS' });
     // A refit holds the ship itself, never the pilot's own two feet.
     if (!onFoot && repairing > 0) throw new ConflictException({ error: 'SHIP_REPAIRING' });
+    if (!onFoot && (await shipFormatChangePending(this.prisma, ship.id))) {
+      throw new ConflictException({ error: 'FORMAT_CHANGE_REQUIRED' });
+    }
 
     const rows = await this.parts.findPlayerParts(playerId);
     const installedRows = rows.filter(

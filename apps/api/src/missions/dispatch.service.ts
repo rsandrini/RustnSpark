@@ -31,6 +31,7 @@ import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
 import { jobDelayMs } from '../config/debug-timing.js';
 import { missionDuration, type DurationClass } from './duration.calculator.js';
 import { missionStatusAfter } from './mission.state-machine.js';
+import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export interface DispatchLeg {
   readonly routeId: string;
@@ -298,6 +299,10 @@ export class DispatchService {
         });
         if (repairing) {
           throw new ConflictException({ error: 'SHIP_REPAIRING' });
+        }
+        // The bridge changed: the pilot has to pick a ship format again before leaving.
+        if (await shipFormatChangePending(tx, ship.id)) {
+          throw new ConflictException({ error: 'FORMAT_CHANGE_REQUIRED' });
         }
         if (ship.currentLocationId !== mission.originId) {
           throw new ConflictException({ error: 'SHIP_NOT_AT_ORIGIN' });

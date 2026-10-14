@@ -33,7 +33,6 @@ import {
 } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
 import { EngineTuning } from './engine-tuning';
-import { formatsForBridge } from './bridge-format';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
@@ -305,45 +304,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
   const [formatPreview, setFormatPreview] = useState<ShipFormat | null>(null);
-  // Whenever the installed bridge changes (a new size or rarity, so other formats open or close),
-  // the pilot has to pick a format again, from the new bridge's own level. The last bridge the
-  // pilot picked a format for is remembered per ship in this browser.
-  const [formatRequired, setFormatRequired] = useState(false);
-  const installedBridge = useMemo(
-    () =>
-      parts.find(
-        (item) =>
-          item.location === 'INSTALLED' &&
-          item.shipId === ship?.id &&
-          item.catalog.partClass === 'BRIDGE',
-      ),
-    [parts, ship?.id],
-  );
-  const bridgeKey = installedBridge?.partType ?? null;
-  const bridgeStorageKey = ship === undefined ? null : `rs.hangar.bridge.${ship.id}`;
+  // After a bridge change the server requires a new format pick (and lists only the new
+  // bridge's own level); the picker opens by itself until it is made.
+  const formatRequired = ship?.formatChangeRequired === true;
   useEffect(() => {
-    if (bridgeStorageKey === null || bridgeKey === null || !inventoryQuery.isSuccess) return;
-    try {
-      const remembered = window.localStorage.getItem(bridgeStorageKey);
-      if (remembered === null) {
-        window.localStorage.setItem(bridgeStorageKey, bridgeKey);
-      } else if (remembered !== bridgeKey) {
-        setFormatRequired(true);
-        setFormatPickerOpen(true);
-      }
-    } catch {
-      // Storage unavailable: the picker is then only a button, as before.
-    }
-  }, [bridgeStorageKey, bridgeKey, inventoryQuery.isSuccess]);
-  const pickableFormats = useMemo(() => {
-    const unlocked = formatsQuery.data ?? [];
-    if (!formatRequired || installedBridge === undefined) return unlocked;
-    return formatsForBridge(unlocked, {
-      rarity: installedBridge.rarity,
-      w: installedBridge.catalog.w,
-      h: installedBridge.catalog.h,
-    });
-  }, [formatsQuery.data, formatRequired, installedBridge]);
+    if (formatRequired) setFormatPickerOpen(true);
+  }, [formatRequired]);
   const setFormat = useMutation({
     mutationFn: (formatId: string) =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/format`, { formatId }),
@@ -355,14 +321,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       setPendingPartId(null);
       setFormatPickerOpen(false);
       setFormatPreview(null);
-      setFormatRequired(false);
-      try {
-        if (bridgeStorageKey !== null && bridgeKey !== null) {
-          window.localStorage.setItem(bridgeStorageKey, bridgeKey);
-        }
-      } catch {
-        // Storage unavailable: nothing to remember.
-      }
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
@@ -845,7 +803,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               )}
               {formatPickerOpen && (
                 <ul className="format-picker-list" aria-label={t('hangar.format.label')}>
-                  {pickableFormats.map((format) => (
+                  {(formatsQuery.data ?? []).map((format) => (
                     <li key={format.id}>
                       <button
                         type="button"

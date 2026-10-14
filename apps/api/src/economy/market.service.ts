@@ -122,7 +122,11 @@ export class MarketService {
     const { market_rarity_by_bridge: byBridge, market_rarity_chance: fallback } =
       this.config.snapshot().rules.economy;
     const bridge = await this.prisma.partInstance.findFirst({
-      where: { ownerPlayerId: playerId, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
+      where: {
+        ownerPlayerId: playerId,
+        location: 'INSTALLED',
+        partCatalog: { partClass: 'BRIDGE' },
+      },
       select: { partCatalog: { select: { rarity: true } } },
     });
     return byBridge[bridge?.partCatalog.rarity ?? ''] ?? fallback;
@@ -132,7 +136,8 @@ export class MarketService {
     await this.assertShipAtLocation(playerId, locationId);
     const context = await this.pricing.contextForLocation(locationId, playerId);
     const catalogs = await this.prisma.partCatalog.findMany({
-      where: { active: true },
+      // A bridge is never sold: a bigger one comes from Expand in the Upgrade tab.
+      where: { active: true, partClass: { not: 'BRIDGE' } },
       orderBy: { partType: 'asc' },
     });
     const day = dayKey(this.clock.now());
@@ -162,7 +167,8 @@ export class MarketService {
       catalog: pickCatalogStats(row),
       condition: 100,
       price: this.pricing.buy(context, row, 100),
-      connectors: rollConnectors(row, catalogConnectorSeed(locationId, day, row.partType))?.cells ?? [],
+      connectors:
+        rollConnectors(row, catalogConnectorSeed(locationId, day, row.partType))?.cells ?? [],
     }));
 
     for (let index = 0; index < USED_OFFER_COUNT; index += 1) {
@@ -245,14 +251,25 @@ export class MarketService {
     const catalog = await this.prisma.partCatalog.findUnique({
       where: { partType: parsed.partType },
     });
-    if (!catalog || !catalog.active) throw new NotFoundException('listing not found');
+    // A bridge is never sold (a bigger one comes from Expand), whatever listing id is sent.
+    if (!catalog || !catalog.active || catalog.partClass === 'BRIDGE') {
+      throw new NotFoundException('listing not found');
+    }
     // Same re-derivation as the used-shelf day check above: a "catalog" listing id carries no
     // day itself (it's stable so it can be bookmarked/priced client-side), so buy() re-rolls
     // today's stock the same way market() did when it built the list — a client can't buy a
     // rarity that was never actually on the shelf just by knowing its listingId shape.
     if (parsed.kind === 'catalog') {
       const rarityChance = await this.shelfChance(playerId);
-      if (!inStockToday(parsed.locationId, dayKey(this.clock.now()), catalog.partType, catalog.rarity, rarityChance)) {
+      if (
+        !inStockToday(
+          parsed.locationId,
+          dayKey(this.clock.now()),
+          catalog.partType,
+          catalog.rarity,
+          rarityChance,
+        )
+      ) {
         throw new BadRequestException({ error: 'INVALID_LISTING' });
       }
     }
@@ -267,7 +284,7 @@ export class MarketService {
     if (parsed.kind === 'used') {
       connectorSeed = usedConnectorSeed(parsed.locationId, parsed.day!, parsed.index!);
       const catalogs = await this.prisma.partCatalog.findMany({
-        where: { active: true },
+        where: { active: true, partClass: { not: 'BRIDGE' } },
         orderBy: { partType: 'asc' },
       });
       // Must match market()'s own pool exactly (same filter, same order) — usedOffer() picks by

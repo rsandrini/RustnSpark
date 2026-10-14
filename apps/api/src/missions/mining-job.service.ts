@@ -30,6 +30,7 @@ import {
   type FillerWorld,
 } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
+import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export const MINING_JOB_TEMPLATE_ID = 'mining_job_generic';
 const MS_PER_HOUR = 3_600_000;
@@ -110,6 +111,9 @@ export class MiningJobService {
     ]);
     if (active > 0) throw new ConflictException({ error: 'ACTIVE_MISSION_EXISTS' });
     if (repairing > 0) throw new ConflictException({ error: 'SHIP_REPAIRING' });
+    if (await shipFormatChangePending(this.prisma, ship.id)) {
+      throw new ConflictException({ error: 'FORMAT_CHANGE_REQUIRED' });
+    }
 
     const rows = await this.parts.findPlayerParts(playerId);
     const installedRows = rows.filter(

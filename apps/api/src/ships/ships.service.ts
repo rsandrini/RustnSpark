@@ -41,6 +41,8 @@ import { checkViability, type ViabilityReport } from './viability.js';
 // Mirrors the same ordering convention already established in part-upgrade.calculator.ts and
 // apps/web's part-detail.tsx lowestRarity — a local copy, not a shared import, since
 // ships.service.ts doesn't otherwise depend on economy/part-upgrade.calculator.ts.
+import { formatChangePending, formatsForBridge } from './bridge-format.js';
+
 const RARITY_ORDER: readonly string[] = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
 
 /**
@@ -80,6 +82,8 @@ export interface ShipResponse {
   /** The spare parts the ship carries against the bridge's slots (and a mission's cargo against its space). */
   hold: HoldState;
   layout: Placement[];
+  /** The bridge changed: a format has to be picked again (from the new bridge's level) before leaving port. */
+  formatChangeRequired: boolean;
   sheet: ShipSheet;
   shipClass: ShipClassType;
   /** The assembly yard the layout lives on; the client draws it, the server validates it. */
@@ -183,7 +187,7 @@ export class ShipsService implements OnModuleInit {
     // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
     // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
-    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules, ship.formatBridgeType);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -208,7 +212,7 @@ export class ShipsService implements OnModuleInit {
     this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
-    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules);
+    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules, ship.formatBridgeType);
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -424,16 +428,20 @@ export class ShipsService implements OnModuleInit {
     const ship = await this.prisma.ship.findFirst({ where: { ownerPlayerId: playerId } });
     const bridge = await this.currentBridge(ship);
     const formats = await this.prisma.shipFormat.findMany({ where: { active: true } });
-    return formats
-      .filter((format) => formatUnlocked(format, bridge))
-      .map((format) => ({
-        id: format.id,
-        displayName: format.displayName,
-        description: format.description,
-        cells: format.cells as [number, number][],
-        minRarity: format.minRarity,
-        minBridgeSize: format.minBridgeSize,
-      }));
+    const unlocked = formats.filter((format) => formatUnlocked(format, bridge));
+    // After a bridge change only the new bridge's own level is on offer.
+    const offered =
+      ship !== null && (await this.formatChangePendingOf(ship))
+        ? formatsForBridge(unlocked, bridge)
+        : unlocked;
+    return offered.map((format) => ({
+      id: format.id,
+      displayName: format.displayName,
+      description: format.description,
+      cells: format.cells as [number, number][],
+      minRarity: format.minRarity,
+      minBridgeSize: format.minBridgeSize,
+    }));
   }
 
   async setFormat(shipId: string, formatId: string): Promise<ShipResponse> {
@@ -447,6 +455,16 @@ export class ShipsService implements OnModuleInit {
     const bridge = await this.currentBridge(ship);
     if (!formatUnlocked(target, bridge)) {
       throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+    }
+    if (await this.formatChangePendingOf(ship)) {
+      const allFormats = await this.prisma.shipFormat.findMany({ where: { active: true } });
+      const offered = formatsForBridge(
+        allFormats.filter((format) => formatUnlocked(format, bridge)),
+        bridge,
+      );
+      if (!offered.some((format) => format.id === formatId)) {
+        throw new ConflictException({ error: 'FORMAT_NOT_UNLOCKED' });
+      }
     }
 
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
@@ -472,7 +490,11 @@ export class ShipsService implements OnModuleInit {
     await this.prisma.$transaction(async (tx) => {
       await tx.ship.update({
         where: { id: shipId },
-        data: { formatId, layout: toJsonInput(keptLayout) },
+        data: {
+          formatId,
+          layout: toJsonInput(keptLayout),
+          formatBridgeType: await this.installedBridgeType(ship.id),
+        },
       });
       const droppedIds = currentLayout.filter((p) => !fits(p)).map((p) => p.partInstanceId);
       if (droppedIds.length > 0) {
@@ -485,6 +507,21 @@ export class ShipsService implements OnModuleInit {
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
+  }
+
+  private async installedBridgeType(shipId: string): Promise<string | null> {
+    const bridge = await this.prisma.partInstance.findFirst({
+      where: { shipId, location: 'INSTALLED', partCatalog: { partClass: 'BRIDGE' } },
+      select: { partType: true },
+    });
+    return bridge?.partType ?? null;
+  }
+
+  /** The bridge is not the one the ship's format was picked for: a new pick is required. */
+  private async formatChangePendingOf(
+    ship: Pick<Ship, 'id' | 'formatBridgeType'>,
+  ): Promise<boolean> {
+    return formatChangePending(ship.formatBridgeType, await this.installedBridgeType(ship.id));
   }
 
   /** The installed bridge's rarity and grid footprint; a ship with none reads as a 1x1 COMMON. */
@@ -630,12 +667,17 @@ export class ShipsService implements OnModuleInit {
     playerParts: PartInstanceWithCatalog[],
     currentFuel: number,
     rules: GameRules,
+    shipFormatBridgeType: string | null,
   ): Promise<void> {
     const layoutIds = new Set(layout.map((placement) => placement.partInstanceId));
     const previouslyInstalled = playerParts.filter(
       (part) => part.location === 'INSTALLED' && part.shipId === shipId,
     );
     const toInventory = previouslyInstalled.filter((part) => !layoutIds.has(part.id));
+    const bridgeAfter = playerParts.find(
+      (part) => layoutIds.has(part.id) && part.partCatalog.partClass === 'BRIDGE',
+    );
+    const recordBaseline = shipFormatBridgeType === null;
 
     await this.prisma.$transaction(async (tx) => {
       for (const part of toInventory) {
@@ -657,6 +699,10 @@ export class ShipsService implements OnModuleInit {
         data: {
           layout: toJsonInput(layout),
           fuel: Math.min(currentFuel, this.fuelCapOf(layout, playerParts, rules)),
+          // The first bridge a ship gets is its baseline: nothing to re-pick yet.
+          ...(recordBaseline && bridgeAfter !== undefined
+            ? { formatBridgeType: bridgeAfter.partType }
+            : {}),
         },
       });
     });
@@ -772,6 +818,10 @@ export class ShipsService implements OnModuleInit {
       energyMode: ship.energyMode,
       engineLevels: { chem: ship.chemLevel, ion: ship.ionLevel },
       hold,
+      formatChangeRequired: formatChangePending(
+        ship.formatBridgeType,
+        installedRows.find((part) => part.partCatalog.partClass === 'BRIDGE')?.partType ?? null,
+      ),
       layout: shipLayout,
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
@@ -839,7 +889,7 @@ export class ShipsService implements OnModuleInit {
 type PartInstanceWithCatalog = PartInstance & { partCatalog: PrismaPartCatalog };
 
 type ShipWithFormat = Prisma.ShipGetPayload<{
-  include: { format: { select: { cells: true, minBridgeSize: true } } };
+  include: { format: { select: { cells: true; minBridgeSize: true } } };
 }>;
 
 const HALF_TURN = 180;

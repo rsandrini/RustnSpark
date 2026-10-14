@@ -31,6 +31,7 @@ import {
   type FillerWorld,
 } from './generator/template.filler.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
+import { shipFormatChangePending } from '../ships/bridge-format.js';
 
 export const TRAVEL_TEMPLATE_ID = 'travel_generic';
 // A requested trip is created already accepted and dispatched at once; the offer window only
@@ -45,6 +46,7 @@ export type TravelBlocker =
   | 'ACTIVE_MISSION_EXISTS'
   | 'SHIP_NOT_IN_PORT'
   | 'SHIP_REPAIRING'
+  | 'FORMAT_CHANGE_REQUIRED'
   | 'SHIP_NOT_VIABLE'
   | 'NOT_ENOUGH_FUEL';
 
@@ -256,6 +258,9 @@ export class TravelService {
     if (active > 0) blockers.push('ACTIVE_MISSION_EXISTS');
     if (ship.status !== 'IN_PORT') blockers.push('SHIP_NOT_IN_PORT');
     if (repairing > 0) blockers.push('SHIP_REPAIRING');
+    if (await shipFormatChangePending(this.prisma, ship.id)) {
+      blockers.push('FORMAT_CHANGE_REQUIRED');
+    }
     if (!viability.viable) blockers.push('SHIP_NOT_VIABLE');
 
     const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);

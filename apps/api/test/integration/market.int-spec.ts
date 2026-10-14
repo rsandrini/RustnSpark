@@ -731,9 +731,11 @@ describe('market API (S8.2)', () => {
   it('a 0-base part moves exactly 1¢ each way — never free, never worthless (review item 1)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
+    // A bridge is never sold, so a plain hull stands in for the 0-base part.
+    await prisma.partCatalog.update({ where: { partType: 'hull' }, data: { basePrice: 0 } });
     const board = await getMarket(player.token, 'ceres');
     const bridge = (board.body as MarketListingBody).listings.find(
-      (entry) => entry.kind === 'catalog' && entry.partType === 'bridge',
+      (entry) => entry.kind === 'catalog' && entry.partType === 'hull',
     );
     expect(bridge).toBeDefined();
     expect(bridge!.price).toBe(1);
@@ -990,7 +992,8 @@ describe('market API (S8.2)', () => {
       const player = await onboardPlayer();
 
       const commonRows = await prisma.partCatalog.findMany({
-        where: { active: true, rarity: 'COMMON' },
+        // A bridge is never on the shelf (it comes from Expand).
+        where: { active: true, rarity: 'COMMON', partClass: { not: 'BRIDGE' } },
         select: { partType: true },
       });
       expect(commonRows.length).toBeGreaterThan(0);
@@ -1015,7 +1018,7 @@ describe('market API (S8.2)', () => {
       });
 
       const legendary = await prisma.partCatalog.findFirstOrThrow({
-        where: { active: true, rarity: 'LEGENDARY' },
+        where: { active: true, rarity: 'LEGENDARY', partClass: { not: 'BRIDGE' } },
       });
 
       const response = await buy(player.token, randomUUID(), {

@@ -173,7 +173,8 @@ const FAMILIES: Family[] = [
   },
   // The big bridge: a 2x2 command core, the only way to unlock the big ship formats. It is not
   // sold: a 1x1 bridge is expanded into the 2x2 one rarity level below it (bridge-resize.service.ts).
-  // EPIC / LEGENDARY come later; until then a LEGENDARY 1x1 has no 2x2 to expand into.
+  // The EPIC / LEGENDARY tiers extend the owner's three by the same steps (price x1.8, structure +80);
+  // they are a starting point for the Admin to tune.
   {
     base: 'bridge_2x2',
     partClass: 'BRIDGE',
@@ -214,6 +215,26 @@ const FAMILIES: Family[] = [
         partHp: 180,
         energyCont: -2,
         name: { en: 'Big Bridge 2x2 III', 'pt-BR': 'Ponte de Comando grande 2x2 III' },
+      },
+      {
+        rarity: 'EPIC',
+        mass: 11,
+        structureCost: -480,
+        basePrice: 56000,
+        scrapValue: 5600,
+        partHp: 210,
+        energyCont: -2,
+        name: { en: 'Big Bridge 2x2 IV', 'pt-BR': 'Ponte de Comando grande 2x2 IV' },
+      },
+      {
+        rarity: 'LEGENDARY',
+        mass: 10,
+        structureCost: -560,
+        basePrice: 100000,
+        scrapValue: 10000,
+        partHp: 240,
+        energyCont: -1,
+        name: { en: 'Apex Big Command Core', 'pt-BR': 'Grande Núcleo de Comando Apex' },
       },
     ],
   },

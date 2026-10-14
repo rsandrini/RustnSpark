@@ -126,6 +126,11 @@ describe('bridge expand / shrink API', () => {
   async function setBridgeType(player: AuthPair, partType: string): Promise<string> {
     const bridge = await installedBridge(player);
     await prisma.partInstance.update({ where: { id: bridge.id }, data: { partType } });
+    // As if the pilot had picked the ship's format with this bridge aboard.
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { formatBridgeType: partType },
+    });
     return bridge.id;
   }
 
@@ -267,5 +272,118 @@ describe('bridge expand / shrink API', () => {
     const response = await post(player.token, `/v1/parts/${bridgeId}/expand`, randomUUID());
     expect(response.status).toBe(409);
     expect(response.body).toMatchObject({ message: { error: 'SHIP_ON_MISSION' } });
+  });
+
+  it('expanding the installed bridge makes the ship pick a format again, and it cannot leave before', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const bridgeId = await setBridgeType(player, 'bridge_uncommon');
+    await setCredits(player.seeded.player.id, 1_000_000);
+
+    const expanded = await post(player.token, `/v1/parts/${bridgeId}/expand`, randomUUID());
+    expect(expanded.status).toBe(200);
+    // Installing the new, bigger bridge is what makes the format pick necessary.
+    await prisma.partInstance.update({
+      where: { id: (expanded.body as { partInstanceId: string }).partInstanceId },
+      data: { location: 'INSTALLED', shipId: player.shipId },
+    });
+    const shipResponse = await request(httpServer(testApp.app))
+      .get(`/v1/ships/${player.shipId}`)
+      .set(auth(player.token));
+    expect(shipResponse.body).toMatchObject({ formatChangeRequired: true });
+
+    const template = await prisma.missionTemplate.findFirstOrThrow({
+      where: { type: 'DELIVERY' },
+      orderBy: { id: 'asc' },
+    });
+    const route = await prisma.route.findFirstOrThrow({ orderBy: { id: 'asc' } });
+    const mission = await prisma.missionInstance.create({
+      data: {
+        templateId: template.id,
+        type: 'DELIVERY',
+        factionId: template.factionId,
+        originId: 'ceres',
+        destinationId: 'hedus',
+        legs: [
+          {
+            routeId: route.id,
+            distance: 100,
+            danger: 1,
+            zone: 0,
+            env: { id: 'belt', level: 1, fuelMult: 1 },
+          },
+        ],
+        cargo: {},
+        reward: 100,
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+        seed: `bridge-${randomUUID()}`,
+        status: 'ACCEPTED',
+        playerId: player.seeded.player.id,
+        shipId: player.shipId,
+      },
+    });
+    const dispatch = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/dispatch`)
+      .set(auth(player.token))
+      .send({ missionId: mission.id });
+    expect(dispatch.status).toBe(409);
+    expect(dispatch.body).toMatchObject({ message: { error: 'FORMAT_CHANGE_REQUIRED' } });
+  });
+
+  it('after a bridge change only the new bridge level is offered, and picking one clears the requirement', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await setBridgeType(player, 'bridge_2x2');
+    // The format was last picked for the starter bridge, and a 2x2 is aboard now.
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { formatBridgeType: 'bridge' },
+    });
+    const server = httpServer(testApp.app);
+
+    const listed = await request(server).get('/v1/ship-formats').set(auth(player.token));
+    expect(listed.status).toBe(200);
+    const ids = (listed.body as Array<{ id: string }>).map((format) => format.id);
+    // A COMMON 2x2 opens the small formats too; only its own level is on offer now.
+    expect(ids).toEqual(['classic_square_big_bridge']);
+
+    const small = await request(server)
+      .post(`/v1/ships/${player.shipId}/format`)
+      .set(auth(player.token))
+      .send({ formatId: 'classic_square' });
+    expect(small.status).toBe(409);
+    expect(small.body).toMatchObject({ message: { error: 'FORMAT_NOT_UNLOCKED' } });
+
+    const picked = await request(server)
+      .post(`/v1/ships/${player.shipId}/format`)
+      .set(auth(player.token))
+      .send({ formatId: 'classic_square_big_bridge' });
+    expect(picked.status).toBe(200);
+    expect(picked.body).toMatchObject({ formatChangeRequired: false });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.formatBridgeType).toBe('bridge_2x2');
+  });
+
+  it('never puts a bridge on the shelf, and refuses to sell one by listing id', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const server = httpServer(testApp.app);
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+
+    const market = await request(server)
+      .get(`/v1/locations/${ship.currentLocationId}/market`)
+      .set(auth(player.token));
+    expect(market.status).toBe(200);
+    const listings = (market.body as { listings: Array<{ partClass: string }> }).listings;
+    expect(listings.length).toBeGreaterThan(0);
+    expect(listings.some((listing) => listing.partClass === 'BRIDGE')).toBe(false);
+
+    await setCredits(player.seeded.player.id, 1_000_000);
+    const buy = await request(server)
+      .post('/v1/market/buy')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ listingId: `catalog:${ship.currentLocationId}:bridge_2x2`, expectedPrice: 10000 });
+    expect(buy.status).toBe(404);
   });
 });

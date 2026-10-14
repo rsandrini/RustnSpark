@@ -593,6 +593,9 @@ model Ship {
   // When a waiting rescue arrives (null = nobody called yet).
   rescueAt          DateTime?
   formatId          String            @default("classic_square")
+  // The bridge type the format was last picked for (null = not recorded yet). A different
+  // installed bridge means the pilot must pick a format again before the ship can leave port.
+  formatBridgeType  String?
   owner             Player            @relation(fields: [ownerPlayerId], references: [id])
   parts             PartInstance[]
   location          Location          @relation(fields: [currentLocationId], references: [id])

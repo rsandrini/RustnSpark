@@ -1421,6 +1421,7 @@
         "ACTIVE_MISSION_EXISTS": "Finish or cancel your current mission first.",
         "SHIP_NOT_IN_PORT": "The ship must be docked to leave.",
         "SHIP_REPAIRING": "The ship is being repaired.",
+        "FORMAT_CHANGE_REQUIRED": "Your bridge changed: pick a ship format in the Hangar before leaving.",
         "SHIP_NOT_VIABLE": "The ship cannot fly yet: assemble it in the Hangar first.",
         "NOT_ENOUGH_FUEL": "Not enough fuel for this trip: refuel at the port first."
       }
@@ -1503,6 +1504,7 @@
     "SHIP_NOT_VIABLE": "The ship is not viable — fix the build first.",
     "SHIP_ON_MISSION": "The ship is on a mission.",
     "SHIP_REPAIRING": "The ship is being repaired.",
+    "FORMAT_CHANGE_REQUIRED": "Your bridge changed: pick a ship format in the Hangar before leaving.",
     "SPEED": "Too slow for this contract.",
     "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",
     "UNAUTHORIZED": "Your session ended — sign in again.",

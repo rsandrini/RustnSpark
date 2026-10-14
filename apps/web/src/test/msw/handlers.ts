@@ -271,6 +271,7 @@ const ship = (): ShipResponse => ({
   stance: 'NEUTRAL',
   energyMode: 'FULL',
   engineLevels: { chem: 1, ion: 1 },
+  formatChangeRequired: false,
   float:
     shipStatus === 'ADRIFT'
       ? { routeId: 'ceres-gate', fromId: 'ceres', toId: 'gate', progress: 0.5 }
@@ -568,6 +569,7 @@ export const handlers = [
       stance: 'NEUTRAL',
       energyMode: 'FULL',
       engineLevels: { chem: 1, ion: 1 },
+      formatChangeRequired: false,
       float: null,
       rescue: null,
       layout: [],

@@ -286,6 +286,9 @@ export const ShipResponseSchema = z.object({
   energyMode: EnergyModeSchema,
   /** Engine tuning set on the bridge: 1 = engines as listed, below throttles down, above pushes. */
   engineLevels: z.object({ chem: z.number(), ion: z.number() }),
+  /** The bridge changed: a ship format has to be picked again (from the new bridge's own level)
+      before the ship can leave port. Kept on the server. */
+  formatChangeRequired: z.boolean(),
   /** What the ship carries besides its installed parts: loose parts (one bridge slot each) and a
       mission's cargo (cargo space). Over capacity = the ship cannot depart. */
   hold: z
@@ -1108,6 +1111,7 @@ export const TravelBlockerSchema = z.enum([
   'ACTIVE_MISSION_EXISTS',
   'SHIP_NOT_IN_PORT',
   'SHIP_REPAIRING',
+  'FORMAT_CHANGE_REQUIRED',
   'SHIP_NOT_VIABLE',
   'NOT_ENOUGH_FUEL',
 ]);
