@@ -788,7 +788,9 @@
         "speed": "Velocidade necessária",
         "speedHelp": "Mobilidade mínima (missões de resgate).",
         "minMobility": "Velocidade de entrada da corrida",
-        "minMobilityHelp": "Mobilidade mínima para entrar numa corrida (padrão: a configuração de Corrida)."
+        "minMobilityHelp": "Mobilidade mínima para entrar numa corrida (padrão: a configuração de Corrida).",
+        "destinationTypes": "Termina nestes tipos de lugar",
+        "destinationIds": "Termina nestes lugares"
       }
     },
     "art": {

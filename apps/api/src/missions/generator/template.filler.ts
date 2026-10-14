@@ -115,6 +115,10 @@ export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
 interface TemplateRequirements {
   readonly originFactions?: readonly string[];
   readonly originTypes?: readonly string[];
+  /** Where the mission may end: a location of one of these types (a race to an empty place). */
+  readonly destinationTypes?: readonly string[];
+  /** Where the mission may end: exactly one of these locations. */
+  readonly destinationIds?: readonly string[];
 }
 
 interface Adjacent {
@@ -132,13 +136,33 @@ function requirementsOf(template: FillerTemplate): TemplateRequirements {
   const raw = (template.requirements ?? {}) as {
     originFactions?: unknown;
     originTypes?: unknown;
+    destinationTypes?: unknown;
+    destinationIds?: unknown;
   };
   return {
     originFactions: Array.isArray(raw.originFactions)
       ? (raw.originFactions as string[])
       : undefined,
     originTypes: Array.isArray(raw.originTypes) ? (raw.originTypes as string[]) : undefined,
+    destinationTypes: Array.isArray(raw.destinationTypes)
+      ? (raw.destinationTypes as string[])
+      : undefined,
+    destinationIds: Array.isArray(raw.destinationIds)
+      ? (raw.destinationIds as string[])
+      : undefined,
   };
+}
+
+/** Whether `destination` is a place this template may end at (no condition = anywhere). */
+function matchesDestination(destination: FillerLocation, template: FillerTemplate): boolean {
+  const requirements = requirementsOf(template);
+  const typeMatch =
+    requirements.destinationTypes === undefined ||
+    requirements.destinationTypes.includes(destination.type);
+  const idMatch =
+    requirements.destinationIds === undefined ||
+    requirements.destinationIds.includes(destination.id);
+  return typeMatch && idMatch;
 }
 
 function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
@@ -174,6 +198,13 @@ function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTe
       // A mining board offer is meaningless without a material to name.
       .filter((template) => template.type !== 'MINING' || world.materials.length > 0)
       .filter((template) => matchesOrigin(origin, template))
+      // A template that must end somewhere specific is only offered where such a place exists
+      // other than the origin itself.
+      .filter((template) =>
+        world.locations.some(
+          (location) => location.id !== origin.id && matchesDestination(location, template),
+        ),
+      )
       .sort(byId)
   );
 }
@@ -339,6 +370,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const reachable = world.locations
     .filter((location) => {
       if (location.id === origin.id) return false;
+      if (!matchesDestination(location, template)) return false;
       const candidatePath = shortestPath(origin.id, location.id, adjacency);
       return candidatePath !== null && withinStarterZone(candidatePath);
     })

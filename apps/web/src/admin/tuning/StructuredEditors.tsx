@@ -233,6 +233,14 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
     id: String(row.id),
     label: pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) || String(row.id),
   }));
+  const locationOptions = (locations.data ?? []).map((row) => ({
+    id: String(row.id),
+    label:
+      row.displayName === undefined || row.displayName === null
+        ? String(row.id)
+        : pickLocalized(row.displayName as { en: string; 'pt-BR': string }, i18n.language) ||
+          String(row.id),
+  }));
   const set = (patch: Json) => {
     const next: Json = { ...current, ...patch };
     for (const key of Object.keys(next)) if (next[key] === undefined) delete next[key];
@@ -254,6 +262,24 @@ export function MissionRequirementsEditor(props: StructuredEditorProps) {
         chosen={Array.isArray(current.originFactions) ? (current.originFactions as string[]) : undefined}
         onChange={(next) => set({ originFactions: next })}
         testPrefix="req-faction"
+      />
+      <ChoiceGroup
+        legend={t('tuning.structured.requirements.destinationTypes')}
+        options={types.map((id) => ({ id, label: id }))}
+        chosen={
+          Array.isArray(current.destinationTypes) ? (current.destinationTypes as string[]) : undefined
+        }
+        onChange={(next) => set({ destinationTypes: next })}
+        testPrefix="req-dest-type"
+      />
+      <ChoiceGroup
+        legend={t('tuning.structured.requirements.destinationIds')}
+        options={locationOptions}
+        chosen={
+          Array.isArray(current.destinationIds) ? (current.destinationIds as string[]) : undefined
+        }
+        onChange={(next) => set({ destinationIds: next })}
+        testPrefix="req-dest-location"
       />
       <div className="structured-numbers">
         {NUMBER_HINTS.map((key) => (

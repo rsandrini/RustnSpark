@@ -156,6 +156,50 @@ describe('S6.2 — template filler (pure generation)', () => {
     }
   });
 
+  it('sends a destination-constrained template only to the place it names', () => {
+    const raceToGamma: FillerTemplate = {
+      id: 'race_to_gamma',
+      type: 'RACE',
+      factionId: 'luna',
+      active: true,
+      requirements: { originFactions: ['luna'], destinationIds: ['gamma'] },
+    };
+    const byType: FillerTemplate = {
+      ...raceToGamma,
+      id: 'race_to_scrap',
+      requirements: { originFactions: ['luna'], destinationTypes: ['scrap_field'] },
+    };
+    for (const template of [raceToGamma, byType]) {
+      for (let epoch = 0; epoch < 8; epoch += 1) {
+        for (const origin of [LOC_ALPHA, LOC_BETA]) {
+          const draft = fill(`dest|${epoch}|v0`, origin, [template]);
+          expect(draft.destinationId).toBe('gamma');
+        }
+      }
+    }
+  });
+
+  it('does not offer a destination-constrained template at the place it names, or when none exists', () => {
+    const raceToGamma: FillerTemplate = {
+      id: 'race_to_gamma',
+      type: 'RACE',
+      factionId: 'explorers',
+      active: true,
+      requirements: { destinationIds: ['gamma'] },
+    };
+    // At gamma itself there is nowhere else to go.
+    expect(() => fill('dest|0|v0', LOC_GAMMA, [raceToGamma])).toThrow(MissionGenerationError);
+    const nowhere: FillerTemplate = {
+      ...raceToGamma,
+      id: 'race_nowhere',
+      requirements: { destinationIds: ['missing'] },
+    };
+    expect(() => fill('dest|0|v0', LOC_ALPHA, [nowhere])).toThrow(MissionGenerationError);
+    // With another template available, the unplayable one is simply skipped.
+    const draft = fill('dest|1|v0', LOC_ALPHA, [nowhere, DELIVERY_LUNA]);
+    expect(draft.templateId).toBe('delivery_luna');
+  });
+
   it('excludes inactive templates', () => {
     const activeOnly = [RESCUE_LUNA];
     const draft = fill('alpha|0|v0', LOC_ALPHA, activeOnly);

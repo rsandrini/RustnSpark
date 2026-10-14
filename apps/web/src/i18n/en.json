@@ -788,7 +788,9 @@
         "speed": "Speed needed",
         "speedHelp": "Minimum mobility (rescue missions).",
         "minMobility": "Race entry speed",
-        "minMobilityHelp": "Minimum mobility to enter a race (default: the Race config)."
+        "minMobilityHelp": "Minimum mobility to enter a race (default: the Race config).",
+        "destinationTypes": "Ends at these kinds of places",
+        "destinationIds": "Ends at these places"
       }
     },
     "art": {
