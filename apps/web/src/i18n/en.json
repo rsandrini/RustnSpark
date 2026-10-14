@@ -1061,7 +1061,10 @@
       "expandRow": "{{name}} → {{target}} · costs {{cost}}",
       "shrinkRow": "{{name}} → {{target}} · you get {{credit}}, the new bridge costs {{cost}}",
       "blockedRow": "{{name}} · {{reason}}"
-    }
+    },
+    "sellAmount": "Amount",
+    "sellAmountFor": "How many {{name}} to sell",
+    "sellSome": "Sell {{count}}"
   },
   "inventory": {
     "title": "Inventory",

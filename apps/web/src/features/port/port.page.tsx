@@ -421,6 +421,11 @@ export function PortPage({
     },
   });
 
+  // How many units of each material the pilot means to sell (default: the whole stack).
+  const [sellAmounts, setSellAmounts] = useState<Record<string, number>>({});
+  const sellAmountOf = (materialId: string, held: number): number =>
+    Math.min(held, Math.max(1, sellAmounts[materialId] ?? held));
+
   const [discardOpen, setDiscardOpen] = useState(false);
   // Owner TODO ("rework discard damaged"): the confirm dialog offers to sell the scrap the
   // discard produces, right there in the same call, instead of leaving it in storage.
@@ -751,7 +756,8 @@ export function PortPage({
           <div className="pcard-grid">
             {materials.map((holding) => {
               const name = pickLocalized(holding.displayName, i18n.language);
-              const total = holding.unitPrice * holding.quantity;
+              const amount = sellAmountOf(holding.materialId, holding.quantity);
+              const total = holding.unitPrice * amount;
               const materialTitle = [t('port.quantity', { quantity: holding.quantity }), name].join(
                 ' ',
               );
@@ -765,6 +771,26 @@ export function PortPage({
                     </div>
                   </header>
                   <footer className="pcard-actions">
+                    {holding.quantity > 1 && (
+                      <label className="sell-amount">
+                        <span className="sub">{t('port.sellAmount')}</span>
+                        <input
+                          type="range"
+                          min={1}
+                          max={holding.quantity}
+                          value={amount}
+                          aria-label={t('port.sellAmountFor', { name })}
+                          data-testid={`sell-amount-${holding.materialId}`}
+                          onChange={(event) =>
+                            setSellAmounts((current) => ({
+                              ...current,
+                              [holding.materialId]: Number(event.target.value),
+                            }))
+                          }
+                        />
+                        <b>{amount}</b>
+                      </label>
+                    )}
                     <button
                       type="button"
                       className="btn primary"
@@ -775,11 +801,13 @@ export function PortPage({
                           name,
                           price: total,
                           materialId: holding.materialId,
-                          quantity: holding.quantity,
+                          quantity: amount,
                         });
                       }}
                     >
-                      {t('port.sellAll')}
+                      {amount === holding.quantity
+                        ? t('port.sellAll')
+                        : t('port.sellSome', { count: amount })}
                     </button>
                   </footer>
                 </article>

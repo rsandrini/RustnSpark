@@ -121,6 +121,21 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,844 ¢'));
   });
 
+  it('sells only the chosen amount of a material', async () => {
+    await renderPort();
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    const slider = await screen.findByTestId('sell-amount-iron');
+    fireEvent.change(slider, { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sell 1' }));
+    const popup = await screen.findByRole('dialog', { name: /Sell Iron for \d+ ¢\?/ });
+    fireEvent.click(within(popup).getByRole('button', { name: 'Sell' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/Sold Iron for \d+ ¢\./);
+    // The rest of the stack is still there to sell.
+    await waitFor(() => expect(screen.getByTestId('sell-amount-iron')).toBeInTheDocument());
+  });
+
   it('a destroyed part has no repair slider and is skipped by "set all to 100%"', async () => {
     destroyEngine();
     await renderPort();

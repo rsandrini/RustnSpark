@@ -1061,7 +1061,10 @@
       "expandRow": "{{name}} → {{target}} · custa {{cost}}",
       "shrinkRow": "{{name}} → {{target}} · você recebe {{credit}}, a nova ponte custa {{cost}}",
       "blockedRow": "{{name}} · {{reason}}"
-    }
+    },
+    "sellAmount": "Quantidade",
+    "sellAmountFor": "Quantas unidades de {{name}} vender",
+    "sellSome": "Vender {{count}}"
   },
   "inventory": {
     "title": "Inventário",
