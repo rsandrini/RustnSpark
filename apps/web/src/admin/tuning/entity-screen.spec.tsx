@@ -697,9 +697,12 @@ describe('EntityScreen', () => {
     const save = await screen.findByRole('button', { name: /save/i });
     await user.click(save);
 
-    // back on the list, all four pieces of state survived the round-trip
-    expect(await screen.findByText('tank_big')).toBeInTheDocument();
-    const search = screen.getByRole('searchbox', { name: /search/i });
+    // back on the list, all four pieces of state survived the round-trip. Wait on the
+    // searchbox, not on 'tank_big': the edit form's Part code input still holds that value
+    // while it unmounts, so a text match resolves against the stale form and the next
+    // synchronous query runs before the list has rendered.
+    const search = await screen.findByRole('searchbox', { name: /search/i });
+    expect(screen.getByText('tank_big')).toBeInTheDocument();
     expect(search).toHaveValue('tank');
     const rarityGroup = screen.getByRole('group', { name: /rarity/i });
     expect(within(rarityGroup).getByRole('button', { name: 'Rare' })).toHaveAttribute(
