@@ -180,9 +180,19 @@ export function miningMaterialsFor<M extends FillerMaterial>(
   return narrowed.length > 0 ? narrowed : [...materials];
 }
 
+/**
+ * Places no ordinary mission may end at: the far deep fields. They are reached by long, hostile
+ * routes a starter ship cannot fly, so a template only goes there when it names them itself
+ * (`destinationIds` / `destinationTypes`).
+ */
+const OPT_IN_PLACE_TYPES: ReadonlySet<string> = new Set(['deep_field']);
+
 /** Whether `destination` is a place this template may end at (no condition = anywhere). */
 function matchesDestination(destination: FillerLocation, template: FillerTemplate): boolean {
   const requirements = requirementsOf(template);
+  const named =
+    requirements.destinationIds !== undefined || requirements.destinationTypes !== undefined;
+  if (OPT_IN_PLACE_TYPES.has(destination.type) && !named) return false;
   const typeMatch =
     requirements.destinationTypes === undefined ||
     requirements.destinationTypes.includes(destination.type);

@@ -252,6 +252,66 @@ describe('S6.2 — template filler (pure generation)', () => {
     expect(miningMaterialsFor(deep, [pinned, open], MATERIALS)).toHaveLength(MATERIALS.length);
   });
 
+  it('an ordinary mission never ends at a far deep field, unless its template names it', () => {
+    const deep: FillerLocation = {
+      id: 'deep',
+      type: 'deep_field',
+      zone: 3,
+      factionId: 'explorers',
+    };
+    const route: FillerRoute = {
+      id: 'beta-deep',
+      nodeAId: 'beta',
+      nodeBId: 'deep',
+      distance: 2500,
+      danger: 9,
+    };
+    const base = (templates: readonly FillerTemplate[], origin: FillerLocation) =>
+      fillMission({
+        seed: 'far|0',
+        origin,
+        world: {
+          locations: [LOC_ALPHA, LOC_BETA, deep],
+          routes: [ROUTE_AB, route],
+          routeEnvironments: [
+            ...ROUTE_ENVIRONMENTS,
+            { routeId: 'beta-deep', environmentId: 'open', order: 0 },
+          ],
+          environments: ENVELOPES,
+          templates,
+          materials: MATERIALS,
+        },
+        rules,
+        now: NOW,
+      });
+    for (let epoch = 0; epoch < 12; epoch += 1) {
+      const ordinary = fillMission({
+        seed: `far|${epoch}`,
+        origin: LOC_ALPHA,
+        world: {
+          locations: [LOC_ALPHA, LOC_BETA, deep],
+          routes: [ROUTE_AB, route],
+          routeEnvironments: [
+            ...ROUTE_ENVIRONMENTS,
+            { routeId: 'beta-deep', environmentId: 'open', order: 0 },
+          ],
+          environments: ENVELOPES,
+          templates: [DELIVERY_LUNA],
+          materials: MATERIALS,
+        },
+        rules,
+        now: NOW,
+      });
+      expect(ordinary.destinationId).toBe('beta');
+    }
+    const named: FillerTemplate = {
+      ...DELIVERY_LUNA,
+      id: 'delivery_far',
+      requirements: { originFactions: ['luna'], destinationTypes: ['deep_field'] },
+    };
+    expect(base([named], LOC_ALPHA).destinationId).toBe('deep');
+  });
+
   it('excludes inactive templates', () => {
     const activeOnly = [RESCUE_LUNA];
     const draft = fill('alpha|0|v0', LOC_ALPHA, activeOnly);

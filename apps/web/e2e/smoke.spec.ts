@@ -22,7 +22,7 @@ for (const faction of FACTIONS) {
     // --- map ---------------------------------------------------------------------------------
     await page.goto('/map');
     await expect(page.getByRole('heading', { name: 'Sector map' })).toBeVisible();
-    await expect(page.locator('svg g[role="button"]')).toHaveCount(12);
+    await expect(page.locator('svg g[role="button"]')).toHaveCount(15);
     await assertClean(page, 'map');
 
     // --- board: a real starter ship must be able to take at least one mission ------------------
