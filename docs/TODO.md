@@ -60,31 +60,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   `resolution/damage/layers.ts`, `resolution/encounter/pirate.generator.ts`, the `combat` and
   `encounter` sections of `game-config.defaults.ts`. *Needs design* once the numbers are in.
 
-- [ ] **Split the Defense items in the shop better.** There are too many kinds of parts under
-  Defense (hull frames, armor plates, shields, in five rarities and several sizes), so a part is
-  hard to find. Split the class into clearer groups, for example Hull, Armor and Shields, with
-  sub-filters (size, rarity) and sorting, in the market and the Hangar's Store tab. The same may
-  be worth doing for other crowded classes (weapons, engines). *Needs design:* the groups and
-  whether the split is a new part class (`DEFENSE` is one `PartClass` shared by hull frames, armor
-  plates and shields, and the wear rules key on it) or only a display grouping. *Where:*
-  `apps/web/src/features/hangar/hangar.page.tsx` (store tabs / class chips), the port market in
-  `apps/web/src/features/port/port.page.tsx`, the part-class labels (`hangar.partClasses` in the
-  i18n files). A display-only grouping is the safe first step.
-
-- [ ] **Destroyed bridge = destroyed ship.** If the bridge is destroyed, the ship is destroyed and
-  every part is lost. The pilot then restarts with a **new starter pack** but **keeps the current
-  money**. *Needs design:* what destroys a bridge (condition reaching the dead threshold, in a
-  fight or by wear) and what happens during a mission; what is kept (credits, materials, history,
-  faction, reputation?) and what is lost (installed parts, loose parts, ship); where the new ship
-  starts; a clear warning and a report of the loss; and whether a protected state (repair warning,
-  a grace period) is needed. Interacts with the Hull Frame tanking hull wear and with a dead part
-  cutting connections (a dead bridge is the root of every connection). *Where:* the bridge is
-  exempt from the "dead part drops out of the connections" rule today
-  (`conductiveCatalog` in `apps/api/src/ships/connectivity.ts`); onboarding creates the starter kit
-  (`apps/api/src/players/onboarding.service.ts`, `STARTER_PARTS` in `prisma/seed-data/starter-kit.ts`);
-  the reset-player CLI (`apps/api/src/admin/cli/reset-player.cli.ts`) is a similar "fresh run" flow
-  that keeps faction and history.
-
 - [ ] **Bridges 2×2: Expand/Shrink in the Upgrade tab, and gate ship formats by bridge size.** An epic 1×1 bridge is still
   a small ship; larger bridges are needed so bigger ships can exist. Three 2×2 bridges are already
   in the catalog (owner, 2026-10-13): `bridge_2x2` (COMMON, 10000), `bridge_2x2_uncommon` (18000),
@@ -166,11 +141,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
   (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
 
-- [ ] **Sell a chosen amount of goods, not only "sell all".** The "Your goods" tab in the port needs
-  a slider (or amount input) to sell X units of a material. *Where:* `apps/web/src/features/port/
-  port.page.tsx` (goods tab); check the materials sell endpoint accepts a quantity
-  (`apps/api/src/economy/materials.service.ts`).
-
 - [ ] **Move crafting into a tab of the minerals view.** Craft becomes a tab inside the minerals /
   materials screen instead of its own place. *Where:* the craft cores UI (`.craft-core` in
   `apps/web/src/styles/index.css`, the port page / materials page that renders it).
@@ -188,15 +158,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   whether "no hold" is an error or a warning for missions that carry no cargo by design (delivery
   cargo modes min / fixed / open already exist). *Where:* the mining job start, the mission
   dispatch validation, and the matching warning in the web port / hangar screens.
-
-- [ ] **Review the scrap system; it is confusing.** Every part has its own scrap with its own price,
-  but upgrades also consume scrap, and it is not clear whether that is the same thing, a random
-  piece, or has to come from the same part family being upgraded. Likely simplification: drop
-  per-part scrap and use a **single generic scrap** with a low price, used wherever scrap is needed
-  (upgrades, selling, crafting). *Decide:* how scavenging and selling a part pay out in generic
-  scrap, what the upgrade scrap cost becomes per tier, and the migration of existing player scrap
-  (the rarity-specific scrap IDs from the 2026-10-10 migration, `seed-data/materials.ts`, the
-  upgrade requirements, `materials.service.ts`). Tuning stays in Admin (DB wins over TS defaults).
 
 - [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
   The items show no description in the UI, even though the seed has one

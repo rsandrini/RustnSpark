@@ -279,12 +279,12 @@ describe('repair job API (S8.4)', () => {
 
     const repaired = await prisma.partInstance.findUnique({ where: { id: part.id } });
     expect(repaired?.condition).toBe(100);
-    // 60 points restored at 50 per piece: one scrap of the repaired part's own type (once)
+    // 60 points restored at 50 per piece: one piece of generic scrap (once)
     const scrap = await prisma.playerMaterial.findMany({
-      where: { playerId: player.seeded.player.id, materialId: { startsWith: 'scrap_' } },
+      where: { playerId: player.seeded.player.id, materialId: 'scrap' },
     });
     expect(scrap.map((entry) => [entry.materialId, entry.quantity])).toEqual([
-      [`scrap_${repaired?.partType ?? ''}`, 1],
+      ['scrap', 1],
     ]);
     const gone = await prisma.partInstance.findUnique({ where: { id: other.id } });
     expect(gone).toBeNull();

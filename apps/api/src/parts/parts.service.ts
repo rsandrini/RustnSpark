@@ -11,6 +11,7 @@ import { WalletService } from '../players/wallet.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { ConnectorCell } from './connectors.js';
 import type { PartCatalog } from './part.types.js';
+import { SCRAP_MATERIAL_ID } from '../economy/scrap.js';
 
 export interface CatalogItem {
   partType: string;
@@ -195,8 +196,7 @@ export class PartsService {
    * no port takes them, so this is the way to clear them out. Installed parts are never touched.
    * Naturally idempotent: a second call finds nothing.
    *
-   * Each destroyed part yields `economy.discard_scrap_per_part` of its own `scrap_<type>`
-   * material. Passing `sellScrap` sells exactly that freshly-granted scrap back to the port at
+   * Each destroyed part yields `economy.discard_scrap_per_part` pieces of generic `scrap`. Passing `sellScrap` sells exactly that freshly-granted scrap back to the port at
    * its fixed price in the same transaction — a port action, so the ship must exist and be off
    * a mission (GDD §13, same guards as a material sale). Without `sellScrap` no ship is needed:
    * clearing out ashore (restart-kit salvage) must still work.
@@ -229,24 +229,31 @@ export class PartsService {
       if (rows.length === 0) return { discarded: 0, scrapSold: 0, credits: 0 };
       await tx.partInstance.deleteMany({ where: { id: { in: rows.map((row) => row.id) } } });
 
-      // What is left of each part is scrap of its own type (when that part has scrap at all).
+      // What is left of each part is generic scrap (when that part has scrap at all: a bridge
+      // and anything with no scrap value leave nothing).
       const perPart = this.config.snapshot().rules.economy.discard_scrap_per_part;
       const gained = new Map<string, number>();
       if (perPart > 0) {
-        const scrapIds = await tx.material.findMany({
-          where: { id: { in: rows.map((row) => `scrap_${row.partType}`) } },
+        const withScrap = await tx.partCatalog.findMany({
+          where: {
+            partType: { in: [...new Set(rows.map((row) => row.partType))] },
+            partClass: { not: 'BRIDGE' },
+            scrapValue: { gt: 0 },
+          },
+          select: { partType: true },
+        });
+        const worth = new Set(withScrap.map((part) => part.partType));
+        const pieces = rows.filter((row) => worth.has(row.partType)).length * perPart;
+        const scrap = await tx.material.findUnique({
+          where: { id: SCRAP_MATERIAL_ID },
           select: { id: true },
         });
-        const known = new Set(scrapIds.map((material) => material.id));
-        for (const row of rows) {
-          const id = `scrap_${row.partType}`;
-          if (known.has(id)) gained.set(id, (gained.get(id) ?? 0) + perPart);
-        }
-        for (const [materialId, quantity] of gained) {
+        if (pieces > 0 && scrap !== null) {
+          gained.set(SCRAP_MATERIAL_ID, pieces);
           await tx.playerMaterial.upsert({
-            where: { playerId_materialId: { playerId, materialId } },
-            create: { playerId, materialId, quantity },
-            update: { quantity: { increment: quantity } },
+            where: { playerId_materialId: { playerId, materialId: SCRAP_MATERIAL_ID } },
+            create: { playerId, materialId: SCRAP_MATERIAL_ID, quantity: pieces },
+            update: { quantity: { increment: pieces } },
           });
         }
       }

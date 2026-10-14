@@ -1,5 +1,4 @@
 import type { PrismaClient } from '@prisma/client';
-import { PARTS } from './parts.js';
 
 const MATERIALS = [
   {
@@ -84,31 +83,23 @@ export async function seedMaterials(prisma: PrismaClient): Promise<void> {
   }
 }
 
-// Scrap: one material per part type, worth the part's catalog scrap value at every port (fixed
-// price). Scavenging in scrap places turns it up; it sells through the ordinary materials sale.
+// Scrap: one generic, cheap, fixed-price material, whichever part it came from. Scavenging, repairs,
+// discards and won fights hand it out; upgrades ask for it and any port buys it for its price.
 export async function seedScrapMaterials(prisma: PrismaClient): Promise<void> {
-  const existing = new Set(
-    (await prisma.material.findMany({ select: { id: true } })).map((m) => m.id),
-  );
-  const missing = PARTS
-    // A bridge is never scavenged (and is worth nothing): only parts with a scrap value leave scrap.
-    .filter((part) => part.partClass !== 'BRIDGE' && part.scrapValue > 0)
-    .filter((part) => !existing.has(`scrap_${part.partType}`));
-  if (missing.length === 0) return;
-  await prisma.material.createMany({
-    data: missing.map((part) => ({
-      id: `scrap_${part.partType}`,
-      displayName: {
-        en: `Scrap: ${part.displayName.en}`,
-        'pt-BR': `Sucata: ${part.displayName['pt-BR']}`,
-      },
+  const existing = await prisma.material.findUnique({ where: { id: 'scrap' } });
+  if (existing !== null) return;
+  await prisma.material.create({
+    data: {
+      id: 'scrap',
+      displayName: { en: 'Scrap', 'pt-BR': 'Sucata' },
       description: {
-        en: `Worn-out remains of a ${part.displayName.en}. Sells for a fixed price at any port.`,
-        'pt-BR': `Restos gastos de ${part.displayName['pt-BR']}. Vende por preço fixo em qualquer porto.`,
+        en: 'Worn-out remains of ship parts. Upgrades ask for it, and any port buys it for a fixed price.',
+        'pt-BR':
+          'Restos gastos de peças de nave. Melhorias pedem sucata, e qualquer porto compra por um preço fixo.',
       },
-      rarity: part.rarity,
-      basePrice: part.scrapValue,
+      rarity: 'COMMON',
+      basePrice: 10,
       fixedPrice: true,
-    })),
+    },
   });
 }

@@ -330,11 +330,10 @@ describe('scavenging job (W8)', () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const playerId = player.seeded.player.id;
-    const scrapValue = (
-      await prisma.partCatalog.findUniqueOrThrow({ where: { partType: 'cargo' } })
-    ).scrapValue;
+    const scrapValue = (await prisma.material.findUniqueOrThrow({ where: { id: 'scrap' } }))
+      .basePrice;
     await prisma.playerMaterial.create({
-      data: { playerId, materialId: 'scrap_cargo', quantity: 3 },
+      data: { playerId, materialId: 'scrap', quantity: 3 },
     });
     const listAt = async (place: string) => {
       await prisma.ship.update({
@@ -346,7 +345,7 @@ describe('scavenging job (W8)', () => {
         .set(auth(player.token));
       return (
         res.body as { materials: Array<{ materialId: string; unitPrice: number }> }
-      ).materials.find((entry) => entry.materialId === 'scrap_cargo')!.unitPrice;
+      ).materials.find((entry) => entry.materialId === 'scrap')!.unitPrice;
     };
     expect(await listAt('ceres')).toBe(scrapValue);
     expect(await listAt('drift')).toBe(scrapValue);
@@ -356,15 +355,15 @@ describe('scavenging job (W8)', () => {
       .post('/v1/market/sell-material')
       .set(auth(player.token))
       .set('Idempotency-Key', randomUUID())
-      .send({ materialId: 'scrap_cargo', quantity: 3, expectedPrice: scrapValue * 3 });
+      .send({ materialId: 'scrap', quantity: 3, expectedPrice: scrapValue * 3 });
     expect(sold.status).toBe(200);
     expect((sold.body as { price: number }).price).toBe(scrapValue * 3);
   });
 
   it('scrap is never something a mining offer asks you to dig', async () => {
     await freshSeededApp();
-    const scrap = await prisma.material.count({ where: { fixedPrice: true } });
-    expect(scrap).toBeGreaterThan(10);
+    const scrap = await prisma.material.findUnique({ where: { id: 'scrap' } });
+    expect(scrap?.fixedPrice).toBe(true);
     const mining = await prisma.missionInstance.count({ where: { type: 'MINING' } });
     expect(mining).toBe(0);
   });

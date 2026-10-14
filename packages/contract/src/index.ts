@@ -1008,7 +1008,7 @@ export const PartUpgradeQuoteResponseSchema = z.object({
   nextPartType: z.string().optional(),
   nextDisplayName: LocalizedTextSchema.optional(),
   cost: z.number().optional(),
-  /** What the upgrade also asks for besides money, against what the pilot holds ('scrap' = any scrap). */
+  /** What the upgrade also asks for besides money, against what the pilot holds. */
   materials: z
     .array(
       z.object({

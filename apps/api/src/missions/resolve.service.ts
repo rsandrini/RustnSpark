@@ -21,6 +21,7 @@ import { rollConnectorsForPartType } from '../parts/roll-connectors-for-part-typ
 import { ShipLossService } from './ship-loss.service.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
+import { SCRAP_MATERIAL_ID } from '../economy/scrap.js';
 
 const NO_MISSION_LOG = '';
 // Hash preview length for the resolve log line — not a balance value (missions/ lint scope).
@@ -231,7 +232,8 @@ export class MissionResolveService {
               },
             });
           } else {
-            const materialId = `scrap_${found.partType}`;
+            // Generic scrap, whichever part it was found of (the log still names the part).
+            const materialId = SCRAP_MATERIAL_ID;
             const exists = await tx.material.findUnique({
               where: { id: materialId },
               select: { id: true },

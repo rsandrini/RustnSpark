@@ -532,10 +532,10 @@ describe('market API (S8.2)', () => {
       .set(auth(player.token));
     expect(discarded.status).toBe(200);
     expect(discarded.body).toEqual({ discarded: 1, scrapSold: 0, credits: 0 });
-    // By default the scrap stays in storage: what is left of the wreck is scrap of its own type.
+    // By default the scrap stays in storage: what is left of the wreck is generic scrap.
     expect(
       await prisma.playerMaterial.findUnique({
-        where: { playerId_materialId: { playerId, materialId: 'scrap_cargo' } },
+        where: { playerId_materialId: { playerId, materialId: 'scrap' } },
       }),
     ).toMatchObject({ quantity: 1 });
     expect(
@@ -567,7 +567,7 @@ describe('market API (S8.2)', () => {
     const wreck = await prisma.partInstance.create({
       data: { partType: 'cargo', ownerPlayerId: playerId, condition: 0, location: 'INVENTORY' },
     });
-    const scrapValue = (await prisma.material.findUniqueOrThrow({ where: { id: 'scrap_cargo' } }))
+    const scrapValue = (await prisma.material.findUniqueOrThrow({ where: { id: 'scrap' } }))
       .basePrice;
     expect(scrapValue).toBeGreaterThan(0);
     const creditsBefore = (
@@ -586,7 +586,7 @@ describe('market API (S8.2)', () => {
     // The scrap never lands in storage: it is sold in the same call, at its fixed price.
     expect(
       await prisma.playerMaterial.findUnique({
-        where: { playerId_materialId: { playerId, materialId: 'scrap_cargo' } },
+        where: { playerId_materialId: { playerId, materialId: 'scrap' } },
       }),
     ).toBeNull();
     expect(

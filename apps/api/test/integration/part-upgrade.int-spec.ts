@@ -276,7 +276,7 @@ describe('part upgrade API (round 5)', () => {
     // ship's connections is solved once per part, not once per rarity).
     const ports = { cells: [{ dx: 0, dy: 0, side: 'E', kind: 'split' }] };
     await prisma.partInstance.update({ where: { id: partId }, data: { connectors: ports } });
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
+    await giveMaterial(player.seeded.player.id, 'scrap', 10);
     const quote = await quoteUpgrade(player.token, partId);
     const cost = (quote.body as { cost: number }).cost;
 
@@ -341,7 +341,7 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 1);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
+    await giveMaterial(player.seeded.player.id, 'scrap', 10);
 
     const response = await doUpgrade(player.token, partId, randomUUID());
     expect(response.status).toBe(409);
@@ -385,7 +385,7 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100000);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 10);
+    await giveMaterial(player.seeded.player.id, 'scrap', 10);
 
     const noKey = await doUpgrade(player.token, partId, undefined);
     expect(noKey.status).toBe(400);
@@ -403,12 +403,11 @@ describe('part upgrade API (round 5)', () => {
     expect(events).toHaveLength(1);
   });
 
-  it('quotes the materials an upgrade asks for, against what the pilot holds (scrap from any part)', async () => {
+  it('quotes the materials an upgrade asks for, against what the pilot holds', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
-    await giveMaterial(player.seeded.player.id, 'scrap_weapon_laser', 1);
+    await giveMaterial(player.seeded.player.id, 'scrap', 2);
 
     const quote = await quoteUpgrade(player.token, partId);
     const { materials } = quote.body as {
@@ -424,30 +423,36 @@ describe('part upgrade API (round 5)', () => {
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100000);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
+    await giveMaterial(player.seeded.player.id, 'scrap', 1);
 
     const refused = await doUpgrade(player.token, partId, randomUUID());
     expect(refused.status).toBe(409);
     expect(refused.body).toMatchObject({ message: { error: 'INSUFFICIENT_MATERIALS' } });
     expect(await currentCredits(player.seeded.player.id)).toBe(100000);
-    expect(await held(player.seeded.player.id, 'scrap_cargo')).toBe(1);
+    expect(await held(player.seeded.player.id, 'scrap')).toBe(1);
     const stored = await prisma.partInstance.findUniqueOrThrow({ where: { id: partId } });
     expect(stored.partType).toBe('hull');
   });
 
-  it('takes the scrap from the least valuable first and keeps the rest of the goods', async () => {
+  it('takes the scrap it asks for and keeps the rest of the goods', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100000);
     const partId = await addLoosePart(player.seeded.player.id, 'hull');
-    // cargo scrap is worth 20 each, a legendary laser scrap far more
-    await giveMaterial(player.seeded.player.id, 'scrap_cargo', 1);
-    await giveMaterial(player.seeded.player.id, 'scrap_weapon_laser_legendary', 3);
+    await giveMaterial(player.seeded.player.id, 'scrap', 5);
+    await giveMaterial(player.seeded.player.id, 'common_ore', 3);
+
+    const quote = await quoteUpgrade(player.token, partId);
+    const needed =
+      (quote.body as { materials: Array<{ materialId: string; needed: number }> }).materials.find(
+        (entry) => entry.materialId === 'scrap',
+      )?.needed ?? 0;
+    expect(needed).toBeGreaterThan(0);
 
     const ok = await doUpgrade(player.token, partId, randomUUID());
     expect(ok.status).toBe(200);
-    expect(await held(player.seeded.player.id, 'scrap_cargo')).toBe(0);
-    expect(await held(player.seeded.player.id, 'scrap_weapon_laser_legendary')).toBe(2);
+    expect(await held(player.seeded.player.id, 'scrap')).toBe(5 - needed);
+    expect(await held(player.seeded.player.id, 'common_ore')).toBe(3);
   });
 
   it('a rare step asks for a prototype core and rare crystals, and an epic one for the ancient core too', async () => {

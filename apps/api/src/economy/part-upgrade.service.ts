@@ -10,8 +10,6 @@ import { upgradeNeeds } from './upgrade-materials.js';
 
 export const PART_UPGRADED_EVENT = 'part.upgraded';
 const FULL_CONDITION = 100;
-const SCRAP = 'scrap';
-const SCRAP_PREFIX = 'scrap_';
 
 export interface PartUpgradeQuote {
   readonly partInstanceId: string;
@@ -30,7 +28,7 @@ export interface PartUpgradeQuote {
   readonly nextCatalog?: PartCatalogStats;
 }
 
-/** One material the upgrade asks for, against what the pilot holds ('scrap' = any scrap). */
+/** One material the upgrade asks for, against what the pilot holds. */
 export interface PartUpgradeMaterial {
   readonly materialId: string;
   readonly displayName: { en: string; 'pt-BR': string };
@@ -124,7 +122,7 @@ export class PartUpgradeService {
     return { part, eligible: true as const, nextCatalog, cost, needs };
   }
 
-  /** What the pilot holds of each needed material ('scrap' adds up every scrap material). */
+  /** What the pilot holds of each needed material. */
   private async materialsFor(
     client: Pick<PrismaService, 'playerMaterial' | 'material'>,
     playerId: string,
@@ -134,7 +132,7 @@ export class PartUpgradeService {
       where: { playerId, quantity: { gt: 0 } },
       select: { materialId: true, quantity: true },
     });
-    const ids = needs.map((need) => need.material).filter((id) => id !== SCRAP);
+    const ids = needs.map((need) => need.material);
     const rows = await client.material.findMany({
       where: { id: { in: ids } },
       select: { id: true, displayName: true },
@@ -142,22 +140,15 @@ export class PartUpgradeService {
     const names = new Map(rows.map((row) => [row.id, bilingual(row.displayName)]));
     return needs.map((need) => ({
       materialId: need.material,
-      displayName:
-        need.material === SCRAP
-          ? { en: 'Scrap (any part)', 'pt-BR': 'Sucata (qualquer peça)' }
-          : (names.get(need.material) ?? { en: need.material, 'pt-BR': need.material }),
+      displayName: names.get(need.material) ?? { en: need.material, 'pt-BR': need.material },
       needed: need.quantity,
       have: held
-        .filter((entry) =>
-          need.material === SCRAP
-            ? entry.materialId.startsWith(SCRAP_PREFIX)
-            : entry.materialId === need.material,
-        )
+        .filter((entry) => entry.materialId === need.material)
         .reduce((sum, entry) => sum + entry.quantity, 0),
     }));
   }
 
-  /** Takes the needed units out of the pilot's goods: scrap from the least valuable scrap first. */
+  /** Takes the needed units out of the pilot's goods. */
   private async consume(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
     playerId: string,
@@ -166,15 +157,8 @@ export class PartUpgradeService {
     for (const need of needs) {
       let left = need.quantity;
       const rows = await tx.playerMaterial.findMany({
-        where: {
-          playerId,
-          quantity: { gt: 0 },
-          ...(need.material === SCRAP
-            ? { materialId: { startsWith: SCRAP_PREFIX } }
-            : { materialId: need.material }),
-        },
-        include: { material: { select: { basePrice: true } } },
-        orderBy: [{ material: { basePrice: 'asc' } }, { materialId: 'asc' }],
+        where: { playerId, quantity: { gt: 0 }, materialId: need.material },
+        orderBy: { materialId: 'asc' },
       });
       for (const row of rows) {
         if (left <= 0) break;
