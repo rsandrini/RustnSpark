@@ -141,10 +141,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
   (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
 
-- [ ] **Move crafting into a tab of the minerals view.** Craft becomes a tab inside the minerals /
-  materials screen instead of its own place. *Where:* the craft cores UI (`.craft-core` in
-  `apps/web/src/styles/index.css`, the port page / materials page that renders it).
-
 - [ ] **Mining animation.** The mining job and its screen need an animation (like the ship scene
   for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
   the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.

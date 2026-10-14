@@ -898,6 +898,10 @@ describe('port (S10.9)', () => {
     );
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    // Crafting is its own tab of the materials area, with a badge for what can be crafted now.
+    expect(screen.queryByTestId('craft-prototype_core')).toBeNull();
+    fireEvent.click(await screen.findByRole('tab', { name: /^Craft cores/ }));
+    expect(screen.getByRole('tab', { name: /^Craft cores/ })).toHaveTextContent('1');
     const prototype = await screen.findByTestId('craft-prototype_core');
     expect(prototype).toHaveTextContent('Prototype Core: 6 of 5 core fragments');
     expect(within(screen.getByTestId('craft-ancient_core')).getByRole('button')).toBeDisabled();

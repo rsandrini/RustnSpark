@@ -421,6 +421,8 @@ export function PortPage({
     },
   });
 
+  // The materials area of the goods tab: selling what was dug up, or crafting cores from fragments.
+  const [materialsView, setMaterialsView] = useState<'sell' | 'craft'>('sell');
   // How many units of each material the pilot means to sell (default: the whole stack).
   const [sellAmounts, setSellAmounts] = useState<Record<string, number>>({});
   const sellAmountOf = (materialId: string, held: number): number =>
@@ -537,6 +539,12 @@ export function PortPage({
   const installed = inventory.filter((entry) => entry.location === 'INSTALLED');
   const damaged = installed.filter((entry) => entry.condition < 100);
   const materials = materialsQuery.data?.materials ?? [];
+  // How many cores the fragments held can be crafted right now (the Craft tab's badge).
+  const fragmentsHeld =
+    materials.find((holding) => holding.materialId === 'core_fragment')?.quantity ?? 0;
+  const craftableCores = Object.values(display.coreFragments).filter(
+    (needed) => fragmentsHeld >= needed,
+  ).length;
   const fuel = ship.fuel;
   const fuelCap = ship.sheet.fuelCap;
   // A ship with no tank at all (fuelCap 0 — an all-ion ship, or one mid-refit) reads as
@@ -729,91 +737,114 @@ export function PortPage({
           </div>
 
           <h3>{t('port.materials')}</h3>
-          {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
-          {Object.entries(display.coreFragments).map(([core, needed]) => {
-            const fragments =
-              materials.find((holding) => holding.materialId === 'core_fragment')?.quantity ?? 0;
-            return (
-              <div key={core} className="panel craft-core" data-testid={`craft-${core}`}>
-                <span>
-                  {t('port.craftLine', {
-                    name: t(`port.cores.${core}`),
-                    needed,
-                    have: fragments,
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={fragments < needed || craftCore.isPending}
-                  onClick={() => craftCore.mutate(core)}
-                >
-                  {t('port.craft')}
-                </button>
-              </div>
-            );
-          })}
-          <div className="pcard-grid">
-            {materials.map((holding) => {
-              const name = pickLocalized(holding.displayName, i18n.language);
-              const amount = sellAmountOf(holding.materialId, holding.quantity);
-              const total = holding.unitPrice * amount;
-              const materialTitle = [t('port.quantity', { quantity: holding.quantity }), name].join(
-                ' ',
-              );
-              return (
-                <article key={holding.materialId} className="pcard rarity-common">
-                  <header className="pcard-head">
-                    <h3 className="pcard-name">{materialTitle}</h3>
-                    <div className="pcard-price">
-                      <b>{money(total)}</b>
-                      <small>{t('port.unitPrice', { price: holding.unitPrice })}</small>
-                    </div>
-                  </header>
-                  <footer className="pcard-actions">
-                    {holding.quantity > 1 && (
-                      <label className="sell-amount">
-                        <span className="sub">{t('port.sellAmount')}</span>
-                        <input
-                          type="range"
-                          min={1}
-                          max={holding.quantity}
-                          value={amount}
-                          aria-label={t('port.sellAmountFor', { name })}
-                          data-testid={`sell-amount-${holding.materialId}`}
-                          onChange={(event) =>
-                            setSellAmounts((current) => ({
-                              ...current,
-                              [holding.materialId]: Number(event.target.value),
-                            }))
-                          }
-                        />
-                        <b>{amount}</b>
-                      </label>
-                    )}
+          <PortTabs
+            tabs={[
+              { id: 'sell', label: t('port.materialsSell') },
+              {
+                id: 'craft',
+                label: t('port.materialsCraft'),
+                ...(craftableCores > 0 ? { badge: craftableCores } : {}),
+              },
+            ]}
+            activeId={materialsView}
+            onChange={(id) => setMaterialsView(id === 'craft' ? 'craft' : 'sell')}
+          />
+          {materialsView === 'sell' && materials.length === 0 && (
+            <p className="sub">{t('inventory.noMaterials')}</p>
+          )}
+          {materialsView === 'craft' && (
+            <div className="stack" data-testid="craft-tab">
+              <p className="sub">{t('port.craftHelp')}</p>
+              {Object.entries(display.coreFragments).map(([core, needed]) => {
+                const fragments =
+                  materials.find((holding) => holding.materialId === 'core_fragment')?.quantity ??
+                  0;
+                return (
+                  <div key={core} className="panel craft-core" data-testid={`craft-${core}`}>
+                    <span>
+                      {t('port.craftLine', {
+                        name: t(`port.cores.${core}`),
+                        needed,
+                        have: fragments,
+                      })}
+                    </span>
                     <button
                       type="button"
-                      className="btn primary"
-                      onClick={() => {
-                        setNotice(null);
-                        setConfirm({
-                          kind: 'sellMaterial',
-                          name,
-                          price: total,
-                          materialId: holding.materialId,
-                          quantity: amount,
-                        });
-                      }}
+                      className="btn"
+                      disabled={fragments < needed || craftCore.isPending}
+                      onClick={() => craftCore.mutate(core)}
                     >
-                      {amount === holding.quantity
-                        ? t('port.sellAll')
-                        : t('port.sellSome', { count: amount })}
+                      {t('port.craft')}
                     </button>
-                  </footer>
-                </article>
-              );
-            })}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {materialsView === 'sell' && (
+            <div className="pcard-grid">
+              {materials.map((holding) => {
+                const name = pickLocalized(holding.displayName, i18n.language);
+                const amount = sellAmountOf(holding.materialId, holding.quantity);
+                const total = holding.unitPrice * amount;
+                const materialTitle = [
+                  t('port.quantity', { quantity: holding.quantity }),
+                  name,
+                ].join(' ');
+                return (
+                  <article key={holding.materialId} className="pcard rarity-common">
+                    <header className="pcard-head">
+                      <h3 className="pcard-name">{materialTitle}</h3>
+                      <div className="pcard-price">
+                        <b>{money(total)}</b>
+                        <small>{t('port.unitPrice', { price: holding.unitPrice })}</small>
+                      </div>
+                    </header>
+                    <footer className="pcard-actions">
+                      {holding.quantity > 1 && (
+                        <label className="sell-amount">
+                          <span className="sub">{t('port.sellAmount')}</span>
+                          <input
+                            type="range"
+                            min={1}
+                            max={holding.quantity}
+                            value={amount}
+                            aria-label={t('port.sellAmountFor', { name })}
+                            data-testid={`sell-amount-${holding.materialId}`}
+                            onChange={(event) =>
+                              setSellAmounts((current) => ({
+                                ...current,
+                                [holding.materialId]: Number(event.target.value),
+                              }))
+                            }
+                          />
+                          <b>{amount}</b>
+                        </label>
+                      )}
+                      <button
+                        type="button"
+                        className="btn primary"
+                        onClick={() => {
+                          setNotice(null);
+                          setConfirm({
+                            kind: 'sellMaterial',
+                            name,
+                            price: total,
+                            materialId: holding.materialId,
+                            quantity: amount,
+                          });
+                        }}
+                      >
+                        {amount === holding.quantity
+                          ? t('port.sellAll')
+                          : t('port.sellSome', { count: amount })}
+                      </button>
+                    </footer>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 

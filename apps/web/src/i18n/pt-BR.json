@@ -1074,7 +1074,10 @@
     },
     "sellAmount": "Quantidade",
     "sellAmountFor": "Quantas unidades de {{name}} vender",
-    "sellSome": "Vender {{count}}"
+    "sellSome": "Vender {{count}}",
+    "materialsSell": "Materiais",
+    "materialsCraft": "Fabricar núcleos",
+    "craftHelp": "Fragmentos de núcleo fabricam um núcleo inteiro, tudo ou nada. Núcleos liberam as melhorias épicas e lendárias."
   },
   "inventory": {
     "title": "Inventário",

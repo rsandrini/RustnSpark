@@ -1074,7 +1074,10 @@
     },
     "sellAmount": "Amount",
     "sellAmountFor": "How many {{name}} to sell",
-    "sellSome": "Sell {{count}}"
+    "sellSome": "Sell {{count}}",
+    "materialsSell": "Materials",
+    "materialsCraft": "Craft cores",
+    "craftHelp": "Core fragments craft into a whole core, all or nothing. Cores unlock the epic and legendary upgrades."
   },
   "inventory": {
     "title": "Inventory",
