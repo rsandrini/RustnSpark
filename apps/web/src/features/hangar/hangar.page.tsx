@@ -298,9 +298,19 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     },
   });
 
+  // What the bridge opens depends on the bridge aboard (and, right after a change, on the
+  // server's "pick again" state), so the list is keyed by both: a list fetched for the old bridge
+  // must never be shown for the new one.
+  const bridgeAboard = parts.find(
+    (item) =>
+      item.location === 'INSTALLED' &&
+      item.shipId === ship?.id &&
+      item.catalog.partClass === 'BRIDGE',
+  )?.partType;
   const formatsQuery = useQuery({
-    queryKey: ['shipFormats'],
+    queryKey: ['shipFormats', bridgeAboard ?? null, ship?.formatChangeRequired ?? false],
     queryFn: () => client.get<ShipFormat[]>('/v1/ship-formats'),
+    staleTime: 0,
   });
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
   const [formatPreview, setFormatPreview] = useState<ShipFormat | null>(null);
@@ -788,7 +798,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   {t('hangar.actions.clear')}
                 </button>
                 <span className="hangar-actions-sep" aria-hidden="true" />
-                <button type="button" className="btn" onClick={() => setFormatPickerOpen(true)}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    void queryClient.invalidateQueries({ queryKey: ['shipFormats'] });
+                    setFormatPickerOpen(true);
+                  }}
+                >
                   {t('hangar.format.button')}
                 </button>
               </div>
