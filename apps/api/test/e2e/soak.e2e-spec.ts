@@ -375,14 +375,14 @@ describe('concurrency soak (S12.3)', () => {
     const resolver = world.app.get(MissionResolveService);
 
     if (jobs.length > 0) {
-      const settled = await Promise.allSettled(
+      // Losers of the race are rejected by the MissionLog unique key or short-circuit as skipped,
+      // and when the in-process worker got there first every call is rejected; none of that is an
+      // assertion by itself, so the convergence check below is what proves the outcome.
+      await Promise.allSettled(
         jobs.flatMap((job) =>
           Array.from({ length: 3 }, () => resolver.resolve(job.data as DispatchJobData)),
         ),
       );
-      // Losers of the race are rejected by the MissionLog unique key or short-circuit as skipped;
-      // what must hold is that somebody committed effects.
-      expect(settled.some((entry) => entry.status === 'fulfilled')).toBe(true);
     } else {
       // The job is gone without a trace: the only acceptable reason is that the worker already
       // resolved it, in which case the world must say so.
