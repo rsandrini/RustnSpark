@@ -132,6 +132,29 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   contract + admin schema, a migration, `apps/web/src/features/market/market-panel.tsx`, and the
   bridge-replace flow in the hangar.
 
+- [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
+  charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and
+  search reset after every save** — they live in `useState` in `EntityScreen.tsx` and the screen
+  *unmounts* while the form is open, so returning remounts empty (`admin-routes.tsx` routes
+  `:new`/`:id`/`:id/clone` to a separate `EntityFormScreen` that navigates back with no query
+  string). *Fix:* move filters/search into URL search params (`useSearchParams`, precedent
+  `board.page.tsx`), and carry `location.search` when the form navigates back. (2) **No column
+  selection** — the list hardcodes 5 columns (`LIST_COLUMNS`, first 5 visible schema fields minus
+  `active`), so part attributes can't be compared side by side; make the column set choosable from
+  the schema's visible fields and persist it in the same URL params (e.g. `?cols=w,h,mass,pot`).
+  (3) **Search is a raw `JSON.stringify(row)` substring match with no sorting** — replace with a
+  localized name search (`pickLocalized(row.displayName)`, comparator-map sorting, clickable
+  headers; copy the `market-panel.tsx` `SortKey`/`useMemo` pattern). (4) **Comparison chart**: let
+  the admin tick rows and compare selected parts — either all engines of a rarity, or one part
+  across rarities — plotting the chosen numeric fields. No chart lib exists in the repo today; first
+  ship a comparison **table** (model on `part-detail.tsx` stat-compare tables), then a small chart
+  (recharts, or hand-rolled SVG bars like `GridCellsPreview`) gated to `entityName === 'parts'`
+  the same way `PART_SECTIONS` / `MANUAL_SAVE_ENTITIES` already specialize parts. Stats/labels
+  already exist under `parts.stat.*` i18n. *Where:* `apps/web/src/admin/tuning/EntityScreen.tsx`
+  (filters, columns, search, sort), `EntityFormScreen.tsx` (preserve search on navigate-back),
+  `entity-screen.spec.tsx` (regression: filters survive a save round-trip), and a new compare
+  component beside `part-detail.tsx`'s compare tables.
+
 - [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
   sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
   design:* expand the map with harder and longer quests (farther zones) with better drops of rare
