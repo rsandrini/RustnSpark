@@ -697,11 +697,12 @@ describe('port (S10.9)', () => {
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
 
-    // hull and both cargo racks have a next-tier fixture entry; bridge/engine/tank/battery don't.
+    // hull and both cargo racks have a next-tier fixture entry; engine/tank/battery don't.
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
     expect(screen.getAllByText('Cargo Rack')).toHaveLength(2);
-    expect(screen.queryByText('Bridge')).toBeNull();
     expect(screen.queryByText('Small Chemical Engine')).toBeNull();
+    // The bridge is always here: its card carries the size controls even with no next tier.
+    expect(await screen.findByText('Bridge')).toBeInTheDocument();
   });
 
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
@@ -834,14 +835,17 @@ describe('port (S10.9)', () => {
     await waitFor(() => expect(screen.queryByText('Plated Hull')).toBeNull());
   });
 
-  it('lists the bridge with what a shrink pays and costs', async () => {
+  it('puts Expand / Shrink inside the bridge card in the Upgrade tab', async () => {
     await renderPort();
     fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
-    const panel = await screen.findByTestId('bridge-resize');
+    const control = await screen.findByTestId(/^bridge-resize-/);
+    // It lives in the bridge's own card, not in a block of its own on the page.
+    const card = control.closest('.pcard');
+    expect(card).not.toBeNull();
     await waitFor(() =>
-      expect(panel).toHaveTextContent('you get 6,000 ¢, the new bridge costs 0 ¢'),
+      expect(control).toHaveTextContent('you get 6,000 ¢, the new bridge costs 0 ¢'),
     );
-    expect(within(panel).getByRole('button', { name: 'Shrink' })).toBeEnabled();
+    expect(within(control).getByRole('button', { name: 'Shrink' })).toBeEnabled();
   });
 
   it('the upgrade card says what it asks for besides money, and blocks while something is missing', async () => {

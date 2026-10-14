@@ -1051,8 +1051,6 @@
     "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir.",
     "upgradePriceCredits": "Créditos: {{cost}} (você tem {{have}})",
     "bridgeResize": {
-      "title": "Tamanho da ponte",
-      "help": "Uma ponte maior libera formatos de nave maiores. Expandir transforma uma ponte 1×1 na 2×2 de uma raridade abaixo (você paga o preço cheio; a ponte antiga é consumida). Reduzir vende uma ponte 2×2 e entrega a 1×1 da mesma raridade.",
       "expand": "Expandir",
       "shrink": "Reduzir",
       "expandDone": "Expandida: {{name}} está no seu inventário. Instale no hangar.",
@@ -1072,9 +1070,8 @@
         "TOO_DAMAGED_TO_SELL": "Danificada demais para vender: repare primeiro.",
         "FORMAT_REQUIRES_BRIDGE": "O formato da sua nave exige uma ponte grande: troque para um formato menor primeiro."
       },
-      "expandRow": "{{name}} → {{target}} · custa {{cost}}",
-      "shrinkRow": "{{name}} → {{target}} · você recebe {{credit}}, a nova ponte custa {{cost}}",
-      "blockedRow": "{{name}} · {{reason}}"
+      "expandRow": "Vira {{target}} · custa {{cost}}",
+      "shrinkRow": "Vira {{target}} · você recebe {{credit}}, a nova ponte custa {{cost}}"
     },
     "sellAmount": "Quantidade",
     "sellAmountFor": "Quantas unidades de {{name}} vender",

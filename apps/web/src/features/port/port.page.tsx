@@ -41,7 +41,7 @@ import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
-import { BridgeResizePanel } from './bridge-resize-panel';
+import { useBridgeResize } from './bridge-resize-panel';
 import type { PartInfoData } from '../parts/part-detail';
 
 const PORT_TABS = [
@@ -279,6 +279,18 @@ export function PortPage({
     }
     setActionError(errorText(t, error, t('port.failed')));
   };
+
+  // Expand / shrink of the pilot's bridge: its controls sit inside the bridge's own card.
+  const bridgeResize = useBridgeResize({
+    parts: upgradeCandidates,
+    wallet,
+    money,
+    onChanged: (message) => {
+      setActionError(null);
+      setNotice(message);
+      afterTrade();
+    },
+  });
 
   const sellPart = useMutation({
     mutationFn: (args: { partInstanceId: string; expectedPrice: number }) =>
@@ -1107,16 +1119,7 @@ export function PortPage({
               <li>{t('port.upgradeRule3')}</li>
             </ol>
           </div>
-          <BridgeResizePanel
-            parts={upgradeCandidates}
-            wallet={wallet}
-            money={money}
-            onChanged={(message) => {
-              setActionError(null);
-              setNotice(message);
-              afterTrade();
-            }}
-          />
+          {bridgeResize.dialog}
           {(() => {
             const quotes = upgradeQuotesQuery.data;
             // Why a part is NOT on the list: said plainly, with the way out.
@@ -1175,7 +1178,16 @@ export function PortPage({
                 </button>
               </div>
             );
-            if (eligible.length === 0) {
+            // The bridge always has its card here (upgrade, expand or shrink live together on it),
+            // even when it cannot be upgraded right now.
+            const cards = [
+              ...eligible,
+              ...upgradeCandidates.filter(
+                (item) =>
+                  bridgeResize.isBridge(item) && !eligible.some((entry) => entry.id === item.id),
+              ),
+            ];
+            if (cards.length === 0) {
               return (
                 <>
                   {filterChips}
@@ -1193,10 +1205,30 @@ export function PortPage({
             return (
               <>
                 {filterChips}
+                {eligible.length === 0 && (
+                  <p className="sub">
+                    {upgradable.length > 0
+                      ? t('port.upgradeNoneAffordable')
+                      : t('port.upgradeNoneWhy')}
+                  </p>
+                )}
                 <div className="pcard-grid">
-                  {eligible.map((item) => {
+                  {cards.map((item) => {
                     const quote = quotes?.get(item.id);
-                    if (quote === undefined || !quote.eligible) return null;
+                    if (quote === undefined) return null;
+                    if (!quote.eligible) {
+                      // Not upgradable now (top rarity, needs repair...): the bridge still shows,
+                      // with its own size controls.
+                      return (
+                        <PartCard
+                          key={item.id}
+                          part={item}
+                          actions={
+                            <div className="upgrade-actions">{bridgeResize.actionsFor(item)}</div>
+                          }
+                        />
+                      );
+                    }
                     const name = partName(item);
                     const nextName =
                       quote.nextDisplayName !== undefined
@@ -1284,6 +1316,7 @@ export function PortPage({
                             >
                               {t('port.upgrade')}
                             </button>
+                            {bridgeResize.actionsFor(item)}
                           </div>
                         }
                       />
