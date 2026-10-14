@@ -43,20 +43,6 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
   first mission) so the first minutes work. It can link to the wiki for details.
 
-- [x] **BUG: Auto layout does not work.** Reproduce it in the Hangar (what happens: an error, parts
-  left out, or a layout that is not ready to fly?) and fix it. *Possible link to check first:* the
-  new flight rules (a disconnected part, `PART_DISCONNECTED`, and a connector against a part it does
-  not fit, `PORT_INCORRECT`) were added on 2026-10-12, and auto layout only places parts so that
-  they reach the bridge (`connectedPartIds` in `apps/api/src/ships/auto-layout.ts`); it does not
-  avoid incorrect ports, so it can leave the ship "not ready". Auto layout should aim for a ship
-  with no red ports and no disconnected parts when a solution exists, and say which parts it could
-  not place correctly when it does not. *Where:* `apps/api/src/ships/auto-layout.ts`, the
-  `auto-assemble` endpoint in `apps/api/src/ships/ships.service.ts`, the Auto layout button in
-  `apps/web/src/features/hangar/hangar.page.tsx`. Add a regression test with a ship of rolled
-  (non-kit) parts.
-
-
-
 - [ ] **Combat: almost every fight ends in 40 rounds as a draw or a flee; no losses, wins are rare.**
   Investigate why and improve the combat. The round cap is `combat.max_rounds` (40) and the flee
   threshold `combat.retreat_hp_ratio` (0.2). *Start by measuring, not guessing:* from the owner's
@@ -228,61 +214,3 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   conversation: requirements follow the capacity growth of each rarity, rewards follow the price
   ladder.
 - **Mission scaling by bridge rarity**: waiting for the simulation's baseline before building.
-
-## Done
-
-- 2026-10-12 — A part not connected to the bridge, or with an incorrect port, keeps the ship on the
-  ground (blocking problem; saving the layout stays allowed). Upgrades keep the part's ports.
-
-- 2026-10-12 — Scavenging no longer dispatches a "with the ship" mission without a usable ship
-  (commit `9e00119`). The start now requires full flight viability (the same gate dispatch uses
-  for SCAVENGE); a ship that cannot fly is refused with `SHIP_NOT_VIABLE` and its problems, and
-  on-foot keeps no ship-quality restrictions. The web disables the "With the ship" card, falls
-  back to on foot, and shows a `scavenge-no-ship` notice.
-
-- 2026-10-12 — A new pilot's fuel tank already starts full (fixed earlier by `264e811`; verified
-  live through onboarding + auto-assemble, fuel 300/300). The rescue/ration path keeps its
-  deliberate `economy.rescue_fuel_fraction`.
-
-- 2026-10-12 — Fuel indicators are hidden for a pure-ion ship (commit `0b92d6f`). `MissionCard`
-  takes an optional `fuelUse` prop; when it is 0 the fuel row, gauge and low-fuel note are
-  dropped, and the board/transit pages pass it from the ship sheet.
-
-- 2026-10-12 — The first mission is short and quick (commit `64345e2`). A new tunable,
-  `missions.starter_max_distance` (default 600, 0 = off), caps the starter trip and the filler
-  now picks the **nearest** safe destination deterministically (falling back to the nearest when
-  the cap excludes everything).
-
-- 2026-10-12 — The trip progress bar and the ship on the map tick on their own (commit `6eeec45`).
-  `TransitPage` drives progress from the existing `useNow` ticker while a flight is under way and
-  the arrival `Countdown`s refetch the active mission on zero; a regression test advances fake
-  timers with no interaction and asserts `aria-valuenow` climbs.
-
-- 2026-10-12 — "Rework discard damaged" (commits `6c3dd6d`, `479a3e1`). `economy.sell_min_condition`
-  drops 15 → 1, so discard is for genuinely dead parts and ordinary used parts stay sellable.
-  `POST /v1/inventory/discard` takes `{ sellScrap }` (default false) and, when set, sells the
-  freshly-granted `scrap_<type>` back to the ship's port in the same transaction at its fixed
-  price (guarded like any material sale); the response gains `scrapSold`/`credits`. The port
-  dialog has a "Sell the scrap" checkbox, on by default.
-
-- 2026-10-12 — An expired accepted mission can no longer be dispatched (commit `3dd8a9a`).
-  `DispatchService.dispatch` re-checks both the offer deadline (`expiresAt`) and the mission's own
-  start deadline (`deadlineAt`) before flying and rejects with `MISSION_EXPIRED` (the accept path
-  already refused them; dispatch was the path that let a stale ACCEPTED mission through). On the
-  web the transit page disables the Dispatch button and shows the reason once either deadline
-  passes, and the board's mission card ticks so an offer that expires while the board is open
-  flips to its "Expired" state on its own.
-
-- 2026-10-12 — On-foot scavenging works without a working ship and while the ship is being
-  repaired (commit `8574331`). "On foot" skips the ship-state gates that "with the ship" keeps
-  (`SHIP_REPAIRING`, `SHIP_NOT_IN_PORT`, `SHIP_NOT_AT_LOCATION`): it needs only the pilot being at
-  the place. "With the ship" still requires a ready, in-port ship at the place. The port's
-  Scavenging tab falls back to foot mode with a reason when the ship is under repair (as it already
-  did when the ship cannot fly), and the on-foot card stays enabled in every one of those cases.
-
-- 2026-10-13 — "Reset ship" in the admin no longer fails with a 500 (commit `aab5bd2`). The admin
-  resetting their own account (caller playerId = target) wiped the in-flight IdempotencyKey row, so
-  the interceptor's post-commit update missed it (P2025). Reset's wipe now skips the pending row,
-  and `complete()` recreates the row on P2025 as a safety net. Also fixed the worker boot (a
-  pre-existing DI gap since `6c3dd6d`: `PartsService` grew a `PricingService` dep that `JobsModule`
-  never registered).
