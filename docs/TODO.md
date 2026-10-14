@@ -99,7 +99,7 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   the reset-player CLI (`apps/api/src/admin/cli/reset-player.cli.ts`) is a similar "fresh run" flow
   that keeps faction and history.
 
-- [ ] **Bridges 2×2: sell them, and gate ship formats by bridge size.** An epic 1×1 bridge is still
+- [ ] **Bridges 2×2: Expand/Shrink in the Upgrade tab, and gate ship formats by bridge size.** An epic 1×1 bridge is still
   a small ship; larger bridges are needed so bigger ships can exist. Three 2×2 bridges are already
   in the catalog (owner, 2026-10-13): `bridge_2x2` (COMMON, 10000), `bridge_2x2_uncommon` (18000),
   `bridge_2x2_rare` (32000), all structure 120. EPIC / LEGENDARY 2×2 to add later; **no 4×4 for
@@ -113,15 +113,26 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   **both** `listFormats()` and `setFormat()` (`apps/api/src/ships/ships.service.ts`, next to the
   `RARITY_ORDER` checks), expose `minBridgeSize` in the contract (`ShipFormatSchema`) and the admin
   `ship-formats` screen (`SHIP_FORMAT_FIELDS`), seed the big formats to size 2 by migration.
-  (2) **Shop** — make the BRIDGE exclusion conditional: show purchasable bridge upgrades (the
-  2×2s), keep hiding the free kit 1×1 (`market-panel.tsx`). (3) **Swap, not upgrade** — the upgrade
-  mechanic is rarity-up-only and **requires identical w/h** (`part-upgrade.service.ts:106`), so
-  1×1 → 2×2 must be a **replace** (old bridge → inventory), which the game already supports. No
-  trade-in / no new endpoint (the starter bridge is price 0, so "trade-in as payment" would be a
-  surrender requirement, not a discount, and it would fight the upgrade ladder). **Offer the format
-  switch at bridge-replace time** (prompt when the new bridge unlocks bigger formats).
-  **Downswap rule:** swapping to a *smaller* bridge while on a bigger format is **blocked** with
-  `FORMAT_REQUIRES_BRIDGE` until the pilot moves to an unlocked format — no auto-kick. *Naming
+  (2) **Shop stays closed to bridges** (revised 2026-10-14, supersedes the "show 2×2s in the shop"
+  idea): keep `market-panel.tsx` hiding BRIDGE **and** make sure market listing generation never
+  rolls a bridge, so there is no API back door to a 2×2. (3) **Expand / Shrink in the Upgrade tab,
+  port only** — the upgrade mechanic is rarity-up-only and requires identical w/h
+  (`part-upgrade.service.ts:106`), so size changes are their own operations next to Upgrade.
+  **Expand** (1×1 → 2×2, **one rarity level below** the current bridge, so a COMMON 1×1 cannot
+  expand until its first upgrade): pays the **full price of the target 2×2, money only, no credit
+  for the old bridge**; the old 1×1 is **consumed**; the new 2×2 lands in the **inventory at 100%
+  condition** and the ship is left **without a bridge** until the player installs it.
+  **Shrink** (2×2 → 1×1, **same rarity**): sells the 2×2 through the normal sell path (`sell_ratio`,
+  condition-aware) and buys the 1×1 of that rarity at catalog price, in one transaction. Never
+  discount Expand or hand-roll the Shrink refund: with full-price Expand and the market sell path,
+  every Expand → Shrink loop is a net money loss. **Format picker is mandatory** whenever the bridge
+  changes (Expand install, Shrink, rarity upgrade): the hangar forces a format choice and lists
+  **only the formats of the new bridge's own level**, not the whole unlocked history; parts that no
+  longer fit are re-seated by auto-layout and the rest go to inventory. **Downswap rule:** a ship
+  that is out on a mission cannot change bridge; swapping to a *smaller* bridge while on a bigger
+  format is **blocked** with `FORMAT_REQUIRES_BRIDGE` until the pilot moves to an unlocked format,
+  no auto-kick. A ship with **no bridge** cannot be dispatched (see the destroyed-bridge item
+  above for the viability check). *Naming
   wrinkle:* the upgrade calculator strips the rarity suffix, so `bridge_2x2_*` is its **own**
   upgrade family (`bridge_2x2` → `_uncommon` → `_rare` → `_epic` → `_legendary`) — the future
   EPIC/LEGENDARY 2×2 **must** be named `bridge_2x2_epic` / `bridge_2x2_legendary` or the ladder
@@ -129,8 +140,8 @@ commit) when it ships. Raise questions before starting anything marked *needs de
   big format grids themselves (today every format assumes the bridge is one cell at the origin; a
   2×2 bridge covers 4 cells, so format `cells` and auto-layout must treat the footprint as
   multi-cell). *Where:* `apps/api/prisma/schema.prisma` (`ShipFormat`), the two gate methods, the
-  contract + admin schema, a migration, `apps/web/src/features/market/market-panel.tsx`, and the
-  bridge-replace flow in the hangar.
+  contract + admin schema, a migration, the market listing generator, the Upgrade tab (Expand / Shrink), and
+  the hangar's mandatory format picker.
 
 - [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
   charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and
