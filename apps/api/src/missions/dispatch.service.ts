@@ -24,7 +24,7 @@ import {
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
-import { loadHold, withHoldProblem } from '../ships/hold.js';
+import { loadHold, withHoldProblem, withMiningCargoProblem } from '../ships/hold.js';
 import { cargoLoadFor, cargoTermsOf } from './cargo-mode.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip, type AppliedPenalty } from '../ships/penalties.js';
@@ -355,7 +355,7 @@ export class DispatchService {
         sheet.crg,
         load?.units ?? 0,
       );
-      const viability =
+      const holdChecked =
         mission.type === 'SCAVENGE'
           ? flightViability
           : withHoldProblem(
@@ -367,6 +367,9 @@ export class DispatchService {
               ),
               hold,
             );
+      // A dig keeps its ore in the cargo space: no space, no run (it would only come back empty).
+      const viability =
+        mission.type === 'MINING' ? withMiningCargoProblem(holdChecked, sheet.crg) : holdChecked;
       // Scavenging is manual work at the place: any ship (even one that cannot fly) can do it, it
       // only finds less when the ship is not flight-ready.
       const handicapped =

@@ -25,6 +25,7 @@ export type ViabilityProblemCode =
   | 'PORT_INCORRECT'
   // The loose parts and the ore the ship carries do not fit its free slots plus its cargo space.
   | 'HOLD_OVER_CAPACITY'
+  | 'NO_CARGO_HOLD'
   // More loose parts than the bridge has slots for.
   | 'HOLD_PARTS_OVER'
   // Part direction rules (ships/direction.ts): reported like any other flight problem — saving a

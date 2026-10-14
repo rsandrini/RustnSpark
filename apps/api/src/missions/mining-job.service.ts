@@ -20,7 +20,7 @@ import {
 import { withDirectionProblems } from '../ships/direction.js';
 import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
-import { loadHold, withHoldProblem } from '../ships/hold.js';
+import { loadHold, withHoldProblem, withMiningCargoProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
 import {
@@ -137,24 +137,27 @@ export class MiningJobService {
     const sheet = deriveSheet(installedConnected, rules);
     // Mining flies the ship out to the field, so the part direction rules (nothing behind an
     // engine's exhaust / a weapon's firing line) apply, like dispatch and travel.
-    const viability = withHoldProblem(
-      withDirectionProblems(
-        withConnectionProblem(
-          checkViability(sheet, installedConnected, rules),
-          installed,
-          connectedIds,
-          incorrectPortPartIds(
-            (ship.layout as unknown as Placement[]) ?? [],
-            catalogForConnectivity,
-            connectorsByInstance,
+    const viability = withMiningCargoProblem(
+      withHoldProblem(
+        withDirectionProblems(
+          withConnectionProblem(
+            checkViability(sheet, installedConnected, rules),
+            installed,
+            connectedIds,
+            incorrectPortPartIds(
+              (ship.layout as unknown as Placement[]) ?? [],
+              catalogForConnectivity,
+              connectorsByInstance,
+            ),
           ),
+          (ship.layout as unknown as Placement[]) ?? [],
+          catalogForConnectivity,
+          connectorsByInstance,
+          { strict: true },
         ),
-        (ship.layout as unknown as Placement[]) ?? [],
-        catalogForConnectivity,
-        connectorsByInstance,
-        { strict: true },
+        await loadHold(this.prisma, playerId, rules.ship.spare_part_slots, sheet.crg),
       ),
-      await loadHold(this.prisma, playerId, rules.ship.spare_part_slots, sheet.crg),
+      sheet.crg,
     );
     if (!viability.viable) {
       throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

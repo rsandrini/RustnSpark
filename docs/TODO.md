@@ -49,14 +49,6 @@ ships (the commit has the history). Raise questions before starting anything mar
   *Where:* world builder (`apps/api/prisma/seed-data/world-builder.ts`), mission templates
   (`mission-templates.ts`), drop tables and `economy.core_drops` / mining materials.
 
-- [ ] **Enforce the cargo hold for mining (and for any mission that collects cargo).** Today the UI
-  shows that a cargo hold is necessary but does not enforce it: a mission or mining run can leave
-  with no cargo space and then collects nothing. Block the dispatch / start with a clear error and
-  message (no cargo hold, or not enough cargo space) instead of letting the run go empty. *Decide:*
-  whether "no hold" is an error or a warning for missions that carry no cargo by design (delivery
-  cargo modes min / fixed / open already exist). *Where:* the mining job start, the mission
-  dispatch validation, and the matching warning in the web port / hangar screens.
-
 - [ ] **Ancient and prototype cores: the UI is bad and they feel like one more thing to manage.**
   The items show no description in the UI, even though the seed has one
   (`seed-data/materials.ts`), so the screen where they are listed is not rendering it. They also

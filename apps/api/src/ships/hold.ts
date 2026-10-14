@@ -82,3 +82,22 @@ export function withHoldProblem(report: ViabilityReport, hold: HoldState): Viabi
   }
   return { ...report, viable: false, problems };
 }
+
+/**
+ * Mining keeps what it digs in the cargo space (what does not fit is lost), so a ship with none
+ * would fly out and come back empty: it is refused instead, with the reason said.
+ */
+export function withMiningCargoProblem(report: ViabilityReport, capacity: number): ViabilityReport {
+  if (capacity >= 1) return report;
+  return {
+    ...report,
+    viable: false,
+    problems: [
+      ...report.problems,
+      {
+        code: 'NO_CARGO_HOLD',
+        message: 'Mining needs cargo space to keep what it digs: this ship has no cargo hold.',
+      },
+    ],
+  };
+}

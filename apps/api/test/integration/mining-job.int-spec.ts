@@ -190,6 +190,33 @@ describe('independent mining job (round 10)', () => {
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });
 
+  it('refuses a dig with no cargo hold: it would only come back empty (NO_CARGO_HOLD)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    // Take the cargo parts off the ship: nothing is left to keep the ore in.
+    const holds = await prisma.partInstance.findMany({
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INSTALLED',
+        partCatalog: { partClass: 'CARGO' },
+      },
+      select: { id: true },
+    });
+    await prisma.partInstance.deleteMany({ where: { id: { in: holds.map((hold) => hold.id) } } });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const keep = (ship.layout as Array<{ partInstanceId: string }>).filter(
+      (placement) => !holds.some((hold) => hold.id === placement.partInstanceId),
+    );
+    await prisma.ship.update({ where: { id: player.shipId }, data: { layout: keep } });
+
+    const response = await start(player.token, 'ceres');
+    expect(response.status).toBe(400);
+    const problems = (response.body as { message?: { problems?: Array<{ code: string }> } }).message
+      ?.problems;
+    expect(problems?.map((problem) => problem.code)).toContain('NO_CARGO_HOLD');
+  });
+
   it('a far deep field holds only rare crystals: every job there digs them', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

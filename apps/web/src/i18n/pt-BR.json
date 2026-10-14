@@ -240,6 +240,7 @@
       "SHIELD_ENERGY_LOW": "Se o escudo estiver em uso, pode faltar energia depois que a bateria e a sobra de energia da nave acabarem.",
       "LIFE_SUPPORT_UNPOWERED": "O suporte de vida não recebe energia suficiente para funcionar: os passageiros não sobreviveriam. Adicione geração de energia.",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
+      "NO_CARGO_HOLD": "A mineração guarda o que escava no porão de carga: esta nave não tem um. Instale um porão de carga antes.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
       "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout.",
       "PORT_INCORRECT": "Alguns conectores encostam em uma peça com a qual não encaixam (as portas vermelhas): mova ou gire essas peças. Você ainda pode salvar o layout."
@@ -1337,6 +1338,7 @@
       "NO_LIFE_SUPPORT": "Sem suporte de vida",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido",
       "HOLD_OVER_CAPACITY": "A carga da missão não cabe no espaço de carga da nave.",
+      "NO_CARGO_HOLD": "A mineração guarda o que escava no porão de carga: esta nave não tem um. Instale um porão de carga antes.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
       "PART_DISCONNECTED": "Peça desconectada",
       "PORT_INCORRECT": "Conexão incorreta"

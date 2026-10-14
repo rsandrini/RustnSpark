@@ -1494,10 +1494,16 @@ export function PortPage({
             </div>
           </header>
           <div className="action-cta">
+            {/* What is dug is kept in the cargo hold: with none, the run would come back empty. */}
+            {ship !== undefined && ship.sheet.crg < 1 && (
+              <p className="warn-text" role="status" data-testid="mine-no-hold">
+                {t('hangar.problems.NO_CARGO_HOLD')}
+              </p>
+            )}
             <button
               type="button"
               className="btn primary"
-              disabled={mine.isPending}
+              disabled={mine.isPending || (ship !== undefined && ship.sheet.crg < 1)}
               onClick={() => mine.mutate()}
             >
               {t('port.mine.action')}
