@@ -171,6 +171,52 @@ const FAMILIES: Family[] = [
       },
     ],
   },
+  // The big bridge: a 2x2 command core, the only way to unlock the big ship formats. It is not
+  // sold: a 1x1 bridge is expanded into the 2x2 one rarity level below it (bridge-resize.service.ts).
+  // EPIC / LEGENDARY come later; until then a LEGENDARY 1x1 has no 2x2 to expand into.
+  {
+    base: 'bridge_2x2',
+    partClass: 'BRIDGE',
+    w: 2,
+    h: 2,
+    name: { en: 'Big Bridge 2x2', 'pt-BR': 'Ponte de Comando grande 2x2' },
+    description: {
+      en: 'The big command core of your ship. Every ship needs exactly one. It keeps the pilot alive if the rest of the ship is lost, and it sets how much structure (total build weight) the ship can carry.',
+      'pt-BR':
+        'O núcleo de comando grande da sua nave. Toda nave precisa de exatamente uma. Ela mantém o piloto vivo se o resto da nave for perdido e define quanta estrutura (peso total de construção) a nave aguenta.',
+    },
+    tiers: [
+      {
+        rarity: 'COMMON',
+        mass: 16,
+        structureCost: -240,
+        basePrice: 10000,
+        scrapValue: 1000,
+        partHp: 120,
+        energyCont: -4,
+      },
+      {
+        rarity: 'UNCOMMON',
+        mass: 14,
+        structureCost: -320,
+        basePrice: 18000,
+        scrapValue: 1800,
+        partHp: 150,
+        energyCont: -3,
+        name: { en: 'Big Bridge 2x2 II', 'pt-BR': 'Ponte de Comando grande 2x2 II' },
+      },
+      {
+        rarity: 'RARE',
+        mass: 12,
+        structureCost: -400,
+        basePrice: 32000,
+        scrapValue: 3200,
+        partHp: 180,
+        energyCont: -2,
+        name: { en: 'Big Bridge 2x2 III', 'pt-BR': 'Ponte de Comando grande 2x2 III' },
+      },
+    ],
+  },
   {
     base: 'engine_chem_large',
     partClass: 'ENGINE',

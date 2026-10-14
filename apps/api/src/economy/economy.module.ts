@@ -13,6 +13,8 @@ import { MarketController } from './market.controller.js';
 import { MarketService } from './market.service.js';
 import { MaterialsController } from './materials.controller.js';
 import { MaterialsService } from './materials.service.js';
+import { BridgeResizeController } from './bridge-resize.controller.js';
+import { BridgeResizeService } from './bridge-resize.service.js';
 import { PartUpgradeController } from './part-upgrade.controller.js';
 import { PartUpgradeService } from './part-upgrade.service.js';
 import { PricingService } from './pricing.service.js';
@@ -52,6 +54,7 @@ import { ScavengingService } from './scavenging.service.js';
     RescueController,
     ScavengingController,
     PartUpgradeController,
+    BridgeResizeController,
   ],
   providers: [
     PricingService,
@@ -63,6 +66,7 @@ import { ScavengingService } from './scavenging.service.js';
     InventoryService,
     ScavengingService,
     PartUpgradeService,
+    BridgeResizeService,
     WalletService,
     PlayerEventService,
     Clock,

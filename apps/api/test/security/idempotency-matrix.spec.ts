@@ -34,6 +34,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
   'POST /v1/locations/:id/mine':
     'the one-active-mission unique index: a repeat while a dig is flying is a 409 with no second effect',
   'POST /v1/parts/:id/upgrade/quote': 'read-shaped: no state change',
+  'POST /v1/parts/:id/expand/quote': 'read-shaped: no state change',
+  'POST /v1/parts/:id/shrink/quote': 'read-shaped: no state change',
   'POST /v1/ships/:id/energy-mode': 'sets a value: repeating is the same state',
   'POST /v1/ships/:id/format': 'sets the ship format to a value: repeating is the same state',
   'POST /v1/ships/:id/refuel/quote': 'read-shaped: no state change',
