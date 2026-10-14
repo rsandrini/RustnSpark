@@ -71,12 +71,26 @@ export function torneioRules(fixture: CombatTapesFixture): GameRules['combat'] {
     first_strike_bonus: 0,
     max_rounds: 50,
     retreat_hp_ratio: 0.2,
+    // The oracle's rules: a fight nobody finishes is a draw, damage never grows, a lost fight does
+    // not touch the bridge (the game's own defaults switch these on).
+    stalemate_by_hull: 0,
+    escalation_start_round: 0,
+    escalation_per_round: 0,
+    loss_bridge_wear: 0,
   };
 }
 
 /** Canonical Layer-3 dials (baselines.json: first_strike 2, max_rounds 40, pierce 0.35). */
 export function canonicalRules(): GameRules['combat'] {
-  return { ...GAME_CONFIG_DEFAULTS.combat };
+  // The canonical dials of the oracle baselines: the rules of the recorded numbers, whatever the
+  // game's own defaults say now.
+  return {
+    ...GAME_CONFIG_DEFAULTS.combat,
+    stalemate_by_hull: 0,
+    escalation_start_round: 0,
+    escalation_per_round: 0,
+    loss_bridge_wear: 0,
+  };
 }
 
 export function toSheet(f: Ficha): CombatSheet {

@@ -70,6 +70,12 @@ function torneioRules(): GameRules['combat'] {
     first_strike_bonus: 0,
     max_rounds: 50,
     retreat_hp_ratio: 0.2,
+    // The oracle's rules: a fight nobody finishes is a draw, damage never grows, a lost fight does
+    // not touch the bridge (the game's own defaults switch these on).
+    stalemate_by_hull: 0,
+    escalation_start_round: 0,
+    escalation_per_round: 0,
+    loss_bridge_wear: 0,
   };
 }
 
@@ -496,5 +502,66 @@ describe('resolveCombat — energy modes', () => {
     );
     expect(aHits.length).toBeGreaterThan(0);
     expect(aHits.some((round) => round.shieldAbsorbed > 0)).toBe(true);
+  });
+});
+
+describe('resolveCombat — a fight nobody finishes (P0 review)', () => {
+  // Two ships that can hardly hurt each other: the fight runs to the cap.
+  const tough: CombatSheet = { pdf: 0, bli: 0, esc: 0, sen: 10, hp: 1000, mob: 3 };
+  const rulesOf = (over: Partial<GameRules['combat']>): GameRules['combat'] => ({
+    ...GAME_CONFIG_DEFAULTS.combat,
+    first_strike_bonus: 0,
+    kite_factor: 0,
+    max_rounds: 10,
+    stalemate_by_hull: 0,
+    escalation_start_round: 0,
+    escalation_per_round: 0,
+    loss_bridge_wear: 0,
+    ...over,
+  });
+
+  it('is a draw at the round cap under the old rule', () => {
+    const result = resolveCombat(
+      { ...tough, pdf: 6 },
+      { ...tough, pdf: 6 },
+      rulesOf({}),
+      createRng('stale'),
+    );
+    expect(result.outcome).toBe('draw');
+  });
+
+  it('goes to the side with more hull left at the cap when asked to', () => {
+    // A hits a lot harder than B: both stand at the cap, A with the larger share left.
+    const a: CombatSheet = { ...tough, pdf: 10, hp: 5000 };
+    const b: CombatSheet = { ...tough, pdf: 0, hp: 5000 };
+    const result = resolveCombat(a, b, rulesOf({ stalemate_by_hull: 1 }), createRng('hull'));
+    expect(result.final.hpB).toBeLessThan(result.final.hpA);
+    expect(result.outcome).toBe('A');
+  });
+
+  it('a perfectly even stalemate (nobody can land a hit) is still a draw', () => {
+    // A dodge so high the DC cannot be reached: no hit, both hulls untouched.
+    const a: CombatSheet = { ...tough, pdf: 0, hp: 5000, mob: 20 };
+    const result = resolveCombat(a, a, rulesOf({ stalemate_by_hull: 1 }), createRng('even'));
+    expect(result.final.hpA).toBe(result.final.hpB);
+    expect(result.outcome).toBe('draw');
+  });
+
+  it('escalation makes later rounds hit harder, without drawing any extra random number', () => {
+    const sheet: CombatSheet = { ...tough, pdf: 4, hp: 100000 };
+    const calm = rulesOf({ max_rounds: 30 });
+    const hot = rulesOf({ max_rounds: 30, escalation_start_round: 10, escalation_per_round: 0.5 });
+    const plain = resolveCombat(sheet, sheet, calm, createRng('esc'));
+    const escalated = resolveCombat(sheet, sheet, hot, createRng('esc'));
+    // Same dice, same hits: only the size of the hits past round 10 differs.
+    expect(escalated.rounds.map((round) => round.hit)).toEqual(
+      plain.rounds.map((round) => round.hit),
+    );
+    const damage = (rounds: typeof plain.rounds) =>
+      rounds.filter((round) => round.round > 10).reduce((sum, round) => sum + round.damage, 0);
+    expect(damage(escalated.rounds)).toBeGreaterThan(damage(plain.rounds));
+    expect(
+      escalated.rounds.filter((round) => round.round <= 10).map((round) => round.damage),
+    ).toEqual(plain.rounds.filter((round) => round.round <= 10).map((round) => round.damage));
   });
 });

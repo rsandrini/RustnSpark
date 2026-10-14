@@ -279,6 +279,10 @@ function sweepCombatRules() {
     armor_reduction_max_share: 0,
     scrap_win_min: 0,
     scrap_win_max: 0,
+    stalemate_by_hull: 0,
+    escalation_start_round: 0,
+    escalation_per_round: 0,
+    loss_bridge_wear: 0,
   } as const;
 }
 

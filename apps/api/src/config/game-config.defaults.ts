@@ -23,6 +23,13 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     first_strike_bonus: 2,
     max_rounds: 40,
     retreat_hp_ratio: 0.2,
+    // P0 review (2026-10-14): 78% of the fights in the dev logs were draws. A fight that reaches the
+    // cap goes to the side with more hull left, damage escalates after round 25 so it rarely does,
+    // and a lost fight can hurt the bridge itself (the only way a fight destroys a ship).
+    stalemate_by_hull: 1,
+    escalation_start_round: 25,
+    escalation_per_round: 0.1,
+    loss_bridge_wear: 10,
   },
   ship: {
     mob_factor: 1.6,

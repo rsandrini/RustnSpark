@@ -224,6 +224,58 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.stalemate_by_hull',
+    group: 'combat',
+    type: 'integer',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.stalemate_by_hull),
+    description: {
+      en: '1 = a fight that reaches the round cap is won by the side with the larger share of its hull left (a tie is still a draw). 0 = the old rule: always a draw.',
+      'pt-BR':
+        '1 = a luta que chega ao limite de rodadas é vencida por quem tem a maior fração de casco restante (empate exato continua empate). 0 = regra antiga: sempre empate.',
+    },
+  },
+  {
+    key: 'combat.escalation_start_round',
+    group: 'combat',
+    type: 'integer',
+    min: 0,
+    max: 200,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.escalation_start_round),
+    description: {
+      en: 'From this round on every hit lands harder, so a stalemate breaks by itself (0 = never).',
+      'pt-BR':
+        'A partir desta rodada cada acerto dói mais, então um impasse se resolve sozinho (0 = nunca).',
+    },
+  },
+  {
+    key: 'combat.escalation_per_round',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 5,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.escalation_per_round),
+    description: {
+      en: 'Extra damage per round past the escalation start: damage x (1 + this x rounds past it).',
+      'pt-BR':
+        'Dano extra por rodada depois do início da escalada: dano x (1 + este valor x rodadas depois).',
+    },
+  },
+  {
+    key: 'combat.loss_bridge_wear',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.loss_bridge_wear),
+    description: {
+      en: 'Condition points the bridge loses when the player loses a fight. A bridge that reaches the dead threshold destroys the ship. 0 = a lost fight never touches the bridge.',
+      'pt-BR':
+        'Pontos de condição que a ponte perde quando o jogador perde uma luta. Ponte que chega ao limite de morta destrói a nave. 0 = perder a luta nunca toca a ponte.',
+    },
+  },
+  {
     key: 'ship.mob_factor',
     group: 'ship',
     type: 'number',

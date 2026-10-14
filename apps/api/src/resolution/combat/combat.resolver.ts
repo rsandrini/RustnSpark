@@ -191,6 +191,12 @@ export function resolveCombat(
       }
 
       const hit = roll + atk.pdf + bonus >= dc;
+      // A fight nobody finishes escalates: past the start round every hit lands harder (no extra
+      // draws, only the size of the hit changes).
+      const escalation =
+        (rules.escalation_start_round ?? 0) > 0 && round > (rules.escalation_start_round ?? 0)
+          ? 1 + (round - (rules.escalation_start_round ?? 0)) * (rules.escalation_per_round ?? 0)
+          : 1;
       let damage = 0;
       let armorAbsorbed = 0;
       let armorReduced = 0;
@@ -200,7 +206,7 @@ export function resolveCombat(
         // Layered: the whole hit goes to the shield first (as much as it can take), what is left
         // to the armor pool, and only the rest to the hull. Same single die roll as the legacy
         // model, so the random stream is unchanged.
-        damage = Math.max(1, atk.pdf + rng.int(1, rules.damage_die));
+        damage = Math.max(1, roundHalfEven((atk.pdf + rng.int(1, rules.damage_die)) * escalation));
         // The armor first CUTS the hit by a flat amount (it keeps its pool), then its pool soaks
         // the rest; both count as what the armor did (`armorAbsorbed`), `armorReduced` is the cut.
         if (isA) {
@@ -223,7 +229,7 @@ export function resolveCombat(
           hpA -= damage - shieldAbsorbed - armorAbsorbed;
         }
       } else if (hit) {
-        const base = atk.pdf + rng.int(1, rules.damage_die);
+        const base = roundHalfEven((atk.pdf + rng.int(1, rules.damage_die)) * escalation);
         const fura = atk.pdf >= rules.pierce_min_pdf ? base * rules.pierce_ratio : 0;
         const bli = Math.min(dfd.bli, rules.armor_cap);
         // Same expression as the oracle (fura cancels algebraically — known defect).
@@ -281,6 +287,11 @@ export function resolveCombat(
     outcome = 'A';
   } else if (hpA <= minA && hpB > minB) {
     outcome = 'B';
+  } else if ((rules.stalemate_by_hull ?? 0) === 1 && a.hp > 0 && b.hp > 0) {
+    // Nobody broke: the side with the larger share of its hull left takes it (a tie stays a draw).
+    const shareA = hpA / a.hp;
+    const shareB = hpB / b.hp;
+    outcome = shareA > shareB ? 'A' : shareB > shareA ? 'B' : 'draw';
   } else {
     outcome = 'draw';
   }

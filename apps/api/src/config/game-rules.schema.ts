@@ -25,6 +25,13 @@ const combatSchema = z.object({
   first_strike_bonus: z.number().int().min(0).max(10),
   max_rounds: z.number().int().min(1).max(200),
   retreat_hp_ratio: z.number().min(0.05).max(0.5),
+  // The defaults below are the OLD behavior (a fight nobody finishes is a draw, damage never grows,
+  // a lost fight does not touch the bridge), so a mission log stored before them replays unchanged;
+  // the game's own defaults (game-config.defaults.ts) switch the new rules on.
+  stalemate_by_hull: z.number().int().min(0).max(1).default(0),
+  escalation_start_round: z.number().int().min(0).max(200).default(0),
+  escalation_per_round: z.number().min(0).max(5).default(0),
+  loss_bridge_wear: z.number().min(0).max(100).default(0),
 });
 
 const shipSchema = z.object({

@@ -38,6 +38,10 @@ export type ConfigKey =
   | 'combat.pierce_min_pdf'
   | 'combat.pierce_ratio'
   | 'combat.retreat_hp_ratio'
+  | 'combat.stalemate_by_hull'
+  | 'combat.escalation_start_round'
+  | 'combat.escalation_per_round'
+  | 'combat.loss_bridge_wear'
   | 'combat.shield_regen'
   | 'combat.armor_pool_factor'
   | 'combat.armor_reduction'
@@ -256,6 +260,14 @@ export type GameRules = Readonly<{
     pierce_min_pdf: number;
     pierce_ratio: number;
     retreat_hp_ratio: number;
+    /** 1 = a fight that reaches the round cap goes to the side with more hull left (0 = a draw). */
+    stalemate_by_hull: number;
+    /** From this round on every hit lands harder (0 = never), so fights rarely reach the cap. */
+    escalation_start_round: number;
+    /** Extra damage per round past the start: damage x (1 + this x rounds past it). */
+    escalation_per_round: number;
+    /** Condition points the bridge loses when a fight is lost (0 = none). */
+    loss_bridge_wear: number;
     /** Shield points a shield with no regen stat of its own recovers per round (legacy shields). */
     shield_regen: number;
     /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */

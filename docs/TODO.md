@@ -6,23 +6,6 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## P0
 
-- [ ] **Combat: almost every fight ends in 40 rounds as a draw or a flee; no losses, wins are rare.**
-  Investigate why and improve the combat. The round cap is `combat.max_rounds` (40) and the flee
-  threshold `combat.retreat_hp_ratio` (0.2). *Start by measuring, not guessing:* from the owner's
-  mission logs (`MissionLog.legs` events `combat_win` / `combat_loss` / `combat_draw` / flee, with
-  the per-round `rounds` data: roll, DC, hit, damage, shield / armor / hull absorbed) compute the hit
-  rate, the damage per hit and per round for the player and the pirate, and how the shield, armor
-  cut and armor pool soak the hits. Likely suspects to test: the player's armor and shield absorb
-  nearly everything (armor cut + pool + shield regeneration per round), the pirates' firepower
-  (`pirate_min_pdf`, strength by zone) is too low to hurt a strong ship while the player's own
-  firepower is too low to kill (pirate hp / armor), and fights where neither side can break the
-  other run out the 40 rounds. Then decide the fix (damage curve, a soft cap that ends stalemates,
-  pirate scaling with the ship's tier or level, a reason for fights to end in a result), simulate it
-  in `apps/api/test/unit/resolution/danger-balance.spec.ts`-style runs, and confirm with the
-  economy simulation. *Where:* `apps/api/src/resolution/combat/combat.resolver.ts`,
-  `resolution/damage/layers.ts`, `resolution/encounter/pirate.generator.ts`, the `combat` and
-  `encounter` sections of `game-config.defaults.ts`. *Needs design* once the numbers are in.
-
 - [ ] **Rare crystals are too hard to find; the board is too weak until a rare ship.** The drop makes
   sense but is too rare, and the mission board is good only until the ship reaches rare. *Needs
   design:* expand the map with harder and longer quests (farther zones) with better drops of rare
@@ -53,7 +36,10 @@ ships (the commit has the history). Raise questions before starting anything mar
   game now has one generic `scrap` material, and the sim still models per-part scrap
   (`scrap_<type>`); scavenging now picks cheap parts far more often, caps a run at two part finds
   and caps the price of a find by zone (`scavenging.max_part_finds`, `price_weight_power`,
-  `find_price_cap`), so measure the value of an average run per zone against a mission's reward.
+  `find_price_cap`), so measure the value of an average run per zone against a mission's reward. Also measure
+  the combat outcome mix with the new rules (`combat.stalemate_by_hull`, `escalation_*`,
+  `loss_bridge_wear`): the dev logs had 78% draws before; check that wins, losses and the rate of
+  destroyed ships (a lost fight now wears the bridge) are where we want them.
 
 ## P3 — Missions
 
