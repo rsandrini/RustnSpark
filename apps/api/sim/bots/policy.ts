@@ -18,7 +18,12 @@ import { canTakeMission } from '../actions/mission.js';
 import { travelOffer } from '../actions/travel.js';
 import { refuelQuote } from '../actions/fuel.js';
 import { fitWouldBeViable, marketShelf, priceInputAt } from '../actions/market.js';
-import { priorityBasesOf, usesChemEngine, type Archetype } from './archetype.js';
+import {
+  priorityBasesOf,
+  usesChemEngine,
+  wantsSecondPanel,
+  type Archetype,
+} from './archetype.js';
 import { retentionFor, upgradeQuote } from '../actions/upgrade.js';
 import {
   averageConditionOf,
@@ -721,7 +726,7 @@ function spendTargetsOf(
   }
   // The ion drive and the shield both draw continuously: one panel is not enough, so the ion
   // archetype carries a second.
-  if (ion && fillSuffix !== null) {
+  if (wantsSecondPanel(archetype) && fillSuffix !== null) {
     const panels = state.ship.parts.filter((part) => {
       const row = catalogByType.get(part.partType);
       return row !== undefined && familyBaseOf(row) === 'reactor_solar';
@@ -912,4 +917,30 @@ export function sellList(
     if (held - kept > 0) materials.push({ materialId, quantity: held - kept });
   }
   return { partIds, materials };
+}
+
+/**
+ * Repair what the wallet allows, worst first. A pilot who cannot pay the whole bill fixes the
+ * parts closest to dying (a dead part is lost for good; a half-worn one is only slower) and
+ * leaves the healthier ones for next time. Whole-ship repair stays the rule when affordable.
+ * Returns null when not even the worst part fits the budget.
+ */
+export function affordableRepairTargets(
+  state: PlayerState,
+  snapshot: Snapshot,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  budget: number,
+): { partId: string }[] | null {
+  const worstFirst = [...state.ship.parts]
+    .filter((part) => part.condition < FULL_CONDITION)
+    .sort((left, right) => left.condition - right.condition || (left.id < right.id ? -1 : 1));
+  const chosen: { partId: string }[] = [];
+  for (const part of worstFirst) {
+    const trial = [...chosen, { partId: part.id }];
+    const quote = repairQuote(state, snapshot, rules, catalogByType, state.locationId, trial);
+    if (quote.cost > budget) continue;
+    chosen.push({ partId: part.id });
+  }
+  return chosen.length === 0 ? null : chosen;
 }

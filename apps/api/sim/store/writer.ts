@@ -131,6 +131,14 @@ function insertRunInto(store: Store, experimentId: number, result: RunResult): n
     purchase: Math.round(totals.purchase),
     sale: Math.round(totals.sale),
   });
+  store.setRunExtras(runId, {
+    archetype: result.archetype,
+    finalParts: JSON.stringify(result.finalParts),
+    actionSeconds: JSON.stringify(result.actionSeconds),
+    findsValue: Math.round(result.findsValue),
+    footScavenges: result.footScavenges,
+    repairActions: result.repairActions,
+  });
   store.insertLevels(
     runId,
     result.levels.map((level) => ({

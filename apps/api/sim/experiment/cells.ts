@@ -49,7 +49,7 @@ export function defaultMatrix(
   return cells;
 }
 
-const ARCHETYPES: readonly Archetype[] = ['chem', 'chem-shield', 'ion-shield'];
+const ARCHETYPES: readonly Archetype[] = ['chem', 'chem-shield', 'ion-shield', 'hybrid'];
 
 /** Every archetype × the three deliberate temperaments (generalist), plus random per archetype. */
 export function archetypeMatrix(

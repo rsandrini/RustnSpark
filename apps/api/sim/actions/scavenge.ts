@@ -45,6 +45,8 @@ export interface JobOfferInput {
   readonly world: FillerWorld;
   readonly state: PlayerState;
   readonly nowMs: number;
+  /** Search on foot (`foot_duration_seconds`, no ship in the job). */
+  readonly onFoot?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export interface JobOfferInput {
  */
 export function scavengeOffer(input: JobOfferInput): Offer | null {
   const { snapshot, world, state, nowMs } = input;
+  const onFoot = input.onFoot === true;
   const locationId = state.locationId;
   const location = snapshot.locations.find((row) => row.id === locationId);
   if (location === undefined) return null;
@@ -68,7 +71,9 @@ export function scavengeOffer(input: JobOfferInput): Offer | null {
   const distance = Math.max(
     1,
     Math.round(
-      (snapshot.rules.scavenging.duration_seconds /
+      ((onFoot
+        ? snapshot.rules.scavenging.foot_duration_seconds
+        : snapshot.rules.scavenging.duration_seconds) /
         (snapshot.rules.missions.duration_k * snapshot.rules.missions.time_scale)) *
         sheet.mob,
     ),
@@ -126,16 +131,20 @@ export function scavenge(
   ctx: MissionContext,
   world: FillerWorld,
   nowMs: number,
+  onFoot = false,
 ): ScavengeOutcome {
   const cooldown = scavengeCooldownLeft(state, ctx.rules, nowMs);
   if (cooldown > 0) return { ok: false, reason: `SCAVENGE_COOL_DOWN:${cooldown}` };
-  const offer = scavengeOffer({ snapshot: ctx.snapshot, world, state, nowMs });
+  const offer = scavengeOffer({ snapshot: ctx.snapshot, world, state, nowMs, onFoot });
   if (offer === null) return { ok: false, reason: 'NO_ROUTE' };
-  const check = canTakeMission(state, offer, ctx);
-  if (!check.ok) return { ok: false, reason: check.reasons.join(',') };
-  const result = takeMission(state, offer, ctx);
+  if (!onFoot) {
+    const check = canTakeMission(state, offer, ctx);
+    if (!check.ok) return { ok: false, reason: check.reasons.join(',') };
+  }
+  const result = takeMission(state, offer, ctx, { onFoot });
   // A job is not a mission on the run's tally (see the file header).
   state.missionsDone -= 1;
+  if (onFoot) state.footScavenges += 1;
   const locationId = state.locationId;
   const entry = state.scavengeAttempts.get(locationId);
   state.scavengeAttempts.set(locationId, {

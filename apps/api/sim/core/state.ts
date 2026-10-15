@@ -59,6 +59,14 @@ export interface PlayerState {
   missionsDone: number;
   scavengesDone: number;
   miningDone: number;
+  /** Scavenging jobs done on foot (no ship in the job). */
+  footScavenges: number;
+  /** Repair actions paid (each one carries the port's maintenance fee). */
+  repairActions: number;
+  /** Base price of the scavenged parts the pilot fitted: what the finds saved from the market. */
+  findsFittedValue: number;
+  /** Scavenged part ids already counted in `findsFittedValue` (a part counts once). */
+  findsCounted: Set<string>;
   /** Simulated second of the last scavenging job (policy hooks read it later). */
   lastScavengeAt: number | null;
   /** locationId → attempt count and last attempt time (the scavenge cooldown). */
@@ -148,6 +156,10 @@ export function starterPlayer(
     missionsDone: 0,
     scavengesDone: 0,
     miningDone: 0,
+    footScavenges: 0,
+    repairActions: 0,
+    findsFittedValue: 0,
+    findsCounted: new Set(),
     lastScavengeAt: null,
     scavengeAttempts: new Map(),
     partSeq: 0,

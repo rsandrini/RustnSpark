@@ -15,6 +15,7 @@ describe('archetype', () => {
   it('reads known names and falls back to the legacy kit', () => {
     expect(archetypeOf('ion-shield')).toBe('ion-shield');
     expect(archetypeOf('chem-shield')).toBe('chem-shield');
+    expect(archetypeOf('hybrid')).toBe('hybrid');
     expect(archetypeOf('whatever')).toBe('chem');
   });
 
@@ -32,6 +33,8 @@ describe('archetype', () => {
     expect(usesChemEngine('ion-shield')).toBe(false);
     expect(kitBasesOf('ion-shield').some((base) => /^(engine_chem|tank)/.test(base))).toBe(false);
     expect(kitBasesOf('chem-shield')).toContain('engine_chem_small');
+    expect(kitBasesOf('hybrid')).toContain('engine_chem_small');
+    expect(kitBasesOf('hybrid')).toContain('engine_ion_micro');
     expect(kitBasesOf('ion-shield')).toContain('engine_ion_micro');
   });
 
@@ -41,6 +44,6 @@ describe('archetype', () => {
     expect(cellName(first!)).toBe('greedy|generalist|2h');
     const ion = archetypeMatrix(2).find((cell) => cell.archetype === 'ion-shield');
     expect(cellName(ion!)).toMatch(/\|ion-shield$/);
-    expect(archetypeMatrix(2)).toHaveLength(12);
+    expect(archetypeMatrix(2)).toHaveLength(16);
   });
 });

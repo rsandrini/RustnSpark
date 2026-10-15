@@ -148,9 +148,14 @@ export function takeMission(
   state: PlayerState,
   offer: Offer,
   ctx: MissionContext,
+  options: { readonly onFoot?: boolean } = {},
 ): MissionRunResult {
   const { snapshot, rules, catalogByType } = ctx;
-  const check = canTakeMission(state, offer, ctx);
+  const onFoot = options.onFoot === true && offer.type === 'SCAVENGE';
+  // On foot there is no ship in the job: none of the ship's gates apply (live service parity).
+  const check = onFoot
+    ? { ok: state.locationId === offer.originId, reasons: ['SHIP_NOT_AT_ORIGIN'] }
+    : canTakeMission(state, offer, ctx);
   if (!check.ok) {
     throw new Error(`cannot take ${offer.id}: ${check.reasons.join(', ')}`);
   }
@@ -248,7 +253,8 @@ export function takeMission(
             ...scavengeContextOf(snapshot, offer.originId),
             // A ship that cannot fly still scavenges, at `scavenging.handicap_factor` of the
             // finds — the same flag dispatch sets when it dispatches a non-viable hull.
-            handicapped: !checkViability(sheet, installed, rules).viable,
+            handicapped: !onFoot && !checkViability(sheet, installed, rules).viable,
+            ...(onFoot ? { onFoot: true } : {}),
           }
         : null,
   });

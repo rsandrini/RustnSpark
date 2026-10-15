@@ -98,6 +98,7 @@ export function repair(
     );
   }
   state.wallet -= quote.cost;
+  state.repairActions += 1;
   state.ledger.record('repair', -quote.cost);
   const targetIds = new Set(quote.partIds);
   for (const part of state.ship.parts) {

@@ -354,6 +354,11 @@ export function fitPart(
     return { ok: false, reason: 'NOT_VIABLE' };
   }
   state.storage.splice(index, 1);
+  // A scavenged part that goes on the ship is a part the pilot did not have to buy.
+  if (fitted.source === 'scavenge' && !state.findsCounted.has(fitted.id)) {
+    state.findsCounted.add(fitted.id);
+    state.findsFittedValue += catalogByType.get(fitted.partType)?.basePrice ?? 0;
+  }
   state.ship.parts = hypotheticalPartsOf(state, fitted, replaceId);
   if (displaced !== undefined) state.storage.push(displaced);
   return { ok: true };

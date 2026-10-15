@@ -8,9 +8,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /** Version of `schema.sql` this build writes; `ensureSchema` applies any older file's upgrades. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
-const SCHEMA_PATH = fileURLToPath(new URL('./schema.sql', import.meta.url));
+/** Schema file for version N is `SCHEMA_FILES[N - 1]`; each applies on top of the one before. */
+const SCHEMA_FILES: readonly string[] = ['./schema.sql', './schema-2.sql'];
+
+function schemaPath(version: number): string {
+  return fileURLToPath(new URL(SCHEMA_FILES[version - 1] ?? '', import.meta.url));
+}
 
 export interface ExperimentRow {
   readonly name: string;
@@ -84,10 +89,21 @@ export interface MissionRow {
   readonly partsFound: number;
 }
 
+/** Per-run facts schema v2 added: the build, the final kit and where the time and value went. */
+export interface RunExtras {
+  readonly archetype: string;
+  readonly finalParts: string;
+  readonly actionSeconds: string;
+  readonly findsValue: number;
+  readonly footScavenges: number;
+  readonly repairActions: number;
+}
+
 export interface Store {
   readonly db: Database.Database;
   insertExperiment(row: ExperimentRow): number;
   insertRun(row: RunRow): number;
+  setRunExtras(runId: number, extras: RunExtras): void;
   insertLevels(runId: number, rows: readonly LevelRow[]): void;
   insertMissions(runId: number, rows: readonly MissionRow[]): void;
   close(): void;
@@ -113,7 +129,11 @@ export function ensureSchema(db: Database.Database): void {
     );
   }
   if (version === SCHEMA_VERSION) return;
-  db.exec(readFileSync(SCHEMA_PATH, 'utf8'));
+  for (let next = version + 1; next <= SCHEMA_VERSION; next += 1) {
+    db.exec(readFileSync(schemaPath(next), 'utf8'));
+    // The v1 file creates `schema_version` itself; later files only add to what is there.
+    if (next === 1) continue;
+  }
   db.prepare('DELETE FROM schema_version').run();
   db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(SCHEMA_VERSION);
 }
@@ -143,6 +163,12 @@ export function openStore(path: string): Store {
       @stalled, @stall_reason, @total_seconds, @total_missions, @success_rate,
       @reward, @combat, @scavenge_sale, @ore_sale, @fuel, @repair, @upgrade, @purchase, @sale
     )
+  `);
+  const setExtrasStmt = db.prepare(`
+    UPDATE runs SET archetype = @archetype, final_parts = @final_parts,
+      action_seconds = @action_seconds, finds_value = @finds_value,
+      foot_scavenges = @foot_scavenges, repair_actions = @repair_actions
+    WHERE id = @id
   `);
   const insertLevelStmt = db.prepare(`
     INSERT INTO levels (run_id, level, t, day, missions, wallet, ship_value)
@@ -204,6 +230,17 @@ export function openStore(path: string): Store {
         sale: row.sale,
       });
       return Number(info.lastInsertRowid);
+    },
+    setRunExtras(runId: number, extras: RunExtras): void {
+      setExtrasStmt.run({
+        id: runId,
+        archetype: extras.archetype,
+        final_parts: extras.finalParts,
+        action_seconds: extras.actionSeconds,
+        finds_value: extras.findsValue,
+        foot_scavenges: extras.footScavenges,
+        repair_actions: extras.repairActions,
+      });
     },
     insertLevels(runId: number, rows: readonly LevelRow[]): void {
       const insertAll = db.transaction((entries: readonly LevelRow[]) => {

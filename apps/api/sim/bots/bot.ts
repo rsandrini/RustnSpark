@@ -59,8 +59,10 @@ import {
   MINE_RATIO_MIN,
   MAX_SHIP_LEVEL,
   missionFuelNeed,
+  needsRepair,
   PLAYTIME_CAP_SECONDS,
   PROGRESS_STALL_MISSIONS,
+  affordableRepairTargets,
   atOrBelowTarget,
   RATIO_WINDOW,
   repositionOffer,
@@ -144,6 +146,11 @@ export interface RunResult {
   readonly scavengesDone: number;
   /** Free mining jobs flown. */
   readonly miningDone: number;
+  /** Scavenging jobs done on foot, what fitted finds saved, repair actions paid, the final kit. */
+  readonly footScavenges: number;
+  readonly findsValue: number;
+  readonly repairActions: number;
+  readonly finalParts: readonly string[];
   readonly levels: LevelRecord[];
   readonly missions: MissionOutcomeRecord[];
   readonly log: string[];
@@ -575,6 +582,22 @@ export function playRun(input: PlayRunInput): RunResult {
             `parts=[${parts}] offers=${offers.length} reasons=${diagnoseBoard(offers, state, ctx)}\n`,
         );
       }
+      // Nothing takeable: the pilot's own two feet still work. A search on foot costs no fuel
+      // and risks no hull, and what it finds (parts to fit, scrap to sell) can unblock the ship.
+      {
+        const nowFootMs = baseMs + state.clock.now() * 1000;
+        if (spend && scavengeCooldownLeft(state, ctx.rules, nowFootMs) === 0) {
+          currentAction = 'scavenge';
+          const walk = scavenge(state, ctx, world, nowFootMs, true);
+          if (walk.ok) {
+            state.log.push(
+              `scavenged on foot ${state.locationId} (nothing takeable): +${walk.partsFound} parts ` +
+                `+${walk.scrapFound} scrap in ${walk.durationSeconds}s (wallet ${state.wallet})`,
+            );
+            continue;
+          }
+        }
+      }
       // A rescue that buys nothing is a money pit. The pilot will pay for a few tows — a stranded
       // ship has no other way home — but once they stop yielding takeable work the run is over,
       // and the stall must be reported rather than the wallet drained on a loop.
@@ -763,9 +786,29 @@ export function playRun(input: PlayRunInput): RunResult {
     if (repairDecision !== null && repairDecision.shouldRepair) {
       const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
       if (quote.cost > state.wallet) {
-        state.log.push(
-          `repair deferred at ${state.locationId}: costs ${quote.cost}, wallet ${state.wallet}`,
+        // Not enough for the whole ship: repair the most worn parts the wallet covers.
+        // Keep what a full tank here costs: a repaired ship with no fuel goes nowhere.
+        const tankCost = refuelQuote(state, snapshot, ctx.rules, catalogByType, state.locationId).cost;
+        const targets = affordableRepairTargets(
+          state,
+          snapshot,
+          ctx.rules,
+          catalogByType,
+          Math.max(0, state.wallet - tankCost),
         );
+        if (targets === null) {
+          state.log.push(
+            `repair deferred at ${state.locationId}: costs ${quote.cost}, wallet ${state.wallet}`,
+          );
+        } else {
+          const bill = repair(state, snapshot, ctx.rules, catalogByType, state.locationId, targets);
+          if (bill.cost > 0) recentRepairBills.push(bill.cost);
+          state.clock.advance(budget.humanPauseSeconds);
+          state.log.push(
+            `partial repair at ${state.locationId}: ${bill.points} points for ${bill.cost} ` +
+              `(whole ship ${quote.cost}, wallet ${state.wallet})`,
+          );
+        }
       } else {
         const bill = repair(state, snapshot, ctx.rules, catalogByType, state.locationId);
         if (bill.cost > 0) recentRepairBills.push(bill.cost);
@@ -840,21 +883,25 @@ export function playRun(input: PlayRunInput): RunResult {
     const afterMs = baseMs + state.clock.now() * 1000;
     // Scavenge on at least 75% of missions when the cooldown and the danger rule allow it.
     const scavengeJob = scavengeOffer({ snapshot, world, state, nowMs: afterMs });
-    if (
-      scavengeJob !== null &&
-      scavengeCooldownLeft(state, ctx.rules, afterMs) === 0 &&
-      canTakeMission(state, scavengeJob, ctx).ok &&
-      decideDanger(state, catalogByType, scavengeJob).accept
-    ) {
+    if (scavengeJob !== null && scavengeCooldownLeft(state, ctx.rules, afterMs) === 0) {
+      // With the ship when the ship can take the job and the danger rule allows it; on foot
+      // (no pirates, no wear, half the finds) when the ship may not, or is too worn to risk
+      // with no money to repair it — the safe way to keep earning parts while broke.
+      const shipOk =
+        canTakeMission(state, scavengeJob, ctx).ok && decideDanger(state, catalogByType, scavengeJob).accept;
+      const tooWorn =
+        needsRepair(state, catalogByType) &&
+        state.wallet < repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId).cost;
+      const onFoot = !shipOk || tooWorn;
       if (atOrBelowTarget(scavengeFlags, SCAVENGE_RATIO_MIN)) {
         currentAction = 'scavenge';
-        const job = scavenge(state, ctx, world, afterMs);
+        const job = scavenge(state, ctx, world, afterMs, onFoot);
         if (job.ok) {
           scavengeFlags.push(true);
-          towIfAdrift(job.shipStatus, 'scavenge');
+          if (!onFoot) towIfAdrift(job.shipStatus, 'scavenge');
           state.log.push(
-            `scavenged ${state.locationId}: +${job.partsFound} parts +${job.scrapFound} scrap ` +
-              `in ${job.durationSeconds}s (wallet ${state.wallet})`,
+            `scavenged${onFoot ? ' on foot' : ''} ${state.locationId}: +${job.partsFound} parts ` +
+              `+${job.scrapFound} scrap in ${job.durationSeconds}s (wallet ${state.wallet})`,
           );
         }
       } else {
@@ -954,6 +1001,10 @@ export function playRun(input: PlayRunInput): RunResult {
     endReason,
     scavengesDone: state.scavengesDone,
     miningDone: state.miningDone,
+    footScavenges: state.footScavenges,
+    findsValue: state.findsFittedValue,
+    repairActions: state.repairActions,
+    finalParts: state.ship.parts.map((part) => `${part.partType}@${Math.round(part.condition)}`),
     levels,
     missions: records,
     log: state.log,
