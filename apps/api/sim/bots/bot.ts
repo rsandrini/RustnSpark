@@ -775,10 +775,14 @@ export function playRun(input: PlayRunInput): RunResult {
           state.missionsDone -= 1;
           state.clock.advance(budget.humanPauseSeconds);
           currentAction = 'repair';
-          const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, target);
-          if (quote.cost <= state.wallet) {
-            const bill = repair(state, snapshot, ctx.rules, catalogByType, target);
-            if (bill.cost > 0) recentRepairBills.push(bill.cost);
+          // The trip can end short of the port (a lost fight, a dry tank): repair only where the
+          // ship actually is.
+          if (state.locationId === target) {
+            const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, target);
+            if (quote.cost <= state.wallet) {
+              const bill = repair(state, snapshot, ctx.rules, catalogByType, target);
+              if (bill.cost > 0) recentRepairBills.push(bill.cost);
+            }
           }
           continue;
         }
