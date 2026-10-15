@@ -152,8 +152,14 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
   // matrix, for a quick look. Default: the whole matrix.
   const onlyPlaystyle = stringFlag(flags, 'playstyle', '');
   const base = stringFlag(flags, 'archetypes', '') === 'all' ? archetypeMatrix(hoursPerDay) : defaultMatrix(hoursPerDay);
+  // `--temperament balanced` keeps one temperament; `--archetype-only ion-shield` one build.
+  const onlyTemperament = stringFlag(flags, 'temperament', '');
+  const onlyArchetype = stringFlag(flags, 'archetype-only', '');
   const matrix = base.filter(
-    (cell) => onlyPlaystyle === '' || cell.playstyle === onlyPlaystyle,
+    (cell) =>
+      (onlyPlaystyle === '' || cell.playstyle === onlyPlaystyle) &&
+      (onlyTemperament === '' || cell.temperament === onlyTemperament) &&
+      (onlyArchetype === '' || cell.archetype === onlyArchetype),
   );
   process.stdout.write(
     `matrix: ${matrix.length} cells x ${runs} runs x ${missions} missions ` +

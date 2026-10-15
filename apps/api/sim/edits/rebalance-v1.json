@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "economy.repair_factor": 0.62,
+    "economy.maintenance_per_tier": 60,
+    "economy.fuel_price": 0.9,
+    "wear.base_min": 1.5,
+    "wear.base_max": 2.5,
+    "wear.environment_damage_factor": 1.5,
+    "encounter.pirate_zone_strength": { "0": 0.35, "1": 0.5, "2": 0.65, "3": 1.1 }
+  }
+}

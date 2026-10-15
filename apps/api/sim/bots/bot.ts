@@ -793,10 +793,10 @@ export function playRun(input: PlayRunInput): RunResult {
     currentAction = 'repair';
     if (repairDecision !== null && repairDecision.shouldRepair) {
       const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
-      if (quote.cost > state.wallet) {
-        // Not enough for the whole ship: repair the most worn parts the wallet covers.
-        // Keep what a full tank here costs: a repaired ship with no fuel goes nowhere.
-        const tankCost = refuelQuote(state, snapshot, ctx.rules, catalogByType, state.locationId).cost;
+      // Keep what a full tank here costs: a repaired ship with no fuel goes nowhere.
+      const tankCost = refuelQuote(state, snapshot, ctx.rules, catalogByType, state.locationId).cost;
+      if (quote.cost > state.wallet - tankCost) {
+        // Not enough for the whole ship and a tank: repair the most worn parts the rest covers.
         const targets = affordableRepairTargets(
           state,
           snapshot,
