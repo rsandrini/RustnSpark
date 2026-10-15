@@ -313,12 +313,13 @@ describe('decideFuel (the "no other way" rule)', () => {
     const state = starterPlayer(snapshot, 'luna');
     state.locationId = EXPENSIVE_PORT;
     state.ship.fuel = 50;
-    // fuelUse 7 × distance 1000 / 100 = 70 units needed, 50 in the tank: 20 short, and at
-    // vesta's price — there is no cheaper way to fly this job than to buy it here.
+    // fuelUse 7 × distance 1000 / 100 = 70 units burned, and the pilot wants the pump's worst
+    // case aboard (× 1.5 = 105): 50 in the tank is 55 short, at vesta's price — there is no
+    // cheaper way to fly this job than to buy it here.
     const decision = decideFuel(state, snapshot, rules, catalogByType, offerAt(1, 1000));
     expect(decision).toEqual({
       shouldRefuel: true,
-      units: 20,
+      units: 55,
       reason: 'expensive-port-minimum',
     });
   });

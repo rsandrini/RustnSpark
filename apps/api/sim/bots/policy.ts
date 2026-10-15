@@ -37,6 +37,7 @@ import {
 } from '../core/state.js';
 import type { Offer } from '../core/world.js';
 import type { CatalogRow, Snapshot } from '../snapshot/types.js';
+import { repairQuote } from '../actions/repair.js';
 
 /** Tolerance for "cheap enough": within 10% of the cheapest reachable port. */
 export const CHEAP_PORT_TOLERANCE = 0.1;
@@ -97,13 +98,19 @@ export function decideDanger(
   return { accept: true, reason: `unarmed-safe-${peak}` };
 }
 
-/** How many units a mission's legs will burn, at this ship's current `fuelUse`. */
+/**
+ * How much fuel the pilot wants aboard for a mission: what its legs burn at this ship's
+ * `fuelUse`, times the tank pump's worst case (`power.pump_fuel_factor`). A leg whose pump roll
+ * fails burns that much more, and a ship that left with exactly the burn ran dry and was towed:
+ * the game lets you leave on the bare figure, a careful pilot does not.
+ */
 export function missionFuelNeed(state: PlayerState, offer: Offer, ctx: { rules: GameRules; catalogByType: ReadonlyMap<string, CatalogRow> }): number {
   const fuelUse = deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules).fuelUse;
-  return offer.legs.reduce(
+  const burn = offer.legs.reduce(
     (sum, leg) => sum + fuelUnits({ fuelUse, distance: leg.distance, envFuelMult: leg.env.fuelMult }),
     0,
   );
+  return Math.ceil(burn * Math.max(1, ctx.rules.power.pump_fuel_factor));
 }
 
 /** Does the ship need a repair right now, by the plan's own thresholds? */
@@ -717,10 +724,14 @@ export function spendPlan(
   }
   const refill = refuelQuote(state, snapshot, rules, catalogByType, state.locationId);
   const bills = recentRepairBills.slice(-REPAIR_SAMPLE);
-  const expectedRepair =
+  const typicalBill =
     bills.length === 0
       ? REPAIR_BILL_FALLBACK_CREDITS
       : bills.reduce((sum, bill) => sum + bill, 0) / bills.length;
+  // What repairing the whole ship costs right now is also owed: money that would leave the hull
+  // unpaid for is not spendable, whatever the last few bills averaged.
+  const fullRepair = repairQuote(state, snapshot, rules, catalogByType, state.locationId).cost;
+  const expectedRepair = Math.max(typicalBill, fullRepair);
   const available = state.wallet - refill.cost - expectedRepair;
   const keepNeedsOfTarget = (target: SpendTarget): readonly MaterialNeed[] =>
     keepNeedsOf(target, rules);

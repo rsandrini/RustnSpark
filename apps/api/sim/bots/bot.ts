@@ -68,7 +68,10 @@ import {
   spendPlan,
   type SpendAction,
 } from './policy.js';
+import { FALLBACK_REPAIR_PER_POINT, isWorthFlying, tripKey, type WearSample } from './prudence.js';
 
+/** How many flown missions the pilot remembers the wear of. */
+const WEAR_SAMPLE_WINDOW = 30;
 /** Consecutive board turns with nothing takeable before the run is declared stalled. */
 const MAX_EMPTY_ROUNDS = 30;
 /** Empty board turns tolerated before the pilot calls a rescue (a board can be thin for a while). */
@@ -233,6 +236,7 @@ function pickOffer(
   nowMs: number,
   temperament: Temperament,
   playstyle: Playstyle,
+  memory: PilotMemory,
 ): { offer: Offer | null; offers: Offer[]; fallback: boolean } {
   const offers = boardAt({
     board,
@@ -243,14 +247,47 @@ function pickOffer(
     locationId: state.locationId,
     nowMs,
   });
-  const qualifying = offers.filter(
+  const takeable = offers.filter(
     (offer) =>
       canTakeMission(state, offer, ctx).ok && decideDanger(state, ctx.catalogByType, offer).accept,
   );
+  // Prudence: not a trip that just stranded this ship (until the tank is bigger), the fuel the
+  // pump's worst case needs aboard, and nothing whose repair bill eats its reward, unless that
+  // leaves nothing at all to fly (then the pilot takes the work rather than sit).
+  const repairPerPoint = repairCostPerPoint(state, ctx);
+  const fuelCap = fuelCapOfShip(state, ctx);
+  const prudent = takeable.filter(
+    (offer) =>
+      state.ship.fuel >= missionFuelNeed(state, offer, ctx) &&
+      !(
+        memory.stranded.get(tripKey(offer)) !== undefined &&
+        fuelCap <= (memory.stranded.get(tripKey(offer)) ?? 0)
+      ),
+  );
+  const worthIt = prudent.filter((offer) =>
+    isWorthFlying(offer, memory.wearSamples, repairPerPoint),
+  );
+  const qualifying = worthIt.length > 0 ? worthIt : prudent;
   if (qualifying.length === 0) return { offer: null, offers, fallback: false };
   const { kept, fallback } = filterForPlaystyle(playstyle, qualifying);
   const offer = chooseOffer(temperament, kept, state, ctx, rng);
   return { offer, offers, fallback };
+}
+
+/** What the pilot remembers of this run: wear per trip and the trips that ran the ship dry. */
+interface PilotMemory {
+  readonly wearSamples: WearSample[];
+  /** Trip key -> the tank capacity the ship had when it was stranded there. */
+  readonly stranded: Map<string, number>;
+}
+
+function repairCostPerPoint(state: PlayerState, ctx: MissionContext): number {
+  const quote = repairQuote(state, ctx.snapshot, ctx.rules, ctx.catalogByType, state.locationId);
+  return quote.points > 0 ? quote.cost / quote.points : FALLBACK_REPAIR_PER_POINT;
+}
+
+function fuelCapOfShip(state: PlayerState, ctx: MissionContext): number {
+  return deriveSheet(installedParts(state.ship, ctx.catalogByType), ctx.rules).fuelCap;
 }
 
 function recordOutcome(
@@ -336,6 +373,7 @@ export function playRun(input: PlayRunInput): RunResult {
   const scavengeFlags: boolean[] = [];
   const mineFlags: boolean[] = [];
   const recentRepairBills: number[] = [];
+  const memory: PilotMemory = { wearSamples: [], stranded: new Map() };
   const walletTrail: { mission: number; wallet: number }[] = [{ mission: 0, wallet: state.wallet }];
   let lastLevel = levels[0]?.level ?? 1;
   let levelChangeAt = 0;
@@ -513,7 +551,7 @@ export function playRun(input: PlayRunInput): RunResult {
     }
     if (spend && executeSpend(plan.action, nowMs)) continue;
 
-    const picked = pickOffer(state, ctx, world, board, rng, nowMs, temperament, playstyle);
+    const picked = pickOffer(state, ctx, world, board, rng, nowMs, temperament, playstyle, memory);
     const { offer, offers } = picked;
     if (picked.fallback) {
       state.log.push(
@@ -779,6 +817,15 @@ export function playRun(input: PlayRunInput): RunResult {
     state.clock.advance(budget.humanPauseSeconds);
     towIfAdrift(result.shipStatus, result.type);
     records.push(recordOutcome(state, ctx, budget, result));
+    memory.wearSamples.push({
+      distance: result.distance,
+      danger: result.maxDanger,
+      wearPoints: result.wearPoints,
+    });
+    if (memory.wearSamples.length > WEAR_SAMPLE_WINDOW) memory.wearSamples.shift();
+    if (result.shipStatus === 'ADRIFT') {
+      memory.stranded.set(tripKey(offer), fuelCapOfShip(state, ctx));
+    }
 
     // --- Opportunistic jobs between missions (Phase 3). ---
     const afterMs = baseMs + state.clock.now() * 1000;
