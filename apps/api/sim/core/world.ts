@@ -214,7 +214,7 @@ export function scavengeContextOf(snapshot: Snapshot, locationId: string): Scave
     tiers,
     catalog: snapshot.catalog
       .filter((part) => part.active && part.partClass !== 'BRIDGE')
-      .map((part) => ({ partType: part.partType, rarity: part.rarity })),
+      .map((part) => ({ partType: part.partType, rarity: part.rarity, basePrice: part.basePrice })),
   };
 }
 

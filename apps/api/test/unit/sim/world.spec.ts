@@ -84,4 +84,12 @@ describe('scavengeContextOf', () => {
     expect(context.tiers).toEqual([{ tier: 'COMMON', chance: 0.5 }]);
     expect(context.catalog.map((part) => part.partType)).not.toContain('bridge');
   });
+
+  it("carries each part's base price, which the price weighting and the zone cap read", () => {
+    const context = scavengeContextOf(snapshot, 'vesta');
+    for (const entry of context.catalog) {
+      const row = snapshot.catalog.find((part) => part.partType === entry.partType);
+      expect(entry.basePrice).toBe(row?.basePrice);
+    }
+  });
 });
