@@ -380,6 +380,8 @@ export function playRun(input: PlayRunInput): RunResult {
   let stalled = false;
   let stallReason: string | null = null;
   let emptyRounds = 0;
+  /** The last empty board was blocked by mining work the ship has no rig for. */
+  let minerBlocked = false;
   let rescuesTaken = 0;
   // Phase 3: ratio windows over mission opportunities, the repair bills the reserve averages,
   // and the wallet trail the progress-stall detector compares against.
@@ -542,7 +544,7 @@ export function playRun(input: PlayRunInput): RunResult {
         if (removed.ok) state.log.push(`removed idle part ${idleId} from the ship`);
       }
     }
-    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
+    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype, minerBlocked);
     if (spend) {
       const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds, archetype);
       for (const partId of sells.partIds) {
@@ -552,7 +554,7 @@ export function playRun(input: PlayRunInput): RunResult {
         sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
       }
     }
-    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
+    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype, minerBlocked);
     if (process.env['SIM_DEBUG'] === '1') {
       const action = plan.action;
       const detail =
@@ -581,6 +583,10 @@ export function playRun(input: PlayRunInput): RunResult {
 
     if (offer === null) {
       emptyRounds += 1;
+      minerBlocked = offers.some((entry) => {
+        const take = canTakeMission(state, entry, ctx);
+        return !take.ok && take.reasons.includes('MINER');
+      });
       if (process.env['SIM_DEBUG'] === '1') {
         const parts = state.ship.parts
           .map((p) => catalogByType.get(p.partType)?.partClass ?? '?')

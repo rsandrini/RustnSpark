@@ -782,6 +782,7 @@ export function spendPlan(
   catalogByType: ReadonlyMap<string, CatalogRow>,
   recentRepairBills: readonly number[],
   archetype: Archetype = 'chem',
+  wantsMiningRig = false,
 ): SpendPlan {
   const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
   if (sheet.min < 1) {
@@ -803,6 +804,45 @@ export function spendPlan(
     }
   }
   const refill = refuelQuote(state, snapshot, rules, catalogByType, state.locationId);
+  // Only mining work is on the board and the ship has no rig: the cheapest rig on the shelf is
+  // the way back to work, ahead of any upgrade (the stall otherwise ends the run).
+  const holdsRig = state.storage.some((part) => {
+    const row = catalogByType.get(part.partType);
+    return row !== undefined && familyBaseOf(row) === 'mining_rig';
+  });
+  // A rig already in the hold that would not fit is not a reason to buy another.
+  if (wantsMiningRig && sheet.min < 1 && !holdsRig) {
+    const rigType = 'mining_rig';
+    const row = catalogByType.get(rigType);
+    const buy = row === undefined ? null : bestBuyPort(state, snapshot, rules, catalogByType, rigType);
+    const spare = state.wallet - refill.cost;
+    if (buy !== null && buy.price <= spare) {
+      if (buy.locationId === state.locationId) {
+        return {
+          action: {
+            kind: 'buy',
+            listingId: buy.listingId,
+            partType: rigType,
+            locationId: buy.locationId,
+            price: buy.price,
+            replaceId: null,
+            targetBase: 'mining_rig',
+            reason: 'buy-mining-rig',
+          },
+          keepNeeds: [],
+        };
+      }
+      return {
+        action: {
+          kind: 'travel-to-buy',
+          locationId: buy.locationId,
+          targetBase: 'mining_rig',
+          reason: 'hop-to-buy-rig',
+        },
+        keepNeeds: [],
+      };
+    }
+  }
   const bills = recentRepairBills.slice(-REPAIR_SAMPLE);
   const typicalBill =
     bills.length === 0
