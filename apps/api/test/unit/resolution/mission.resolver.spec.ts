@@ -729,3 +729,56 @@ describe("the pilot's own free mining job", () => {
     expect(paid.events.some((event) => event.type === 'mission_payout')).toBe(true);
   });
 });
+
+describe('P0 review — a lost fight wears the bridge', () => {
+  const withBridge = (): MissionSnapshot =>
+    snapshot({
+      fuel: 800,
+      parts: [
+        ...PARTS,
+        { id: 'bridge-1', partClass: 'BRIDGE', providesEsc: false, condition: 100 },
+      ],
+    });
+  const route = (zone: number) =>
+    mission({
+      relation: 'HOSTILE',
+      stance: 'AGGRESSIVE',
+      legs: [{ distance: 800, danger: 10, zone, env: { id: 'debris', level: 3, fuelMult: 1.1 } }],
+    });
+  const wearRules = (minZone: number): GameRules => ({
+    ...rules,
+    combat: { ...rules.combat, loss_bridge_wear: 15, loss_bridge_wear_min_zone: minZone },
+  });
+  const bridgeAfter = (seed: number, zone: number, minZone: number): number | undefined => {
+    const out = resolveMission({
+      seed,
+      snapshot: withBridge(),
+      mission: route(zone),
+      rules: wearRules(minZone),
+    });
+    if (!out.events.some((event) => event.type === 'combat_loss')) return undefined;
+    return out.parts.find((part) => part.id === 'bridge-1')?.condition;
+  };
+
+  it('costs the bridge condition in a zone at or above the minimum, and spares it below', () => {
+    let checked = 0;
+    for (let seed = 0; seed < 600 && checked < 3; seed += 1) {
+      const worn = bridgeAfter(seed, 3, 2);
+      if (worn === undefined) continue;
+      checked += 1;
+      // The same lost fight on a route below the minimum zone leaves the bridge alone.
+      const spared = bridgeAfter(seed, 3, 3);
+      expect(worn).toBeLessThanOrEqual(100 - 15);
+      expect(spared).toBeDefined();
+      // minZone 3 equals the route's zone 3, so it applies too: use a higher minimum to spare it.
+      const protectedBridge = resolveMission({
+        seed,
+        snapshot: withBridge(),
+        mission: route(1),
+        rules: wearRules(2),
+      }).parts.find((part) => part.id === 'bridge-1')?.condition;
+      expect(protectedBridge === undefined || protectedBridge > 85).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});

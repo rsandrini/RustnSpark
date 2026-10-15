@@ -12,6 +12,14 @@ _Avoid_: Core, command module
 The assembly yard a ship is built inside: the set of cells its parts must fit. A format opens by the bridge's rarity and size.
 _Avoid_: Layout (that is where parts sit inside the format), grid, hull
 
+**Bridge rarity**:
+The rarity of the installed bridge. It is what mission requirements and rewards are scaled by: what a pilot can take and what it pays follows the bridge they bought.
+_Avoid_: Ship level, tier
+
+**Level** (progress measure):
+The lowest rarity among every installed part, bridge included. Used only to measure how far a run has climbed (the simulation reports days and missions to each level), never to scale missions.
+_Avoid_: Bridge rarity (a ship can have an epic bridge and common weapons)
+
 **Expand / Shrink**:
 Changing the bridge's size at a port. Expand turns a 1×1 bridge into the 2×2 one rarity level below, for its full price; Shrink sells a 2×2 and gives the 1×1 of the same rarity.
 _Avoid_: Upgrade (that raises rarity, never size), downgrade

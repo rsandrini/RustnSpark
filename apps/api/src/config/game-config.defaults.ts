@@ -30,6 +30,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     escalation_start_round: 25,
     escalation_per_round: 0.1,
     loss_bridge_wear: 10,
+    // Zones 0 and 1 are where a new pilot learns: a lost fight there costs money and time, never the ship.
+    loss_bridge_wear_min_zone: 2,
   },
   ship: {
     mob_factor: 1.6,

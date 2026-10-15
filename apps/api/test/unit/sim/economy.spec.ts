@@ -123,20 +123,11 @@ function econSnapshot(): Snapshot {
     materials: [
       ...base.materials,
       {
-        id: 'scrap_ceramic',
-        displayName: { en: 'Ceramic scrap' },
-        description: { en: 'Broken plating.' },
+        id: 'scrap',
+        displayName: { en: 'Scrap' },
+        description: { en: 'Worn-out remains.' },
         rarity: 'COMMON' as const,
         basePrice: 3,
-        fixedPrice: true,
-        active: true,
-      },
-      {
-        id: 'scrap_alloy',
-        displayName: { en: 'Alloy scrap' },
-        description: { en: 'Denser offcuts.' },
-        rarity: 'COMMON' as const,
-        basePrice: 9,
         fixedPrice: true,
         active: true,
       },
@@ -213,7 +204,7 @@ describe('scavenge job', () => {
     // Whatever the resolver rolled lands in the hold (the scrap materials mirror the counter;
     // a fight could have stolen a found part, so storage is a lower bound on partsFound).
     const scrapHeld = [...state.materials]
-      .filter(([materialId]) => materialId.startsWith('scrap_'))
+      .filter(([materialId]) => materialId === 'scrap')
       .reduce((sum, [, quantity]) => sum + quantity, 0);
     expect(scrapHeld).toBe(out.scrapFound);
     const scavengedInHold = state.storage.filter((part) => part.source === 'scavenge');
@@ -569,7 +560,7 @@ describe('market: selling', () => {
     const ctx = missionContext(snapshot);
     const state = starterPlayer(snapshot, 'luna');
     state.materials.set('ore_iron', 5);
-    state.materials.set('scrap_ceramic', 4);
+    state.materials.set('scrap', 4);
 
     const oreUnit = sellPrice(priceInputAt(snapshot, 'luna', 'ceres', 10, 100), ctx.rules);
     const ore = sellMaterial(state, snapshot, ctx.rules, 'ore_iron', 2);
@@ -578,12 +569,12 @@ describe('market: selling', () => {
     expect(state.ledger.total('oreSale')).toBe(2 * oreUnit);
 
     // Scrap never takes place or mood: exactly basePrice per unit (floored at 1).
-    expect(sellMaterial(state, snapshot, ctx.rules, 'scrap_ceramic', 99)).toMatchObject({
+    expect(sellMaterial(state, snapshot, ctx.rules, 'scrap', 99)).toMatchObject({
       ok: true,
       units: 4,
       credits: 4 * 3,
     });
-    expect(state.materials.has('scrap_ceramic')).toBe(false);
+    expect(state.materials.has('scrap')).toBe(false);
 
     expect(sellMaterial(state, snapshot, ctx.rules, 'ore_iron', 0)).toEqual({
       ok: false,
@@ -698,23 +689,23 @@ describe('upgrade', () => {
     });
     const hullId = hullIdOf(snapshot);
 
-    state.materials.set('scrap_ceramic', 3);
+    state.materials.set('scrap', 3);
     state.wallet = 10;
     const broke = upgrade(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     expect(broke).toMatchObject({ ok: false, reason: 'INSUFFICIENT_FUNDS', cost: 132 });
     expect(state.wallet).toBe(10);
-    expect(state.materials.get('scrap_ceramic')).toBe(3);
+    expect(state.materials.get('scrap')).toBe(3);
 
     state.wallet = 10_000;
-    state.materials.set('scrap_ceramic', 2); // 2 < the 3 the upgrade asks for
+    state.materials.set('scrap', 2); // 2 < the 3 the upgrade asks for
     const short = upgrade(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     expect(short).toMatchObject({ ok: false, reason: 'INSUFFICIENT_MATERIALS' });
     expect(state.wallet).toBe(10_000);
-    expect(state.materials.get('scrap_ceramic')).toBe(2);
+    expect(state.materials.get('scrap')).toBe(2);
     expect(state.ship.parts.find((part) => part.id === hullId)?.partType).toBe('hull');
   });
 
-  it('charges the money, takes scrap cheapest-first, and carries the condition', () => {
+  it('charges the money, takes the scrap it asks for, and carries the condition', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
     const state = starterPlayer(snapshot, 'luna');
@@ -723,25 +714,22 @@ describe('upgrade', () => {
     });
     const hullId = hullIdOf(snapshot);
     state.wallet = 10_000;
-    state.materials.set('scrap_ceramic', 1); // basePrice 3: consumed before the alloy
-    state.materials.set('scrap_alloy', 5); // basePrice 9
+    state.materials.set('scrap', 5);
 
     const out = upgrade(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     expect(out).toEqual({ ok: true, partId: hullId, partType: 'hull_uncommon', cost: 132 });
     expect(state.wallet).toBe(10_000 - 132);
     expect(state.ledger.total('upgrade')).toBe(-132);
-    expect(state.materials.has('scrap_ceramic')).toBe(false);
-    expect(state.materials.get('scrap_alloy')).toBe(3); // 5 − (3 − 1)
+    expect(state.materials.get('scrap')).toBe(2); // 5 − 3
     const hull = state.ship.parts.find((part) => part.id === hullId);
     expect(hull?.partType).toBe('hull_uncommon');
     expect(hull?.condition).toBe(100);
   });
 
-  it('counts held scrap across every scrap id and allocates retention cheapest-first', () => {
+  it('counts what is held of each material and keeps what the upgrade needs', () => {
     const snapshot = econSnapshot();
     const state = starterPlayer(snapshot, 'luna');
-    state.materials.set('scrap_ceramic', 1);
-    state.materials.set('scrap_alloy', 5);
+    state.materials.set('scrap', 6);
     state.materials.set('ore_iron', 9);
 
     expect(heldForNeed(state, { material: 'scrap', quantity: 3 })).toBe(6);
@@ -749,10 +737,7 @@ describe('upgrade', () => {
     expect(heldForNeed(state, { material: 'rare_crystals', quantity: 3 })).toBe(0);
 
     const keep = retentionFor(state, snapshot, [{ material: 'scrap', quantity: 3 }]);
-    expect([...keep]).toEqual([
-      ['scrap_ceramic', 1],
-      ['scrap_alloy', 2],
-    ]);
+    expect([...keep]).toEqual([['scrap', 3]]);
   });
 });
 
@@ -954,14 +939,14 @@ describe('sell list', () => {
       { id: 'tank-loose', partType: 'tank_small', condition: 100 }, // not in the target kit
       { id: 'rig-loose', partType: 'mining_rig', condition: 100 },
     ];
-    state.materials.set('scrap_ceramic', 5);
+    state.materials.set('scrap', 5);
     state.materials.set('ore_iron', 4);
 
     const keepNeeds = [{ material: 'scrap', quantity: 2 }];
     const list = sellList(state, snapshot, ctx.rules, ctx.catalogByType, keepNeeds);
     expect([...list.partIds].sort()).toEqual(['hull-worn', 'tank-loose']);
     const materials = new Map(list.materials.map((entry) => [entry.materialId, entry.quantity]));
-    expect(materials.get('scrap_ceramic')).toBe(3); // 5 held, 2 reserved for the upgrade
+    expect(materials.get('scrap')).toBe(3); // 5 held, 2 reserved for the upgrade
     expect(materials.get('ore_iron')).toBe(4); // ore is never part of an upgrade here
     expect(state.storage).toHaveLength(5); // selling happens in the market actions, not here
   });

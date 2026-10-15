@@ -35,6 +35,7 @@ import {
   scaleOffer,
   type BridgeScaling,
 } from '../experiment/scaling.js';
+import { SCRAP_MATERIAL_ID } from '../../src/economy/scrap.js';
 
 export interface MissionContext {
   readonly snapshot: Snapshot;
@@ -44,10 +45,7 @@ export interface MissionContext {
   readonly bridgeScaling?: BridgeScaling;
 }
 
-export function missionContext(
-  snapshot: Snapshot,
-  bridgeScaling?: BridgeScaling,
-): MissionContext {
+export function missionContext(snapshot: Snapshot, bridgeScaling?: BridgeScaling): MissionContext {
   return {
     snapshot,
     rules: snapshot.rules,
@@ -64,17 +62,14 @@ export interface TakeCheck {
 
 export function totalFuelNeeded(legs: readonly DispatchLeg[], fuelUse: number): number {
   return legs.reduce(
-    (sum, leg) => sum + fuelUnits({ fuelUse, distance: leg.distance, envFuelMult: leg.env.fuelMult }),
+    (sum, leg) =>
+      sum + fuelUnits({ fuelUse, distance: leg.distance, envFuelMult: leg.env.fuelMult }),
     0,
   );
 }
 
 /** Can this ship accept this offer right now? Mirrors `missions.service.ts → accept`'s checks. */
-export function canTakeMission(
-  state: PlayerState,
-  offer: Offer,
-  ctx: MissionContext,
-): TakeCheck {
+export function canTakeMission(state: PlayerState, offer: Offer, ctx: MissionContext): TakeCheck {
   const reasons: string[] = [];
   if (state.locationId !== offer.originId) reasons.push('SHIP_NOT_AT_ORIGIN');
   const installed = installedParts(state.ship, ctx.catalogByType);
@@ -186,7 +181,10 @@ export function takeMission(
         );
   // The what-if hook, pay side: the bridge's rarity multiplies the accept-time figure, and the
   // resolver is paid from it — all ones is today's game.
-  const rewardMult = rewardMultiplier(ctx.bridgeScaling ?? NO_SCALING, bridgeRarityIndex(state, catalogByType));
+  const rewardMult = rewardMultiplier(
+    ctx.bridgeScaling ?? NO_SCALING,
+    bridgeRarityIndex(state, catalogByType),
+  );
   const scaledReward = Math.round(rewardOffered * rewardMult);
 
   const legs: DispatchLeg[] = offer.legs.map((leg) => ({
@@ -306,8 +304,8 @@ export function takeMission(
       });
     } else {
       scrapFound += 1;
-      const key = `scrap_${found.partType}`;
-      state.materials.set(key, (state.materials.get(key) ?? 0) + 1);
+      // Scrap is one generic material whichever part it was found of (economy/scrap.ts).
+      state.materials.set(SCRAP_MATERIAL_ID, (state.materials.get(SCRAP_MATERIAL_ID) ?? 0) + 1);
     }
   }
 

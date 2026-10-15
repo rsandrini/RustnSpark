@@ -835,7 +835,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }
       // A lost fight can hurt the bridge itself: it is the one way a fight destroys a ship.
       const bridgeWear = rules.combat.loss_bridge_wear ?? 0;
-      if (bridgeWear > 0) {
+      if (bridgeWear > 0 && input.route.zone >= (rules.combat.loss_bridge_wear_min_zone ?? 0)) {
         parts = parts.map((part) =>
           part.partClass === 'BRIDGE'
             ? { ...part, condition: applyWear(part.condition, bridgeWear) }

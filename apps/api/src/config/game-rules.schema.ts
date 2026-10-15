@@ -32,6 +32,7 @@ const combatSchema = z.object({
   escalation_start_round: z.number().int().min(0).max(200).default(0),
   escalation_per_round: z.number().min(0).max(5).default(0),
   loss_bridge_wear: z.number().min(0).max(100).default(0),
+  loss_bridge_wear_min_zone: z.number().int().min(0).max(3).default(0),
 });
 
 const shipSchema = z.object({

@@ -276,6 +276,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.loss_bridge_wear_min_zone',
+    group: 'combat',
+    type: 'integer',
+    min: 0,
+    max: 3,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.loss_bridge_wear_min_zone),
+    description: {
+      en: 'The bridge only wears from a lost fight on routes of this zone or above (so a new pilot in the safe zones never risks the ship).',
+      'pt-BR':
+        'A ponte só desgasta numa luta perdida em rotas desta zona ou acima (assim um piloto novo nas zonas seguras nunca arrisca a nave).',
+    },
+  },
+  {
     key: 'ship.mob_factor',
     group: 'ship',
     type: 'number',

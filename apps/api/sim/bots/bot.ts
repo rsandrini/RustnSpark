@@ -192,11 +192,7 @@ function baseEpochMs(snapshot: Snapshot): number {
 }
 
 /** Why nothing on the board was takeable — the stall report's real content. */
-function diagnoseBoard(
-  offers: readonly Offer[],
-  state: PlayerState,
-  ctx: MissionContext,
-): string {
+function diagnoseBoard(offers: readonly Offer[], state: PlayerState, ctx: MissionContext): string {
   if (offers.length === 0) return 'board empty';
   const reasons = offers.map((offer) => {
     const take = canTakeMission(state, offer, ctx);
@@ -249,8 +245,7 @@ function pickOffer(
   });
   const qualifying = offers.filter(
     (offer) =>
-      canTakeMission(state, offer, ctx).ok &&
-      decideDanger(state, ctx.catalogByType, offer).accept,
+      canTakeMission(state, offer, ctx).ok && decideDanger(state, ctx.catalogByType, offer).accept,
   );
   if (qualifying.length === 0) return { offer: null, offers, fallback: false };
   const { kept, fallback } = filterForPlaystyle(playstyle, qualifying);
@@ -302,7 +297,7 @@ function recordOutcome(
 /** Plays one game: `missions` accepted missions from a fresh starter ship, seeded end to end. */
 export function playRun(input: PlayRunInput): RunResult {
   const { snapshot, seed, missions } = input;
-  const factionId = input.factionId ?? defaultFaction(snapshot);
+  const factionId = input.factionId ?? factionForSeed(snapshot, seed);
   const budget = input.budget ?? DEFAULT_BUDGET;
   const temperament = temperamentOf(input.temperament ?? 'random');
   const playstyle = playstyleOf(input.playstyle ?? 'generalist');
@@ -325,7 +320,7 @@ export function playRun(input: PlayRunInput): RunResult {
   const state = starterPlayer(snapshot, factionId, { clock: attributedClock });
   const startWallet = state.wallet;
   const world = buildFillerWorld(snapshot);
-  const board = createBoard();
+  const board = createBoard(seed);
   const rng = createRng(seed);
   const baseMs = baseEpochMs(snapshot);
   const catalogByType = catalogIndex(snapshot);
@@ -341,9 +336,7 @@ export function playRun(input: PlayRunInput): RunResult {
   const scavengeFlags: boolean[] = [];
   const mineFlags: boolean[] = [];
   const recentRepairBills: number[] = [];
-  const walletTrail: { mission: number; wallet: number }[] = [
-    { mission: 0, wallet: state.wallet },
-  ];
+  const walletTrail: { mission: number; wallet: number }[] = [{ mission: 0, wallet: state.wallet }];
   let lastLevel = levels[0]?.level ?? 1;
   let levelChangeAt = 0;
   let endReason = 'missions';
@@ -373,13 +366,7 @@ export function playRun(input: PlayRunInput): RunResult {
       }
       case 'buy': {
         currentAction = 'market';
-        const out = buyListing(
-          state,
-          snapshot,
-          ctx.rules,
-          catalogByType,
-          action.listingId,
-        );
+        const out = buyListing(state, snapshot, ctx.rules, catalogByType, action.listingId);
         if (!out.ok || out.partId === undefined || out.price === undefined) return false;
         const fit = fitPart(
           state,
@@ -388,7 +375,8 @@ export function playRun(input: PlayRunInput): RunResult {
           out.partId,
           action.replaceId ?? undefined,
         );
-        const used = out.condition !== undefined && out.condition < 100 ? ` used@${out.condition}` : '';
+        const used =
+          out.condition !== undefined && out.condition < 100 ? ` used@${out.condition}` : '';
         state.log.push(
           `bought ${action.partType} at ${action.locationId} for ${out.price}${used} ` +
             `(wallet ${state.wallet})${fit.ok ? '' : ' — kept in the hold'}`,
@@ -418,7 +406,12 @@ export function playRun(input: PlayRunInput): RunResult {
         const shortfall = need - state.ship.fuel;
         if (shortfall > 0) {
           const quote = refuelQuote(
-            state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
+            state,
+            snapshot,
+            ctx.rules,
+            catalogByType,
+            state.locationId,
+            shortfall,
           );
           if (quote.cost <= state.wallet) {
             refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
@@ -544,7 +537,8 @@ export function playRun(input: PlayRunInput): RunResult {
       // and the stall must be reported rather than the wallet drained on a loop.
       if (rescuesTaken >= RESCUE_MAX_ATTEMPTS || emptyRounds > MAX_EMPTY_ROUNDS) {
         stalled = true;
-        stallReason = `nothing takeable for ${emptyRounds} board turns @ ${state.locationId}` +
+        stallReason =
+          `nothing takeable for ${emptyRounds} board turns @ ${state.locationId}` +
           `: ${diagnoseBoard(offers, state, ctx)}`;
         endReason = 'board-stall';
         state.log.push(stallReason);
@@ -566,9 +560,7 @@ export function playRun(input: PlayRunInput): RunResult {
         currentAction = 'repair';
         const targets = viabilityParts
           .filter(
-            (part) =>
-              isDead(part.instance.condition, ctx.rules) &&
-              (part.catalog.fuelCap ?? 0) > 0,
+            (part) => isDead(part.instance.condition, ctx.rules) && (part.catalog.fuelCap ?? 0) > 0,
           )
           .map((part) => ({ partId: part.instance.id }));
         const quote = repairQuote(
@@ -587,14 +579,7 @@ export function playRun(input: PlayRunInput): RunResult {
           );
         }
         if (spend && targets.length > 0 && quote.points > 0 && quote.cost <= state.wallet) {
-          const bill = repair(
-            state,
-            snapshot,
-            ctx.rules,
-            catalogByType,
-            state.locationId,
-            targets,
-          );
+          const bill = repair(state, snapshot, ctx.rules, catalogByType, state.locationId, targets);
           if (bill.cost > 0) recentRepairBills.push(bill.cost);
           state.clock.advance(budget.humanPauseSeconds);
           emptyRounds = 0;
@@ -627,7 +612,12 @@ export function playRun(input: PlayRunInput): RunResult {
       if (cheapestUnlock !== undefined && spend) {
         const shortfall = cheapestUnlock.need - state.ship.fuel;
         const quote = refuelQuote(
-          state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
+          state,
+          snapshot,
+          ctx.rules,
+          catalogByType,
+          state.locationId,
+          shortfall,
         );
         currentAction = 'fuel';
         if (quote.cost <= state.wallet) {
@@ -652,13 +642,16 @@ export function playRun(input: PlayRunInput): RunResult {
         const shortfall = need - state.ship.fuel;
         if (shortfall > 0 && spend) {
           const quote = refuelQuote(
-            state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
+            state,
+            snapshot,
+            ctx.rules,
+            catalogByType,
+            state.locationId,
+            shortfall,
           );
           if (quote.cost <= state.wallet) {
             currentAction = 'fuel';
-            refuel(
-              state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall,
-            );
+            refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, shortfall);
           }
         }
         if (state.ship.fuel >= need) {
@@ -690,8 +683,11 @@ export function playRun(input: PlayRunInput): RunResult {
       // the tow buys a way home, not a new build. It fires only when the pilot cannot reach any
       // other port, or has bought their way as far as they can and still has no work.
       const dry = state.ship.fuel < rescueRationOf(state, ctx);
-      if (spend && (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
-          (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry))) {
+      if (
+        spend &&
+        (!canReachAnywhereSafe(state, ctx, world, nowMs) ||
+          (emptyRounds >= RESCUE_AFTER_EMPTY_ROUNDS && dry))
+      ) {
         currentAction = 'rescue';
         const out = rescue(state, ctx.snapshot, ctx.rules, catalogByType);
         state.log.push(
@@ -719,9 +715,7 @@ export function playRun(input: PlayRunInput): RunResult {
     // Before flying: decide whether to repair and where (the plan's "buy at the right port" rule).
     // A bill the wallet cannot cover is deferred, not thrown: the pilot earns it next mission —
     // unless the hull cannot fly at all, in which case the board stays empty and the stall says so.
-    const repairDecision = spend
-      ? decideRepair(state, snapshot, ctx.rules, catalogByType)
-      : null;
+    const repairDecision = spend ? decideRepair(state, snapshot, ctx.rules, catalogByType) : null;
     currentAction = 'repair';
     if (repairDecision !== null && repairDecision.shouldRepair) {
       const quote = repairQuote(state, snapshot, ctx.rules, catalogByType, state.locationId);
@@ -775,14 +769,7 @@ export function playRun(input: PlayRunInput): RunResult {
             `wallet ${state.wallet}`,
         );
       } else {
-        refuel(
-          state,
-          snapshot,
-          ctx.rules,
-          catalogByType,
-          state.locationId,
-          fuelDecision.units,
-        );
+        refuel(state, snapshot, ctx.rules, catalogByType, state.locationId, fuelDecision.units);
         state.clock.advance(budget.humanPauseSeconds);
       }
     }
@@ -915,6 +902,21 @@ export function playRun(input: PlayRunInput): RunResult {
     log: state.log,
     actionSeconds,
   };
+}
+
+/**
+ * The faction of a run with none given: rotates through the playable ones by seed, since a real
+ * pilot picks any of them and the three start in different places with different boards.
+ */
+export function factionForSeed(snapshot: Snapshot, seed: number): string {
+  const homeOf = snapshot.rules.onboarding.home_locations as unknown as Record<string, string>;
+  const placed = new Set(snapshot.locations.map((row) => row.id));
+  const all = Object.keys(homeOf);
+  // Only factions that can start somewhere the snapshot has (an edited or trimmed world).
+  const homes = all.filter((faction) => placed.has(homeOf[faction] ?? ''));
+  const pool = homes.length > 0 ? homes : all;
+  if (pool.length === 0) throw new Error('rules.onboarding.home_locations is empty');
+  return pool[Math.abs(seed - 1) % pool.length]!;
 }
 
 /** The playable faction the sim defaults to (the first home in the onboarding map). */

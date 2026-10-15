@@ -104,10 +104,19 @@ interface BoardLocationState {
 
 export interface Board {
   readonly locations: Map<string, BoardLocationState>;
+  /**
+   * Where every location's offer sequence starts. The board is a pure function of (place, epoch),
+   * so two runs with the same start would be the very same game: the run seed moves the start so
+   * that "100 runs" are 100 different boards (0 = the original, seed-independent sequence).
+   */
+  readonly startEpoch: number;
 }
 
-export function createBoard(): Board {
-  return { locations: new Map() };
+/** Epochs between two runs' offer sequences: far apart enough that boards never overlap. */
+const EPOCHS_PER_RUN = 1000;
+
+export function createBoard(runSeed = 0): Board {
+  return { locations: new Map(), startEpoch: Math.max(0, runSeed) * EPOCHS_PER_RUN };
 }
 
 export function buildFillerWorld(snapshot: Snapshot): FillerWorld {
@@ -314,7 +323,7 @@ export interface BoardAtInput {
 function locationState(board: Board, locationId: string): BoardLocationState {
   let state = board.locations.get(locationId);
   if (state === undefined) {
-    state = { offers: [], epoch: 0, starterDrafts: 0, starterOffer: null };
+    state = { offers: [], epoch: board.startEpoch, starterDrafts: 0, starterOffer: null };
     board.locations.set(locationId, state);
   }
   return state;

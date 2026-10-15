@@ -77,6 +77,7 @@ export function torneioRules(fixture: CombatTapesFixture): GameRules['combat'] {
     escalation_start_round: 0,
     escalation_per_round: 0,
     loss_bridge_wear: 0,
+    loss_bridge_wear_min_zone: 0,
   };
 }
 
@@ -90,6 +91,7 @@ export function canonicalRules(): GameRules['combat'] {
     escalation_start_round: 0,
     escalation_per_round: 0,
     loss_bridge_wear: 0,
+    loss_bridge_wear_min_zone: 0,
   };
 }
 
