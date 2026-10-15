@@ -49,8 +49,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     performance_slope: 0.5,
     choke_threshold: 30,
     dead_at_or_below: 1,
-    base_min: 3,
-    base_max: 5,
+    // Balance round 2026-10-15 (sim experiments 42-47): wear per mission came down from ~60 to
+    // ~20-30 points so repair stops eating the reward as the ship gets more valuable.
+    base_min: 1,
+    base_max: 1.7,
     env_multiplier: 1,
     choke_loss_min: 3,
     choke_loss_max: 8,
@@ -75,20 +77,20 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     mining_wear_factor: 0.5,
     // The journey's own damage (space, radiation, debris) is a hit that goes through the same
     // layers as a weapon: shield, armor, hull, then parts. This scales its size.
-    environment_damage_factor: 3,
+    environment_damage_factor: 1,
     // Hull points a run lost become condition lost on every part, at this share (1 = a hull at
     // 80% leaves every part 20% worn).
-    hull_to_condition: 0.5,
+    hull_to_condition: 0.3,
     // Of the wear the hull's losses cause, the Hull Frame parts tank this share (the rest passes
     // through to the other parts). 0 = every part wears alike.
     hull_frame_share: 0.7,
   },
   economy: {
-    fuel_price: 1.1,
+    fuel_price: 0.65,
     repair_price: 3,
     repair_price_ref: 3,
-    repair_factor: 0.8,
-    maintenance_per_tier: 100,
+    repair_factor: 0.62,
+    maintenance_per_tier: 60,
     reward_base: 200,
     reward_per_tier: 120,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
@@ -203,7 +205,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   encounter: {
     chance_divisor: 20,
     pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
-    pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
+    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.1 },
     pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],

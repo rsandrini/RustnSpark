@@ -72,7 +72,30 @@ const baselines = JSON.parse(readFileSync(path.join(oracleDir, 'baselines.json')
   layer4: Layer4;
 };
 
-const rules: GameRules = GAME_CONFIG_DEFAULTS;
+// The recorded bands describe the balance signed off before the 2026-10-15 balance round (wear
+// per mission ~60, repair 0.8, fuel 1.1). The bands check the engine's mechanics against that
+// record, so the spec runs on the production rules with that round's retuned values put back;
+// the new numbers are judged by the economy simulation, not by these bands.
+const rules: GameRules = {
+  ...GAME_CONFIG_DEFAULTS,
+  economy: {
+    ...GAME_CONFIG_DEFAULTS.economy,
+    repair_factor: 0.8,
+    maintenance_per_tier: 100,
+    fuel_price: 1.1,
+  },
+  wear: {
+    ...GAME_CONFIG_DEFAULTS.wear,
+    base_min: 3,
+    base_max: 5,
+    environment_damage_factor: 3,
+    hull_to_condition: 0.5,
+  },
+  encounter: {
+    ...GAME_CONFIG_DEFAULTS.encounter,
+    pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
+  },
+};
 
 // Test-only production life constants (same shop cadence as the sim harness).
 const START_CREDITS = 200;

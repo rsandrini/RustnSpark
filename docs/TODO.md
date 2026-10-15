@@ -35,6 +35,28 @@ ships (the commit has the history). Raise questions before starting anything mar
   `loss_bridge_wear`): the dev logs had 78% draws before; check that wins, losses and the rate of
   destroyed ships (a lost fight now wears the bridge) are where we want them.
 
+### P2 status — balance round (2026-10-15)
+
+Done: the sim is trustworthy (builds `chem`, `chem-shield`, `ion-shield`, `hybrid`; foot scavenging;
+partial repair; idle-part removal; fuel reserve; store schema v2). The economy math (repair grows with
+ship value ×33 from tier 1 to 5, reward ×6) drove one config round, applied to the DB by migration
+`20261015020000_balance_round_wear_repair_fuel` and to the factory defaults: `repair_factor` 0.62,
+`maintenance_per_tier` 60, `fuel_price` 0.65, `wear.base_min/max` 1/1.7, `environment_damage_factor` 1,
+`hull_to_condition` 0.3, `pirate_zone_strength` {0.35, 0.5, 0.65, 1.1}. Results (sim experiments
+46→47): wear per mission 57–76 → 18–32, repair share of reward 53–69% → 23–44%, stalls 0–2 of 6,
+ion L2 day ~17 and L3 day ~35. Rules learned: repair must not go below ~0.6 × part price (the
+buy-used/repair/sell exploit floor), so wear is the lever, not a repair price curve.
+
+- [ ] Re-baseline: one full 16-cell run on the new defaults (stored), the reference for what follows.
+- [ ] Reward ladder: zone 3 should out-earn zone 1 (today zone 1 pays most and is nearly free).
+- [ ] Bot gaps: buy a mining rig when only `MINER` work is on the board; prefer shorter routes when
+  fuel-bound.
+- [ ] Late game (parked): fusion torch engine + fusion reactor family above nuclear (see GLOSSARY once
+  written); needs the early and mid economy to hold first.
+
+**Deferred on purpose (owner): the bigger bridge / starter shield test.** First the game, the sim and
+the balance must all work; only then go back to a starter shield with a larger bridge budget.
+
 ## P3 — Missions
 
 - [ ] **Mission scaling by bridge rarity.** Reward, requirements, fuel and repairs scale with the

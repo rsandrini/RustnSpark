@@ -16,8 +16,15 @@ export const APPENDIX_E_RULES: GameRules = {
     fuel_price: 1.5,
     payout_floor_integrity: 0.5,
     repair_price_ref: 4,
+    // the balance round of 2026-10-15 retuned these; the oracle formulas are checked on the old set
+    repair_factor: 0.8,
+    maintenance_per_tier: 100,
     repair_seconds_per_point: { hub: 3, outpost: 8 },
     reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
+  },
+  encounter: {
+    ...GAME_CONFIG_DEFAULTS.encounter,
+    pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
   },
   integrity: { ...GAME_CONFIG_DEFAULTS.integrity, combat_factor: 0.6, env_factor: 0.4 },
   mining: { ...GAME_CONFIG_DEFAULTS.mining, attempts_per_stop: 10 },
@@ -33,5 +40,9 @@ export const APPENDIX_E_RULES: GameRules = {
     danger_ref: 6,
     env_multiplier: 1.2,
     system_base_min: 0.05,
+    base_min: 3,
+    base_max: 5,
+    environment_damage_factor: 3,
+    hull_to_condition: 0.5,
   },
 };

@@ -402,7 +402,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
     key: 'wear.base_min',
     group: 'wear',
-    type: 'integer',
+    type: 'number',
     min: 0,
     max: 20,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.base_min),
@@ -414,7 +414,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
     key: 'wear.base_max',
     group: 'wear',
-    type: 'integer',
+    type: 'number',
     min: 0,
     max: 20,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.base_max),
