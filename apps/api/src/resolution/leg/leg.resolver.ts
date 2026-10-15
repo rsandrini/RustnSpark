@@ -789,8 +789,21 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       const layers = layersOf(ship);
       if (layers !== null) {
         const settled = settleLosses(ship.parts, layers, rules);
-        ship = { ...ship, parts: settled.parts, settled: settled.settled };
-        parts = [...settled.parts];
+        let settledParts = settled.parts;
+        // A lost fight costs by zone: a tenth in the safest, the full price in the hardest.
+        const lossScale =
+          winner === 'enemy' ? rules.combat.loss_wear_scale?.[String(input.route.zone)] : undefined;
+        if (lossScale !== undefined && lossScale < 1) {
+          const before = new Map(ship.parts.map((part) => [part.id, part.condition]));
+          settledParts = settled.parts.map((part) => {
+            const was = before.get(part.id);
+            return was === undefined
+              ? part
+              : { ...part, condition: was - (was - part.condition) * lossScale };
+          });
+        }
+        ship = { ...ship, parts: settledParts, settled: settled.settled };
+        parts = [...settledParts];
         combatCondition = conditionsOf(parts);
       }
     }
@@ -825,11 +838,13 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       if (final.armor === undefined) {
         const defeatLoss = defeatWear(rules, wearRng.child('defeat'));
         const defenseCount = countDefenseParts(parts);
+        // Costs by zone like the layered model's write-back: a tenth in the safest zone.
+        const zoneScale = rules.combat.loss_wear_scale?.[String(input.route.zone)] ?? 1;
         parts = parts.map((part) => ({
           ...part,
           condition: applyWear(
             part.condition,
-            partDefeatWear(part.partClass, defeatLoss, defenseCount, rules),
+            partDefeatWear(part.partClass, defeatLoss, defenseCount, rules) * zoneScale,
           ),
         }));
       }

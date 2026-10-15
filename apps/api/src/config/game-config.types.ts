@@ -43,6 +43,7 @@ export type ConfigKey =
   | 'combat.escalation_per_round'
   | 'combat.loss_bridge_wear'
   | 'combat.loss_bridge_wear_min_zone'
+  | 'combat.loss_wear_scale'
   | 'combat.shield_regen'
   | 'combat.armor_pool_factor'
   | 'combat.armor_reduction'
@@ -271,6 +272,8 @@ export type GameRules = Readonly<{
     loss_bridge_wear: number;
     /** The bridge only wears from a lost fight on routes of this zone or above (a new pilot's early losses never reach it). */
     loss_bridge_wear_min_zone: number;
+    /** By zone: the share of a lost fight's wear the parts take (a missing zone = all of it). */
+    loss_wear_scale: Readonly<Record<string, number>>;
     /** Shield points a shield with no regen stat of its own recovers per round (legacy shields). */
     shield_regen: number;
     /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */

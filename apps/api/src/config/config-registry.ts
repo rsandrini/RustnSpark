@@ -289,6 +289,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.loss_wear_scale',
+    group: 'combat',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.loss_wear_scale),
+    description: {
+      en: "By zone: the share of a lost fight's condition loss the parts actually take (0.1 = a tenth). A zone not listed takes all of it.",
+      'pt-BR':
+        'Por zona: a fração do desgaste de uma luta perdida que as peças realmente sofrem (0.1 = um décimo). Zona não listada sofre tudo.',
+    },
+  },
+  {
     key: 'ship.mob_factor',
     group: 'ship',
     type: 'number',

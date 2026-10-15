@@ -25,6 +25,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'combat.kite_factor',
   'combat.loss_bridge_wear',
   'combat.loss_bridge_wear_min_zone',
+  'combat.loss_wear_scale',
   'combat.max_rounds',
   'combat.pierce_min_pdf',
   'combat.pierce_ratio',

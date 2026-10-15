@@ -33,6 +33,8 @@ const combatSchema = z.object({
   escalation_per_round: z.number().min(0).max(5).default(0),
   loss_bridge_wear: z.number().min(0).max(100).default(0),
   loss_bridge_wear_min_zone: z.number().int().min(0).max(3).default(0),
+  // By zone: the share of a lost fight's condition loss the parts actually take (missing = all).
+  loss_wear_scale: z.record(z.string(), z.number().min(0).max(2)).default({}),
 });
 
 const shipSchema = z.object({

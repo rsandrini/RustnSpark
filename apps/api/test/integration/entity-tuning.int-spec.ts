@@ -206,15 +206,15 @@ describe('entity tuning (S3.8)', () => {
     const token = await loginAdmin(server, admin);
 
     const deleteResponse = await request(server)
-      .delete('/v1/admin/tuning/parts/weapon_ballistic')
+      .delete('/v1/admin/tuning/parts/weapon_laser')
       .set('Authorization', `Bearer ${token}`)
       .send({ reason: 'retire test weapon' });
     expect(deleteResponse.status).toBe(200);
     const body = deleteResponse.body as EntityWriteResponse;
     expect(body.row.active).toBe(false);
-    expect(body.revision.entityId).toBe('weapon_ballistic');
+    expect(body.revision.entityId).toBe('weapon_laser');
 
-    const part = await prisma.partCatalog.findUnique({ where: { partType: 'weapon_ballistic' } });
+    const part = await prisma.partCatalog.findUnique({ where: { partType: 'weapon_laser' } });
     expect(part?.active).toBe(false);
   });
 

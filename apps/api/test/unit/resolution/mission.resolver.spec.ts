@@ -782,3 +782,47 @@ describe('P0 review — a lost fight wears the bridge', () => {
     expect(checked).toBeGreaterThan(0);
   });
 });
+
+describe('P2 review — a lost fight costs by zone', () => {
+  const hostile = (zone: number) =>
+    mission({
+      relation: 'HOSTILE',
+      stance: 'AGGRESSIVE',
+      legs: [{ distance: 800, danger: 10, zone, env: { id: 'debris', level: 3, fuelMult: 1.1 } }],
+    });
+  const withScale = (scale: Record<string, number>): GameRules => ({
+    ...rules,
+    combat: { ...rules.combat, loss_bridge_wear: 0, loss_wear_scale: scale },
+  });
+  const lostWear = (seed: number, scale: Record<string, number>, zone: number): number | null => {
+    const out = resolveMission({
+      seed,
+      snapshot: snapshot({ fuel: 800 }),
+      mission: hostile(zone),
+      rules: withScale(scale),
+    });
+    if (!out.events.some((event) => event.type === 'combat_loss')) return null;
+    return out.parts.reduce((sum, part) => sum + (80 - part.condition), 0);
+  };
+
+  it('takes the configured share of the condition a lost fight cost', () => {
+    let compared = 0;
+    for (let seed = 0; seed < 800 && compared < 3; seed += 1) {
+      const full = lostWear(seed, { '3': 1 }, 3);
+      const tenth = lostWear(seed, { '3': 0.1 }, 3);
+      if (full === null || tenth === null || full <= 5) continue;
+      compared += 1;
+      expect(tenth).toBeLessThan(full);
+      expect(tenth).toBeLessThanOrEqual(full * 0.25);
+    }
+    expect(compared).toBeGreaterThan(0);
+  });
+
+  it('a zone with no entry takes all of it, like before', () => {
+    for (let seed = 0; seed < 400; seed += 1) {
+      const none = lostWear(seed, {}, 2);
+      const one = lostWear(seed, { '2': 1 }, 2);
+      expect(none).toEqual(one);
+    }
+  });
+});

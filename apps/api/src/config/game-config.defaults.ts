@@ -31,7 +31,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     escalation_per_round: 0.1,
     loss_bridge_wear: 10,
     // Zones 0 and 1 are where a new pilot learns: a lost fight there costs money and time, never the ship.
-    loss_bridge_wear_min_zone: 2,
+    loss_bridge_wear_min_zone: 3,
+    // A lost fight hurts by zone: almost nothing in the safest one, easy in 1 and 2, the full
+    // price from 3 on (where the bridge itself is also at risk).
+    loss_wear_scale: { 0: 0.1, 1: 0.4, 2: 0.5, 3: 1 },
   },
   ship: {
     mob_factor: 1.6,
@@ -364,7 +367,14 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // so a battery here was pure cost with no function — "overkill... as [much as] two cargo
     // hold[s]" (owner, round-3 playtest; battery_small's basePrice 150 vs. cargo's 80 each).
     // One cargo hold, not two (owner, round-3 playtest follow-up).
-    starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'hull'],
+    starter_parts: [
+      'bridge',
+      'engine_chem_small',
+      'tank_small',
+      'cargo',
+      'hull',
+      'weapon_ballistic',
+    ],
     home_locations: { luna: 'ceres', sun: 'hedus', explorers: 'cair' },
   },
   world: {

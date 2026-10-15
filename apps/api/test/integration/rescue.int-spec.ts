@@ -118,6 +118,8 @@ describe('rescue API (S8.6)', () => {
       cargo: { gx: 0, gy: -1, rot: 0 },
       // 2x1: covers (-2, 0) and (-1, 0), reaching the bridge from the left.
       hull: { gx: -2, gy: 0, rot: 0 },
+      // The armed starter's weapon: straight on the bridge, above it.
+      weapon_ballistic: { gx: 0, gy: -2, rot: 0 },
     };
     const parts = await prisma.partInstance.findMany({
       where: { shipId, location: 'INSTALLED' },

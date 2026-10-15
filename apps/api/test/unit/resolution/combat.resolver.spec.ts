@@ -77,6 +77,7 @@ function torneioRules(): GameRules['combat'] {
     escalation_per_round: 0,
     loss_bridge_wear: 0,
     loss_bridge_wear_min_zone: 0,
+    loss_wear_scale: {},
   };
 }
 
@@ -519,6 +520,7 @@ describe('resolveCombat — a fight nobody finishes (P0 review)', () => {
     escalation_per_round: 0,
     loss_bridge_wear: 0,
     loss_bridge_wear_min_zone: 0,
+    loss_wear_scale: {},
     ...over,
   });
 

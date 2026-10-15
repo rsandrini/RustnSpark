@@ -9,7 +9,9 @@ import type { CatalogRow, Snapshot } from '../../../sim/snapshot/types.js';
 
 const TAKEN_AT = '2026-10-11T00:00:00.000Z';
 
-function catalogRow(overrides: Partial<CatalogRow> & Pick<CatalogRow, 'partType' | 'partClass'>): CatalogRow {
+function catalogRow(
+  overrides: Partial<CatalogRow> & Pick<CatalogRow, 'partType' | 'partClass'>,
+): CatalogRow {
   return {
     rarity: 'COMMON',
     w: 1,
@@ -111,7 +113,14 @@ export const STARTER_CATALOG: CatalogRow[] = [
 export function fixtureSnapshot(): Snapshot {
   return {
     takenAt: TAKEN_AT,
-    rules: structuredClone(GAME_CONFIG_DEFAULTS),
+    // The fixture's catalog is the five-part kit: the game's own starter now also carries a weapon.
+    rules: {
+      ...structuredClone(GAME_CONFIG_DEFAULTS),
+      onboarding: {
+        ...GAME_CONFIG_DEFAULTS.onboarding,
+        starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'hull'],
+      },
+    },
     catalog: STARTER_CATALOG,
     locations: [
       {
