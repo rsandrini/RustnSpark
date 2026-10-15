@@ -4,27 +4,21 @@ The owner's backlog, by priority (P0 first). Items are written as the owner aske
 note on where the code lives so whoever picks one up can start quickly. Delete an item when it
 ships (the commit has the history). Raise questions before starting anything marked *needs design*.
 
-## P0
-
-- [ ] **Late-game content: the board is still weak once the ship is rare.** The three far deep
-  fields (Halcyon Reach, Obsidian Shoal, The Maw) exist and give rare crystals by mining, but only
-  as mining. Still to do: harder and longer *missions* (deliveries, races, escorts) that end in the
-  far fields and pay rare materials, and tuning the crystal yield there (the per-attempt chance is
-  `richness × (1 − 0.85) × MIN`) against how many crystals the upgrades ask for. Measure with the
-  economy simulation (P2). *Where:* `prisma/seed-data/far-zones.ts`, mission templates
-  (`destinationIds` / `destinationTypes` now exist), `mining.richness`, `economy.core_drops`.
-
 ## P1 — CI/CD
 
-- [ ] **Fix the CI/CD and keep it green.** Every push to `develop` must end with the aggregate `CI`
-  job green: quality, unit, web, integration (`test:cov` with the coverage thresholds and the
-  Prisma migration diff), compose-check, docker-lifecycle, security, oracle-fixtures-fresh and
-  browser-smoke. After the 2026-10-14 fixes (heap 8 GB, resolve transaction 30 s, connection pool
-  20, repair test flake) the last settled run was green; rapid pushes cancel each other, so
-  confirm one full run on the head before calling it done. Watch for: a CI-only failure is
-  reproduced with a full local `test:cov` (cross-suite state), after checking for a stray jest
-  process; the soak test prints the rejection reasons when it fails; never edit `baselines.json`
-  by hand (regenerate it with `tools/oracle/gen_fixtures.py`).
+- [ ] **Keep the CI/CD green.** Every push to `develop` must end with the aggregate `CI` job
+  green: quality, unit, web, integration (`test:cov` with the coverage thresholds and the Prisma
+  migration diff), compose-check, docker-lifecycle, security and oracle-fixtures-fresh. State on
+  2026-10-14: green on the head (`c6d7341`) after the heap (8 GB), resolve transaction (30 s),
+  connection pool (20) and repair-test fixes. *Standing rules:* (1) the **browser smoke does not
+  gate the aggregate** (`continue-on-error`), so a red smoke is a real regression that goes
+  unnoticed (the far fields broke the map count and the race board for eight commits): read it on
+  every run, and promote it to required once it has stayed green for a week (see the comment in
+  `.github/workflows/ci.yml`); (2) rapid pushes cancel each other (`cancel-in-progress`), so confirm
+  one full run on the head before calling anything done; (3) a CI-only failure is reproduced with a
+  full local `test:cov` (cross-suite state), after checking for a stray jest process; the soak
+  test prints the rejection reasons when it fails; (4) never edit `baselines.json` by hand
+  (regenerate it with `tools/oracle/gen_fixtures.py`).
 
 ## P2 — Simulations
 
