@@ -18,6 +18,7 @@ import { canTakeMission } from '../actions/mission.js';
 import { travelOffer } from '../actions/travel.js';
 import { refuelQuote } from '../actions/fuel.js';
 import { fitWouldBeViable, marketShelf, priceInputAt } from '../actions/market.js';
+import { priorityBasesOf, usesChemEngine, type Archetype } from './archetype.js';
 import { retentionFor, upgradeQuote } from '../actions/upgrade.js';
 import {
   averageConditionOf,
@@ -370,6 +371,15 @@ export const TARGET_KIT_BASES: readonly string[] = [
   'reactor_solar',
 ];
 
+/** The kit the archetype grows: ion drops the chemical engines and tank for the ion drive. */
+export function kitBasesOf(archetype: Archetype): readonly string[] {
+  const base = usesChemEngine(archetype)
+    ? TARGET_KIT_BASES
+    : TARGET_KIT_BASES.filter((b) => !/^(engine_chem|tank)/.test(b));
+  const extra = priorityBasesOf(archetype).filter((b) => !base.includes(b));
+  return [...base, ...extra];
+}
+
 const RARITY_SUFFIX: Readonly<Record<string, string>> = {
   COMMON: '',
   UNCOMMON: '_uncommon',
@@ -603,7 +613,10 @@ function optionsFor(
   }
   // (c) Upgrade in place: full condition, materials counted as free (missing = not an option
   // at all, per the plan), and the raised part must still fly — same gate as (a) and (b).
-  if (target.replaceId !== null && target.currentCondition === FULL_CONDITION) {
+  // An engine swap target is a different family: raising the old engine in place is not it.
+  const isSwap =
+    target.currentRow !== null && familyBaseOf(target.currentRow) !== target.base;
+  if (!isSwap && target.replaceId !== null && target.currentCondition === FULL_CONDITION) {
     const quote = upgradeQuote(state, snapshot, rules, catalogByType, target.replaceId);
     const nextPartType = quote.nextPartType ?? target.nextRow.partType;
     if (
@@ -632,15 +645,32 @@ function optionsFor(
   return options;
 }
 
+/**
+ * Where a target sits in the archetype's buy order. Only a fill or an engine swap counts: raising
+ * a part the ship already has (a second-tier battery) is ordinary upgrade work, not the build.
+ */
+function priorityRankOf(order: readonly string[], target: SpendTarget): number {
+  const at = order.indexOf(target.base);
+  const isSwap =
+    target.currentRow !== null && familyBaseOf(target.currentRow) !== target.base;
+  if (at === -1 || (target.replaceId !== null && !isSwap)) return order.length;
+  return at;
+}
+
 function spendTargetsOf(
   state: PlayerState,
   catalogByType: ReadonlyMap<string, CatalogRow>,
+  archetype: Archetype = 'chem',
 ): SpendTarget[] {
   const targets: SpendTarget[] = [];
+  const ion = !usesChemEngine(archetype);
+  const priority = priorityBasesOf(archetype);
   // Raise the installed parts to their next tier.
   for (const part of state.ship.parts) {
     const row = catalogByType.get(part.partType);
     if (row === undefined) continue;
+    // The ion archetype never raises the chemical engine or tank it is about to drop.
+    if (ion && /^(engine_chem|tank)/.test(familyBaseOf(row))) continue;
     const idx = rarityIndex(row.rarity);
     if (idx >= RARITY_ORDER.length - 1) continue;
     const nextType = nextTierPartTypeOf(part.partType, row.rarity);
@@ -669,7 +699,46 @@ function spendTargetsOf(
   );
   const fillRarity = RARITY_ORDER[fillIdx];
   const fillSuffix = fillRarity === undefined ? null : RARITY_SUFFIX[fillRarity] ?? '';
-  for (const base of TARGET_KIT_BASES) {
+  // The ion archetype swaps the chemical engine for the ion drive: a replace target, so the
+  // viability gate sees the ship without the old engine.
+  if (ion && fillSuffix !== null && !covered.has('engine_ion_micro')) {
+    const chem = state.ship.parts.find((part) => {
+      const row = catalogByType.get(part.partType);
+      return row !== undefined && familyBaseOf(row).startsWith('engine_chem');
+    });
+    const ionRow = catalogByType.get(`engine_ion_micro${fillSuffix}`);
+    const chemRow = chem === undefined ? undefined : catalogByType.get(chem.partType);
+    if (chem !== undefined && chemRow !== undefined && ionRow !== undefined && ionRow.active) {
+      targets.push({
+        rarityIdx: fillIdx,
+        base: 'engine_ion_micro',
+        replaceId: chem.id,
+        nextRow: ionRow,
+        currentRow: chemRow,
+        currentCondition: chem.condition,
+      });
+    }
+  }
+  // The ion drive and the shield both draw continuously: one panel is not enough, so the ion
+  // archetype carries a second.
+  if (ion && fillSuffix !== null) {
+    const panels = state.ship.parts.filter((part) => {
+      const row = catalogByType.get(part.partType);
+      return row !== undefined && familyBaseOf(row) === 'reactor_solar';
+    }).length;
+    const panelRow = catalogByType.get(`reactor_solar${fillSuffix}`);
+    if (panels < 2 && panelRow !== undefined && panelRow.active) {
+      targets.push({
+        rarityIdx: fillIdx,
+        base: 'reactor_solar',
+        replaceId: null,
+        nextRow: panelRow,
+        currentRow: null,
+        currentCondition: null,
+      });
+    }
+  }
+  for (const base of kitBasesOf(archetype)) {
     if (fillSuffix === null) break;
     if (covered.has(base)) continue;
     const wantedType = `${base}${fillSuffix}`;
@@ -683,6 +752,11 @@ function spendTargetsOf(
       currentRow: null,
       currentCondition: null,
     });
+  }
+  if (priority.length > 0) {
+    targets.sort(
+      (left, right) => priorityRankOf(priority, left) - priorityRankOf(priority, right),
+    );
   }
   return targets;
 }
@@ -702,6 +776,7 @@ export function spendPlan(
   rules: GameRules,
   catalogByType: ReadonlyMap<string, CatalogRow>,
   recentRepairBills: readonly number[],
+  archetype: Archetype = 'chem',
 ): SpendPlan {
   const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
   if (sheet.min < 1) {
@@ -736,13 +811,13 @@ export function spendPlan(
   const keepNeedsOfTarget = (target: SpendTarget): readonly MaterialNeed[] =>
     keepNeedsOf(target, rules);
   if (available < 1) {
-    const first = spendTargetsOf(state, catalogByType)[0];
+    const first = spendTargetsOf(state, catalogByType, archetype)[0];
     return {
       action: { kind: 'none', reason: 'reserve' },
       keepNeeds: first === undefined ? [] : keepNeedsOfTarget(first),
     };
   }
-  const ranked = spendTargetsOf(state, catalogByType)
+  const ranked = spendTargetsOf(state, catalogByType, archetype)
     .map((target) => {
       const options = optionsFor(state, snapshot, rules, catalogByType, target);
       const minNet =
@@ -751,10 +826,14 @@ export function spendPlan(
           : Math.min(...options.map((option) => option.net));
       return { target, options, minNet };
     })
-    .sort(
-      (left, right) =>
-        left.target.rarityIdx - right.target.rarityIdx || left.minNet - right.minNet,
-    );
+    .sort((left, right) => {
+      const order = priorityBasesOf(archetype);
+      return (
+        priorityRankOf(order, left.target) - priorityRankOf(order, right.target) ||
+        left.target.rarityIdx - right.target.rarityIdx ||
+        left.minNet - right.minNet
+      );
+    });
   for (const rankedOne of ranked) {
     if (rankedOne.options.length === 0) continue;
     const affordable = rankedOne.options
@@ -766,7 +845,7 @@ export function spendPlan(
     }
     // The target is clear but out of reach: save for it rather than chasing a prouder slot.
     return {
-      action: { kind: 'none', reason: 'saving' },
+      action: { kind: 'none', reason: `saving ${rankedOne.target.base}` },
       keepNeeds: keepNeedsOfTarget(rankedOne.target),
     };
   }
@@ -800,6 +879,7 @@ export function sellList(
   rules: GameRules,
   catalogByType: ReadonlyMap<string, CatalogRow>,
   keepNeeds: readonly MaterialNeed[],
+  archetype: Archetype = 'chem',
 ): SellList {
   const sheet = deriveSheet(installedParts(state.ship, catalogByType), rules);
   const keepParts = new Map<string, ShipPartState>();
@@ -809,7 +889,7 @@ export function sellList(
     if (row === undefined) continue;
     const base = familyBaseOf(row);
     const worthKeeping =
-      TARGET_KIT_BASES.includes(base) ||
+      kitBasesOf(archetype).includes(base) ||
       (base === 'mining_rig' && sheet.min < 1 && row.active);
     if (!worthKeeping) {
       if (part.condition >= rules.economy.sell_min_condition) partIds.push(part.id);

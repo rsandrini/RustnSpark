@@ -12,7 +12,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { calendarDays, DEFAULT_BUDGET } from '../core/clock.js';
-import { cellName, defaultMatrix, type ExperimentCell } from './cells.js';
+import { archetypeMatrix, cellName, defaultMatrix, type ExperimentCell } from './cells.js';
 import { daysToLevelSpread, percentile, runCell, summarizeRun, type RunSummary } from './runner.js';
 import { printReport, type CellReport } from './report.js';
 import { parseScaling, NO_SCALING, type BridgeScaling } from './scaling.js';
@@ -151,7 +151,8 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
   // `--playstyle generalist` keeps one playstyle (and the random control): a quarter of the
   // matrix, for a quick look. Default: the whole matrix.
   const onlyPlaystyle = stringFlag(flags, 'playstyle', '');
-  const matrix = defaultMatrix(hoursPerDay).filter(
+  const base = stringFlag(flags, 'archetypes', '') === 'all' ? archetypeMatrix(hoursPerDay) : defaultMatrix(hoursPerDay);
+  const matrix = base.filter(
     (cell) => onlyPlaystyle === '' || cell.playstyle === onlyPlaystyle,
   );
   process.stdout.write(

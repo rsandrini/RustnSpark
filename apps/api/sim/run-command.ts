@@ -95,6 +95,7 @@ export function runCommand(args: readonly string[]): Promise<void> {
   const faction = stringFlag(flags, 'faction', '');
   const temperament = stringFlag(flags, 'temperament', 'random');
   const playstyle = stringFlag(flags, 'playstyle', 'generalist');
+  const archetype = stringFlag(flags, 'archetype', 'chem');
   const noStore = boolFlag(flags, 'no-store');
 
   const snapshot = loadSnapshot(SNAPSHOT_PATH);
@@ -104,6 +105,7 @@ export function runCommand(args: readonly string[]): Promise<void> {
     missions,
     temperament,
     playstyle,
+    archetype,
     ...(faction === '' ? {} : { factionId: faction }),
   });
 

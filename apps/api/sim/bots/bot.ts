@@ -48,6 +48,7 @@ import {
   playstyleOf,
   type Playstyle,
 } from './playstyle.js';
+import { archetypeOf } from './archetype.js';
 import type { BridgeScaling } from '../experiment/scaling.js';
 import {
   canTravelTo,
@@ -126,6 +127,7 @@ export interface RunResult {
   readonly factionId: string;
   readonly temperament: string;
   readonly playstyle: string;
+  readonly archetype: string;
   readonly hoursPerDay: number;
   readonly totalSeconds: number;
   readonly totalMissions: number;
@@ -157,6 +159,8 @@ export interface PlayRunInput {
   readonly budget?: PlayTimeBudget;
   readonly temperament?: string;
   readonly playstyle?: string;
+  /** The build the pilot grows toward (`chem` | `chem-shield` | `ion-shield`). */
+  readonly archetype?: string;
   /** The what-if table: rewards and numeric requirements scale by bridge rarity. */
   readonly bridgeScaling?: BridgeScaling;
   /** Sanity bot: never sells, buys, fits, upgrades or repairs — it must stagnate. */
@@ -338,6 +342,7 @@ export function playRun(input: PlayRunInput): RunResult {
   const budget = input.budget ?? DEFAULT_BUDGET;
   const temperament = temperamentOf(input.temperament ?? 'random');
   const playstyle = playstyleOf(input.playstyle ?? 'generalist');
+  const archetype = archetypeOf(input.archetype ?? 'chem');
   const ctx = missionContext(snapshot, input.bridgeScaling);
   const noSpend = input.noSpend ?? false;
   /** The sanity bot's switch: off, it never touches the market, the pump or the tow. */
@@ -521,10 +526,10 @@ export function playRun(input: PlayRunInput): RunResult {
     // Port economy before looking for work: sell what the target ship does not need, then
     // spend what the reserve-adjusted plan allows (both re-run every turn, so the sell's cash
     // is available to the buy that follows).
-    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
     currentAction = 'market';
     if (spend) {
-      const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds);
+      const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds, archetype);
       for (const partId of sells.partIds) {
         sellPart(state, snapshot, ctx.rules, partId);
       }
@@ -532,7 +537,7 @@ export function playRun(input: PlayRunInput): RunResult {
         sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
       }
     }
-    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills);
+    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
     if (process.env['SIM_DEBUG'] === '1') {
       const action = plan.action;
       const detail =
@@ -935,6 +940,7 @@ export function playRun(input: PlayRunInput): RunResult {
     factionId,
     temperament,
     playstyle,
+    archetype,
     hoursPerDay: budget.hoursPerDay,
     totalSeconds: state.clock.now(),
     totalMissions: records.length,

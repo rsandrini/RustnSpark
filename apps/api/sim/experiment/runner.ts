@@ -104,6 +104,7 @@ export function runCell(
         budget,
         temperament: cell.temperament,
         playstyle: cell.playstyle,
+        archetype: cell.archetype,
         ...(bridgeScaling === undefined ? {} : { bridgeScaling }),
       }),
     );

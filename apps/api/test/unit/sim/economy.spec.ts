@@ -922,7 +922,8 @@ describe('spending plan', () => {
     expect(Number.isFinite(cheapestCash)).toBe(true);
     state.wallet = 500 + cheapestCash - 1; // available = cheapestCash − 1 → no option fits
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
-    expect(plan.action).toEqual({ kind: 'none', reason: 'saving' });
+    expect(plan.action).toMatchObject({ kind: 'none' });
+    expect((plan.action as { reason: string }).reason).toMatch(/^saving /);
     expect(state.wallet).toBe(500 + cheapestCash - 1);
   });
 });

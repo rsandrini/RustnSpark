@@ -108,7 +108,9 @@ function insertRunInto(store: Store, experimentId: number, result: RunResult): n
   const totals = result.ledgerTotals;
   const runId = store.insertRun({
     experimentId,
-    cell: `${result.temperament}|${result.playstyle}|${result.hoursPerDay}h`,
+    cell:
+      `${result.temperament}|${result.playstyle}|${result.hoursPerDay}h` +
+      (result.archetype === 'chem' ? '' : `|${result.archetype}`),
     temperament: result.temperament,
     playstyle: result.playstyle,
     hoursPerDay: result.hoursPerDay,
