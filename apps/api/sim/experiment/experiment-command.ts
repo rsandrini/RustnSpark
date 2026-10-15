@@ -13,13 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { calendarDays, DEFAULT_BUDGET } from '../core/clock.js';
 import { cellName, defaultMatrix, type ExperimentCell } from './cells.js';
-import {
-  daysToLevelSpread,
-  percentile,
-  runCell,
-  summarizeRun,
-  type RunSummary,
-} from './runner.js';
+import { daysToLevelSpread, percentile, runCell, summarizeRun, type RunSummary } from './runner.js';
 import { printReport, type CellReport } from './report.js';
 import { parseScaling, NO_SCALING, type BridgeScaling } from './scaling.js';
 import { boolFlag, intFlag, parseFlags, stringFlag } from '../flags.js';
@@ -56,7 +50,8 @@ function printCell(
     summaries.reduce((sum, summary) => sum + summary.successRate, 0) / summaries.length;
   const totalDays = results.reduce(
     (sum, result) =>
-      sum + calendarDays(result.totalSeconds, {
+      sum +
+      calendarDays(result.totalSeconds, {
         hoursPerDay: cell.hoursPerDay,
         humanPauseSeconds: DEFAULT_BUDGET.humanPauseSeconds,
       }),
@@ -122,10 +117,7 @@ function playMatrix(
 }
 
 /** Median days to each level per cell — the A/B delta, base then edited. */
-function printAb(
-  base: readonly CellReport[],
-  edited: readonly CellReport[],
-): void {
+function printAb(base: readonly CellReport[], edited: readonly CellReport[]): void {
   process.stdout.write('\n--- A/B: median days to level (base -> edit) ---\n');
   for (const [index, baseCell] of base.entries()) {
     const editedCell = edited[index];
@@ -156,7 +148,12 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
   const noStore = boolFlag(flags, 'no-store');
 
   const baseSnapshot = loadSnapshot(SNAPSHOT_PATH);
-  const matrix = defaultMatrix(hoursPerDay);
+  // `--playstyle generalist` keeps one playstyle (and the random control): a quarter of the
+  // matrix, for a quick look. Default: the whole matrix.
+  const onlyPlaystyle = stringFlag(flags, 'playstyle', '');
+  const matrix = defaultMatrix(hoursPerDay).filter(
+    (cell) => onlyPlaystyle === '' || cell.playstyle === onlyPlaystyle,
+  );
   process.stdout.write(
     `matrix: ${matrix.length} cells x ${runs} runs x ${missions} missions ` +
       `(seeds ${baseSeed}..${baseSeed + runs - 1})\n`,
