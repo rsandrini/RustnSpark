@@ -34,7 +34,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     loss_bridge_wear_min_zone: 3,
     // A lost fight hurts by zone: almost nothing in the safest one, easy in 1 and 2, the full
     // price from 3 on (where the bridge itself is also at risk).
-    loss_wear_scale: { 0: 0.1, 1: 0.4, 2: 0.5, 3: 1 },
+    // Balance round 2 (sim experiments 49-50): a lost far fight stopped paying back the zone 3 reward.
+    loss_wear_scale: { 0: 0.1, 1: 0.3, 2: 0.4, 3: 0.7 },
   },
   ship: {
     mob_factor: 1.6,
@@ -96,7 +97,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
     // too subtly to notice — halving both divisors roughly doubles the spread between an
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
-    reward_danger_divisor: 8,
+    reward_danger_divisor: 4,
     reward_distance_ref: 800,
     reward_distance_divisor: 1500,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },

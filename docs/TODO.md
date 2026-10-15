@@ -47,10 +47,17 @@ ship value ×33 from tier 1 to 5, reward ×6) drove one config round, applied to
 ion L2 day ~17 and L3 day ~35. Rules learned: repair must not go below ~0.6 × part price (the
 buy-used/repair/sell exploit floor), so wear is the lever, not a repair price curve.
 
-- [ ] Re-baseline: one full 16-cell run on the new defaults (stored), the reference for what follows.
-- [ ] Reward ladder: zone 3 should out-earn zone 1 (today zone 1 pays most and is nearly free).
-- [ ] Bot gaps: buy a mining rig when only `MINER` work is on the board; prefer shorter routes when
-  fuel-bound.
+- [x] Re-baseline on the new defaults: experiment 48 (16 cells, stored). Chem stalls 4-7 of 8 -> 1,
+  wear per mission 57-76 -> 21-38, repair share 53-87% -> 34-50%.
+- [x] Reward ladder, first step (migration `20261015030000_balance_round_reward_ladder`):
+  `reward_danger_divisor` 8 -> 4, `loss_wear_scale` {0.1, 0.3, 0.4, 0.7}. Zone 3 net per mission went
+  42 -> 823 credits (zone 2: 668 -> 1055). *Still open:* zone 3 nets 0.78x zone 2; next dial is
+  divisor 3 + `loss_wear_scale[3]` 0.5 + zone 3 pirate strength 1.0, but it speeds up progression
+  (chem L2 already at day ~9), so it needs a decision on the intended level pace first.
+- [x] Bot: buys a mining rig when only `MINER` work is on the board.
+- [ ] Bot gap left: prefer shorter routes when fuel-bound (fuel is still 29-37% of reward on chem).
+- [ ] Dev-only data (`ziggy` location, 5000-distance route, `race_explorers_ziggy`) inflates the zone 1
+  reward average; decide whether it ships.
 - [ ] Late game (parked): fusion torch engine + fusion reactor family above nuclear (see GLOSSARY once
   written); needs the early and mid economy to hold first.
 

@@ -9,7 +9,12 @@ import type { GameRules } from '../../src/config/game-config.types.js';
  */
 export const APPENDIX_E_RULES: GameRules = {
   ...GAME_CONFIG_DEFAULTS,
-  combat: { ...GAME_CONFIG_DEFAULTS.combat, armor_reduction: 0.25, armor_pool_factor: 5 },
+  combat: {
+    ...GAME_CONFIG_DEFAULTS.combat,
+    armor_reduction: 0.25,
+    armor_pool_factor: 5,
+    loss_wear_scale: { 0: 0.1, 1: 0.4, 2: 0.5, 3: 1 },
+  },
   economy: {
     ...GAME_CONFIG_DEFAULTS.economy,
     combat_win_base: 100,
@@ -19,6 +24,7 @@ export const APPENDIX_E_RULES: GameRules = {
     // the balance round of 2026-10-15 retuned these; the oracle formulas are checked on the old set
     repair_factor: 0.8,
     maintenance_per_tier: 100,
+    reward_danger_divisor: 8,
     repair_seconds_per_point: { hub: 3, outpost: 8 },
     reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
   },

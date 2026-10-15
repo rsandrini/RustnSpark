@@ -83,6 +83,11 @@ const rules: GameRules = {
     repair_factor: 0.8,
     maintenance_per_tier: 100,
     fuel_price: 1.1,
+    reward_danger_divisor: 8,
+  },
+  combat: {
+    ...GAME_CONFIG_DEFAULTS.combat,
+    loss_wear_scale: { 0: 0.1, 1: 0.4, 2: 0.5, 3: 1 },
   },
   wear: {
     ...GAME_CONFIG_DEFAULTS.wear,
