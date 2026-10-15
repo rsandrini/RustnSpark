@@ -94,7 +94,13 @@ describe('RACE mission resolution (pipeline)', () => {
         originId: 'ceres',
         destinationId: 'hedus',
         legs: [
-          { routeId: route.id, distance: 150, danger: 0, zone: 0, env: { id: 'open', level: 1, fuelMult: 1 } },
+          {
+            routeId: route.id,
+            distance: 150,
+            danger: 0,
+            zone: 0,
+            env: { id: 'open', level: 1, fuelMult: 1 },
+          },
         ],
         cargo: {
           race: {
@@ -126,16 +132,21 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(response.status).toBe(200);
     const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
     await processor.process(job);
-    const credits = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } })).credits;
-    const log = await prisma.missionLog.findUniqueOrThrow({ where: { missionId: setup.mission.id } });
-    const events = (log.legs as { events: { type: string; race?: { place: number; standings: unknown[] } }[] })
-      .events;
+    const credits = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } }))
+      .credits;
+    const log = await prisma.missionLog.findUniqueOrThrow({
+      where: { missionId: setup.mission.id },
+    });
+    const events = (
+      log.legs as { events: { type: string; race?: { place: number; standings: unknown[] } }[] }
+    ).events;
     return { credits, log, events };
   }
 
   it('beating every rival wins the top prize, paid once, with the standings in the log', async () => {
     const setup = await raceWith(0.5);
-    const before = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } })).credits;
+    const before = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } }))
+      .credits;
     const { credits, log, events } = await run(setup);
     const result = events.find((event) => event.type === 'race_result');
     expect(result?.race?.place).toBe(1);
@@ -152,7 +163,8 @@ describe('RACE mission resolution (pipeline)', () => {
 
   it('being slower than the whole field finishes last and earns nothing', async () => {
     const setup = await raceWith(9);
-    const before = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } })).credits;
+    const before = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } }))
+      .credits;
     const { credits, log, events } = await run(setup);
     expect(events.find((event) => event.type === 'race_result')?.race?.place).toBe(4);
     expect(events.some((event) => event.type === 'mission_payout')).toBe(false);
@@ -177,7 +189,10 @@ describe('RACE mission resolution (pipeline)', () => {
       const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
       const snapshot = (
         job.data as unknown as {
-          snapshot: { engine?: { chem: number; ion: number }; parts: { catalog: { fuelUse: number } }[] };
+          snapshot: {
+            engine?: { chem: number; ion: number };
+            parts: { catalog: { fuelUse: number } }[];
+          };
         }
       ).snapshot;
       return {
@@ -187,10 +202,12 @@ describe('RACE mission resolution (pipeline)', () => {
       };
     };
     const calm = await flyWith(1);
-    const pushed = await flyWith(1.4);
+    // The top of the chemical range: the armed starter is heavier, so a smaller push can land in
+    // the same duration class as the listed power.
+    const pushed = await flyWith(1.5);
     const eased = await flyWith(0.6);
     expect(calm.engine).toEqual({ chem: 1, ion: 1 });
-    expect(pushed.engine?.chem).toBeCloseTo(1.4);
+    expect(pushed.engine?.chem).toBeCloseTo(1.5);
     expect(pushed.seconds).toBeLessThan(calm.seconds);
     expect(pushed.fuelUse).toBeGreaterThan(calm.fuelUse);
     // asking to throttle down is brought back to 100%: the same trip as at the listed power
@@ -239,7 +256,11 @@ describe('RACE mission resolution (pipeline)', () => {
       .set('Authorization', `Bearer ${setup.token}`)
       .send({ missionId: setup.mission.id });
     expect(response.status).toBe(200);
-    expect(Math.abs((response.body as { durationSeconds: number }).durationSeconds - shown.trip.durationSeconds)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(
+        (response.body as { durationSeconds: number }).durationSeconds - shown.trip.durationSeconds,
+      ),
+    ).toBeLessThanOrEqual(1);
   }, 60_000);
 
   it('end to end: a pushed engine leaves a line per leg in the stored log and in the rendered report', async () => {
@@ -267,14 +288,26 @@ describe('RACE mission resolution (pipeline)', () => {
     const summary = await request(httpServer(testApp.app))
       .get(`/v1/reports/${setup.mission.id}`)
       .set('Authorization', `Bearer ${setup.token}`);
-    const engines = (summary.body as { stats: { engines?: { group: string; levelPct: number; pushedLegs: number }[] } }).stats.engines;
-    expect(engines).toEqual([expect.objectContaining({ group: 'chem', levelPct: 150, pushedLegs: legCount })]);
+    const engines = (
+      summary.body as {
+        stats: { engines?: { group: string; levelPct: number; pushedLegs: number }[] };
+      }
+    ).stats.engines;
+    expect(engines).toEqual([
+      expect.objectContaining({ group: 'chem', levelPct: 150, pushedLegs: legCount }),
+    ]);
   }, 60_000);
 
   it('engine tuning applies to every flying mission, not only races', async () => {
     const setup = await raceWith(0.5);
-    await prisma.missionInstance.update({ where: { id: setup.mission.id }, data: { type: 'DELIVERY', cargo: {} } });
-    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000, chemLevel: 1.3 } });
+    await prisma.missionInstance.update({
+      where: { id: setup.mission.id },
+      data: { type: 'DELIVERY', cargo: {} },
+    });
+    await prisma.ship.update({
+      where: { id: setup.shipId },
+      data: { fuel: 10_000, chemLevel: 1.3 },
+    });
     const response = await request(httpServer(testApp.app))
       .post(`/v1/ships/${setup.shipId}/dispatch`)
       .set('Authorization', `Bearer ${setup.token}`)

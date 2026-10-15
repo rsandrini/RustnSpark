@@ -141,7 +141,7 @@ describe('parts and ships API (S4.3)', () => {
         const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: player.id } });
         // No battery (nothing else in the kit draws combat energy), one cargo hold, and one basic
         // weapon so a new pilot can win an early fight (2026-10-15 simulation review).
-        expect(parts.length).toBe(6);
+        expect(parts.length).toBe(7);
         for (const part of parts) {
           expect(part.condition).toBe(85);
           expect(part.location).toBe('INVENTORY');
@@ -156,7 +156,7 @@ describe('parts and ships API (S4.3)', () => {
             .get(`/v1/ships/${ship.id}`)
             .set('Authorization', `Bearer ${token}`),
         );
-        expect(assembled.layout).toHaveLength(6);
+        expect(assembled.layout).toHaveLength(7);
         expect(assembled.sheet.pot).toBeGreaterThan(0);
         expect(assembled.sheet.hp).toBeGreaterThan(0);
         expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
@@ -454,10 +454,18 @@ describe('parts and ships API (S4.3)', () => {
       const items = response.body as Array<Record<string, unknown>>;
       // No battery (nothing else in the kit draws combat energy), one cargo hold, and one basic
       // weapon so a new pilot can win an early fight.
-      expect(items.length).toBe(6);
+      expect(items.length).toBe(7);
       const types = items.map((item) => item.partType as string).sort();
       expect(types).toEqual(
-        ['bridge', 'cargo', 'engine_chem_small', 'hull', 'tank_small', 'weapon_ballistic'].sort(),
+        [
+          'bridge',
+          'cargo',
+          'engine_chem_small',
+          'hull',
+          'reactor_solar',
+          'tank_small',
+          'weapon_ballistic',
+        ].sort(),
       );
       for (const item of items) {
         expect(item.condition).toBe(85);
