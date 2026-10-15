@@ -944,3 +944,24 @@ export function affordableRepairTargets(
   }
   return chosen.length === 0 ? null : chosen;
 }
+
+/**
+ * Installed parts nothing uses: they weigh on the ship, take a slot, count against the structure
+ * budget and are charged on every repair. Today that is a fuel tank on a ship with no engine that
+ * burns fuel (an ion ship that kept the old tank). A part only counts as idle when it is alive and
+ * the rest of the ship needs none of what it gives.
+ */
+export function idleInstalledParts(
+  state: PlayerState,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+): string[] {
+  const installed = state.ship.parts
+    .map((part) => ({ part, row: catalogByType.get(part.partType) }))
+    .filter((entry): entry is { part: ShipPartState; row: CatalogRow } => entry.row !== undefined);
+  const burnsFuel = installed.some(({ row }) => (row.fuelUse ?? 0) > 0);
+  const idle: string[] = [];
+  for (const { part, row } of installed) {
+    if (!burnsFuel && (row.fuelCap ?? 0) > 0) idle.push(part.id);
+  }
+  return idle;
+}

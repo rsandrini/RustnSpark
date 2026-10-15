@@ -21,7 +21,7 @@ import { rescue, rescueQuote } from '../actions/rescue.js';
 import { travel, travelOffer } from '../actions/travel.js';
 import { canMine, mine, miningOffer } from '../actions/mining.js';
 import { scavenge, scavengeCooldownLeft, scavengeOffer } from '../actions/scavenge.js';
-import { buyListing, fitPart, sellMaterial, sellPart } from '../actions/market.js';
+import { buyListing, fitPart, sellMaterial, sellPart, unfitPart } from '../actions/market.js';
 import { upgrade } from '../actions/upgrade.js';
 import {
   calendarDays,
@@ -64,6 +64,7 @@ import {
   PROGRESS_STALL_MISSIONS,
   affordableRepairTargets,
   atOrBelowTarget,
+  idleInstalledParts,
   RATIO_WINDOW,
   repositionOffer,
   SCAVENGE_RATIO_MIN,
@@ -533,8 +534,15 @@ export function playRun(input: PlayRunInput): RunResult {
     // Port economy before looking for work: sell what the target ship does not need, then
     // spend what the reserve-adjusted plan allows (both re-run every turn, so the sell's cash
     // is available to the buy that follows).
-    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
     currentAction = 'market';
+    if (spend) {
+      // Dead weight comes off first: a part the ship does not use is sold, not carried.
+      for (const idleId of idleInstalledParts(state, catalogByType)) {
+        const removed = unfitPart(state, ctx.rules, catalogByType, idleId);
+        if (removed.ok) state.log.push(`removed idle part ${idleId} from the ship`);
+      }
+    }
+    const prePlan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype);
     if (spend) {
       const sells = sellList(state, snapshot, ctx.rules, catalogByType, prePlan.keepNeeds, archetype);
       for (const partId of sells.partIds) {

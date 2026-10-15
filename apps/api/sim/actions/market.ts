@@ -327,6 +327,28 @@ export function fitWouldBeViable(
 }
 
 /**
+ * Take an installed part off the ship into the hold (re-assembling the layout without it, in the
+ * live game). Refused when the ship would no longer fly: removing is only free of risk for a part
+ * nothing leans on.
+ */
+export function unfitPart(
+  state: PlayerState,
+  rules: GameRules,
+  catalogByType: ReadonlyMap<string, CatalogRow>,
+  partId: string,
+): FitOutcome {
+  const removed = state.ship.parts.find((part) => part.id === partId);
+  if (removed === undefined) return { ok: false, reason: 'INSTALLED_NOT_FOUND' };
+  const remaining = state.ship.parts.filter((part) => part.id !== partId);
+  const installed = installedParts({ ...state.ship, parts: remaining }, catalogByType);
+  const sheet = deriveSheet(installed, rules);
+  if (!checkViability(sheet, installed, rules).viable) return { ok: false, reason: 'NOT_VIABLE' };
+  state.ship.parts = remaining;
+  state.storage.push(removed);
+  return { ok: true };
+}
+
+/**
  * Move a loose part from the hold onto the ship, optionally swapping it with the installed
  * `replaceId` (the displaced part drops into the hold). A fit that would leave the ship
  * non-viable is refused. No credits and no time move: equipping is a port action, like the
