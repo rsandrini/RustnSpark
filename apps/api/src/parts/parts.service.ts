@@ -73,6 +73,7 @@ export function pickCatalogStats(row: PartCatalogRow): PartCatalog {
   return {
     partType: row.partType,
     partClass: row.partClass,
+    rarity: row.rarity,
     w: row.w,
     h: row.h,
     mass: row.mass,

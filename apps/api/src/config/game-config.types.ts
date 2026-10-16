@@ -78,6 +78,7 @@ export type ConfigKey =
   | 'economy.reward_distance_ref'
   | 'economy.reward_per_tier'
   | 'economy.reward_type_bonus'
+  | 'economy.reward_by_bridge'
   | 'economy.sell_min_condition'
   | 'economy.discard_scrap_per_part'
   | 'economy.repair_points_per_scrap'
@@ -342,6 +343,7 @@ export type GameRules = Readonly<{
     reward_distance_ref: number;
     reward_distance_divisor: number;
     reward_type_bonus: Readonly<Record<string, number>>;
+    reward_by_bridge: Readonly<Record<string, number>>;
     combat_win_base: number;
     combat_win_per_tier: number;
     combat_loss_penalty: number;

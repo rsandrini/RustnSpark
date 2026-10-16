@@ -60,6 +60,8 @@ export interface MissionInput {
   readonly type: MissionType;
   readonly legs: readonly LegRoute[];
   readonly tier: number;
+  /** Rarity of the ship's bridge at dispatch: scales the payout (absent in older payloads = x1). */
+  readonly bridgeRarity?: string;
   readonly isolation: number;
   readonly factionRelation: string;
   readonly relation: FactionRelation;
@@ -307,6 +309,7 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       rewardBase(
         {
           tier: input.mission.tier,
+          ...(input.mission.bridgeRarity === undefined ? {} : { bridgeRarity: input.mission.bridgeRarity }),
           danger: maxDanger,
           distance: totalDistance,
           missionType: input.mission.type ?? 'delivery',
@@ -387,6 +390,7 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       const base = rewardBase(
         {
           tier: input.mission.tier,
+          ...(input.mission.bridgeRarity === undefined ? {} : { bridgeRarity: input.mission.bridgeRarity }),
           danger: maxDanger,
           distance: totalDistance,
           missionType: 'race',

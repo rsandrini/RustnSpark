@@ -101,6 +101,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_distance_ref: 800,
     reward_distance_divisor: 1500,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
+    // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
+    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.2, LEGENDARY: 3.2 },
     combat_win_base: 150,
     combat_win_per_tier: 50,
     combat_loss_penalty: 120,

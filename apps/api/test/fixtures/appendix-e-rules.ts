@@ -26,6 +26,7 @@ export const APPENDIX_E_RULES: GameRules = {
     maintenance_per_tier: 100,
     reward_danger_divisor: 8,
     reward_base: 200,
+    reward_by_bridge: {},
     reward_per_tier: 120,
     market_rarity_by_bridge: {
       COMMON: { COMMON: 1, UNCOMMON: 0.14, RARE: 0.045, EPIC: 0, LEGENDARY: 0 },

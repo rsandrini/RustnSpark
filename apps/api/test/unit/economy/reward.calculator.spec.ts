@@ -2,6 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 import { APPENDIX_E_RULES as GAME_CONFIG_DEFAULTS } from '../../fixtures/appendix-e-rules.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
+  bridgeRarityOf,
+  bridgeRewardMultiplier,
   contractedMiningPayout,
   integrityMultiplier,
   integrityPayout,
@@ -88,5 +90,40 @@ describe('S5.6 — integrity payout (GDD §12)', () => {
   it('mining is exempt: contracted pays the fixed base only when settled', () => {
     expect(contractedMiningPayout(500, true)).toBe(500);
     expect(contractedMiningPayout(500, false)).toBe(0);
+  });
+});
+
+describe('P3 — reward follows the bridge rarity (the part-price ladder)', () => {
+  const ladder: GameRules = {
+    ...rules,
+    economy: {
+      ...rules.economy,
+      reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.2, LEGENDARY: 3.2 },
+    },
+  };
+  const trip = { tier: 3, danger: 5, distance: 1200, missionType: 'delivery' } as const;
+
+  it('pays the table entry of the bridge rarity on top of the D13 formula', () => {
+    const plain = rewardBase(trip, ladder);
+    expect(rewardBase({ ...trip, bridgeRarity: 'COMMON' }, ladder)).toBeCloseTo(plain, 12);
+    expect(rewardBase({ ...trip, bridgeRarity: 'RARE' }, ladder)).toBeCloseTo(plain * 1.4, 12);
+    expect(rewardBase({ ...trip, bridgeRarity: 'LEGENDARY' }, ladder)).toBeCloseTo(plain * 3.2, 12);
+  });
+
+  it('is x1 with no bridge, an unknown rarity or an empty table (older rule sets replay unchanged)', () => {
+    const plain = rewardBase(trip, rules);
+    expect(bridgeRewardMultiplier(undefined, ladder)).toBe(1);
+    expect(bridgeRewardMultiplier('MYTHIC', ladder)).toBe(1);
+    expect(rewardBase({ ...trip, bridgeRarity: 'EPIC' }, rules)).toBeCloseTo(plain, 12);
+  });
+
+  it('reads the rarity of the BRIDGE among the ship parts', () => {
+    expect(
+      bridgeRarityOf([
+        { partClass: 'ENGINE', rarity: 'LEGENDARY' },
+        { partClass: 'BRIDGE', rarity: 'EPIC' },
+      ]),
+    ).toBe('EPIC');
+    expect(bridgeRarityOf([{ partClass: 'ENGINE', rarity: 'RARE' }])).toBeUndefined();
   });
 });

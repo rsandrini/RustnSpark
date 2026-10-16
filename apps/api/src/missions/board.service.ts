@@ -75,6 +75,7 @@ export class BoardService {
     locationId: string,
     viewerTier: number,
     viewerId?: string,
+    viewerBridgeRarity?: string,
   ): Promise<BoardMission[]> {
     const { rules, version } = this.config.snapshot();
     const now = new Date();
@@ -99,7 +100,7 @@ export class BoardService {
       });
       return rows.map((row) => ({
         ...row,
-        rewardEstimate: missionReward(row, viewerTier, rules),
+        rewardEstimate: missionReward(row, viewerTier, rules, viewerBridgeRarity),
       }));
     });
   }

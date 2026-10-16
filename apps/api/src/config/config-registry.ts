@@ -809,6 +809,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.reward_by_bridge',
+    group: 'economy',
+    type: 'json',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.reward_by_bridge),
+    description: {
+      en: 'Payout multiplier by the rarity of the ship bridge (COMMON..LEGENDARY): mission pay follows the part-price ladder.',
+      'pt-BR':
+        'Multiplicador do pagamento pela raridade da ponte da nave (COMMON..LEGENDARY): o pagamento das missões acompanha a escada de preços das peças.',
+    },
+  },
+  {
     key: 'economy.combat_win_base',
     group: 'economy',
     type: 'integer',

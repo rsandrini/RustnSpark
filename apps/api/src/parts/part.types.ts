@@ -1,6 +1,8 @@
 export interface PartCatalog {
   partType: string;
   partClass: string;
+  /** COMMON..LEGENDARY: the bridge's rarity scales rewards (`economy.reward_by_bridge`). */
+  rarity?: string;
   w: number;
   h: number;
   mass: number;

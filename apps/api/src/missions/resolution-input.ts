@@ -15,6 +15,7 @@ import { deriveSheet } from '../ships/sheet.deriver.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { isHullFrame } from '../resolution/damage/layers.js';
 import type { DispatchSnapshot } from './dispatch.service.js';
+import { bridgeRarityOf } from '../economy/reward.calculator.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 
 // ONE place that turns (mission, dispatch snapshot, resolution context, rules) into the engine's
@@ -285,6 +286,8 @@ export function buildResolveInput(args: {
       )
     : PROVISIONAL_TIER;
 
+  const bridgeRarity = bridgeRarityOf(snapshot.parts.map((part) => part.catalog));
+
   const legs: readonly LegRoute[] = snapshot.legs;
   const lastLeg = legs[legs.length - 1];
   const missionInput: MissionInput = {
@@ -292,6 +295,7 @@ export function buildResolveInput(args: {
     type: args.missionType as MissionInput['type'],
     legs,
     tier,
+    ...(bridgeRarity === undefined ? {} : { bridgeRarity }),
     isolation: context.isolation,
     factionRelation: context.factionRelation,
     relation: RELATIONS[context.factionRelation] ?? 'NEUTRAL',

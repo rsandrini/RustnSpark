@@ -5,6 +5,7 @@
  * tier, like `missions.service.ts → accept`), the duration from `missionDuration`, and the
  * outcome from the real `resolveMission(buildResolveInput(...))`.
  */
+import { bridgeRarityOf } from '../../src/economy/reward.calculator.js';
 import type { GameRules } from '../../src/config/game-config.types.js';
 import { fuelUnits } from '../../src/economy/fuel-cost.calculator.js';
 import type { DispatchLeg, DispatchSnapshot } from '../../src/missions/dispatch.service.js';
@@ -183,6 +184,7 @@ export function takeMission(
           },
           tier,
           rules,
+          bridgeRarityOf(installed.map((part) => part.catalog)),
         );
   // The what-if hook, pay side: the bridge's rarity multiplies the accept-time figure, and the
   // resolver is paid from it — all ones is today's game.

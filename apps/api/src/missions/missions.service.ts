@@ -30,6 +30,7 @@ import { BoardService, type BoardMission } from './board.service.js';
 import { rebuildDispatchData, type DispatchJobData } from './dispatch.service.js';
 import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
+import { bridgeRarityOf } from '../economy/reward.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
 import { fieldFor } from '../resolution/race/race.resolver.js';
 import { parseCompetitors } from './resolution-input.js';
@@ -150,6 +151,8 @@ export type ActiveMission = MissionInstance & {
 
 interface ViewerContext {
   readonly tier: number;
+  /** Rarity of the viewer's bridge: the board's reward estimate follows it. */
+  readonly bridgeRarity: string | undefined;
   readonly ship: Ship | undefined;
   readonly installed: InstalledPart[];
 }
@@ -212,7 +215,7 @@ export class MissionsService implements OnModuleInit {
       rules.missions.starter_guarantee_max_completed > 0 &&
       completed < rules.missions.starter_guarantee_max_completed;
 
-    const rows = await this.board.getBoard(locationId, viewer.tier, playerId);
+    const rows = await this.board.getBoard(locationId, viewer.tier, playerId, viewer.bridgeRarity);
     const offers = await this.withEligibility(
       this.capForNewPlayer(rows, playerId, isNewPlayer, rules),
       viewer,
@@ -226,7 +229,7 @@ export class MissionsService implements OnModuleInit {
     // is read again to include it.
     const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
     if (!created) return offers;
-    const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId);
+    const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId, viewer.bridgeRarity);
     return this.withEligibility(
       this.capForNewPlayer(withStarter, playerId, isNewPlayer, rules),
       viewer,
@@ -592,7 +595,12 @@ export class MissionsService implements OnModuleInit {
       installedRows.map((part) => ({ basePrice: part.partCatalog.basePrice })),
       rules,
     );
-    const reward = missionReward(mission, tier, rules);
+    const reward = missionReward(
+      mission,
+      tier,
+      rules,
+      bridgeRarityOf(installedRows.map((part) => part.partCatalog)),
+    );
 
     // One active mission per player is a partial unique index (S6.1): a concurrent
     // accept of a second mission loses here with P2002, which must surface as 409.
@@ -671,7 +679,12 @@ export class MissionsService implements OnModuleInit {
             installed.map((part) => ({ basePrice: part.catalog.basePrice })),
             this.config.snapshot().rules,
           );
-    return { tier, ship, installed };
+    return {
+      tier,
+      bridgeRarity: bridgeRarityOf(installed.map((part) => part.catalog)),
+      ship,
+      installed,
+    };
   }
 
   // Composes every precondition accept() enforces (one active mission, ship at origin,

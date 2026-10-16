@@ -12,12 +12,28 @@ export interface RewardBaseInput {
   readonly distance: number;
   /** Mission type key into `economy.reward_type_bonus` (case-insensitive). */
   readonly missionType: string;
+  /** Rarity of the ship's bridge: scales the payout by `economy.reward_by_bridge` (absent = x1). */
+  readonly bridgeRarity?: string;
+}
+
+/** The payout multiplier for a ship's bridge rarity (x1 when the table has no entry). */
+export function bridgeRewardMultiplier(bridgeRarity: string | undefined, rules: GameRules): number {
+  if (bridgeRarity === undefined) return 1;
+  return rules.economy.reward_by_bridge[bridgeRarity] ?? 1;
+}
+
+/** The rarity of the bridge among a ship's parts (undefined with no bridge). */
+export function bridgeRarityOf(
+  parts: readonly { readonly partClass: string; readonly rarity?: string }[],
+): string | undefined {
+  return parts.find((part) => part.partClass === 'BRIDGE')?.rarity;
 }
 
 /**
  * D13 validated base (sim form, before the integrity multiplier):
  * `(reward_base + tier × reward_per_tier) × (1 + danger / reward_danger_divisor)
- *  × (1 + (distance − reward_distance_ref) / reward_distance_divisor) × type_bonus`.
+ *  × (1 + (distance − reward_distance_ref) / reward_distance_divisor) × type_bonus`,
+ * then × `reward_by_bridge[bridge rarity]` (the part-price ladder: a better bridge pays more).
  */
 export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
   // A trip the pilot asked for pays nothing: it costs fuel and time, nothing more.
@@ -28,7 +44,9 @@ export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
   const dangerMod = 1 + input.danger / e.reward_danger_divisor;
   const distanceMod = 1 + (input.distance - e.reward_distance_ref) / e.reward_distance_divisor;
   const typeBonus = e.reward_type_bonus[input.missionType.toLowerCase()] ?? 1;
-  return tierBase * dangerMod * distanceMod * typeBonus;
+  return (
+    tierBase * dangerMod * distanceMod * typeBonus * bridgeRewardMultiplier(input.bridgeRarity, rules)
+  );
 }
 
 /**

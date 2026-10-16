@@ -90,6 +90,8 @@ const economySchema = z.object({
   reward_distance_ref: z.number().int().min(100).max(5000),
   reward_distance_divisor: z.number().int().min(100).max(10000),
   reward_type_bonus: z.record(z.string(), z.number().min(0).max(5)),
+  // Payout multiplier by the rarity of the ship's bridge. Older stored rule sets have none: x1.
+  reward_by_bridge: z.record(z.string(), z.number().min(0).max(100)).default({}),
   combat_win_base: z.number().int().min(0).max(1000),
   combat_win_per_tier: z.number().int().min(0).max(500),
   combat_loss_penalty: z.number().int().min(0).max(1000),

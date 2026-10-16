@@ -84,9 +84,16 @@ the balance must all work; only then go back to a starter shield with a larger b
 
 ## P3 — Missions
 
-- [ ] **Mission scaling by bridge rarity.** Reward, requirements, fuel and repairs scale with the
-  bridge level: requirements follow the capacity growth of each rarity, rewards follow the price
-  ladder. Waiting for the simulation's baseline (P2) before building.
+- [x] **Mission rewards follow the bridge rarity (the part-price ladder)** — first slice of P3, owner
+  decision "rewards follow the part-price ladder". New rule `economy.reward_by_bridge`
+  {COMMON 1, UNCOMMON 1, RARE 1.4, EPIC 2.2, LEGENDARY 3.2}, applied in `rewardBase` (board estimate,
+  accept-time figure and the resolver's payout all see it; older rule sets have no table = x1).
+  Before it, 80% of the missions flew at ship tier 5 (value >= 18000, reached at L3) so pay was flat
+  from L3 to L5 while repair kept growing. Sim (8 runs x 300 missions): repair share of reward
+  chem 37-44% -> 18-26%, ion 64% -> 40%; ion Legendary 164 -> 130 game hours; chem pace unchanged. The
+  stronger table [1, 1.2, 1.8, 3, 5] over-pays (repair 11-22%).
+- [ ] P3, still open: requirements, fuel and repair scaling by bridge rarity (numeric requirements follow
+  the capacity growth of each rarity). Not decided yet; reward was the owner's pick.
 
 ## P4
 

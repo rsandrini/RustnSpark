@@ -62,6 +62,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.rescue_wait_fraction',
   'economy.rescue_wait_seconds',
   'economy.reward_base',
+  'economy.reward_by_bridge',
   'economy.reward_danger_divisor',
   'economy.reward_distance_divisor',
   'economy.reward_distance_ref',
