@@ -106,7 +106,7 @@ Each phase ends with: web tests green, CI green, before/after screenshots (deskt
 | phase | work | size |
 |---|---|---|
 | **0** | this audit; owner decisions (section 6) | done when you answer |
-| **1 Foundations** | `tokens.css` (Lumen Night + semantic colours), fonts, base type, and the component kit: button, input, select, tab strip, chip, card, popup, table, badge, each with the 8 states. Move the 109 hex + 75 rgb literals into tokens; split the 5.9k-line sheet into base / components / features layers (admin stays in its own scoped layer, untouched). | L |
+| **1 Foundations** (done 2026-10-16) | `styles/tokens.css` (Lumen Night + meaning colours + legacy aliases), self-hosted Geist / Geist Mono / Instrument Serif (`@fontsource`, latin subsets), `styles/components.css` (button, tab, chip, card, pill, form controls, popup, table, each with the 8 states), and every one of the 109 hex + 75 rgb literals moved to tokens (0 left in `index.css`). The legacy sheet is **not** split yet: its rules are scattered across features, so each screen's rules move into a feature file in phase 3, when that screen is rebuilt. | L |
 | **2 Shell and navigation** | the new header, status strip, account menu, route renames with redirects, the Missions merge | M |
 | **3 Screens**, in the order of the play loop | Ship (yard + sheet), Port (Buy, Service, Work), Missions (board + transit), Report, Map (with the place panel), then Auth / Onboarding / Profile | XL (Port is 1.6k lines, Ship 1.1k) |
 | **4 Hardening** | 320 / 375 / 414 / 768 px pass, contrast, reduced motion, browser-smoke selectors, i18n parity (en + pt-BR, lowercase titles in both) | M |

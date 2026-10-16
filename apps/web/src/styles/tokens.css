@@ -1,0 +1,103 @@
+/*
+ * Design tokens: Hallmark "Lumen", Night Foundry (owner pick, 2026-10-16). One black canvas, one
+ * molten-brass accent, hairline rules, tabular mono numbers. Every colour in the app comes from
+ * here (the rest of the sheets use `var(--…)` only); the legacy names (--bg, --panel, --spark,
+ * --blue …) stay as aliases so older rules follow the new palette without being rewritten.
+ * Meaning-carrying colours (rarity, faction, risk, ok/bad) are tokens of their own, retuned to sit
+ * on this canvas, never part of the accent.
+ */
+:root {
+  /* canvas and surfaces */
+  --paper: oklch(13% 0.014 265);
+  --paper-2: oklch(17% 0.016 265);
+  --paper-3: oklch(21% 0.018 265);
+  --paper-4: oklch(26% 0.02 262);
+  --black: oklch(0% 0 0);
+  --white: oklch(100% 0 0);
+
+  /* ink */
+  --ink: oklch(96% 0.006 262);
+  --ink-2: oklch(86% 0.01 255);
+  --muted: oklch(66% 0.016 262);
+  --faint: oklch(52% 0.02 262);
+
+  /* rules (hairlines) */
+  --rule: oklch(96% 0.006 262 / 0.1);
+  --rule-2: oklch(96% 0.006 262 / 0.18);
+  --rule-3: oklch(96% 0.006 262 / 0.3);
+
+  /* accent: molten brass (emits), coral chord (warnings, secondary) */
+  --brass: oklch(76% 0.17 50);
+  --brass-hi: oklch(88% 0.12 85);
+  --brass-ink: oklch(16% 0.03 50);
+  --coral: oklch(68% 0.16 18);
+  --glow: oklch(80% 0.16 50 / 0.42);
+
+  /* state */
+  --ok: oklch(74% 0.15 150);
+  --ok-hi: oklch(84% 0.14 150);
+  --bad: oklch(66% 0.19 25);
+  --warn: oklch(76% 0.15 70);
+  --info: oklch(72% 0.14 245);
+
+  /* steel (the assembly yard and decorative metal) */
+  --steel: oklch(34% 0.02 255);
+  --steel-lt: oklch(48% 0.025 250);
+  --steel-hi: oklch(62% 0.025 250);
+
+  /* risk, faction, rarity: each keeps its own meaning */
+  --risk-lo: var(--ok);
+  --risk-md: var(--warn);
+  --risk-hi: var(--bad);
+  --luna: oklch(70% 0.12 250);
+  --sun: oklch(80% 0.15 85);
+  --explorers: oklch(70% 0.13 155);
+  --pirata: oklch(58% 0.17 25);
+  --neutro: oklch(52% 0.02 262);
+  --rar-common: oklch(70% 0.01 262);
+  --rar-uncommon: oklch(74% 0.15 150);
+  --rar-rare: oklch(72% 0.14 245);
+  --rar-epic: oklch(70% 0.17 305);
+  --rar-legendary: oklch(78% 0.16 75);
+
+  /* type */
+  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-hero: clamp(36px, 5vw, 56px);
+  --tracking-micro: 0.08em;
+
+  /* shape and depth */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-pill: 999px;
+  --gap: 12px;
+  --shadow-card: 0 24px 60px -34px oklch(0% 0 0 / 0.7);
+  --shadow-pop: 0 24px 60px -28px oklch(0% 0 0 / 0.8);
+  --dur-fast: 120ms;
+  --dur-pulse: 4s;
+
+  /* legacy names, kept as aliases (older rules keep working on the new palette) */
+  --bg: var(--paper);
+  --panel: var(--paper-2);
+  --panel2: var(--paper-3);
+  --mut: var(--muted);
+  --line: var(--rule-2);
+  --line-strong: var(--rule-3);
+  --spark: var(--brass);
+  --rust: var(--coral);
+  --blue: var(--info);
+  --yard-bg: var(--paper-2);
+  --yard-panel: var(--paper-2);
+  --yard-panel2: var(--paper-3);
+  --ink-dim: var(--muted);
+  --amber: var(--brass);
+
+  color-scheme: dark;
+}

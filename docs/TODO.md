@@ -159,4 +159,4 @@ the balance must all work; only then go back to a starter shield with a larger b
   - **Owner pick (2026-10-16): a black theme, Hallmark "Lumen" (Night Foundry); redesign the whole game,
     admin excluded; analyse the routes and menus first.** The audit, the proposed navigation, the Lumen
     mapping and the phased plan are in `docs/design/ux-audit-and-redesign-plan.md` (screenshots in
-    `docs/design/before/`). Waiting on four decisions in its section 6 before phase 1.
+    `docs/design/before/`). Navigation approved on the demo (`docs/design/demo/`); **phase 1 (tokens, fonts, component kit) is done**; next: phase 2 (shell and navigation).

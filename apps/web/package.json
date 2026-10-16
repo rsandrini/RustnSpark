@@ -14,6 +14,9 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@fontsource/geist": "5.3.0",
+    "@fontsource/geist-mono": "5.3.0",
+    "@fontsource/instrument-serif": "5.3.0",
     "@rustandspark/contract": "workspace:^",
     "@tanstack/react-query": "^5.74.0",
     "i18next": "^23.16.8",

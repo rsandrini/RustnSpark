@@ -1,0 +1,314 @@
+/*
+ * Component kit (Lumen Night). Loaded after the legacy sheet, so these rules restyle the classes the
+ * screens already use: .btn, .tab, .chip, .panel/.card, .risk/.cond/.fac pills, form controls,
+ * .modal and tables. Every interactive control has all eight states: default, hover,
+ * :focus-visible, :active, disabled, loading (aria-busy), error (aria-invalid) and success
+ * (data-state="success"). Colours come from tokens only.
+ */
+
+/* ---- type ---------------------------------------------------------------------------------- */
+.display,
+.app h1.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-hero);
+  line-height: 1.02;
+  text-transform: lowercase;
+  text-wrap: balance;
+  letter-spacing: 0;
+}
+.display em {
+  font-style: normal;
+  color: var(--brass);
+}
+.label,
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.num,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- focus (one rule for every control) --------------------------------------------------- */
+:where(a, button, input, select, textarea, summary, [role='tab'], [tabindex='0']):focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* ---- buttons ------------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-3);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast),
+    transform var(--dur-fast);
+}
+.btn:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--paper-4);
+  border-color: var(--faint);
+}
+.btn:active:not(:disabled):not([aria-disabled='true']) {
+  transform: translateY(1px);
+}
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn.primary,
+.btn.spark {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--brass-ink);
+  font-weight: 600;
+}
+.btn.primary:hover:not(:disabled):not([aria-disabled='true']),
+.btn.spark:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--brass-hi);
+  border-color: var(--brass-hi);
+}
+.btn.ghost {
+  background: transparent;
+}
+.btn.danger {
+  background: transparent;
+  border-color: color-mix(in oklab, var(--bad) 55%, transparent);
+  color: var(--bad);
+}
+.btn.danger:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--bad) 14%, transparent);
+  border-color: var(--bad);
+}
+.btn[aria-busy='true'] {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+.btn[aria-busy='true']::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--rule-3);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: kit-spin 0.8s linear infinite;
+}
+.btn.primary[aria-busy='true']::after {
+  border-color: color-mix(in oklab, var(--brass-ink) 30%, transparent);
+  border-top-color: var(--brass-ink);
+}
+.btn[data-state='success'] {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.btn.tiny {
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+}
+@keyframes kit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- tabs ---------------------------------------------------------------------------------- */
+.tabs {
+  border-bottom: 1px solid var(--rule);
+}
+.tab {
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: color var(--dur-fast);
+}
+.tab:hover:not(:disabled) {
+  color: var(--ink);
+}
+.tab.on,
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--brass);
+}
+.tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tabs-sub .tab.on {
+  border-bottom-color: var(--brass);
+}
+.tab .count {
+  font-family: var(--font-mono);
+  background: var(--paper-3);
+  border-color: var(--rule-2);
+  color: var(--ink-2);
+}
+
+/* ---- chips (filters, toggles) ---------------------------------------------------------------- */
+.chip {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--rule-2);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
+}
+.chip:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--faint);
+}
+.chip.on,
+.chip[aria-pressed='true'] {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--brass-ink);
+}
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- surfaces ------------------------------------------------------------------------------- */
+.panel,
+.card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.card:hover {
+  border-color: var(--rule-2);
+}
+.item {
+  background: var(--paper-2);
+  border-color: var(--rule);
+}
+
+/* ---- pills (risk, condition, faction) -------------------------------------------------------- */
+.risk,
+.cond,
+.fac {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* ---- form controls ----------------------------------------------------------------------------- */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+select,
+textarea {
+  background: var(--paper-2);
+  color: var(--ink);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--faint);
+}
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled) {
+  border-color: var(--faint);
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+input[aria-invalid='true'],
+select[aria-invalid='true'],
+textarea[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+input[data-state='success'],
+select[data-state='success'],
+textarea[data-state='success'] {
+  border-color: var(--ok);
+}
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--brass);
+}
+
+/* ---- popups --------------------------------------------------------------------------------- */
+.modal,
+.sheet {
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+.modal h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-2xl);
+  text-transform: lowercase;
+}
+.modal-backdrop {
+  background: color-mix(in oklab, var(--paper) 72%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+/* ---- tables ---------------------------------------------------------------------------------- */
+table {
+  border-collapse: collapse;
+}
+th {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--muted);
+}
+td {
+  font-variant-numeric: tabular-nums;
+}
+tbody tr:hover td {
+  background: color-mix(in oklab, var(--ink) 3%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .tab,
+  .chip {
+    transition: none;
+  }
+  .btn[aria-busy='true']::after {
+    animation: none;
+  }
+}

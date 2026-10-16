@@ -5,45 +5,12 @@
  * (montagem) keeps its steel/amber engineering tones under .hangar-scoped rules.
  */
 
+@import './tokens.css';
+
 :root {
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-
-  --bg: #0b0e13;
-  --panel: #12171f;
-  --panel2: #1a212c;
-  --ink: #e6edf3;
-  --mut: #8b949e;
-  --line: #2a313c;
-  --line-strong: #30363d;
-  --spark: #f0a500;
-  --rust: #b5462f;
-  --ok: #2ea043;
-  --bad: #f85149;
-  --blue: #1f6feb;
-
-  --luna: #4a90d9;
-  --sun: #e3b341;
-  --explorers: #3fa66a;
-  --pirata: #c23b3b;
-  --neutro: #5a6273;
-
-  --risk-lo: #2ea043;
-  --risk-md: #e8833a;
-  --risk-hi: #f85149;
-
-  /* assembly yard palette (montagem-esboco-v2) */
-  --yard-bg: #12161a;
-  --yard-panel: #1a2026;
-  --yard-panel2: #222a31;
-  --steel: #3a4650;
-  --steel-lt: #5a6b78;
-  --ink-dim: #7e8c98;
-  --amber: #e0a13c;
-
-  --radius: 10px;
-  --gap: 12px;
 }
 
 * {
@@ -60,12 +27,7 @@ body,
 }
 
 body {
-  font:
-    15px/1.55 -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font: var(--text-md) / 1.55 var(--font-body);
 }
 
 button,
@@ -76,7 +38,7 @@ textarea {
 }
 
 a {
-  color: var(--blue);
+  color: var(--brass);
 }
 
 .app {
@@ -299,17 +261,17 @@ a {
 .btn.primary {
   background: var(--blue);
   border-color: var(--blue);
-  color: #fff;
+  color: var(--white);
 }
 
 .btn.spark {
-  background: rgba(240, 165, 0, 0.14);
+  background: color-mix(in oklab, var(--brass) 14%, transparent);
   border-color: var(--spark);
   color: var(--spark);
 }
 
 .btn.danger {
-  background: rgba(248, 81, 73, 0.12);
+  background: color-mix(in oklab, var(--bad) 12%, transparent);
   border-color: var(--bad);
   color: var(--bad);
 }
@@ -329,17 +291,17 @@ a {
 }
 
 .risk.lo {
-  background: rgba(46, 160, 67, 0.16);
+  background: color-mix(in oklab, var(--ok) 16%, transparent);
   color: var(--risk-lo);
 }
 
 .risk.md {
-  background: rgba(210, 153, 34, 0.16);
+  background: color-mix(in oklab, var(--warn) 16%, transparent);
   color: var(--risk-md);
 }
 
 .risk.hi {
-  background: rgba(248, 81, 73, 0.16);
+  background: color-mix(in oklab, var(--bad) 16%, transparent);
   color: var(--risk-hi);
 }
 
@@ -352,17 +314,17 @@ a {
 }
 
 .cond.ok {
-  background: rgba(46, 160, 67, 0.15);
+  background: color-mix(in oklab, var(--ok) 15%, transparent);
   color: var(--ok);
 }
 
 .cond.warn {
-  background: rgba(240, 165, 0, 0.15);
+  background: color-mix(in oklab, var(--brass) 15%, transparent);
   color: var(--spark);
 }
 
 .cond.bad {
-  background: rgba(248, 81, 73, 0.15);
+  background: color-mix(in oklab, var(--bad) 15%, transparent);
   color: var(--bad);
 }
 
@@ -418,7 +380,7 @@ a {
 }
 
 .card:hover {
-  border-color: #3d4756;
+  border-color: var(--steel);
 }
 
 .card .row {
@@ -603,7 +565,7 @@ a {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(3, 6, 10, 0.66);
+  background: color-mix(in oklab, var(--paper) 66%, transparent);
   display: grid;
   place-items: center;
   z-index: 100;
@@ -635,7 +597,7 @@ a {
 .stage {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, #101720, var(--bg));
+  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--bg));
   border: 1px solid var(--line);
   border-radius: 12px;
   /* Bounded so the map fits on screen without scrolling in fullscreen (owner: "today is bigger
@@ -670,7 +632,7 @@ a {
 }
 
 .ncore {
-  stroke: #0b0e13;
+  stroke: var(--paper);
   stroke-width: 2.5;
 }
 
@@ -755,19 +717,19 @@ a {
 }
 
 .verdict.ok {
-  background: rgba(46, 160, 67, 0.16);
+  background: color-mix(in oklab, var(--ok) 16%, transparent);
   color: var(--ok);
   border: 1px solid var(--ok);
 }
 
 .verdict.partial {
-  background: rgba(240, 165, 0, 0.16);
+  background: color-mix(in oklab, var(--brass) 16%, transparent);
   color: var(--spark);
   border: 1px solid var(--spark);
 }
 
 .verdict.bad {
-  background: rgba(248, 81, 73, 0.16);
+  background: color-mix(in oklab, var(--bad) 16%, transparent);
   color: var(--bad);
   border: 1px solid var(--bad);
 }
@@ -785,7 +747,7 @@ a {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(600px 120px at 20% -10%, rgba(240, 165, 0, 0.1), transparent);
+  background: radial-gradient(600px 120px at 20% -10%, color-mix(in oklab, var(--brass) 10%, transparent), transparent);
   pointer-events: none;
 }
 
@@ -878,7 +840,7 @@ a {
 
 /* hangar (montagem) ---------------------------------------------------- */
 .hangar-scene {
-  background: radial-gradient(circle at 50% 40%, #171d22, #0e1215);
+  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--paper-2));
   border: 1px solid var(--steel);
   border-radius: 12px;
 }
@@ -960,7 +922,7 @@ a {
 .legbar {
   height: 8px;
   border-radius: 6px;
-  background: var(--bg-2, #161b22);
+  background: var(--bg-2, var(--paper-3));
   border: 1px solid var(--line);
   overflow: hidden;
   margin: 10px 0;
@@ -1308,7 +1270,7 @@ a {
 }
 
 .faction-card:hover {
-  border-color: #3d4756;
+  border-color: var(--steel);
 }
 
 .faction-card.on {
@@ -1322,14 +1284,14 @@ a {
 
 .faction-card .fac {
   justify-self: start;
-  background: rgba(5, 7, 11, 0.55);
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
 }
 
 .faction-card .desc {
   grid-column: 2;
   font-size: 12.5px;
-  color: #d6dbe3;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  color: var(--ink-2);
+  text-shadow: 0 1px 3px color-mix(in oklab, var(--black) 70%, transparent);
 }
 
 /* hangar yard (S10.4) ---------------------------------------------------- */
@@ -1341,7 +1303,7 @@ a {
 }
 
 .yard-cell:hover {
-  fill: rgba(240, 165, 0, 0.08);
+  fill: color-mix(in oklab, var(--brass) 8%, transparent);
 }
 
 /* Format confirm popup (hangar): shape thumbnail + dropped-parts warning. Preview reuses
@@ -1378,7 +1340,7 @@ svg .block.selected {
 }
 
 svg .block-halo {
-  fill: rgba(240, 165, 0, 0.1);
+  fill: color-mix(in oklab, var(--brass) 10%, transparent);
   stroke: var(--spark);
   stroke-width: 0.04;
   stroke-dasharray: 0.14 0.1;
@@ -1426,26 +1388,26 @@ svg .yard-ghost .ghost-cell {
 
 svg .yard-ghost .ghost-body.ok,
 svg .yard-ghost .ghost-cell.ok {
-  fill: rgba(80, 200, 120, 0.22);
-  stroke: #48c078;
+  fill: color-mix(in oklab, var(--ok) 22%, transparent);
+  stroke: var(--ok);
 }
 
 svg .yard-ghost .ghost-body.bad,
 svg .yard-ghost .ghost-cell.bad {
-  fill: rgba(230, 70, 70, 0.22);
-  stroke: #e64646;
+  fill: color-mix(in oklab, var(--bad) 22%, transparent);
+  stroke: var(--bad);
 }
 
 /* The carried content stays legible over the ghost body. */
 svg .yard-ghost .ghost-label {
-  fill: #fff;
+  fill: var(--white);
   fill-opacity: 0.95;
 }
 
 /* A part that is not wired to the bridge does nothing: dim its fill and blink a yellow border. */
 svg .block.disconnected {
   fill-opacity: 0.45;
-  stroke: #ffd400;
+  stroke: var(--brass-hi);
   stroke-width: 0.1;
   animation: disconnected-blink 1s ease-in-out infinite;
 }
@@ -1496,7 +1458,7 @@ svg .block.disconnected {
 
 .part-btn.on {
   border-color: var(--amber);
-  background: #28323a;
+  background: var(--steel);
 }
 
 .part-btn[aria-disabled='true'] {
@@ -1631,7 +1593,7 @@ svg .block.disconnected {
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
   pointer-events: none;
 }
 
@@ -1808,12 +1770,12 @@ svg .block.disconnected {
 }
 
 .pill-hit {
-  background: rgba(46, 160, 67, 0.18);
+  background: color-mix(in oklab, var(--ok) 18%, transparent);
   color: var(--ok);
 }
 
 .pill-miss {
-  background: rgba(139, 148, 158, 0.18);
+  background: color-mix(in oklab, var(--muted) 18%, transparent);
   color: var(--mut);
 }
 
@@ -1822,13 +1784,13 @@ svg .block.disconnected {
    `.statrow` for the same specificity reason as `.tone-*` above. */
 .pill-ok,
 .statrow .pill-ok {
-  background: rgba(46, 160, 67, 0.18);
+  background: color-mix(in oklab, var(--ok) 18%, transparent);
   color: var(--ok);
 }
 
 .pill-bad,
 .statrow .pill-bad {
-  background: rgba(248, 81, 73, 0.18);
+  background: color-mix(in oklab, var(--bad) 18%, transparent);
   color: var(--bad);
 }
 
@@ -1836,14 +1798,14 @@ svg .block.disconnected {
    combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
    round-by-round detail (links straight to the report with #combat). */
 .pill-combat {
-  background: rgba(248, 81, 73, 0.18);
+  background: color-mix(in oklab, var(--bad) 18%, transparent);
   color: var(--bad);
   text-decoration: none;
   margin-right: 6px;
 }
 
 .pill-combat:hover {
-  background: rgba(248, 81, 73, 0.3);
+  background: color-mix(in oklab, var(--bad) 30%, transparent);
 }
 
 /* Generic text-color tones for a value that has a pass/fail threshold (energy, autonomy,
@@ -1880,12 +1842,12 @@ svg .block.disconnected {
 }
 
 .sheet-status.ready {
-  background: rgba(46, 160, 67, 0.14);
+  background: color-mix(in oklab, var(--ok) 14%, transparent);
   color: var(--ok);
 }
 
 .sheet-status.problem {
-  background: rgba(248, 81, 73, 0.14);
+  background: color-mix(in oklab, var(--bad) 14%, transparent);
   color: var(--bad);
 }
 
@@ -1995,11 +1957,11 @@ svg .block.disconnected {
 }
 
 .combat-log-table tr.attacker-player {
-  background: rgba(240, 165, 0, 0.06);
+  background: color-mix(in oklab, var(--brass) 6%, transparent);
 }
 
 .combat-log-table tr.attacker-enemy {
-  background: rgba(248, 81, 73, 0.06);
+  background: color-mix(in oklab, var(--bad) 6%, transparent);
 }
 
 .part-stats {
@@ -2041,7 +2003,7 @@ svg .block.disconnected {
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: var(--panel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
   pointer-events: none;
 }
 
@@ -2192,7 +2154,7 @@ svg .block.disconnected {
 .chip.on {
   border-color: var(--spark);
   color: var(--spark);
-  background: rgba(240, 165, 0, 0.12);
+  background: color-mix(in oklab, var(--brass) 12%, transparent);
 }
 
 .market-controls {
@@ -2283,8 +2245,8 @@ svg .block.disconnected {
 
 /* A quick clockwise flourish when the part turns, so the rotation is visibly acknowledged. */
 .yard-rotate-icon.rotating {
-  color: #fff;
-  border-color: #fff;
+  color: var(--white);
+  border-color: var(--white);
   animation: rotate-icon-spin 320ms ease;
 }
 
@@ -2384,7 +2346,7 @@ svg .block.disconnected {
   display: inline-block;
   padding: 1px 9px;
   border-radius: 999px;
-  background: rgba(240, 165, 0, 0.16);
+  background: color-mix(in oklab, var(--brass) 16%, transparent);
   border: 1px solid var(--spark);
   color: var(--spark);
   font-size: 12px;
@@ -2430,7 +2392,7 @@ svg .block.disconnected {
 }
 
 .you-tag text {
-  fill: #0b0e13;
+  fill: var(--paper);
   font-size: 10px;
   font-weight: 800;
   text-anchor: middle;
@@ -2443,14 +2405,14 @@ svg .block.disconnected {
 }
 
 .ship-halo {
-  fill: rgba(240, 165, 0, 0.18);
+  fill: color-mix(in oklab, var(--brass) 18%, transparent);
   stroke: var(--spark);
   stroke-width: 1.2;
 }
 
 .ship-glyph {
   fill: var(--spark);
-  stroke: #0b0e13;
+  stroke: var(--paper);
   stroke-width: 1;
   stroke-linejoin: round;
 }
@@ -2514,7 +2476,7 @@ svg .block.disconnected {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: radial-gradient(ellipse at 60% 50%, #0d1622 0%, #05070b 75%);
+  background: radial-gradient(ellipse at 60% 50%, var(--paper-3) 0%, var(--paper) 75%);
   margin: 12px 0;
 }
 
@@ -2525,7 +2487,7 @@ svg .block.disconnected {
   z-index: 1;
   padding: 5px 14px;
   border-radius: 999px;
-  background: rgba(5, 7, 11, 0.55);
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
   color: var(--ink);
   font-size: 18px;
   font-weight: 700;
@@ -2541,31 +2503,31 @@ svg .block.disconnected {
 
 .stars-far {
   background-image:
-    radial-gradient(1px 1px at 20px 30px, #8aa0c0 50%, transparent 51%),
-    radial-gradient(1px 1px at 90px 120px, #8aa0c0 50%, transparent 51%),
-    radial-gradient(1px 1px at 160px 70px, #8aa0c0 50%, transparent 51%),
-    radial-gradient(1px 1px at 230px 200px, #8aa0c0 50%, transparent 51%),
-    radial-gradient(1px 1px at 300px 150px, #8aa0c0 50%, transparent 51%),
-    radial-gradient(1px 1px at 60px 240px, #8aa0c0 50%, transparent 51%);
+    radial-gradient(1px 1px at 20px 30px, var(--muted) 50%, transparent 51%),
+    radial-gradient(1px 1px at 90px 120px, var(--muted) 50%, transparent 51%),
+    radial-gradient(1px 1px at 160px 70px, var(--muted) 50%, transparent 51%),
+    radial-gradient(1px 1px at 230px 200px, var(--muted) 50%, transparent 51%),
+    radial-gradient(1px 1px at 300px 150px, var(--muted) 50%, transparent 51%),
+    radial-gradient(1px 1px at 60px 240px, var(--muted) 50%, transparent 51%);
   background-size: 320px 280px;
   opacity: 0.55;
 }
 
 .stars-mid {
   background-image:
-    radial-gradient(1.5px 1.5px at 40px 60px, #cfe0ff 55%, transparent 56%),
-    radial-gradient(1.5px 1.5px at 140px 190px, #cfe0ff 55%, transparent 56%),
-    radial-gradient(1.5px 1.5px at 250px 110px, #cfe0ff 55%, transparent 56%),
-    radial-gradient(1.5px 1.5px at 340px 250px, #cfe0ff 55%, transparent 56%);
+    radial-gradient(1.5px 1.5px at 40px 60px, var(--ink-2) 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 140px 190px, var(--ink-2) 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 250px 110px, var(--ink-2) 55%, transparent 56%),
+    radial-gradient(1.5px 1.5px at 340px 250px, var(--ink-2) 55%, transparent 56%);
   background-size: 380px 300px;
   opacity: 0.8;
 }
 
 .stars-near {
   background-image:
-    radial-gradient(2.2px 2.2px at 70px 90px, #fff 55%, transparent 56%),
-    radial-gradient(2.2px 2.2px at 240px 220px, #fff 55%, transparent 56%),
-    radial-gradient(2.2px 2.2px at 400px 40px, #ffe9b0 55%, transparent 56%);
+    radial-gradient(2.2px 2.2px at 70px 90px, var(--white) 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 240px 220px, var(--white) 55%, transparent 56%),
+    radial-gradient(2.2px 2.2px at 400px 40px, var(--brass-hi) 55%, transparent 56%);
   background-size: 480px 300px;
 }
 
@@ -2582,29 +2544,29 @@ svg .block.disconnected {
 }
 
 .ship-hull {
-  fill: #2b3947;
-  stroke: #6f8296;
+  fill: var(--steel);
+  stroke: var(--steel-hi);
   stroke-width: 1.5;
   stroke-linejoin: round;
 }
 
 .ship-wing {
-  fill: #223040;
-  stroke: #56697d;
+  fill: var(--steel);
+  stroke: var(--faint);
   stroke-width: 1.2;
 }
 
 .ship-cockpit {
-  fill: #f0a500;
+  fill: var(--brass);
   opacity: 0.9;
 }
 
 .ship-engine {
-  fill: #4a5a6b;
+  fill: var(--steel-lt);
 }
 
 .ship-flame {
-  fill: #ff8a2b;
+  fill: var(--brass);
   opacity: 0;
 }
 
@@ -2766,10 +2728,10 @@ svg .block.disconnected {
 .gauge-planned {
   background: repeating-linear-gradient(
     135deg,
-    rgba(230, 237, 243, 0.28),
-    rgba(230, 237, 243, 0.28) 4px,
-    rgba(230, 237, 243, 0.12) 4px,
-    rgba(230, 237, 243, 0.12) 8px
+    color-mix(in oklab, var(--ink) 28%, transparent),
+    color-mix(in oklab, var(--ink) 28%, transparent) 4px,
+    color-mix(in oklab, var(--ink) 12%, transparent) 4px,
+    color-mix(in oklab, var(--ink) 12%, transparent) 8px
   );
 }
 
@@ -2796,8 +2758,8 @@ svg .block.disconnected {
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  color: var(--white);
+  text-shadow: 0 1px 2px color-mix(in oklab, var(--black) 90%, transparent);
 }
 
 .gauge.big {
@@ -2860,11 +2822,11 @@ svg .block.disconnected {
 
 /* part cards: one part per card, stacked ------------------------------------- */
 :root {
-  --rar-common: #8b949e;
-  --rar-uncommon: #3fb950;
-  --rar-rare: #4493f8;
-  --rar-epic: #ab7df8;
-  --rar-legendary: #f0a500;
+  --rar-common: var(--muted);
+  --rar-uncommon: var(--ok);
+  --rar-rare: var(--info);
+  --rar-epic: var(--rar-epic);
+  --rar-legendary: var(--brass);
 }
 
 .pcard-grid {
@@ -2976,41 +2938,41 @@ svg .block.rar-common {
 
 svg .block.rar-uncommon {
   stroke: var(--rar-uncommon);
-  fill: rgba(63, 185, 80, 0.16);
+  fill: color-mix(in oklab, var(--ok) 16%, transparent);
 }
 
 svg .block.rar-rare {
   stroke: var(--rar-rare);
-  fill: rgba(68, 147, 248, 0.18);
+  fill: color-mix(in oklab, var(--info) 18%, transparent);
 }
 
 svg .block.rar-epic {
   stroke: var(--rar-epic);
-  fill: rgba(171, 125, 248, 0.2);
+  fill: color-mix(in oklab, var(--rar-epic) 20%, transparent);
 }
 
 svg .block.rar-legendary {
   stroke: var(--rar-legendary);
-  fill: rgba(240, 165, 0, 0.2);
+  fill: color-mix(in oklab, var(--brass) 20%, transparent);
 }
 
 svg .block.cond-ok {
-  fill: rgba(46, 160, 67, 0.28);
+  fill: color-mix(in oklab, var(--ok) 28%, transparent);
   stroke: var(--ok);
 }
 
 svg .block.cond-warn {
-  fill: rgba(232, 131, 58, 0.3);
+  fill: color-mix(in oklab, var(--warn) 30%, transparent);
   stroke: var(--risk-md);
 }
 
 svg .block.cond-bad {
-  fill: rgba(248, 81, 73, 0.32);
+  fill: color-mix(in oklab, var(--bad) 32%, transparent);
   stroke: var(--bad);
 }
 
 .cond-track {
-  fill: rgba(0, 0, 0, 0.55);
+  fill: color-mix(in oklab, var(--black) 55%, transparent);
 }
 
 .cond-bar.cond-ok {
@@ -3026,11 +2988,11 @@ svg .block.cond-bad {
 }
 
 .cond-label {
-  fill: #fff;
+  fill: var(--white);
   font-size: 0.09px;
   text-anchor: middle;
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.65);
+  stroke: color-mix(in oklab, var(--black) 65%, transparent);
   stroke-width: 0.018px;
   pointer-events: none;
   user-select: none;
@@ -3100,7 +3062,7 @@ svg .block.cond-bad {
   padding: 10px 12px;
   border: 1px solid var(--spark);
   border-radius: 10px;
-  background: rgba(240, 165, 0, 0.06);
+  background: color-mix(in oklab, var(--brass) 6%, transparent);
 }
 
 .travel-box h3 {
@@ -3413,7 +3375,7 @@ svg .block.cond-bad {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.18);
+  background: color-mix(in oklab, var(--black) 18%, transparent);
 }
 
 .debrief-tiles dt {
@@ -3445,7 +3407,7 @@ svg .block.cond-bad {
   padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--explorers);
-  background: rgba(63, 166, 106, 0.14);
+  background: color-mix(in oklab, var(--ok) 14%, transparent);
   color: var(--ink);
 }
 
@@ -3453,7 +3415,7 @@ svg .block.cond-bad {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(248, 81, 73, 0.1);
+  background: color-mix(in oklab, var(--bad) 10%, transparent);
   color: var(--ink);
 }
 
@@ -3540,10 +3502,10 @@ svg .block.cond-bad {
 .gauge.fuel .gauge-planned {
   background: repeating-linear-gradient(
     135deg,
-    rgba(88, 166, 255, 0.55),
-    rgba(88, 166, 255, 0.55) 4px,
-    rgba(88, 166, 255, 0.28) 4px,
-    rgba(88, 166, 255, 0.28) 8px
+    color-mix(in oklab, var(--info) 55%, transparent),
+    color-mix(in oklab, var(--info) 55%, transparent) 4px,
+    color-mix(in oklab, var(--info) 28%, transparent) 4px,
+    color-mix(in oklab, var(--info) 28%, transparent) 8px
   );
 }
 .refuel-panel .over {
@@ -3572,7 +3534,7 @@ svg .block.cond-bad {
 
 /* broken parts (condition at zero): a red, pulsing outline everywhere the part shows */
 svg .block.broken {
-  fill: rgba(248, 81, 73, 0.22);
+  fill: color-mix(in oklab, var(--bad) 22%, transparent);
   stroke: var(--bad);
   stroke-width: 0.14;
   stroke-dasharray: 0.25 0.15;
@@ -3781,7 +3743,7 @@ svg .block.broken {
   top: 10px;
   right: 10px;
   z-index: 2;
-  background: rgba(5, 7, 11, 0.55);
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
 }
 
 /* Reserve room so the overlay toggle never sits under the collapsed caption's own text. */
@@ -3792,8 +3754,8 @@ svg .block.broken {
 .debris {
   position: absolute;
   right: -40px;
-  background: #3a3f47;
-  border: 1px solid #6b7480;
+  background: var(--steel);
+  border: 1px solid var(--faint);
   clip-path: polygon(10% 30%, 40% 0, 90% 20%, 100% 60%, 60% 100%, 15% 85%);
   animation: debris-drift linear infinite;
   opacity: 0.9;
@@ -3815,9 +3777,9 @@ svg .block.broken {
   width: 14px;
   height: 10px;
   border-radius: 5px;
-  background: #cfd8e3;
-  border: 1px solid #56697d;
-  box-shadow: 0 0 8px rgba(120, 190, 255, 0.7);
+  background: var(--ink-2);
+  border: 1px solid var(--faint);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--info) 70%, transparent);
 }
 
 .drone-beam {
@@ -3826,7 +3788,7 @@ svg .block.broken {
   top: 5px;
   width: 2px;
   height: 22px;
-  background: linear-gradient(#7fd0ff, transparent);
+  background: linear-gradient(var(--info), transparent);
   opacity: 0.8;
 }
 
@@ -3835,8 +3797,8 @@ svg .block.broken {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #ffd76a;
-  box-shadow: 0 0 10px 3px rgba(255, 190, 60, 0.9);
+  background: var(--brass-hi);
+  box-shadow: 0 0 10px 3px color-mix(in oklab, var(--brass) 90%, transparent);
   animation: spark-blink 1.1s ease-in-out infinite;
 }
 
@@ -3939,7 +3901,7 @@ svg .block.broken {
   border-radius: 10px;
   border: 1px solid var(--line-strong);
   background: var(--panel2);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 35%, transparent);
 }
 
 .admin-nav-panel .nav-link {
@@ -4202,7 +4164,7 @@ svg .block.broken {
 }
 .rules-chip.on > button {
   border-color: var(--spark);
-  background: rgba(240, 165, 0, 0.14);
+  background: color-mix(in oklab, var(--brass) 14%, transparent);
 }
 .rules-weight {
   width: 46px;
@@ -4654,7 +4616,7 @@ svg .block.dir-blocked {
   padding: 10px 14px;
   border: 1px solid var(--bad);
   border-radius: 8px;
-  background: rgba(248, 81, 73, 0.08);
+  background: color-mix(in oklab, var(--bad) 8%, transparent);
 }
 .form-error-summary ul {
   margin: 6px 0 0;
@@ -4827,7 +4789,7 @@ svg .block.dir-blocked {
 
 /* Flight warnings: the ship flies, weaker — amber, not the red of a problem. */
 .sheet-status.warning {
-  background: rgba(224, 161, 60, 0.16);
+  background: color-mix(in oklab, var(--brass) 16%, transparent);
   color: var(--amber);
 }
 .warn-text {
@@ -4944,7 +4906,7 @@ svg .block.dir-blocked {
   border-radius: 999px;
 }
 .lossbar-lost {
-  background: rgba(248, 81, 73, 0.45);
+  background: color-mix(in oklab, var(--bad) 45%, transparent);
 }
 .lossbar-fill {
   background: var(--ok);
@@ -5277,8 +5239,8 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   overflow: hidden;
   padding: 7vh 16px 56px;
   background:
-    radial-gradient(1200px 500px at 85% -10%, rgba(240, 165, 0, 0.16), transparent 60%),
-    radial-gradient(900px 600px at 0% 100%, rgba(31, 111, 235, 0.14), transparent 60%),
+    radial-gradient(1200px 500px at 85% -10%, color-mix(in oklab, var(--brass) 16%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 0% 100%, color-mix(in oklab, var(--info) 14%, transparent), transparent 60%),
     var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -5288,10 +5250,10 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(1.5px 1.5px at 20px 30px, #fff 60%, transparent 62%),
-    radial-gradient(1px 1px at 90px 120px, #cfd8e3 60%, transparent 62%),
-    radial-gradient(2px 2px at 160px 70px, #f0d9a0 60%, transparent 62%),
-    radial-gradient(1px 1px at 230px 180px, #fff 60%, transparent 62%);
+    radial-gradient(1.5px 1.5px at 20px 30px, var(--white) 60%, transparent 62%),
+    radial-gradient(1px 1px at 90px 120px, var(--ink-2) 60%, transparent 62%),
+    radial-gradient(2px 2px at 160px 70px, var(--brass-hi) 60%, transparent 62%),
+    radial-gradient(1px 1px at 230px 180px, var(--white) 60%, transparent 62%);
   background-size: 260px 220px;
   opacity: 0.55;
 }
@@ -5306,13 +5268,13 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 }
 
 .landing-ship .hull {
-  fill: #1a212c;
+  fill: var(--paper-4);
   stroke: var(--steel-lt);
   stroke-width: 2;
 }
 
 .landing-ship .fin {
-  fill: #222a31;
+  fill: var(--paper-4);
   stroke: var(--steel);
   stroke-width: 2;
 }
@@ -5385,13 +5347,13 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   padding: 4px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: rgba(18, 23, 31, 0.8);
+  background: color-mix(in oklab, var(--paper-2) 80%, transparent);
   color: var(--mut);
   font-size: 13px;
 }
 
 .landing-auth {
-  background: rgba(18, 23, 31, 0.92);
+  background: color-mix(in oklab, var(--paper-2) 92%, transparent);
 }
 
 .landing-auth h2 {
@@ -5468,7 +5430,7 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   margin-bottom: 8px;
   border-radius: 50%;
   background: var(--spark);
-  color: #1a1200;
+  color: var(--brass-ink);
   font-weight: 700;
   font-size: 13px;
 }
@@ -5544,26 +5506,26 @@ details.collapsible > summary h2 {
   border-radius: 8px;
 }
 .action-art .art-sky {
-  fill: #0a0f1a;
+  fill: var(--paper-2);
 }
 .action-art .art-star {
-  fill: #cdd9e5;
+  fill: var(--ink-2);
   opacity: 0.7;
 }
 .action-art .art-ground {
-  fill: #1c2430;
+  fill: var(--paper-4);
 }
 .action-art .art-ship {
-  fill: #5a6b78;
-  stroke: #8da0b0;
+  fill: var(--faint);
+  stroke: var(--muted);
   stroke-width: 1;
 }
 .action-art .art-wreck {
-  fill: #3a4650;
-  stroke: #5a6b78;
+  fill: var(--steel);
+  stroke: var(--faint);
 }
 .action-art .art-rock {
-  fill: #3a3f4a;
+  fill: var(--steel);
 }
 .action-art .art-vein,
 .action-art .art-beam {
@@ -5576,7 +5538,7 @@ details.collapsible > summary h2 {
   fill: var(--spark);
 }
 .action-art .art-suit {
-  fill: #d0d7de;
+  fill: var(--ink-2);
 }
 .action-hero {
   display: grid;
@@ -5720,11 +5682,11 @@ details.collapsible > summary h2 {
 
 .format-card:hover,
 .format-card.on {
-  border-color: var(--spark, #f0a500);
+  border-color: var(--spark, var(--brass));
 }
 
 .format-card.on {
-  box-shadow: 0 0 0 1px var(--spark, #f0a500);
+  box-shadow: 0 0 0 1px var(--spark, var(--brass));
 }
 
 .format-card:disabled {
@@ -5756,8 +5718,8 @@ details.collapsible > summary h2 {
   font-size: 11px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: var(--spark, #f0a500);
-  color: #111;
+  background: var(--spark, var(--brass));
+  color: var(--paper-2);
 }
 
 .format-detail {
@@ -5777,7 +5739,7 @@ details.collapsible > summary h2 {
 .part-compare {
   margin: 12px 0 16px;
   padding: 12px;
-  border: 1px solid var(--line, #3b4252);
+  border: 1px solid var(--line, var(--steel));
   border-radius: 8px;
 }
 .part-compare-head {
@@ -5788,7 +5750,7 @@ details.collapsible > summary h2 {
 }
 .part-compare td.best {
   font-weight: 700;
-  color: var(--accent, #7fd18b);
+  color: var(--accent, var(--ok-hi));
 }
 .part-compare-fields {
   display: flex;
@@ -5811,7 +5773,7 @@ details.collapsible > summary h2 {
   margin-bottom: 4px;
 }
 .part-compare-chart .bar {
-  fill: var(--accent, #7fd18b);
+  fill: var(--accent, var(--ok-hi));
 }
 .part-compare-chart text {
   fill: currentColor;
@@ -5825,16 +5787,16 @@ details.collapsible > summary h2 {
   bottom: 6%;
   height: 78%;
   width: auto;
-  fill: #3a3f47;
-  stroke: #6b7480;
+  fill: var(--steel);
+  stroke: var(--faint);
   stroke-width: 1.5;
 }
 .transit-scene .mine-vein {
   fill: none;
-  stroke: #ffd76a;
+  stroke: var(--brass-hi);
   stroke-width: 2.5;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 4px rgba(255, 190, 60, 0.9));
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--brass) 90%, transparent));
   animation: mine-vein-glow 1.6s ease-in-out infinite;
 }
 .transit-scene .mine-beam {
@@ -5845,8 +5807,8 @@ details.collapsible > summary h2 {
   height: 4px;
   margin-top: -2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, rgba(255, 215, 106, 0.1), rgba(255, 215, 106, 0.95));
-  box-shadow: 0 0 12px 2px rgba(255, 190, 60, 0.7);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--brass-hi) 10%, transparent), color-mix(in oklab, var(--brass-hi) 95%, transparent));
+  box-shadow: 0 0 12px 2px color-mix(in oklab, var(--brass) 70%, transparent);
   transform-origin: left center;
   animation: mine-beam-pulse 0.9s ease-in-out infinite alternate;
 }
@@ -5858,8 +5820,8 @@ details.collapsible > summary h2 {
   height: 10px;
   margin: -5px -5px 0 0;
   border-radius: 50%;
-  background: #fff2c0;
-  box-shadow: 0 0 14px 5px rgba(255, 190, 60, 0.95);
+  background: var(--brass-hi);
+  box-shadow: 0 0 14px 5px color-mix(in oklab, var(--brass) 95%, transparent);
   animation: spark-blink 0.7s ease-in-out infinite;
 }
 .transit-scene .mine-chunk {
@@ -5867,8 +5829,8 @@ details.collapsible > summary h2 {
   right: 15%;
   width: 7px;
   height: 7px;
-  background: #b9c2cf;
-  border: 1px solid #6b7480;
+  background: var(--ink-2);
+  border: 1px solid var(--faint);
   clip-path: polygon(10% 30%, 40% 0, 90% 20%, 100% 60%, 60% 100%, 15% 85%);
   animation: mine-chunk-fly ease-in infinite;
 }
