@@ -92,8 +92,8 @@ the balance must all work; only then go back to a starter shield with a larger b
   from L3 to L5 while repair kept growing. Sim (8 runs x 300 missions): repair share of reward
   chem 37-44% -> 18-26%, ion 64% -> 40%; ion Legendary 164 -> 130 game hours; chem pace unchanged. The
   stronger table [1, 1.2, 1.8, 3, 5] over-pays (repair 11-22%).
-- [ ] P3, still open: requirements, fuel and repair scaling by bridge rarity (numeric requirements follow
-  the capacity growth of each rarity). Not decided yet; reward was the owner's pick.
+- [x] P3 closed by the owner after the reward slice: requirements, fuel and repair scaling by bridge rarity
+  were not needed (the sim shows repair at 18-40% of reward).
 
 ## P4
 
@@ -118,28 +118,10 @@ the balance must all work; only then go back to a starter shield with a larger b
   for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
   the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
 
-- [ ] **Admin parts browser: filters that stick, selectable columns, search + sort, comparison
-  charts.** The tuning list screen is too weak to actually work with the catalog: (1) **filters and
-  search reset after every save** — they live in `useState` in `EntityScreen.tsx` and the screen
-  *unmounts* while the form is open, so returning remounts empty (`admin-routes.tsx` routes
-  `:new`/`:id`/`:id/clone` to a separate `EntityFormScreen` that navigates back with no query
-  string). *Fix:* move filters/search into URL search params (`useSearchParams`, precedent
-  `board.page.tsx`), and carry `location.search` when the form navigates back. (2) **No column
-  selection** — the list hardcodes 5 columns (`LIST_COLUMNS`, first 5 visible schema fields minus
-  `active`), so part attributes can't be compared side by side; make the column set choosable from
-  the schema's visible fields and persist it in the same URL params (e.g. `?cols=w,h,mass,pot`).
-  (3) **Search is a raw `JSON.stringify(row)` substring match with no sorting** — replace with a
-  localized name search (`pickLocalized(row.displayName)`, comparator-map sorting, clickable
-  headers; copy the `market-panel.tsx` `SortKey`/`useMemo` pattern). (4) **Comparison chart**: let
-  the admin tick rows and compare selected parts — either all engines of a rarity, or one part
-  across rarities — plotting the chosen numeric fields. No chart lib exists in the repo today; first
-  ship a comparison **table** (model on `part-detail.tsx` stat-compare tables), then a small chart
-  (recharts, or hand-rolled SVG bars like `GridCellsPreview`) gated to `entityName === 'parts'`
-  the same way `PART_SECTIONS` / `MANUAL_SAVE_ENTITIES` already specialize parts. Stats/labels
-  already exist under `parts.stat.*` i18n. *Where:* `apps/web/src/admin/tuning/EntityScreen.tsx`
-  (filters, columns, search, sort), `EntityFormScreen.tsx` (preserve search on navigate-back),
-  `entity-screen.spec.tsx` (regression: filters survive a save round-trip), and a new compare
-  component beside `part-detail.tsx`'s compare tables.
+- [x] **Admin parts browser.** Filters, search, sort and column choice live in the URL and survive a save
+  (`EntityScreen.tsx`, round 6). Comparison (round 7): tick parts in the list (`?sel=`), a table of the
+  numeric stats with the best value marked and hand-rolled SVG bars for the stats ticked
+  (`PartCompare.tsx`, parts only).
 
 ## P5 — Look and feel
 

@@ -5772,3 +5772,48 @@ details.collapsible > summary h2 {
 .format-detail h3 {
   margin: 0;
 }
+
+/* Admin parts comparison: the table of selected parts and its hand-rolled SVG bars. */
+.part-compare {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--line, #3b4252);
+  border-radius: 8px;
+}
+.part-compare-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.part-compare td.best {
+  font-weight: 700;
+  color: var(--accent, #7fd18b);
+}
+.part-compare-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 0;
+  border: 0;
+  padding: 0;
+}
+.part-compare-charts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.part-compare-chart {
+  margin: 0;
+}
+.part-compare-chart figcaption {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.part-compare-chart .bar {
+  fill: var(--accent, #7fd18b);
+}
+.part-compare-chart text {
+  fill: currentColor;
+  font-size: 12px;
+}

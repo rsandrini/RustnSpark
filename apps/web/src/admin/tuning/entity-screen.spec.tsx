@@ -714,8 +714,9 @@ describe('EntityScreen', () => {
     expect(headers).toEqual(['Part code', 'Mass ▼', 'Actions']);
     expect(headers.join(' ')).not.toContain('Rarity tier');
     // mass sorted descending puts the heavier tank first
+    // (a parts row starts with its comparison checkbox cell)
     const firstRowCells = within(screen.getAllByRole('row')[1]!).getAllByRole('cell');
-    expect(firstRowCells[1]).toHaveTextContent('30');
+    expect(firstRowCells[2]).toHaveTextContent('30');
   });
 
   it('sorts a column on click, toggling asc then desc (round 6)', async () => {
@@ -823,6 +824,113 @@ describe('EntityScreen', () => {
     expect(headers.join(' ')).not.toContain('Base price');
     // and the choice lives in the URL, so it would survive a reload or a save round-trip
     expect(screen.getByRole('columnheader', { name: /mass/i })).toBeInTheDocument();
+  });
+
+  it('compares ticked parts side by side: a table with the best value marked and a bar per part (round 7)', async () => {
+    const partsSchema = {
+      entity: 'parts',
+      fields: [
+        {
+          name: 'partType',
+          type: 'string',
+          required: true,
+          description: { en: 'Part type', 'pt-BR': 'Tipo' },
+        },
+        {
+          name: 'displayName',
+          type: 'locale-map',
+          required: true,
+          description: { en: 'Name', 'pt-BR': 'Nome' },
+        },
+        {
+          name: 'rarity',
+          type: 'enum',
+          required: true,
+          enumValues: ['COMMON', 'RARE'],
+          description: { en: 'Rarity', 'pt-BR': 'Raridade' },
+        },
+        {
+          name: 'basePrice',
+          type: 'integer',
+          required: true,
+          description: { en: 'Base price', 'pt-BR': 'Preço' },
+        },
+        {
+          name: 'pot',
+          type: 'float',
+          required: false,
+          description: { en: 'Thrust', 'pt-BR': 'Empuxo' },
+        },
+        {
+          name: 'mass',
+          type: 'float',
+          required: false,
+          description: { en: 'Mass', 'pt-BR': 'Massa' },
+        },
+      ],
+    };
+    const partRows = [
+      {
+        partType: 'engine_a',
+        displayName: { en: 'Engine A', 'pt-BR': 'Motor A' },
+        rarity: 'COMMON',
+        basePrice: 100,
+        pot: 25,
+        mass: 3,
+      },
+      {
+        partType: 'engine_b',
+        displayName: { en: 'Engine B', 'pt-BR': 'Motor B' },
+        rarity: 'RARE',
+        basePrice: 400,
+        pot: 40,
+        mass: 2,
+      },
+      {
+        partType: 'engine_c',
+        displayName: { en: 'Engine C', 'pt-BR': 'Motor C' },
+        rarity: 'RARE',
+        basePrice: 500,
+        pot: 30,
+        mass: 5,
+      },
+    ];
+    server.use(
+      http.get('/v1/admin/tuning/schema/parts', () =>
+        HttpResponse.json(partsSchema, { status: 200 }),
+      ),
+      http.get('/v1/admin/tuning/parts', () => HttpResponse.json(partRows, { status: 200 })),
+    );
+
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/parts');
+
+    expect(await screen.findByText('Engine A')).toBeInTheDocument();
+    // nothing to compare until something is ticked
+    expect(screen.queryByRole('region', { name: /compare parts/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /select for comparison engine_a/i }));
+    await user.click(screen.getByRole('checkbox', { name: /select for comparison engine_b/i }));
+
+    const compare = await screen.findByRole('region', { name: /compare parts/i });
+    // one table column per ticked part, none for the one left alone
+    expect(within(compare).getByRole('columnheader', { name: /engine a/i })).toBeInTheDocument();
+    expect(within(compare).getByRole('columnheader', { name: /engine b/i })).toBeInTheDocument();
+    expect(
+      within(compare).queryByRole('columnheader', { name: /engine c/i }),
+    ).not.toBeInTheDocument();
+    // the best value of a stat is marked (thrust 40 beats 25)
+    const thrustRow = within(compare).getByRole('row', { name: /thrust/i });
+    expect(within(thrustRow).getByText('40')).toHaveClass('best');
+    expect(within(thrustRow).getByText('25')).not.toHaveClass('best');
+    // a bar chart exists for a ticked stat, and can be switched off
+    expect(within(compare).getByRole('img', { name: /thrust/i })).toBeInTheDocument();
+    await user.click(within(compare).getByRole('checkbox', { name: /^thrust$/i }));
+    expect(within(compare).queryByRole('img', { name: /thrust/i })).not.toBeInTheDocument();
+
+    // clearing the selection removes the comparison
+    await user.click(within(compare).getByRole('button', { name: /clear selection/i }));
+    expect(screen.queryByRole('region', { name: /compare parts/i })).not.toBeInTheDocument();
   });
 
   it('opens a create form generated from the schema', async () => {

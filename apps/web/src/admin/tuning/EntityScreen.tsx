@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { GridCellsPreview } from './GridCellsPreview';
+import { PartCompare } from './PartCompare';
 import { Popup } from '../../ui/Popup';
 import { pickLocalized } from '../../i18n/localized';
 import type * as dto from '../../api/generated';
@@ -51,6 +52,12 @@ export function EntityScreen() {
   const sortKey = searchParams.get('sort');
   const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc';
   const colsParam = searchParams.get('cols');
+  // The parts the admin ticked for the comparison (`?sel=id1,id2`), kept in the URL like the rest.
+  const selParam = searchParams.get('sel');
+  const selectedIds = useMemo(
+    () => (selParam === null || selParam === '' ? [] : selParam.split(',')),
+    [selParam],
+  );
   const filters = useMemo(() => {
     const out: Record<string, string> = {};
     for (const [key, value] of searchParams.entries()) {
@@ -126,6 +133,15 @@ export function EntityScreen() {
           );
           return sortDir === 'desc' ? -order : order;
         });
+  const isParts = entityName === 'parts';
+  const comparedRows = (rows ?? []).filter((row) => selectedIds.includes(rowId(entityName, row)));
+  const toggleSelected = (id: string) =>
+    setParam({
+      sel: (selectedIds.includes(id)
+        ? selectedIds.filter((entry) => entry !== id)
+        : [...selectedIds, id]
+      ).join(','),
+    });
   const basePath = `/admin/tuning/entities/${entityName}`;
   // Form pages carry the list's query string with them, so their back-navigation (and the links
   // into them) land on the same filtered, sorted, column-picked list.
@@ -165,7 +181,20 @@ export function EntityScreen() {
         <span className="muted">
           {t('tuning.rowCount', { shown: filteredRows.length, total: rows?.length ?? 0 })}
         </span>
+        {isParts && selectedIds.length > 0 && (
+          <span className="muted">
+            {t('tuning.compareSelected', { count: selectedIds.length })}
+          </span>
+        )}
       </div>
+      {isParts && comparedRows.length > 0 && (
+        <PartCompare
+          rows={comparedRows}
+          fields={visibleFields}
+          defaultFieldNames={listFields.map((field) => field.name)}
+          onClear={() => setParam({ sel: null })}
+        />
+      )}
       {enumFilterFields.length > 0 && (
         <div className="tuning-filters">
           {enumFilterFields.map((field) => {
@@ -206,6 +235,7 @@ export function EntityScreen() {
         <table>
           <thead>
             <tr>
+              {isParts && <td aria-label={t('tuning.compare')} />}
               {listFields.map((field) => {
                 const label =
                   field.description !== undefined
@@ -244,6 +274,16 @@ export function EntityScreen() {
               const id = rowId(entityName, row);
               return (
                 <tr key={id}>
+                  {isParts && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={`${t('tuning.compareSelect')} ${id}`}
+                        checked={selectedIds.includes(id)}
+                        onChange={() => toggleSelected(id)}
+                      />
+                    </td>
+                  )}
                   {listFields.map((field) => (
                     <td key={field.name}>
                       {field.type === 'grid-cells' ? (
