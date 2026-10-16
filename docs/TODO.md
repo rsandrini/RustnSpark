@@ -22,8 +22,8 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## P2 — Simulations
 
-- [ ] **Check the simulations: is the economy bot simulation feature complete? Run it and get
-  insights.** Specs: `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`, plan:
+- [x] **Check the simulations: is the economy bot simulation feature complete? Run it and get
+  insights.** (done; see the status section below) Specs: `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`, plan:
   `docs/superpowers/plans/2026-10-11-economy-bot-simulation-plan.md`, code in `apps/api/sim`. First
   verify it against the plan (what is built, what is missing), then run it and report what it says
   about progression through the bridge rarities and the economy. *Known drift to fix first:* the
@@ -114,7 +114,7 @@ the balance must all work; only then go back to a starter shield with a larger b
   skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
   first mission) so the first minutes work. It can link to the wiki for details.
 
-- [ ] **Mining animation.** The mining job and its screen need an animation (like the ship scene
+- [x] **Mining animation.** (done: the ship stage shows a free dig; port art animated) The mining job and its screen need an animation (like the ship scene
   for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
   the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
 
@@ -122,6 +122,19 @@ the balance must all work; only then go back to a starter shield with a larger b
   (`EntityScreen.tsx`, round 6). Comparison (round 7): tick parts in the list (`?sel=`), a table of the
   numeric stats with the best value marked and hand-rolled SVG bars for the stats ticked
   (`PartCompare.tsx`, parts only).
+
+## Parked / not yet scheduled (owner steers, 2026-10-16)
+
+- [ ] Starter shield + battery in the free kit with a larger bridge budget (2x2 bridge limits): test it as
+  its own A/B once the game, sim and balance all work.
+- [ ] Map expansion for a complete v1: zoom and panning, very short and very long distances, new places.
+- [ ] Late game: far *missions* (the three `deep_field` places have mining only), the fusion torch engine
+  and the fusion reactor family, and a pre-warning before a bridge is destroyed.
+- [ ] Seed sync of dev-only data: the `ziggy` location, route and `race_explorers_ziggy` template, hull
+  edits, `sell_min_condition` 15 and the 1x1 bridge connector rules only exist in the dev DB.
+- [ ] Tests: a no-bridge dispatch test; the soak test prints rejection output while it runs.
+- [ ] Sim: chem and hybrid builds still stall now and then on an empty wallet; the ion build's repair
+  share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level.
 
 ## P5 — Look and feel
 
