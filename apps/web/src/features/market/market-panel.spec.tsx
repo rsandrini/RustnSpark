@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { economyState, resetEconomyState } from '../../test/msw/handlers';
+import { economyState, resetEconomyState, setWallet } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import type { ShipSheet } from '../../api/generated';
 
@@ -66,13 +66,17 @@ describe('market panel: descriptions and filters', () => {
     server.use(onboarded());
   });
 
-  it('shows every offer with its description, never just a name and a price', async () => {
+  it('shows name, price, what it is and a key stat on every card; the long description is behind the info button', async () => {
     await renderPortMarket();
     await screen.findByText('Plated Hull');
     const cards = document.querySelectorAll('.market-panel .pcard');
     expect(cards.length).toBeGreaterThan(0);
     for (const card of Array.from(cards)) {
-      expect(card.querySelector('.part-desc-short')?.textContent ?? '').not.toBe('');
+      expect(card.querySelector('.pcard-name')?.textContent ?? '').not.toBe('');
+      expect(card.querySelector('.pcard-price')).not.toBeNull();
+      expect(card.querySelector('.pcard-summary')?.textContent ?? '').not.toBe('');
+      // the prose moved behind (i): it no longer takes three lines on every card
+      expect(card.querySelector('.part-desc-short')).toBeNull();
     }
   });
 
@@ -107,11 +111,16 @@ describe('market panel: descriptions and filters', () => {
     fireEvent.click(screen.getByRole('button', { name: 'All' }));
     expect(list()).toHaveLength(total);
 
+    // New / used lives under "More filters".
+    fireEvent.click(screen.getByRole('button', { name: /More filters/ }));
     fireEvent.change(screen.getByLabelText('Condition'), { target: { value: 'used' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Show parts' }));
     expect(list()).toHaveLength(1);
     expect(within(panel()).getByText('Cargo Rack (used)')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: /More filters/ }));
     fireEvent.change(screen.getByLabelText('Condition'), { target: { value: 'all' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Show parts' }));
     fireEvent.change(screen.getByLabelText('Search parts'), { target: { value: 'zzz' } });
     expect(list()).toHaveLength(0);
     expect(screen.getByText('No parts match these filters.')).toBeInTheDocument();
@@ -123,6 +132,7 @@ describe('market panel: descriptions and filters', () => {
     const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
     const total = list().length;
 
+    fireEvent.click(screen.getByRole('button', { name: /More filters/ }));
     const rarity = screen.getByLabelText('Rarity');
     const options = within(rarity)
       .getAllByRole('option')
@@ -138,6 +148,83 @@ describe('market panel: descriptions and filters', () => {
     expect(list()).toHaveLength(0);
     fireEvent.change(size, { target: { value: 'all' } });
     expect(list()).toHaveLength(total);
+  });
+
+  it('lists the cheapest offers first by default', async () => {
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const prices = Array.from(document.querySelectorAll('.market-panel .pcard-price b')).map(
+      (node) => Number((node.textContent ?? '').replace(/[^\d]/g, '')),
+    );
+    expect(prices.length).toBeGreaterThan(1);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+  });
+
+  it('"Affordable now" hides what the pilot cannot pay, and a button says how much is missing', async () => {
+    setWallet(130);
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
+    const total = list().length;
+
+    // Off by default: the Plated Hull (300) is listed, its button says what is missing.
+    const hull = screen.getByText('Plated Hull').closest('.pcard') as HTMLElement;
+    await waitFor(() =>
+      expect(within(hull).getByRole('button', { name: 'Need 170 ¢ more' })).toBeDisabled(),
+    );
+
+    const chip = screen.getByRole('button', { name: 'Affordable now' });
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    expect(list().length).toBeLessThan(total);
+    expect(screen.queryByText('Plated Hull')).toBeNull();
+
+    fireEvent.click(chip);
+    expect(list()).toHaveLength(total);
+  });
+
+  it('says what the ship lacks, offers the matching parts, and can be dismissed', async () => {
+    const shelf = (await (await fetch('/v1/locations/ceres/market')).json()) as {
+      listings: Array<Record<string, unknown> & { catalog: Record<string, unknown> }>;
+    };
+    const hull = shelf.listings[0]!;
+    server.use(
+      http.get('/v1/locations/:id/market', ({ params }) =>
+        HttpResponse.json({
+          locationId: String(params.id),
+          listings: [
+            ...shelf.listings,
+            {
+              ...hull,
+              listingId: 'catalog:ceres:cannon',
+              partType: 'cannon',
+              partClass: 'WEAPON',
+              displayName: { en: 'Cannon', 'pt-BR': 'Canhão' },
+              catalog: { ...hull.catalog, partType: 'cannon', partClass: 'WEAPON' },
+              price: 110,
+            },
+          ],
+          sellMinCondition: 1,
+          sellOffers: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+
+    // The default ship has armor and cargo but no firepower.
+    const needs = await screen.findByTestId('ship-needs');
+    expect(within(needs).getByText(/A weapon/)).toBeInTheDocument();
+    expect(within(needs).queryByText(/cargo hold/)).toBeNull();
+
+    fireEvent.click(within(needs).getByRole('button', { name: 'Show parts' }));
+    const list = () => document.querySelectorAll('.market-panel .pcard-grid .pcard');
+    expect(list()).toHaveLength(1);
+    expect(within(panel()).getByText('Cannon')).toBeInTheDocument();
+
+    fireEvent.click(within(needs).getByRole('button', { name: /^Dismiss: A weapon/ }));
+    expect(screen.queryByTestId('ship-needs')).toBeNull();
   });
 
   it('shows the pilot balance in the Hangar store', async () => {

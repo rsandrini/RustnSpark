@@ -97,7 +97,7 @@ export function PartCard({
       {(part.broken === true || note !== undefined) && (
         <div className="pcard-note">{part.broken === true ? t('parts.broken') : note}</div>
       )}
-      {condition !== undefined && (
+      {condition !== undefined && condition < 100 && (
         <Gauge
           value={condition}
           max={100}
@@ -107,7 +107,6 @@ export function PartCard({
         />
       )}
       <div className="pcard-summary">{partSummary(part.catalog, t, format)}</div>
-      <p className="pcard-desc part-desc-short">{pickLocalized(part.description, i18n.language)}</p>
       <footer className="pcard-actions">
         <PartInfoButton part={part} compare={compare} extra={infoExtra} />
         {actions}

@@ -96,3 +96,133 @@
   border-color: color-mix(in oklab, var(--coral) 55%, transparent);
   color: var(--coral);
 }
+
+/* the market: one line of controls, the part groups under it, and the ship's needs above both */
+.market-filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.market-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.market-controls input[type='search'] {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.market-controls .btn .count {
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+  color: var(--brass-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.needs-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in oklab, var(--brass) 35%, transparent);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+}
+.needs-row .needs-tag {
+  color: var(--brass);
+}
+.needs-row ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.needs-row li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.needs-row li > span {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.needs-dismiss {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+.needs-dismiss:hover {
+  color: var(--ink);
+}
+
+/* the part card (Market, Your goods and Upgrade): hairline, rarity pip, mono numbers */
+.pcard-grid {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.pcard,
+.pcard[class*='rarity-'] {
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  box-shadow: var(--shadow-card);
+}
+.pcard-name {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.pcard-price b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--brass);
+}
+.pcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pcard-meta::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.pcard-summary {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.pcard-actions .btn.primary {
+  margin-left: auto;
+}
+.pcard-actions .btn:disabled {
+  font-variant-numeric: tabular-nums;
+}
+.market-controls select.input {
+  flex: 0 0 auto;
+  width: auto;
+}
+.market-controls .chip,
+.market-controls .btn {
+  flex: 0 0 auto;
+}

@@ -1085,7 +1085,8 @@
     },
     "sellAmount": "Amount",
     "sellAmountFor": "How many {{name}} to sell",
-    "sellSome": "Sell {{count}}"
+    "sellSome": "Sell {{count}}",
+    "needMore": "Need {{amount}} more"
   },
   "inventory": {
     "title": "Inventory",
@@ -1725,7 +1726,22 @@
     "rarity": "Rarity",
     "rarityAll": "Any rarity",
     "size": "Size",
-    "sizeAll": "Any size"
+    "sizeAll": "Any size",
+    "affordable": "Affordable now",
+    "moreFilters": "More filters",
+    "clearFilters": "Clear",
+    "applyFilters": "Show parts",
+    "needsTitle": "Your ship needs",
+    "needsShow": "Show parts",
+    "needsDismiss": "Dismiss: {{need}}",
+    "needsDismissMark": "×",
+    "chipClear": " ×",
+    "needs": {
+      "weapon": "A weapon: it has no firepower, so it cannot take combat work.",
+      "defense": "Armor or a shield: nothing protects the hull in a fight.",
+      "power": "More power: its engines and systems draw more than it makes.",
+      "cargo": "A cargo hold: it cannot carry deliveries."
+    }
   },
   "ship": {
     "empty": {

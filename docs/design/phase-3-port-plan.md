@@ -101,7 +101,7 @@ exists, it starts off). 4 "Your ship needs" row: **both** Port and Store. 5 desc
 | step | what | touches |
 |---|---|---|
 | P1 *(done)* | Frame: slim serif title header, Buy / Service / Work groups with a second row of tabs, no second wallet chip, notice strips | `port.page.tsx`, `ui/PortTabs.tsx`, `ui/ShipStage.tsx`, new `styles/port.css` |
-| P2 | Market panel: defaults, filters, needs row, new card, buy button | `market-panel.tsx`, `part-card.tsx` (shared with Store) |
+| P2 *(done)* | Market panel: price-ascending default, "Affordable now" chip (off), "More filters" popover, "your ship needs" row, lighter card (description behind (i), gauge only when worn, the before-buy connector grid stays), "Need N ¢ more" | `market-panel.tsx`, `part-card.tsx` (shared with Store) |
 | P3 | Goods, Repair, Refuel | `port.page.tsx` |
 | P4 | Upgrade, Scavenging, Mining | `port.page.tsx` |
 | P5 | 320 to 768 px pass, specs, browser smoke, before/after screenshots | specs, e2e |

@@ -63,7 +63,10 @@ export function MarketPanel({
   const [partClass, setPartClass] = useState<string | null>(presetClass);
   const [search, setSearch] = useState('');
   const [condition, setCondition] = useState<Condition>('all');
-  const [sort, setSort] = useState<SortKey>('name');
+  const [sort, setSort] = useState<SortKey>('priceAsc');
+  const [affordableOnly, setAffordableOnly] = useState(false);
+  const [moreFilters, setMoreFilters] = useState(false);
+  const [dismissedNeeds, setDismissedNeeds] = useState<ReadonlySet<string>>(new Set());
   const [rarity, setRarity] = useState<string>('all');
   const [size, setSize] = useState<string>('all');
 
@@ -158,6 +161,7 @@ export function MarketPanel({
       if (!matchesPartGroup(listing.catalog.partType, listing.catalog.partClass, partClass)) {
         return false;
       }
+      if (affordableOnly && listing.price > wallet) return false;
       if (rarity !== 'all' && listing.rarity !== rarity) return false;
       if (size !== 'all' && sizeOf(listing) !== size) return false;
       if (condition === 'new' && listing.kind !== 'catalog') return false;
@@ -173,7 +177,39 @@ export function MarketPanel({
       condition: (a, b) => b.condition - a.condition,
     };
     return [...filtered].sort(compare[sort]);
-  }, [listings, partClass, rarity, size, condition, search, sort, i18n.language]);
+  }, [
+    listings,
+    partClass,
+    rarity,
+    size,
+    condition,
+    search,
+    sort,
+    affordableOnly,
+    wallet,
+    i18n.language,
+  ]);
+
+  // What the ship lacks, read off its sheet (no server call): each need names the class of part
+  // that would fix it and only shows when this shelf has such parts.
+  const needs = useMemo(() => {
+    if (currentSheet === undefined) return [];
+    const lacking: Array<{ id: string; partClass: string }> = [];
+    if (currentSheet.pdf <= 0) lacking.push({ id: 'weapon', partClass: 'WEAPON' });
+    if (currentSheet.bli <= 0 && currentSheet.esc <= 0) {
+      lacking.push({ id: 'defense', partClass: 'DEFENSE' });
+    }
+    if (currentSheet.energyCont < 0) lacking.push({ id: 'power', partClass: 'REACTOR' });
+    if (currentSheet.crg <= 0) lacking.push({ id: 'cargo', partClass: 'CARGO' });
+    return lacking.filter(
+      (need) =>
+        !dismissedNeeds.has(need.id) &&
+        listings.some((listing) => listing.catalog.partClass === need.partClass),
+    );
+  }, [currentSheet, listings, dismissedNeeds]);
+  const extraFilters = [rarity !== 'all', size !== 'all', condition !== 'all'].filter(
+    Boolean,
+  ).length;
 
   const insufficient = confirm !== null && wallet < confirm.price;
 
@@ -211,7 +247,68 @@ export function MarketPanel({
         </p>
       )}
 
+      {needs.length > 0 && (
+        <div className="needs-row" role="note" data-testid="ship-needs">
+          <span className="label needs-tag">{t('market.needsTitle')}</span>
+          <ul>
+            {needs.map((need) => (
+              <li key={need.id}>
+                <span>{t(`market.needs.${need.id}`)}</span>
+                <button
+                  type="button"
+                  className="btn tiny"
+                  onClick={() => setPartClass(need.partClass)}
+                >
+                  {t('market.needsShow')}
+                </button>
+                <button
+                  type="button"
+                  className="needs-dismiss"
+                  aria-label={t('market.needsDismiss', { need: t(`market.needs.${need.id}`) })}
+                  onClick={() => setDismissedNeeds((was) => new Set([...was, need.id]))}
+                >
+                  {t('market.needsDismissMark')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="market-filters" role="search">
+        <div className="market-controls">
+          <input
+            className="input"
+            type="search"
+            value={search}
+            placeholder={t('market.searchPlaceholder')}
+            aria-label={t('market.search')}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <select
+            className="input"
+            value={sort}
+            aria-label={t('market.sort')}
+            onChange={(event) => setSort(event.target.value as SortKey)}
+          >
+            <option value="priceAsc">{t('market.sortPriceAsc')}</option>
+            <option value="priceDesc">{t('market.sortPriceDesc')}</option>
+            <option value="name">{t('market.sortName')}</option>
+            <option value="condition">{t('market.sortCondition')}</option>
+          </select>
+          <button
+            type="button"
+            className={`chip${affordableOnly ? ' on' : ''}`}
+            aria-pressed={affordableOnly}
+            onClick={() => setAffordableOnly((was) => !was)}
+          >
+            {t('market.affordable')}
+          </button>
+          <button type="button" className="btn" onClick={() => setMoreFilters(true)}>
+            {t('market.moreFilters')}
+            {extraFilters > 0 && <span className="count">{extraFilters}</span>}
+          </button>
+        </div>
         <div className="chips" role="group" aria-label={t('market.filterByType')}>
           <button
             type="button"
@@ -221,6 +318,17 @@ export function MarketPanel({
           >
             {t('market.all')}
           </button>
+          {partClass !== null && !classes.includes(partClass) && (
+            <button
+              type="button"
+              className="chip on"
+              aria-pressed="true"
+              onClick={() => setPartClass(null)}
+            >
+              {t(`hangar.partClasses.${partClass}`, { defaultValue: partClass })}
+              {t('market.chipClear')}
+            </button>
+          )}
           {classes.map((cls) => (
             <button
               key={cls}
@@ -233,64 +341,77 @@ export function MarketPanel({
             </button>
           ))}
         </div>
-        <div className="market-controls">
-          <input
-            className="input"
-            type="search"
-            value={search}
-            placeholder={t('market.searchPlaceholder')}
-            aria-label={t('market.search')}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select
-            className="input"
-            value={rarity}
-            aria-label={t('market.rarity')}
-            onChange={(event) => setRarity(event.target.value)}
-          >
-            <option value="all">{t('market.rarityAll')}</option>
-            {rarities.map((value) => (
-              <option key={value} value={value}>
-                {t(`parts.rarities.${value}`, { defaultValue: value })}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input"
-            value={size}
-            aria-label={t('market.size')}
-            onChange={(event) => setSize(event.target.value)}
-          >
-            <option value="all">{t('market.sizeAll')}</option>
-            {sizes.map((value) => (
-              <option key={value} value={value}>
-                {value.replace('x', '×')}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input"
-            value={condition}
-            aria-label={t('market.condition')}
-            onChange={(event) => setCondition(event.target.value as Condition)}
-          >
-            <option value="all">{t('market.conditionAll')}</option>
-            <option value="new">{t('market.conditionNew')}</option>
-            <option value="used">{t('market.conditionUsed')}</option>
-          </select>
-          <select
-            className="input"
-            value={sort}
-            aria-label={t('market.sort')}
-            onChange={(event) => setSort(event.target.value as SortKey)}
-          >
-            <option value="name">{t('market.sortName')}</option>
-            <option value="priceAsc">{t('market.sortPriceAsc')}</option>
-            <option value="priceDesc">{t('market.sortPriceDesc')}</option>
-            <option value="condition">{t('market.sortCondition')}</option>
-          </select>
-        </div>
       </div>
+
+      <Popup
+        open={moreFilters}
+        title={t('market.moreFilters')}
+        onClose={() => setMoreFilters(false)}
+      >
+        <div className="stack">
+          <label className="field">
+            <span className="lbl">{t('market.rarity')}</span>
+            <select
+              className="input"
+              value={rarity}
+              aria-label={t('market.rarity')}
+              onChange={(event) => setRarity(event.target.value)}
+            >
+              <option value="all">{t('market.rarityAll')}</option>
+              {rarities.map((value) => (
+                <option key={value} value={value}>
+                  {t(`parts.rarities.${value}`, { defaultValue: value })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="lbl">{t('market.size')}</span>
+            <select
+              className="input"
+              value={size}
+              aria-label={t('market.size')}
+              onChange={(event) => setSize(event.target.value)}
+            >
+              <option value="all">{t('market.sizeAll')}</option>
+              {sizes.map((value) => (
+                <option key={value} value={value}>
+                  {value.replace('x', '×')}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span className="lbl">{t('market.condition')}</span>
+            <select
+              className="input"
+              value={condition}
+              aria-label={t('market.condition')}
+              onChange={(event) => setCondition(event.target.value as Condition)}
+            >
+              <option value="all">{t('market.conditionAll')}</option>
+              <option value="new">{t('market.conditionNew')}</option>
+              <option value="used">{t('market.conditionUsed')}</option>
+            </select>
+          </label>
+          <div className="actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setRarity('all');
+                setSize('all');
+                setCondition('all');
+              }}
+            >
+              {t('market.clearFilters')}
+            </button>
+            <button type="button" className="btn primary" onClick={() => setMoreFilters(false)}>
+              {t('market.applyFilters')}
+            </button>
+          </div>
+        </div>
+      </Popup>
 
       {listings.length === 0 && marketQuery.isSuccess && (
         <p className="sub">{t('port.marketEmpty')}</p>
@@ -321,7 +442,9 @@ export function MarketPanel({
                     setConfirm({ name, price: listing.price, listingId: listing.listingId });
                   }}
                 >
-                  {affordable ? t('port.buy') : t('port.notEnoughFunds')}
+                  {affordable
+                    ? t('port.buy')
+                    : t('port.needMore', { amount: money(listing.price - wallet) })}
                 </button>
               }
             />

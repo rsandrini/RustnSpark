@@ -1085,7 +1085,8 @@
     },
     "sellAmount": "Quantidade",
     "sellAmountFor": "Quantas unidades de {{name}} vender",
-    "sellSome": "Vender {{count}}"
+    "sellSome": "Vender {{count}}",
+    "needMore": "Faltam {{amount}}"
   },
   "inventory": {
     "title": "Inventário",
@@ -1725,7 +1726,22 @@
     "rarity": "Raridade",
     "rarityAll": "Qualquer raridade",
     "size": "Tamanho",
-    "sizeAll": "Qualquer tamanho"
+    "sizeAll": "Qualquer tamanho",
+    "affordable": "Que eu posso pagar",
+    "moreFilters": "Mais filtros",
+    "clearFilters": "Limpar",
+    "applyFilters": "Ver peças",
+    "needsTitle": "Sua nave precisa de",
+    "needsShow": "Ver peças",
+    "needsDismiss": "Dispensar: {{need}}",
+    "needsDismissMark": "×",
+    "chipClear": " ×",
+    "needs": {
+      "weapon": "Uma arma: sem poder de fogo, ela não pega trabalho de combate.",
+      "defense": "Blindagem ou escudo: nada protege o casco numa luta.",
+      "power": "Mais energia: motores e sistemas gastam mais do que ela produz.",
+      "cargo": "Um porão de carga: ela não carrega entregas."
+    }
   },
   "ship": {
     "empty": {
