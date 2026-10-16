@@ -55,6 +55,24 @@ const repairSliders = () =>
     .getAllByRole('slider')
     .filter((slider) => slider.closest('[data-testid="engine-tuning"]') === null);
 
+// The seven Port tabs sit under three group tabs (Buy, Service, Work): open the group, then the tab.
+const TAB_GROUP: Record<string, string> = {
+  Market: 'Buy',
+  'Your goods': 'Buy',
+  Repair: 'Service',
+  Refuel: 'Service',
+  Upgrade: 'Service',
+  Scavenging: 'Work',
+  Mining: 'Work',
+};
+function openPortTab(name: string): void {
+  const group = TAB_GROUP[name];
+  if (group === undefined) throw new Error(`unknown Port tab ${name}`);
+  const groupTab = screen.getByRole('tab', { name: new RegExp(`^${group}`) });
+  if (groupTab.getAttribute('aria-selected') !== 'true') fireEvent.click(groupTab);
+  fireEvent.click(screen.getByRole('tab', { name: name === 'Repair' ? /^Repair/ : name }));
+}
+
 describe('port (S10.9)', () => {
   beforeEach(() => {
     resetEconomyState();
@@ -101,17 +119,17 @@ describe('port (S10.9)', () => {
     expect(screen.getByText(/Negative balance/i)).toBeInTheDocument();
     expect(rowButton('Plated Hull')).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     expect(screen.getByRole('button', { name: /^Buy \d+/ })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
   });
 
   it('sells all mined materials after the quote popup', async () => {
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     fireEvent.click(rowButton(/Iron/));
     const popup = await screen.findByRole('dialog', { name: 'Sell Iron for 24 ¢?' });
     expect(popup).toHaveTextContent('Balance after: 4,844 ¢');
@@ -124,7 +142,7 @@ describe('port (S10.9)', () => {
   it('sells only the chosen amount of a material', async () => {
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     const slider = await screen.findByTestId('sell-amount-iron');
     fireEvent.change(slider, { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Sell 1' }));
@@ -140,7 +158,7 @@ describe('port (S10.9)', () => {
     destroyEngine();
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    openPortTab('Repair');
     expect(
       await screen.findByText('A destroyed part cannot be repaired: replace it.'),
     ).toBeInTheDocument();
@@ -152,7 +170,7 @@ describe('port (S10.9)', () => {
   it('repair defaults to a full repair, prices each part and the total, then charges once', async () => {
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    openPortTab('Repair');
     const sliders = repairSliders();
     expect(sliders).toHaveLength(6);
     // A full repair is the default the first time there's damage to quote (owner: the workshop
@@ -226,7 +244,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     const notice = await screen.findByTestId('scavenge-no-ship');
     expect(notice).toHaveTextContent(/cannot fly/i);
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
@@ -238,7 +256,7 @@ describe('port (S10.9)', () => {
   it('a ship under refit loses "with the ship" (the API would refuse it) and falls back to on foot', async () => {
     setShipActivity({ kind: 'repairing', until: null, missionId: null });
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     const notice = await screen.findByTestId('scavenge-no-ship');
     expect(notice).toHaveTextContent(/repair/i);
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
@@ -287,7 +305,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     const notice = await screen.findByTestId('scavenge-handicap');
     expect(notice).toHaveTextContent('only 50% of the usual chance');
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeEnabled();
@@ -296,7 +314,7 @@ describe('port (S10.9)', () => {
 
   it('shows no handicap notice for a ship that is ready', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     await screen.findByTestId('scavenging');
     await waitFor(() => expect(screen.queryByTestId('scavenge-handicap')).not.toBeInTheDocument());
   });
@@ -320,7 +338,7 @@ describe('port (S10.9)', () => {
       }),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    openPortTab('Repair');
     const summary = screen.getByTestId('repair-summary');
     await waitFor(() => expect(screen.getByTestId('repair-total')).toHaveTextContent('1,188 ¢'));
     fireEvent.click(within(summary).getByRole('button', { name: 'Start repair' }));
@@ -356,7 +374,7 @@ describe('port (S10.9)', () => {
     );
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: /^Repair/ }));
+    openPortTab('Repair');
     const summary = screen.getByTestId('repair-summary');
     // The default is already a full repair (every part), which this test's mock would gate as
     // the "bigger plan": back out to nothing selected first, then pick a single part, to get the
@@ -380,7 +398,7 @@ describe('port (S10.9)', () => {
   it('fills the tank and scavenges the field', async () => {
     await renderPort();
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     // The slider defaults to filling the tank; the price shown is the server's quote of that amount.
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
     // The bar shows what the slider adds, and the summary spells it out.
@@ -390,7 +408,7 @@ describe('port (S10.9)', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Filled 15 units for 45 ¢.');
     await waitFor(() => expect(screen.getByTestId('topbar-wallet')).toHaveTextContent('4,775 ¢'));
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Scavenging' }));
+    openPortTab('Scavenging');
     // The tab explains itself: time, risk, what you find, and where it works.
     const scav = await screen.findByTestId('scavenging');
     expect(await within(scav).findByText('~10 min')).toBeInTheDocument();
@@ -420,7 +438,7 @@ describe('port (S10.9)', () => {
   // any other gated action here).
   it('starts an independent mining job from its own Mining tab', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
+    openPortTab('Mining');
 
     const mining = await screen.findByTestId('mining-job');
     expect(within(mining).getByText(/minable/)).toBeInTheDocument();
@@ -442,7 +460,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     const why = await screen.findByTestId('upgrade-why');
     expect(why).toHaveTextContent(/not at 100% condition/);
     expect(screen.getByTestId('upgrade-rules')).toHaveTextContent('100% condition');
@@ -455,8 +473,13 @@ describe('port (S10.9)', () => {
       http.get('/v1/locations/:id/mine/info', () => HttpResponse.json({ minable: false })),
     );
     await renderPort();
-    await screen.findByRole('tab', { name: 'Scavenging' });
-    await waitFor(() => expect(screen.queryByRole('tab', { name: 'Mining' })).toBeNull());
+    fireEvent.click(await screen.findByRole('tab', { name: /^Work/ }));
+    // Nothing to mine: Work holds the one job, so there is no second row of tabs and no Mining.
+    expect(
+      await screen.findByRole('button', { name: 'Send the ship scavenging' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Mining' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Scavenging' })).toBeNull();
   });
 
   it('surfaces NOT_MINABLE from the server as a plain action error', async () => {
@@ -466,7 +489,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Mining' }));
+    openPortTab('Mining');
     fireEvent.click(screen.getByRole('button', { name: 'Send the ship mining' }));
     expect(await screen.findByText('There is nothing to mine here.')).toBeInTheDocument();
   });
@@ -498,7 +521,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     expect(await screen.findByText(/no fuel tank installed/i)).toBeInTheDocument();
     expect(screen.queryByText(/tank is already full/i)).toBeNull();
     expect(screen.queryByTestId('refuel-cost')).toBeNull();
@@ -578,7 +601,7 @@ describe('port (S10.9)', () => {
 
   it('refuel, sell and repair are refused by the (strict) mock without a key — and the UI sends one', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('45 ¢'));
     fireEvent.click(screen.getByRole('button', { name: 'Buy 15' }));
     // The strict mock answers 400 IDEMPOTENCY_KEY_REQUIRED if the header is missing.
@@ -613,7 +636,7 @@ describe('port (S10.9)', () => {
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
     await screen.findByRole('status');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     const sell = await screen.findAllByRole('button', { name: 'Sell' });
     fireEvent.click(sell[0]!);
     popup = await screen.findByRole('dialog');
@@ -645,7 +668,7 @@ describe('port (S10.9)', () => {
   it('refuel opens on what the pilot can afford, never on a price they cannot pay', async () => {
     setWallet(30);
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     // 3 ¢ a unit and 30 ¢ in the wallet: ten units, not the whole tank.
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('30 ¢'));
     expect(screen.getByRole('button', { name: 'Buy 10' })).toBeEnabled();
@@ -653,7 +676,7 @@ describe('port (S10.9)', () => {
 
   it('refuel: the slider picks how much to buy and the price follows the amount', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Refuel' }));
+    openPortTab('Refuel');
     const slider = await screen.findByLabelText('How much fuel to buy');
     fireEvent.change(slider, { target: { value: '5' } });
     await waitFor(() => expect(screen.getByTestId('refuel-cost')).toHaveTextContent('15 ¢'));
@@ -664,7 +687,7 @@ describe('port (S10.9)', () => {
   it('a too-damaged loose part cannot be sold; discard asks first, then destroys it and sells the scrap', async () => {
     addWreck();
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     const note = await screen.findByTestId('discard-note');
     expect(note).toHaveTextContent('under 1% condition');
     expect(screen.getByText('Too damaged to sell')).toBeInTheDocument();
@@ -683,7 +706,7 @@ describe('port (S10.9)', () => {
   it('unchecking "sell the scrap" destroys the parts and keeps the scrap in storage', async () => {
     addWreck();
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     const note = await screen.findByTestId('discard-note');
     fireEvent.click(within(note).getByRole('button', { name: /Discard 1/ }));
     const popup = await screen.findByRole('dialog', { name: 'Destroy 1 damaged part(s)?' });
@@ -695,7 +718,7 @@ describe('port (S10.9)', () => {
 
   it('upgrade tab lists only parts the catalog has a next tier for (round 5, item 4)', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
 
     // hull and both cargo racks have a next-tier fixture entry; engine/tank/battery don't.
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
@@ -710,7 +733,7 @@ describe('port (S10.9)', () => {
   // next tier (which doesn't exist as an owned instance yet).
   it('the upgrade tab starts on "only what I can afford", which still lists what is within reach', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Only what I can afford' })).toHaveAttribute(
       'aria-pressed',
@@ -721,7 +744,7 @@ describe('port (S10.9)', () => {
   it('with too few credits the list says so, and turning the filter off shows everything upgradable', async () => {
     setWallet(1);
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     expect(
       await screen.findByText(/Nothing you can upgrade with your credits/),
     ).toBeInTheDocument();
@@ -773,7 +796,7 @@ describe('port (S10.9)', () => {
       }),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
 
     const hullRow = (await screen.findByText('Plated Hull')).closest('article');
@@ -800,7 +823,7 @@ describe('port (S10.9)', () => {
 
   it('hovering a card in the Upgrade tab shows the part it will become, not the one it is', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     const card = (await screen.findByText('Plated Hull')).closest('article') as HTMLElement;
     fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
     const hover = await screen.findByTestId('part-card-hover-card');
@@ -811,7 +834,7 @@ describe('port (S10.9)', () => {
 
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
 
     fireEvent.click(rowButton('Plated Hull'));
@@ -837,7 +860,7 @@ describe('port (S10.9)', () => {
 
   it('puts one Expand / Shrink button with an (i) inside the bridge card, and nothing else', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     const control = await screen.findByTestId(/^bridge-resize-/);
     // It lives in the bridge's own card, not in a block of its own on the page.
     expect(control.closest('.pcard')).not.toBeNull();
@@ -874,7 +897,7 @@ describe('port (S10.9)', () => {
       ),
     );
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Upgrade' }));
+    openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
     const list = (await screen.findAllByTestId('upgrade-materials'))[0]!;
     expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
@@ -884,7 +907,7 @@ describe('port (S10.9)', () => {
 
   it('shows what each material is: its description sits on its card', async () => {
     await renderPort();
-    fireEvent.click(await screen.findByRole('tab', { name: 'Your goods' }));
+    openPortTab('Your goods');
     expect(await screen.findByText('Common iron ore.')).toBeInTheDocument();
   });
 });

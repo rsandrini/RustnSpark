@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { assertClean, flyOneMission, registerAndLaunch, walletOf } from './support';
+import { assertClean, flyOneMission, registerAndLaunch, walletOf, openPortTab } from './support';
 
 /**
  * S12.4: the money flows on the real stack — buy, sell, refuel and repair as a player does them
@@ -15,7 +15,7 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   const before = await walletOf(page);
 
   // Cheapest thing the player can afford.
-  const buy = page.locator('button:has-text("Buy"):not([disabled])').first();
+  const buy = page.locator('button:not([role="tab"]):has-text("Buy"):not([disabled])').first();
   await expect(buy).toBeVisible();
   await buy.click();
   const buyDialog = page.getByRole('dialog');
@@ -29,7 +29,7 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   await assertClean(page, 'port after buy');
 
   // The purchase is now in "Your goods" and can be sold (used parts sell for less than new).
-  await page.getByRole('tab', { name: 'Your goods' }).click();
+  await openPortTab(page, 'Your goods');
   const sell = page.locator('button:has-text("Sell"):not(:has-text("Sell all"))').first();
   await expect(sell).toBeVisible();
   await sell.click();
@@ -46,7 +46,7 @@ test('after a flight: refuel opens on what the pilot can afford, and paying debi
   await registerAndLaunch(page, 'sun');
   await flyOneMission(page);
   await page.goto('/port');
-  await page.getByRole('tab', { name: 'Refuel' }).click();
+  await openPortTab(page, 'Refuel');
 
   // The slider opens on what the wallet covers (the whole tank only when affordable).
   const buy = page.getByRole('button', { name: /^Buy \d+$/ });
@@ -68,7 +68,7 @@ test('repair: worn parts are quoted, confirmed and charged; a clean ship says so
   await registerAndLaunch(page, 'explorers');
   await flyOneMission(page);
   await page.goto('/port');
-  await page.getByRole('tab', { name: /^Repair/ }).click();
+  await openPortTab(page, 'Repair');
 
   const clean = page.getByText('Every installed part is at full condition.');
   if (await clean.isVisible()) {

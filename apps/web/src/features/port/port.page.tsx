@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
@@ -44,16 +43,19 @@ import { PartDetail } from '../parts/part-detail';
 import { useBridgeResize } from './bridge-resize-panel';
 import type { PartInfoData } from '../parts/part-detail';
 
-const PORT_TABS = [
-  'market',
-  'goods',
-  'repair',
-  'refuel',
-  'upgrade',
-  'scavenging',
-  'mining',
+// The seven tabs sit under three groups: what you buy, what the workshop does for the ship, and the
+// jobs the ship does at this port. The tab state stays one `PortTabId`; the group is derived from it.
+const PORT_GROUPS = [
+  { id: 'buy', tabs: ['market', 'goods'] },
+  { id: 'service', tabs: ['repair', 'refuel', 'upgrade'] },
+  { id: 'work', tabs: ['scavenging', 'mining'] },
 ] as const;
-type PortTabId = (typeof PORT_TABS)[number];
+type PortGroupId = (typeof PORT_GROUPS)[number]['id'];
+type PortTabId = (typeof PORT_GROUPS)[number]['tabs'][number];
+
+function groupOf(tab: PortTabId): PortGroupId {
+  return PORT_GROUPS.find((group) => (group.tabs as readonly string[]).includes(tab))?.id ?? 'buy';
+}
 
 interface UpgradeConfirm {
   partInstanceId: string;
@@ -97,23 +99,19 @@ export interface PortPageProps {
   /** Embedded only: switches the host to its own "Ship" tab (a route Link would just reload
       the current page, since /hangar already is the current page). */
   onGoToShip?: () => void;
-  /** Embedded only (owner request): a DOM node the host wants Port's own tab row (Market/Your
-      goods/Repair/…) portaled into instead of rendered inline — My Ship uses this to put it
-      above the ship animation, left-aligned, right under the top nav, since it's the only
-      sub-navigation left once a tab is open. Port keeps owning the tab state either way. */
-  subNavContainer?: HTMLDivElement | null;
 }
 
-export function PortPage({
-  guided = false,
-  embedded = false,
-  onGoToShip,
-  subNavContainer,
-}: PortPageProps) {
+export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<PortTabId>('market');
+  // The last tab opened in each group, so going back to a group lands where the pilot was.
+  const [lastInGroup, setLastInGroup] = useState<Partial<Record<PortGroupId, PortTabId>>>({});
+  const selectTab = (next: PortTabId) => {
+    setTab(next);
+    setLastInGroup((was) => ({ ...was, [groupOf(next)]: next }));
+  };
   const [confirm, setConfirm] = useState<ConfirmTrade | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -585,28 +583,48 @@ export function PortPage({
   const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
-  // Credits repeated here, next to the tabs (owner: "hard to see my credits" deep in a tab like
-  // Repair — the top bar's wallet is easy to lose track of that far down).
+  // Two levels: the group (Buy, Service, Work) and, under it, that group's own tabs. Mining only
+  // exists where the place can be mined, so Work may have a single tab (then no second row).
+  const group = groupOf(tab);
+  const visibleTabs = (ids: readonly PortTabId[]) => ids.filter((id) => id !== 'mining' || minable);
+  const groupTabs = visibleTabs(PORT_GROUPS.find((entry) => entry.id === group)?.tabs ?? []);
   const portTabsRow = (
-    <div className="page-tabs-row">
+    <div className="port-nav">
       <PortTabs
-        tabs={PORT_TABS.filter((id) => id !== 'mining' || minable).map((id) => ({
-          id,
-          label: t(`port.tabs.${id}`),
-          badge: id === 'repair' ? repairBadge : undefined,
+        label={t('port.groupsLabel')}
+        tabs={PORT_GROUPS.map((entry) => ({
+          id: entry.id,
+          label: t(`port.groups.${entry.id}`),
+          badge: entry.id === 'service' ? repairBadge : undefined,
         }))}
-        activeId={tab}
-        onChange={(next) => setTab(next as PortTabId)}
+        activeId={group}
+        onChange={(next) => {
+          const target = PORT_GROUPS.find((entry) => entry.id === next);
+          const remembered = lastInGroup[next as PortGroupId];
+          const first = visibleTabs(target?.tabs ?? [])[0];
+          const wanted =
+            remembered !== undefined && visibleTabs([remembered]).length > 0 ? remembered : first;
+          if (wanted !== undefined) selectTab(wanted);
+        }}
       />
-      <span className="wallet-chip" data-testid="port-tabs-wallet">
-        {money(wallet)}
-      </span>
+      {groupTabs.length > 1 && (
+        <PortTabs
+          variant="segment"
+          label={t(`port.groups.${group}`)}
+          tabs={groupTabs.map((id) => ({
+            id,
+            label: t(`port.tabs.${id}`),
+            badge: id === 'repair' ? repairBadge : undefined,
+          }))}
+          activeId={tab}
+          onChange={(next) => selectTab(next as PortTabId)}
+        />
+      )}
     </div>
   );
 
   const body = (
     <>
-      {subNavContainer != null && createPortal(portTabsRow, subNavContainer)}
       {!embedded && (
         <header className="topbar">
           <div>
@@ -640,7 +658,7 @@ export function PortPage({
 
       <RescueBanner />
 
-      {subNavContainer == null && portTabsRow}
+      {portTabsRow}
 
       {notice !== null && (
         <p className="notice" role="status">

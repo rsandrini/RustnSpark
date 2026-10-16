@@ -87,3 +87,22 @@ export async function flyOneMission(page: Page): Promise<void> {
   // The transit screen sends the pilot to the report when the flight ends.
   await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 }
+
+const PORT_TAB_GROUP: Record<string, string> = {
+  Market: 'Buy',
+  'Your goods': 'Buy',
+  Repair: 'Service',
+  Refuel: 'Service',
+  Upgrade: 'Service',
+  Scavenging: 'Work',
+  Mining: 'Work',
+};
+
+/** The Port's seven tabs sit under three groups (Buy, Service, Work): open the group, then the tab. */
+export async function openPortTab(page: Page, name: string): Promise<void> {
+  const group = PORT_TAB_GROUP[name];
+  if (group === undefined) throw new Error(`unknown Port tab ${name}`);
+  const groupTab = page.getByRole('tab', { name: new RegExp(`^${group}`) });
+  if ((await groupTab.getAttribute('aria-selected')) !== 'true') await groupTab.click();
+  await page.getByRole('tab', { name: name === 'Repair' ? /^Repair/ : name }).click();
+}

@@ -24,7 +24,9 @@ describe('ship stage', () => {
     expect(scene).toHaveClass('parked');
     expect(scene).not.toHaveClass('moving');
     expect(scene.getAttribute('style')).toContain('/places/ceres.wide.svg');
-    expect(screen.getByText('Porto Ceres')).toBeInTheDocument();
+    const label = scene.querySelector('.stage-place-label');
+    expect(label?.textContent).toBe('Porto Ceres');
+    expect(label?.querySelector('em')?.textContent).toBe('Ceres');
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('Scavenging the wreckage');
   });
 

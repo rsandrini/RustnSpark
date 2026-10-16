@@ -77,7 +77,13 @@ API calls, quotes, intent keys, confirmation flows, test ids (`port-tabs-wallet`
 `topbar-wallet` is the wallet), the viability gates, rescue banner, the bridge resize panel (a separate
 screen section), the place banner (see decision 1).
 
-## 4. Decisions before I start
+## 4. Decisions (answered 2026-10-16)
+
+1 slim header: **yes**. 2 tabs: **grouped as Buy / Service / Work**. 3 "Affordable now": **no default** (the chip
+exists, it starts off). 4 "Your ship needs" row: **both** Port and Store. 5 description behind (i): **yes**.
+*(Below: the original options, kept for the record.)*
+
+## 4b. Original options
 
 1. **The 170 px place banner on Port.** Keep it as is, or replace it on this screen by a slim header: place art
    as a 96 px background with the title over it? *Recommended: slim header (the title needs a home, and it
@@ -94,7 +100,7 @@ screen section), the place banner (see decision 1).
 
 | step | what | touches |
 |---|---|---|
-| P1 | Frame: title, header, wallet chip, tab strip, notices | `port.page.tsx`, `ui/PortTabs.tsx`, new `styles/port.css` |
+| P1 *(done)* | Frame: slim serif title header, Buy / Service / Work groups with a second row of tabs, no second wallet chip, notice strips | `port.page.tsx`, `ui/PortTabs.tsx`, `ui/ShipStage.tsx`, new `styles/port.css` |
 | P2 | Market panel: defaults, filters, needs row, new card, buy button | `market-panel.tsx`, `part-card.tsx` (shared with Store) |
 | P3 | Goods, Repair, Refuel | `port.page.tsx` |
 | P4 | Upgrade, Scavenging, Mining | `port.page.tsx` |

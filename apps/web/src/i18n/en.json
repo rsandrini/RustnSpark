@@ -893,6 +893,12 @@
     "wallet": "Credits",
     "negative": "Negative balance — buying and refuelling are disabled.",
     "at": "Docked at {{location}}",
+    "groupsLabel": "Port services",
+    "groups": {
+      "buy": "Buy",
+      "service": "Service",
+      "work": "Work"
+    },
     "tabs": {
       "market": "Market",
       "repair": "Repair",

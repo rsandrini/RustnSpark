@@ -17,7 +17,7 @@ export function ActiveShipStage({
   size = 'hero',
   collapsed = false,
 }: {
-  size?: 'hero' | 'compact';
+  size?: 'hero' | 'compact' | 'slim';
   /** Owner request (hangar, extra screen space): replace the animated scene with a small text
       placeholder — the data keeps loading/refreshing underneath either way. */
   collapsed?: boolean;

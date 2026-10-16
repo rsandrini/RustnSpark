@@ -93,30 +93,35 @@ describe('hangar (S10.4)', () => {
     ).toBe('1%');
   });
 
-  it('opens straight to the Port or Board tab from a nested URL (owner request: reachable from the top nav, not just the local tab row)', async () => {
+  it('opens straight to the Port tab from /port, with its two levels of tabs', async () => {
     server.use(onboarded());
-    renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+    renderWithRouter(routes, { initialEntries: ['/port'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    // Embedded Port has no page <h1> of its own (round-3 nav consolidation kept that
-    // suppressed); its own Market/Repair/Refuel/Scavenging tabs are always there.
-    expect(await screen.findByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
+    // Embedded Port has no page <h1> of its own; its three groups are always there, and the open
+    // group shows its own tabs under them.
+    for (const name of ['Buy', 'Service', 'Work']) {
+      expect(await screen.findByRole('tab', { name: new RegExp(`^${name}`) })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('tab', { name: 'Market' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Your goods' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Refuel' })).toBeNull();
   });
 
-  it("portals Port's own tab row above the ship animation, not below it (owner request)", async () => {
+  it("puts Port's tabs under the slim place header, and the header is the slim size on Port only", async () => {
     server.use(onboarded());
-    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
-    await screen.findByRole('tab', { name: 'Refuel' });
+    const { container } = renderWithRouter(routes, { initialEntries: ['/port'] });
+    await screen.findByRole('tab', { name: 'Market' });
 
-    const slot = container.querySelector('.hangar-subnav-slot');
-    expect(slot).not.toBeNull();
-    expect(within(slot as HTMLElement).getByRole('tab', { name: 'Market' })).toBeInTheDocument();
-
-    // DOM order: the slot (with Port's tabs now inside it) comes before the animated scene.
+    expect(container.querySelector('.hangar-subnav-slot')).toBeNull();
     const scene = container.querySelector('[data-testid="transit-scene"]');
     expect(scene).not.toBeNull();
+    expect(scene).toHaveClass('stage-slim');
+    // DOM order: the header scene comes before Port's tab row.
+    const nav = container.querySelector('.port-nav');
+    expect(nav).not.toBeNull();
     expect(
-      slot!.compareDocumentPosition(scene as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+      (scene as Node).compareDocumentPosition(nav as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 

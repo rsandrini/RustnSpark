@@ -893,6 +893,12 @@
     "wallet": "Créditos",
     "negative": "Saldo negativo — comprar e reabastecer estão desativados.",
     "at": "Atracado em {{location}}",
+    "groupsLabel": "Serviços do porto",
+    "groups": {
+      "buy": "Comprar",
+      "service": "Serviços",
+      "work": "Trabalho"
+    },
     "tabs": {
       "market": "Mercado",
       "repair": "Reparo",

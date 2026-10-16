@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { FACTIONS, LEAKED_KEY, assertClean, registerAndLaunch } from './support';
+import { FACTIONS, LEAKED_KEY, assertClean, registerAndLaunch, openPortTab } from './support';
 
 /**
  * One player's whole loop against the real stack, for each playable faction, in both a desktop
@@ -67,11 +67,11 @@ for (const faction of FACTIONS) {
     await expect(page.getByTestId('topbar-wallet')).toBeVisible();
     await expect(page.locator('.pcard').first()).toBeVisible();
     await assertClean(page, 'port market');
-    await page.getByRole('tab', { name: 'Refuel' }).click();
+    await openPortTab(page, 'Refuel');
     await assertClean(page, 'port refuel');
-    await page.getByRole('tab', { name: /^Repair/ }).click();
+    await openPortTab(page, 'Repair');
     await assertClean(page, 'port repair');
-    await page.getByRole('tab', { name: 'Scavenging' }).click();
+    await openPortTab(page, 'Scavenging');
     await assertClean(page, 'port scavenging');
 
     // --- profile -------------------------------------------------------------------------------

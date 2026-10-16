@@ -11,7 +11,7 @@ export interface ShipStageProps {
   placeId?: string;
   /** When the current activity ends (arrival, repair completion): shown as a countdown. */
   until?: string | null;
-  size?: 'hero' | 'compact';
+  size?: 'hero' | 'compact' | 'slim';
   /** Extra line under the scene (what exactly is going on). */
   detail?: string;
   /** The place's display name, shown as a small label over the scene itself while parked (owner
@@ -52,6 +52,14 @@ const DEBRIS = [
   { top: 26, size: 22, seconds: 13, delay: -8 },
   { top: 56, size: 10, seconds: 5, delay: -1 },
 ];
+
+/** A place name split so its last word can carry the accent colour ("Ceres" + "Port"). */
+function placeTitle(name: string): { rest: string; last: string } {
+  const at = name.lastIndexOf(' ');
+  return at === -1
+    ? { rest: '', last: name }
+    : { rest: `${name.slice(0, at)} `, last: name.slice(at + 1) };
+}
 
 // The ship, always on screen and always doing what the server says it is doing. Flying: stars stream
 // past. Scavenging: stars plus wreckage drifting by. Parked (or repairing): the ship rests against the
@@ -119,7 +127,10 @@ export function ShipStage({
         <div className="stars stars-mid" />
         <div className="stars stars-near" />
         {parked && placeName !== undefined && (
-          <span className="stage-place-label">{placeName}</span>
+          <span className="stage-place-label">
+            {placeTitle(placeName).rest}
+            <em>{placeTitle(placeName).last}</em>
+          </span>
         )}
         {mode === 'scavenging' &&
           DEBRIS.map((piece, index) => (

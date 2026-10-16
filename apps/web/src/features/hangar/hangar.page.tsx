@@ -168,9 +168,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       return next;
     });
   };
-  // A state setter (not a plain ref) so the first real render — once the slot div actually
-  // exists in the DOM — triggers the re-render Port's portal needs to find it.
-  const [subNavNode, setSubNavNode] = useState<HTMLDivElement | null>(null);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
@@ -589,17 +586,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
           heading-based ready signal every screen uses, just not shown on screen. */}
       <h1 className="sr-only">{t('hangar.title')}</h1>
-      {/* Owner request: Port's own sub-menu (Market/Your goods/Repair/…) moves here, above the
-          animation and left-aligned, right under the top nav — it's the only sub-navigation
-          left once a tab is open, so it reads better before the scene than buried below it.
-          Port portals its tab row into this node (see PortPage's `subNavContainer` prop); empty
-          otherwise (Ship, Board). */}
-      <div className="hangar-subnav-slot" ref={setSubNavNode} />
       {/* Owner request, round 10 follow-up: ON the animation box itself (an overlay, top-right
           corner), not in its own row before or after it — neither spends vertical space the
           scene (or, collapsed, the placeholder bar) isn't already using. */}
       <div className="ship-stage-overlay-host">
-        <ActiveShipStage size="compact" collapsed={stageCollapsed} />
+        <ActiveShipStage
+          size={pageTab === 'port' ? 'slim' : 'compact'}
+          collapsed={stageCollapsed}
+        />
         <button type="button" className="btn tiny stage-toggle-overlay" onClick={toggleStage}>
           {stageCollapsed ? t('hangar.stage.show') : t('hangar.stage.hide')}
         </button>
@@ -641,7 +635,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           onGoToShip={() => {
             void goToTab('ship');
           }}
-          subNavContainer={subNavNode}
         />
       )}
 
