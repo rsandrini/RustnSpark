@@ -79,17 +79,21 @@ describe('navigation flow (S10.10)', () => {
   });
 
   it('on a phone the four places are a bottom tab bar, not the top row', async () => {
-    const original = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: true,
-      media: query,
-      onchange: null,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => false,
-    })) as typeof window.matchMedia;
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({
+        matches: true,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }),
+    });
     try {
       const { container } = renderWithRouter(routes, { initialEntries: ['/ship'] });
       await screen.findByRole('heading', { name: 'My Ship' });
@@ -102,7 +106,8 @@ describe('navigation flow (S10.10)', () => {
         .map((link) => link.getAttribute('href'));
       expect(hrefs).toEqual(['/ship', '/port', '/missions', '/map']);
     } finally {
-      window.matchMedia = original;
+      if (original === undefined) delete (window as { matchMedia?: unknown }).matchMedia;
+      else Object.defineProperty(window, 'matchMedia', original);
     }
   });
 
