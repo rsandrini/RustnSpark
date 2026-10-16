@@ -42,7 +42,7 @@ Everything below is chosen so that no later phase has to undo it.
    `ShipIdentity` today (`/v1/ships`, world, rescue settle) so no data flow changes.
 5. **Phone tab bar.** *(done)* Under 860 px the four links become a fixed bottom bar with safe-area padding and the
    top nav row disappears; the header keeps wordmark, wallet and avatar on one row.
-6. **Hardening.** 320 / 375 / 414 / 768 px, keyboard and focus order, the account menu closing on Escape and
+6. **Hardening.** *(done: no horizontal overflow on Ship, Port, Missions, Map and Profile at 320, 375, 414, 768 and 1024 px; bottom bar up to 860 px, top row above; keyboard: avatar menu opens on Enter, closes on Escape; browser smoke 14 of 14 on desktop and phone)* 320 / 375 / 414 / 768 px, keyboard and focus order, the account menu closing on Escape and
    outside click, reduced motion, the browser smoke on desktop and phone, before/after screenshots.
 
 ## 4. What this phase does not touch (so it cannot need redoing)
