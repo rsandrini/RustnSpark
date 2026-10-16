@@ -10,6 +10,7 @@ import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import type { DispatchJobData, DispatchSnapshot } from '../../src/missions/dispatch.service.js';
 import type { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
@@ -289,7 +290,9 @@ describe('MissionLog replay determinism (S7.6)', () => {
 
     expect(configService.snapshot().hash).not.toBe(log.rulesHash);
     const frozenRules = await configService.byHash(log.rulesHash);
-    expect(frozenRules.economy.reward_per_tier).toBe(120);
+    expect(frozenRules.economy.reward_per_tier).toBe(
+      GAME_CONFIG_DEFAULTS.economy.reward_per_tier,
+    );
     expect(configService.snapshot().rules.economy.reward_per_tier).toBe(500);
 
     const afterEdits = await replayService.replay(log);
