@@ -2645,48 +2645,6 @@ svg .block.disconnected {
   font-size: 13px;
 }
 
-/* compact repair list */
-.repair-list {
-  display: grid;
-  gap: 4px;
-}
-
-.repair-row {
-  display: grid;
-  grid-template-columns: minmax(110px, 1.1fr) minmax(150px, 2fr) minmax(90px, 1fr) minmax(
-      120px,
-      0.9fr
-    );
-  align-items: center;
-  gap: 10px;
-  padding: 5px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-
-.repair-row .rname {
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.repair-row .rname small {
-  display: block;
-  font-weight: 400;
-  color: var(--mut);
-  font-size: 11px;
-}
-
-.repair-row input[type='range'] {
-  width: 100%;
-}
-
-@media (max-width: 640px) {
-  .repair-row {
-    grid-template-columns: 1fr;
-  }
-}
-
 .scav-facts {
   display: grid;
   gap: 6px;
@@ -2911,17 +2869,6 @@ svg .block.cond-bad {
 .part-btn .gauge-label {
   line-height: 12px;
   font-size: 10px;
-}
-
-.repair-row .rcost {
-  text-align: right;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--spark);
-}
-
-.repair-summary .statrow.total {
-  font-size: 16px;
 }
 
 .stack-h {
@@ -3327,63 +3274,6 @@ svg .block.cond-bad {
 .nav-link.disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.repair-row .rcost.over,
-.repair-summary .statrow.over b {
-  color: var(--bad);
-}
-
-.refuel-panel {
-  display: grid;
-  gap: 10px;
-}
-
-.refuel-panel input[type='range'] {
-  width: 100%;
-}
-
-.refuel-summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  text-align: center;
-}
-.refuel-summary > div {
-  display: grid;
-  gap: 2px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel2);
-}
-.refuel-summary small {
-  color: var(--mut);
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-.refuel-summary b {
-  font-variant-numeric: tabular-nums;
-}
-.refuel-summary .add b {
-  color: var(--spark);
-}
-.refuel-panel input[type='range'] {
-  accent-color: var(--blue);
-}
-/* What the slider would add, past the current fuel: a lighter blue stripe. */
-.gauge.fuel .gauge-planned {
-  background: repeating-linear-gradient(
-    135deg,
-    color-mix(in oklab, var(--info) 55%, transparent),
-    color-mix(in oklab, var(--info) 55%, transparent) 4px,
-    color-mix(in oklab, var(--info) 28%, transparent) 4px,
-    color-mix(in oklab, var(--info) 28%, transparent) 8px
-  );
-}
-.refuel-panel .over {
-  color: var(--bad);
 }
 
 .discard-note {
