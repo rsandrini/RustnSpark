@@ -156,3 +156,7 @@ the balance must all work; only then go back to a starter shield with a larger b
     tied to markup and classes).
   - Recommendation: **A first**, then decide on a B-lite (a type pairing and token structure from
     `midnight`/`aurora`) from the audit's punch list. No code changes until the owner picks.
+  - **Owner pick (2026-10-16): a black theme, Hallmark "Lumen" (Night Foundry); redesign the whole game,
+    admin excluded; analyse the routes and menus first.** The audit, the proposed navigation, the Lumen
+    mapping and the phased plan are in `docs/design/ux-audit-and-redesign-plan.md` (screenshots in
+    `docs/design/before/`). Waiting on four decisions in its section 6 before phase 1.
