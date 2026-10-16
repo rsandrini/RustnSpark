@@ -51,9 +51,14 @@ buy-used/repair/sell exploit floor), so wear is the lever, not a repair price cu
   wear per mission 57-76 -> 21-38, repair share 53-87% -> 34-50%.
 - [x] Reward ladder, first step (migration `20261015030000_balance_round_reward_ladder`):
   `reward_danger_divisor` 8 -> 4, `loss_wear_scale` {0.1, 0.3, 0.4, 0.7}. Zone 3 net per mission went
-  42 -> 823 credits (zone 2: 668 -> 1055). *Still open:* zone 3 nets 0.78x zone 2; next dial is
-  divisor 3 + `loss_wear_scale[3]` 0.5 + zone 3 pirate strength 1.0, but it speeds up progression
-  (chem L2 already at day ~9), so it needs a decision on the intended level pace first.
+  42 -> 823 credits (zone 2: 668 -> 1055).
+- [x] Fast pace (owner: "keep the pace a lot faster"), migration `20261015040000_balance_round_fast_pace`:
+  `reward_base` 300, `reward_danger_divisor` 3, `loss_wear_scale[3]` 0.5, zone 3 pirate strength 1.0.
+  Zone 3 net is now 1.35x zone 2, chem fuel 30% -> 20% of reward. *Finding:* level days did not move
+  (chem L2 ~day 11 / L3 ~21, ion L2 ~17 / L3 ~42) although wallets are full at L2 (6.8k chem, 21k ion):
+  money is not the gate, the market's bridge-gated rarity shelves and the upgrade materials are.
+- [ ] Next for pace: test `market_rarity_by_bridge` (common bridge sees 14% uncommon, 4.5% rare) and the
+  `economy.upgrade_materials` amounts; target L2 <= day 7, L3 <= day 15 on every build, ion included.
 - [x] Bot: buys a mining rig when only `MINER` work is on the board.
 - [ ] Bot gap left: prefer shorter routes when fuel-bound (fuel is still 29-37% of reward on chem).
 - [ ] Dev-only data (`ziggy` location, 5000-distance route, `race_explorers_ziggy`) inflates the zone 1

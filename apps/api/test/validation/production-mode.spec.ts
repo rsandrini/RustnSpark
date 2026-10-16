@@ -84,6 +84,7 @@ const rules: GameRules = {
     maintenance_per_tier: 100,
     fuel_price: 1.1,
     reward_danger_divisor: 8,
+    reward_base: 200,
   },
   combat: {
     ...GAME_CONFIG_DEFAULTS.combat,

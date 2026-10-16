@@ -25,6 +25,7 @@ export const APPENDIX_E_RULES: GameRules = {
     repair_factor: 0.8,
     maintenance_per_tier: 100,
     reward_danger_divisor: 8,
+    reward_base: 200,
     repair_seconds_per_point: { hub: 3, outpost: 8 },
     reward_type_bonus: { delivery: 1, transport: 1, escort: 1, mining: 1, rescue: 1 },
   },

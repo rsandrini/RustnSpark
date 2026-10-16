@@ -35,7 +35,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // A lost fight hurts by zone: almost nothing in the safest one, easy in 1 and 2, the full
     // price from 3 on (where the bridge itself is also at risk).
     // Balance round 2 (sim experiments 49-50): a lost far fight stopped paying back the zone 3 reward.
-    loss_wear_scale: { 0: 0.1, 1: 0.3, 2: 0.4, 3: 0.7 },
+    loss_wear_scale: { 0: 0.1, 1: 0.3, 2: 0.4, 3: 0.5 },
   },
   ship: {
     mob_factor: 1.6,
@@ -92,12 +92,12 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     repair_price_ref: 3,
     repair_factor: 0.62,
     maintenance_per_tier: 60,
-    reward_base: 200,
+    reward_base: 300,
     reward_per_tier: 120,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
     // too subtly to notice — halving both divisors roughly doubles the spread between an
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
-    reward_danger_divisor: 4,
+    reward_danger_divisor: 3,
     reward_distance_ref: 800,
     reward_distance_divisor: 1500,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
@@ -206,7 +206,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   encounter: {
     chance_divisor: 20,
     pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
-    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.1 },
+    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 },
     pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],

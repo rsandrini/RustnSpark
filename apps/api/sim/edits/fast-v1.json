@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "economy.reward_danger_divisor": 3,
+    "economy.reward_base": 300,
+    "combat.loss_wear_scale": { "0": 0.1, "1": 0.3, "2": 0.4, "3": 0.5 },
+    "encounter.pirate_zone_strength": { "0": 0.35, "1": 0.5, "2": 0.65, "3": 1.0 }
+  }
+}
