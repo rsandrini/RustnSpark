@@ -11,6 +11,7 @@ import '@fontsource/geist-mono/latin-500.css';
 import '@fontsource/instrument-serif/latin-400.css';
 import './styles/index.css';
 import './styles/components.css';
+import './styles/shell.css';
 
 const container = document.getElementById('root');
 if (!container) {

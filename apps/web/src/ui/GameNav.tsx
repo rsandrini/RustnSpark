@@ -1,31 +1,41 @@
 import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
-// Owner request: Port and Board are reachable straight from the top nav again (reversing the
-// round-3 fold into gated My Ship tabs) — the hangar's own tab row still has them too, this is
-// an additional way in, not a replacement. `end` on My Ship keeps it from reading "active" on
-// /hangar/port or /hangar/board, which also start with /hangar. Profile/Admin/Logout still live
-// in the top-right AccountMenu instead.
+// The game's four places, in this order: Ship, Port, Missions, Map (phase 2 of the redesign). The
+// ids are the i18n keys under `nav.*` ("hangar" is the Ship, "board" the Missions); the paths are
+// the real routes — the old /hangar and /board paths only redirect. Profile, Admin, language and
+// Sign out live in the account menu at the right of the top bar.
 const GAME_LINKS = [
-  { id: 'hangar', to: '/ship', end: false },
-  { id: 'port', to: '/port', end: false },
-  { id: 'board', to: '/missions', end: false },
-  { id: 'map', to: '/map', end: false },
+  { id: 'hangar', to: '/ship', icon: 'M3 12l5-6h8l5 6-5 6H8z M12 10v4 M10 12h4' },
+  { id: 'port', to: '/port', icon: 'M4 20V10l8-6 8 6v10z M9 20v-6h6v6' },
+  { id: 'board', to: '/missions', icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3' },
+  { id: 'map', to: '/map', icon: 'M6 8h.01 M18 6h.01 M14 18h.01 M8 8l8-2 M7 10l6 7 M17 8l-3 9' },
 ] as const;
 
-// Persistent game loop nav (S10.10): My Ship reaches everything else from one screen now.
-export function GameNav() {
+/**
+ * The persistent game nav. In the top bar it is a row of text links; on a phone the same links are
+ * rendered as a fixed bottom tab bar (`bar`), each with its icon above the label.
+ */
+export function GameNav({ bar = false }: { bar?: boolean }) {
   const { t } = useTranslation();
   return (
-    <nav className="game-nav" aria-label={t('nav.label')}>
-      {GAME_LINKS.map(({ id, to, end }) => (
-        <NavLink
-          key={id}
-          to={to}
-          end={end}
-          className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}
-        >
-          {t(`nav.${id}`)}
+    <nav className={bar ? 'shell-tabbar' : 'shell-nav'} aria-label={t('nav.label')}>
+      {GAME_LINKS.map(({ id, to, icon }) => (
+        <NavLink key={id} to={to} className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}>
+          <svg
+            className="nav-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={icon} />
+          </svg>
+          <span>{t(`nav.${id}`)}</span>
         </NavLink>
       ))}
     </nav>

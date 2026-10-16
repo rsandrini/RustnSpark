@@ -34,13 +34,13 @@ Everything below is chosen so that no later phase has to undo it.
 1. **Routes and redirects (no visual change).** *(done; `/port` has no `:tab` parameter yet, Port's own tabs are not URL-driven until the Port screen is rebuilt)* New paths per D1, redirects per D2, `goToTab` and every
    internal link updated, `useNavigate` targets updated. Specs and the browser smoke move to the new paths.
    *Why first:* everything after it (nav links, tab bar) points at the final URLs, so nothing is rewritten.
-2. **Labels.** `nav.*` strings in en and pt-BR per D3 (Transit's and Board's keys are removed or reused);
+2. **Labels.** *(done)* `nav.*` strings in en and pt-BR per D3 (Transit's and Board's keys are removed or reused);
    specs that look for "My Ship" / "Board" follow.
-3. **Header.** New `TopBar`: wordmark, four links, wallet, avatar menu (Profile, Language, Admin for admins,
+3. **Header.** *(done)* New `TopBar`: wordmark, four links, wallet, avatar menu (Profile, Language, Admin for admins,
    Sign out). `GameNav`, `AccountMenu` rebuilt on the component kit; `ShipIdentity` leaves the bar.
-4. **Status strip.** New component under the header per D6 and D7, reading the same queries as
+4. **Status strip.** *(done)* New component under the header per D6 and D7, reading the same queries as
    `ShipIdentity` today (`/v1/ships`, world, rescue settle) so no data flow changes.
-5. **Phone tab bar.** Under 860 px the four links become a fixed bottom bar with safe-area padding and the
+5. **Phone tab bar.** *(done)* Under 860 px the four links become a fixed bottom bar with safe-area padding and the
    top nav row disappears; the header keeps wordmark, wallet and avatar on one row.
 6. **Hardening.** 320 / 375 / 414 / 768 px, keyboard and focus order, the account menu closing on Escape and
    outside click, reduced motion, the browser smoke on desktop and phone, before/after screenshots.

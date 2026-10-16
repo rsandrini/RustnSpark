@@ -22,7 +22,7 @@ const me = () =>
   );
 
 describe('TopBar', () => {
-  it('shows faction, ship name and current status/location in the middle', async () => {
+  it('shows faction, ship name and current status/location in the status strip', async () => {
     server.use(me());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('TopBar', () => {
     expect(within(identity).getByText('Docked at Porto Ceres')).toBeInTheDocument();
   });
 
-  it('shows the last mission link in the top bar when no mission is active', async () => {
+  it('shows the last mission link in the status strip when no mission is active', async () => {
     server.use(
       me(),
       http.get('/v1/missions/active', () => HttpResponse.json([], { status: 200 })),
@@ -59,7 +59,7 @@ describe('TopBar', () => {
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     const link = screen.getByRole('link', { name: 'Last mission' });
     expect(link).toHaveAttribute('href', '/report/m-last');
-    expect(link.closest('.top-bar')).not.toBeNull();
+    expect(link.closest('.status-strip')).not.toBeNull();
     expect(document.querySelector('.hangar-links-row')).toBeNull();
   });
 

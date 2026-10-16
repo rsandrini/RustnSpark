@@ -25,7 +25,7 @@ export function LastMissionLink() {
   if (report === undefined) return null;
 
   return (
-    <Link className="nav-link last-mission-link" to={`/report/${report.missionId}`}>
+    <Link className="last-mission-link" to={`/report/${report.missionId}`}>
       {t('transit.lastMission')}
     </Link>
   );

@@ -882,6 +882,7 @@
     "board": "Missions",
     "transit": "Transit",
     "port": "Port",
+    "account": "Account menu",
     "profile": "Profile",
     "admin": "Admin",
     "logout": "Sign out",

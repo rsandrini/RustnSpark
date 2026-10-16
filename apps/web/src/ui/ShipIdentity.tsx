@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../api/client';
 import type { ShipResponse } from '../api/generated';
@@ -6,7 +6,12 @@ import { useAuth } from '../features/auth/auth.hooks';
 import { useRescueSettle } from '../features/rescue/use-rescue-settle';
 import { useWorld } from '../features/ship/use-world';
 import { pickLocalized } from '../i18n/localized';
+import { Countdown } from './Countdown';
 import { FactionBadge } from './FactionBadge';
+import { LastMissionLink } from './LastMissionLink';
+
+/** Between the status text and its countdown. */
+const STATUS_SEPARATOR = ' · ';
 
 // A ship always has a name (the server assigns a starter one), but a placeholder still guards
 // against an unexpected blank — a short, stable hex tag derived from the ship's id, not a
@@ -20,12 +25,13 @@ function hexPlaceholder(seed: string): string {
 }
 
 /**
- * Faction, ship name and current status/location, in the middle of the top bar (owner request):
- * who the pilot is flying for, which ship, and what it is doing now — visible from every
- * in-game screen so the body can stay clean.
+ * The status strip under the top bar: faction, ship name and what the ship is doing now (with the
+ * countdown while a job or flight runs), and the link to the last mission's report at the right.
+ * Visible from every in-game screen so the body can stay clean.
  */
-export function ShipIdentity() {
+export function StatusStrip() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const world = useWorld();
   const shipsQuery = useQuery({
@@ -58,11 +64,30 @@ export function ShipIdentity() {
             : t(`stage.mode.${kind}`);
   }
 
+  const activity = ship?.activity;
+  const running = activity !== undefined && activity.kind !== 'idle' && activity.until !== null;
+
   return (
-    <div className="ship-identity">
-      <FactionBadge factionId={user.factionId} />
-      {shipName !== undefined && <span className="ship-identity-name">{shipName}</span>}
-      {statusText !== undefined && <span className="ship-identity-status">{statusText}</span>}
+    <div className="status-strip">
+      <div className="ship-identity">
+        <FactionBadge factionId={user.factionId} />
+        {shipName !== undefined && <span className="ship-identity-name">{shipName}</span>}
+        {statusText !== undefined && (
+          <span className="ship-identity-status" aria-live="polite">
+            {statusText}
+            {running && activity.until !== null && (
+              <>
+                {STATUS_SEPARATOR}
+                <Countdown
+                  until={activity.until}
+                  onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+                />
+              </>
+            )}
+          </span>
+        )}
+      </div>
+      <LastMissionLink />
     </div>
   );
 }

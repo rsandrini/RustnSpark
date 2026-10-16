@@ -1,0 +1,259 @@
+/*
+ * The in-game shell (phase 2 of the redesign): a slim sticky top bar, the status strip under it and,
+ * on a phone, a fixed bottom tab bar with the same four places. Built on tokens and the component
+ * kit; nothing here is specific to a screen.
+ */
+.shell-top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 20;
+  background: color-mix(in oklab, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+.shell-top-in {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 56px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-inline: 14px;
+}
+.shell-top .brand {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  text-transform: lowercase;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.shell-top .brand b {
+  color: var(--brass);
+  font-weight: 400;
+}
+.shell-top .spacer {
+  flex: 1;
+}
+
+/* the four places, as a row in the top bar ... */
+.shell-nav {
+  display: flex;
+  gap: 4px;
+}
+.shell-nav .nav-link {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+.shell-nav .nav-link:hover {
+  color: var(--ink);
+  background: var(--paper-2);
+}
+.shell-nav .nav-link.on {
+  color: var(--ink);
+  background: var(--paper-3);
+  box-shadow: inset 0 -2px 0 var(--brass);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.shell-nav .nav-icon {
+  display: none;
+}
+
+/* ... and as a bottom tab bar on a phone */
+.shell-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: color-mix(in oklab, var(--paper) 96%, transparent);
+  border-top: 1px solid var(--rule-2);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.shell-tabbar .nav-link {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-decoration: none;
+}
+.shell-tabbar .nav-link.on {
+  color: var(--brass);
+}
+.shell-tabbar .nav-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* account: wallet and avatar menu */
+.shell-account {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.shell-account .wallet-chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--brass);
+  padding: 6px 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius-pill);
+}
+.shell-account .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-2);
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.shell-account .avatar:hover,
+.shell-account .avatar[aria-expanded='true'] {
+  background: var(--paper-3);
+  border-color: var(--faint);
+}
+.shell-menu {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  z-index: 40;
+  min-width: 220px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+.shell-menu-name {
+  padding: 8px 10px;
+}
+.shell-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+.shell-menu-item:hover {
+  background: var(--paper-3);
+}
+.shell-menu-lang {
+  padding: 8px 10px;
+  border-block: 1px solid var(--rule);
+  margin-block: 4px;
+}
+.shell-menu-lang .lang-switch {
+  display: grid;
+  gap: 4px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+.shell-menu-lang select {
+  width: 100%;
+}
+
+/* the status strip */
+.status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.ship-identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.ship-identity-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.ship-identity-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ship-identity-status::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 10px 2px color-mix(in oklab, var(--ok) 50%, transparent);
+}
+.status-strip .last-mission-link {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.status-strip .last-mission-link:hover {
+  color: var(--brass);
+}
+
+@media (max-width: 860px) {
+  .shell-top-in {
+    gap: 12px;
+  }
+  .shell-account .wallet-chip {
+    padding: 4px 10px;
+  }
+  /* room for the fixed tab bar under the content */
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ship-identity-status::before {
+    animation: shell-pulse var(--dur-pulse) ease-in-out infinite;
+  }
+  @keyframes shell-pulse {
+    50% {
+      opacity: 0.55;
+    }
+  }
+}
+.shell-menu-lang label {
+  justify-self: start;
+}

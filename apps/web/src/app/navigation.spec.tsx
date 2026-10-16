@@ -49,9 +49,61 @@ describe('navigation flow (S10.10)', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+    // The menu is closed until the avatar is pressed; the wallet is always visible.
+    expect(screen.getByTestId('topbar-wallet')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
+  });
+
+  it('the account menu holds the language switch, and closes on Escape and on a click outside', async () => {
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    const avatar = screen.getByRole('button', { name: 'Account menu' });
+    expect(avatar).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(avatar);
+    expect(avatar).toHaveAttribute('aria-expanded', 'true');
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByRole('combobox', { name: 'Language' })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+    fireEvent.click(avatar);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('on a phone the four places are a bottom tab bar, not the top row', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    try {
+      const { container } = renderWithRouter(routes, { initialEntries: ['/ship'] });
+      await screen.findByRole('heading', { name: 'My Ship' });
+      // one navigation landmark, and it is the fixed bar at the bottom
+      expect(screen.getAllByRole('navigation', { name: 'Game navigation' })).toHaveLength(1);
+      expect(container.querySelector('.shell-tabbar')).not.toBeNull();
+      expect(container.querySelector('.shell-nav')).toBeNull();
+      const hrefs = within(gameNav())
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href'));
+      expect(hrefs).toEqual(['/ship', '/port', '/missions', '/map']);
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it('shows Admin in the account menu for an admin account', async () => {
@@ -73,7 +125,8 @@ describe('navigation flow (S10.10)', () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await screen.findByRole('heading', { name: 'My Ship' });
 
-    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
+    fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    expect(screen.getByRole('menuitem', { name: 'Admin' })).toHaveAttribute('href', '/admin');
   });
 
   it('/ redirects an onboarded pilot straight to My Ship (Home was retired)', async () => {
