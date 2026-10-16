@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Countdown } from './Countdown';
 import { placeArtUrl, usePlaceArt } from './PlaceArt';
 
-export type StageMode = 'idle' | 'flying' | 'scavenging' | 'repairing';
+export type StageMode = 'idle' | 'flying' | 'scavenging' | 'mining' | 'repairing';
 
 export interface ShipStageProps {
   mode: StageMode;
@@ -37,6 +37,13 @@ const SPARKS = [
   { x: 64, y: 44, delay: 1.3 },
   { x: 36, y: 55, delay: 1.7 },
 ];
+// Mining: ore chunks break off the rock and fly back toward the ship's hold.
+const CHUNKS = [
+  { top: 46, seconds: 2.6, delay: 0 },
+  { top: 54, seconds: 3.1, delay: -1.1 },
+  { top: 50, seconds: 2.2, delay: -1.9 },
+  { top: 44, seconds: 3.4, delay: -0.5 },
+];
 const DEBRIS = [
   { top: 14, size: 18, seconds: 7, delay: 0 },
   { top: 68, size: 26, seconds: 11, delay: -4 },
@@ -49,6 +56,8 @@ const DEBRIS = [
 // The ship, always on screen and always doing what the server says it is doing. Flying: stars stream
 // past. Scavenging: stars plus wreckage drifting by. Parked (or repairing): the ship rests against the
 // wide picture of the place it is docked at; while repairing, drones circle the hull and sparks fly.
+// Mining: the same parked scene with a rock face beside the ship, a drill beam pulsing onto it,
+// sparks at the contact point and ore chunks flying back to the hold.
 // Pure decoration: hidden from assistive technology, still under `prefers-reduced-motion`; the
 // caption beside it says the same thing in words.
 export function ShipStage({
@@ -126,6 +135,27 @@ export function ShipStage({
               }}
             />
           ))}
+        {mode === 'mining' && (
+          <>
+            <svg className="mine-rock" viewBox="0 0 120 160" aria-hidden="true">
+              <path d="M10 150 L4 96 L26 58 L22 22 L58 6 L92 26 L112 70 L104 120 L84 150 Z" />
+              <path className="mine-vein" d="M30 120 L44 84 L40 52 M70 130 L82 96 L96 64" />
+            </svg>
+            <span className="mine-beam" />
+            <span className="mine-impact" />
+            {CHUNKS.map((chunk, index) => (
+              <span
+                key={index}
+                className="mine-chunk"
+                style={{
+                  top: `${chunk.top}%`,
+                  animationDuration: `${chunk.seconds}s`,
+                  animationDelay: `${chunk.delay}s`,
+                }}
+              />
+            ))}
+          </>
+        )}
         <div className="scene-ship">
           <svg viewBox="0 0 120 60" width="160" height="80">
             <path className="ship-flame" d="M14,30 L-6,22 L2,30 L-6,38 Z" />

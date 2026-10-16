@@ -28,6 +28,18 @@ describe('ship stage', () => {
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('Scavenging the wreckage');
   });
 
+  it('mining: a rock face, a drill beam and ore chunks beside the parked ship', () => {
+    renderStage({ mode: 'mining', placeId: 'ceres', placeName: 'Porto Ceres' });
+    const scene = screen.getByTestId('transit-scene');
+    expect(scene).toHaveClass('parked');
+    expect(scene).not.toHaveClass('moving');
+    expect(scene.querySelector('.mine-rock')).not.toBeNull();
+    expect(scene.querySelector('.mine-beam')).not.toBeNull();
+    expect(scene.querySelectorAll('.mine-chunk').length).toBeGreaterThan(0);
+    expect(scene.querySelectorAll('.debris').length).toBe(0);
+    expect(screen.getByTestId('stage-caption')).toHaveTextContent('Mining the rock');
+  });
+
   it('repairing: drones circle the hull, sparks fly, and the place is the backdrop', () => {
     renderStage({ mode: 'repairing', placeId: 'ceres' });
     const scene = screen.getByTestId('transit-scene');

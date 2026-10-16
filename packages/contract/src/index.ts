@@ -340,7 +340,7 @@ export const ShipResponseSchema = z.object({
     .nullable(),
   /** What the ship is doing now: drives the animated ship stage. */
   activity: z.object({
-    kind: z.enum(['idle', 'flying', 'scavenging', 'repairing']),
+    kind: z.enum(['idle', 'flying', 'scavenging', 'mining', 'repairing']),
     until: IsoDate.nullable(),
     missionId: z.string().nullable(),
   }),

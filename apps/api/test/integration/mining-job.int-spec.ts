@@ -186,6 +186,15 @@ describe('independent mining job (round 10)', () => {
     expect(ship.status).toBe('ON_MISSION');
     expect(await queue.getJob(mission.id)).toBeTruthy();
 
+    // The ship stage shows the dig (a rock and a drill beam), not a flight.
+    const ships = await request(httpServer(testApp.app)).get('/v1/ships').set(auth(player.token));
+    expect(ships.status).toBe(200);
+    const activity = (
+      ships.body as Array<{ activity: { kind: string; missionId: string | null } }>
+    )[0]!.activity;
+    expect(activity.kind).toBe('mining');
+    expect(activity.missionId).toBe(mission.id);
+
     // One flight at a time.
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });

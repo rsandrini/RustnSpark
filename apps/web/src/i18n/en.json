@@ -1743,6 +1743,7 @@
       "idle": "Docked and ready",
       "flying": "In flight",
       "scavenging": "Scavenging the wreckage",
+      "mining": "Mining the rock",
       "repairing": "Repairs under way"
     },
     "docked": "Docked at {{place}}",

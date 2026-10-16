@@ -1743,6 +1743,7 @@
       "idle": "Atracada e pronta",
       "flying": "Em voo",
       "scavenging": "Vasculhando os destroços",
+      "mining": "Minerando a rocha",
       "repairing": "Reparos em andamento"
     },
     "docked": "Atracada em {{place}}",

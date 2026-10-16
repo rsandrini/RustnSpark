@@ -62,7 +62,7 @@ function formatUnlocked(
 
 /** What the ship is doing now (drives the ship stage on the client). */
 export interface ShipActivity {
-  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'mining' | 'repairing';
   /** When it ends (arrival or repair completion), if it does. */
   readonly until: string | null;
   readonly missionId: string | null;
@@ -119,7 +119,7 @@ export interface RescueOptions {
 
 /** What the ship is doing now (flying, scavenging, repairing or idle). */
 export interface ShipActivity {
-  readonly kind: 'idle' | 'flying' | 'scavenging' | 'repairing';
+  readonly kind: 'idle' | 'flying' | 'scavenging' | 'mining' | 'repairing';
   /** When it ends (arrival or repair completion), if it does. */
   readonly until: string | null;
   readonly missionId: string | null;
@@ -861,14 +861,14 @@ export class ShipsService implements OnModuleInit {
 
   /**
    * What the ship is doing right now, for the animated ship stage: flying (a mission or a trip in
-   * flight), scavenging (a scavenging job), repairing (a pending repair job) or idle. Read from the
+   * flight), scavenging (a scavenging job), mining (a free mining job at the ship's own place), repairing (a pending repair job) or idle. Read from the
    * mission and repair rows, so it can never disagree with them.
    */
   private async activityOf(ship: Ship): Promise<ShipActivity> {
     const [mission, repair] = await Promise.all([
       this.prisma.missionInstance.findFirst({
         where: { shipId: ship.id, status: { in: ['IN_TRANSIT', 'RESOLVING'] } },
-        select: { id: true, type: true, arrivalAt: true },
+        select: { id: true, type: true, arrivalAt: true, cargo: true },
       }),
       this.prisma.repairJob.findFirst({
         where: { shipId: ship.id, status: 'PENDING' },
@@ -876,8 +876,12 @@ export class ShipsService implements OnModuleInit {
       }),
     ]);
     if (mission !== null) {
+      // A free mining job (cargo.contracted === false) digs where the ship already is, like
+      // scavenging; a contracted mining mission flies out to the field and stays 'flying'.
+      const cargo = mission.cargo as { contracted?: unknown } | null;
+      const freeMining = (mission.type as string) === 'MINING' && cargo?.contracted === false;
       return {
-        kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : 'flying',
+        kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
         until: mission.arrivalAt?.toISOString() ?? null,
         missionId: mission.id,
       };
