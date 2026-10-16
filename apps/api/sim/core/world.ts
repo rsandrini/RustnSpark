@@ -160,15 +160,28 @@ export function buildFillerWorld(snapshot: Snapshot): FillerWorld {
   return { locations, routes, routeEnvironments, environments, templates, materials };
 }
 
+// Row lookups run thousands of times per simulated run; index each snapshot once.
+const locationIndex = new WeakMap<Snapshot, Map<string, LocationRow>>();
+const factionIndex = new WeakMap<Snapshot, Map<string, Snapshot['factions'][number]>>();
+
 function locationRowOf(snapshot: Snapshot, locationId: string): LocationRow {
-  const row = snapshot.locations.find((location) => location.id === locationId);
+  let index = locationIndex.get(snapshot);
+  if (index === undefined) {
+    index = new Map(snapshot.locations.map((location) => [location.id, location]));
+    locationIndex.set(snapshot, index);
+  }
+  const row = index.get(locationId);
   if (row === undefined) throw new Error(`location ${locationId} is not in the snapshot`);
   return row;
 }
 
 function factionRelationsOf(snapshot: Snapshot, factionId: string): unknown {
-  const row = snapshot.factions.find((faction) => faction.id === factionId);
-  return row?.relations ?? {};
+  let index = factionIndex.get(snapshot);
+  if (index === undefined) {
+    index = new Map(snapshot.factions.map((faction) => [faction.id, faction]));
+    factionIndex.set(snapshot, index);
+  }
+  return index.get(factionId)?.relations ?? {};
 }
 
 /** What a port charges and fears: isolation and the employer faction's view of the player. */

@@ -169,8 +169,13 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
   const edit = editPath === '' ? null : parseEditFile(editPath);
   const scaling = edit === null ? NO_SCALING : parseScaling(edit.bridgeScaling);
 
-  const baseRun = playMatrix(baseSnapshot, matrix, runs, baseSeed, missions, NO_SCALING);
-  printReport(baseRun.reports, SIM_ASSUMPTIONS);
+  // `--skip-base` plays only the edited matrix: the base is a stored experiment already, and
+  // replaying it doubles the run time for a number that does not change.
+  const skipBase = boolFlag(flags, 'skip-base') && edit !== null;
+  const baseRun: MatrixRun = skipBase
+    ? { reports: [], results: [] }
+    : playMatrix(baseSnapshot, matrix, runs, baseSeed, missions, NO_SCALING);
+  if (!skipBase) printReport(baseRun.reports, SIM_ASSUMPTIONS);
 
   let editedRun: MatrixRun | null = null;
   if (edit !== null) {
@@ -189,7 +194,7 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
       editedRun.reports,
       `${SIM_ASSUMPTIONS}; what-if: ${JSON.stringify({ rules, bridgeScaling: scaling })}`,
     );
-    printAb(baseRun.reports, editedRun.reports);
+    if (!skipBase) printAb(baseRun.reports, editedRun.reports);
   }
 
   if (!noStore) {
@@ -201,14 +206,16 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
       cells: matrix.length,
       ...(edit === null ? {} : { edit: editPath }),
     });
-    const written = writeExperimentRuns(baseSnapshot, baseRun.results, {
-      experimentName: name,
-      argsJson,
-    });
-    process.stdout.write(
-      `stored: sim-data/sim.db experiment ${written.experimentId} ` +
-        `(${written.runIds.length} runs)\n`,
-    );
+    if (!skipBase) {
+      const written = writeExperimentRuns(baseSnapshot, baseRun.results, {
+        experimentName: name,
+        argsJson,
+      });
+      process.stdout.write(
+        `stored: sim-data/sim.db experiment ${written.experimentId} ` +
+          `(${written.runIds.length} runs)\n`,
+      );
+    }
     if (editedRun !== null) {
       const editedWritten = writeExperimentRuns(baseSnapshot, editedRun.results, {
         experimentName: `${name}-edit`,

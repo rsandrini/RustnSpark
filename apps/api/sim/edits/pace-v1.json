@@ -1,0 +1,86 @@
+{
+ "rules": {
+  "economy.market_rarity_by_bridge": {
+   "COMMON": {
+    "COMMON": 1,
+    "UNCOMMON": 0.5,
+    "RARE": 0.15,
+    "EPIC": 0,
+    "LEGENDARY": 0
+   },
+   "UNCOMMON": {
+    "COMMON": 1,
+    "UNCOMMON": 0.7,
+    "RARE": 0.3,
+    "EPIC": 0.03,
+    "LEGENDARY": 0
+   },
+   "RARE": {
+    "EPIC": 0.02,
+    "RARE": 0.3,
+    "COMMON": 1,
+    "UNCOMMON": 0.7,
+    "LEGENDARY": 0
+   },
+   "EPIC": {
+    "EPIC": 0.2,
+    "RARE": 0.5,
+    "COMMON": 1,
+    "UNCOMMON": 0.9,
+    "LEGENDARY": 0.02
+   },
+   "LEGENDARY": {
+    "EPIC": 0.4,
+    "RARE": 0.7,
+    "COMMON": 1,
+    "UNCOMMON": 1,
+    "LEGENDARY": 0.1
+   }
+  },
+  "economy.upgrade_materials": {
+   "EPIC": [
+    {
+     "material": "core_fragment",
+     "mode": "size",
+     "k": 30
+    },
+    {
+     "material": "core_fragment",
+     "mode": "size",
+     "k": 20
+    },
+    {
+     "material": "rare_crystals",
+     "mode": "gap",
+     "k": 12
+    }
+   ],
+   "RARE": [
+    {
+     "material": "core_fragment",
+     "mode": "size",
+     "k": 10
+    },
+    {
+     "material": "rare_crystals",
+     "mode": "gap",
+     "k": 12
+    }
+   ],
+   "COMMON": [
+    {
+     "material": "scrap",
+     "mode": "gap",
+     "k": 10
+    }
+   ],
+   "UNCOMMON": [
+    {
+     "material": "rare_crystals",
+     "mode": "gap",
+     "k": 10
+    }
+   ]
+  }
+ }
+}
