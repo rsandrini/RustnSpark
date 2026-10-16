@@ -64,14 +64,14 @@ test.describe('race mission', () => {
     await page.goto('/port');
     const before = await walletOf(page);
 
-    await page.goto('/board');
+    await page.goto('/missions');
     const race = page.locator('.mcard.type-race').first();
     await expect(race).toBeVisible({ timeout: 30_000 });
     const field = race.getByTestId('race-field');
     expect(await field.locator('tbody tr').count()).toBeGreaterThanOrEqual(4); // 3-5 rivals + you
 
     await race.getByRole('button', { name: 'Accept' }).click();
-    await expect(page).toHaveURL(/\/hangar/);
+    await expect(page).toHaveURL(/\/ship/);
     await expect(page.getByTestId('race-rivals')).toBeVisible();
     await page.getByRole('button', { name: 'Dispatch' }).click();
     await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });

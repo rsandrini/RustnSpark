@@ -97,7 +97,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       if (embedded && onGoToShip !== undefined) {
         onGoToShip();
       } else {
-        void navigate('/hangar');
+        void navigate('/ship');
       }
     },
     onError,
@@ -212,7 +212,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                 className="btn primary"
                 onClick={() => {
                   if (embedded && onGoToShip !== undefined) onGoToShip();
-                  else void navigate('/hangar');
+                  else void navigate('/ship');
                 }}
               >
                 {t('board.goToShip')}

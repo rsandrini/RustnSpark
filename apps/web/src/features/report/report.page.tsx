@@ -266,7 +266,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
         <Link className="btn" to="/map">
           {t('report.backMap')}
         </Link>
-        <Link className="btn" to="/board">
+        <Link className="btn" to="/missions">
           {t('report.backBoard')}
         </Link>
         <Link className="btn" to="/port">

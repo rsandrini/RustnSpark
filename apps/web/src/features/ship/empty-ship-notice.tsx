@@ -19,7 +19,7 @@ export function EmptyShipNotice() {
     <div className="panel kit-note" role="note">
       <b>{t('ship.empty.title')}</b>
       <p className="muted">{t('ship.empty.body')}</p>
-      <Link className="btn primary" to="/hangar">
+      <Link className="btn primary" to="/ship">
         {t('ship.empty.action')}
       </Link>
     </div>

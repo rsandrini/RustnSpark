@@ -66,7 +66,7 @@ export async function registerAndLaunch(
   await expect(page.getByRole('navigation')).toBeVisible();
 
   // The starter kit arrives loose (D44): assemble it the way a new pilot does, with Auto layout.
-  await expect(page).toHaveURL(/\/hangar/);
+  await expect(page).toHaveURL(/\/ship/);
   const assembled = page.waitForResponse((response) => response.url().includes('/auto-assemble'));
   await page.getByRole('button', { name: 'Auto layout' }).click();
   expect((await assembled).ok()).toBe(true);
@@ -80,9 +80,9 @@ export async function walletOf(page: Page): Promise<number> {
 
 /** Accept the first acceptable mission on the home board, dispatch, and wait for the report. */
 export async function flyOneMission(page: Page): Promise<void> {
-  await page.goto('/board');
+  await page.goto('/missions');
   await page.locator('button:has-text("Accept"):not([disabled])').first().click();
-  await expect(page).toHaveURL(/\/hangar/);
+  await expect(page).toHaveURL(/\/ship/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
   // The transit screen sends the pilot to the report when the flight ends.
   await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });

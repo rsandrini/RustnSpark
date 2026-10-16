@@ -26,7 +26,7 @@ export function OnboardingRoute() {
     return <Navigate to="/login" replace />;
   }
   if (user.factionId) {
-    return <Navigate to="/hangar" replace />;
+    return <Navigate to="/ship" replace />;
   }
   return <OnboardingPage />;
 }
@@ -49,7 +49,7 @@ export function OnboardingPage() {
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
-      void navigate('/hangar');
+      void navigate('/ship');
     },
   });
 

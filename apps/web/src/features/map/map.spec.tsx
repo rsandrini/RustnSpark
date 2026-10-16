@@ -97,7 +97,7 @@ describe('map (S10.5)', () => {
     expect(dialog.textContent).toContain('Zone 0');
     expect(await within(dialog).findByText('Missions here')).toBeInTheDocument();
 
-    const boardLink = dialog.querySelector('a[href="/board?location=ceres"]');
+    const boardLink = dialog.querySelector('a[href="/missions?location=ceres"]');
     expect(boardLink).not.toBeNull();
 
     const closeButton = dialog.querySelector('button');
@@ -230,7 +230,7 @@ describe('map (S10.5)', () => {
     expect(requested).toContain('ceres');
     expect(requested).not.toContain('tycho');
     // The board link goes to the pilot's own board, not a query string for the remote place.
-    expect(dialog.querySelector('a[href="/board"]')).not.toBeNull();
+    expect(dialog.querySelector('a[href="/missions"]')).not.toBeNull();
   });
 
   it('does not offer a trip to the place you are already at', async () => {

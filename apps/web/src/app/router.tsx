@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet, useLocation } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,15 +26,21 @@ function AdminFallback() {
   return <p>{t('tuning.loading')}</p>;
 }
 
-/** Board/Transit/Port are real nested routes under /hangar again (reversing the query-param
-    form of the round-3 nav consolidation — Port and Board are reachable from the top nav now,
-    not just a tab inside My Ship); these three bare paths stay only as redirects for any stray
-    old bookmark/link, keeping whichever tab it meant to open and any other query string it
-    carried (e.g. /board?location=X for the mission board's own origin filter). */
-function RedirectToHangarTab({ tab }: { tab?: 'board' | 'port' }) {
+/** The game's four places: Ship, Port, Missions and Map (phase 2 of the redesign). Ship, Port and
+    Missions are all served by HangarPage, which reads its tab from the path. The old paths
+    (/hangar, /hangar/port, /hangar/board, /board, /transit) stay for good as redirects for any
+    bookmark or stray link; each keeps the query string it carried (e.g. /board?location=X for the
+    mission board's own origin filter). */
+function RedirectTo({ to }: { to: string }) {
   const location = useLocation();
-  const path = tab === undefined ? '/hangar' : `/hangar/${tab}`;
-  return <Navigate to={`${path}${location.search}`} replace />;
+  return <Navigate to={`${to}${location.search}`} replace />;
+}
+
+/** `/hangar/:tab`: the old nested form, mapped to the new path of the tab it named. */
+function RedirectFromHangarTab() {
+  const { tab } = useParams<{ tab?: string }>();
+  const to = tab === 'board' ? '/missions' : tab === 'port' ? '/port' : '/ship';
+  return <RedirectTo to={to} />;
 }
 
 function InGameChrome() {
@@ -74,12 +80,12 @@ export const routes = [
         // Home was retired (round-3 nav consolidation): My Ship (the Hangar) is the landing
         // page. The guard chain still does the right thing for every visitor: no session →
         // /login (ProtectedRoute); no faction yet → /onboarding (RequireFaction); otherwise →
-        // /hangar.
+        // /ship.
         path: '/',
         element: (
           <ProtectedRoute>
             <RequireFaction>
-              <Navigate to="/hangar" replace />
+              <Navigate to="/ship" replace />
             </RequireFaction>
           </ProtectedRoute>
         ),
@@ -97,8 +103,8 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
-      {
-        path: '/hangar/:tab?',
+      ...(['/ship', '/port', '/missions'] as const).map((path) => ({
+        path,
         element: (
           <ProtectedRoute>
             <RequireFaction>
@@ -106,7 +112,9 @@ export const routes = [
             </RequireFaction>
           </ProtectedRoute>
         ),
-      },
+      })),
+      { path: '/hangar', element: <RedirectTo to="/ship" /> },
+      { path: '/hangar/:tab', element: <RedirectFromHangarTab /> },
       {
         path: '/map',
         element: (
@@ -117,10 +125,9 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
-      // Bare bookmarks from before Port/Board got their own nested routes back.
-      { path: '/board', element: <RedirectToHangarTab tab="board" /> },
-      { path: '/transit', element: <RedirectToHangarTab /> },
-      { path: '/port', element: <RedirectToHangarTab tab="port" /> },
+      // Bare bookmarks from before the four-place navigation.
+      { path: '/board', element: <RedirectTo to="/missions" /> },
+      { path: '/transit', element: <RedirectTo to="/ship" /> },
       {
         path: '/report/:missionId',
         element: (

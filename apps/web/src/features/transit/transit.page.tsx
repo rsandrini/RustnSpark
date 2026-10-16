@@ -204,7 +204,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
           </section>
         )}
         <div className="actions">
-          <Link className="btn primary" to="/board">
+          <Link className="btn primary" to="/missions">
             {t('board.title')}
           </Link>
           <Link className="btn" to="/map">
@@ -435,7 +435,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                     {t('board.title')}
                   </button>
                 ) : (
-                  <Link className="btn primary" to="/board">
+                  <Link className="btn primary" to="/missions">
                     {t('board.title')}
                   </Link>
                 )}

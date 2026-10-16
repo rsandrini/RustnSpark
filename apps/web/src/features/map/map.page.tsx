@@ -429,7 +429,7 @@ function PlaceDetails({
         className="btn primary block"
         // Suggested deliveries live on the pilot's OWN board (their ship's location), not this
         // place's — that's the whole point (the remote board's offers can't be accepted here).
-        to={suggestingDeliveries ? '/board' : `/board?location=${place.id}`}
+        to={suggestingDeliveries ? '/missions' : `/missions?location=${place.id}`}
         style={{ textAlign: 'center', textDecoration: 'none' }}
       >
         {t('map.board')}
@@ -458,7 +458,7 @@ function TravelSection({ place, byId }: TravelSectionProps) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
-      void navigate('/transit');
+      void navigate('/ship');
     },
   });
   const quote = quoteQuery.data;

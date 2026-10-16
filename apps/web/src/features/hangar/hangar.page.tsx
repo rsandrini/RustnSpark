@@ -12,7 +12,7 @@ import type {
   ShipFormat,
   ShipResponse,
 } from '../../api/generated';
-import { useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
 import { ShipYard, type PartLook } from './ship-yard';
 import {
@@ -44,9 +44,16 @@ import { TransitPage } from '../transit/transit.page';
 // port service (round-3 nav consolidation — same rule the old Transit-disabled nav entry used).
 type PageTab = 'ship' | 'board' | 'port';
 
-/** A `?tab=` value from a redirect (Map, Report, Transit's own links), if it names a real tab. */
-function pageTabFrom(value: string | null): PageTab | null {
-  return value === 'ship' || value === 'board' || value === 'port' ? value : null;
+/** The route each tab lives at, and the tab a path means (anything else is the ship). */
+const PATH_OF_TAB: Record<PageTab, string> = {
+  ship: '/ship',
+  port: '/port',
+  board: '/missions',
+};
+function pageTabFromPath(pathname: string): PageTab {
+  if (pathname.startsWith('/port')) return 'port';
+  if (pathname.startsWith('/missions')) return 'board';
+  return 'ship';
 }
 
 // Which kind of part fixes each viability problem: the hint names it and offers the store filter.
@@ -128,18 +135,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // own hover card (round 5/6) manages its own position state locally (TrayPartRow) since each
   // row needs an independent measured/clamped placement, not one shared id.
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  // Ship/Port/Board is a nested route (/hangar, /hangar/port, /hangar/board) now, not local
-  // state: the URL is the only source of truth, so a link elsewhere (Map, Report, Transit's own
-  // "Mission board" button, or the top nav) always lands on the right tab, including when it's
-  // the same route the page is already showing.
+  // Ship / Port / Missions are three routes (/ship, /port, /missions) served by this page, not
+  // local state: the URL is the only source of truth, so a link elsewhere (Map, Report, Transit's
+  // own "Mission board" button, or the top nav) always lands on the right tab, including when it's
+  // the same route the page is already showing. (The board is the `board` tab; its route is
+  // /missions.)
   const navigate = useNavigate();
   const location = useLocation();
-  const { tab: tabParam } = useParams<{ tab?: string }>();
-  const pageTab: PageTab = pageTabFrom(tabParam ?? null) ?? 'ship';
+  const pageTab: PageTab = pageTabFromPath(location.pathname);
   // Keep whatever query string is already there (e.g. Board's own ?location=X origin filter) —
   // switching tabs changes the path, never drops it.
-  const goToTab = (tab: PageTab) =>
-    navigate(`${tab === 'ship' ? '/hangar' : `/hangar/${tab}`}${location.search}`);
+  const goToTab = (tab: PageTab) => navigate(`${PATH_OF_TAB[tab]}${location.search}`);
   // Port and Board are enabled only while the ship is docked (same rule the old Transit-disabled
   // nav entry used) — collapsed animation state persists across visits (owner request: extra
   // screen space), client-side only, per the latest round's own stated constraint (no backend
@@ -180,7 +186,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // now-disabled tab.
   useEffect(() => {
     if (ship !== undefined && ship.status !== 'IN_PORT' && pageTab !== 'ship') {
-      void navigate('/hangar', { replace: true });
+      void navigate('/ship', { replace: true });
     }
   }, [ship, pageTab, navigate]);
 

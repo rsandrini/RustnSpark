@@ -14,7 +14,7 @@ for (const faction of FACTIONS) {
     await registerAndLaunch(page, faction);
 
     // --- hangar: the starter ship, named parts ---------------------------------------------
-    await page.goto('/hangar');
+    await page.goto('/ship');
     await expect(page.getByRole('heading', { name: 'My Ship' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Assembly yard' })).toBeVisible();
     await assertClean(page, 'hangar');
@@ -26,7 +26,7 @@ for (const faction of FACTIONS) {
     await assertClean(page, 'map');
 
     // --- board: a real starter ship must be able to take at least one mission ------------------
-    await page.goto('/board');
+    await page.goto('/missions');
     await expect(page.getByRole('group', { name: 'Mission board' })).toBeVisible();
     // The board itself must work: offers are listed, each with its description and trip facts.
     await expect(page.locator('.mcard').first()).toBeVisible();
@@ -41,7 +41,7 @@ for (const faction of FACTIONS) {
     await accept.click();
 
     // --- transit: dispatch, then the worker resolves it --------------------------------------
-    await expect(page).toHaveURL(/\/hangar/);
+    await expect(page).toHaveURL(/\/ship/);
     await page.getByRole('button', { name: 'Dispatch' }).click();
     await expect(page.getByTestId('in-transit')).toBeVisible();
     await assertClean(page, 'transit');

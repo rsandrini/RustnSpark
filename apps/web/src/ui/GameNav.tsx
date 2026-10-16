@@ -7,9 +7,9 @@ import { useTranslation } from 'react-i18next';
 // /hangar/port or /hangar/board, which also start with /hangar. Profile/Admin/Logout still live
 // in the top-right AccountMenu instead.
 const GAME_LINKS = [
-  { id: 'hangar', to: '/hangar', end: true },
-  { id: 'port', to: '/hangar/port', end: false },
-  { id: 'board', to: '/hangar/board', end: false },
+  { id: 'hangar', to: '/ship', end: false },
+  { id: 'port', to: '/port', end: false },
+  { id: 'board', to: '/missions', end: false },
   { id: 'map', to: '/map', end: false },
 ] as const;
 

@@ -470,7 +470,7 @@ export function PortPage({
       if (embedded && onGoToShip !== undefined) {
         onGoToShip();
       } else {
-        void navigate('/hangar');
+        void navigate('/ship');
       }
     },
     onError: (error) => {
@@ -492,7 +492,7 @@ export function PortPage({
       if (embedded && onGoToShip !== undefined) {
         onGoToShip();
       } else {
-        void navigate('/hangar');
+        void navigate('/ship');
       }
     },
     onError: (error) => {
@@ -695,7 +695,7 @@ export function PortPage({
                           {t('inventory.install')}
                         </button>
                       ) : (
-                        <Link className="btn" to="/hangar">
+                        <Link className="btn" to="/ship">
                           {t('inventory.install')}
                         </Link>
                       )}
@@ -1451,7 +1451,7 @@ export function PortPage({
           <Link className="btn" to="/profile">
             {t('profile.title')}
           </Link>
-          <Link className="btn" to="/hangar">
+          <Link className="btn" to="/ship">
             {t('nav.hangar')}
           </Link>
         </div>

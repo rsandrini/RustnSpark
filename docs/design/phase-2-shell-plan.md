@@ -31,7 +31,7 @@ Everything below is chosen so that no later phase has to undo it.
 
 ## 3. Steps (each one ships on its own: web tests green, CI green, before/after screenshots)
 
-1. **Routes and redirects (no visual change).** New paths per D1, redirects per D2, `goToTab` and every
+1. **Routes and redirects (no visual change).** *(done; `/port` has no `:tab` parameter yet, Port's own tabs are not URL-driven until the Port screen is rebuilt)* New paths per D1, redirects per D2, `goToTab` and every
    internal link updated, `useNavigate` targets updated. Specs and the browser smoke move to the new paths.
    *Why first:* everything after it (nav links, tab bar) points at the final URLs, so nothing is rewritten.
 2. **Labels.** `nav.*` strings in en and pt-BR per D3 (Transit's and Board's keys are removed or reused);

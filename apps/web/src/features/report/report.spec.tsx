@@ -67,7 +67,7 @@ describe('report (S10.8)', () => {
     expect(screen.getByRole('link', { name: 'Back to the map' })).toHaveAttribute('href', '/map');
     expect(screen.getByRole('link', { name: 'Back to the board' })).toHaveAttribute(
       'href',
-      '/board',
+      '/missions',
     );
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
   });

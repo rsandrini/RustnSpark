@@ -42,7 +42,7 @@ describe('navigation flow (S10.10)', () => {
       .map((link) => link.getAttribute('href'));
     // Owner request: Port and Board are reachable straight from the top nav again (reversing
     // the round-3 fold), between My Ship and Map.
-    expect(hrefs).toEqual(['/hangar', '/hangar/port', '/hangar/board', '/map']);
+    expect(hrefs).toEqual(['/ship', '/port', '/missions', '/map']);
   });
 
   it('the top-right account menu has Profile and Logout, and Admin only for an admin account', async () => {
@@ -96,28 +96,28 @@ describe('navigation flow (S10.10)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
     // Port now has two "Port" links on this screen at once: the report's own (to="/port") and
-    // the top nav's (to="/hangar/port", now always present). Find the report's own by its href.
+    // the top nav's (to="/port", now always present). Find the report's own by its href.
     const reportPortLink = screen
       .getAllByRole('link', { name: 'Port' })
       .find((link) => link.getAttribute('href') === '/port');
     expect(reportPortLink).toBeDefined();
     fireEvent.click(reportPortLink!);
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/port'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/port'));
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
 
     fireEvent.click(within(gameNav()).getByRole('link', { name: 'Map' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/map'));
   });
 
-  it('a /board link lands on My Ship with the Board tab open, not the Ship tab', async () => {
+  it('a board link lands on /missions with the Board tab open, not the Ship tab', async () => {
     // Owner: "open mission board from the map is going to ship (not to the mission board
-    // menu)" — /board (and /port, /transit) land on the matching nested hangar route; whichever
+    // menu)" — the board link lands on /missions (the old /board redirects there); whichever
     // tab the link meant to open must actually be the one selected.
     const { router } = renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
     expect(await screen.findByRole('heading', { name: 'Mission report' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Back to the board' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/hangar/board'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/missions'));
     // No local tab row left to read "selected" off (owner request: it duplicated the top nav
     // and was removed) — Board's own content actually rendering is the real signal.
     expect(await screen.findByRole('group', { name: 'Mission board' })).toBeInTheDocument();
@@ -143,5 +143,27 @@ describe('navigation flow (S10.10)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Choose your faction' })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Game navigation' })).not.toBeInTheDocument();
+  });
+
+  describe('old paths stay as redirects (bookmarks and stray links keep working)', () => {
+    const cases: Array<[string, string]> = [
+      ['/hangar', '/ship'],
+      ['/hangar/port', '/port'],
+      ['/hangar/board', '/missions'],
+      ['/board', '/missions'],
+      ['/transit', '/ship'],
+    ];
+    for (const [from, to] of cases) {
+      it(`${from} lands on ${to}`, async () => {
+        const { router } = renderWithRouter(routes, { initialEntries: [from] });
+        await waitFor(() => expect(router.state.location.pathname).toBe(to));
+      });
+    }
+
+    it("keeps the query string (the board's origin filter)", async () => {
+      const { router } = renderWithRouter(routes, { initialEntries: ['/board?location=ceres'] });
+      await waitFor(() => expect(router.state.location.pathname).toBe('/missions'));
+      expect(router.state.location.search).toBe('?location=ceres');
+    });
   });
 });
