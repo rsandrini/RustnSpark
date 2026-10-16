@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "economy.reward_base": 450,
+    "economy.reward_per_tier": 90
+  }
+}

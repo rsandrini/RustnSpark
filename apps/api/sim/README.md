@@ -96,3 +96,13 @@ at real prices; rescue pays the real tow and sells nothing; unarmed ships only t
 layout grid abstracted (connectivity assumed); empty-board viability repair targets dead
 fuel-holders first; experiment runs are in-process. The market keeps real shelf stock — the
 board and the prices are the live ones, per listing id.
+
+## Fast experiments
+
+- `sim/run-parallel.sh <name> <edit.json> [flags]` plays the edited matrix with one process per build
+  (chem, chem-shield, ion-shield, hybrid) at once; `--skip-base` is implied, the base is a stored
+  experiment. A 4-build, 8-run, 50-mission test takes about 2.5 minutes (it used to take 25+).
+- `sim/compare.py "label=<name LIKE pattern>" ...` prints level days, wallet at each level, repair and
+  fuel share for stored experiments (e.g. `"base=chain-base-%-edit" "new=early-v1-%-edit"`).
+- `sim/edits/*.json` are the rule edits the balance rounds tried; `none.json` is the no-op edit used to
+  store a baseline with the parallel runner.

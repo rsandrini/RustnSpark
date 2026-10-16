@@ -125,6 +125,9 @@ export interface MissionOutcomeRecord {
   readonly shipTier: number;
 }
 
+/** How many fits, buys and upgrades the pilot chains at one stop before moving on. */
+const MAX_SPEND_STEPS_PER_STOP = 8;
+
 export interface RunResult {
   readonly seed: number;
   readonly factionId: string;
@@ -554,24 +557,38 @@ export function playRun(input: PlayRunInput): RunResult {
         sellMaterial(state, snapshot, ctx.rules, material.materialId, material.quantity);
       }
     }
-    const plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype, minerBlocked);
-    if (process.env['SIM_DEBUG'] === '1') {
-      const action = plan.action;
-      const detail =
-        action.kind === 'none'
-          ? action.reason
-          : action.kind === 'fit'
-            ? `${action.targetBase} ${action.reason}`
-            : action.kind === 'buy'
-              ? `${action.partType}@${action.locationId} ${action.price} ${action.reason}`
-              : action.kind === 'travel-to-buy'
-                ? `${action.targetBase}->${action.locationId} ${action.reason}`
-                : `${action.partId} ${action.nextPartType} ${action.reason}`;
-      process.stderr.write(
-        `[plan] @${state.locationId} wallet=${state.wallet} ${action.kind} ${detail}\n`,
-      );
+    // A pilot at a port does everything that is worth doing there before leaving: fits, buys and
+    // upgrades chain until the plan has nothing more for this stop (or says to travel).
+    let plan = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype, minerBlocked);
+    let travelled = false;
+    for (let step = 0; spend && step < MAX_SPEND_STEPS_PER_STOP; step += 1) {
+      if (process.env['SIM_DEBUG'] === '1') {
+        const action = plan.action;
+        const detail =
+          action.kind === 'none'
+            ? action.reason
+            : action.kind === 'fit'
+              ? `${action.targetBase} ${action.reason}`
+              : action.kind === 'buy'
+                ? `${action.partType}@${action.locationId} ${action.price} ${action.reason}`
+                : action.kind === 'travel-to-buy'
+                  ? `${action.targetBase}->${action.locationId} ${action.reason}`
+                  : `${action.partId} ${action.nextPartType} ${action.reason}`;
+        process.stderr.write(
+          `[plan] @${state.locationId} wallet=${state.wallet} ${action.kind} ${detail}\n`,
+        );
+      }
+      if (plan.action.kind === 'none') break;
+      if (executeSpend(plan.action, nowMs)) {
+        travelled = true;
+        break;
+      }
+      const next = spendPlan(state, snapshot, ctx.rules, catalogByType, recentRepairBills, archetype, minerBlocked);
+      // The same action again means it did not take (a refused fit): stop rather than spin.
+      if (JSON.stringify(next.action) === JSON.stringify(plan.action)) break;
+      plan = next;
     }
-    if (spend && executeSpend(plan.action, nowMs)) continue;
+    if (travelled) continue;
 
     const picked = pickOffer(state, ctx, world, board, rng, nowMs, temperament, playstyle, memory);
     const { offer, offers } = picked;

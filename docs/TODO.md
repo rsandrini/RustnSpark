@@ -57,8 +57,13 @@ buy-used/repair/sell exploit floor), so wear is the lever, not a repair price cu
   Zone 3 net is now 1.35x zone 2, chem fuel 30% -> 20% of reward. *Finding:* level days did not move
   (chem L2 ~day 11 / L3 ~21, ion L2 ~17 / L3 ~42) although wallets are full at L2 (6.8k chem, 21k ion):
   money is not the gate, the market's bridge-gated rarity shelves and the upgrade materials are.
-- [ ] Next for pace: test `market_rarity_by_bridge` (common bridge sees 14% uncommon, 4.5% rare) and the
-  `economy.upgrade_materials` amounts; target L2 <= day 7, L3 <= day 15 on every build, ion included.
+- [x] Pace investigation (sim experiments 53-68): neither shelf rarity (`market_rarity_by_bridge` up) nor
+  halved upgrade materials moved the level days, and the pilot is income-bound early. A real sim
+  artifact was found and fixed: the bot did one fit/buy/upgrade per loop turn, a player does several
+  per stop; chaining them (up to 8 per stop) took ion L2 17 -> 14 days and L3 42 -> 26. Today (balanced
+  pilot, 2 h/day): chem L2 ~11 / L3 ~18, hybrid ~9 / ~19, ion ~14 / ~26. An early-income dial exists
+  (`reward_base` 450 + `reward_per_tier` 90: L2 ~15% sooner, chem repair share +6 points) but is NOT
+  applied. To halve L2 again the early net per mission has to double; that is a design call.
 - [x] Bot: buys a mining rig when only `MINER` work is on the board.
 - [ ] Bot gap left: prefer shorter routes when fuel-bound (fuel is still 29-37% of reward on chem).
 - [ ] Dev-only data (`ziggy` location, 5000-distance route, `race_explorers_ziggy`) inflates the zone 1
