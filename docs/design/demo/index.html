@@ -1,0 +1,470 @@
+<title>Rustnspark Redesign Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif&display=swap">
+<style>
+/* Layout concept: a black instrument panel. Header + status strip on top, one job per screen, the ship drawn as the apparatus with leader-line callouts. Phone: bottom tab bar. */
+:root {
+  --paper: oklch(13% 0.014 265);
+  --paper-2: oklch(17% 0.016 265);
+  --paper-3: oklch(21% 0.018 265);
+  --ink: oklch(96% 0.006 262);
+  --muted: oklch(66% 0.016 262);
+  --rule: oklch(96% 0.006 262 / 0.1);
+  --rule-2: oklch(96% 0.006 262 / 0.18);
+  --accent: oklch(76% 0.17 50);
+  --accent-ink: oklch(16% 0.03 50);
+  --accent-2: oklch(68% 0.16 18);
+  --glow: oklch(80% 0.16 50 / 0.42);
+  --ok: oklch(74% 0.15 150);
+  --risk-lo: oklch(74% 0.15 150);
+  --risk-md: oklch(76% 0.15 70);
+  --risk-hi: oklch(66% 0.19 25);
+  --rar-common: oklch(70% 0.01 262);
+  --rar-uncommon: oklch(74% 0.15 150);
+  --rar-rare: oklch(72% 0.14 245);
+  --rar-epic: oklch(70% 0.17 305);
+  --rar-legendary: oklch(78% 0.16 75);
+  --f-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --f-body: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --f-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+  background-blend-mode: normal;
+}
+body::before { content: ""; position: fixed; inset: 0; background: var(--paper); opacity: 0.965; z-index: -1; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 0 96px; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; color: var(--muted); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; }
+h1 { font-family: var(--f-display); font-size: clamp(36px, 5vw, 56px); line-height: 1.02; text-transform: lowercase; }
+h1 em { font-style: normal; color: var(--accent); }
+h2 { font-family: var(--f-display); font-size: 28px; text-transform: lowercase; }
+.lede { color: var(--muted); max-width: 62ch; margin: 8px 0 0; }
+
+/* header */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: oklch(13% 0.014 265 / 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--rule); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.top-in { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 24px; height: 56px; }
+.brand { font-family: var(--f-display); font-size: 26px; text-transform: lowercase; letter-spacing: 0.01em; }
+.brand b { color: var(--accent); font-weight: 400; }
+.nav { display: flex; gap: 4px; }
+.nav a { padding: 8px 14px; border-radius: 999px; color: var(--muted); text-decoration: none; font-weight: 500; }
+.nav a:hover { color: var(--ink); background: var(--paper-2); }
+.nav a[aria-current="page"] { color: var(--ink); background: var(--paper-3); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 8px 8px 0 0; }
+.spacer { flex: 1; }
+.wallet { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--accent); padding: 6px 12px; border: 1px solid var(--rule-2); border-radius: 999px; }
+.acct { position: relative; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--rule-2); background: var(--paper-2); cursor: pointer; font-family: var(--f-mono); font-size: 12px; }
+.menu { position: absolute; right: 0; top: 42px; min-width: 200px; background: var(--paper-2); border: 1px solid var(--rule-2); border-radius: 10px; padding: 6px; box-shadow: 0 24px 60px -28px oklch(0% 0 0 / 0.8); }
+.menu button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 9px 10px; border-radius: 6px; cursor: pointer; }
+.menu button:hover { background: var(--paper-3); }
+.menu hr { border: 0; border-top: 1px solid var(--rule); margin: 6px 0; }
+.status { display: flex; align-items: center; gap: 10px; height: 36px; border-bottom: 1px solid var(--rule); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px 2px oklch(74% 0.15 150 / 0.5); }
+
+/* screens */
+.screen { display: none; padding-top: 28px; }
+.screen.on { display: block; }
+.head { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; flex-wrap: wrap; }
+.tabs button { background: none; border: 0; padding: 10px 16px; color: var(--muted); cursor: pointer; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.btn { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 16px; border-radius: 8px; border: 1px solid var(--rule-2); background: var(--paper-2); cursor: pointer; font-weight: 500; }
+.btn:hover { background: var(--paper-3); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+select { background: var(--paper-2); border: 1px solid var(--rule-2); border-radius: 8px; padding: 8px 12px; }
+.btn.primary:hover { background: oklch(80% 0.17 50); }
+.btn.ghost { background: none; }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+.card { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 24px 60px -34px oklch(0% 0 0 / 0.7); }
+.chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule-2); background: none; cursor: pointer; color: var(--muted); }
+.chip[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.lo { color: var(--risk-lo); } .md { color: var(--risk-md); } .hi { color: var(--risk-hi); }
+
+/* ship */
+.ship-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.yard { padding: 20px; position: relative; overflow: hidden; }
+.yard svg { width: 100%; height: auto; display: block; }
+.yard-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.sheet { padding: 20px; display: grid; gap: 14px; }
+.stat { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
+.stat b { font-family: var(--f-mono); font-weight: 500; font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat b.good { color: var(--ok); }
+.store { margin-top: 24px; padding: 18px 20px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.hint { color: var(--muted); max-width: 60ch; margin: 4px 0 0; }
+
+/* port */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.filters .sp { flex: 1; }
+.needs { padding: 16px 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; margin-bottom: 20px; border-color: oklch(76% 0.17 50 / 0.35); }
+.needs .tag { color: var(--accent); }
+.parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.part { padding: 16px; display: grid; gap: 10px; }
+.part .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.part h3 { font-size: 17px; font-family: var(--f-body); font-weight: 600; }
+.price { font-family: var(--f-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.price.short { color: var(--muted); }
+.rar { display: inline-flex; align-items: center; gap: 6px; }
+.rar i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); box-shadow: 0 0 8px var(--c); }
+.keystat { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.keystat b { color: var(--ink); font-family: var(--f-mono); font-weight: 500; }
+.svc { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.svc .card { padding: 20px; display: grid; gap: 14px; align-content: start; }
+.bar { height: 8px; border-radius: 4px; background: var(--paper-3); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); }
+.bar.fuel i { background: var(--accent); }
+
+/* missions */
+.active { padding: 18px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.rows { display: grid; gap: 10px; }
+.mrow { padding: 16px 20px; display: grid; grid-template-columns: 110px minmax(0, 1.6fr) minmax(0, 1.2fr) 110px 130px; gap: 16px; align-items: center; }
+.mrow h3 { font-family: var(--f-body); font-size: 17px; font-weight: 600; }
+.route { color: var(--muted); font-size: 14px; }
+.reward { font-family: var(--f-mono); font-size: 22px; color: var(--accent); text-align: right; font-variant-numeric: tabular-nums; }
+.needs-line { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.ok-t { color: var(--ok); } .no-t { color: var(--accent-2); }
+.mrow.locked { opacity: 0.72; }
+
+/* map */
+.map-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.map { padding: 8px; }
+.map svg { width: 100%; height: auto; display: block; }
+.node { cursor: pointer; }
+.node circle.ring { fill: var(--paper-2); stroke-width: 2; }
+.node text { fill: var(--ink); font: 500 12px var(--f-body); }
+.node text.t { fill: var(--muted); font: 400 9px var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.node:hover circle.ring, .node:focus-visible circle.ring { fill: var(--paper-3); }
+.node.sel circle.ring { fill: oklch(76% 0.17 50 / 0.18); }
+.panel { padding: 20px; display: grid; gap: 14px; position: sticky; top: 130px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-s { padding: 3px 9px; border: 1px solid var(--rule-2); border-radius: 6px; font-size: 12px; color: var(--muted); }
+
+/* mobile tab bar */
+.tabbar { display: none; }
+@media (max-width: 860px) {
+  .ship-grid, .map-grid { grid-template-columns: minmax(0, 1fr); }
+  .panel { position: static; }
+  .mrow { grid-template-columns: minmax(0, 1fr) auto; }
+  .mrow > :nth-child(3) { grid-column: 1 / -1; }
+  .mrow > :nth-child(4) { text-align: left; }
+  .nav { display: none; }
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: oklch(13% 0.014 265 / 0.96); border-top: 1px solid var(--rule-2); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .tabbar a { padding: 12px 4px 10px; text-align: center; color: var(--muted); text-decoration: none; font-size: 12px; display: grid; gap: 2px; }
+  .tabbar a[aria-current="page"] { color: var(--accent); }
+  .tabbar svg { width: 22px; height: 22px; margin: 0 auto; }
+  .needs { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dot { animation: pulse 4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.55; } }
+  .flame { animation: flick 0.9s ease-in-out infinite alternate; transform-origin: right center; transform-box: fill-box; }
+  @keyframes flick { from { opacity: 0.6; transform: scaleX(0.8); } to { opacity: 1; transform: scaleX(1.2); } }
+}
+.callout line { stroke: var(--rule-2); }
+.callout text { font: 400 10.5px var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--muted); }
+.callout text.v { fill: var(--ink); font-size: 13px; letter-spacing: 0.02em; text-transform: none; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="top-in">
+      <span class="brand">rust<b>n</b>spark</span>
+      <nav class="nav" aria-label="Game">
+        <a href="#ship">Ship</a><a href="#port">Port</a><a href="#missions">Missions</a><a href="#map">Map</a>
+      </nav>
+      <span class="spacer"></span>
+      <span class="wallet" aria-label="Credits">200 ¢</span>
+      <div class="acct">
+        <button class="avatar" id="avatar" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">LS</button>
+        <div class="menu" id="menu" hidden>
+          <div class="mono" style="padding:8px 10px">luna starter · luna authority</div>
+          <button type="button">Profile</button>
+          <button type="button">Language: English</button>
+          <hr>
+          <button type="button">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="status mono" role="status"><span class="dot"></span> docked at ceres port · ship ready · mining and scavenging available here</div>
+
+  <!-- SHIP -->
+  <section class="screen" id="s-ship" aria-labelledby="h-ship">
+    <div class="head">
+      <div><h1 id="h-ship">your <em>ship</em></h1><p class="lede">Eight parts, all connected. It can reach every place on the map on a full tank.</p></div>
+      <div class="yard-bar">
+        <button class="btn ghost" type="button">Auto layout</button>
+        <button class="btn ghost" type="button">Format</button>
+        <button class="btn primary" type="button">Save layout</button>
+      </div>
+    </div>
+    <div class="ship-grid">
+      <div class="card yard">
+        <svg viewBox="0 0 640 360" role="img" aria-label="Ship layout: engine, solar panel, cargo hold, bridge, hull frame, cannon, fuel tank">
+          <defs>
+            <pattern id="g" width="56" height="56" patternUnits="userSpaceOnUse"><path d="M56 0H0V56" fill="none" stroke="oklch(96% 0.006 262 / 0.05)"/></pattern>
+            <radialGradient id="glow"><stop offset="0" stop-color="oklch(80% 0.16 50 / 0.5)"/><stop offset="1" stop-color="oklch(80% 0.16 50 / 0)"/></radialGradient>
+          </defs>
+          <rect width="640" height="360" fill="url(#g)"/>
+          <g transform="translate(176 72)">
+            <ellipse cx="60" cy="100" rx="130" ry="70" fill="url(#glow)" opacity="0.5"/>
+            <!-- parts: x,y in 56px cells -->
+            <g stroke="oklch(96% 0.006 262 / 0.28)" fill="oklch(19% 0.018 265)" stroke-width="1.2">
+              <rect x="0" y="0" width="56" height="56" rx="6"/>
+              <rect x="56" y="0" width="56" height="56" rx="6"/>
+              <rect x="112" y="0" width="56" height="56" rx="6"/>
+              <rect x="56" y="56" width="56" height="56" rx="6" stroke="oklch(76% 0.17 50 / 0.7)"/>
+              <rect x="112" y="56" width="112" height="56" rx="6"/>
+              <rect x="56" y="112" width="56" height="56" rx="6"/>
+              <rect x="112" y="112" width="56" height="56" rx="6"/>
+            </g>
+            <path class="flame" d="M-6 28 L-30 18 L-22 28 L-30 38 Z" fill="oklch(80% 0.17 50)"/>
+            <g font-family="Geist Mono, monospace" font-size="9" letter-spacing="0.8" fill="oklch(66% 0.016 262)" text-anchor="middle">
+              <text x="28" y="31">ENGINE</text><text x="84" y="31">SOLAR</text><text x="140" y="31">CARGO</text>
+              <text x="84" y="87" fill="oklch(76% 0.17 50)">BRIDGE</text><text x="168" y="87">HULL FRAME</text>
+              <text x="84" y="143">CANNON</text><text x="140" y="143">TANK</text>
+            </g>
+            <g fill="oklch(74% 0.15 150)"><circle cx="56" cy="28" r="2.4"/><circle cx="112" cy="28" r="2.4"/><circle cx="84" cy="56" r="2.4"/><circle cx="112" cy="84" r="2.4"/><circle cx="84" cy="112" r="2.4"/><circle cx="112" cy="140" r="2.4"/></g>
+          </g>
+          <g class="callout">
+            <line x1="176" y1="100" x2="60" y2="60"/><text x="20" y="44">range</text><text class="v" x="20" y="62">4,285 · 21 of 21 routes</text>
+            <line x1="344" y1="100" x2="470" y2="56"/><text x="448" y="40">power</text><text class="v" x="448" y="58">+2 energy</text>
+            <line x1="400" y1="160" x2="500" y2="190"/><text x="470" y="206">mobility</text><text class="v" x="470" y="224">14.8</text>
+            <line x1="232" y1="230" x2="140" y2="290"/><text x="20" y="306">structure</text><text class="v" x="20" y="324">27 / 60</text>
+            <line x1="288" y1="238" x2="330" y2="300"/><text x="300" y="316">fuel</text><text class="v" x="300" y="334">300 / 300</text>
+          </g>
+        </svg>
+      </div>
+      <aside class="card sheet" aria-label="Ship sheet">
+        <div class="mono">ship sheet · common</div>
+        <div class="stat"><span class="mono">firepower</span><b>3</b></div>
+        <div class="stat"><span class="mono">armor · shield</span><b>0 · 0</b></div>
+        <div class="stat"><span class="mono">cargo</span><b>5</b></div>
+        <div class="stat"><span class="mono">condition</span><b class="good">85%</b></div>
+        <div class="stat"><span class="mono">class</span><b style="font-family:var(--f-body)">multirole</b></div>
+        <span class="pill lo" style="justify-self:start">ready to fly</span>
+        <button class="btn ghost" type="button">Engine tuning</button>
+      </aside>
+    </div>
+    <div class="card store">
+      <div><div class="mono">spare parts · 0 of 8 slots</div><p class="hint">Nothing in storage. No shield fitted, so every hit lands on the hull. The port sells shields and batteries that fit this ship.</p></div>
+      <a class="btn" href="#port">Buy what your ship lacks</a>
+    </div>
+  </section>
+
+  <!-- PORT -->
+  <section class="screen" id="s-port" aria-labelledby="h-port">
+    <div class="head">
+      <div><h1 id="h-port">ceres <em>port</em></h1><p class="lede">Commercial port, Luna Authority. Buy parts, repair and refuel, or send the ship out to work.</p></div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Port services">
+      <button role="tab" aria-selected="true" data-tab="buy">Buy</button>
+      <button role="tab" aria-selected="false" data-tab="service">Service</button>
+      <button role="tab" aria-selected="false" data-tab="work">Work</button>
+    </div>
+    <div id="p-buy">
+      <div class="card needs">
+        <span class="mono tag">your ship needs</span>
+        <div><b>A shield.</b> <span class="hint">Shields take the damage first and recharge between rounds. Your ship has none and carries no battery to power one.</span></div>
+        <button class="btn" type="button" id="needs-btn">Show shields</button>
+      </div>
+      <div class="filters" role="group" aria-label="Filters">
+        <button class="chip" aria-pressed="true" id="f-aff" type="button">Affordable now</button>
+        <button class="chip" aria-pressed="true" data-class="all" type="button">All</button>
+        <button class="chip" aria-pressed="false" data-class="engine" type="button">Engines</button>
+        <button class="chip" aria-pressed="false" data-class="defense" type="button">Defense</button>
+        <button class="chip" aria-pressed="false" data-class="battery" type="button">Batteries</button>
+        <button class="chip" aria-pressed="false" data-class="weapon" type="button">Weapons</button>
+        <button class="chip" aria-pressed="false" data-class="sensor" type="button">Sensors</button>
+        <span class="sp"></span>
+        <select id="sort" aria-label="Sort"><option>Price, low to high</option><option>Rarity</option></select>
+      </div>
+      <div class="parts" id="parts"></div>
+    </div>
+    <div id="p-service" hidden>
+      <div class="svc">
+        <div class="card"><h2>repair</h2><div class="mono">condition 85% · 7 points to restore</div><div class="bar"><i style="width:85%"></i></div><div class="num">42 ¢ · 14 s</div><button class="btn primary" type="button">Repair all</button></div>
+        <div class="card"><h2>refuel</h2><div class="mono">tank 300 / 300</div><div class="bar fuel"><i style="width:100%"></i></div><div class="num">0 ¢ · full</div><button class="btn" type="button" disabled>Tank is full</button></div>
+        <div class="card"><h2>upgrade</h2><div class="mono">every part at 100% can rise one rarity</div><p class="hint">Upgrades cost credits and scrap. Common to uncommon asks for scrap only.</p><button class="btn" type="button">Choose a part</button></div>
+      </div>
+    </div>
+    <div id="p-work" hidden>
+      <div class="svc">
+        <div class="card"><h2>scavenging</h2><div class="mono">ready · 10 min · with the ship</div><p class="hint">Search the wreckage around the port for parts and scrap. Pirates can find the ship; on foot finds half as much but is safe.</p><div class="chips"><button class="btn primary" type="button">Send the ship</button><button class="btn ghost" type="button">Go on foot</button></div></div>
+        <div class="card"><h2>mining</h2><div class="mono">needs a mining rig</div><p class="hint">Dig ore at a minable place and sell it. Your ship has no mining rig yet.</p><a class="btn" href="#port" id="rig-link">Find a mining rig</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSIONS -->
+  <section class="screen" id="s-missions" aria-labelledby="h-missions">
+    <div class="head">
+      <div><h1 id="h-missions"><em>missions</em> from ceres</h1><p class="lede">Contracts open at this port. Anything your ship can take is listed first.</p></div>
+      <div class="chips" role="group" aria-label="Mission type"><button class="chip" aria-pressed="true" type="button">All</button><button class="chip" aria-pressed="false" type="button">Delivery</button><button class="chip" aria-pressed="false" type="button">Escort</button><button class="chip" aria-pressed="false" type="button">Mining</button></div>
+    </div>
+    <div class="card active"><div><div class="mono">no mission in flight</div><div>Pick a contract below, or send the ship out to scavenge.</div></div><a class="btn ghost" href="#port">Go to port</a></div>
+    <div class="rows">
+      <article class="card mrow"><span class="mono">delivery</span><div><h3>Express Parcel</h3><div class="route">Ceres Port → Vesta Refinery · 555</div></div><div class="needs-line"><span class="ok-t">✓ cargo 1 (you 5)</span><span class="num">uses 43 fuel · 20m 49s</span><span class="mono">expires 15:29</span></div><div><span class="pill lo">low risk</span></div><div style="display:grid;gap:8px"><div class="reward">753 ¢</div><button class="btn primary" type="button">Accept</button></div></article>
+      <article class="card mrow"><span class="mono">escort</span><div><h3>Convoy Cover</h3><div class="route">Ceres Port → Tycho Shipyard · 1,210</div></div><div class="needs-line"><span class="no-t">✗ firepower 4 (you 3)</span><span class="num">uses 79 fuel · 34m</span><span class="mono">expires 15:02</span></div><div><span class="pill md">medium</span></div><div style="display:grid;gap:8px"><div class="reward">1,120 ¢</div><button class="btn" type="button" disabled>Need firepower 4</button></div></article>
+      <article class="card mrow locked"><span class="mono">mining</span><div><h3>Ore Run</h3><div class="route">Ceres Port → Drift-9 Field · 1,430</div></div><div class="needs-line"><span class="no-t">✗ mining rig</span><span class="no-t">✗ shield</span><span class="num">uses 120 fuel · 1h 12m</span></div><div><span class="pill hi">high risk</span></div><div style="display:grid;gap:8px"><div class="reward">1,640 ¢</div><button class="btn" type="button" disabled>Not eligible</button></div></article>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section class="screen" id="s-map" aria-labelledby="h-map">
+    <div class="head"><div><h1 id="h-map">sector <em>map</em></h1><p class="lede">Pick a place to see what it offers and how far it is.</p></div>
+      <div class="mono"><span class="lo">● low</span> &nbsp; <span class="md">● medium</span> &nbsp; <span class="hi">● high</span> risk</div></div>
+    <div class="map-grid">
+      <div class="card map">
+        <svg viewBox="0 0 760 470" role="group" aria-label="Sector map" id="mapsvg"></svg>
+      </div>
+      <aside class="card panel" id="panel" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <nav class="tabbar" aria-label="Game">
+    <a href="#ship"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12l5-6h8l5 6-5 6H8z"/><circle cx="12" cy="12" r="2"/></svg>Ship</a>
+    <a href="#port"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10l8-6 8 6v10zM9 20v-6h6v6"/></svg>Port</a>
+    <a href="#missions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/></svg>Missions</a>
+    <a href="#map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="8" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="14" cy="18" r="2"/><path d="M8 8l8-2M7 10l6 7M17 8l-3 9"/></svg>Map</a>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var wallet = 200;
+  var PARTS = [
+    { n: 'Small Chemical Engine', c: 'engine', r: 'common', p: 92, k: ['Thrust', '25'] },
+    { n: 'Cannon', c: 'weapon', r: 'common', p: 110, k: ['Firepower', '3'] },
+    { n: 'Small Battery', c: 'battery', r: 'common', p: 138, k: ['Battery charge', '30'] },
+    { n: 'Micro Ion Engine', c: 'engine', r: 'common', p: 138, k: ['Thrust', '18 · no fuel'] },
+    { n: 'Radar', c: 'sensor', r: 'common', p: 184, k: ['Sensors', '4'] },
+    { n: 'Light Armor Plate', c: 'defense', r: 'common', p: 110, k: ['Armor', '1.5'] },
+    { n: 'Basic Shield', c: 'defense', r: 'common', p: 368, k: ['Shield', '11 · regen 3'] },
+    { n: 'Large Battery', c: 'battery', r: 'common', p: 212, k: ['Battery charge', '70'] },
+    { n: 'Laser', c: 'weapon', r: 'uncommon', p: 184, k: ['Firepower', '4'] },
+    { n: 'Battery Bank', c: 'battery', r: 'common', p: 487, k: ['Battery charge', '162'] }
+  ];
+  var cls = 'all', aff = true, sort = 0;
+  function fmt(n) { return n.toLocaleString('en-US'); }
+  function drawParts() {
+    var list = PARTS.filter(function (p) { return (cls === 'all' || p.c === cls) && (!aff || p.p <= wallet); });
+    list.sort(function (a, b) { return a.p - b.p; });
+    var el = document.getElementById('parts');
+    el.innerHTML = list.length ? list.map(function (p) {
+      var can = p.p <= wallet;
+      return '<article class="card part"><div class="row"><h3>' + p.n + '</h3><span class="price' + (can ? '' : ' short') + '">' + fmt(p.p) + ' ¢</span></div>' +
+        '<div class="row"><span class="rar" style="--c:var(--rar-' + p.r + ')"><i></i><span class="mono">' + p.r + ' · ' + p.c + '</span></span></div>' +
+        '<div class="keystat"><span>' + p.k[0] + '</span><b>' + p.k[1] + '</b></div>' +
+        (can ? '<button class="btn primary" type="button">Buy</button>' : '<button class="btn" type="button" disabled>Need ' + fmt(p.p - wallet) + ' ¢ more</button>') + '</article>';
+    }).join('') : '<p class="hint">Nothing here is affordable yet. Switch off “Affordable now” to see everything.</p>';
+  }
+  document.getElementById('f-aff').addEventListener('click', function () { aff = !aff; this.setAttribute('aria-pressed', aff); drawParts(); });
+  document.querySelectorAll('[data-class]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      cls = b.getAttribute('data-class');
+      document.querySelectorAll('[data-class]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      drawParts();
+    });
+  });
+  document.getElementById('needs-btn').addEventListener('click', function () {
+    aff = false; document.getElementById('f-aff').setAttribute('aria-pressed', 'false');
+    cls = 'defense'; document.querySelectorAll('[data-class]').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-class') === 'defense'); });
+    drawParts();
+  });
+  document.querySelectorAll('[data-tab]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x === b); });
+      ['buy', 'service', 'work'].forEach(function (t) { document.getElementById('p-' + t).hidden = t !== b.getAttribute('data-tab'); });
+    });
+  });
+  document.getElementById('rig-link').addEventListener('click', function () {
+    cls = 'all'; aff = false; drawParts();
+    document.querySelector('[data-tab="buy"]').click();
+  });
+
+  /* map */
+  var PLACES = [
+    { id: 'tycho', n: 'Tycho Shipyard', t: 'shipyard', x: 150, y: 90, risk: 'lo', d: 410, s: ['repair', 'refuel', 'market', 'upgrade'], m: 2 },
+    { id: 'vesta', n: 'Vesta Refinery', t: 'outpost', x: 300, y: 120, risk: 'lo', d: 555, s: ['refuel', 'market'], m: 1 },
+    { id: 'echo', n: 'Echo-7', t: 'relay', x: 360, y: 40, risk: 'md', d: 780, s: ['refuel'], m: 0 },
+    { id: 'marsa', n: 'Marsa Anchorage', t: 'commercial port', x: 540, y: 80, risk: 'md', d: 1210, s: ['market', 'repair', 'refuel'], m: 3 },
+    { id: 'hedus', n: 'Hedus Base', t: 'garrison', x: 470, y: 150, risk: 'md', d: 980, s: ['repair', 'refuel'], m: 2 },
+    { id: 'ceres', n: 'Ceres Port', t: 'commercial port', x: 190, y: 230, risk: 'lo', d: 0, s: ['market', 'repair', 'refuel', 'upgrade', 'scavenging', 'mining'], m: 3, here: true },
+    { id: 'kessler', n: 'Kessler Gate', t: 'junction', x: 380, y: 245, risk: 'md', d: 780, s: ['refuel'], m: 1 },
+    { id: 'cair', n: 'Cair Refuge', t: 'outpost', x: 130, y: 320, risk: 'lo', d: 410, s: ['refuel', 'market', 'scavenging'], m: 2 },
+    { id: 'spur', n: 'Spur Rift', t: 'frontier', x: 290, y: 345, risk: 'md', d: 1010, s: ['refuel', 'scavenging'], m: 1 },
+    { id: 'rennick', n: 'Rennick Station', t: 'outpost', x: 420, y: 345, risk: 'md', d: 1180, s: ['market', 'refuel'], m: 2 },
+    { id: 'drift', n: 'Drift-9 Field', t: 'scrap field', x: 520, y: 310, risk: 'hi', d: 1430, s: ['mining'], m: 2 },
+    { id: 'veil', n: 'The Veil', t: 'dead zone', x: 560, y: 430, risk: 'hi', d: 1780, s: [], m: 1 },
+    { id: 'halcyon', n: 'Halcyon Reach', t: 'deep field', x: 640, y: 215, risk: 'hi', d: 2100, s: ['mining'], m: 0 },
+    { id: 'maw', n: 'The Maw', t: 'deep field', x: 720, y: 270, risk: 'hi', d: 2600, s: ['mining'], m: 0 }
+  ];
+  var EDGES = [['tycho','vesta'],['tycho','ceres'],['vesta','ceres'],['ceres','kessler'],['ceres','cair'],['cair','spur'],['spur','rennick'],['kessler','hedus'],['hedus','marsa'],['echo','hedus'],['kessler','rennick'],['rennick','drift'],['drift','halcyon'],['halcyon','maw'],['drift','veil']];
+  var color = { lo: 'var(--risk-lo)', md: 'var(--risk-md)', hi: 'var(--risk-hi)' };
+  var by = {}; PLACES.forEach(function (p) { by[p.id] = p; });
+  var svg = document.getElementById('mapsvg');
+  var html = EDGES.map(function (e) {
+    var a = by[e[0]], b = by[e[1]];
+    return '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="oklch(96% 0.006 262 / 0.16)" stroke-width="1.2"/>';
+  }).join('');
+  html += PLACES.map(function (p) {
+    return '<g class="node" tabindex="0" role="button" data-id="' + p.id + '" aria-label="' + p.n + '">' +
+      (p.here ? '<circle cx="' + p.x + '" cy="' + p.y + '" r="19" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 4"/>' : '') +
+      '<circle class="ring" cx="' + p.x + '" cy="' + p.y + '" r="10" stroke="' + color[p.risk] + '"/>' +
+      '<text x="' + p.x + '" y="' + (p.y + 27) + '" text-anchor="middle">' + p.n + '</text>' +
+      '<text class="t" x="' + p.x + '" y="' + (p.y + 38) + '" text-anchor="middle">' + p.t + '</text></g>';
+  }).join('');
+  svg.innerHTML = html;
+  function showPlace(id) {
+    var p = by[id];
+    document.querySelectorAll('.node').forEach(function (n) { n.classList.toggle('sel', n.getAttribute('data-id') === id); });
+    var risk = { lo: 'low risk', md: 'medium risk', hi: 'high risk' }[p.risk];
+    document.getElementById('panel').innerHTML =
+      '<div><div class="mono">' + p.t + (p.here ? ' · you are here' : '') + '</div><h2>' + p.n.toLowerCase() + '</h2></div>' +
+      '<div class="stat"><span class="mono">distance</span><b>' + (p.here ? '0' : fmt(p.d)) + '</b></div>' +
+      '<div class="stat"><span class="mono">risk</span><span class="pill ' + p.risk + '">' + risk + '</span></div>' +
+      '<div class="stat"><span class="mono">fuel to go</span><b>' + (p.here ? '0' : Math.round(p.d * 0.078)) + '</b></div>' +
+      '<div><div class="mono" style="margin-bottom:6px">services</div><div class="chips">' + (p.s.length ? p.s.map(function (s) { return '<span class="tag-s">' + s + '</span>'; }).join('') : '<span class="hint">None. Nobody lives here.</span>') + '</div></div>' +
+      (p.here ? '<a class="btn primary" href="#port">Open the port</a>' : '<button class="btn primary" type="button">Travel here · ' + Math.round(p.d * 0.078) + ' fuel</button>') +
+      '<a class="btn ghost" href="#missions">' + p.m + ' mission' + (p.m === 1 ? '' : 's') + ' from here</a>';
+  }
+  svg.addEventListener('click', function (e) { var g = e.target.closest('.node'); if (g) showPlace(g.getAttribute('data-id')); });
+  svg.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { var g = e.target.closest('.node'); if (g) { e.preventDefault(); showPlace(g.getAttribute('data-id')); } } });
+  showPlace('ceres');
+
+  /* routing by plain hash tokens */
+  function route() {
+    var h = (location.hash || '#ship').slice(1);
+    if (['ship', 'port', 'missions', 'map'].indexOf(h) < 0) h = 'ship';
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === 's-' + h); });
+    document.querySelectorAll('.nav a, .tabbar a').forEach(function (a) {
+      if (a.getAttribute('href') === '#' + h) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  /* account menu */
+  var av = document.getElementById('avatar'), menu = document.getElementById('menu');
+  av.addEventListener('click', function () { var open = menu.hidden; menu.hidden = !open; av.setAttribute('aria-expanded', open); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.acct')) { menu.hidden = true; av.setAttribute('aria-expanded', 'false'); } });
+  drawParts();
+})();
+</script>
