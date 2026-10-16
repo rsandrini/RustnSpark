@@ -1,0 +1,48 @@
+{
+ "rules": {
+  "economy.reward_base": 450,
+  "economy.reward_per_tier": 90,
+  "economy.fuel_price": 0.45,
+  "economy.market_rarity_by_bridge": {
+   "EPIC": {
+    "COMMON": 1,
+    "UNCOMMON": 0.9,
+    "RARE": 0.6,
+    "EPIC": 0.4,
+    "LEGENDARY": 0.08
+   },
+   "RARE": {
+    "COMMON": 1,
+    "UNCOMMON": 0.7,
+    "RARE": 0.4,
+    "EPIC": 0.15,
+    "LEGENDARY": 0
+   },
+   "COMMON": {
+    "EPIC": 0,
+    "RARE": 0.045,
+    "COMMON": 1,
+    "UNCOMMON": 0.14,
+    "LEGENDARY": 0
+   },
+   "UNCOMMON": {
+    "EPIC": 0.01,
+    "RARE": 0.12,
+    "COMMON": 1,
+    "UNCOMMON": 0.4,
+    "LEGENDARY": 0
+   },
+   "LEGENDARY": {
+    "EPIC": 0.4,
+    "RARE": 0.7,
+    "COMMON": 1,
+    "UNCOMMON": 1,
+    "LEGENDARY": 0.1
+   }
+  }
+ },
+ "catalogPrice": {
+  "EPIC": 2,
+  "LEGENDARY": 3
+ }
+}

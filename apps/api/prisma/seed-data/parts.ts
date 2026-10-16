@@ -75,9 +75,18 @@ const RARITY_SUFFIX: Record<string, string> = {
   LEGENDARY: '_legendary',
 };
 
+/**
+ * Balance round 4 (sim experiment epic-v1): money must keep mattering up to Legendary, so the two
+ * top tiers cost more than the doubling ladder the tables are written with (Epic x2, Legendary x3).
+ * Repair, upgrade gaps and resale all follow the price, so one number moves the whole economy.
+ */
+const PRICE_BY_RARITY: Record<string, number> = { EPIC: 2, LEGENDARY: 3 };
+
 function rowsOf(family: Family): SeedPart[] {
   return family.tiers.map(({ name, description, ...tier }) => ({
     ...tier,
+    basePrice: Math.round(tier.basePrice * (PRICE_BY_RARITY[tier.rarity] ?? 1)),
+    scrapValue: Math.round(tier.scrapValue * (PRICE_BY_RARITY[tier.rarity] ?? 1)),
     partType: `${family.base}${RARITY_SUFFIX[tier.rarity] ?? ''}`,
     displayName: name ?? family.name,
     description: description ?? family.description,

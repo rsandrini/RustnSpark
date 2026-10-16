@@ -87,13 +87,13 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     hull_frame_share: 0.7,
   },
   economy: {
-    fuel_price: 0.65,
+    fuel_price: 0.45,
     repair_price: 3,
     repair_price_ref: 3,
     repair_factor: 0.62,
     maintenance_per_tier: 60,
-    reward_base: 300,
-    reward_per_tier: 120,
+    reward_base: 450,
+    reward_per_tier: 90,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
     // too subtly to notice — halving both divisors roughly doubles the spread between an
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
@@ -185,8 +185,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     market_rarity_by_bridge: {
       COMMON: { COMMON: 1, UNCOMMON: 0.14, RARE: 0.045, EPIC: 0, LEGENDARY: 0 },
       UNCOMMON: { COMMON: 1, UNCOMMON: 0.4, RARE: 0.12, EPIC: 0.01, LEGENDARY: 0 },
-      RARE: { COMMON: 1, UNCOMMON: 0.7, RARE: 0.3, EPIC: 0.02, LEGENDARY: 0 },
-      EPIC: { COMMON: 1, UNCOMMON: 0.9, RARE: 0.5, EPIC: 0.2, LEGENDARY: 0.02 },
+      // Balance round 4: a rare/epic bridge sees epic parts often enough to buy its way up (money is the path past Rare).
+      RARE: { COMMON: 1, UNCOMMON: 0.7, RARE: 0.4, EPIC: 0.15, LEGENDARY: 0 },
+      EPIC: { COMMON: 1, UNCOMMON: 0.9, RARE: 0.6, EPIC: 0.4, LEGENDARY: 0.08 },
       LEGENDARY: { COMMON: 1, UNCOMMON: 1, RARE: 0.7, EPIC: 0.4, LEGENDARY: 0.1 },
     },
   },

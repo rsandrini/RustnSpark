@@ -66,6 +66,8 @@ function printCell(
 
 interface EditFile {
   readonly rules?: Record<string, Json>;
+  /** Part price multipliers by rarity (`{"EPIC": 2, "LEGENDARY": 3}`): base price and scrap value. */
+  readonly catalogPrice?: Record<string, number>;
   readonly bridgeScaling?: unknown;
 }
 
@@ -183,6 +185,13 @@ export function experimentCommand(args: readonly string[]): Promise<void> {
     const editedSnapshot = withEdits(baseSnapshot, (draft) => {
       for (const [key, value] of Object.entries(rules)) {
         setRule(draft, key, value);
+      }
+      for (const row of draft.catalog) {
+        const multiplier = edit.catalogPrice?.[row.rarity];
+        if (multiplier === undefined) continue;
+        const editable = row as { basePrice: number; scrapValue: number };
+        editable.basePrice = Math.round(row.basePrice * multiplier);
+        editable.scrapValue = Math.round(row.scrapValue * multiplier);
       }
     });
     process.stdout.write(

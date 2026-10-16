@@ -10,6 +10,7 @@ import { assembleStarterKit } from '../support/assemble.js';
 import { seed } from '../../prisma/seed.js';
 import { PasswordService } from '../../src/auth/password.service.js';
 import { TokenService } from '../../src/auth/token.service.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 import { GameConfigService } from '../../src/config/game-config.service.js';
 import type { DispatchJobData } from '../../src/missions/dispatch.service.js';
 import { MissionResolveService } from '../../src/missions/resolve.service.js';
@@ -356,7 +357,9 @@ describe('admin player inspector (S11.4)', () => {
     expect(edit.status).toBe(200);
     const configService = testApp.app.get(GameConfigService);
     expect(configService.snapshot().hash).not.toBe(log.rulesHash);
-    expect((await configService.byHash(log.rulesHash)).economy.reward_per_tier).toBe(120);
+    expect((await configService.byHash(log.rulesHash)).economy.reward_per_tier).toBe(
+      GAME_CONFIG_DEFAULTS.economy.reward_per_tier,
+    );
 
     // The world the run read is stored in the log: re-tuning the map afterwards must not
     // change what the replay sees.

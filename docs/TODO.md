@@ -65,9 +65,17 @@ buy-used/repair/sell exploit floor), so wear is the lever, not a repair price cu
   (`reward_base` 450 + `reward_per_tier` 90: L2 ~15% sooner, chem repair share +6 points) but is NOT
   applied. To halve L2 again the early net per mission has to double; that is a design call.
 - [x] Bot: buys a mining rig when only `MINER` work is on the board.
-- [ ] Bot gap left: prefer shorter routes when fuel-bound (fuel is still 29-37% of reward on chem).
-- [ ] Dev-only data (`ziggy` location, 5000-distance route, `race_explorers_ziggy`) inflates the zone 1
-  reward average; decide whether it ships.
+- [x] Balance round 4 (migration `20261016000000_balance_round_epic_sink`, sim experiment `epic-v1`, 8 runs x
+  300 missions per build, game-clock hours, median): Epic parts cost x2 and Legendary x3 (money is the
+  path past Rare), rare/epic bridges see epic parts more often, `reward_base` 450 / `reward_per_tier` 90,
+  `fuel_price` 0.45. Time to Epic (L4): chem never -> 56 h, hybrid 132 h (1 of 8) -> 56 h, ion 187 -> 91 h;
+  Legendary (L5): chem never -> 107 h, ion 232 -> 191 h. End wallets 200-450k -> 35-85k. Cost: repair is
+  49-62% of reward at the top (parts cost more); fuel is 12% of reward on chem.
+- [x] Fuel share of reward on chem 29-37% -> 12%; the "prefer shorter routes" bot gap is no longer needed.
+- [x] Sim robustness: a fill slot (second solar panel) buys the next tier up when the wanted tier is on no
+  reachable shelf, instead of wandering (ion's early levels depended on shelf luck).
+- [x] Map: a separate next step (owner): expand it for a complete v1, with zoom and panning, very short and
+  long distances. The dev-only `ziggy` route was shortened 5000 -> 900 so it stops inflating zone 1.
 - [ ] Late game (parked): fusion torch engine + fusion reactor family above nuclear (see GLOSSARY once
   written); needs the early and mid economy to hold first.
 

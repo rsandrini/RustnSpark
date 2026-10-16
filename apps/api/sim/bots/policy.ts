@@ -563,14 +563,24 @@ function optionsFor(
   // (b) Buy the tier at the cheapest reachable port, net of what the old part sells for — only
   // when the bought part would actually fly in this slot (same power/viability gate as a fit:
   // a part that cannot be fitted is money the reserve just lit on fire).
-  const buy = bestBuyPort(state, snapshot, rules, catalogByType, target.nextRow.partType);
+  // A slot with nothing in it (a fill) takes the wanted tier or, when no reachable shelf has it,
+  // the next one up: a pilot who cannot find the common panel buys the uncommon one, not wanders.
+  let buyType = target.nextRow.partType;
+  let buy = bestBuyPort(state, snapshot, rules, catalogByType, buyType);
+  for (let tries = 0; buy === null && target.replaceId === null && tries < 4; tries += 1) {
+    const row = catalogByType.get(buyType);
+    const upType = row === undefined ? null : nextTierPartTypeOf(buyType, row.rarity);
+    if (upType === null) break;
+    buyType = upType;
+    buy = bestBuyPort(state, snapshot, rules, catalogByType, buyType);
+  }
   if (
     buy !== null &&
     fitWouldBeViable(
       state,
       rules,
       catalogByType,
-      { id: 'phantom-buy', partType: target.nextRow.partType, condition: FULL_CONDITION },
+      { id: 'phantom-buy', partType: buyType, condition: FULL_CONDITION },
       target.replaceId ?? undefined,
     )
   ) {
@@ -595,7 +605,7 @@ function optionsFor(
         action: {
           kind: 'buy',
           listingId: buy.listingId,
-          partType: target.nextRow.partType,
+          partType: buyType,
           locationId: buy.locationId,
           price: buy.price,
           replaceId: target.replaceId,
