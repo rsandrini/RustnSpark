@@ -139,8 +139,20 @@ the balance must all work; only then go back to a starter shield with a larger b
 ## P5 — Look and feel
 
 - [ ] **Upgrade the CSS to https://github.com/nutlope/hallmark: investigate first, to choose which
-  one will be used.** Today the styles are one hand-written sheet (`apps/web/src/styles/index.css`)
-  and the design tokens live in it. The investigation compares what hallmark offers with what the
-  game needs (the dark yard look, the rarity colours, the part cards, the popups and the Admin
-  screens), what the migration would touch, and what it costs; it ends with a recommendation to
-  pick the one to use. No code changes until that is decided.
+  one will be used.** *Investigation done (2026-10-16); waiting for the owner's pick.* Findings:
+  - Hallmark is **not a stylesheet or component library**. It is a design *skill* for Claude Code / Cursor /
+    Codex (MIT, `npx skills add nutlope/hallmark`): 21 token themes (`[data-theme]`), 57 "slop test" gates,
+    and four verbs: build, `audit` (punch list, no edits), `redesign`, `study` (extract a design's DNA into
+    a portable `design.md`). There is nothing to install in the app and no runtime dependency.
+  - Its themes target marketing and editorial pages (hero, nav and footer archetypes); most are light
+    "paper" themes. The dark ones are `midnight`, `terminal`, `aurora`, `manifesto`, `lumen` (Night).
+  - Our sheet: one 5,943-line `index.css`, 37 custom properties and 568 `var()` uses, but also 109 hex and
+    75 rgb literals (68 distinct hex colours) that bypass the tokens, no deliberate type pairing
+    (`inherit` / Georgia / monospace), 0 `!important`, reduced-motion handled, 21 keyframes, 4 breakpoints.
+  - Options: **A** keep our identity and use Hallmark as an audit + discipline tool (audit key screens,
+    lift the hex literals into named tokens, the 8-state rule for interactive controls, a 320-414 px
+    mobile floor); **B** adopt a dark theme's token set and type pairing as the new base (rarity and
+    faction colours stay ours); **C** `redesign` the whole UI (not recommended: 6k lines, 48 web specs
+    tied to markup and classes).
+  - Recommendation: **A first**, then decide on a B-lite (a type pairing and token structure from
+    `midnight`/`aurora`) from the audit's punch list. No code changes until the owner picks.
