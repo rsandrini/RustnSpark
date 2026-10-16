@@ -877,9 +877,9 @@
   },
   "nav": {
     "label": "Game navigation",
-    "hangar": "My Ship",
+    "hangar": "Ship",
     "map": "Map",
-    "board": "Board",
+    "board": "Missions",
     "transit": "Transit",
     "port": "Port",
     "profile": "Profile",

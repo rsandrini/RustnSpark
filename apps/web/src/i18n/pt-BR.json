@@ -877,9 +877,9 @@
   },
   "nav": {
     "label": "Navegação do jogo",
-    "hangar": "Minha Nave",
+    "hangar": "Nave",
     "map": "Mapa",
-    "board": "Quadro",
+    "board": "Missões",
     "transit": "Trânsito",
     "port": "Porto",
     "profile": "Perfil",
