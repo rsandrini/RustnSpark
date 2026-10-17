@@ -4,11 +4,12 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 import { RedisModule } from '../common/redis/redis.module.js';
 import { GameConfigRepository } from './game-config.repository.js';
 import { DisplayController } from './display.controller.js';
+import { GuideController } from './guide.controller.js';
 import { GameConfigService } from './game-config.service.js';
 
 @Module({
   imports: [EnvModule, PrismaModule, RedisModule],
-  controllers: [DisplayController],
+  controllers: [DisplayController, GuideController],
   providers: [GameConfigService, GameConfigRepository],
   exports: [GameConfigService, GameConfigRepository],
 })

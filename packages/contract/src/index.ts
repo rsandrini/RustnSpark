@@ -247,6 +247,35 @@ export const DisplayResponseSchema = z.object({
 });
 export type DisplayResponse = z.infer<typeof DisplayResponseSchema>;
 
+/** GET /v1/guide/rules: the player-facing figures the in-game Guide quotes (all admin-tunable). */
+export const GuideRulesResponseSchema = z.object({
+  fuelPrice: z.number(),
+  chemLevelMax: z.number(),
+  ionLevelMax: z.number(),
+  repairScrapMax: z.number(),
+  repairPointsPerScrap: z.number(),
+  repairSecondsPerPoint: z.record(z.string(), z.number()),
+  sellRatio: z.number(),
+  startCredits: z.number(),
+  rescueCost: z.number(),
+  upgradePriceMultiplier: z.record(z.string(), z.number()),
+  upgradeMaterials: z.record(
+    z.string(),
+    z.array(z.object({ material: z.string(), mode: z.string(), k: z.number() })),
+  ),
+  scavengeCooldownSeconds: z.number(),
+  scavengeShipSeconds: z.number(),
+  scavengeFootSeconds: z.number(),
+  miningJobSeconds: z.number(),
+  shieldRegen: z.number(),
+  armorPoolFactor: z.number(),
+  armorReduction: z.number(),
+  sparePartSlots: z.number(),
+  openCargoUnitPay: z.number(),
+  shipTierThresholds: z.record(z.string(), z.number()),
+});
+export type GuideRulesResponse = z.infer<typeof GuideRulesResponseSchema>;
+
 export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
 export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
 

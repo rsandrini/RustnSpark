@@ -33,6 +33,7 @@ import {
   SellResponseSchema,
   ShipResponseSchema,
   TuningRevisionResponseSchema,
+  GuideRulesResponseSchema,
   UpdateLocaleResponseSchema,
   UpdateTutorialResponseSchema,
   WorldResponseSchema,
@@ -171,6 +172,15 @@ describe('HTTP contract: real responses match packages/contract', () => {
     ).toEqual({
       tutorialDone: true,
     });
+  });
+
+  it('guide rules: the figures the in-game Guide quotes, tracking the live config', async () => {
+    const response = await get('/v1/guide/rules');
+    expect(response.status).toBe(200);
+    const rules = contract(GuideRulesResponseSchema, response.body, 'GET /guide/rules');
+    expect(rules.fuelPrice).toBeGreaterThan(0);
+    expect(rules.upgradeMaterials.COMMON?.length).toBeGreaterThan(0);
+    expect(Object.keys(rules.shipTierThresholds).length).toBeGreaterThan(0);
   });
 
   it('world map', async () => {
