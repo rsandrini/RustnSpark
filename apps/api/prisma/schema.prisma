@@ -61,6 +61,9 @@ model Player {
   // repair) still show and store their real duration, but actually finish after
   // admin.debug_fast_ops_seconds. Off for everyone by default; set only by an admin.
   debugFastOps    Boolean           @default(false)
+  // The newcomer tutorial card is gone for good: skipped or finished. Reopening it from the
+  // account menu sets it back to false.
+  tutorialDone    Boolean           @default(false)
   createdAt       DateTime          @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]

@@ -23,6 +23,8 @@ import {
   type Rot,
 } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
+import { useAuthContext } from '../auth/auth.context';
+import { useTutorialVisit } from '../tutorial/tutorial-store';
 import { hexPlaceholder } from '../../ui/ShipIdentity';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
@@ -146,6 +148,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const pageTab: PageTab = pageTabFromPath(location.pathname);
+  const { user: tutorialUser } = useAuthContext();
+  useTutorialVisit(tutorialUser?.id, pageTab === 'ship' ? 'yard' : null);
   // Keep whatever query string is already there (e.g. Board's own ?location=X origin filter) —
   // switching tabs changes the path, never drops it.
   const goToTab = (tab: PageTab) => navigate(`${PATH_OF_TAB[tab]}${location.search}`);

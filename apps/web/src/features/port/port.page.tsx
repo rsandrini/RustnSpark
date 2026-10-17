@@ -26,6 +26,7 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
+import { useTutorialVisit } from '../tutorial/tutorial-store';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
@@ -106,6 +107,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<PortTabId>('market');
+  useTutorialVisit(
+    user?.id,
+    tab === 'repair' || tab === 'refuel' || tab === 'scavenging' || tab === 'mining' ? tab : null,
+  );
   // The last tab opened in each group, so going back to a group lands where the pilot was.
   const [lastInGroup, setLastInGroup] = useState<Partial<Record<PortGroupId, PortTabId>>>({});
   const selectTab = (next: PortTabId) => {

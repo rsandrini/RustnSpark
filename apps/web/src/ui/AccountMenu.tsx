@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { authApi } from '../features/auth/auth.api';
+import { useAuthContext } from '../features/auth/auth.context';
 import { useAuth, useLogout } from '../features/auth/auth.hooks';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 
@@ -23,6 +25,7 @@ function initialsOf(name: string | undefined): string {
 export function AccountMenu() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { reloadProfile } = useAuthContext();
   const logout = useLogout();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -71,6 +74,19 @@ export function AccountMenu() {
           >
             {t('nav.profile')}
           </Link>
+          {user?.tutorialDone === true && (
+            <button
+              type="button"
+              className="shell-menu-item"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                void authApi.setTutorialDone(false).then(() => reloadProfile());
+              }}
+            >
+              {t('nav.gettingStarted')}
+            </button>
+          )}
           {user?.role === 'ADMIN' && (
             <Link
               className="shell-menu-item"

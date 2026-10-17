@@ -13,6 +13,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'locale',
     'factionId',
     'debugFastOps',
+    'tutorialDone',
     'createdAt',
   ],
   RefreshToken: [

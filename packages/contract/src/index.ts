@@ -49,6 +49,8 @@ export const PlayerProfileResponseSchema = z.object({
   role: UserRoleSchema,
   /** null until POST /v1/players/me/onboarding picks a faction (S10.2). */
   factionId: z.string().nullable(),
+  /** The newcomer tutorial was skipped or finished; false again when it is reopened. */
+  tutorialDone: z.boolean(),
 });
 export type PlayerProfileResponse = z.infer<typeof PlayerProfileResponseSchema>;
 
@@ -74,6 +76,11 @@ export type UpdateLocaleRequest = z.infer<typeof UpdateLocaleRequestSchema>;
 
 export const UpdateLocaleResponseSchema = z.object({ locale: z.string() });
 export type UpdateLocaleResponse = z.infer<typeof UpdateLocaleResponseSchema>;
+
+export const UpdateTutorialRequestSchema = z.object({ done: z.boolean() });
+export type UpdateTutorialRequest = z.infer<typeof UpdateTutorialRequestSchema>;
+export const UpdateTutorialResponseSchema = z.object({ tutorialDone: z.boolean() });
+export type UpdateTutorialResponse = z.infer<typeof UpdateTutorialResponseSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Ships, parts, assembly

@@ -40,6 +40,7 @@ import type {
   ShipResponse,
   ShipStatus,
   UpdateLocaleResponse,
+  UpdateTutorialResponse,
   WorldResponse,
 } from '../../api/generated';
 
@@ -63,6 +64,8 @@ const profile = (factionId: string | null = null) => ({
   role: 'PLAYER' as const,
   locale: 'en',
   factionId,
+  // an established pilot by default: the tutorial card stays out of every other screen's specs
+  tutorialDone: true,
 });
 
 const sheet = () => ({
@@ -559,6 +562,11 @@ export const handlers = [
   http.post('/v1/players/me/locale', async ({ request }) => {
     const body = (await request.json()) as { locale: string };
     return ok<UpdateLocaleResponse>({ locale: body.locale });
+  }),
+
+  http.post('/v1/players/me/tutorial', async ({ request }) => {
+    const body = (await request.json()) as { done: boolean };
+    return ok<UpdateTutorialResponse>({ tutorialDone: body.done });
   }),
 
   http.post('/v1/players/me/onboarding', () =>

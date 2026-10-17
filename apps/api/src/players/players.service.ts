@@ -12,6 +12,8 @@ export interface PlayerProfile {
   locale: string;
   role: string;
   factionId: string | null;
+  /** The newcomer tutorial was skipped or finished (reopening it sets this back to false). */
+  tutorialDone: boolean;
 }
 
 export function toPlayerProfile(player: Player, role: string): PlayerProfile {
@@ -22,6 +24,7 @@ export function toPlayerProfile(player: Player, role: string): PlayerProfile {
     locale: player.locale,
     role,
     factionId: player.factionId,
+    tutorialDone: player.tutorialDone,
   };
 }
 
@@ -40,10 +43,21 @@ export class PlayersService {
   }
 
   async updateLocale(playerId: string, locale: Locale): Promise<PlayerProfile> {
+    return this.updatePlayer(playerId, { locale });
+  }
+
+  async updateTutorial(playerId: string, done: boolean): Promise<PlayerProfile> {
+    return this.updatePlayer(playerId, { tutorialDone: done });
+  }
+
+  private async updatePlayer(
+    playerId: string,
+    data: Prisma.PlayerUpdateInput,
+  ): Promise<PlayerProfile> {
     try {
       const player = await this.prisma.player.update({
         where: { id: playerId },
-        data: { locale },
+        data,
         include: { account: { select: { role: true } } },
       });
       return toPlayerProfile(player, player.account.role);

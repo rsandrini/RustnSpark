@@ -1,0 +1,150 @@
+/*
+ * The newcomer tutorial card (a checklist at the bottom right) and its collapsed pill.
+ */
+.tutorial-card,
+.tutorial-pill {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: 16px;
+  z-index: 40;
+}
+.tutorial-card {
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.tutorial-head h2 {
+  margin: 0;
+  margin-right: auto;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  text-transform: lowercase;
+}
+.tutorial-count {
+  color: var(--brass);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.tutorial-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tutorial-step {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.tutorial-step p {
+  margin: 2px 0 0;
+}
+.tutorial-step b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.tutorial-step.done b {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.tutorial-step.done p {
+  display: none;
+}
+.tutorial-step:not(.next):not(.done) p {
+  display: none;
+}
+.tutorial-tick {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border: 1px solid var(--rule-3);
+  border-radius: 50%;
+  color: var(--ok-hi);
+  font-size: 11px;
+  font-weight: 700;
+}
+.tutorial-step.done .tutorial-tick {
+  border-color: var(--ok);
+  background: color-mix(in oklab, var(--ok) 18%, transparent);
+}
+.tutorial-step.next .tutorial-tick {
+  border-color: var(--brass);
+}
+.tutorial-go {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--brass);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tutorial-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+.tutorial-foot p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.tutorial-skip {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.tutorial-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-pop);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.tutorial-pill b {
+  color: var(--brass);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+/* phones: above the bottom tab bar */
+@media (max-width: 860px) {
+  .tutorial-card,
+  .tutorial-pill {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}

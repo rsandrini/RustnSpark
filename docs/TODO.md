@@ -107,7 +107,7 @@ the balance must all work; only then go back to a starter shield with a larger b
   from the API where it quotes them (for example the repair and upgrade rules), not hard-coding
   them. The part descriptions (`hangar.partClasses`, the part-class help texts) are a starting point.
 
-- [ ] **A simple tutorial for newcomers.** Something short that shows, step by step: how to build a
+- [x] **A simple tutorial for newcomers.** (done: a self-ticking checklist card, skip / finish saved on the player (`tutorialDone`), reopened from the account menu; see `docs/design/tutorial-plan.md`) Something short that shows, step by step: how to build a
   ship (place parts, connect them, fix red ports), how to refuel, repair, scavenge and mine, and
   how to get and accept tasks. *Needs design:* an in-game guided flow for a new pilot (a checklist
   that ticks as the pilot does each thing, or a few highlighted steps), shown after onboarding and

@@ -62,6 +62,7 @@ describe('players/me endpoints (S2.3)', () => {
       locale: 'pt-BR',
       role: seeded.account.role,
       factionId: null,
+      tutorialDone: false,
     });
   });
 
@@ -100,6 +101,37 @@ describe('players/me endpoints (S2.3)', () => {
 
     const me = await request(server).get('/v1/players/me').set('Authorization', `Bearer ${token}`);
     expect(me.body).toMatchObject({ locale: 'pt-BR' });
+  });
+
+  it('starts with the tutorial not done, saves skip / finish and reopening, and is idempotent', async () => {
+    const { seeded, token } = await seedAndToken();
+    const server = httpServer(testApp.app);
+    const send = (done: unknown) =>
+      request(server)
+        .post('/v1/players/me/tutorial')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ done });
+
+    const me = await request(server).get('/v1/players/me').set('Authorization', `Bearer ${token}`);
+    expect(me.body).toMatchObject({ tutorialDone: false });
+
+    for (const done of [true, true, false]) {
+      const response = await send(done);
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ id: seeded.player.id, tutorialDone: done });
+      const persisted = await prisma.player.findUniqueOrThrow({ where: { id: seeded.player.id } });
+      expect(persisted.tutorialDone).toBe(done);
+    }
+    for (const bad of ['yes', 1, null, undefined]) {
+      expect((await send(bad)).status).toBe(400);
+    }
+  });
+
+  it('rejects a tutorial update without an access token', async () => {
+    const response = await request(httpServer(testApp.app))
+      .post('/v1/players/me/tutorial')
+      .send({ done: true });
+    expect(response.status).toBe(401);
   });
 
   it('rejects unsupported, wrongly-cased or missing locales with 400', async () => {

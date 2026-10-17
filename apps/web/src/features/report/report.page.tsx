@@ -21,6 +21,7 @@ import { PageTitle } from '../../ui/PageTitle';
 import { ReportOverview } from './report-overview';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
+import { useTutorialVisit } from '../tutorial/tutorial-store';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
@@ -35,7 +36,8 @@ export interface ReportPageProps {
 export function ReportPage({ guided = false }: ReportPageProps) {
   const { missionId = '' } = useParams();
   const location = useLocation();
-  const { reloadProfile } = useAuthContext();
+  const { user, reloadProfile } = useAuthContext();
+  useTutorialVisit(user?.id, 'report');
   // Opening a report is the moment a pilot looks at the money: make sure it is current.
   useEffect(() => {
     void reloadProfile();

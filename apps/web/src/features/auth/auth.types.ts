@@ -10,6 +10,8 @@ export interface UserProfile {
   role: UserRole;
   /** null until onboarding picks a faction — gates the game routes (S10.2). */
   factionId: string | null;
+  /** The newcomer tutorial was skipped or finished; false while it should still show. */
+  tutorialDone?: boolean;
 }
 
 export interface LoginCredentials {

@@ -4,6 +4,7 @@ import {
   type CurrentUserPayload,
 } from '../common/decorators/current-user.decorator.js';
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
+import { UpdateTutorialDto } from './dto/update-tutorial.dto.js';
 import { OnboardingDto } from './dto/onboarding.dto.js';
 import { OnboardingService } from './onboarding.service.js';
 import { PlayersService, type PlayerProfile } from './players.service.js';
@@ -29,6 +30,15 @@ export class PlayersController {
     @Body() dto: UpdateLocaleDto,
   ): Promise<PlayerProfile> {
     return this.playersService.updateLocale(user.playerId, dto.locale);
+  }
+
+  @Post('me/tutorial')
+  @HttpCode(200)
+  updateTutorial(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateTutorialDto,
+  ): Promise<PlayerProfile> {
+    return this.playersService.updateTutorial(user.playerId, dto.done);
   }
 
   @Post('me/onboarding')

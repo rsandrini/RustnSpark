@@ -53,6 +53,7 @@ describe('GET /v1/players/me profile shape', () => {
       locale: 'en',
       role: 'PLAYER',
       factionId: null,
+      tutorialDone: false,
     });
     expect((meResponse.body as Record<string, unknown>).email).toBeUndefined();
   });

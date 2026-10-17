@@ -96,6 +96,48 @@
       "shapes": "Ponto = central · dois pontos pequenos = dividido · três = universal"
     }
   },
+  "tutorial": {
+    "title": "Primeiros passos",
+    "progress": "{{done}}/{{total}}",
+    "collapse": "Ocultar",
+    "go": "Leve-me até lá",
+    "skip": "Pular tutorial",
+    "skipConfirm": "Pular o tutorial de vez? Você pode trazê-lo de volta pelo menu da conta.",
+    "skipYes": "Sim, pular",
+    "skipNo": "Manter",
+    "allDone": "Tudo pronto. Era só isso.",
+    "close": "Fechar",
+    "steps": {
+      "build": {
+        "title": "Monte sua nave",
+        "hint": "Em Nave, use o Layout automático, ou posicione as peças você mesmo."
+      },
+      "ports": {
+        "title": "Leia as portas",
+        "hint": "Portas verdes estão conectadas, vermelhas estão erradas. Abra o estaleiro e confira."
+      },
+      "mission": {
+        "title": "Pegue uma missão",
+        "hint": "Abra Missões e aceite uma que sua nave possa fazer."
+      },
+      "dispatch": {
+        "title": "Despache",
+        "hint": "Mande a nave partir e espere o resultado."
+      },
+      "report": {
+        "title": "Leia seu relatório",
+        "hint": "Veja o que aconteceu, quanto pagou e o que a viagem desgastou."
+      },
+      "repair": {
+        "title": "Repare o desgaste",
+        "hint": "No Porto, abra Reparo e conserte o que a viagem desgastou."
+      },
+      "work": {
+        "title": "Teste outros trabalhos",
+        "hint": "No Porto: reabasteça, recupere sucata ou minere."
+      }
+    }
+  },
   "hangar": {
     "callouts": {
       "fp": "PD",
@@ -884,6 +926,7 @@
     "loading": "Carregando..."
   },
   "nav": {
+    "gettingStarted": "Primeiros passos",
     "label": "Navegação do jogo",
     "hangar": "Nave",
     "map": "Mapa",

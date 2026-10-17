@@ -1,4 +1,8 @@
-# Newcomer tutorial (plan, nothing built yet)
+# Newcomer tutorial (built; decision 3 changed: skipped / finished is saved on the server)
+
+Owner note: a skipped or finished tutorial must never come back, so `Player.tutorialDone` (boolean) lives in the
+database and `POST /v1/players/me/tutorial {done}` sets it; only the visit ticks stay in the browser. The card is
+open by default only on My Ship and is a small pill elsewhere (an open card covered the Port's Buy button).
 
 From `docs/TODO.md`: a short, skippable, bilingual guided flow for a new pilot, shown after onboarding, that
 ticks as the pilot does each thing: build the ship (place parts, connect them, fix red ports), refuel, repair,

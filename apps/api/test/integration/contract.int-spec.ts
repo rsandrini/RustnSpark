@@ -34,6 +34,7 @@ import {
   ShipResponseSchema,
   TuningRevisionResponseSchema,
   UpdateLocaleResponseSchema,
+  UpdateTutorialResponseSchema,
   WorldResponseSchema,
 } from '@rustandspark/contract';
 import { seed } from '../../prisma/seed.js';
@@ -163,6 +164,13 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
     const locale = await post('/v1/players/me/locale', { locale: 'pt-BR' });
     contract(UpdateLocaleResponseSchema, locale.body, 'POST /players/me/locale');
+
+    const tutorial = await post('/v1/players/me/tutorial', { done: true });
+    expect(
+      contract(UpdateTutorialResponseSchema, tutorial.body, 'POST /players/me/tutorial'),
+    ).toEqual({
+      tutorialDone: true,
+    });
   });
 
   it('world map', async () => {

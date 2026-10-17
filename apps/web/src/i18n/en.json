@@ -96,6 +96,48 @@
       "shapes": "Dot = central · two small dots = split · three = universal"
     }
   },
+  "tutorial": {
+    "title": "Getting started",
+    "progress": "{{done}}/{{total}}",
+    "collapse": "Hide",
+    "go": "Take me there",
+    "skip": "Skip tutorial",
+    "skipConfirm": "Skip the tutorial for good? You can bring it back from the account menu.",
+    "skipYes": "Yes, skip it",
+    "skipNo": "Keep it",
+    "allDone": "You are set. That was everything.",
+    "close": "Close",
+    "steps": {
+      "build": {
+        "title": "Build your ship",
+        "hint": "On My Ship, press Auto layout, or place the parts yourself."
+      },
+      "ports": {
+        "title": "Read the ports",
+        "hint": "Green ports are connected, red ones are wrong. Open the yard and check them."
+      },
+      "mission": {
+        "title": "Take a mission",
+        "hint": "Open Missions and accept one your ship can take."
+      },
+      "dispatch": {
+        "title": "Dispatch it",
+        "hint": "Send the ship out and wait for the result."
+      },
+      "report": {
+        "title": "Read your report",
+        "hint": "See what happened, what it paid and what the trip wore down."
+      },
+      "repair": {
+        "title": "Repair the wear",
+        "hint": "At the Port, open Repair and fix what the trip wore down."
+      },
+      "work": {
+        "title": "Try other work",
+        "hint": "At the Port: refuel, scavenge or mine."
+      }
+    }
+  },
   "hangar": {
     "callouts": {
       "fp": "FP",
@@ -884,6 +926,7 @@
     "loading": "Loading..."
   },
   "nav": {
+    "gettingStarted": "Getting started",
     "label": "Game navigation",
     "hangar": "Ship",
     "map": "Map",
