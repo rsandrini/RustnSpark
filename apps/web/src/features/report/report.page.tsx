@@ -17,6 +17,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
 import { pathOfLegs } from '../../ui/RouteMap';
+import { PageTitle } from '../../ui/PageTitle';
 import { ReportOverview } from './report-overview';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
@@ -127,9 +128,7 @@ export function ReportPage({ guided = false }: ReportPageProps) {
 
   return (
     <main className="app" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <h1>{t('report.title')}</h1>
-      </header>
+      <PageTitle title={t('report.title')} />
 
       {report !== undefined && (
         <Debrief
@@ -145,14 +144,14 @@ export function ReportPage({ guided = false }: ReportPageProps) {
 
       {report !== undefined && (
         <>
-          <div className="tabs" role="tablist" aria-label={t('report.title')}>
+          <div className="segment report-tabs" role="tablist" aria-label={t('report.title')}>
             {tabs.map((name) => (
               <button
                 key={name}
                 type="button"
                 role="tab"
                 aria-selected={tab === name}
-                className={`tab${tab === name ? ' on' : ''}`}
+                className={`seg${tab === name ? ' on' : ''}`}
                 onClick={() => setTab(name)}
               >
                 {t(`report.tabs.${name}`)}

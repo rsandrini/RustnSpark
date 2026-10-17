@@ -1,4 +1,4 @@
-# Phase 3, screens 4 to 7: Report, Auth, Onboarding, Profile (plan, nothing built yet)
+# Phase 3, screens 4 to 7: Report, Auth, Onboarding, Profile (R1-R5 built; decisions as recommended; onboarding grid is 3 across because there are 3 playable factions)
 
 Order set by the owner: these four first, **Ship last**. Same scope rule as before: the logic does not change
 (same queries, same forms and validation, same flows, same test ids and roles). Markup, layout, styling.
@@ -67,11 +67,11 @@ database, all test ids and accessible names.
 
 | step | what | touches |
 |---|---|---|
-| R1 | Profile: header, mission rows, `profile.css` | `profile.page.tsx`, specs |
-| R2 | Onboarding: header, faction grid, `onboarding.css` | `onboarding.page.tsx`, specs |
-| R3 | Auth: landing, card, forms, forgot / reset, `auth.css` | `landing.tsx`, `login.page.tsx`, `register-form.tsx`, 2 pages, specs |
-| R4 | Report frame, tabs, debrief, `report.css` | `report.page.tsx`, `report-overview.tsx` |
-| R5 | Report story and log, then the 320 to 1280 px pass for all four, browser smoke, screenshots | specs, e2e |
+| R1 *(done)* | Profile: header, mission rows, `profile.css` | `profile.page.tsx`, specs |
+| R2 *(done)* | Onboarding: header, faction grid, `onboarding.css` | `onboarding.page.tsx`, specs |
+| R3 *(done)* | Auth: landing, card, forms, forgot / reset, `auth.css` | `landing.tsx`, `login.page.tsx`, `register-form.tsx`, 2 pages, specs |
+| R4 *(done)* | Report frame, tabs, debrief, `report.css` | `report.page.tsx`, `report-overview.tsx` |
+| R5 *(done)* | Report story and log, then the 320 to 1280 px pass for all four, browser smoke, screenshots | specs, e2e |
 
 ## 6. Cost and risk
 Auth and onboarding specs read roles and labels (they stay). The browser smoke goes through register, onboarding
