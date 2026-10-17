@@ -85,6 +85,19 @@ describe('map (S10.5)', () => {
     expect(highRiskNode.querySelector('.ncore')).toHaveClass('risk-hi');
   });
 
+  it('zooms with the buttons and Fit map returns to the whole map', async () => {
+    const { svg } = await renderMap();
+    const width = () => Number((svg.getAttribute('viewBox') ?? '').split(' ')[2]);
+    const whole = width();
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Fit map' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    expect(width()).toBeLessThan(whole);
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fit map' }));
+    expect(width()).toBe(whole);
+  });
+
   it('opens the side panel on a node click with board link, then closes', async () => {
     const { svg } = await renderMap();
 

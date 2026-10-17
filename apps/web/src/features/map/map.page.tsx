@@ -25,6 +25,8 @@ import { useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
+import { MAX_SCALE, MIN_SCALE } from './map-view';
+import { useMapCamera } from './use-map-camera';
 
 const SEPARATOR = ' · ';
 const NODE_RADIUS = 9;
@@ -103,6 +105,8 @@ export function MapPage({ guided = false }: MapPageProps) {
     const maxY = Math.max(...ys) + VIEW_PADDING + 24;
     return { minX, minY, width: maxX - minX, height: maxY - minY };
   }, [world]);
+
+  const camera = useMapCamera(bounds);
 
   const byId = useMemo(
     () => new Map((world?.locations ?? []).map((location) => [location.id, location])),
@@ -217,9 +221,38 @@ export function MapPage({ guided = false }: MapPageProps) {
       </div>
 
       <div className="map-layout">
-        <div className="stage map-stage">
+        <div className="stage map-stage" ref={camera.stageRef} {...camera.stageHandlers}>
+          <div className="map-zoom" role="group" aria-label={t('map.zoom.label')}>
+            <button
+              type="button"
+              className="btn"
+              aria-label={t('map.zoom.out')}
+              disabled={camera.scale <= MIN_SCALE}
+              onClick={camera.zoomOut}
+            >
+              {t('map.zoom.minus')}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-label={t('map.zoom.in')}
+              disabled={camera.scale >= MAX_SCALE}
+              onClick={camera.zoomIn}
+            >
+              {t('map.zoom.plus')}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={camera.scale <= MIN_SCALE}
+              onClick={camera.reset}
+            >
+              {t('map.zoom.fit')}
+            </button>
+          </div>
           <svg
-            viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
+            ref={camera.svgRef}
+            viewBox={`${camera.box?.x ?? bounds.minX} ${camera.box?.y ?? bounds.minY} ${camera.box?.w ?? bounds.width} ${camera.box?.h ?? bounds.height}`}
             role="group"
             aria-label={t('map.title')}
           >

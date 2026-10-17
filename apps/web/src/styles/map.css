@@ -221,26 +221,37 @@
   }
 }
 
-/* phones: the map keeps a readable size and scrolls inside its own box until zoom and pan exist */
+/* zoom and pan: the controls sit on the map, dragging pans, the wheel and a pinch zoom */
+.map-stage {
+  cursor: grab;
+}
+.map-stage:active {
+  cursor: grabbing;
+}
+.map-stage svg {
+  touch-action: none;
+  user-select: none;
+}
+.map-zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px;
+  background: color-mix(in oklab, var(--paper) 80%, transparent);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+}
+.map-zoom .btn {
+  min-width: 32px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+}
 @media (max-width: 860px) {
   .map-stage {
     height: min(60vh, 460px);
-    overflow: auto;
   }
-  .map-stage svg {
-    width: 820px;
-    max-width: none;
-    height: 100%;
-    touch-action: pan-x pan-y;
-  }
-}
-
-/* in the docked panel the place picture is a short banner, so the trip and missions stay in view */
-.map-place-card .place-art-square {
-  width: 100%;
-  max-width: none;
-  aspect-ratio: auto;
-  height: 96px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
 }

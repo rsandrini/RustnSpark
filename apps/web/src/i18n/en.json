@@ -1783,6 +1783,14 @@
     "working": {
       "SCAVENGE": "Scavenging",
       "MINING": "Mining"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "plus": "+",
+      "minus": "−",
+      "fit": "Fit map"
     }
   },
   "notFound": {

@@ -22,7 +22,12 @@ for (const faction of FACTIONS) {
     // --- map ---------------------------------------------------------------------------------
     await page.goto('/map');
     await expect(page.getByRole('heading', { name: 'Sector map' })).toBeVisible();
-    await expect(page.locator('svg g[role="button"]')).toHaveCount(15);
+    await expect(page.locator('svg g[role="button"]')).toHaveCount(16);
+    // zoom and pan: the buttons work, and Fit map returns to the whole sector
+    await page.getByRole('button', { name: 'Zoom in' }).click();
+    await expect(page.getByRole('button', { name: 'Fit map' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Fit map' }).click();
+    await expect(page.getByRole('button', { name: 'Fit map' })).toBeDisabled();
     await assertClean(page, 'map');
 
     // --- board: a real starter ship must be able to take at least one mission ------------------
