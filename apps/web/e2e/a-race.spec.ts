@@ -65,8 +65,9 @@ test.describe('race mission', () => {
     const before = await walletOf(page);
 
     await page.goto('/missions');
-    const race = page.locator('.mcard.type-race').first();
+    const race = page.locator('.mrow.type-race').first();
     await expect(race).toBeVisible({ timeout: 30_000 });
+    await race.getByText('Details').click();
     const field = race.getByTestId('race-field');
     expect(await field.locator('tbody tr').count()).toBeGreaterThanOrEqual(4); // 3-5 rivals + you
 

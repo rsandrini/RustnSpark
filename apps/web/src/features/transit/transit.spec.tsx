@@ -200,7 +200,8 @@ describe('transit (S10.7)', () => {
       );
       renderWithRouter(routes, { initialEntries: ['/hangar/board'] });
       await screen.findByTestId('board-active-mission');
-      expect(screen.getAllByText('Ceres run')).toHaveLength(1);
+      // the pinned row's title and the same mission's card behind its Details: never a second listing
+      expect(screen.getAllByText('Ceres run')).toHaveLength(2);
     });
 
     it('on the Ship tab it is the My Ship summary', async () => {

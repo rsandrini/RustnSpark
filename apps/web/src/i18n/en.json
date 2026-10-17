@@ -1292,6 +1292,8 @@
     }
   },
   "board": {
+    "details": "Details",
+    "notEligible": "Not eligible",
     "summary": "Missions board · {{open}} open, {{can}} you can take",
     "emptyEligible": "Nothing here you can take. Switch off Only eligible to see {{count}} more.",
     "sort": {

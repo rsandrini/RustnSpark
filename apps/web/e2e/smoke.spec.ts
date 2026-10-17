@@ -28,8 +28,8 @@ for (const faction of FACTIONS) {
     // --- board: a real starter ship must be able to take at least one mission ------------------
     await page.goto('/missions');
     await expect(page.getByRole('group', { name: 'Mission board' })).toBeVisible();
-    // The board itself must work: offers are listed, each with its description and trip facts.
-    await expect(page.locator('.mcard').first()).toBeVisible();
+    // The board itself must work: offers are listed, each row with its requirements and trip facts.
+    await expect(page.locator('.mrow').first()).toBeVisible();
     // D43: on default settings a freshly onboarded player must always have a mission they can
     // accept — a private start-safe one when the shared board has nothing takeable.
     const accept = page.locator('button:has-text("Accept"):not([disabled])').first();

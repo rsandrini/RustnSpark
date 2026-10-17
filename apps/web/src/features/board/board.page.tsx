@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
-import { MissionCard } from './mission-card';
+import { MissionRow } from './mission-row';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
@@ -235,9 +235,8 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       </div>
 
       {takenOffer !== null && (
-        <section className="stack board-taken" data-testid="board-active-mission">
-          <h2>{t('board.yourMission')}</h2>
-          <MissionCard
+        <ul className="mrow-list">
+          <MissionRow
             offer={takenOffer}
             origin={worldQuery.data?.locations.find((entry) => entry.id === takenOffer.originId)}
             destination={worldQuery.data?.locations.find(
@@ -245,6 +244,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
             )}
             mine
             taken
+            tag={t('board.yourMission')}
             actions={
               <button
                 type="button"
@@ -263,7 +263,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
             {...(ship?.engineLevels !== undefined ? { engineLevels: ship.engineLevels } : {})}
             {...(worldQuery.data !== undefined ? { world: worldQuery.data } : {})}
           />
-        </section>
+        </ul>
       )}
 
       {ship === undefined && originId === null && <p className="sub">{t('board.noShip')}</p>}
@@ -279,15 +279,18 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         </p>
       )}
 
-      <div className="mcard-grid">
+      <ul className="mrow-list">
         {offers.map((offer) => {
           const mine = offer.playerId === user?.id;
           const canAccept =
             ship !== undefined &&
             offer.eligibility.eligible &&
             (offer.status === 'AVAILABLE' || (offer.status === 'HELD' && mine));
+          const acceptLabel = offer.eligibility.eligible
+            ? t('board.accept')
+            : t('board.notEligible');
           return (
-            <MissionCard
+            <MissionRow
               key={offer.id}
               offer={offer}
               origin={worldQuery.data?.locations.find((entry) => entry.id === offer.originId)}
@@ -308,7 +311,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                       disabled={!canAccept || accept.isPending}
                       onClick={() => accept.mutate(offer)}
                     >
-                      {t('board.accept')}
+                      {acceptLabel}
                     </button>
                   )}
                   {offer.status === 'AVAILABLE' && (
@@ -329,7 +332,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                         disabled={!canAccept || accept.isPending}
                         onClick={() => accept.mutate(offer)}
                       >
-                        {t('board.accept')}
+                        {acceptLabel}
                       </button>
                       <button
                         type="button"
@@ -346,7 +349,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
             />
           );
         })}
-      </div>
+      </ul>
     </>
   );
 

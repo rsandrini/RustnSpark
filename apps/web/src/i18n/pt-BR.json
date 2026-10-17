@@ -1292,6 +1292,8 @@
     }
   },
   "board": {
+    "details": "Detalhes",
+    "notEligible": "Não elegível",
     "summary": "Quadro de missões · {{open}} abertas, {{can}} que você pode pegar",
     "emptyEligible": "Nada aqui que você possa pegar. Desligue Só elegíveis para ver mais {{count}}.",
     "sort": {

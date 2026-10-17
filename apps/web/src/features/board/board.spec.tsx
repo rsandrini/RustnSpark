@@ -58,9 +58,9 @@ describe('board (S10.6)', () => {
     // MINER is now shown via the requirement checklist ("A mining rig installed", unmet),
     // not the old failure-only sentence; MOB_TOO_LOW is a general viability reason and still
     // uses the old reasons list.
-    expect(screen.getByText('A mining rig installed')).toBeInTheDocument();
+    expect(screen.getAllByText('A mining rig installed').length).toBeGreaterThan(0);
     expect(screen.getByText('Mobility too low')).toBeInTheDocument();
-    expect(screen.getByText('On hold')).toBeInTheDocument();
+    expect(screen.getAllByText('On hold').length).toBeGreaterThan(0);
     expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
 
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
@@ -107,7 +107,8 @@ describe('board (S10.6)', () => {
     // The old failure-only message for MINER must not also appear — it is now fully replaced
     // by the checklist entry for that same code, not duplicated alongside it.
     expect(screen.queryByText('Needs a mining system')).toBeNull();
-    expect(screen.getAllByText('A mining rig installed')).toHaveLength(1);
+    // once as the row's chip, once in the card behind Details
+    expect(screen.getAllByText('A mining rig installed')).toHaveLength(2);
   });
 
   it('an open-cargo delivery says what the extra units pay', async () => {
@@ -154,8 +155,9 @@ describe('board (S10.6)', () => {
     // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
     fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
 
-    const acceptButtons = await screen.findAllByRole('button', { name: 'Accept' });
+    const acceptButtons = await screen.findAllByRole('button', { name: /Accept|Not eligible/ });
     expect(acceptButtons).toHaveLength(4);
+    expect(screen.getAllByRole('button', { name: 'Not eligible' })).toHaveLength(1);
     // The board is sorted by reward now, so the first row may be the blocked one: take an enabled one.
     fireEvent.click(acceptButtons.find((button) => !button.hasAttribute('disabled')) as Element);
 
@@ -179,7 +181,7 @@ describe('board (S10.6)', () => {
     const releaseButtons = await screen.findAllByRole('button', { name: 'Release' });
     fireEvent.click(releaseButtons[0] as Element);
 
-    await waitFor(() => expect(screen.getAllByText('On hold')).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByText('On hold')).toHaveLength(2));
     expect(screen.getAllByRole('button', { name: 'Hold' })).toHaveLength(3);
   });
 
@@ -368,9 +370,9 @@ describe('board (S10.6)', () => {
 
     const pinned = await screen.findByTestId('board-active-mission');
     expect(within(pinned).getByText('Your mission')).toBeInTheDocument();
-    expect(within(pinned).getByText('Ore to Hedus')).toBeInTheDocument();
+    expect(within(pinned).getAllByText('Ore to Hedus')[0]).toBeInTheDocument();
     expect(within(pinned).getByText('Haul ore to the Hedus garrison.')).toBeInTheDocument();
-    expect(within(pinned).getByText('1m 30s')).toBeInTheDocument();
+    expect(within(pinned).getAllByText('1m 30s').length).toBeGreaterThan(0);
     expect(within(pinned).getByRole('button', { name: 'Open on My Ship' })).toBeInTheDocument();
     // it is not offered again as something to accept
     expect(within(pinned).queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
@@ -423,9 +425,10 @@ describe('board (S10.6)', () => {
       ),
     );
     await renderBoard();
-    await screen.findByText('Equal Estimate Run');
+    await screen.findAllByText('Equal Estimate Run');
 
-    expect(screen.getAllByText('900 ¢')).toHaveLength(1);
+    // the row's pay and the card's: the equal estimate adds no third one
+    expect(screen.getAllByText('900 ¢')).toHaveLength(2);
     expect(screen.queryByText(/Est\. 900 ¢/)).toBeNull();
 
     // The facts grid (Distance/Legs/Flight time) no longer includes Fuel as a fourth column —
