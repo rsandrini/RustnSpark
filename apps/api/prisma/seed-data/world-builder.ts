@@ -260,6 +260,33 @@ function routeEnvironmentId(
   return riskOrder[nodeARisk] > riskOrder[nodeBRisk] ? nodeAEnv : nodeBEnv;
 }
 
+// Places added by hand after the prototype map (they are not in RAW_NODES / RAW_EDGES): the values are
+// stored as they are, so a fresh database matches the one the game was balanced on.
+const EXTRA_PLACES = [
+  {
+    id: 'ziggy',
+    displayName: { en: 'Ziggy - Star dust', 'pt-BR': 'Ziggy - Poeira estelar' },
+    description: {
+      en: 'Ziggy - Star dust — an empty place in the sector.',
+      'pt-BR': 'Ziggy - Poeira estelar — local vazio no setor.',
+    },
+    type: 'empty',
+    x: 10,
+    y: 350,
+    zone: 1,
+    factionId: 'luna',
+    isolation: 1,
+    mood: 1,
+    services: { buy: false, sell: false, repair: true, missions: true, passengers: false },
+  },
+] as const;
+
+// Corridors of those places: [from, to, distance, danger, environment].
+const EXTRA_ROUTES = [['cair', 'ziggy', 900, 1, 'open']] as const;
+
+// Places whose isolation was set by hand instead of following their zone's multiplier.
+export const ISOLATION_OVERRIDES: Readonly<Record<string, number>> = { drift: 1.6 };
+
 export async function seedWorld(prisma: PrismaClient): Promise<void> {
   const seed = GAME_CONFIG_DEFAULTS.world.seed;
   const isolationMult = GAME_CONFIG_DEFAULTS.economy.isolation_mult as Record<string, number>;
@@ -283,7 +310,7 @@ export async function seedWorld(prisma: PrismaClient): Promise<void> {
           y: raw.y,
           zone,
           factionId,
-          isolation: isolationMult[String(zone)] ?? 1.0,
+          isolation: ISOLATION_OVERRIDES[id] ?? isolationMult[String(zone)] ?? 1.0,
           mood: computeMood(id, seed),
           services: {
             buy: true,
@@ -338,6 +365,19 @@ export async function seedWorld(prisma: PrismaClient): Promise<void> {
           order: 0,
         },
       });
+    }
+  }
+
+  for (const place of EXTRA_PLACES) {
+    if ((await prisma.location.findUnique({ where: { id: place.id } })) === null) {
+      await prisma.location.create({ data: { ...place } });
+    }
+  }
+  for (const [from, to, distance, danger, environmentId] of EXTRA_ROUTES) {
+    const id = `${from}-${to}`;
+    if ((await prisma.route.findUnique({ where: { id } })) === null) {
+      await prisma.route.create({ data: { id, nodeAId: from, nodeBId: to, distance, danger } });
+      await prisma.routeEnvironment.create({ data: { routeId: id, environmentId, order: 0 } });
     }
   }
 }

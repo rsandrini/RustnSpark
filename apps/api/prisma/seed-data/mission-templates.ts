@@ -79,6 +79,18 @@ export const TEMPLATES: {
     requirements: { originFactions: ['explorers'], originTypes: ['outpost', 'frontier'] },
   },
   {
+    id: 'race_explorers_ziggy',
+    displayName: { en: 'Explorers Long Push', 'pt-BR': 'Longa Corrida dos Exploradores' },
+    description: {
+      en: 'Race a field of rival ships to an empty place far, far away. It needs a ship that can travel far and fast; the prize follows your finishing place.',
+      'pt-BR':
+        'Dispute uma corrida contra naves rivais até um ponto vazio muito distante. Só naves que possam ir longe e rápido; o prêmio segue a sua colocação.',
+    },
+    type: 'RACE',
+    factionId: 'explorers',
+    requirements: { destinationIds: ['ziggy'], originFactions: ['luna', 'sun', 'explorers'] },
+  },
+  {
     id: 'transport_luna',
     displayName: { en: 'Luna Transport', 'pt-BR': 'Transporte da Luna' },
     description: {

@@ -2276,14 +2276,14 @@ const FAMILIES: Family[] = [
         'Uma estrutura barata e leve: muitos pontos de vida, mas nenhuma blindagem. Os pontos de vida mantêm a nave viva quando a blindagem e o escudo acabam.',
     },
     tiers: [
-      { rarity: 'COMMON', mass: 4, structureCost: 5, basePrice: 100, scrapValue: 25, partHp: 30 },
+      { rarity: 'COMMON', mass: 8, structureCost: 5, basePrice: 100, scrapValue: 25, partHp: 65 },
       {
         rarity: 'UNCOMMON',
         mass: 4,
         structureCost: 4,
         basePrice: 200,
         scrapValue: 50,
-        partHp: 39,
+        partHp: 80,
         name: { en: 'Reinforced Hull Frame', 'pt-BR': 'Estrutura de Casco Reforçada' },
         description: {
           en: 'A stronger structural frame with more hit points than a basic hull, still no armor and no heavier.',
@@ -2295,7 +2295,7 @@ const FAMILIES: Family[] = [
         rarity: 'RARE',
         mass: 3,
         structureCost: 4,
-        basePrice: 400,
+        basePrice: 100,
         scrapValue: 100,
         partHp: 51,
         name: { en: 'Composite Hull Frame', 'pt-BR': 'Estrutura de Casco Composta' },
@@ -2347,29 +2347,29 @@ const FAMILIES: Family[] = [
         'Uma estrutura de casco 2×2: mais pontos de vida por célula e por crédito que a estrutura padrão.',
     },
     tiers: [
-      { rarity: 'COMMON', mass: 7.4, structureCost: 9, basePrice: 230, scrapValue: 58, partHp: 69 },
+      { rarity: 'COMMON', mass: 16, structureCost: 9, basePrice: 210, scrapValue: 58, partHp: 130 },
       {
         rarity: 'UNCOMMON',
-        mass: 7.4,
+        mass: 8,
         structureCost: 7,
-        basePrice: 460,
+        basePrice: 420,
         scrapValue: 115,
-        partHp: 90,
+        partHp: 155,
       },
-      { rarity: 'RARE', mass: 5.5, structureCost: 7, basePrice: 920, scrapValue: 230, partHp: 117 },
+      { rarity: 'RARE', mass: 6, structureCost: 7, basePrice: 840, scrapValue: 230, partHp: 180 },
       {
         rarity: 'EPIC',
-        mass: 5.5,
+        mass: 6,
         structureCost: 6,
-        basePrice: 1850,
+        basePrice: 1680,
         scrapValue: 462,
         partHp: 138,
       },
       {
         rarity: 'LEGENDARY',
-        mass: 3.7,
+        mass: 3,
         structureCost: 6,
-        basePrice: 3700,
+        basePrice: 3360,
         scrapValue: 925,
         partHp: 172,
       },
@@ -2387,22 +2387,22 @@ const FAMILIES: Family[] = [
         'Uma estrutura de casco de uma célula: estrutura barata que encaixa em qualquer vão.',
     },
     tiers: [
-      { rarity: 'COMMON', mass: 2.2, structureCost: 3, basePrice: 50, scrapValue: 12, partHp: 14 },
+      { rarity: 'COMMON', mass: 4, structureCost: 3, basePrice: 50, scrapValue: 12, partHp: 30 },
       {
         rarity: 'UNCOMMON',
-        mass: 2.2,
+        mass: 2,
         structureCost: 2,
-        basePrice: 95,
+        basePrice: 100,
         scrapValue: 24,
-        partHp: 19,
+        partHp: 45,
       },
-      { rarity: 'RARE', mass: 1.7, structureCost: 2, basePrice: 190, scrapValue: 48, partHp: 24 },
-      { rarity: 'EPIC', mass: 1.7, structureCost: 2, basePrice: 380, scrapValue: 95, partHp: 28 },
+      { rarity: 'RARE', mass: 2, structureCost: 2, basePrice: 200, scrapValue: 48, partHp: 60 },
+      { rarity: 'EPIC', mass: 2, structureCost: 2, basePrice: 400, scrapValue: 95, partHp: 28 },
       {
         rarity: 'LEGENDARY',
-        mass: 1.1,
+        mass: 1,
         structureCost: 2,
-        basePrice: 760,
+        basePrice: 800,
         scrapValue: 190,
         partHp: 36,
       },
@@ -3322,6 +3322,23 @@ const FAMILIES: Family[] = [
 
 export const PARTS: SeedPart[] = FAMILIES.flatMap(rowsOf);
 
+/** Bridges whose ports are all universal (the dev database was balanced that way). */
+const UNIVERSAL_BRIDGES = new Set([
+  'bridge',
+  'bridge_2x2',
+  'bridge_2x2_uncommon',
+  'bridge_2x2_rare',
+]);
+const UNIVERSAL_BRIDGE_RULES = {
+  sides: {
+    N: [{ kind: 'universal', weight: 1 }],
+    E: [{ kind: 'universal', weight: 1 }],
+    S: [{ kind: 'universal', weight: 1 }],
+    W: [{ kind: 'universal', weight: 1 }],
+  },
+  oneKindPerPart: true,
+};
+
 export async function seedParts(prisma: PrismaClient): Promise<void> {
   // One read for what exists, one batched insert for what is missing: the catalog is a few hundred
   // rows and every test world seeds it. Like every other seeded value the rows only FILL what is
@@ -3332,8 +3349,11 @@ export async function seedParts(prisma: PrismaClient): Promise<void> {
   const missing = PARTS.filter((part) => !existing.has(part.partType));
   const rulesOf = (part: SeedPart) =>
     // Factory default generation rules (connector ports spec): every side central, ENGINE/WEAPON
-    // none on the facing side W.
-    defaultConnectorRules(part.partClass) as unknown as Prisma.InputJsonValue;
+    // none on the facing side W. The starter 1x1 bridge and the 2x2 bridges up to rare connect to
+    // everything on every side (a bridge never rolls an awkward port layout).
+    (UNIVERSAL_BRIDGES.has(part.partType)
+      ? UNIVERSAL_BRIDGE_RULES
+      : defaultConnectorRules(part.partClass)) as unknown as Prisma.InputJsonValue;
   if (missing.length > 0) {
     await prisma.partCatalog.createMany({
       data: missing.map((part) => ({ ...part, connectorRules: rulesOf(part) })),

@@ -127,12 +127,12 @@ the balance must all work; only then go back to a starter shield with a larger b
 
 - [ ] Starter shield + battery in the free kit with a larger bridge budget (2x2 bridge limits): test it as
   its own A/B once the game, sim and balance all work.
-- [ ] Map expansion for a complete v1: zoom and panning, very short and very long distances, new places.
+- [ ] Map expansion for a complete v1: very short and very long distances, new places. *(Zoom and pan are done: wheel, pinch, drag and buttons.)*
 - [ ] Late game: far *missions* (the three `deep_field` places have mining only), the fusion torch engine
   and the fusion reactor family, and a pre-warning before a bridge is destroyed.
-- [ ] Seed sync of dev-only data: the `ziggy` location, route and `race_explorers_ziggy` template, hull
+- [x] Seed sync of dev-only data (done 2026-10-17: seed == dev DB, checked table by table; `ziggy`, its route and race template, the hull edits, `sell_min_condition` 15, the universal bridge rules and `drift` isolation 1.6 are in the seed; the dev DB's older texts and `upgrade_materials` were refreshed from the seed). Was: the `ziggy` location, route and `race_explorers_ziggy` template, hull
   edits, `sell_min_condition` 15 and the 1x1 bridge connector rules only exist in the dev DB.
-- [ ] Tests: a no-bridge dispatch test; the soak test prints rejection output while it runs.
+- [x] Tests (done 2026-10-17): a no-bridge dispatch test; the flaky ghost-drop spec fixed (stale viewBox); the soak test prints nothing now (not reproducible). Still watch: the race e2e needs a race offer on the dev board.
 - [ ] Sim: chem and hybrid builds still stall now and then on an empty wallet; the ion build's repair
   share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level.
 
