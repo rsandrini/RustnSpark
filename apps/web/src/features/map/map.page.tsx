@@ -26,7 +26,7 @@ import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 import { PageTitle } from '../../ui/PageTitle';
-import { MAX_SCALE, MIN_SCALE } from './map-view';
+import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE } from './map-view';
 import { useMapCamera } from './use-map-camera';
 
 const SEPARATOR = ' · ';
@@ -125,6 +125,22 @@ export function MapPage({ guided = false }: MapPageProps) {
       ? positionAt(journey.stops, flight.legWindows, now)
       : null;
   const inFlight = position !== null && !position.docked;
+  // Which places the map draws at this zoom: `main` ones always, `regional` ones once zoomed in a little,
+  // `local` ones zoomed in close. What the pilot is using always shows: the selected place, the ship's own,
+  // both ends of a trip under way and the places of an accepted mission.
+  const alwaysShown = new Set<string>(
+    [
+      selectedId,
+      shipLocation,
+      flight?.originId,
+      flight?.destinationId,
+      ...(activeQuery.data ?? []).flatMap((mission) => [mission.originId, mission.destinationId]),
+    ].filter((id): id is string => typeof id === 'string'),
+  );
+  const shownAtZoom = (location: WorldLocation): boolean =>
+    camera.scale >= DETAIL_MIN_SCALE[location.detail] || alwaysShown.has(location.id);
+  const nodeScale = 1 / Math.sqrt(camera.scale);
+  const hiddenCount = (world?.locations ?? []).filter((location) => !shownAtZoom(location)).length;
   // An out-of-fuel ship floats between two places, not on the place it left from.
   const floatPoint = (() => {
     if (ship?.status !== 'ADRIFT' || ship.float == null) return null;
@@ -183,6 +199,12 @@ export function MapPage({ guided = false }: MapPageProps) {
         line={
           <>
             {t('map.line', { count: world.locations.length })}
+            {hiddenCount > 0 && (
+              <>
+                {SEPARATOR}
+                {t('map.zoomHint', { count: hiddenCount })}
+              </>
+            )}
             {shipPlace !== undefined && (
               <>
                 {SEPARATOR}
@@ -253,6 +275,7 @@ export function MapPage({ guided = false }: MapPageProps) {
               const from = byId.get(route.nodeAId);
               const to = byId.get(route.nodeBId);
               if (from === undefined || to === undefined) return null;
+              if (!shownAtZoom(from) || !shownAtZoom(to)) return null;
               return (
                 <line
                   key={route.id}
@@ -270,7 +293,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                 points={journey.stops.map((stop) => `${stop.x},${stop.y}`).join(' ')}
               />
             )}
-            {world.locations.map((location) => {
+            {world.locations.filter(shownAtZoom).map((location) => {
               const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
               const isDestination = inFlight && flight?.destinationId === location.id;
               const label = isHere
@@ -286,6 +309,8 @@ export function MapPage({ guided = false }: MapPageProps) {
                   tabIndex={0}
                   aria-label={label}
                   data-risk={location.risk}
+                  // zoomed in, the places and their labels shrink on the map so they stay a readable size
+                  transform={`translate(${location.x} ${location.y}) scale(${nodeScale}) translate(${-location.x} ${-location.y})`}
                   onClick={() => selectNode(location.id)}
                   onKeyDown={(event) => handleNodeKeyDown(event, location.id)}
                 >

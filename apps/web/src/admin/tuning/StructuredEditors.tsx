@@ -93,7 +93,7 @@ function FlagsEditor({
   );
 }
 
-const SERVICE_FLAGS: readonly FlagSpec[] = ['buy', 'sell', 'repair', 'missions', 'passengers'].map(
+const SERVICE_FLAGS: readonly FlagSpec[] = ['buy', 'sell', 'repair', 'refuel', 'upgrade', 'missions', 'passengers'].map(
   (key) => ({
     key,
     labelKey: `tuning.structured.services.${key}`,

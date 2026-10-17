@@ -85,6 +85,34 @@ describe('map (S10.5)', () => {
     expect(highRiskNode.querySelector('.ncore')).toHaveClass('risk-hi');
   });
 
+  it('shows main places zoomed out, regional ones zoomed in and local ones zoomed in close, plus the selected place', async () => {
+    const { svg } = await renderMap();
+    const shown = () =>
+      Array.from(svg.querySelectorAll('g[role="button"]')).map((node) =>
+        node.getAttribute('aria-label'),
+      );
+    expect(shown()).toHaveLength(12);
+    expect(shown()).not.toContain('Alcance Halcyon');
+    expect(screen.getByText(/2 more when you zoom in/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' })); // x2.25: regional ones appear
+    expect(shown()).toContain('Alcance Halcyon');
+    expect(shown()).not.toContain('Doca Seca de Ceres');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' })); // x3.4: local ones appear
+    expect(shown()).toContain('Doca Seca de Ceres');
+    expect(shown()).toHaveLength(14);
+    expect(screen.queryByText(/more when you zoom in/)).not.toBeInTheDocument();
+  });
+
+  it('a place that is selected stays on the map even when the zoom would hide it', async () => {
+    server.use(onboarded());
+    const view = renderWithRouter(routes, { initialEntries: ['/map?place=ceres_dock'] });
+    await screen.findByRole('region', { name: 'Doca Seca de Ceres' });
+    const svg = view.container.querySelector('.map-stage svg') as SVGSVGElement;
+    expect(svg.querySelector('[aria-label="Doca Seca de Ceres"]')).not.toBeNull();
+  });
+
   it('zooms with the buttons and Fit map returns to the whole map', async () => {
     const { svg } = await renderMap();
     const width = () => Number((svg.getAttribute('viewBox') ?? '').split(' ')[2]);
@@ -125,7 +153,8 @@ describe('map (S10.5)', () => {
     await renderMap();
     const list = await screen.findByRole('region', { name: 'Places' });
     const buttons = within(list).getAllByRole('button');
-    expect(buttons).toHaveLength(12);
+    // every place is listed, whether or not the map shows it at this zoom
+    expect(buttons).toHaveLength(14);
     expect(buttons[0]).toHaveTextContent('Porto Ceres'); // the ship's own place is the nearest
     fireEvent.click(buttons[1] as Element);
     expect(await screen.findByRole('button', { name: 'Close' })).toBeInTheDocument();

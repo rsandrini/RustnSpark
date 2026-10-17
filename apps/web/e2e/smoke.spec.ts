@@ -22,7 +22,7 @@ for (const faction of FACTIONS) {
     // --- map ---------------------------------------------------------------------------------
     await page.goto('/map');
     await expect(page.getByRole('heading', { name: 'Sector map' })).toBeVisible();
-    await expect(page.locator('svg g[role="button"]')).toHaveCount(16);
+    await expect(page.locator('svg g[role="button"]')).toHaveCount(18);
     // zoom and pan: the buttons work, and Fit map returns to the whole sector
     await page.getByRole('button', { name: 'Zoom in' }).click();
     await expect(page.getByRole('button', { name: 'Fit map' })).toBeEnabled();
@@ -37,7 +37,7 @@ for (const faction of FACTIONS) {
     await expect(page.locator('.mrow').first()).toBeVisible();
     // D43: on default settings a freshly onboarded player must always have a mission they can
     // accept — a private start-safe one when the shared board has nothing takeable.
-    const accept = page.locator('button:has-text("Accept"):not([disabled])').first();
+    const accept = page.locator('.mrow', { hasText: 'Starter mission' }).locator('button:has-text("Accept"):not([disabled])').first();
     await expect(
       accept,
       `${faction}: a freshly onboarded player has no acceptable mission on the home board`,

@@ -230,6 +230,22 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     queryFn: () => client.get<WorldResponse>('/v1/locations'),
   });
 
+  // A place can switch services off (a drydock has no market and no upgrades): only an explicit `false`
+  // closes one. The tabs of a closed service are not offered; the server refuses them too.
+  const placeServices = worldQuery.data?.locations.find(
+    (entry) => entry.id === ship?.currentLocationId,
+  )?.services;
+  const serviceClosed = (id: PortTabId): boolean =>
+    (id === 'market' && placeServices?.buy === false) ||
+    (id === 'goods' && placeServices?.sell === false) ||
+    (id === 'upgrade' && placeServices?.upgrade === false);
+  useEffect(() => {
+    if (!serviceClosed(tab)) return;
+    const next = PORT_GROUPS.flatMap((entry) => entry.tabs).find((id) => !serviceClosed(id));
+    if (next !== undefined) setTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, placeServices]);
+
   // Upgrade mechanism only (round 5): eligibility comes from the catalog's own tier-naming
   // convention server-side, not anything decided here — this tab just quotes every owned part
   // (installed or loose) and shows the ones that came back eligible. A part whose family has no
@@ -591,13 +607,14 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // Two levels: the group (Buy, Service, Work) and, under it, that group's own tabs. Mining only
   // exists where the place can be mined, so Work may have a single tab (then no second row).
   const group = groupOf(tab);
-  const visibleTabs = (ids: readonly PortTabId[]) => ids.filter((id) => id !== 'mining' || minable);
+  const visibleTabs = (ids: readonly PortTabId[]) =>
+    ids.filter((id) => (id !== 'mining' || minable) && !serviceClosed(id));
   const groupTabs = visibleTabs(PORT_GROUPS.find((entry) => entry.id === group)?.tabs ?? []);
   const portTabsRow = (
     <div className="port-nav">
       <PortTabs
         label={t('port.groupsLabel')}
-        tabs={PORT_GROUPS.map((entry) => ({
+        tabs={PORT_GROUPS.filter((entry) => visibleTabs(entry.tabs).length > 0).map((entry) => ({
           id: entry.id,
           label: t(`port.groups.${entry.id}`),
           badge: entry.id === 'service' ? repairBadge : undefined,

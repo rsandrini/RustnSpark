@@ -1086,7 +1086,11 @@
         "missions": "Missões",
         "missionsHelp": "O quadro de missões lista ofertas daqui.",
         "passengers": "Passageiros",
-        "passengersHelp": "Trabalhos de transporte e de passageiros começam aqui."
+        "passengersHelp": "Trabalhos de transporte e de passageiros começam aqui.",
+        "refuel": "Reabastecer",
+        "refuelHelp": "A doca de combustível está aberta aqui (sem o campo, conta como aberta).",
+        "upgrade": "Melhorar",
+        "upgradeHelp": "As peças podem ser melhoradas aqui (sem o campo, conta como aberto)."
       },
       "special": {
         "pressurized": "Cabine pressurizada",
@@ -1747,7 +1751,14 @@
       "scrap_field": "Campo de destroços",
       "frontier": "Fronteira",
       "dead_zone": "Zona morta",
-      "relay": "Relé"
+      "relay": "Relé",
+      "drydock": "Doca seca",
+      "scrapyard": "Ferro-velho",
+      "fuel_depot": "Depósito de combustível",
+      "mining_claim": "Concessão de mineração",
+      "waystation": "Estação de passagem",
+      "far_station": "Estação distante",
+      "far_field": "Campo distante"
     },
     "inTransit": "Em voo",
     "headingTo": "rumo a {{destination}}, chegando em",
@@ -1792,7 +1803,8 @@
       "plus": "+",
       "minus": "−",
       "fit": "Ver tudo"
-    }
+    },
+    "zoomHint": "mais {{count}} com zoom"
   },
   "notFound": {
     "title": "Página não encontrada",
@@ -1875,7 +1887,8 @@
     "UNKNOWN_VIEW": "Visão de relatório desconhecida.",
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "WEAPONS": "Nenhuma arma instalada.",
-    "unexpected": "Algo deu errado"
+    "unexpected": "Algo deu errado",
+    "SERVICE_UNAVAILABLE": "Este lugar não oferece esse serviço."
   },
   "language": {
     "label": "Idioma",

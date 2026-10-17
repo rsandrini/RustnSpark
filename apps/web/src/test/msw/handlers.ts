@@ -1682,7 +1682,7 @@ export function resetBoardState(): void {
   }
 }
 
-const world = (): WorldResponse => ({
+export const world = (): WorldResponse => ({
   locations: [
     ['ceres', 'Porto Ceres', 'port', 250, 340, 0, 'luna', 'lo', 5],
     ['vesta', 'Refinaria Vesta', 'outpost', 430, 210, 1, 'luna', 'lo', 1],
@@ -1696,6 +1696,8 @@ const world = (): WorldResponse => ({
     ['cair', 'Refúgio Cair', 'outpost', 150, 470, 0, 'explorers', 'lo', 4],
     ['veil', 'O Véu', 'dead_zone', 910, 610, 3, 'pirates', 'hi', 0],
     ['echo', 'Eco-7', 'relay', 520, 120, 3, 'sun', 'hi', 1],
+    ['ceres_dock', 'Doca Seca de Ceres', 'drydock', 300, 395, 0, 'luna', 'lo', 1],
+    ['halcyon', 'Alcance Halcyon', 'deep_field', 1100, 360, 3, 'explorers', 'hi', 1],
   ].map(([id, name, type, x, y, zone, factionId, risk, missionCount]) => ({
     id: id as string,
     displayName: { en: name as string, 'pt-BR': name as string },
@@ -1704,12 +1706,18 @@ const world = (): WorldResponse => ({
       'pt-BR': `${name as string} — um nó no setor.`,
     },
     type: type as string,
+    // the map shows the main places always, regional ones zoomed in, local ones zoomed in close
+    detail: (id === 'ceres_dock' ? 'local' : id === 'halcyon' ? 'regional' : 'main') as
+      'main' | 'regional' | 'local',
     x: x as number,
     y: y as number,
     zone: zone as number,
     factionId: factionId as string,
     isolation: 1,
-    services: { buy: true, sell: true, repair: true, missions: true },
+    services:
+      id === 'ceres_dock'
+        ? { buy: false, sell: false, repair: true, refuel: true, upgrade: false, missions: true }
+        : { buy: true, sell: true, repair: true, missions: true },
     risk: risk as WorldResponse['locations'][number]['risk'],
     missionCount: missionCount as number,
   })),

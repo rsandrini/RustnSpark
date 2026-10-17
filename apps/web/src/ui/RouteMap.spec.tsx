@@ -8,6 +8,7 @@ const place = (id: string, x: number, y: number) => ({
   id,
   displayName: { en: id.toUpperCase(), 'pt-BR': id.toUpperCase() },
   description: { en: '', 'pt-BR': '' },
+  detail: 'main' as const,
   type: 'port',
   x,
   y,

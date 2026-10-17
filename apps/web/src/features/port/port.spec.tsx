@@ -80,6 +80,32 @@ describe('port (S10.9)', () => {
     server.use(onboarded());
   });
 
+  it('a service stop (no market, no upgrades) offers only repair and refuel', async () => {
+    const stop = (await import('../../test/msw/handlers')).world();
+    server.use(
+      http.get('/v1/locations', () =>
+        HttpResponse.json({
+          ...stop,
+          locations: stop.locations.map((place) =>
+            place.id === 'ceres'
+              ? {
+                  ...place,
+                  services: { buy: false, sell: false, repair: true, refuel: true, upgrade: false },
+                }
+              : place,
+          ),
+        }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar/port'] });
+    await screen.findByRole('tab', { name: /^Repair/ });
+    expect(screen.queryByRole('tab', { name: 'Market' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Your goods' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /^Buy/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Refuel' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Upgrade' })).not.toBeInTheDocument();
+  });
+
   it('buys a listing behind the confirmation popup and updates the wallet', async () => {
     await renderPort();
 

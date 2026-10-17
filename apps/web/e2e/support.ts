@@ -14,7 +14,10 @@ export async function assertClean(page: Page, screen: string): Promise<void> {
   const overflow = await page.evaluate(() => {
     // On a phone, content wider than the screen makes the browser widen its layout viewport
     // instead of scrolling — so measure against the screen itself (the visual viewport).
-    const screenWidth = Math.min(window.innerWidth, window.visualViewport?.width ?? window.innerWidth);
+    const screenWidth = Math.min(
+      window.innerWidth,
+      window.visualViewport?.width ?? window.innerWidth,
+    );
     const extra = Math.max(
       document.documentElement.scrollWidth - screenWidth,
       window.innerWidth - screenWidth,
@@ -81,7 +84,11 @@ export async function walletOf(page: Page): Promise<number> {
 /** Accept the first acceptable mission on the home board, dispatch, and wait for the report. */
 export async function flyOneMission(page: Page): Promise<void> {
   await page.goto('/missions');
-  await page.locator('button:has-text("Accept"):not([disabled])').first().click();
+  await page
+    .locator('.mrow', { hasText: 'Starter mission' })
+    .locator('button:has-text("Accept"):not([disabled])')
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/ship/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
   // The transit screen sends the pilot to the report when the flight ends.

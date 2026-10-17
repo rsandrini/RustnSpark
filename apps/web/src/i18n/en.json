@@ -1086,7 +1086,11 @@
         "missions": "Missions",
         "missionsHelp": "The mission board lists offers from here.",
         "passengers": "Passengers",
-        "passengersHelp": "Transport and passenger jobs start here."
+        "passengersHelp": "Transport and passenger jobs start here.",
+        "refuel": "Refuel",
+        "refuelHelp": "The fuel dock is open here (a missing flag counts as open).",
+        "upgrade": "Upgrade",
+        "upgradeHelp": "Parts can be upgraded here (a missing flag counts as open)."
       },
       "special": {
         "pressurized": "Pressurized cabin",
@@ -1747,7 +1751,14 @@
       "scrap_field": "Scrap field",
       "frontier": "Frontier",
       "dead_zone": "Dead zone",
-      "relay": "Relay"
+      "relay": "Relay",
+      "drydock": "Drydock",
+      "scrapyard": "Scrapyard",
+      "fuel_depot": "Fuel depot",
+      "mining_claim": "Mining claim",
+      "waystation": "Waystation",
+      "far_station": "Far station",
+      "far_field": "Far field"
     },
     "inTransit": "In flight",
     "headingTo": "heading to {{destination}}, arriving in",
@@ -1792,7 +1803,8 @@
       "plus": "+",
       "minus": "−",
       "fit": "Fit map"
-    }
+    },
+    "zoomHint": "{{count}} more when you zoom in"
   },
   "notFound": {
     "title": "Page not found",
@@ -1875,7 +1887,8 @@
     "UNKNOWN_VIEW": "Unknown report view.",
     "VALIDATION_ERROR": "Some fields are invalid.",
     "WEAPONS": "No weapons installed.",
-    "unexpected": "Something went wrong"
+    "unexpected": "Something went wrong",
+    "SERVICE_UNAVAILABLE": "This place does not offer that service."
   },
   "language": {
     "label": "Language",

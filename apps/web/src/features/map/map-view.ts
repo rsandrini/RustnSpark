@@ -19,6 +19,13 @@ export interface Box {
   h: number;
 }
 
+/** How far the map has to be zoomed in before a place of each detail level is drawn. */
+export const DETAIL_MIN_SCALE: Record<'main' | 'regional' | 'local', number> = {
+  main: 1,
+  regional: 1.6,
+  local: 2.5,
+};
+
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 6;
 export const ZOOM_STEP = 1.5;
