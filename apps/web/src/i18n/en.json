@@ -1422,6 +1422,8 @@
     }
   },
   "map": {
+    "line": "Sector map · {{count}} places",
+    "lineAt": "You are at {{place}}",
     "title": "Sector map",
     "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",

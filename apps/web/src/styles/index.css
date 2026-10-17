@@ -593,7 +593,7 @@ a {
   margin-top: 16px;
 }
 
-/* map (mapa-esboco) ---------------------------------------------------- */
+/* the hangar scene reuses the stage box */
 .stage {
   position: relative;
   overflow: hidden;
@@ -610,99 +610,6 @@ a {
   height: 100%;
   display: block;
   touch-action: none;
-}
-
-.edge {
-  stroke: var(--line-strong);
-  stroke-width: 2;
-}
-
-.edge.hot {
-  stroke: var(--pirata);
-  stroke-dasharray: 5 4;
-  opacity: 0.8;
-}
-
-.node-hit {
-  cursor: pointer;
-}
-
-.node-hit:focus-visible .nring {
-  stroke: var(--blue);
-}
-
-.ncore {
-  stroke: var(--paper);
-  stroke-width: 2.5;
-}
-
-.ncore.risk-lo {
-  fill: var(--risk-lo);
-  fill-opacity: 0.55;
-}
-
-.ncore.risk-md {
-  fill: var(--risk-md);
-  fill-opacity: 0.55;
-}
-
-.ncore.risk-hi {
-  fill: var(--risk-hi);
-  fill-opacity: 0.55;
-}
-
-.nring {
-  fill: none;
-  stroke-width: 2.5;
-  opacity: 0.9;
-}
-
-.nlabel {
-  fill: var(--ink);
-  font-size: 12px;
-  font-weight: 600;
-  text-anchor: middle;
-  pointer-events: none;
-}
-
-.nsub {
-  fill: var(--mut);
-  font-size: 9.5px;
-  text-anchor: middle;
-  pointer-events: none;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.node-hit.sel .nring,
-.node-hit.sel .ncore {
-  stroke: var(--spark);
-  opacity: 1;
-}
-
-.miss-count {
-  fill: var(--spark);
-  font-size: 10.5px;
-  font-weight: 700;
-  text-anchor: middle;
-  pointer-events: none;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 11.5px;
-  color: var(--mut);
-  margin-top: 8px;
-}
-
-.legend .dotleg {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 5px;
 }
 
 /* report (relatorio-narrado) ------------------------------------------ */

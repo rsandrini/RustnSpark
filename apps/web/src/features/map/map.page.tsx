@@ -128,6 +128,15 @@ export function MapPage({ guided = false }: MapPageProps) {
   const descriptionOf = (location: WorldLocation) =>
     pickLocalized(location.description, i18n.language);
 
+  const shipPlace = shipLocation === null ? undefined : byId.get(shipLocation);
+  const titleWords = (() => {
+    const title = t('map.title');
+    const at = title.lastIndexOf(' ');
+    return at === -1
+      ? { rest: '', last: title }
+      : { rest: `${title.slice(0, at)} `, last: title.slice(at + 1) };
+  })();
+
   const selectNode = (id: string) => setSelectedId((current) => (current === id ? null : id));
 
   const handleNodeKeyDown = (event: ReactKeyboardEvent, id: string) => {
@@ -139,12 +148,40 @@ export function MapPage({ guided = false }: MapPageProps) {
 
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
-      {/* Owner request: no text before the map — "you are here" and the in-flight ship are
-          already shown directly on the map itself (the you-tag label and the moving marker). */}
-      <h1 className="sr-only">{t('map.title')}</h1>
+      {/* One slim strip and one mono line, no copy: "you are here" and the in-flight ship are
+          shown on the map itself (the you-tag label and the moving marker). */}
+      <header className="map-head">
+        <h1 className="map-title">
+          {titleWords.rest}
+          <em>{titleWords.last}</em>
+        </h1>
+        <p className="map-line">
+          {t('map.line', { count: world.locations.length })}
+          {shipPlace !== undefined && ` · ${t('map.lineAt', { place: nameOf(shipPlace) })}`}
+        </p>
+      </header>
       <EmptyShipNotice />
 
-      <div className="stage">
+      <div className="legend">
+        <span>
+          <span className="dotleg" style={{ background: 'var(--risk-lo)' }} />
+          {t('ui.risk.lo')}
+        </span>
+        <span>
+          <span className="dotleg" style={{ background: 'var(--risk-md)' }} />
+          {t('ui.risk.md')}
+        </span>
+        <span>
+          <span className="dotleg" style={{ background: 'var(--risk-hi)' }} />
+          {t('ui.risk.hi')}
+        </span>
+        <span>
+          <span className="dotleg" style={{ background: 'var(--spark)' }} />
+          {t('map.youAreHere')}
+        </span>
+      </div>
+
+      <div className="stage map-stage">
         <svg
           viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
           role="group"
@@ -285,25 +322,6 @@ export function MapPage({ guided = false }: MapPageProps) {
             </g>
           )}
         </svg>
-      </div>
-
-      <div className="legend">
-        <span>
-          <span className="dotleg" style={{ background: 'var(--risk-lo)' }} />
-          {t('ui.risk.lo')}
-        </span>
-        <span>
-          <span className="dotleg" style={{ background: 'var(--risk-md)' }} />
-          {t('ui.risk.md')}
-        </span>
-        <span>
-          <span className="dotleg" style={{ background: 'var(--risk-hi)' }} />
-          {t('ui.risk.hi')}
-        </span>
-        <span>
-          <span className="dotleg" style={{ background: 'var(--spark)' }} />
-          {t('map.youAreHere')}
-        </span>
       </div>
 
       <Popup

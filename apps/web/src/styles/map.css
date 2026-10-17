@@ -1,0 +1,151 @@
+/*
+ * Map screen (phase 3). The header strip, the legend row, the map and its nodes. The side panel
+ * rules join them when the popup is replaced.
+ */
+.map-head {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.map-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: lowercase;
+}
+.map-title em {
+  font-style: normal;
+  color: var(--brass);
+}
+.map-line {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.legend .dotleg {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.map-stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  /* bounded so the map fits on screen; the svg's viewBox scales inside, letterboxed */
+  height: min(68vh, 620px);
+}
+.map-stage svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.edge {
+  stroke: var(--rule-3);
+  stroke-width: 1.5;
+}
+.edge.hot {
+  stroke: var(--coral);
+  stroke-dasharray: 5 4;
+  opacity: 0.8;
+}
+.node-hit {
+  cursor: pointer;
+}
+.node-hit:focus-visible .nring {
+  stroke: var(--brass);
+}
+.ncore {
+  stroke: var(--paper);
+  stroke-width: 2.5;
+}
+.ncore.risk-lo {
+  fill: var(--risk-lo);
+  fill-opacity: 0.55;
+}
+.ncore.risk-md {
+  fill: var(--risk-md);
+  fill-opacity: 0.55;
+}
+.ncore.risk-hi {
+  fill: var(--risk-hi);
+  fill-opacity: 0.55;
+}
+.nring {
+  fill: none;
+  stroke-width: 2.5;
+  opacity: 0.9;
+}
+.nlabel {
+  fill: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.nsub {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-anchor: middle;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.node-hit.sel .nring,
+.node-hit.sel .ncore {
+  stroke: var(--brass);
+  opacity: 1;
+}
+.miss-count {
+  fill: var(--brass);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* phones: the map keeps a readable size and scrolls inside its own box until zoom and pan exist */
+@media (max-width: 860px) {
+  .map-stage {
+    height: min(60vh, 460px);
+    overflow: auto;
+  }
+  .map-stage svg {
+    width: 820px;
+    max-width: none;
+    height: 100%;
+    touch-action: pan-x pan-y;
+  }
+}

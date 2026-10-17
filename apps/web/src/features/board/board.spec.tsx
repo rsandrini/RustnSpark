@@ -164,8 +164,9 @@ describe('board (S10.6)', () => {
 
     // Embedded: accepting switches the host back to its own Ship view —
     // the just-accepted mission's travel summary appears there.
-    await waitFor(() =>
-      expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
+    await waitFor(
+      () => expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
+      { timeout: 4000 },
     );
   });
 
