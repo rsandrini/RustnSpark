@@ -53,8 +53,9 @@ describe('board (S10.6)', () => {
     );
     expect(screen.getAllByText('Flight time').length).toBeGreaterThan(0);
     expect(screen.getAllByText('You need:').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Eligible')).toHaveLength(3);
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    // each verdict shows twice: in the row's line and in the card behind Details
+    expect(screen.getAllByText('Eligible')).toHaveLength(6);
+    expect(screen.getAllByText('Blocked')).toHaveLength(2);
     // MINER is now shown via the requirement checklist ("A mining rig installed", unmet),
     // not the old failure-only sentence; MOB_TOO_LOW is a general viability reason and still
     // uses the old reasons list.
@@ -131,7 +132,7 @@ describe('board (S10.6)', () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     expect(document.querySelectorAll('.mcard')).toHaveLength(4);
-    expect(screen.getByText('Blocked')).toBeInTheDocument();
+    expect(screen.getAllByText('Blocked')).toHaveLength(2);
   });
 
   it('says how many offers are open, sorts by reward first and can re-sort', async () => {

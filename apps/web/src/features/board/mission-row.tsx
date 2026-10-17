@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import type { MissionOffer, WorldLocation, WorldResponse } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
+import { Countdown } from '../../ui/Countdown';
+import { FactionBadge } from '../../ui/FactionBadge';
+import { useNow } from '../../ui/useNow';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { MissionCard } from './mission-card';
@@ -48,6 +51,7 @@ export function MissionRow({
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
+  const expired = Date.parse(offer.expiresAt) <= useNow(true);
   const blocked = !taken && !offer.eligibility.eligible;
   const burnsFuel = fuelUse === undefined || fuelUse > 0;
   const number = (value: number, unit: string | undefined) =>
@@ -78,16 +82,32 @@ export function MissionRow({
               {info.totalDistance}
             </span>
           </p>
-          {(offer.privatePlayerId !== null || offer.status !== 'AVAILABLE') && (
-            <p className="mrow-badges">
-              {offer.privatePlayerId !== null && (
-                <span className="badge ok">{t('board.starterBadge')}</span>
-              )}
-              {offer.status !== 'AVAILABLE' && (
-                <span className="badge">{t(`board.status.${offer.status}`)}</span>
-              )}
-            </p>
-          )}
+          <p className="mrow-badges">
+            {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
+            {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+              <span className="mrow-expires">
+                {expired ? (
+                  t('board.expiredLabel')
+                ) : (
+                  <>
+                    {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
+                    <Countdown until={offer.expiresAt} />
+                  </>
+                )}
+              </span>
+            )}
+            {!taken && (
+              <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+                {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+              </span>
+            )}
+            {offer.privatePlayerId !== null && (
+              <span className="badge ok">{t('board.starterBadge')}</span>
+            )}
+            {offer.status !== 'AVAILABLE' && (
+              <span className="badge">{t(`board.status.${offer.status}`)}</span>
+            )}
+          </p>
         </div>
 
         <ul className="mrow-needs" aria-label={t('board.needsTitle')}>

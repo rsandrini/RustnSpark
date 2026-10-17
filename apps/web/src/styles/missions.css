@@ -97,6 +97,12 @@
   font-weight: 600;
   color: var(--ink);
 }
+.mrow-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
 .mrow-route,
 .mrow-badges {
   margin: 2px 0 0;
@@ -178,7 +184,8 @@
 }
 /* the open card: map on the left, what it asks and the trip figures beside it, the rest below */
 .mrow-details .mcard-head,
-.mrow-details .mcard-route {
+.mrow-details .mcard-route,
+.mrow-details .mcard-meta {
   display: none; /* the row above already says it */
 }
 .mrow-details .mcard-main {
