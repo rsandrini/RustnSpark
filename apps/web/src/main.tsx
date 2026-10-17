@@ -19,6 +19,7 @@ import './styles/profile.css';
 import './styles/onboarding.css';
 import './styles/auth.css';
 import './styles/report.css';
+import './styles/ship.css';
 
 const container = document.getElementById('root');
 if (!container) {

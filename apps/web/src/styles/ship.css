@@ -1,0 +1,223 @@
+/*
+ * Ship screen (phase 3). The sheet panel and the engine tuning first; the parts column, the frame and
+ * the yard bezel join them as those steps land.
+ */
+/* Ship sheet (owner request, round 8: "too long and hard to understand") — a short status, an
+   8-number headline always visible, and the full 20-row breakdown grouped and collapsed behind
+   a disclosure, instead of one flat list. */
+.sheet-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.sheet-status.ready {
+  background: color-mix(in oklab, var(--ok) 14%, transparent);
+  color: var(--ok);
+}
+
+.sheet-status.problem {
+  background: color-mix(in oklab, var(--bad) 14%, transparent);
+  color: var(--bad);
+}
+
+.sheet-headline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.sheet-headline-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheet-headline-tile span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.sheet-headline-tile b {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sheet-details summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--brass);
+  list-style: none;
+  margin-bottom: 6px;
+}
+
+.sheet-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.sheet-details summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 5px;
+  transition: transform 0.15s ease;
+}
+
+.sheet-details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.sheet-group {
+  margin-bottom: 10px;
+}
+
+.sheet-group:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-group-title {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 700;
+  padding-top: 6px;
+}
+
+.sheet-group:first-child .sheet-group-title {
+  padding-top: 0;
+}
+
+/* Cruising/Combat power's generate/consume (or draw/coverage) line under the pill. */
+.statrow .substat {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.engine-tuning {
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper-3);
+}
+.engine-tuning-title {
+  margin: 0;
+  cursor: pointer;
+}
+.engine-tuning-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.engine-slider {
+  display: grid;
+  gap: 4px;
+}
+.engine-slider input[type='range'] {
+  width: 100%;
+}
+.engine-level {
+  font-variant-numeric: tabular-nums;
+  color: var(--brass);
+}
+.engine-thrust {
+  display: grid;
+  gap: 4px;
+}
+.engine-thrust-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--paper-2);
+}
+.engine-thrust-chem {
+  background: var(--brass);
+}
+.engine-thrust-ion {
+  background: var(--brass);
+}
+.engine-thrust-legend {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.engine-stats {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+}
+.engine-stats .bad {
+  color: var(--bad);
+}
+.engine-stats .clean.ok {
+  color: var(--ok);
+}
+.engine-stats .clean.warn {
+  color: var(--brass);
+}
+.engine-stats .clean.bad {
+  color: var(--bad);
+}
+
+/* Lumen finish for the sheet */
+.sheet-status {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sheet-status.warning {
+  background: color-mix(in oklab, var(--sun) 14%, transparent);
+  color: var(--sun);
+}
+.sheet-headline {
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+.sheet-headline-tile span,
+.sheet-group-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+}
+.sheet-headline-tile b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--text-lg);
+}
+.sheet-details summary {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.statrow b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.engine-tuning {
+  border-radius: var(--radius-sm);
+}
+.engine-level {
+  font-family: var(--font-mono);
+}
+.engine-thrust-ion {
+  background: var(--info);
+}
