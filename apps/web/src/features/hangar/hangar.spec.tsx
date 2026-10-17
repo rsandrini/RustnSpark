@@ -72,6 +72,29 @@ function shipEcho(layout: Placement[]) {
   };
 }
 
+/**
+ * Screen coordinates for a point of the yard, read from the svg's viewBox each time it is called: the view
+ * fits itself to the ship once the data is in, so a viewBox read once up front can be stale (the drag
+ * specs used to fail now and then under load).
+ */
+function viewPoint(svg: SVGSVGElement) {
+  return (px: number, py: number) => {
+    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+    return { clientX: (px - vb[0]!) / vb[2]!, clientY: (py - vb[1]!) / vb[2]! };
+  };
+}
+
+/** Waits until the view has stopped refitting (the viewBox is the same on two polls). */
+async function stableView(svg: SVGSVGElement): Promise<void> {
+  let last = '';
+  await waitFor(() => {
+    const now = svg.getAttribute('viewBox') ?? '';
+    const same = now === last;
+    last = now;
+    expect(same).toBe(true);
+  });
+}
+
 describe('hangar (S10.4)', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -769,11 +792,8 @@ describe('hangar (S10.4)', () => {
 
     // Dragging from the part's middle floats no ghost either.
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-    const toClient = (px: number, py: number) => ({
-      clientX: (px - vb[0]!) / vb[2]!,
-      clientY: (py - vb[1]!) / vb[2]!,
-    });
+    const toClient = viewPoint(svg);
+    await stableView(svg);
     fireEvent.pointerDown(cargo, toClient(2.5, 2.5));
     fireEvent.pointerMove(svg, toClient(6, 4));
     expect(container.querySelector('g.yard-ghost')).toBeNull();
@@ -798,16 +818,10 @@ describe('hangar (S10.4)', () => {
     expect(handle).not.toBeNull();
 
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-    const zx = vb[0]!;
-    const zy = vb[1]!;
-    const span = vb[2]!;
     // The button sits at cargo-a's top-right corner (2×1 at (2,2)): pivot (3, 2.5), button (4, 2).
     // Drag the pointer clockwise from the corner down to the right: a +90° spin.
-    const toClient = (px: number, py: number) => ({
-      clientX: (px - zx) / span,
-      clientY: (py - zy) / span,
-    });
+    const toClient = viewPoint(svg);
+    await stableView(svg);
     fireEvent.pointerDown(handle, toClient(4, 2));
     fireEvent.pointerMove(handle, toClient(3.5, 3.5));
     fireEvent.pointerUp(handle, toClient(3.5, 3.5));
@@ -828,14 +842,8 @@ describe('hangar (S10.4)', () => {
     });
 
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-    const zx = vb[0]!;
-    const zy = vb[1]!;
-    const span = vb[2]!;
-    const toClient = (px: number, py: number) => ({
-      clientX: (px - zx) / span,
-      clientY: (py - zy) / span,
-    });
+    const toClient = viewPoint(svg);
+    await stableView(svg);
 
     // Press the MIDDLE of cargo-a (2×1 at (2,2)) — the drag affordance — then float it to (5,4).
     fireEvent.pointerDown(cargo, toClient(3, 2.5));
@@ -866,13 +874,8 @@ describe('hangar (S10.4)', () => {
     });
 
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    // The view fits itself to the ship once the data is in: read the viewBox when each pointer event
-    // is built (not once up front), so a late refit cannot leave the coordinates stale (this test
-    // used to fail now and then under load).
-    const toClient = (px: number, py: number) => {
-      const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-      return { clientX: (px - vb[0]!) / vb[2]!, clientY: (py - vb[1]!) / vb[2]! };
-    };
+    const toClient = viewPoint(svg);
+    await stableView(svg);
 
     // Float cargo-a from its middle straight onto the bridge at (0,0): it cannot fit, so the
     // ghost reads bad and releasing leaves the part where it began.
@@ -900,11 +903,8 @@ describe('hangar (S10.4)', () => {
     const beforeHeight = Number(cargo.getAttribute('height'));
 
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-    const toClient = (px: number, py: number) => ({
-      clientX: (px - vb[0]!) / vb[2]!,
-      clientY: (py - vb[1]!) / vb[2]!,
-    });
+    const toClient = viewPoint(svg);
+    await stableView(svg);
 
     fireEvent.pointerEnter(cargo);
     const icon = container.querySelector(

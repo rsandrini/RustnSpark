@@ -11,7 +11,10 @@ let headers: Record<string, string> = {};
 const restore: Array<() => Promise<void>> = [];
 
 async function admin(path: string, init: RequestInit = {}): Promise<unknown> {
-  const response = await fetch(`${baseURL}${path}`, { ...init, headers: { ...headers, ...(init.headers ?? {}) } });
+  const response = await fetch(`${baseURL}${path}`, {
+    ...init,
+    headers: { ...headers, ...(init.headers ?? {}) },
+  });
   if (!response.ok) throw new Error(`${init.method ?? 'GET'} ${path} -> ${response.status}`);
   return response.status === 204 ? null : response.json();
 }
@@ -59,14 +62,23 @@ test.describe('race mission', () => {
   test('the board shows the field, the pilot races and wins a prize, the report shows the standings', async ({
     page,
   }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'needs a board generated after the tuning; desktop runs first');
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'needs a board generated after the tuning; desktop runs first',
+    );
     await registerAndLaunch(page, 'luna');
     await page.goto('/port');
     const before = await walletOf(page);
 
     await page.goto('/missions');
     const race = page.locator('.mrow.type-race').first();
-    await expect(race).toBeVisible({ timeout: 30_000 });
+    // The board is topped up on read from the templates that are active, so a race offer appears once the
+    // offers generated before the other templates were retired are gone. On a database that has been
+    // played on for a while (the dev one) that can take a while: say so instead of a bare timeout.
+    await expect(
+      race,
+      'no RACE offer on the Ceres board: it still holds offers generated before the other luna templates were retired (they expire on their own); run this spec first on a fresh database, as CI does',
+    ).toBeVisible({ timeout: 30_000 });
     await race.getByText('Details').click();
     const field = race.getByTestId('race-field');
     expect(await field.locator('tbody tr').count()).toBeGreaterThanOrEqual(4); // 3-5 rivals + you

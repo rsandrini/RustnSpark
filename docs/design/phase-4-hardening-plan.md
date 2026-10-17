@@ -27,7 +27,7 @@ Admin stays out of scope (owner, from the start).
 
 ## 2. Steps (each one shipped and green on its own)
 
-### H1: CI health (small, first, protects the rest)
+### H1: CI health (done 2026-10-17: the other flaky drag spec found in CI and fixed, three web runs and a 4x parallel stress run green, the race e2e explains itself, smoke flip dated 2026-10-24)
 - Read the last 10 CI runs, the smoke report included, and list anything red or retried.
 - Make the **race e2e self-sufficient**: it creates (through the admin API it already uses for tuning) or waits for a
   race offer instead of relying on whatever the board holds, so it cannot fail on an empty board.

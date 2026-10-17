@@ -13,7 +13,7 @@ ships (the commit has the history). Raise questions before starting anything mar
   connection pool (20) and repair-test fixes. *Standing rules:* (1) the **browser smoke does not
   gate the aggregate** (`continue-on-error`), so a red smoke is a real regression that goes
   unnoticed (the far fields broke the map count and the race board for eight commits): read it on
-  every run, and promote it to required once it has stayed green for a week (see the comment in
+  every run, and promote it to required once it has stayed green for a week (the last 30 runs are all green, since 2026-10-16; **flip `continue-on-error` on or after 2026-10-24 if it is still green**, owner decision 2026-10-17) (see the comment in
   `.github/workflows/ci.yml`); (2) rapid pushes cancel each other (`cancel-in-progress`), so confirm
   one full run on the head before calling anything done; (3) a CI-only failure is reproduced with a
   full local `test:cov` (cross-suite state), after checking for a stray jest process; the soak
