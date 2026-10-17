@@ -1,3 +1,97 @@
+.verdict.ok {
+  background: color-mix(in oklab, var(--ok) 16%, transparent);
+  color: var(--ok);
+  border: 1px solid var(--ok);
+}
+
+.verdict.partial {
+  background: color-mix(in oklab, var(--brass) 16%, transparent);
+  color: var(--brass);
+  border: 1px solid var(--brass);
+}
+
+.verdict.bad {
+  background: color-mix(in oklab, var(--bad) 16%, transparent);
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
+.tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--paper);
+  border: 1px solid var(--rule-2);
+}
+
+.tag.wear {
+  color: var(--brass);
+}
+
+.tag.loot {
+  color: var(--ok);
+}
+
+.tag.info {
+  color: var(--muted);
+}
+
+/* the story as a timeline */
+.report-story .event {
+  position: relative;
+  margin-left: 12px;
+  padding: 10px 14px 12px 20px;
+  border-left: 3px solid var(--rule-3);
+}
+
+.report-story .event::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 14px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--brass);
+  border: 2px solid var(--paper);
+}
+
+.report-story .event h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--brass);
+}
+
+.report-story .event ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.lossbar.warn .lossbar-fill {
+  background: var(--brass);
+}
+.lossbar.bad .lossbar-fill {
+  background: var(--bad);
+}
+
+/* The story: a timeline per leg, each event tagged by what kind it is. */
+.report-story .story-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+.report-story li.ev {
+  border-left: 3px solid var(--rule-3);
+  padding: 4px 0 4px 10px;
+}
+
+.report-overview .route-map.compact,
+.stack > .route-map.compact {
+  margin-inline: auto;
+}
+
 /* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
    (shield/armor/hull), not just the last one, is right-aligned; a miss row is dimmed. */
 .combat-log-table {

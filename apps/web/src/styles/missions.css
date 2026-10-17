@@ -1,3 +1,328 @@
+.card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--steel);
+}
+
+.card .row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  padding: 13px 14px;
+  cursor: pointer;
+  align-items: center;
+}
+
+.card .row.static {
+  cursor: default;
+}
+
+.card .ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  background: var(--paper-3);
+  border: 1px solid var(--rule-2);
+}
+
+.card .meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.card .meta b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.card .right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.leg {
+  margin-top: 18px;
+  position: relative;
+  padding-left: 26px;
+}
+
+.leg::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 26px;
+  bottom: -18px;
+  width: 2px;
+  background: var(--rule-2);
+}
+
+.leg:last-child::before {
+  display: none;
+}
+
+.leg {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 10px;
+  border: 1px solid var(--rule-2);
+  border-radius: 8px;
+}
+
+.leg.done {
+  opacity: 0.55;
+}
+
+.leg.current {
+  border-color: var(--brass);
+}
+
+.transit-scene.moving .stars-far {
+  animation: stars-scroll-far 40s linear infinite;
+}
+
+.transit-scene.moving .stars-mid {
+  animation: stars-scroll-mid 22s linear infinite;
+}
+
+.transit-scene.moving .stars-near {
+  animation: stars-scroll-near 9s linear infinite;
+}
+
+.transit-scene.moving .scene-ship {
+  animation: ship-hover 4.5s ease-in-out infinite;
+}
+
+.transit-scene.moving .ship-flame {
+  opacity: 1;
+  animation: flame-flicker 0.18s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.moving .stars-far,
+  .transit-scene.moving .stars-mid,
+  .transit-scene.moving .stars-near,
+  .transit-scene.moving .scene-ship,
+  .transit-scene.moving .ship-flame {
+    animation: none;
+  }
+}
+
+.briefing .fact .k {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+.briefing .fact .v {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.briefing .fact-route .v {
+  font-size: 13px;
+}
+
+.mcard.type-transport {
+  --accent: var(--luna);
+}
+
+.mcard.type-escort {
+  --accent: var(--pirata);
+}
+
+.mcard.type-mining {
+  --accent: var(--explorers);
+}
+
+.mcard.type-rescue {
+  --accent: var(--risk-md);
+}
+
+.mcard.type-travel {
+  --accent: var(--muted);
+}
+
+.mcard-route .arrow {
+  color: var(--muted);
+}
+
+.mcard-requirements .req-unmet {
+  color: var(--bad);
+}
+
+.mcard-fuel .k {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.mcard-fuel .gauge {
+  flex: 1 1 auto;
+  min-width: 60px;
+}
+
+.mcard-fuel.bad .mcard-fuel-need {
+  color: var(--bad);
+}
+
+.mcard-fuel.bad {
+  border-color: var(--bad);
+}
+
+.mcard-facts .bad dd {
+  color: var(--bad);
+}
+
+.mcard-actions .btn.primary {
+  flex: 1;
+}
+.mcard-accepted .btn.primary {
+  flex: 0 1 auto;
+}
+
+.transit-scene.stage-compact {
+  height: 170px;
+  margin: 0;
+}
+
+.transit-scene.stage-compact .scene-ship {
+  transform: scale(0.75);
+  transform-origin: center;
+}
+
+.transit-scene.parked {
+  background-size: cover;
+  background-position: center;
+}
+
+.transit-scene.parked .stars {
+  opacity: 0.15;
+}
+
+.transit-scene.parked .scene-ship {
+  animation: ship-idle 7s ease-in-out infinite;
+}
+
+.transit-scene.parked .ship-flame {
+  opacity: 0.35;
+  animation: flame-flicker 0.9s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: right center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transit-scene.parked .scene-ship,
+  .transit-scene.parked .ship-flame,
+  .drone,
+  .spark,
+  .debris {
+    animation: none;
+  }
+}
+
+/* Race offers: the rival field table. */
+.mcard-race table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.mcard-race th,
+.mcard-race td {
+  padding: 3px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule-2);
+}
+.mcard-race .race-you td {
+  color: var(--brass);
+  font-weight: 700;
+}
+
+.mcard-requirements .req-unmet .req-numbers {
+  color: var(--brass);
+}
+
+.route-map .rm-node.on {
+  fill: var(--brass);
+}
+.route-map .rm-node.end {
+  fill: var(--paper);
+  stroke: var(--brass);
+  stroke-width: 2;
+}
+
+/* Small maps stay small: a glance at the route, never a banner. */
+.route-map.compact {
+  max-width: 320px;
+}
+
+/* Under way: the route marches and the ship pulses, like the sector map's flight path. */
+.route-map.animated .rm-path {
+  stroke-dasharray: 8 6;
+  animation: flight-dash 1.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-map.animated .rm-path,
+  .route-map .rm-ship-pulse {
+    animation: none;
+  }
+}
+
+.mcard-accepted .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.mcard-with-side .mcard-side .route-map {
+  margin: 0;
+  flex: 1;
+  max-width: none;
+  display: flex;
+  align-items: center;
+}
+/* The scene takes the whole column but never more height than the card beside it. */
+.transit-aside-solo .ship-stage-wrap {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+}
+.transit-aside-solo .transit-scene.stage-compact {
+  height: 100%;
+}
+.transit-aside .route-map {
+  align-self: stretch;
+  display: grid;
+  align-items: center;
+}
+.transit-aside .route-map {
+  margin: 0;
+}
+/* The wide scene above the screen steps aside when the trip column carries its own. */
+main:has(.transit-aside) .ship-stage-overlay-host {
+  display: none;
+}
+
 /* report (relatorio-narrado) ------------------------------------------ */
 .verdict {
   display: inline-block;

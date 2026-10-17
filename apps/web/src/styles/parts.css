@@ -1,3 +1,352 @@
+.rarity-name.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+.rarity-name.rarity-rare {
+  color: var(--rar-rare);
+}
+.rarity-name.rarity-epic {
+  color: var(--rar-epic);
+}
+.rarity-name.rarity-legendary {
+  color: var(--rar-legendary);
+}
+
+.rarity-badge.rarity-common {
+  color: var(--rar-common);
+}
+
+.rarity-badge.rarity-uncommon {
+  color: var(--rar-uncommon);
+}
+
+.rarity-badge.rarity-rare {
+  color: var(--rar-rare);
+}
+
+.rarity-badge.rarity-epic {
+  color: var(--rar-epic);
+}
+
+.rarity-badge.rarity-legendary {
+  color: var(--rar-legendary);
+}
+
+.part-btn.on {
+  border-color: var(--brass);
+  background: var(--steel);
+}
+
+.part-btn .meta {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* part details, market filters ----------------------------------------- */
+.info-btn {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 50%;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+/* Tray-row hover card (round 5/6, owner request: "add it at the side of the mouse, right
+   side"). Anchored to the cursor in fixed/viewport coordinates (left/top set inline, per hover)
+   rather than positioned relative to the row: the tray sidebar (.hangar-side) scrolls
+   vertically, which per the CSS spec also makes its overflow-x compute to "auto" (not
+   "visible"), clipping anything positioned past the column's own edge — position: fixed escapes
+   that entirely, since it's relative to the viewport, not any scrolling ancestor. */
+.compare-hover-card {
+  position: fixed;
+  z-index: 30;
+  width: 240px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--rule-3);
+  background: var(--paper-2);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
+  pointer-events: none;
+}
+
+.part-btn-wrap .info-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  font-size: 12px;
+}
+
+.part-detail p {
+  margin: 4px 0;
+}
+
+/* The description and "why you need it" text moved behind a hover tag next to the name (owner
+   request — the stats table is the point of this popup now, not always-on prose). */
+.part-why-tag,
+.mission-why-tag {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.part-compare-note {
+  margin: 10px 0 2px;
+  font-size: 12px;
+}
+
+.part-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.part-stats-table th,
+.part-stats-table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule-2);
+}
+
+.part-stats-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.part-stats-table th:last-child,
+.part-stats-table td:last-child {
+  text-align: right;
+}
+
+.part-stats-table .delta {
+  font-weight: 700;
+}
+
+/* Owner request (round 5): color the comparison by whether it helps or hurts, not one flat
+   color for every change — same green/red language RiskBadge already uses for low/high risk. */
+.part-stats-table .delta-same {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.part-stats-table .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-table .delta-bad {
+  color: var(--risk-hi);
+}
+
+.part-stats .statrow {
+  align-items: baseline;
+  gap: 12px;
+}
+
+.part-stats-card .statrow {
+  gap: 8px;
+  font-size: 12px;
+}
+
+/* Tray hover card's own compare column (round 5): same delta language as the popup's
+   .part-stats-table, scoped separately since this card uses a <dl>, not a <table>. */
+.part-stats-card .delta {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.part-stats-card .delta-good {
+  color: var(--risk-lo);
+}
+
+.part-stats-card .delta-bad {
+  color: var(--risk-hi);
+}
+
+.pcard {
+  --accent: var(--rar-common);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--rule-2);
+  border-top: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--paper-2);
+}
+
+.pcard.rarity-uncommon {
+  --accent: var(--rar-uncommon);
+}
+
+.pcard.rarity-rare {
+  --accent: var(--rar-rare);
+}
+
+.pcard.rarity-epic {
+  --accent: var(--rar-epic);
+}
+
+.pcard.rarity-legendary {
+  --accent: var(--rar-legendary);
+}
+
+.pcard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pcard-name {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.pcard-price {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pcard-price b {
+  display: block;
+  font-size: 17px;
+  color: var(--brass);
+}
+
+.pcard-price small {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.pcard-actions {
+  margin-top: auto;
+  padding-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pcard-actions .btn.primary {
+  flex: 1;
+}
+
+.part-btn.rarity-uncommon {
+  border-left-color: var(--rar-uncommon);
+}
+
+.part-btn.rarity-rare {
+  border-left-color: var(--rar-rare);
+}
+
+.part-btn.rarity-epic {
+  border-left-color: var(--rar-epic);
+}
+
+.part-btn.rarity-legendary {
+  border-left-color: var(--rar-legendary);
+}
+
+.part-btn .gauge {
+  margin-top: 5px;
+  height: 14px;
+}
+
+.part-btn .gauge-label {
+  line-height: 12px;
+  font-size: 10px;
+}
+
+.pcard-note {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.part-btn.broken,
+.pcard.broken {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad) inset;
+}
+
+.part-thumb.rarity-uncommon {
+  --accent: var(--rar-uncommon);
+}
+
+.part-thumb.rarity-rare {
+  --accent: var(--rar-rare);
+}
+
+.part-thumb.rarity-epic {
+  --accent: var(--rar-epic);
+}
+
+.part-thumb.rarity-legendary {
+  --accent: var(--rar-legendary);
+}
+
+.pcard-head .part-thumb {
+  margin-right: 8px;
+}
+
+.part-thumb.small {
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  border-radius: 6px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.connector-grid {
+  display: block;
+}
+.connector-grid-mini {
+  height: 22px;
+  width: auto;
+  max-width: 44px;
+  margin-top: 4px;
+}
+.connector-grid-full {
+  height: 72px;
+  width: auto;
+  max-width: 160px;
+}
+
+/* The wallet stays in view while the part list scrolls under it. */
+.market-panel > .balance {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--rule-3);
+  border-radius: 8px;
+  background: var(--paper-2);
+  font-size: 15px;
+}
+.market-panel > .balance b {
+  color: var(--brass);
+}
+
+.part-compare td.best {
+  font-weight: 700;
+  color: var(--accent, var(--ok-hi));
+}
+.part-compare-chart .bar {
+  fill: var(--accent, var(--ok-hi));
+}
+
 .rarity-badge {
   font-size: 13px;
   letter-spacing: 1px;
