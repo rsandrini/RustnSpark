@@ -7,6 +7,7 @@ import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
 import { factionBlurb, factionName, useFactions } from '../../ui/factions';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
+import { PageTitle } from '../../ui/PageTitle';
 
 // The playable factions are the keys of the admin-editable `onboarding.home_locations`
 // config; these three are the factory defaults (GDD §10). The server re-validates.
@@ -71,18 +72,15 @@ export function OnboardingPage() {
           : undefined
       }
     >
-      <header className="topbar">
-        <h1>{t('onboarding.title')}</h1>
-      </header>
-      <p className="sub">{t('onboarding.subtitle')}</p>
-      <p className="sub">{t('onboarding.hint')}</p>
+      <PageTitle title={t('onboarding.title')} line={t('onboarding.subtitle')} />
+      <p className="sub onboarding-hint">{t('onboarding.hint')}</p>
 
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
         <legend className="sr-only">{t('onboarding.title')}</legend>
         {playable.map((faction) => (
           <label
             key={faction}
-            className={`faction-card${selected === faction ? ' on' : ''}`}
+            className={`faction-card f-${faction}${selected === faction ? ' on' : ''}`}
             style={factionCardStyle(faction, factionArt)}
           >
             <input
@@ -92,8 +90,14 @@ export function OnboardingPage() {
               checked={selected === faction}
               onChange={() => setSelected(faction)}
             />
-            <span className={`fac ${faction}`}>{factionName(byId[faction], i18n.language) ?? t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}</span>
-            <span className="desc">{factionBlurb(byId[faction], i18n.language) ?? t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}</span>
+            <span className={`fac ${faction}`}>
+              {factionName(byId[faction], i18n.language) ??
+                t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}
+            </span>
+            <span className="desc">
+              {factionBlurb(byId[faction], i18n.language) ??
+                t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}
+            </span>
           </label>
         ))}
       </fieldset>

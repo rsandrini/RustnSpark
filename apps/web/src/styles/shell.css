@@ -257,3 +257,34 @@
 .shell-menu-lang label {
   justify-self: start;
 }
+
+/* the slim page header: lowercase serif title with one accent word, one mono line under it */
+.page-head {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+.page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: lowercase;
+}
+.page-title em {
+  font-style: normal;
+  color: var(--brass);
+}
+.page-line {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.page-line b {
+  color: var(--brass);
+  font-weight: 600;
+}

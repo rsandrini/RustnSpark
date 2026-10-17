@@ -1,0 +1,69 @@
+/*
+ * Onboarding (phase 3): the faction picker. One card per playable faction, the faction colour as a
+ * rule on top, a brass ring on the chosen one.
+ */
+.onboarding-hint {
+  margin: 0;
+}
+.faction-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 20px 0 16px;
+  padding: 0;
+  border: 0;
+}
+.faction-card {
+  --fc: var(--steel-hi);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-content: start;
+  align-items: center;
+  /* backgroundImage (the faction's art + a darkening gradient) is set inline per card. */
+  background-color: var(--paper-2);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--fc);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast);
+}
+.faction-card.f-luna {
+  --fc: var(--luna);
+}
+.faction-card.f-sun {
+  --fc: var(--sun);
+}
+.faction-card.f-explorers {
+  --fc: var(--explorers);
+}
+.faction-card:hover {
+  border-color: var(--rule-3);
+  border-top-color: var(--fc);
+}
+.faction-card.on {
+  border-color: var(--brass);
+  border-top-color: var(--fc);
+  box-shadow: inset 0 0 0 1px var(--brass);
+}
+.faction-card:focus-within {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+.faction-card input {
+  grid-row: span 2;
+  accent-color: var(--brass);
+}
+.faction-card .fac {
+  justify-self: start;
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
+}
+.faction-card .desc {
+  grid-column: 2;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  text-shadow: 0 1px 3px color-mix(in oklab, var(--black) 70%, transparent);
+}

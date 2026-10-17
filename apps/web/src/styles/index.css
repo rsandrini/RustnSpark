@@ -1044,56 +1044,6 @@ a {
   border: 0;
 }
 
-.faction-picker {
-  border: 0;
-  margin: 18px 0 14px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.faction-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  align-items: center;
-  /* backgroundImage (the faction's art + a darkening gradient) is set inline per card. */
-  background-color: var(--panel);
-  background-size: cover;
-  background-position: center;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 13px 15px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.faction-card:hover {
-  border-color: var(--steel);
-}
-
-.faction-card.on {
-  border-color: var(--spark);
-  box-shadow: inset 0 0 0 1px var(--spark);
-}
-
-.faction-card input {
-  grid-row: span 2;
-}
-
-.faction-card .fac {
-  justify-self: start;
-  background: color-mix(in oklab, var(--paper) 55%, transparent);
-}
-
-.faction-card .desc {
-  grid-column: 2;
-  font-size: 12.5px;
-  color: var(--ink-2);
-  text-shadow: 0 1px 3px color-mix(in oklab, var(--black) 70%, transparent);
-}
-
 /* hangar yard (S10.4) ---------------------------------------------------- */
 .yard-cell {
   fill: var(--yard-panel);

@@ -6,7 +6,9 @@ import { client } from '../../api/client';
 import type { ReportListResponse } from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
-import { ItemCard } from '../../ui/ItemCard';
+import { PageTitle } from '../../ui/PageTitle';
+
+const SEPARATOR = ' · ';
 
 export interface ProfilePageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -36,33 +38,33 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
 
   return (
     <main className="app" data-guided={guided ? '' : undefined}>
-      <header className="topbar">
-        <div>
-          <h1>{t('profile.title')}</h1>
-          <span className="sub">{user?.name ?? ''}</span>
-        </div>
-        <div className="wallet">
-          <div className="lbl">{t('profile.wallet')}</div>
-          <div className="amt" data-testid="wallet">
-            {money(user?.credits ?? 0)}
-          </div>
-        </div>
-      </header>
+      <PageTitle
+        title={t('profile.title')}
+        line={
+          <>
+            {user?.name ?? ''}
+            {SEPARATOR}
+            {t('profile.wallet')} <b data-testid="wallet">{money(user?.credits ?? 0)}</b>
+          </>
+        }
+      />
 
       {user?.factionId != null && <FactionBadge factionId={user.factionId} />}
 
-      <h2>{t('profile.history')}</h2>
+      <h2 className="profile-history">{t('profile.history')}</h2>
       {reportsQuery.isLoading && <p>{t('loading')}</p>}
       {!reportsQuery.isLoading && (reportsQuery.data?.items.length ?? 0) === 0 && (
         <p className="sub">{t('profile.noHistory')}</p>
       )}
-      <div className="stack">
+      <ul className="run-list">
         {reportsQuery.data?.items.map((item) => (
-          <ItemCard
-            key={item.missionId}
-            name={t(`report.outcome.${item.outcome}`, { defaultValue: item.outcome })}
-            description={
-              <>
+          <li key={item.missionId} className={`run run-${item.outcome}`}>
+            <span className="run-pip" aria-hidden="true" />
+            <div className="run-main">
+              <b className="run-outcome">
+                {t(`report.outcome.${item.outcome}`, { defaultValue: item.outcome })}
+              </b>
+              <span className="run-meta">
                 {item.hadCombat && (
                   <Link
                     className="pill pill-combat"
@@ -75,19 +77,18 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
                 {[
                   t('profile.legCount', { count: item.legs }),
                   dateFormat.format(new Date(item.createdAt)),
-                ].join(' · ')}
-              </>
-            }
-            action={
-              <Link className="btn" to={`/report/${item.missionId}`}>
-                {t('transit.viewReport')}
-              </Link>
-            }
-          />
+                ].join(SEPARATOR)}
+              </span>
+            </div>
+            <span className="run-credits">{t('profile.credits', { amount: item.credits })}</span>
+            <Link className="btn" to={`/report/${item.missionId}`}>
+              {t('transit.viewReport')}
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className="actions" style={{ marginTop: 16 }}>
+      <div className="profile-links">
         <Link className="btn" to="/port">
           {t('port.title')}
         </Link>
