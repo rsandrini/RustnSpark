@@ -97,6 +97,7 @@
     }
   },
   "hangar": {
+    "line": "Ship · {{name}} · {{count}} installed",
     "title": "My Ship",
     "tray": "Parts",
     "trayEmpty": "No loose parts in storage.",

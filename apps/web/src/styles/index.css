@@ -1223,26 +1223,6 @@ svg .block.disconnected {
   margin-top: 2px;
 }
 
-.hangar-layout {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 300px;
-  gap: 12px;
-  margin-top: 10px;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .hangar-layout {
-    grid-template-columns: 1fr;
-  }
-
-  /* Stacked layout: nothing to "keep in view" beside it, so let the list flow naturally. */
-  .hangar-side {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-
 /* auth + home ---------------------------------------------------------- */
 .auth {
   max-width: 420px;

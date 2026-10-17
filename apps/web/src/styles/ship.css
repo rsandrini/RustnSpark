@@ -276,3 +276,39 @@
   background: var(--paper-2);
   font-size: var(--text-sm);
 }
+
+/* the frame: the mono line under the header, and the three columns */
+.ship-line {
+  margin: 12px 0 0;
+}
+.ship-line b {
+  color: var(--ok);
+  font-weight: 600;
+}
+.ship-line b.ship-line-bad {
+  color: var(--coral);
+}
+.hangar-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
+  gap: 16px;
+  margin-top: 12px;
+  align-items: start;
+}
+/* below 1100px the yard comes first (it is the screen), then the sheet, then Parts / Store */
+@media (max-width: 1100px) {
+  .hangar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hangar-main {
+    order: 1;
+  }
+  .hangar-sheet {
+    order: 2;
+  }
+  .hangar-side {
+    order: 3;
+    max-height: none;
+    overflow-y: visible;
+  }
+}

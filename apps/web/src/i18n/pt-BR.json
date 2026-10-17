@@ -97,6 +97,7 @@
     }
   },
   "hangar": {
+    "line": "Nave · {{name}} · {{count}} instaladas",
     "title": "Minha Nave",
     "tray": "Peças",
     "trayEmpty": "Nenhuma peça solta no estoque.",

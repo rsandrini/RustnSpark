@@ -16,7 +16,7 @@ const STATUS_SEPARATOR = ' · ';
 // A ship always has a name (the server assigns a starter one), but a placeholder still guards
 // against an unexpected blank — a short, stable hex tag derived from the ship's id, not a
 // different random value on every render.
-function hexPlaceholder(seed: string): string {
+export function hexPlaceholder(seed: string): string {
   let hash = 0;
   for (let index = 0; index < seed.length; index += 1) {
     hash = (Math.imul(hash, 31) + seed.charCodeAt(index)) >>> 0;

@@ -23,6 +23,7 @@ import {
   type Rot,
 } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
+import { hexPlaceholder } from '../../ui/ShipIdentity';
 import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import {
@@ -50,6 +51,7 @@ const PATH_OF_TAB: Record<PageTab, string> = {
   port: '/port',
   board: '/missions',
 };
+
 function pageTabFromPath(pathname: string): PageTab {
   if (pathname.startsWith('/port')) return 'port';
   if (pathname.startsWith('/missions')) return 'board';
@@ -590,14 +592,20 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           corner), not in its own row before or after it — neither spends vertical space the
           scene (or, collapsed, the placeholder bar) isn't already using. */}
       <div className="ship-stage-overlay-host">
-        <ActiveShipStage
-          size={pageTab === 'port' || pageTab === 'board' ? 'slim' : 'compact'}
-          collapsed={stageCollapsed}
-        />
+        <ActiveShipStage size="slim" collapsed={stageCollapsed} />
         <button type="button" className="btn tiny stage-toggle-overlay" onClick={toggleStage}>
           {stageCollapsed ? t('hangar.stage.show') : t('hangar.stage.hide')}
         </button>
       </div>
+
+      {pageTab === 'ship' && (
+        <p className="page-line ship-line" data-testid="ship-line">
+          {t('hangar.line', {
+            name: ship.name.trim() !== '' ? ship.name : hexPlaceholder(ship.id),
+            count: parts.filter((part) => part.location === 'INSTALLED').length,
+          })}
+        </p>
+      )}
 
       {/* Owner request: the Ship/Port/Board switcher duplicated the top nav (which reaches the
           same three places now) and read as confusing, two menus doing the same job. Removed —
@@ -715,7 +723,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 ))}
             </section>
 
-            <section style={{ position: 'relative' }}>
+            <section className="hangar-main" style={{ position: 'relative' }}>
               <ShipYard
                 lookById={lookById}
                 cells={ship.yard.cells}
@@ -956,7 +964,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               </Popup>
             </section>
 
-            <section aria-label={t('hangar.sheet')}>
+            <section aria-label={t('hangar.sheet')} className="hangar-sheet">
               {allWarnings.length > 0 && (
                 <details open className="panel collapsible" data-testid="flight-warnings">
                   <summary>
