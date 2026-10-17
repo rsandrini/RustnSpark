@@ -10,6 +10,7 @@ import '@fontsource/geist-mono/latin-400.css';
 import '@fontsource/geist-mono/latin-500.css';
 import '@fontsource/instrument-serif/latin-400.css';
 import './styles/index.css';
+import './styles/admin.css';
 import './styles/components.css';
 import './styles/shell.css';
 import './styles/port.css';

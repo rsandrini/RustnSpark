@@ -719,15 +719,6 @@ a {
   cursor: not-allowed;
 }
 
-.game-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-
 .game-nav .nav-link {
   color: var(--mut);
   text-decoration: none;
@@ -2835,58 +2826,6 @@ svg .block.broken {
   }
 }
 
-/* admin (S11): the screens were built with no CSS hooks of their own — every element below is
-   bare markup in ~15 different files. This skins them generically under one wrapper instead of
-   a className in each file; a per-screen layout pass (grouped filter bars, grid forms) can
-   follow later. ------------------------------------------------------------------------------ */
-.admin-shell {
-  padding-top: 14px;
-}
-
-.admin-nav {
-  margin: 0 0 8px;
-  border-radius: 10px;
-}
-
-/* Round-5 owner follow-up: each of Stats/Editable is one click-to-open menu now, not a
-   permanently expanded row. */
-.admin-nav-dropdown {
-  position: relative;
-}
-
-.admin-nav-trigger {
-  background: none;
-  border: none;
-  font: inherit;
-  cursor: pointer;
-}
-
-.admin-nav-trigger::after {
-  content: '▾';
-  margin-left: 4px;
-  font-size: 10px;
-  opacity: 0.7;
-}
-
-.admin-nav-trigger[aria-expanded='true']::after {
-  content: '▴';
-}
-
-.admin-nav-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 6px;
-  border-radius: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel2);
-  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 35%, transparent);
-}
-
 .admin-nav-panel .nav-link {
   padding: 7px 10px;
   border-radius: 6px;
@@ -2896,108 +2835,8 @@ svg .block.broken {
   background: var(--panel);
 }
 
-.admin-shell h2 {
-  margin: 22px 0 10px;
-  font-size: 18px;
-}
-
-.admin-shell h2:first-child {
-  margin-top: 0;
-}
-
-.admin-shell h3 {
-  margin: 18px 0 8px;
-  font-size: 13px;
-  color: var(--mut);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.admin-shell section {
-  margin-bottom: 22px;
-}
-
-.admin-shell p {
-  color: var(--mut);
-  margin: 4px 0;
-}
-
 .admin-shell a:not(.nav-link) {
   color: var(--blue);
-}
-
-.admin-shell table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-top: 8px;
-}
-
-.admin-shell th,
-.admin-shell td {
-  text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-}
-
-.admin-shell th {
-  color: var(--mut);
-  font-weight: 600;
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-}
-
-.admin-shell tbody tr:hover {
-  background: var(--panel2);
-}
-
-.admin-shell button {
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel2);
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  margin: 2px 4px 2px 0;
-}
-
-.admin-shell button:hover:not(:disabled) {
-  border-color: var(--mut);
-}
-
-.admin-shell button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.tuning-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 10px 0;
-}
-
-.grid-cells-editor {
-  display: inline-block;
-  border: 1px solid var(--line);
-}
-
-.grid-cells-row {
-  display: flex;
-}
-
-.grid-cells-cell {
-  width: 14px;
-  height: 14px;
-  padding: 0;
-  border: 1px solid var(--line);
-  background: transparent;
-  cursor: pointer;
 }
 
 .grid-cells-cell.painted {
@@ -3009,33 +2848,8 @@ svg .block.broken {
   cursor: default;
 }
 
-.grid-cells-editor-wrap {
-  display: inline-block;
-}
-
-.grid-cells-cell.preview-paint {
-  box-shadow: inset 0 0 0 1px var(--spark);
-}
-
-.grid-cells-cell.preview-erase {
-  box-shadow: inset 0 0 0 1px var(--bad);
-  opacity: 0.45;
-}
-
 .grid-cells-cell.selected {
   box-shadow: inset 0 0 0 1px var(--amber);
-}
-
-.grid-cells-toolbar {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.grid-cells-count {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--mut);
 }
 
 /* Over the cellTarget soft budget: the count line and the wrap ring go red. Cells stay
@@ -3043,16 +2857,6 @@ svg .block.broken {
 .grid-cells-count.over {
   color: var(--bad);
   font-weight: 700;
-}
-
-.grid-cells-editor-wrap.over-target .grid-cells-editor {
-  outline: 1px solid var(--bad);
-}
-
-.grid-cells-preview {
-  display: block;
-  width: 72px;
-  height: 72px;
 }
 
 .grid-preview-cell {
@@ -3067,91 +2871,17 @@ svg .block.broken {
   stroke-width: 0.08;
 }
 
-.grid-preview-fallback {
-  font-size: 0.75rem;
-  word-break: break-all;
-}
-
-.connector-rules-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.rules-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-/* The part in the middle, its four sides around it: N top, W left, E right, S bottom. */
-.rules-diagram {
-  display: grid;
-  grid-template-columns: minmax(230px, 1fr) minmax(70px, auto) minmax(230px, 1fr);
-  grid-template-areas:
-    '. n .'
-    'w part e'
-    '. s .';
-  gap: 10px;
-  align-items: center;
-  justify-items: center;
-}
 .rules-side-N { grid-area: n; }
 .rules-side-W { grid-area: w; }
 .rules-side-E { grid-area: e; }
 .rules-side-S { grid-area: s; }
-.rules-part {
-  grid-area: part;
-  display: grid;
-  place-items: center;
-  min-width: 70px;
-  min-height: 70px;
-  border: 2px solid var(--steel-lt);
-  border-radius: 8px;
-  background: var(--panel2);
-  font-weight: 700;
-}
-.rules-side {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
 .rules-side.locked {
   opacity: 0.8;
   border-style: dashed;
 }
-.rules-chips {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  justify-content: center;
-}
-.rules-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-.admin-shell .rules-chip > button {
-  width: 46px;
-  height: 30px;
-  padding: 2px;
-  border-radius: 6px;
-  background: var(--panel2);
-}
 .rules-chip.on > button {
   border-color: var(--spark);
   background: color-mix(in oklab, var(--brass) 14%, transparent);
-}
-.rules-weight {
-  width: 46px;
-  text-align: center;
 }
 .kind-icon {
   width: 100%;
@@ -3162,57 +2892,12 @@ svg .block.broken {
   stroke: var(--mut);
   stroke-width: 0.03;
 }
-.rules-preview {
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
-}
-.rules-combos {
-  list-style: none;
-  margin: 0 0 8px;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-.rules-combos li {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.rules-combos b {
-  min-width: 52px;
-}
-.rules-combo-side {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-}
 .rules-combo-side .kind-icon {
   width: 34px;
   height: 14px;
 }
-.rules-samples {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
 .rules-samples .connector-grid {
   height: 56px;
-}
-
-.connector-rules-limits,
-.connector-rules-forbidden-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.connector-rules-forbidden {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
 }
 
 /* The blanket `.admin-shell button` rule above (higher specificity than `.chip` alone) would
@@ -3227,98 +2912,14 @@ svg .block.broken {
   color: var(--mut);
 }
 
-/* Owner request (round 5, auto-save): a small status word next to Save instead of a silent
-   background write. */
-.auto-save-status {
-  margin-left: 8px;
-  font-size: 12px;
-  color: var(--mut);
-}
-
-.admin-shell input,
-.admin-shell select,
-.admin-shell textarea {
-  width: 100%;
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
-  color: var(--ink);
-  font-size: 13px;
-  font-family: inherit;
-}
-
-.admin-shell input:focus,
-.admin-shell select:focus,
-.admin-shell textarea:focus {
-  outline: none;
-  border-color: var(--blue);
-}
-
-.admin-shell label {
-  display: block;
-  font-size: 12px;
-  color: var(--mut);
-  margin: 10px 0 4px;
-}
-
-/* Round-5 cleanup ("the admin tables/forms CSS is a mess"): a long single-column list of fields
-   (Parts has ~20) made every edit a lot of scrolling. Short fields (numbers, selects) pair up
-   two-to-a-row on a wide-enough modal; locale-map pairs and JSON stay full width. */
-.schema-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0 16px;
-}
-
 .schema-form-grid .field {
   margin: 0;
-}
-
-.schema-form-grid .field-wide {
-  grid-column: 1 / -1;
-}
-
-.schema-form-grid .field-wide .locale-pair {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 12px;
-}
-
-.schema-form-grid .field-wide .locale-input {
-  display: block;
-  width: calc(50% - 6px);
-  min-width: 160px;
-}
-
-.schema-form-grid .field-wide input {
-  width: 100%;
-}
-
-.field-required {
-  margin-left: 6px;
-  color: var(--spark);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.field-hint {
-  display: block;
-  margin-top: 3px;
-  color: var(--mut);
-  font-size: 11px;
 }
 
 /* Entity edit/create forms (Parts alone has ~20 fields) need more room than the default
    confirm-dialog width once they're a two-column grid. */
 .admin-shell .modal {
   width: min(640px, 94vw);
-}
-
-.admin-shell ul {
-  padding-left: 18px;
-  color: var(--mut);
 }
 
 /* A dialog-like confirm/import panel (BundleDialog and friends): plain divs today, but this
@@ -3437,178 +3038,12 @@ svg .block.dir-blocked {
   stroke-dasharray: 0.16 0.1;
 }
 
-/* Ship-format (cell drawing) form: details in a left column, the drawing area centered beside it. */
-.schema-form-split {
-  display: grid;
-  grid-template-columns: minmax(260px, 340px) 1fr;
-  gap: 24px;
-  align-items: start;
-  flex: 1;
-  min-height: 0;
-}
-
-.schema-form-split .schema-form-side {
-  grid-template-columns: 1fr;
-  overflow-y: auto;
-  max-height: 100%;
-}
-
-.schema-form-split .schema-form-main {
-  display: flex;
-  justify-content: center;
-  overflow: auto;
-  max-height: 100%;
-}
-
 .schema-form-split .schema-form-main .field {
   width: auto;
   max-width: 100%;
 }
 
 .schema-form-split .schema-form-main .lbl {
-  text-align: center;
-}
-
-/* Admin entity pages: list toolbar, scroll container and the edit/create page chrome. */
-.tuning-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  margin: 8px 0 12px;
-}
-.tuning-search {
-  min-width: 220px;
-  max-width: 100%;
-}
-.tuning-table-wrap {
-  overflow-x: auto;
-  max-width: 100%;
-}
-.tuning-table-wrap th .th-label {
-  display: block;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.row-actions {
-  white-space: nowrap;
-}
-.row-actions > * {
-  margin-right: 6px;
-}
-/* A link that looks like the admin's buttons (navigation, not an action). */
-.admin-shell a.btn-link,
-.btn-link {
-  display: inline-block;
-  padding: 6px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 6px;
-  background: var(--panel2);
-  color: var(--ink);
-  text-decoration: none;
-  font-weight: 600;
-}
-.admin-shell a.btn-link:hover {
-  border-color: var(--spark);
-}
-.breadcrumb {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 4px;
-  color: var(--mut);
-  font-size: 13px;
-}
-.entity-form-page .schema-form-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 0;
-  margin-top: 16px;
-  background: var(--bg);
-  border-top: 1px solid var(--line);
-}
-.entity-form-page .schema-form-split {
-  min-height: 0;
-}
-
-.schema-form-section {
-  margin-bottom: 18px;
-}
-.schema-form-section h3 {
-  margin: 0 0 8px;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--spark);
-}
-.schema-form-split .schema-form-side .schema-form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-}
-
-/* Config groups: collapsed by default (the screen is hundreds of keys); a search opens them all. */
-.config-group {
-  margin: 10px 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0 12px;
-}
-.config-group > summary {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px 0;
-  list-style: none;
-}
-.config-group > summary h3 {
-  margin: 0;
-}
-.config-group[open] > summary {
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 8px;
-}
-
-/* The admin's blanket input rule makes a checkbox full-width; keep it inline with its label. */
-.connector-rules-one-kind {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.admin-shell .connector-rules-one-kind input[type='checkbox'] {
-  width: auto;
-}
-
-.rules-share {
-  color: var(--mut);
-  font-size: 11px;
-}
-
-.field-error {
-  display: block;
-  margin-top: 4px;
-  color: var(--bad);
-}
-.form-error-summary {
-  margin: 8px 0 14px;
-  padding: 10px 14px;
-  border: 1px solid var(--bad);
-  border-radius: 8px;
-  background: color-mix(in oklab, var(--bad) 8%, transparent);
-}
-.form-error-summary ul {
-  margin: 6px 0 0;
-  padding-left: 18px;
-}
-
-/* A column whose values read better centered (Config > factory default). */
-.admin-shell th.col-center,
-.admin-shell td.col-center {
   text-align: center;
 }
 
@@ -3630,99 +3065,11 @@ svg .block.dir-blocked {
   font-weight: 700;
 }
 
-/* Structured editors for what used to be raw JSON. */
-.field-help {
-  display: block;
-  margin: 2px 0 6px;
-  color: var(--mut);
-}
-.structured-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.flags-editor,
-.structured-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.flag-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.flag-row small {
-  display: block;
-  color: var(--mut);
-}
-.admin-shell .flag-row input[type='checkbox'],
-.admin-shell .choice-options input[type='checkbox'] {
-  width: auto;
-}
-.choice-group {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 6px 10px 10px;
-}
-.choice-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-}
-.structured-numbers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.kv-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.advanced-json summary {
-  cursor: pointer;
-  color: var(--mut);
-}
-.advanced-json textarea {
-  width: 100%;
-  font-family: monospace;
-}
-
 .fac-logo {
   width: 16px;
   height: 16px;
   margin-right: 5px;
   vertical-align: -3px;
-  object-fit: contain;
-}
-.faction-art-editor {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  margin: 10px 0 18px;
-}
-.faction-art-slot {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-}
-.faction-art-preview {
-  min-height: 90px;
-  max-height: 140px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 6px;
-  background: var(--panel2) center / cover no-repeat;
-}
-.faction-art-preview img {
-  max-width: 100%;
-  max-height: 140px;
   object-fit: contain;
 }
 
@@ -3731,17 +3078,6 @@ svg .block.dir-blocked {
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
-}
-
-.color-input {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.admin-shell .color-input input[type='color'] {
-  width: 44px;
-  height: 32px;
-  padding: 0;
 }
 
 /* Comparison in the part hover card: what the ship has now, then what it would have. */
@@ -4297,49 +3633,12 @@ details.collapsible > summary h2 {
   margin: 0;
 }
 
-/* Admin parts comparison: the table of selected parts and its hand-rolled SVG bars. */
-.part-compare {
-  margin: 12px 0 16px;
-  padding: 12px;
-  border: 1px solid var(--line, var(--steel));
-  border-radius: 8px;
-}
-.part-compare-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
 .part-compare td.best {
   font-weight: 700;
   color: var(--accent, var(--ok-hi));
 }
-.part-compare-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin: 12px 0;
-  border: 0;
-  padding: 0;
-}
-.part-compare-charts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.part-compare-chart {
-  margin: 0;
-}
-.part-compare-chart figcaption {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
 .part-compare-chart .bar {
   fill: var(--accent, var(--ok-hi));
-}
-.part-compare-chart text {
-  fill: currentColor;
-  font-size: 12px;
 }
 
 /* ship stage: mining (a rock face beside the parked ship, a pulsing drill beam, ore flying back) */
