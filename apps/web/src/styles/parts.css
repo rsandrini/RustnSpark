@@ -43,7 +43,7 @@
 }
 
 .part-stats-card .delta-same {
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -82,21 +82,21 @@
   fill: var(--ink);
 }
 .kind-icon-none {
-  stroke: var(--mut);
+  stroke: var(--muted);
   stroke-width: 0.03;
 }
 
 /* Connector ports (connector ports spec): shape = connection kind, colour = state. */
 .conn-mark {
-  --conn-color: var(--blue);
+  --conn-color: var(--info);
   fill: var(--conn-color);
   /* Dots and bars are filled only: an SVG stroke defaults to 1 user unit = a whole yard cell. */
   stroke: none;
 }
 
 .connector-grid-cell {
-  fill: var(--panel2);
-  stroke: var(--line-strong);
+  fill: var(--paper-3);
+  stroke: var(--rule-3);
   stroke-width: 0.03;
 }
 
@@ -114,7 +114,7 @@
   align-items: baseline;
 }
 .compare-inline .compare-now {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /*
@@ -166,7 +166,7 @@
 }
 
 .part-stats-card .delta-same {
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -205,21 +205,21 @@
   fill: var(--ink);
 }
 .kind-icon-none {
-  stroke: var(--mut);
+  stroke: var(--muted);
   stroke-width: 0.03;
 }
 
 /* Connector ports (connector ports spec): shape = connection kind, colour = state. */
 .conn-mark {
-  --conn-color: var(--blue);
+  --conn-color: var(--info);
   fill: var(--conn-color);
   /* Dots and bars are filled only: an SVG stroke defaults to 1 user unit = a whole yard cell. */
   stroke: none;
 }
 
 .connector-grid-cell {
-  fill: var(--panel2);
-  stroke: var(--line-strong);
+  fill: var(--paper-3);
+  stroke: var(--rule-3);
   stroke-width: 0.03;
 }
 
@@ -237,5 +237,5 @@
   align-items: baseline;
 }
 .compare-inline .compare-now {
-  color: var(--mut);
+  color: var(--muted);
 }

@@ -3,15 +3,15 @@
   padding: 1px 9px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--brass) 16%, transparent);
-  border: 1px solid var(--spark);
-  color: var(--spark);
+  border: 1px solid var(--brass);
+  color: var(--brass);
   font-size: 12px;
   font-weight: 700;
 }
 
 .flight-path {
   fill: none;
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 3;
   stroke-dasharray: 8 6;
   opacity: 0.85;
@@ -20,14 +20,14 @@
 
 .dest-ring {
   fill: none;
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 2;
   stroke-dasharray: 3 3;
 }
 
 .here-pulse {
   fill: none;
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 2.5;
   transform-box: fill-box;
   transform-origin: center;
@@ -40,11 +40,11 @@
 }
 
 .you-tag rect {
-  fill: var(--spark);
+  fill: var(--brass);
 }
 
 .you-tag path {
-  fill: var(--spark);
+  fill: var(--brass);
 }
 
 .you-tag text {
@@ -62,12 +62,12 @@
 
 .ship-halo {
   fill: color-mix(in oklab, var(--brass) 18%, transparent);
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 1.2;
 }
 
 .ship-glyph {
-  fill: var(--spark);
+  fill: var(--brass);
   stroke: var(--paper);
   stroke-width: 1;
   stroke-linejoin: round;
@@ -83,9 +83,9 @@
 
 .place-mission {
   padding: 8px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
-  background: var(--panel2);
+  background: var(--paper-3);
 }
 
 .place-details h3 {
@@ -93,7 +93,7 @@
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,7 +107,7 @@
   display: grid;
   gap: 6px;
   padding: 10px 12px;
-  border: 1px solid var(--spark);
+  border: 1px solid var(--brass);
   border-radius: 10px;
   background: color-mix(in oklab, var(--brass) 6%, transparent);
 }

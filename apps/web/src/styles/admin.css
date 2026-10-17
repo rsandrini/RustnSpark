@@ -7,8 +7,8 @@
   flex-wrap: wrap;
   gap: 4px;
   padding: 8px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  border-bottom: 1px solid var(--rule-2);
+  background: var(--paper-2);
 }
 
 /* admin (S11): the screens were built with no CSS hooks of their own — every element below is
@@ -58,8 +58,8 @@
   min-width: 200px;
   padding: 6px;
   border-radius: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel2);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-3);
   box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 35%, transparent);
 }
 
@@ -75,7 +75,7 @@
 .admin-shell h3 {
   margin: 18px 0 8px;
   font-size: 13px;
-  color: var(--mut);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -85,7 +85,7 @@
 }
 
 .admin-shell p {
-  color: var(--mut);
+  color: var(--muted);
   margin: 4px 0;
 }
 
@@ -100,12 +100,12 @@
 .admin-shell td {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
   vertical-align: top;
 }
 
 .admin-shell th {
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 600;
   font-size: 11.5px;
   text-transform: uppercase;
@@ -114,14 +114,14 @@
 }
 
 .admin-shell tbody tr:hover {
-  background: var(--panel2);
+  background: var(--paper-3);
 }
 
 .admin-shell button {
   padding: 7px 12px;
   border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel2);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-3);
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
@@ -130,7 +130,7 @@
 }
 
 .admin-shell button:hover:not(:disabled) {
-  border-color: var(--mut);
+  border-color: var(--muted);
 }
 
 .admin-shell button:disabled {
@@ -147,7 +147,7 @@
 
 .grid-cells-editor {
   display: inline-block;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
 }
 
 .grid-cells-row {
@@ -158,7 +158,7 @@
   width: 14px;
   height: 14px;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   background: transparent;
   cursor: pointer;
 }
@@ -168,7 +168,7 @@
 }
 
 .grid-cells-cell.preview-paint {
-  box-shadow: inset 0 0 0 1px var(--spark);
+  box-shadow: inset 0 0 0 1px var(--brass);
 }
 
 .grid-cells-cell.preview-erase {
@@ -185,7 +185,7 @@
 .grid-cells-count {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .grid-cells-editor-wrap.over-target .grid-cells-editor {
@@ -237,7 +237,7 @@
   min-height: 70px;
   border: 2px solid var(--steel-lt);
   border-radius: 8px;
-  background: var(--panel2);
+  background: var(--paper-3);
   font-weight: 700;
 }
 .rules-side {
@@ -246,9 +246,9 @@
   gap: 4px;
   align-items: center;
   padding: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
-  background: var(--panel);
+  background: var(--paper-2);
 }
 
 .rules-chips {
@@ -268,7 +268,7 @@
   height: 30px;
   padding: 2px;
   border-radius: 6px;
-  background: var(--panel2);
+  background: var(--paper-3);
 }
 
 .rules-weight {
@@ -277,7 +277,7 @@
 }
 
 .rules-preview {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--rule-2);
   padding-top: 8px;
 }
 .rules-combos {
@@ -328,7 +328,7 @@
 .auto-save-status {
   margin-left: 8px;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .admin-shell input,
@@ -337,8 +337,8 @@
   width: 100%;
   padding: 7px 10px;
   border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
+  border: 1px solid var(--rule-3);
+  background: var(--paper);
   color: var(--ink);
   font-size: 13px;
   font-family: inherit;
@@ -348,13 +348,13 @@
 .admin-shell select:focus,
 .admin-shell textarea:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: var(--info);
 }
 
 .admin-shell label {
   display: block;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
   margin: 10px 0 4px;
 }
 
@@ -389,7 +389,7 @@
 
 .field-required {
   margin-left: 6px;
-  color: var(--spark);
+  color: var(--brass);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -398,13 +398,13 @@
 .field-hint {
   display: block;
   margin-top: 3px;
-  color: var(--mut);
+  color: var(--muted);
   font-size: 11px;
 }
 
 .admin-shell ul {
   padding-left: 18px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /* Ship-format (cell drawing) form: details in a left column, the drawing area centered beside it. */
@@ -464,22 +464,22 @@
 .btn-link {
   display: inline-block;
   padding: 6px 12px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--rule-3);
   border-radius: 6px;
-  background: var(--panel2);
+  background: var(--paper-3);
   color: var(--ink);
   text-decoration: none;
   font-weight: 600;
 }
 .admin-shell a.btn-link:hover {
-  border-color: var(--spark);
+  border-color: var(--brass);
 }
 .breadcrumb {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-bottom: 4px;
-  color: var(--mut);
+  color: var(--muted);
   font-size: 13px;
 }
 .entity-form-page .schema-form-actions {
@@ -491,8 +491,8 @@
   align-items: center;
   padding: 10px 0;
   margin-top: 16px;
-  background: var(--bg);
-  border-top: 1px solid var(--line);
+  background: var(--paper);
+  border-top: 1px solid var(--rule-2);
 }
 .entity-form-page .schema-form-split {
   min-height: 0;
@@ -506,7 +506,7 @@
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--spark);
+  color: var(--brass);
 }
 .schema-form-split .schema-form-side .schema-form-grid {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -515,7 +515,7 @@
 /* Config groups: collapsed by default (the screen is hundreds of keys); a search opens them all. */
 .config-group {
   margin: 10px 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
   padding: 0 12px;
 }
@@ -531,7 +531,7 @@
   margin: 0;
 }
 .config-group[open] > summary {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
   margin-bottom: 8px;
 }
 
@@ -546,7 +546,7 @@
 }
 
 .rules-share {
-  color: var(--mut);
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -577,7 +577,7 @@
 .field-help {
   display: block;
   margin: 2px 0 6px;
-  color: var(--mut);
+  color: var(--muted);
 }
 .structured-editor {
   display: flex;
@@ -597,14 +597,14 @@
 }
 .flag-row small {
   display: block;
-  color: var(--mut);
+  color: var(--muted);
 }
 .admin-shell .flag-row input[type='checkbox'],
 .admin-shell .choice-options input[type='checkbox'] {
   width: auto;
 }
 .choice-group {
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
   padding: 6px 10px 10px;
 }
@@ -625,7 +625,7 @@
 }
 .advanced-json summary {
   cursor: pointer;
-  color: var(--mut);
+  color: var(--muted);
 }
 .advanced-json textarea {
   width: 100%;
@@ -643,9 +643,9 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
-  background: var(--panel);
+  background: var(--paper-2);
 }
 .faction-art-preview {
   min-height: 90px;
@@ -654,7 +654,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: 6px;
-  background: var(--panel2) center / cover no-repeat;
+  background: var(--paper-3) center / cover no-repeat;
 }
 .faction-art-preview img {
   max-width: 100%;
@@ -677,7 +677,7 @@
 .part-compare {
   margin: 12px 0 16px;
   padding: 12px;
-  border: 1px solid var(--line, var(--steel));
+  border: 1px solid var(--rule-2, var(--steel));
   border-radius: 8px;
 }
 .part-compare-head {

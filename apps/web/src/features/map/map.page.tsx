@@ -215,7 +215,7 @@ export function MapPage({ guided = false }: MapPageProps) {
           {t('ui.risk.hi')}
         </span>
         <span>
-          <span className="dotleg" style={{ background: 'var(--spark)' }} />
+          <span className="dotleg" style={{ background: 'var(--brass)' }} />
           {t('map.youAreHere')}
         </span>
       </div>

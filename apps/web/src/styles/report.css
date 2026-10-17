@@ -17,17 +17,17 @@
 
 .pill-miss {
   background: color-mix(in oklab, var(--muted) 18%, transparent);
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /* One consistent color per damage type, reused nowhere else so it never collides with rarity,
    risk or faction colors. */
 .combat-log-table .dmg-shield {
-  color: var(--blue);
+  color: var(--info);
 }
 
 .combat-log-table .dmg-armor {
-  color: var(--amber);
+  color: var(--brass);
 }
 
 .combat-log-table .dmg-hull {
@@ -38,7 +38,7 @@
    checking the Attacker column on every row — reuses the app's own accent (you) and danger
    (enemy) tokens, not new colors, and stays distinct from the shield/armor/hull palette above. */
 .combat-log-table .attacker-player {
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .combat-log-table .attacker-enemy {
@@ -65,7 +65,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
 }
 
 .parts-damage-name {
@@ -122,7 +122,7 @@
   position: relative;
   height: 12px;
   border-radius: 999px;
-  background: var(--panel2);
+  background: var(--paper-3);
   overflow: hidden;
 }
 .lossbar-lost,
@@ -154,8 +154,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: var(--panel2);
-  color: var(--mut);
+  background: var(--paper-3);
+  color: var(--muted);
 }
 li.ev-combat,
 tr.ev-combat td:first-child {
@@ -163,11 +163,11 @@ tr.ev-combat td:first-child {
 }
 li.ev-failure,
 tr.ev-failure td:first-child {
-  border-left-color: var(--rust);
+  border-left-color: var(--coral);
 }
 li.ev-environment,
 tr.ev-environment td:first-child {
-  border-left-color: var(--amber);
+  border-left-color: var(--brass);
 }
 li.ev-loot,
 li.ev-payment,
@@ -177,23 +177,23 @@ tr.ev-payment td:first-child {
 }
 li.ev-transit,
 tr.ev-transit td:first-child {
-  border-left-color: var(--blue);
+  border-left-color: var(--info);
 }
 .ev-tag.ev-combat {
   color: var(--bad);
 }
 .ev-tag.ev-failure {
-  color: var(--rust);
+  color: var(--coral);
 }
 .ev-tag.ev-environment {
-  color: var(--amber);
+  color: var(--brass);
 }
 .ev-tag.ev-loot,
 .ev-tag.ev-payment {
   color: var(--ok);
 }
 .ev-tag.ev-transit {
-  color: var(--blue);
+  color: var(--info);
 }
 
 /* The log as a table. */
@@ -207,18 +207,18 @@ tr.ev-transit td:first-child {
 }
 .log-table th {
   text-align: left;
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 600;
   padding: 6px 8px;
-  border-bottom: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--rule-3);
 }
 .log-table td {
   padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
   vertical-align: top;
 }
 .log-table td:first-child {
-  border-left: 3px solid var(--line-strong);
+  border-left: 3px solid var(--rule-3);
   width: 1%;
   white-space: nowrap;
 }
@@ -228,7 +228,7 @@ tr.ev-transit td:first-child {
   font-weight: 600;
 }
 .race-trouble {
-  color: var(--amber);
+  color: var(--brass);
 }
 
 /* Report overview: the place scene over the map in one narrow column, the numbers beside it. */

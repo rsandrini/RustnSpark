@@ -70,7 +70,7 @@
 }
 
 .landing-ship .flame {
-  fill: var(--rust);
+  fill: var(--coral);
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -83,21 +83,5 @@
   --dur-fast: 120ms;
   --dur-pulse: 4s;
 
-  /* legacy names, kept as aliases (older rules keep working on the new palette) */
-  --bg: var(--paper);
-  --panel: var(--paper-2);
-  --panel2: var(--paper-3);
-  --mut: var(--muted);
-  --line: var(--rule-2);
-  --line-strong: var(--rule-3);
-  --spark: var(--brass);
-  --rust: var(--coral);
-  --blue: var(--info);
-  --yard-bg: var(--paper-2);
-  --yard-panel: var(--paper-2);
-  --yard-panel2: var(--paper-3);
-  --ink-dim: var(--muted);
-  --amber: var(--brass);
-
   color-scheme: dark;
 }

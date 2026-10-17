@@ -23,7 +23,7 @@
 .wallet-chip {
   font-size: 13px;
   font-weight: 700;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 /* transit: the moving scene ------------------------------------------------ */
@@ -31,7 +31,7 @@
   position: relative;
   height: 300px;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 14px;
   background: radial-gradient(ellipse at 60% 50%, var(--paper-3) 0%, var(--paper) 75%);
   margin: 12px 0;
@@ -133,8 +133,8 @@
   height: 18px;
   min-width: 90px;
   border-radius: 9px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
+  border: 1px solid var(--rule-3);
+  background: var(--paper);
   overflow: hidden;
 }
 
@@ -148,7 +148,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--spark);
+  background: var(--brass);
 }
 
 .gauge-planned {
@@ -203,7 +203,7 @@
   min-height: 110px;
   padding: 14px 18px;
   margin: 8px 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 12px;
   background-size: cover;
   background-position: center;
@@ -224,7 +224,7 @@
   height: 34px;
   border-radius: 8px;
   border: 2px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, var(--panel2));
+  background: color-mix(in srgb, var(--accent) 18%, var(--paper-3));
   color: var(--accent);
   font-weight: 800;
   font-size: 16px;
@@ -249,8 +249,8 @@
 .ship-stage-collapsed .stage-caption {
   margin: 0;
   padding: 10px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: 10px;
 }
 
@@ -321,9 +321,9 @@
 /* The trip on the sector map (mission cards, transit, report). */
 .route-map {
   margin: 8px 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 10px;
-  background: var(--panel);
+  background: var(--paper-2);
   overflow: hidden;
 }
 .route-map svg {
@@ -332,17 +332,17 @@
   height: auto;
 }
 .route-map .rm-route {
-  stroke: var(--line-strong);
+  stroke: var(--rule-3);
   stroke-width: 1;
 }
 .route-map .rm-path {
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 2.5;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 .route-map .rm-node {
-  fill: var(--line-strong);
+  fill: var(--rule-3);
   stroke: none;
 }
 
@@ -351,8 +351,8 @@
   font-size: 10px;
 }
 .route-map .rm-ship {
-  fill: var(--blue);
-  stroke: var(--bg);
+  fill: var(--info);
+  stroke: var(--paper);
   stroke-width: 1.5;
 }
 
@@ -360,7 +360,7 @@
   transition: transform 1s linear;
 }
 .route-map .rm-ship-pulse {
-  fill: var(--blue);
+  fill: var(--info);
   opacity: 0.6;
   transform-origin: center;
   transform-box: fill-box;
@@ -399,12 +399,12 @@
 .action-art .art-vein,
 .action-art .art-beam {
   fill: none;
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
 .action-art .art-spark {
-  fill: var(--spark);
+  fill: var(--brass);
 }
 .action-art .art-suit {
   fill: var(--ink-2);

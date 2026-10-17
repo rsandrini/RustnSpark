@@ -14,14 +14,14 @@
   height: 8px;
   border-radius: 6px;
   background: var(--bg-2, var(--paper-3));
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   overflow: hidden;
   margin: 10px 0;
 }
 
 .legbar-fill {
   height: 100%;
-  background: var(--spark);
+  background: var(--brass);
   transition: width 0.8s linear;
 }
 
@@ -72,22 +72,22 @@
 
 .mission-leg-plan li {
   padding: 4px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
-  background: var(--panel);
+  background: var(--paper-2);
   font-size: 13px;
 }
 
 .mcard {
-  --accent: var(--blue);
+  --accent: var(--info);
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-left: 4px solid var(--accent);
   border-radius: 10px;
-  background: var(--panel);
+  background: var(--paper-2);
 }
 
 .mcard-head {
@@ -117,11 +117,11 @@
 .mcard-reward b {
   display: block;
   font-size: 18px;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .mcard-reward small {
-  color: var(--mut);
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -141,7 +141,7 @@
 }
 
 .mcard-desc {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .mcard-material {
@@ -152,7 +152,7 @@
 .mcard-needs {
   padding: 6px 8px;
   border-radius: 8px;
-  background: var(--panel2);
+  background: var(--paper-3);
 }
 
 .mcard-requirements {
@@ -184,20 +184,20 @@
   align-items: center;
   gap: 10px;
   padding: 5px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
 }
 
 .mcard-fuel-need {
   flex: 0 0 auto;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
   white-space: nowrap;
 }
 
 .mcard-facts div {
   padding: 5px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
 }
 
@@ -205,7 +205,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .mcard-facts dd {
@@ -233,7 +233,7 @@
   display: block;
   margin-left: 22px;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /* Quest details and trip scene side by side: the text on the left, the ship scene and the map in

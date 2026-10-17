@@ -22,7 +22,7 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
+  background: var(--paper);
   color: var(--ink);
 }
 
@@ -67,16 +67,16 @@ a {
 }
 
 .topbar h1 .r {
-  color: var(--rust);
+  color: var(--coral);
 }
 
 .topbar h1 .s {
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .sub {
   font-size: 12.5px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .sub b {
@@ -85,7 +85,7 @@ a {
 }
 
 .muted {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .mono {
@@ -94,8 +94,8 @@ a {
 
 /* panels --------------------------------------------------------------- */
 .panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: var(--radius);
   padding: 14px 16px;
 }
@@ -109,7 +109,7 @@ a {
   font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--spark);
+  color: var(--brass);
   font-weight: 600;
 }
 
@@ -119,7 +119,7 @@ a {
   gap: 2px;
   margin-top: 14px;
   overflow-x: auto;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
 }
 
 /* My Ship's "Last mission" link (owner request: the Ship/Board/Port switcher that used to share
@@ -134,7 +134,7 @@ a {
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
-  color: var(--mut);
+  color: var(--muted);
   padding: 9px 14px;
   font-size: 14px;
   font-weight: 600;
@@ -144,7 +144,7 @@ a {
 
 .tab.on {
   color: var(--ink);
-  border-bottom-color: var(--spark);
+  border-bottom-color: var(--brass);
 }
 
 /* A tab strip nested one level down (My Ship's Parts/Store, inside the Ship tab): its own
@@ -152,8 +152,8 @@ a {
 
 .tab .count {
   font-size: 10px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
+  background: var(--paper-3);
+  border: 1px solid var(--rule-2);
   border-radius: 10px;
   padding: 0 6px;
   margin-left: 5px;
@@ -165,8 +165,8 @@ a {
   grid-template-columns: 40px 1fr auto;
   gap: 12px;
   align-items: center;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: var(--radius);
   padding: 11px 13px;
   margin-bottom: 9px;
@@ -176,8 +176,8 @@ a {
   width: 40px;
   height: 40px;
   border-radius: 9px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
+  background: var(--paper-3);
+  border: 1px solid var(--rule-2);
   display: grid;
   place-items: center;
   font-size: 19px;
@@ -190,7 +190,7 @@ a {
 
 .item .desc {
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
   margin-top: 1px;
 }
 
@@ -202,8 +202,8 @@ a {
 .btn {
   padding: 8px 13px;
   border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel2);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-3);
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
@@ -211,7 +211,7 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  border-color: var(--mut);
+  border-color: var(--muted);
 }
 
 .btn:disabled {
@@ -220,15 +220,15 @@ a {
 }
 
 .btn.primary {
-  background: var(--blue);
-  border-color: var(--blue);
+  background: var(--info);
+  border-color: var(--info);
   color: var(--white);
 }
 
 .btn.spark {
   background: color-mix(in oklab, var(--brass) 14%, transparent);
-  border-color: var(--spark);
-  color: var(--spark);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
 .btn.danger {
@@ -310,8 +310,8 @@ a {
 }
 
 .card {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: 12px;
   overflow: hidden;
   transition: border-color 0.15s;
@@ -341,8 +341,8 @@ a {
   display: grid;
   place-items: center;
   font-size: 22px;
-  background: var(--panel2);
-  border: 1px solid var(--line);
+  background: var(--paper-3);
+  border: 1px solid var(--rule-2);
 }
 
 .card .meta {
@@ -350,7 +350,7 @@ a {
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12.5px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .card .meta b {
@@ -372,7 +372,7 @@ a {
   justify-content: space-between;
   font-size: 13.5px;
   padding: 5px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
 }
 
 .statrow b {
@@ -381,7 +381,7 @@ a {
 }
 
 .statrow span {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /* popup (side sheet, from mapa-esboco) -------------------------------- */
@@ -391,8 +391,8 @@ a {
   top: 0;
   bottom: 0;
   width: min(340px, 86vw);
-  background: var(--panel);
-  border-left: 1px solid var(--line);
+  background: var(--paper-2);
+  border-left: 1px solid var(--rule-2);
   transform: translateX(100%);
   transition: transform 0.22s ease;
   display: flex;
@@ -405,8 +405,8 @@ a {
 }
 
 .modal {
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-3);
   border-radius: 14px;
   padding: 18px;
   width: min(440px, 92vw);
@@ -430,8 +430,8 @@ a {
 .stage {
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--bg));
-  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--paper));
+  border: 1px solid var(--rule-2);
   border-radius: 12px;
   /* Bounded so the map fits on screen without scrolling in fullscreen (owner: "today is bigger
      than that") — the svg's own viewBox scales to fit inside this, letterboxed, not stretched. */
@@ -453,8 +453,8 @@ a {
 
 .verdict.partial {
   background: color-mix(in oklab, var(--brass) 16%, transparent);
-  color: var(--spark);
-  border: 1px solid var(--spark);
+  color: var(--brass);
+  border: 1px solid var(--brass);
 }
 
 .verdict.bad {
@@ -476,7 +476,7 @@ a {
   top: 26px;
   bottom: -18px;
   width: 2px;
-  background: var(--line);
+  background: var(--rule-2);
 }
 
 .leg:last-child::before {
@@ -485,8 +485,8 @@ a {
 
 .event {
   margin: 10px 0;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: 10px;
   padding: 12px 14px;
 }
@@ -496,12 +496,12 @@ a {
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: var(--paper);
+  border: 1px solid var(--rule-2);
 }
 
 .tag.wear {
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .tag.loot {
@@ -509,7 +509,7 @@ a {
 }
 
 .tag.info {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 /* (The HTML-era `.block` yard-block rules were removed: `.block` is also the full-width button
@@ -521,15 +521,15 @@ a {
   width: 100%;
   padding: 9px 11px;
   border-radius: 8px;
-  border: 1px solid var(--line-strong);
-  background: var(--bg);
+  border: 1px solid var(--rule-3);
+  background: var(--paper);
   color: var(--ink);
   font-size: 14px;
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: var(--info);
 }
 
 .field {
@@ -540,7 +540,7 @@ a {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--mut);
+  color: var(--muted);
   margin-bottom: 4px;
 }
 
@@ -564,8 +564,8 @@ a {
   text-transform: uppercase;
   padding: 2px 8px;
   border-radius: 10px;
-  border: 1px solid var(--line);
-  color: var(--mut);
+  border: 1px solid var(--rule-2);
+  color: var(--muted);
 }
 
 .badge.ok {
@@ -596,7 +596,7 @@ a {
   gap: 10px;
   align-items: baseline;
   padding: 8px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-radius: 8px;
 }
 
@@ -605,7 +605,7 @@ a {
 }
 
 .leg.current {
-  border-color: var(--spark);
+  border-color: var(--brass);
 }
 
 /* report (S10.8) --------------------------------------------------------- */
@@ -640,17 +640,17 @@ a {
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .wallet .amt {
   font-size: 20px;
   font-weight: 700;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .game-nav .nav-link {
-  color: var(--mut);
+  color: var(--muted);
   text-decoration: none;
   font-size: 12.5px;
   font-weight: 600;
@@ -663,8 +663,8 @@ a {
 }
 
 .game-nav .nav-link.on {
-  color: var(--spark);
-  border-bottom: 2px solid var(--spark);
+  color: var(--brass);
+  border-bottom: 2px solid var(--brass);
   border-radius: 8px 8px 0 0;
 }
 
@@ -723,20 +723,20 @@ a {
 }
 
 svg .block {
-  fill: var(--yard-panel2);
+  fill: var(--paper-3);
   stroke: var(--steel-lt);
   stroke-width: 0.035;
   cursor: grab;
 }
 
 svg .block.bridge {
-  stroke: var(--amber);
+  stroke: var(--brass);
   stroke-width: 0.06;
 }
 
 /* Selection is shown by a soft halo behind the block plus a thicker spark outline. */
 svg .block.selected {
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 0.07;
 }
 
@@ -749,7 +749,7 @@ svg .block.ghosting {
 
 /* A part being spun: a bright pulsing outline so the rotation is visibly happening. */
 svg .block.rotating {
-  stroke: var(--spark);
+  stroke: var(--brass);
   stroke-width: 0.09;
   animation: rotating-pulse 0.7s ease-in-out infinite;
 }
@@ -799,14 +799,14 @@ svg .block.disconnected {
 }
 
 .part-btn.on {
-  border-color: var(--amber);
+  border-color: var(--brass);
   background: var(--steel);
 }
 
 .part-btn .meta {
   display: block;
   font-size: 10px;
-  color: var(--ink-dim);
+  color: var(--muted);
   margin-top: 2px;
 }
 
@@ -839,7 +839,7 @@ svg .block.disconnected {
   gap: 8px;
   padding: 8px 14px 0;
   font-size: 12px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .lang-switch .input {
@@ -869,8 +869,8 @@ svg .block.disconnected {
   width: 240px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-2);
   box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
   pointer-events: none;
 }
@@ -911,14 +911,14 @@ svg .block.disconnected {
 .part-stats-table td {
   padding: 6px 8px;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
 }
 
 .part-stats-table th {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 700;
 }
 
@@ -934,7 +934,7 @@ svg .block.disconnected {
 /* Owner request (round 5): color the comparison by whether it helps or hurts, not one flat
    color for every change — same green/red language RiskBadge already uses for low/high risk. */
 .part-stats-table .delta-same {
-  color: var(--mut);
+  color: var(--muted);
   font-weight: 600;
 }
 
@@ -1040,17 +1040,17 @@ svg .block.disconnected {
 .chip {
   padding: 4px 11px;
   border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  color: var(--mut);
+  border: 1px solid var(--rule-3);
+  background: var(--paper-2);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .chip.on {
-  border-color: var(--spark);
-  color: var(--spark);
+  border-color: var(--brass);
+  color: var(--brass);
   background: color-mix(in oklab, var(--brass) 12%, transparent);
 }
 
@@ -1071,7 +1071,7 @@ svg .block.disconnected {
   margin-bottom: 10px;
   position: sticky;
   top: 0;
-  background: var(--bg);
+  background: var(--paper);
   z-index: 1;
 }
 
@@ -1091,13 +1091,13 @@ svg .block.disconnected {
 }
 
 .balance b {
-  color: var(--spark);
+  color: var(--brass);
 }
 
 /* map: position, flight, place popup ------------------------------------ */
 
 .spark {
-  color: var(--spark);
+  color: var(--brass);
   font-weight: 700;
 }
 
@@ -1197,7 +1197,7 @@ svg .block.disconnected {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .briefing .fact .v {
@@ -1222,7 +1222,7 @@ svg .block.disconnected {
 }
 
 .gauge.fuel .gauge-fill {
-  background: var(--blue);
+  background: var(--info);
 }
 
 .gauge.big {
@@ -1253,10 +1253,10 @@ svg .block.disconnected {
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--rule-2);
   border-top: 3px solid var(--accent);
   border-radius: 10px;
-  background: var(--panel);
+  background: var(--paper-2);
 }
 
 .pcard.rarity-uncommon {
@@ -1297,12 +1297,12 @@ svg .block.disconnected {
 .pcard-price b {
   display: block;
   font-size: 17px;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .pcard-price small {
   font-size: 10.5px;
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .pcard-actions {
@@ -1359,8 +1359,8 @@ svg .block.cond-bad {
 }
 
 .yard-color-toggle .btn.on {
-  border-color: var(--spark);
-  color: var(--spark);
+  border-color: var(--brass);
+  color: var(--brass);
 }
 
 .part-btn.rarity-uncommon {
@@ -1408,11 +1408,11 @@ svg .block.cond-bad {
 }
 
 .mcard.type-travel {
-  --accent: var(--mut);
+  --accent: var(--muted);
 }
 
 .mcard-route .arrow {
-  color: var(--mut);
+  color: var(--muted);
 }
 
 .mcard-requirements .req-unmet {
@@ -1423,7 +1423,7 @@ svg .block.cond-bad {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--mut);
+  color: var(--muted);
   flex: 0 0 auto;
 }
 
@@ -1456,7 +1456,7 @@ svg .block.cond-bad {
   position: relative;
   margin-left: 12px;
   padding: 10px 14px 12px 20px;
-  border-left: 3px solid var(--line-strong);
+  border-left: 3px solid var(--rule-3);
 }
 
 .report-story .event::before {
@@ -1467,14 +1467,14 @@ svg .block.cond-bad {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: var(--spark);
-  border: 2px solid var(--bg);
+  background: var(--brass);
+  border: 2px solid var(--paper);
 }
 
 .report-story .event h2 {
   margin: 0 0 6px;
   font-size: 15px;
-  color: var(--spark);
+  color: var(--brass);
 }
 
 .report-story .event ol {
@@ -1643,15 +1643,15 @@ svg .block.broken {
 }
 
 .admin-nav-panel .nav-link:hover {
-  background: var(--panel);
+  background: var(--paper-2);
 }
 
 .admin-shell a:not(.nav-link) {
-  color: var(--blue);
+  color: var(--info);
 }
 
 .grid-cells-cell.painted {
-  background: var(--spark);
+  background: var(--brass);
 }
 
 .grid-cells-cell.anchor {
@@ -1660,7 +1660,7 @@ svg .block.broken {
 }
 
 .grid-cells-cell.selected {
-  box-shadow: inset 0 0 0 1px var(--amber);
+  box-shadow: inset 0 0 0 1px var(--brass);
 }
 
 /* Over the cellTarget soft budget: the count line and the wrap ring go red. Cells stay
@@ -1671,14 +1671,14 @@ svg .block.broken {
 }
 
 .grid-preview-cell {
-  fill: var(--spark);
-  stroke: var(--line);
+  fill: var(--brass);
+  stroke: var(--rule-2);
   stroke-width: 0.08;
 }
 
 .grid-preview-anchor {
   fill: var(--bad);
-  stroke: var(--line);
+  stroke: var(--rule-2);
   stroke-width: 0.08;
 }
 
@@ -1691,7 +1691,7 @@ svg .block.broken {
   border-style: dashed;
 }
 .rules-chip.on > button {
-  border-color: var(--spark);
+  border-color: var(--brass);
   background: color-mix(in oklab, var(--brass) 14%, transparent);
 }
 .rules-combo-side .kind-icon {
@@ -1710,8 +1710,8 @@ svg .block.broken {
   border-radius: 999px;
   margin: 0;
   font-size: 12px;
-  background: var(--panel);
-  color: var(--mut);
+  background: var(--paper-2);
+  color: var(--muted);
 }
 
 .schema-form-grid .field {
@@ -1728,8 +1728,8 @@ svg .block.broken {
    keeps them from reading as part of the page flow if a screen adds a fixed/floating one. */
 .admin-shell .panel,
 .admin-shell dialog {
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-2);
   border-radius: 10px;
   padding: 14px;
 }
@@ -1741,7 +1741,7 @@ svg .block.broken {
   --conn-color: var(--bad);
 }
 .conn-mark.conn-available {
-  --conn-color: var(--blue);
+  --conn-color: var(--info);
 }
 
 .connector-grid {
@@ -1785,10 +1785,10 @@ svg .block.dir-blocked {
 .mcard-race td {
   padding: 3px 6px;
   text-align: left;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--rule-2);
 }
 .mcard-race .race-you td {
-  color: var(--spark);
+  color: var(--brass);
   font-weight: 700;
 }
 
@@ -1799,39 +1799,39 @@ svg .block.dir-blocked {
   z-index: 2;
   margin: 0;
   padding: 8px 10px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--rule-3);
   border-radius: 8px;
-  background: var(--panel);
+  background: var(--paper-2);
   font-size: 15px;
 }
 .market-panel > .balance b {
-  color: var(--spark);
+  color: var(--brass);
 }
 
 /* Flight warnings: the ship flies, weaker — amber, not the red of a problem. */
 .sheet-status.warning {
   background: color-mix(in oklab, var(--brass) 16%, transparent);
-  color: var(--amber);
+  color: var(--brass);
 }
 .warn-text {
-  color: var(--amber);
+  color: var(--brass);
 }
 
 .mcard-requirements .req-unmet .req-numbers {
-  color: var(--amber);
+  color: var(--brass);
 }
 
 .route-map .rm-node.on {
-  fill: var(--spark);
+  fill: var(--brass);
 }
 .route-map .rm-node.end {
-  fill: var(--bg);
-  stroke: var(--spark);
+  fill: var(--paper);
+  stroke: var(--brass);
   stroke-width: 2;
 }
 
 .lossbar.warn .lossbar-fill {
-  background: var(--amber);
+  background: var(--brass);
 }
 .lossbar.bad .lossbar-fill {
   background: var(--bad);
@@ -1845,7 +1845,7 @@ svg .block.dir-blocked {
   gap: 8px;
 }
 .report-story li.ev {
-  border-left: 3px solid var(--line-strong);
+  border-left: 3px solid var(--rule-3);
   padding: 4px 0 4px 10px;
 }
 
@@ -1916,11 +1916,11 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 
 .format-card:hover,
 .format-card.on {
-  border-color: var(--spark, var(--brass));
+  border-color: var(--brass, var(--brass));
 }
 
 .format-card.on {
-  box-shadow: 0 0 0 1px var(--spark, var(--brass));
+  box-shadow: 0 0 0 1px var(--brass, var(--brass));
 }
 
 .part-compare td.best {
