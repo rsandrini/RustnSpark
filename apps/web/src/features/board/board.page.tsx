@@ -30,6 +30,26 @@ const MISSION_TYPES: readonly MissionType[] = [
   'RACE',
 ];
 
+type SortKey = 'reward' | 'time' | 'risk' | 'expires';
+const SORT_KEYS: readonly SortKey[] = ['reward', 'time', 'risk', 'expires'];
+
+/** Sorting happens here over the offers already loaded; the server's order is only the tie-break. */
+function compareOffers(key: SortKey, a: MissionOffer, b: MissionOffer): number {
+  switch (key) {
+    case 'reward':
+      return b.reward - a.reward;
+    case 'time':
+      return (
+        (a.info.estimate?.durationSeconds ?? Number.MAX_SAFE_INTEGER) -
+        (b.info.estimate?.durationSeconds ?? Number.MAX_SAFE_INTEGER)
+      );
+    case 'risk':
+      return a.info.peakDanger - b.info.peakDanger;
+    case 'expires':
+      return Date.parse(a.expiresAt) - Date.parse(b.expiresAt);
+  }
+}
+
 export interface BoardPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
@@ -50,6 +70,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   // Defaults on (owner request): most offers on a busy board are ones the ship can't take yet,
   // and the pilot generally wants to see what they CAN take first.
   const [onlyEligible, setOnlyEligible] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey>('reward');
   const [actionError, setActionError] = useState<string | null>(null);
 
   const shipsQuery = useQuery({
@@ -135,11 +156,14 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     return pickLocalized(location.displayName, i18n.language);
   };
 
-  const offers = (boardQuery.data ?? []).filter(
-    (offer) =>
-      (typeFilter === 'all' || offer.type === typeFilter) &&
-      (!onlyEligible || offer.eligibility.eligible),
+  const ofType = (boardQuery.data ?? []).filter(
+    (offer) => typeFilter === 'all' || offer.type === typeFilter,
   );
+  const offers = ofType
+    .filter((offer) => !onlyEligible || offer.eligibility.eligible)
+    .sort((a, b) => compareOffers(sortKey, a, b));
+  const hiddenCount = ofType.length - offers.length;
+  const takeableCount = ofType.filter((offer) => offer.eligibility.eligible).length;
 
   const body = (
     <>
@@ -155,6 +179,11 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         <PlaceBanner placeId={originId}>
           <h2>{locationName(originId)}</h2>
         </PlaceBanner>
+      )}
+      {!boardQuery.isLoading && (
+        <p className="board-summary">
+          {t('board.summary', { open: ofType.length, can: takeableCount })}
+        </p>
       )}
       <EmptyShipNotice />
 
@@ -193,6 +222,16 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         >
           {t('board.onlyEligible')}
         </button>
+        <label className="board-sort">
+          <span>{t('board.sort.label')}</span>
+          <select value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)}>
+            {SORT_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {t(`board.sort.${key}`)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {takenOffer !== null && (
@@ -234,7 +273,11 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         </p>
       )}
       {boardQuery.isLoading && <p>{t('loading')}</p>}
-      {!boardQuery.isLoading && offers.length === 0 && <p className="sub">{t('board.empty')}</p>}
+      {!boardQuery.isLoading && offers.length === 0 && (
+        <p className="sub board-empty">
+          {hiddenCount > 0 ? t('board.emptyEligible', { count: hiddenCount }) : t('board.empty')}
+        </p>
+      )}
 
       <div className="mcard-grid">
         {offers.map((offer) => {

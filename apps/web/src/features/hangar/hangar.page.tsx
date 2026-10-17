@@ -591,7 +591,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           scene (or, collapsed, the placeholder bar) isn't already using. */}
       <div className="ship-stage-overlay-host">
         <ActiveShipStage
-          size={pageTab === 'port' ? 'slim' : 'compact'}
+          size={pageTab === 'port' || pageTab === 'board' ? 'slim' : 'compact'}
           collapsed={stageCollapsed}
         />
         <button type="button" className="btn tiny stage-toggle-overlay" onClick={toggleStage}>

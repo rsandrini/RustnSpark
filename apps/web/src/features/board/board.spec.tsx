@@ -133,6 +133,22 @@ describe('board (S10.6)', () => {
     expect(screen.getByText('Blocked')).toBeInTheDocument();
   });
 
+  it('says how many offers are open, sorts by reward first and can re-sort', async () => {
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    expect(screen.getByText('Missions board · 4 open, 3 you can take')).toBeInTheDocument();
+    const sort = screen.getByRole('combobox', { name: 'Sort' });
+    expect(sort).toHaveValue('reward');
+    const rewards = () =>
+      Array.from(document.querySelectorAll('.mcard-reward')).map((node) =>
+        Number((node.textContent ?? '').replace(/\D/g, '')),
+      );
+    const sorted = [...rewards()].sort((a, b) => b - a);
+    expect(rewards()).toEqual(sorted);
+    fireEvent.change(sort, { target: { value: 'expires' } });
+    expect(document.querySelectorAll('.mcard')).toHaveLength(3);
+  });
+
   it('accepts an eligible offer and moves on to the transit screen', async () => {
     await renderBoard();
     // "Only eligible" defaults on and would hide the blocked offer this test's count expects.
@@ -140,7 +156,8 @@ describe('board (S10.6)', () => {
 
     const acceptButtons = await screen.findAllByRole('button', { name: 'Accept' });
     expect(acceptButtons).toHaveLength(4);
-    fireEvent.click(acceptButtons[0] as Element);
+    // The board is sorted by reward now, so the first row may be the blocked one: take an enabled one.
+    fireEvent.click(acceptButtons.find((button) => !button.hasAttribute('disabled')) as Element);
 
     // Embedded: accepting switches the host back to its own Ship view —
     // the just-accepted mission's travel summary appears there.

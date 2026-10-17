@@ -1292,6 +1292,15 @@
     }
   },
   "board": {
+    "summary": "Quadro de missões · {{open}} abertas, {{can}} que você pode pegar",
+    "emptyEligible": "Nada aqui que você possa pegar. Desligue Só elegíveis para ver mais {{count}}.",
+    "sort": {
+      "label": "Ordenar",
+      "reward": "Recompensa, maior primeiro",
+      "time": "Viagem mais curta",
+      "risk": "Menor risco",
+      "expires": "Expira primeiro"
+    },
     "title": "Quadro de missões",
     "filterAll": "Todas as missões",
     "onlyEligible": "Só elegíveis",

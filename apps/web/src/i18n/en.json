@@ -1292,6 +1292,15 @@
     }
   },
   "board": {
+    "summary": "Missions board · {{open}} open, {{can}} you can take",
+    "emptyEligible": "Nothing here you can take. Switch off Only eligible to see {{count}} more.",
+    "sort": {
+      "label": "Sort",
+      "reward": "Reward, high to low",
+      "time": "Shortest trip",
+      "risk": "Lowest risk",
+      "expires": "Soonest to expire"
+    },
     "title": "Mission board",
     "filterAll": "All missions",
     "onlyEligible": "Only eligible",
