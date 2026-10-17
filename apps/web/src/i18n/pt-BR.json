@@ -1191,7 +1191,8 @@
     "profile": "Perfil",
     "admin": "Admin",
     "logout": "Sair",
-    "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro."
+    "transitDisabled": "Nada para acompanhar: aceite uma missão ou comece uma viagem primeiro.",
+    "status": "Estado da nave"
   },
   "port": {
     "title": "Porto",
@@ -1877,7 +1878,8 @@
     "unexpected": "Algo deu errado"
   },
   "language": {
-    "label": "Idioma"
+    "label": "Idioma",
+    "region": "Preferências"
   },
   "rescue": {
     "title": "Flutuando no espaço",

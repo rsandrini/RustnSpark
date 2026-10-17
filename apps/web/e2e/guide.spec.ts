@@ -8,7 +8,7 @@ test('the guide opens from the account menu, searches parts and mechanics, and q
 }) => {
   await registerAndLaunch(page, 'luna');
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('menuitem', { name: 'Guide' }).click();
+  await page.getByRole('link', { name: 'Guide' }).click();
   await expect(page).toHaveURL(/\/guide/);
 
   const box = page.getByRole('searchbox', { name: 'Search the guide' });

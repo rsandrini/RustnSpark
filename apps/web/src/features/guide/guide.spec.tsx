@@ -29,7 +29,7 @@ describe('guide', () => {
   it('is reached from the account menu and lists every topic', async () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     fireEvent.click(await screen.findByRole('button', { name: 'Account menu' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Guide' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'Guide' }));
     const nav = await screen.findByRole('navigation', { name: 'Topics' });
     expect(within(nav).getAllByRole('link')).toHaveLength(9);
     expect(within(nav).getByText('How a run goes')).toBeInTheDocument();

@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div className="lang-switch">
+    <section className="lang-switch" aria-label={t('language.region')}>
       <label htmlFor="language-switcher">{t('language.label')}</label>{' '}
       <select
         className="input"
@@ -42,6 +42,6 @@ export function LanguageSwitcher() {
           </option>
         ))}
       </select>
-    </div>
+    </section>
   );
 }

@@ -53,9 +53,9 @@ describe('navigation flow (S10.10)', () => {
     expect(screen.getByTestId('topbar-wallet')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
-    expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/profile');
-    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
   it('the account menu holds the language switch, and closes on Escape and on a click outside', async () => {
@@ -66,16 +66,20 @@ describe('navigation flow (S10.10)', () => {
     expect(avatar).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(avatar);
     expect(avatar).toHaveAttribute('aria-expanded', 'true');
-    const menu = screen.getByRole('menu');
-    expect(within(menu).getByRole('combobox', { name: 'Language' })).toBeInTheDocument();
+    // a disclosure (a button that opens a panel), not an ARIA menu: it holds links, a select and buttons
+    const menu = document.getElementById('account-menu');
+    expect(menu).not.toBeNull();
+    expect(
+      within(menu as HTMLElement).getByRole('combobox', { name: 'Language' }),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(document.getElementById('account-menu')).toBeNull();
 
     fireEvent.click(avatar);
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(document.getElementById('account-menu')).not.toBeNull();
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(document.getElementById('account-menu')).toBeNull();
   });
 
   it('on a phone the four places are a bottom tab bar, not the top row', async () => {
@@ -131,7 +135,7 @@ describe('navigation flow (S10.10)', () => {
     await screen.findByRole('heading', { name: 'My Ship' });
 
     fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
-    expect(screen.getByRole('menuitem', { name: 'Admin' })).toHaveAttribute('href', '/admin');
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
   });
 
   it('/ redirects an onboarded pilot straight to My Ship (Home was retired)', async () => {

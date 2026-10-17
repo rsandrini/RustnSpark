@@ -29,6 +29,6 @@ test('the tutorial card ticks, can be skipped for good, and comes back from the 
   await expect(page.getByTestId('tutorial-card')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('menuitem', { name: 'Getting started' }).click();
+  await page.getByRole('button', { name: 'Getting started' }).click();
   await expect(page.getByTestId('tutorial-card')).toBeVisible();
 });

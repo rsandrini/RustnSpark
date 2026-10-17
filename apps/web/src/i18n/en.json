@@ -1191,7 +1191,8 @@
     "profile": "Profile",
     "admin": "Admin",
     "logout": "Sign out",
-    "transitDisabled": "Nothing to watch: accept a mission or start a trip first."
+    "transitDisabled": "Nothing to watch: accept a mission or start a trip first.",
+    "status": "Ship status"
   },
   "port": {
     "title": "Port",
@@ -1877,7 +1878,8 @@
     "unexpected": "Something went wrong"
   },
   "language": {
-    "label": "Language"
+    "label": "Language",
+    "region": "Preferences"
   },
   "rescue": {
     "title": "Floating in space",

@@ -71,7 +71,7 @@ describe('newcomer tutorial', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     await screen.findByRole('heading', { name: 'My Ship' });
     fireEvent.click(await screen.findByRole('button', { name: 'Account menu' }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Getting started' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Getting started' }));
     expect(await screen.findByTestId('tutorial-card')).toBeInTheDocument();
     expect(saved).toEqual([false]);
   });

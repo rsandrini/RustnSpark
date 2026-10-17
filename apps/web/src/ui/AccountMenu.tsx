@@ -55,7 +55,6 @@ export function AccountMenu() {
       <button
         type="button"
         className="avatar"
-        aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="account-menu"
         aria-label={t('nav.account')}
@@ -64,29 +63,18 @@ export function AccountMenu() {
         {initialsOf(user?.name)}
       </button>
       {open && (
-        <div className="shell-menu" id="account-menu" role="menu">
+        <div className="shell-menu" id="account-menu">
           <div className="label shell-menu-name">{user?.name}</div>
-          <Link
-            className="shell-menu-item"
-            role="menuitem"
-            to="/profile"
-            onClick={() => setOpen(false)}
-          >
+          <Link className="shell-menu-item" to="/profile" onClick={() => setOpen(false)}>
             {t('nav.profile')}
           </Link>
-          <Link
-            className="shell-menu-item"
-            role="menuitem"
-            to="/guide"
-            onClick={() => setOpen(false)}
-          >
+          <Link className="shell-menu-item" to="/guide" onClick={() => setOpen(false)}>
             {t('nav.guide')}
           </Link>
           {user?.tutorialDone === true && (
             <button
               type="button"
               className="shell-menu-item"
-              role="menuitem"
               onClick={() => {
                 setOpen(false);
                 void authApi.setTutorialDone(false).then(() => reloadProfile());
@@ -96,24 +84,14 @@ export function AccountMenu() {
             </button>
           )}
           {user?.role === 'ADMIN' && (
-            <Link
-              className="shell-menu-item"
-              role="menuitem"
-              to="/admin"
-              onClick={() => setOpen(false)}
-            >
+            <Link className="shell-menu-item" to="/admin" onClick={() => setOpen(false)}>
               {t('nav.admin')}
             </Link>
           )}
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>
-          <button
-            type="button"
-            className="shell-menu-item"
-            role="menuitem"
-            onClick={() => logout.mutate()}
-          >
+          <button type="button" className="shell-menu-item" onClick={() => logout.mutate()}>
             {t('nav.logout')}
           </button>
         </div>

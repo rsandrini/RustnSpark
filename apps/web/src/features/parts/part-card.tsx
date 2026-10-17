@@ -73,7 +73,7 @@ export function PartCard({
       <header className="pcard-head">
         <div className="pcard-title-row">
           <PartThumb name={name} rarity={part.rarity} />
-          <h3 className="pcard-name">{name}</h3>
+          <h2 className="pcard-name">{name}</h2>
         </div>
         {price !== undefined && (
           <div className="pcard-price">

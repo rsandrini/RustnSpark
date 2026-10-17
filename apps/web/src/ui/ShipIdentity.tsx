@@ -68,7 +68,7 @@ export function StatusStrip() {
   const running = activity !== undefined && activity.kind !== 'idle' && activity.until !== null;
 
   return (
-    <div className="status-strip">
+    <section className="status-strip" aria-label={t('nav.status')}>
       <div className="ship-identity">
         <FactionBadge factionId={user.factionId} />
         {shipName !== undefined && <span className="ship-identity-name">{shipName}</span>}
@@ -88,6 +88,6 @@ export function StatusStrip() {
         )}
       </div>
       <LastMissionLink />
-    </div>
+    </section>
   );
 }

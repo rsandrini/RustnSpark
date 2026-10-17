@@ -745,7 +745,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             })}
           </div>
 
-          <h3>{t('port.materials')}</h3>
+          <h2>{t('port.materials')}</h2>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
           <div className="pcard-grid">
             {materials.map((holding) => {
@@ -758,7 +758,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               return (
                 <article key={holding.materialId} className="pcard rarity-common">
                   <header className="pcard-head">
-                    <h3 className="pcard-name">{materialTitle}</h3>
+                    <h2 className="pcard-name">{materialTitle}</h2>
                     <p className="sub pcard-desc">
                       {pickLocalized(holding.description, i18n.language)}
                     </p>

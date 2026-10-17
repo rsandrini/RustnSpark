@@ -72,7 +72,7 @@ export function MissionRow({
         </div>
 
         <div className="mrow-job">
-          <h3 className="mrow-title">{pickLocalized(info.title, i18n.language)}</h3>
+          <h2 className="mrow-title">{pickLocalized(info.title, i18n.language)}</h2>
           <p className="mrow-route">
             {place(origin, offer.originId)}
             <span aria-hidden="true"> {t('board.arrow')} </span>
