@@ -1,4 +1,4 @@
-# Phase 3, screen 8 (last): Ship (plan, nothing built yet)
+# Phase 3, screen 8 (last): Ship (S1-S6 built; decisions as recommended; callouts sit on the yard's bottom edge so they never cover the zoom bar)
 
 The riskiest screen, so it goes last and in small steps. Scope rule as before: **the logic does not change.**
 Same queries, same layout editing (drag, rotate, remove, auto layout, save, format), same sheet numbers, same
@@ -79,12 +79,12 @@ controls; every test id and accessible name (`Assembly yard` group, tab names, b
 
 | step | what | touches |
 |---|---|---|
-| S1 | Sheet panel and engine tuning restyled, verdict chip; rules into `ship.css` | `ship-sheet-panel.tsx`, `engine-tuning.tsx`, `ship.css` |
-| S2 | Parts column: segment control, tray rows, kit note | `hangar.page.tsx`, `tray-part-row.tsx` |
-| S3 | Frame: slim header + mono line, three-column to responsive layout (yard first on small screens), the notices | `hangar.page.tsx`, `ship.css` |
-| S4 | Yard bezel and toolbar (caption row, Save as the one primary), hover card | `ship-yard.tsx` (markup around the SVG only), `hangar.page.tsx` |
-| S5 | Callouts on the yard (read-only) and the SVG tokens (cells, parts, ports) | `ship-yard.tsx` |
-| S6 | Trip summary (Dispatch / Cancel pair); 320 to 1280 px pass; specs; browser smoke on desktop and phone; screenshots | `transit.page.tsx`, specs, e2e |
+| S1 *(done)* | Sheet panel and engine tuning restyled, verdict chip; rules into `ship.css` | `ship-sheet-panel.tsx`, `engine-tuning.tsx`, `ship.css` |
+| S2 *(done)* | Parts column: segment control, tray rows, kit note | `hangar.page.tsx`, `tray-part-row.tsx` |
+| S3 *(done)* | Frame: slim header + mono line, three-column to responsive layout (yard first on small screens), the notices | `hangar.page.tsx`, `ship.css` |
+| S4 *(done)* | Yard bezel and toolbar (caption row, Save as the one primary), hover card | `ship-yard.tsx` (markup around the SVG only), `hangar.page.tsx` |
+| S5 *(done)* | Callouts on the yard (read-only) and the SVG tokens (cells, parts, ports) | `ship-yard.tsx` |
+| S6 *(done)* | Trip summary (Dispatch / Cancel pair); 320 to 1280 px pass; specs; browser smoke on desktop and phone; screenshots | `transit.page.tsx`, specs, e2e |
 
 ## 6. Cost and risk
 The yard is the risk: S4 and S5 touch `ship-yard.tsx`, so they only wrap or restyle the SVG and never change its
