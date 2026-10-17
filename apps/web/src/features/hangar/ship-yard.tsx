@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   MouseEvent as ReactMouseEvent,
@@ -198,6 +199,8 @@ export interface ShipYardProps {
   onRotateLive?: (partInstanceId: string, rot: Rot) => void;
   /** When false the ship is out on a mission: no rotate button, no drag, no rotation. */
   editable?: boolean;
+  /** Read-only figures pinned on the yard's bottom edge (the sheet's key numbers). */
+  callouts?: ReactNode;
 }
 
 // The assembly yard. Cells are transparent rects (data-gx/gy) so placement and drag feedback
@@ -223,6 +226,7 @@ export function ShipYard({
   onRotate,
   onRotateLive,
   editable = true,
+  callouts,
 }: ShipYardProps) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -682,6 +686,7 @@ export function ShipYard({
 
   return (
     <div className="stage hangar-scene" ref={sceneRef}>
+      {callouts}
       <div className="yard-tools" role="group" aria-label={t('hangar.zoom.label')}>
         <button
           type="button"

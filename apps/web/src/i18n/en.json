@@ -97,6 +97,13 @@
     }
   },
   "hangar": {
+    "callouts": {
+      "fp": "FP",
+      "def": "DEF",
+      "crg": "CRG",
+      "mob": "MOB",
+      "rng": "RNG"
+    },
     "line": "Ship · {{name}} · {{count}} installed",
     "title": "My Ship",
     "tray": "Parts",

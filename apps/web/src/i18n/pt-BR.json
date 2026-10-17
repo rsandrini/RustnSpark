@@ -97,6 +97,13 @@
     }
   },
   "hangar": {
+    "callouts": {
+      "fp": "PD",
+      "def": "DEF",
+      "crg": "CRG",
+      "mob": "MOB",
+      "rng": "ALC"
+    },
     "line": "Nave · {{name}} · {{count}} instaladas",
     "title": "Minha Nave",
     "tray": "Peças",

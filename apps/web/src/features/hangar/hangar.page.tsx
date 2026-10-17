@@ -34,6 +34,7 @@ import {
 } from '../parts/part-detail';
 import { TrayPartRow } from './tray-part-row';
 import { EngineTuning } from './engine-tuning';
+import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
@@ -746,6 +747,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 onRotate={rotatePart}
                 onRotateLive={rotatePartLive}
                 editable={!modifyBlocked}
+                callouts={<YardCallouts sheet={sheet} layers={preview?.layers} />}
               />
               {/* Hover a placed part: numbers only, no popup (owner request, round-3 follow-up —
               the full popup now opens only from the (i) button on a tray/store row). */}

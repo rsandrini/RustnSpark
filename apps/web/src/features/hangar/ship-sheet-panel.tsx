@@ -79,6 +79,18 @@ function structureTone(used: number, budget: number): Tone {
   return 'ok';
 }
 
+/** The pools a fight would really start with (parts as worn): the shield, and the armor in points. */
+export function defensePools(
+  sheet: ShipSheet,
+  layers: { shield: number; armor: number } | undefined,
+  armorPoolFactor: number,
+): { shield: number; armor: number } {
+  return {
+    shield: layers?.shield ?? sheet.esc,
+    armor: layers?.armor ?? sheet.bli * armorPoolFactor,
+  };
+}
+
 export function ShipSheetPanel({
   shipClass,
   sheet,
@@ -112,8 +124,11 @@ export function ShipSheetPanel({
   const shieldRegen =
     layers?.shieldRegen ?? installedCatalogs.reduce((sum, c) => sum + (c.shieldRegen ?? 0), 0);
   // The pools a fight would really start with (parts as worn); the sheet's totals are nominal.
-  const shieldPool = layers?.shield ?? sheet.esc;
-  const armorPool = layers?.armor ?? sheet.bli * display.armorPoolFactor;
+  const { shield: shieldPool, armor: armorPool } = defensePools(
+    sheet,
+    layers,
+    display.armorPoolFactor,
+  );
   // Systems that get less than their whole need while travelling (the bridge and the ones with no
   // power cost never show up here).
   const starved = Object.entries(power?.shares ?? {}).filter(
