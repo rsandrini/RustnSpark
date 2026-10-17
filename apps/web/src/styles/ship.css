@@ -312,3 +312,49 @@
     overflow-y: visible;
   }
 }
+
+/* the yard as an apparatus: a hairline bezel, the zoom and overlay controls as one mono caption bar */
+.hangar-scene {
+  border: 1px solid var(--rule-3);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--brass) 10%, transparent),
+    var(--shadow-card);
+}
+.yard-tools {
+  top: 10px;
+  right: 10px;
+  gap: 6px;
+  padding: 4px 6px;
+  background: color-mix(in oklab, var(--paper) 80%, transparent);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(4px);
+}
+.yard-tools .btn {
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+}
+.yard-zoom {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.yard-color-toggle .btn.on {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+/* the toolbar under the yard: one hairline bar, Save layout the single primary */
+.hangar-actions {
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.hangar-actions-sep {
+  height: 22px;
+  background: var(--rule-2);
+}
