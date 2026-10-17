@@ -654,14 +654,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               {/* A nested sub-menu (Parts/Store) inside the Ship tab: a different accent colour
                   and a bit of breathing room from the Ship/Board/Port tabs above it, so it
                   reads as a level down rather than a continuation of the same tab strip. */}
-              <div className="tabs tabs-sub" role="tablist">
+              <div className="segment side-tabs" role="tablist">
                 {(['parts', 'store'] as const).map((id) => (
                   <button
                     key={id}
                     type="button"
                     role="tab"
                     aria-selected={sideTab === id}
-                    className={`tab${sideTab === id ? ' on' : ''}`}
+                    className={`seg${sideTab === id ? ' on' : ''}`}
                     onClick={() => setSideTab(id)}
                   >
                     {t(`hangar.side.${id}`)}

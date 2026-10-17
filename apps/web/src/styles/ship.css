@@ -221,3 +221,58 @@
 .engine-thrust-ion {
   background: var(--info);
 }
+
+/* the parts column: Parts / Store as a segment control, loose parts as hairline rows */
+.side-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-bottom: 12px;
+}
+.part-btn {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--rar-common);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+.part-btn:hover {
+  border-color: var(--rule-3);
+  border-left-color: var(--rar-common);
+}
+.part-btn.on {
+  border-color: var(--brass);
+  background: color-mix(in oklab, var(--brass) 8%, var(--paper-2));
+}
+.part-btn.rarity-uncommon,
+.part-btn.rarity-uncommon:hover {
+  border-left-color: var(--rar-uncommon);
+}
+.part-btn.rarity-rare,
+.part-btn.rarity-rare:hover {
+  border-left-color: var(--rar-rare);
+}
+.part-btn.rarity-epic,
+.part-btn.rarity-epic:hover {
+  border-left-color: var(--rar-epic);
+}
+.part-btn.rarity-legendary,
+.part-btn.rarity-legendary:hover {
+  border-left-color: var(--rar-legendary);
+}
+.part-btn.broken {
+  border-color: var(--coral);
+}
+.part-btn .meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+}
+.kit-note {
+  padding: 10px 14px;
+  border: 1px solid var(--rule-2);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+  font-size: var(--text-sm);
+}
