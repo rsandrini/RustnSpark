@@ -1,3 +1,121 @@
+.you-badge {
+  display: inline-block;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--brass) 16%, transparent);
+  border: 1px solid var(--spark);
+  color: var(--spark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.flight-path {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  opacity: 0.85;
+  animation: flight-dash 1.2s linear infinite;
+}
+
+.dest-ring {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+
+.here-pulse {
+  fill: none;
+  stroke: var(--spark);
+  stroke-width: 2.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: here-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.you-tag {
+  pointer-events: none;
+}
+
+.you-tag rect {
+  fill: var(--spark);
+}
+
+.you-tag path {
+  fill: var(--spark);
+}
+
+.you-tag text {
+  fill: var(--paper);
+  font-size: 10px;
+  font-weight: 800;
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ship-marker {
+  pointer-events: none;
+}
+
+.ship-halo {
+  fill: color-mix(in oklab, var(--brass) 18%, transparent);
+  stroke: var(--spark);
+  stroke-width: 1.2;
+}
+
+.ship-glyph {
+  fill: var(--spark);
+  stroke: var(--paper);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.place-missions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.place-mission {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel2);
+}
+
+.place-details h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--spark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flight-path,
+  .here-pulse {
+    animation: none;
+  }
+}
+
+.travel-box {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--spark);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--brass) 6%, transparent);
+}
+
+.travel-box h3 {
+  margin: 0;
+}
+
 /*
  * Map screen (phase 3). The header strip, the legend row, the map and its nodes. The side panel
  * rules join them when the popup is replaced.

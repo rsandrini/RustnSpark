@@ -1,3 +1,17 @@
+/* Mission history's own "Combat" tag (owner: "almost impossible to know... where I had a
+   combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
+   round-by-round detail (links straight to the report with #combat). */
+.pill-combat {
+  background: color-mix(in oklab, var(--bad) 18%, transparent);
+  color: var(--bad);
+  text-decoration: none;
+  margin-right: 6px;
+}
+
+.pill-combat:hover {
+  background: color-mix(in oklab, var(--bad) 30%, transparent);
+}
+
 /*
  * Profile screen (phase 3): the mission history as rows, newest first.
  */

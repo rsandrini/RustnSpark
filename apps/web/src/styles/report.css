@@ -1,3 +1,250 @@
+/* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
+   (shield/armor/hull), not just the last one, is right-aligned; a miss row is dimmed. */
+.combat-log-table {
+  display: block;
+  overflow-x: auto;
+}
+
+.combat-log-table th:nth-child(n + 5),
+.combat-log-table td:nth-child(n + 5) {
+  text-align: right;
+}
+
+.pill-hit {
+  background: color-mix(in oklab, var(--ok) 18%, transparent);
+  color: var(--ok);
+}
+
+.pill-miss {
+  background: color-mix(in oklab, var(--muted) 18%, transparent);
+  color: var(--mut);
+}
+
+/* One consistent color per damage type, reused nowhere else so it never collides with rarity,
+   risk or faction colors. */
+.combat-log-table .dmg-shield {
+  color: var(--blue);
+}
+
+.combat-log-table .dmg-armor {
+  color: var(--amber);
+}
+
+.combat-log-table .dmg-hull {
+  color: var(--bad);
+}
+
+/* Owner follow-up: color-code "who's attacking" (text + a faint row tint) so it reads without
+   checking the Attacker column on every row — reuses the app's own accent (you) and danger
+   (enemy) tokens, not new colors, and stays distinct from the shield/armor/hull palette above. */
+.combat-log-table .attacker-player {
+  color: var(--spark);
+}
+
+.combat-log-table .attacker-enemy {
+  color: var(--bad);
+}
+
+.combat-log-table tr.attacker-player {
+  background: color-mix(in oklab, var(--brass) 6%, transparent);
+}
+
+.combat-log-table tr.attacker-enemy {
+  background: color-mix(in oklab, var(--bad) 6%, transparent);
+}
+
+/* report: parts-damage table (Details tab) ------------------------------------------------ */
+.parts-damage-list {
+  padding: 0;
+  list-style: none;
+}
+
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.parts-damage-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.parts-damage-lost {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Report overview: the loss is played, bars sink from what they were to what they are. */
+.damage-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 12px;
+}
+.damage-split > *,
+.overview-body,
+.overview-body > * {
+  min-width: 0;
+}
+/* Shield / armor / hull rows: name, bar, number — the bar takes whatever room is left. */
+.loss-row {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+/* Parts: the name and what was lost share a line, the bar runs the full width under them. */
+.parts-damage-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name lost'
+    'bar bar';
+  gap: 4px 10px;
+  align-items: center;
+}
+.parts-damage-row .parts-damage-name {
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.parts-damage-row .lossbar {
+  grid-area: bar;
+}
+.parts-damage-row .parts-damage-lost {
+  grid-area: lost;
+  text-align: right;
+}
+.lossbar {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--panel2);
+  overflow: hidden;
+}
+.lossbar-lost,
+.lossbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+}
+.lossbar-lost {
+  background: color-mix(in oklab, var(--bad) 45%, transparent);
+}
+.lossbar-fill {
+  background: var(--ok);
+  transition: width 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lossbar-fill {
+    transition: none;
+  }
+}
+
+.ev-tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--panel2);
+  color: var(--mut);
+}
+li.ev-combat,
+tr.ev-combat td:first-child {
+  border-left-color: var(--bad);
+}
+li.ev-failure,
+tr.ev-failure td:first-child {
+  border-left-color: var(--rust);
+}
+li.ev-environment,
+tr.ev-environment td:first-child {
+  border-left-color: var(--amber);
+}
+li.ev-loot,
+li.ev-payment,
+tr.ev-loot td:first-child,
+tr.ev-payment td:first-child {
+  border-left-color: var(--ok);
+}
+li.ev-transit,
+tr.ev-transit td:first-child {
+  border-left-color: var(--blue);
+}
+.ev-tag.ev-combat {
+  color: var(--bad);
+}
+.ev-tag.ev-failure {
+  color: var(--rust);
+}
+.ev-tag.ev-environment {
+  color: var(--amber);
+}
+.ev-tag.ev-loot,
+.ev-tag.ev-payment {
+  color: var(--ok);
+}
+.ev-tag.ev-transit {
+  color: var(--blue);
+}
+
+/* The log as a table. */
+.log-table-wrap {
+  overflow-x: auto;
+}
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.log-table th {
+  text-align: left;
+  color: var(--mut);
+  font-weight: 600;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.log-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.log-table td:first-child {
+  border-left: 3px solid var(--line-strong);
+  width: 1%;
+  white-space: nowrap;
+}
+.log-table .log-effect {
+  white-space: nowrap;
+  color: var(--ink);
+  font-weight: 600;
+}
+.race-trouble {
+  color: var(--amber);
+}
+
+/* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
+.report-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+/* The place scene with the map under it in column one, the numbers beside it. */
+@media (max-width: 900px) {
+  .report-overview {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* report debrief --------------------------------------------------------------- */
 .debrief {
   --tone: var(--ok);

@@ -1,3 +1,10 @@
+.faction-backdrop {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
 /*
  * Onboarding (phase 3): the faction picker. One card per playable faction, the faction colour as a
  * rule on top, a brass ring on the chosen one.

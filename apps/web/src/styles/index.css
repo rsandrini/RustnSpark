@@ -455,17 +455,6 @@ a {
   touch-action: none;
 }
 
-/* report (relatorio-narrado) ------------------------------------------ */
-.verdict {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  padding: 5px 12px;
-  border-radius: 20px;
-}
-
 .verdict.ok {
   background: color-mix(in oklab, var(--ok) 16%, transparent);
   color: var(--ok);
@@ -531,13 +520,6 @@ a {
 
 .tag.info {
   color: var(--mut);
-}
-
-/* hangar (montagem) ---------------------------------------------------- */
-.hangar-scene {
-  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--paper-2));
-  border: 1px solid var(--steel);
-  border-radius: 12px;
 }
 
 /* (The HTML-era `.block` yard-block rules were removed: `.block` is also the full-width button
@@ -613,22 +595,6 @@ a {
   font-size: 12.5px;
 }
 
-/* transit (S10.7) -------------------------------------------------------- */
-.legbar {
-  height: 8px;
-  border-radius: 6px;
-  background: var(--bg-2, var(--paper-3));
-  border: 1px solid var(--line);
-  overflow: hidden;
-  margin: 10px 0;
-}
-
-.legbar-fill {
-  height: 100%;
-  background: var(--spark);
-  transition: width 0.8s linear;
-}
-
 .legs {
   list-style: none;
   margin: 0;
@@ -693,32 +659,6 @@ a {
   color: var(--spark);
 }
 
-/* navigation (S10.10) ---------------------------------------------------- */
-/* One merged top bar: game nav, language and account menu in a single row instead of three
-   stacked bars. .game-nav/.lang-switch/.account-menu keep their own rules below (each is also
-   used standalone — .lang-switch alone on the signed-out layout) but lose their own border/
-   background/padding once nested inside .top-bar, which owns the outer chrome instead. */
-.engine-energy {
-  display: grid;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.engine-energy select {
-  font-size: 11px;
-  padding: 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.engine-energy select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .game-nav .nav-link {
   color: var(--mut);
   text-decoration: none;
@@ -758,14 +698,6 @@ a {
   margin: 0;
 }
 
-.rarity-badge {
-  font-size: 13px;
-  letter-spacing: 1px;
-}
-
-.rarity-name.rarity-common {
-  color: var(--rar-common);
-}
 .rarity-name.rarity-uncommon {
   color: var(--rar-uncommon);
 }
@@ -812,33 +744,6 @@ a {
   border: 0;
 }
 
-/* hangar yard (S10.4) ---------------------------------------------------- */
-.yard-cell {
-  fill: var(--yard-panel);
-  stroke: var(--line);
-  stroke-width: 0.03;
-  opacity: 0.7;
-}
-
-.yard-cell:hover {
-  fill: color-mix(in oklab, var(--brass) 8%, transparent);
-}
-
-/* Format confirm popup (hangar): shape thumbnail + dropped-parts warning. Preview reuses
-   the admin list-preview cell classes (.grid-preview-*) — same spark/bad visual language. */
-.format-preview {
-  display: block;
-  width: min(240px, 55vw);
-  height: auto;
-  margin: 10px 0;
-}
-
-.format-drop-warning {
-  color: var(--bad);
-  font-size: 13px;
-  margin: 8px 0 0;
-}
-
 svg .block {
   fill: var(--yard-panel2);
   stroke: var(--steel-lt);
@@ -855,14 +760,6 @@ svg .block.bridge {
 svg .block.selected {
   stroke: var(--spark);
   stroke-width: 0.07;
-}
-
-svg .block-halo {
-  fill: color-mix(in oklab, var(--brass) 10%, transparent);
-  stroke: var(--spark);
-  stroke-width: 0.04;
-  stroke-dasharray: 0.14 0.1;
-  pointer-events: none;
 }
 
 /* A dragged part leaves its origin behind as a dim placeholder while the ghost floats above. */
@@ -891,19 +788,6 @@ svg .block.rotating {
   }
 }
 
-/* The floating ghost of a dragged part: it rides on top of every block until released. */
-svg .yard-ghost .ghost-body {
-  fill-opacity: 0.5;
-  stroke-width: 0.06;
-  stroke-dasharray: 0.16 0.1;
-}
-
-svg .yard-ghost .ghost-cell {
-  fill: none;
-  stroke-width: 0.04;
-  stroke-dasharray: 0.1 0.08;
-}
-
 svg .yard-ghost .ghost-body.ok,
 svg .yard-ghost .ghost-cell.ok {
   fill: color-mix(in oklab, var(--ok) 22%, transparent);
@@ -914,12 +798,6 @@ svg .yard-ghost .ghost-body.bad,
 svg .yard-ghost .ghost-cell.bad {
   fill: color-mix(in oklab, var(--bad) 22%, transparent);
   stroke: var(--bad);
-}
-
-/* The carried content stays legible over the ghost body. */
-svg .yard-ghost .ghost-label {
-  fill: var(--white);
-  fill-opacity: 0.95;
 }
 
 /* A part that is not wired to the bridge does nothing: dim its fill and blink a yellow border. */
@@ -942,46 +820,9 @@ svg .block.disconnected {
   }
 }
 
-.block-label {
-  fill: var(--ink);
-  /* User units of the yard viewBox (1 = one cell). A unitless value is invalid CSS and falls
-     back to the 16px default, i.e. 16 cells — the labels then swallow the whole yard. */
-  font-size: 0.42px;
-  text-anchor: middle;
-  pointer-events: none;
-  user-select: none;
-}
-
-.part-btn {
-  display: block;
-  width: 100%;
-  background: var(--yard-panel2);
-  border: 1px solid var(--steel);
-  color: var(--ink);
-  padding: 8px 10px;
-  margin-bottom: 7px;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
-  font-size: 12px;
-  border-radius: 2px;
-  transition:
-    border-color 0.12s,
-    background 0.12s;
-}
-
-.part-btn:hover {
-  border-color: var(--steel-lt);
-}
-
 .part-btn.on {
   border-color: var(--amber);
   background: var(--steel);
-}
-
-.part-btn[aria-disabled='true'] {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .part-btn .meta {
@@ -1013,12 +854,6 @@ svg .block.disconnected {
   padding: 10px 13px;
 }
 
-.auth-alt {
-  margin: 14px 0 0;
-  text-align: center;
-  font-size: 13px;
-}
-
 .lang-switch {
   display: flex;
   align-items: center;
@@ -1048,14 +883,6 @@ svg .block.disconnected {
   border-radius: 50%;
   font-style: italic;
   font-family: Georgia, serif;
-}
-
-/* My Ship's tray: the info button sits inside its part's card, near the top corner, instead of
-   trailing it as a separate column — a sibling of the card's <button> in the DOM (two nested
-   interactive controls is an accessibility violation, not just a style choice), positioned to
-   look like it belongs to the card with plain CSS. */
-.part-btn-wrap {
-  position: relative;
 }
 
 /* Tray-row hover card (round 5/6, owner request: "add it at the side of the mouse, right
@@ -1096,20 +923,8 @@ svg .block.disconnected {
   vertical-align: middle;
 }
 
-.mission-brief-line {
-  margin: 4px 0;
-}
-
 .part-compare-note {
   margin: 10px 0 2px;
-  font-size: 12px;
-}
-
-/* Owner request (round 6): "check if the part fits the ship" — a viability problem the swap
-   would cause (e.g. over the structure budget), not just the raw stat deltas. */
-.compare-viability-warning {
-  margin: 6px 0 0;
-  padding-left: 18px;
   font-size: 12px;
 }
 
@@ -1159,18 +974,6 @@ svg .block.disconnected {
   color: var(--risk-hi);
 }
 
-/* Combat log (round-4 owner request): 7 columns instead of 2-3, so every numeric column
-   (shield/armor/hull), not just the last one, is right-aligned; a miss row is dimmed. */
-.combat-log-table {
-  display: block;
-  overflow-x: auto;
-}
-
-.combat-log-table th:nth-child(n + 5),
-.combat-log-table td:nth-child(n + 5) {
-  text-align: right;
-}
-
 /* Owner request (round 8, from a demo comparison): this popup specifically needs more room
    than the default confirm-dialog width — a scoped override, not a change to every `.modal`. */
 .modal.combat-log-modal {
@@ -1197,16 +1000,6 @@ svg .block.disconnected {
   border-radius: 999px;
 }
 
-.pill-hit {
-  background: color-mix(in oklab, var(--ok) 18%, transparent);
-  color: var(--ok);
-}
-
-.pill-miss {
-  background: color-mix(in oklab, var(--muted) 18%, transparent);
-  color: var(--mut);
-}
-
 /* Ship sheet's own ok/bad pills (energy surplus/deficit, battery coverage) — same shape as the
    combat log's, but a plain ok/bad semantic rather than hit/miss specifically. Qualified with
    `.statrow` for the same specificity reason as `.tone-*` above. */
@@ -1220,20 +1013,6 @@ svg .block.disconnected {
 .statrow .pill-bad {
   background: color-mix(in oklab, var(--bad) 18%, transparent);
   color: var(--bad);
-}
-
-/* Mission history's own "Combat" tag (owner: "almost impossible to know... where I had a
-   combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
-   round-by-round detail (links straight to the report with #combat). */
-.pill-combat {
-  background: color-mix(in oklab, var(--bad) 18%, transparent);
-  color: var(--bad);
-  text-decoration: none;
-  margin-right: 6px;
-}
-
-.pill-combat:hover {
-  background: color-mix(in oklab, var(--bad) 30%, transparent);
 }
 
 /* Generic text-color tones for a value that has a pass/fail threshold (energy, autonomy,
@@ -1255,86 +1034,9 @@ svg .block.disconnected {
   color: var(--bad);
 }
 
-/* One consistent color per damage type, reused nowhere else so it never collides with rarity,
-   risk or faction colors. */
-.combat-log-table .dmg-shield {
-  color: var(--blue);
-}
-
-.combat-log-table .dmg-armor {
-  color: var(--amber);
-}
-
-.combat-log-table .dmg-hull {
-  color: var(--bad);
-}
-
-/* Owner follow-up: color-code "who's attacking" (text + a faint row tint) so it reads without
-   checking the Attacker column on every row — reuses the app's own accent (you) and danger
-   (enemy) tokens, not new colors, and stays distinct from the shield/armor/hull palette above. */
-.combat-log-table .attacker-player {
-  color: var(--spark);
-}
-
-.combat-log-table .attacker-enemy {
-  color: var(--bad);
-}
-
-.combat-log-table tr.attacker-player {
-  background: color-mix(in oklab, var(--brass) 6%, transparent);
-}
-
-.combat-log-table tr.attacker-enemy {
-  background: color-mix(in oklab, var(--bad) 6%, transparent);
-}
-
-.part-stats {
-  margin: 12px 0 0;
-}
-
 .part-stats .statrow {
   align-items: baseline;
   gap: 12px;
-}
-
-.part-stats dt {
-  min-width: 110px;
-}
-
-.part-stats dd {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-}
-
-/* ship yard: hover-only stats card (round-3 follow-up) — numbers only, no popup. */
-.part-hover-card {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 5;
-  width: 220px;
-  max-height: calc(100% - 16px);
-  overflow-y: auto;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line-strong);
-  background: var(--panel);
-  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
-  pointer-events: none;
-}
-
-.part-stats-card-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.part-stats-card .part-stats {
-  margin-top: 6px;
 }
 
 .part-stats-card .statrow {
@@ -1342,20 +1044,11 @@ svg .block.disconnected {
   font-size: 12px;
 }
 
-.part-stats-card dt {
-  min-width: 0;
-}
-
 /* Tray hover card's own compare column (round 5): same delta language as the popup's
    .part-stats-table, scoped separately since this card uses a <dl>, not a <table>. */
 .part-stats-card .delta {
   font-size: 11px;
   font-weight: 700;
-}
-
-.part-stats-card .delta-same {
-  color: var(--mut);
-  font-weight: 600;
 }
 
 .part-stats-card .delta-good {
@@ -1366,27 +1059,10 @@ svg .block.disconnected {
   color: var(--risk-hi);
 }
 
-.market-filters {
-  display: grid;
-  gap: 8px;
-  /* Same top space as Board's own filter row (owner request — the removed "For sale" heading
-     no longer sets it, and the two lists should feel like siblings). */
-  margin: 12px 0;
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.board-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 12px 0;
 }
 
 .chip {
@@ -1406,97 +1082,8 @@ svg .block.disconnected {
   background: color-mix(in oklab, var(--brass) 12%, transparent);
 }
 
-.market-controls {
-  display: grid;
-  grid-template-columns: minmax(140px, 2fr) 1fr 1fr;
-  gap: 8px;
-}
-
-@media (max-width: 640px) {
-  .market-controls {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* hangar: zoom tools, side tabs, kit note ------------------------------ */
-.yard-tools {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .yard-tools .btn {
   padding: 4px 10px;
-}
-
-/* hangar: one-line action row under the yard (Rotate · Remove | Save · Auto · Clear · Format). */
-.hangar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.hangar-actions-sep {
-  width: 1px;
-  height: 20px;
-  margin: 0 3px;
-  background: var(--line);
-}
-
-/* A single small rotate button overlaid on the yard, pinned to the hovered part's top-right
-   corner. It is a real HTML element (not SVG) so it keeps a fixed on-screen size at any zoom. */
-.yard-rotate-icons {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.yard-rotate-icon {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--spark);
-  background: var(--bg);
-  color: var(--spark);
-  cursor: grab;
-  pointer-events: auto;
-  transition: transform 120ms ease, background-color 120ms ease, color 120ms ease;
-}
-
-.yard-rotate-icon:hover {
-  background: var(--spark);
-  color: var(--bg);
-  transform: translate(-50%, -50%) scale(1.15);
-}
-
-.yard-rotate-icon:active {
-  cursor: grabbing;
-}
-
-.yard-rotate-icon svg {
-  width: 7px;
-  height: 7px;
-  display: block;
-}
-
-/* A quick clockwise flourish when the part turns, so the rotation is visibly acknowledged. */
-.yard-rotate-icon.rotating {
-  color: var(--white);
-  border-color: var(--white);
-  animation: rotate-icon-spin 320ms ease;
 }
 
 @keyframes rotate-icon-spin {
@@ -1508,45 +1095,12 @@ svg .block.disconnected {
   }
 }
 
-.yard-zoom {
-  min-width: 44px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--mut);
-}
-
-/* Its own scroll region (owner request): a long parts/store list scrolls in place instead of
-   carrying the ship yard out of view with it. */
-.hangar-side {
-  max-height: calc(100vh - 260px);
-  min-height: 240px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
 .hangar-side .tabs {
   margin-bottom: 10px;
   position: sticky;
   top: 0;
   background: var(--bg);
   z-index: 1;
-}
-
-.kit-note {
-  margin-bottom: 10px;
-  border-color: var(--spark);
-}
-
-.kit-note p {
-  margin: 4px 0 0;
-  font-size: 13px;
-}
-
-.fix-hint {
-  display: block;
-  color: var(--mut);
-  font-size: 12px;
-  margin-top: 2px;
 }
 
 .fix-hint .btn {
@@ -1559,18 +1113,6 @@ svg .block.disconnected {
   grid-template-columns: 1fr;
 }
 
-.used-tag {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: 1px solid var(--risk-md);
-  color: var(--risk-md);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
 .balance {
   margin: 0;
   font-size: 14px;
@@ -1581,104 +1123,6 @@ svg .block.disconnected {
 }
 
 /* map: position, flight, place popup ------------------------------------ */
-
-.you-badge {
-  display: inline-block;
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--brass) 16%, transparent);
-  border: 1px solid var(--spark);
-  color: var(--spark);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.flight-path {
-  fill: none;
-  stroke: var(--spark);
-  stroke-width: 3;
-  stroke-dasharray: 8 6;
-  opacity: 0.85;
-  animation: flight-dash 1.2s linear infinite;
-}
-
-.dest-ring {
-  fill: none;
-  stroke: var(--spark);
-  stroke-width: 2;
-  stroke-dasharray: 3 3;
-}
-
-.here-pulse {
-  fill: none;
-  stroke: var(--spark);
-  stroke-width: 2.5;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: here-pulse 1.8s ease-out infinite;
-  pointer-events: none;
-}
-
-.you-tag {
-  pointer-events: none;
-}
-
-.you-tag rect {
-  fill: var(--spark);
-}
-
-.you-tag path {
-  fill: var(--spark);
-}
-
-.you-tag text {
-  fill: var(--paper);
-  font-size: 10px;
-  font-weight: 800;
-  text-anchor: middle;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.ship-marker {
-  pointer-events: none;
-}
-
-.ship-halo {
-  fill: color-mix(in oklab, var(--brass) 18%, transparent);
-  stroke: var(--spark);
-  stroke-width: 1.2;
-}
-
-.ship-glyph {
-  fill: var(--spark);
-  stroke: var(--paper);
-  stroke-width: 1;
-  stroke-linejoin: round;
-}
-
-.place-missions {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.place-mission {
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel2);
-}
-
-.place-details h3 {
-  margin: 8px 0 0;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--spark);
-}
 
 .spark {
   color: var(--spark);
@@ -1699,13 +1143,6 @@ svg .block.disconnected {
   to {
     transform: scale(1.9);
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .flight-path,
-  .here-pulse {
-    animation: none;
   }
 }
 
@@ -1885,23 +1322,6 @@ svg .block.disconnected {
   }
 }
 
-/* Owner follow-up (round 10): the old bordered-tile grid gave four simple facts a whole
-   row of boxes each — same information, as a dense wrapped strip of "label value" pairs
-   instead, so it reads in one glance rather than taking up a quarter of the screen. */
-.briefing {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 16px;
-  margin: 8px 0;
-}
-
-.briefing .fact {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
-
 .briefing .fact .k {
   font-size: 10px;
   text-transform: uppercase;
@@ -1914,30 +1334,7 @@ svg .block.disconnected {
   font-weight: 700;
 }
 
-/* Route names (owner request: "I cannot see the origin -> destination" on the pre-dispatch
-   screen) run longer than the other facts — give it the full width, above the rest. */
-.briefing .fact-route {
-  flex-basis: 100%;
-}
-
 .briefing .fact-route .v {
-  font-size: 13px;
-}
-
-.mission-leg-plan {
-  margin: 0 0 10px;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.mission-leg-plan li {
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
   font-size: 13px;
 }
 
@@ -2011,13 +1408,6 @@ svg .block.disconnected {
   font-size: 13px;
 }
 
-.scav-facts {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding-left: 18px;
-}
-
 /* part cards: one part per card, stacked ------------------------------------- */
 :root {
   --rar-common: var(--muted);
@@ -2025,12 +1415,6 @@ svg .block.disconnected {
   --rar-rare: var(--info);
   --rar-epic: var(--rar-epic);
   --rar-legendary: var(--brass);
-}
-
-.pcard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 10px;
 }
 
 .hangar-side .pcard-grid {
@@ -2095,27 +1479,6 @@ svg .block.disconnected {
   color: var(--mut);
 }
 
-.pcard-meta {
-  font-size: 12px;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.pcard-summary {
-  font-size: 12px;
-  color: var(--ink);
-}
-
-.pcard-desc {
-  margin: 0;
-  font-size: 12px;
-  color: var(--mut);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
 .pcard-actions {
   margin-top: auto;
   padding-top: 6px;
@@ -2169,46 +1532,9 @@ svg .block.cond-bad {
   stroke: var(--bad);
 }
 
-.cond-track {
-  fill: color-mix(in oklab, var(--black) 55%, transparent);
-}
-
-.cond-bar.cond-ok {
-  fill: var(--ok);
-}
-
-.cond-bar.cond-warn {
-  fill: var(--risk-md);
-}
-
-.cond-bar.cond-bad {
-  fill: var(--bad);
-}
-
-.cond-label {
-  fill: var(--white);
-  font-size: 0.09px;
-  text-anchor: middle;
-  paint-order: stroke;
-  stroke: color-mix(in oklab, var(--black) 65%, transparent);
-  stroke-width: 0.018px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.yard-color-toggle {
-  display: inline-flex;
-  gap: 4px;
-  margin-left: 6px;
-}
-
 .yard-color-toggle .btn.on {
   border-color: var(--spark);
   color: var(--spark);
-}
-
-.part-btn {
-  border-left: 4px solid var(--rar-common);
 }
 
 .part-btn.rarity-uncommon {
@@ -2237,38 +1563,7 @@ svg .block.cond-bad {
   font-size: 10px;
 }
 
-.stack-h {
-  display: inline-flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.travel-box {
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-  border: 1px solid var(--spark);
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--brass) 6%, transparent);
-}
-
-.travel-box h3 {
-  margin: 0;
-}
-
 /* mission cards ------------------------------------------------------------------ */
-
-.mcard {
-  --accent: var(--blue);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px 14px;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
-  background: var(--panel);
-}
 
 .mcard.type-transport {
   --accent: var(--luna);
@@ -2290,110 +1585,12 @@ svg .block.cond-bad {
   --accent: var(--mut);
 }
 
-.mcard-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.mcard-type {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.mcard-title {
-  margin: 2px 0 0;
-  font-size: 16px;
-}
-
-.mcard-reward {
-  text-align: right;
-}
-
-.mcard-reward b {
-  display: block;
-  font-size: 18px;
-  color: var(--spark);
-}
-
-.mcard-reward small {
-  color: var(--mut);
-  font-size: 11px;
-}
-
-.mcard-route {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
 .mcard-route .arrow {
   color: var(--mut);
 }
 
-.mcard-desc,
-.mcard-material,
-.mcard-needs {
-  margin: 0;
-  font-size: 13px;
-}
-
-.mcard-desc {
-  color: var(--mut);
-}
-
-.mcard-material {
-  color: var(--explorers);
-  font-weight: 600;
-}
-
-.mcard-needs {
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: var(--panel2);
-}
-
-.mcard-requirements {
-  list-style: none;
-  margin: 4px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mcard-requirements li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .mcard-requirements .req-unmet {
   color: var(--bad);
-}
-
-.mcard-facts {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin: 0;
-}
-
-/* Fuel lives outside the facts grid (a gauge's label needs more room than a 1/3-width cell
-   gives it) as its own full-width row instead. */
-.mcard-fuel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
 }
 
 .mcard-fuel .k {
@@ -2409,13 +1606,6 @@ svg .block.cond-bad {
   min-width: 60px;
 }
 
-.mcard-fuel-need {
-  flex: 0 0 auto;
-  font-size: 12px;
-  color: var(--mut);
-  white-space: nowrap;
-}
-
 .mcard-fuel.bad .mcard-fuel-need {
   color: var(--bad);
 }
@@ -2424,41 +1614,8 @@ svg .block.cond-bad {
   border-color: var(--bad);
 }
 
-.mcard-facts div {
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.mcard-facts dt {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--mut);
-}
-
-.mcard-facts dd {
-  margin: 0;
-  font-weight: 700;
-  font-size: 14px;
-}
-
 .mcard-facts .bad dd {
   color: var(--bad);
-}
-
-.mcard-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.mcard-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
 }
 
 .mcard-actions .btn.primary {
@@ -2502,16 +1659,6 @@ svg .block.cond-bad {
 .nav-link.disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.discard-note {
-  border-color: var(--bad);
-  display: grid;
-  gap: 8px;
-}
-
-.discard-note p {
-  margin: 0;
 }
 
 .pcard-note {
@@ -2633,12 +1780,6 @@ svg .block.broken {
   margin-right: 8px;
 }
 
-.pcard-title-row {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
 .part-thumb.small {
   width: 22px;
   height: 22px;
@@ -2646,12 +1787,6 @@ svg .block.broken {
   border-radius: 6px;
   margin-right: 6px;
   vertical-align: middle;
-}
-
-.part-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* ship stage: modes ------------------------------------------------------------------ */
@@ -2706,18 +1841,6 @@ svg .block.broken {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 10px;
-}
-
-.ship-stage-overlay-host {
-  position: relative;
-}
-
-.stage-toggle-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  background: color-mix(in oklab, var(--paper) 55%, transparent);
 }
 
 /* Reserve room so the overlay toggle never sits under the collapsed caption's own text. */
@@ -2883,15 +2006,6 @@ svg .block.broken {
   border-color: var(--spark);
   background: color-mix(in oklab, var(--brass) 14%, transparent);
 }
-.kind-icon {
-  width: 100%;
-  height: 100%;
-  fill: var(--ink);
-}
-.kind-icon-none {
-  stroke: var(--mut);
-  stroke-width: 0.03;
-}
 .rules-combo-side .kind-icon {
   width: 34px;
   height: 14px;
@@ -2932,38 +2046,6 @@ svg .block.broken {
   padding: 14px;
 }
 
-/* report: parts-damage table (Details tab) ------------------------------------------------ */
-.parts-damage-list {
-  padding: 0;
-  list-style: none;
-}
-
-.parts-damage-row {
-  display: grid;
-  grid-template-columns: 140px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.parts-damage-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.parts-damage-lost {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-/* Connector ports (connector ports spec): shape = connection kind, colour = state. */
-.conn-mark {
-  --conn-color: var(--blue);
-  fill: var(--conn-color);
-  /* Dots and bars are filled only: an SVG stroke defaults to 1 user unit = a whole yard cell. */
-  stroke: none;
-}
 .conn-mark.conn-connected {
   --conn-color: var(--ok);
 }
@@ -2974,37 +2056,8 @@ svg .block.broken {
   --conn-color: var(--blue);
 }
 
-.conn-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  align-items: center;
-}
-.conn-swatch::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: var(--conn-color);
-}
-.conn-swatch.conn-connected {
-  --conn-color: var(--ok);
-}
-.conn-swatch.conn-incorrect {
-  --conn-color: var(--bad);
-}
-.conn-swatch.conn-available {
-  --conn-color: var(--blue);
-}
 .connector-grid {
   display: block;
-}
-.connector-grid-cell {
-  fill: var(--panel2);
-  stroke: var(--line-strong);
-  stroke-width: 0.03;
 }
 .connector-grid-mini {
   height: 22px;
@@ -3016,20 +2069,6 @@ svg .block.broken {
   height: 72px;
   width: auto;
   max-width: 160px;
-}
-.part-ports {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 6px 0;
-}
-
-/* Engine exhaust / weapon muzzle marker on the facing edge (part direction rules). */
-.facing-arrow {
-  fill: var(--amber);
-  stroke: var(--bg);
-  stroke-width: 0.02;
-  opacity: 0.9;
 }
 
 svg .block.dir-blocked {
@@ -3073,23 +2112,6 @@ svg .block.dir-blocked {
   object-fit: contain;
 }
 
-.faction-backdrop {
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
-
-/* Comparison in the part hover card: what the ship has now, then what it would have. */
-.compare-inline {
-  display: inline-flex;
-  gap: 6px;
-  align-items: baseline;
-}
-.compare-inline .compare-now {
-  color: var(--mut);
-}
-
 /* The wallet stays in view while the part list scrolls under it. */
 .market-panel > .balance {
   position: sticky;
@@ -3115,13 +2137,6 @@ svg .block.dir-blocked {
   color: var(--amber);
 }
 
-/* "Your ship: 12 · needs 25" next to a numeric requirement on a mission card. */
-.mcard-requirements .req-numbers {
-  display: block;
-  margin-left: 22px;
-  font-size: 12px;
-  color: var(--mut);
-}
 .mcard-requirements .req-unmet .req-numbers {
   color: var(--amber);
 }
@@ -3171,76 +2186,11 @@ svg .block.dir-blocked {
   stroke-width: 1.5;
 }
 
-/* Report overview: the loss is played, bars sink from what they were to what they are. */
-.damage-split {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: 12px;
-}
-.damage-split > *,
-.overview-body,
-.overview-body > * {
-  min-width: 0;
-}
-/* Shield / armor / hull rows: name, bar, number — the bar takes whatever room is left. */
-.loss-row {
-  display: grid;
-  grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-/* Parts: the name and what was lost share a line, the bar runs the full width under them. */
-.parts-damage-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'name lost'
-    'bar bar';
-  gap: 4px 10px;
-  align-items: center;
-}
-.parts-damage-row .parts-damage-name {
-  grid-area: name;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.parts-damage-row .lossbar {
-  grid-area: bar;
-}
-.parts-damage-row .parts-damage-lost {
-  grid-area: lost;
-  text-align: right;
-}
-.lossbar {
-  position: relative;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--panel2);
-  overflow: hidden;
-}
-.lossbar-lost,
-.lossbar-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 999px;
-}
-.lossbar-lost {
-  background: color-mix(in oklab, var(--bad) 45%, transparent);
-}
-.lossbar-fill {
-  background: var(--ok);
-  transition: width 1.4s cubic-bezier(0.22, 0.8, 0.3, 1);
-}
 .lossbar.warn .lossbar-fill {
   background: var(--amber);
 }
 .lossbar.bad .lossbar-fill {
   background: var(--bad);
-}
-@media (prefers-reduced-motion: reduce) {
-  .lossbar-fill {
-    transition: none;
-  }
 }
 
 /* The story: a timeline per leg, each event tagged by what kind it is. */
@@ -3253,91 +2203,6 @@ svg .block.dir-blocked {
 .report-story li.ev {
   border-left: 3px solid var(--line-strong);
   padding: 4px 0 4px 10px;
-}
-.ev-tag {
-  display: inline-block;
-  margin-right: 8px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--panel2);
-  color: var(--mut);
-}
-li.ev-combat,
-tr.ev-combat td:first-child {
-  border-left-color: var(--bad);
-}
-li.ev-failure,
-tr.ev-failure td:first-child {
-  border-left-color: var(--rust);
-}
-li.ev-environment,
-tr.ev-environment td:first-child {
-  border-left-color: var(--amber);
-}
-li.ev-loot,
-li.ev-payment,
-tr.ev-loot td:first-child,
-tr.ev-payment td:first-child {
-  border-left-color: var(--ok);
-}
-li.ev-transit,
-tr.ev-transit td:first-child {
-  border-left-color: var(--blue);
-}
-.ev-tag.ev-combat {
-  color: var(--bad);
-}
-.ev-tag.ev-failure {
-  color: var(--rust);
-}
-.ev-tag.ev-environment {
-  color: var(--amber);
-}
-.ev-tag.ev-loot,
-.ev-tag.ev-payment {
-  color: var(--ok);
-}
-.ev-tag.ev-transit {
-  color: var(--blue);
-}
-
-/* The log as a table. */
-.log-table-wrap {
-  overflow-x: auto;
-}
-.log-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.log-table th {
-  text-align: left;
-  color: var(--mut);
-  font-weight: 600;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line-strong);
-}
-.log-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-}
-.log-table td:first-child {
-  border-left: 3px solid var(--line-strong);
-  width: 1%;
-  white-space: nowrap;
-}
-.log-table .log-effect {
-  white-space: nowrap;
-  color: var(--ink);
-  font-weight: 600;
-}
-.race-trouble {
-  color: var(--amber);
 }
 
 /* Small maps stay small: a glance at the route, never a banner. */
@@ -3370,63 +2235,16 @@ tr.ev-transit td:first-child {
   }
 }
 
-/* A low-level note (not a warning): quiet, never red or amber. */
-.low-note {
-  color: var(--mut);
-  font-size: 12px;
-}
-
 /* An open details popup is always on top, and the hover cards step aside while it is open. */
 body:has(.modal-backdrop) .compare-hover-card,
 body:has(.modal-backdrop) .part-hover-card {
   display: none;
 }
 
-/* Quest details and trip scene side by side: the text on the left, the ship scene and the map in
-   a narrow column on the right (stacked on a phone). */
-.transit-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 460px;
-  gap: 16px;
-  align-items: start;
-}
-/* A mission card with the trip map inside: details on one half, the map on the other. */
-.mcard-with-side {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-.mcard-with-side .mcard-main {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-.mcard-with-side {
-  align-items: stretch;
-}
-.mcard-with-side > .mcard-actions {
-  grid-column: 1 / -1;
-}
-.mcard-accepted {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  width: 100%;
-  text-align: center;
-}
-.mcard-accepted p {
-  margin: 0;
-}
 .mcard-accepted .actions {
   display: flex;
   gap: 8px;
   justify-content: center;
-}
-.mcard-with-side .mcard-side {
-  display: flex;
-  min-width: 0;
 }
 .mcard-with-side .mcard-side .route-map {
   margin: 0;
@@ -3434,20 +2252,6 @@ body:has(.modal-backdrop) .part-hover-card {
   max-width: none;
   display: flex;
   align-items: center;
-}
-@media (max-width: 700px) {
-  .mcard-with-side {
-    grid-template-columns: 1fr;
-  }
-}
-.transit-aside-solo {
-  grid-template-columns: 1fr;
-  position: relative;
-  min-height: 160px;
-}
-.transit-layout:has(.transit-aside-solo) {
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  align-items: stretch;
 }
 /* The scene takes the whole column but never more height than the card beside it. */
 .transit-aside-solo .ship-stage-wrap {
@@ -3458,13 +2262,6 @@ body:has(.modal-backdrop) .part-hover-card {
 .transit-aside-solo .transit-scene.stage-compact {
   height: 100%;
 }
-/* The ship scene and the map side by side, so the pair takes one row of height. */
-.transit-aside {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  align-items: stretch;
-}
 .transit-aside .route-map {
   align-self: stretch;
   display: grid;
@@ -3473,38 +2270,9 @@ body:has(.modal-backdrop) .part-hover-card {
 .transit-aside .route-map {
   margin: 0;
 }
-@media (max-width: 900px) {
-  .transit-layout {
-    grid-template-columns: 1fr;
-  }
-}
 /* The wide scene above the screen steps aside when the trip column carries its own. */
 main:has(.transit-aside) .ship-stage-overlay-host {
   display: none;
-}
-
-/* Report overview: the place scene over the map in one narrow column, the numbers beside it. */
-.report-overview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-/* The place scene with the map under it in column one, the numbers beside it. */
-@media (max-width: 900px) {
-  .report-overview {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Collapsible panels (flight warnings, layout problems): the heading is the toggle. */
-details.collapsible > summary {
-  cursor: pointer;
-  list-style: revert;
-}
-details.collapsible > summary h2 {
-  display: inline;
-  margin: 0;
 }
 
 /* Port actions (scavenging, mining): an illustrated hero, stat tiles and choice cards. */
@@ -3554,30 +2322,6 @@ details.collapsible > summary h2 {
   width: min(900px, 94vw);
 }
 
-.format-grid {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-}
-
-.format-card {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 8px;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  color: inherit;
-  cursor: pointer;
-  position: relative;
-}
-
 .format-card:hover,
 .format-card.on {
   border-color: var(--spark, var(--brass));
@@ -3585,52 +2329,6 @@ details.collapsible > summary h2 {
 
 .format-card.on {
   box-shadow: 0 0 0 1px var(--spark, var(--brass));
-}
-
-.format-card:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.format-preview.format-preview-thumb {
-  width: 100%;
-  height: 84px;
-  margin: 0;
-}
-
-.format-card-name {
-  font-weight: 600;
-  text-align: center;
-}
-
-.format-card-meta {
-  font-size: 12px;
-  opacity: 0.75;
-  text-align: center;
-}
-
-.format-card-tag {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--spark, var(--brass));
-  color: var(--paper-2);
-}
-
-.format-detail {
-  margin-top: 14px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line-strong);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.format-detail h3 {
-  margin: 0;
 }
 
 .part-compare td.best {

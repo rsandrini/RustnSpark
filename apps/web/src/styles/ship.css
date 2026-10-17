@@ -1,3 +1,436 @@
+/* hangar (montagem) ---------------------------------------------------- */
+.hangar-scene {
+  background: radial-gradient(circle at 50% 40%, var(--paper-3), var(--paper-2));
+  border: 1px solid var(--steel);
+  border-radius: 12px;
+}
+
+/* navigation (S10.10) ---------------------------------------------------- */
+/* One merged top bar: game nav, language and account menu in a single row instead of three
+   stacked bars. .game-nav/.lang-switch/.account-menu keep their own rules below (each is also
+   used standalone — .lang-switch alone on the signed-out layout) but lose their own border/
+   background/padding once nested inside .top-bar, which owns the outer chrome instead. */
+.engine-energy {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.engine-energy select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.engine-energy select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* hangar yard (S10.4) ---------------------------------------------------- */
+.yard-cell {
+  fill: var(--yard-panel);
+  stroke: var(--line);
+  stroke-width: 0.03;
+  opacity: 0.7;
+}
+
+.yard-cell:hover {
+  fill: color-mix(in oklab, var(--brass) 8%, transparent);
+}
+
+/* Format confirm popup (hangar): shape thumbnail + dropped-parts warning. Preview reuses
+   the admin list-preview cell classes (.grid-preview-*) — same spark/bad visual language. */
+.format-preview {
+  display: block;
+  width: min(240px, 55vw);
+  height: auto;
+  margin: 10px 0;
+}
+
+.format-drop-warning {
+  color: var(--bad);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+svg .block-halo {
+  fill: color-mix(in oklab, var(--brass) 10%, transparent);
+  stroke: var(--spark);
+  stroke-width: 0.04;
+  stroke-dasharray: 0.14 0.1;
+  pointer-events: none;
+}
+
+/* The floating ghost of a dragged part: it rides on top of every block until released. */
+svg .yard-ghost .ghost-body {
+  fill-opacity: 0.5;
+  stroke-width: 0.06;
+  stroke-dasharray: 0.16 0.1;
+}
+
+svg .yard-ghost .ghost-cell {
+  fill: none;
+  stroke-width: 0.04;
+  stroke-dasharray: 0.1 0.08;
+}
+
+/* The carried content stays legible over the ghost body. */
+svg .yard-ghost .ghost-label {
+  fill: var(--white);
+  fill-opacity: 0.95;
+}
+
+.block-label {
+  fill: var(--ink);
+  /* User units of the yard viewBox (1 = one cell). A unitless value is invalid CSS and falls
+     back to the 16px default, i.e. 16 cells — the labels then swallow the whole yard. */
+  font-size: 0.42px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.part-btn {
+  display: block;
+  width: 100%;
+  background: var(--yard-panel2);
+  border: 1px solid var(--steel);
+  color: var(--ink);
+  padding: 8px 10px;
+  margin-bottom: 7px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 2px;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.part-btn:hover {
+  border-color: var(--steel-lt);
+}
+
+.part-btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* My Ship's tray: the info button sits inside its part's card, near the top corner, instead of
+   trailing it as a separate column — a sibling of the card's <button> in the DOM (two nested
+   interactive controls is an accessibility violation, not just a style choice), positioned to
+   look like it belongs to the card with plain CSS. */
+.part-btn-wrap {
+  position: relative;
+}
+
+/* ship yard: hover-only stats card (round-3 follow-up) — numbers only, no popup. */
+.part-hover-card {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 220px;
+  max-height: calc(100% - 16px);
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  box-shadow: 0 8px 24px color-mix(in oklab, var(--black) 45%, transparent);
+  pointer-events: none;
+}
+
+/* hangar: zoom tools, side tabs, kit note ------------------------------ */
+.yard-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* hangar: one-line action row under the yard (Rotate · Remove | Save · Auto · Clear · Format). */
+.hangar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.hangar-actions-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--line);
+}
+
+/* A single small rotate button overlaid on the yard, pinned to the hovered part's top-right
+   corner. It is a real HTML element (not SVG) so it keeps a fixed on-screen size at any zoom. */
+.yard-rotate-icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.yard-rotate-icon {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--spark);
+  background: var(--bg);
+  color: var(--spark);
+  cursor: grab;
+  pointer-events: auto;
+  transition: transform 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+.yard-rotate-icon:hover {
+  background: var(--spark);
+  color: var(--bg);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.yard-rotate-icon:active {
+  cursor: grabbing;
+}
+
+.yard-rotate-icon svg {
+  width: 7px;
+  height: 7px;
+  display: block;
+}
+
+/* A quick clockwise flourish when the part turns, so the rotation is visibly acknowledged. */
+.yard-rotate-icon.rotating {
+  color: var(--white);
+  border-color: var(--white);
+  animation: rotate-icon-spin 320ms ease;
+}
+
+.yard-zoom {
+  min-width: 44px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+/* Its own scroll region (owner request): a long parts/store list scrolls in place instead of
+   carrying the ship yard out of view with it. */
+.hangar-side {
+  max-height: calc(100vh - 260px);
+  min-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.kit-note {
+  margin-bottom: 10px;
+  border-color: var(--spark);
+}
+
+.kit-note p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.fix-hint {
+  display: block;
+  color: var(--mut);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.cond-track {
+  fill: color-mix(in oklab, var(--black) 55%, transparent);
+}
+
+.cond-bar.cond-ok {
+  fill: var(--ok);
+}
+
+.cond-bar.cond-warn {
+  fill: var(--risk-md);
+}
+
+.cond-bar.cond-bad {
+  fill: var(--bad);
+}
+
+.cond-label {
+  fill: var(--white);
+  font-size: 0.09px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: color-mix(in oklab, var(--black) 65%, transparent);
+  stroke-width: 0.018px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.yard-color-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.part-btn {
+  border-left: 4px solid var(--rar-common);
+}
+
+.part-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ship-stage-overlay-host {
+  position: relative;
+}
+
+.stage-toggle-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: color-mix(in oklab, var(--paper) 55%, transparent);
+}
+
+.conn-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+}
+.conn-swatch::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--conn-color);
+}
+.conn-swatch.conn-connected {
+  --conn-color: var(--ok);
+}
+.conn-swatch.conn-incorrect {
+  --conn-color: var(--bad);
+}
+.conn-swatch.conn-available {
+  --conn-color: var(--blue);
+}
+
+/* Engine exhaust / weapon muzzle marker on the facing edge (part direction rules). */
+.facing-arrow {
+  fill: var(--amber);
+  stroke: var(--bg);
+  stroke-width: 0.02;
+  opacity: 0.9;
+}
+
+/* A low-level note (not a warning): quiet, never red or amber. */
+.low-note {
+  color: var(--mut);
+  font-size: 12px;
+}
+
+/* Collapsible panels (flight warnings, layout problems): the heading is the toggle. */
+details.collapsible > summary {
+  cursor: pointer;
+  list-style: revert;
+}
+details.collapsible > summary h2 {
+  display: inline;
+  margin: 0;
+}
+
+.format-grid {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.format-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+}
+
+.format-card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.format-preview.format-preview-thumb {
+  width: 100%;
+  height: 84px;
+  margin: 0;
+}
+
+.format-card-name {
+  font-weight: 600;
+  text-align: center;
+}
+
+.format-card-meta {
+  font-size: 12px;
+  opacity: 0.75;
+  text-align: center;
+}
+
+.format-card-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--spark, var(--brass));
+  color: var(--paper-2);
+}
+
+.format-detail {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.format-detail h3 {
+  margin: 0;
+}
+
 /*
  * Ship screen (phase 3). The sheet panel and the engine tuning first; the parts column, the frame and
  * the yard bezel join them as those steps land.

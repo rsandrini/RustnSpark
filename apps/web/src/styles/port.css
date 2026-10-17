@@ -1,3 +1,66 @@
+.rarity-name.rarity-common {
+  color: var(--rar-common);
+}
+
+.market-filters {
+  display: grid;
+  gap: 8px;
+  /* Same top space as Board's own filter row (owner request — the removed "For sale" heading
+     no longer sets it, and the two lists should feel like siblings). */
+  margin: 12px 0;
+}
+
+.market-controls {
+  display: grid;
+  grid-template-columns: minmax(140px, 2fr) 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .market-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scav-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.pcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.pcard-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mut);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stack-h {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.discard-note {
+  border-color: var(--bad);
+  display: grid;
+  gap: 8px;
+}
+
+.discard-note p {
+  margin: 0;
+}
+
 /*
  * Port screen (phase 3). Two-level navigation (Buy / Service / Work, then that group's tabs), the
  * slim place header with the serif title, and the notice strips. The cards and lists of each tab

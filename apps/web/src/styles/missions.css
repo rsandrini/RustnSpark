@@ -1,3 +1,313 @@
+/* report (relatorio-narrado) ------------------------------------------ */
+.verdict {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* transit (S10.7) -------------------------------------------------------- */
+.legbar {
+  height: 8px;
+  border-radius: 6px;
+  background: var(--bg-2, var(--paper-3));
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.legbar-fill {
+  height: 100%;
+  background: var(--spark);
+  transition: width 0.8s linear;
+}
+
+.mission-brief-line {
+  margin: 4px 0;
+}
+
+.board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* Owner follow-up (round 10): the old bordered-tile grid gave four simple facts a whole
+   row of boxes each — same information, as a dense wrapped strip of "label value" pairs
+   instead, so it reads in one glance rather than taking up a quarter of the screen. */
+.briefing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin: 8px 0;
+}
+
+.briefing .fact {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+/* Route names (owner request: "I cannot see the origin -> destination" on the pre-dispatch
+   screen) run longer than the other facts — give it the full width, above the rest. */
+.briefing .fact-route {
+  flex-basis: 100%;
+}
+
+.mission-leg-plan {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mission-leg-plan li {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.mcard {
+  --accent: var(--blue);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.mcard-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.mcard-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.mcard-title {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.mcard-reward {
+  text-align: right;
+}
+
+.mcard-reward b {
+  display: block;
+  font-size: 18px;
+  color: var(--spark);
+}
+
+.mcard-reward small {
+  color: var(--mut);
+  font-size: 11px;
+}
+
+.mcard-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.mcard-desc,
+.mcard-material,
+.mcard-needs {
+  margin: 0;
+  font-size: 13px;
+}
+
+.mcard-desc {
+  color: var(--mut);
+}
+
+.mcard-material {
+  color: var(--explorers);
+  font-weight: 600;
+}
+
+.mcard-needs {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--panel2);
+}
+
+.mcard-requirements {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mcard-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mcard-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+}
+
+/* Fuel lives outside the facts grid (a gauge's label needs more room than a 1/3-width cell
+   gives it) as its own full-width row instead. */
+.mcard-fuel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mcard-fuel-need {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--mut);
+  white-space: nowrap;
+}
+
+.mcard-facts div {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mcard-facts dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--mut);
+}
+
+.mcard-facts dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mcard-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* "Your ship: 12 · needs 25" next to a numeric requirement on a mission card. */
+.mcard-requirements .req-numbers {
+  display: block;
+  margin-left: 22px;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+/* Quest details and trip scene side by side: the text on the left, the ship scene and the map in
+   a narrow column on the right (stacked on a phone). */
+.transit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 16px;
+  align-items: start;
+}
+/* A mission card with the trip map inside: details on one half, the map on the other. */
+.mcard-with-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.mcard-with-side .mcard-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.mcard-with-side {
+  align-items: stretch;
+}
+.mcard-with-side > .mcard-actions {
+  grid-column: 1 / -1;
+}
+.mcard-accepted {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+}
+.mcard-accepted p {
+  margin: 0;
+}
+
+.mcard-with-side .mcard-side {
+  display: flex;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .mcard-with-side {
+    grid-template-columns: 1fr;
+  }
+}
+.transit-aside-solo {
+  grid-template-columns: 1fr;
+  position: relative;
+  min-height: 160px;
+}
+.transit-layout:has(.transit-aside-solo) {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: stretch;
+}
+
+/* The ship scene and the map side by side, so the pair takes one row of height. */
+.transit-aside {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .transit-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 /*
  * Missions screen (phase 3). The frame: count line, filters, sort. The rows and the card rules
  * move here from the legacy sheet as they are rebuilt.
