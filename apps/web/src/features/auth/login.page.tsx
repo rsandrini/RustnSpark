@@ -20,6 +20,14 @@ export function LoginPage() {
     login.mutate({ email, password });
   };
 
+  const heroTitle = (() => {
+    const title = t('landing.title');
+    const at = title.lastIndexOf(' ');
+    return at === -1
+      ? { rest: '', last: title }
+      : { rest: `${title.slice(0, at)} `, last: title.slice(at + 1) };
+  })();
+
   const rateLimited = login.error instanceof ApiError && login.error.status === 429;
 
   return (
@@ -30,7 +38,10 @@ export function LoginPage() {
         <div className="landing-hero-inner">
           <div className="landing-copy">
             <p className="landing-kicker">{t('landing.kicker')}</p>
-            <h1>{t('landing.title')}</h1>
+            <h1>
+              {heroTitle.rest}
+              <em>{heroTitle.last}</em>
+            </h1>
             <p className="landing-pitch">{t('landing.pitch')}</p>
             {landing !== undefined && (
               <ul className="landing-facts" data-testid="landing-facts">

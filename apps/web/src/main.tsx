@@ -17,6 +17,7 @@ import './styles/missions.css';
 import './styles/map.css';
 import './styles/profile.css';
 import './styles/onboarding.css';
+import './styles/auth.css';
 
 const container = document.getElementById('root');
 if (!container) {
