@@ -75,14 +75,18 @@
   border-radius: 50%;
   background: var(--brass);
 }
+/* every type has its own clear colour (no grey: it read as disabled) */
+.mrow.type-transport .mrow-pip {
+  background: var(--sun);
+}
 .mrow.type-mining .mrow-pip {
-  background: var(--steel-hi);
+  background: oklch(72% 0.14 305);
 }
 .mrow.type-rescue .mrow-pip {
   background: var(--coral);
 }
 .mrow.type-escort .mrow-pip {
-  background: var(--info);
+  background: oklch(74% 0.12 200);
 }
 .mrow.type-race .mrow-pip {
   background: var(--ok);
@@ -116,6 +120,10 @@
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   color: var(--muted);
+}
+.mrow-needs li.met > span:first-child {
+  color: var(--ok-hi);
+  font-weight: 700;
 }
 .mrow-needs li.unmet {
   border-color: var(--coral);
@@ -167,6 +175,50 @@
 }
 .mrow-details .mcard {
   margin: 0 16px 16px;
+}
+/* the open card: map on the left, what it asks and the trip figures beside it, the rest below */
+.mrow-details .mcard-head,
+.mrow-details .mcard-route {
+  display: none; /* the row above already says it */
+}
+.mrow-details .mcard-main {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.4fr);
+  gap: 10px 16px;
+  align-items: start;
+}
+.mrow-details .mcard-main > * {
+  grid-column: 1 / -1;
+}
+.mrow-details .mcard-main > .route-map {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  margin: 0;
+  max-width: none;
+}
+.mrow-details .mcard-main > .mcard-desc,
+.mrow-details .mcard-main > .mcard-material,
+.mrow-details .mcard-main > .mcard-facts,
+.mrow-details .mcard-main > .mcard-needs {
+  grid-column: 2;
+}
+.mrow-details .mcard-requirements {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+}
+@media (max-width: 700px) {
+  .mrow-details .mcard-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mrow-details .mcard-main > .route-map,
+  .mrow-details .mcard-main > .mcard-desc,
+  .mrow-details .mcard-main > .mcard-material,
+  .mrow-details .mcard-main > .mcard-facts,
+  .mrow-details .mcard-main > .mcard-needs {
+    grid-column: 1;
+    grid-row: auto;
+  }
 }
 
 @media (max-width: 960px) {
