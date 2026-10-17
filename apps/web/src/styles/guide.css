@@ -1,0 +1,148 @@
+/*
+ * The in-game Guide: a topic list with search, and the open topic beside it.
+ */
+.guide-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.guide-side {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+}
+.guide-search {
+  width: 100%;
+}
+.guide-list-title {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.guide-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide-list a {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  text-decoration: none;
+}
+.guide-list a:hover,
+.guide-list a.on {
+  border-color: var(--brass);
+}
+.guide-list a span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.guide-topic {
+  min-width: 0;
+  max-width: 72ch;
+}
+.guide-back {
+  display: none;
+  margin-bottom: 8px;
+  color: var(--brass);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.guide-topic-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+.guide-summary {
+  margin: 6px 0 20px;
+  color: var(--muted);
+}
+.guide-section {
+  margin-bottom: 18px;
+  scroll-margin-top: 16px;
+}
+.guide-section h3 {
+  margin: 0 0 4px;
+  font-size: var(--text-lg);
+}
+.guide-section p {
+  margin: 0;
+  line-height: 1.6;
+}
+.guide-live {
+  margin: 24px 0;
+  padding: 14px 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--brass);
+  border-radius: var(--radius-sm);
+}
+.guide-live h3 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.guide-live dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.guide-live dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--text-sm);
+}
+.guide-live dt {
+  color: var(--muted);
+}
+.guide-live dd {
+  margin: 0;
+  color: var(--brass);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.guide-live .sub {
+  margin: 8px 0 0;
+}
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@media (max-width: 860px) {
+  .guide-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .guide-side {
+    position: static;
+  }
+  /* on a phone: the list first; once a topic is open, the topic with a way back */
+  .guide-layout.has-topic .guide-side {
+    display: none;
+  }
+  .guide-back {
+    display: inline-block;
+  }
+}

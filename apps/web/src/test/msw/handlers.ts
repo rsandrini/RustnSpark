@@ -39,6 +39,8 @@ import type {
   CatalogDetail,
   ShipResponse,
   ShipStatus,
+  GuideRulesResponse,
+  PartCatalogListItem,
   UpdateLocaleResponse,
   UpdateTutorialResponse,
   WorldResponse,
@@ -556,6 +558,40 @@ export const handlers = [
   http.post('/v1/auth/reset-password', () => new HttpResponse(null, { status: 204 })),
 
   http.get('/v1/system/notices', () => ok<SystemNoticesResponse>({ items: [] })),
+
+  http.get('/v1/guide/rules', () =>
+    ok<GuideRulesResponse>({
+      fuelPrice: 0.45,
+      chemLevelMax: 1.5,
+      ionLevelMax: 2.5,
+      repairScrapMax: 3,
+      repairPointsPerScrap: 50,
+      repairSecondsPerPoint: { hub: 2, outpost: 6 },
+      sellRatio: 0.6,
+      startCredits: 200,
+      rescueCost: 800,
+      upgradePriceMultiplier: { COMMON: 1.1, UNCOMMON: 1.2, RARE: 1.35, EPIC: 1.5, LEGENDARY: 1.5 },
+      upgradeMaterials: { COMMON: [{ material: 'scrap', mode: 'gap', k: 5 }] },
+      scavengeCooldownSeconds: 600,
+      scavengeShipSeconds: 600,
+      scavengeFootSeconds: 300,
+      miningJobSeconds: 300,
+      shieldRegen: 2,
+      armorPoolFactor: 8,
+      armorReduction: 0.5,
+      sparePartSlots: 8,
+      openCargoUnitPay: 20,
+      shipTierThresholds: { '2': 1200 },
+    }),
+  ),
+
+  http.get('/v1/parts/catalog', () =>
+    ok<PartCatalogListItem[]>([
+      { partType: 'small_fuel_tank', displayName: 'Small Fuel Tank', partClass: 'TANK' },
+      { partType: 'light_cannon', displayName: 'Light Cannon', partClass: 'WEAPON' },
+      { partType: 'basic_shield', displayName: 'Basic Shield', partClass: 'DEFENSE' },
+    ]),
+  ),
 
   http.get('/v1/players/me', () => ok<PlayerProfileResponse>(profile())),
 

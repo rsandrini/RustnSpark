@@ -1,4 +1,4 @@
-# In-game Guide (the wiki) (plan; decisions answered by the owner)
+# In-game Guide (the wiki) (built; decisions answered by the owner)
 
 From `docs/TODO.md`: a place that explains the game's mechanics (defense / armor / shields / hull, engines, batteries,
 weapons, rarity, size, bridge level, upgrading, fuel, repair, scavenging, mining, missions, ports and connectors).
@@ -27,8 +27,8 @@ weapons, rarity, size, bridge level, upgrading, fuel, repair, scavenging, mining
 ## Steps
 | step | what |
 |---|---|
-| G1 | API: `GET /v1/guide/rules`, contract schema, integration and contract tests |
-| G2 | Web: `/guide` route, topic list, topic page frame, account-menu entry, `guide.css`, topics 1 and 2 (run, parts) |
-| G3 | Search: index of topics (title, keywords, body) plus the parts catalog, result list, keyboard handling |
-| G4 | Topics 3 to 9 with their live figures |
-| G5 | Links (tutorial last line, a "Learn more" link on a few screens), en and pt-BR check, specs, e2e, width pass |
+| G1 *(done)* | API: `GET /v1/guide/rules`, contract schema, integration and contract tests |
+| G2 *(done)* | Web: `/guide` route, topic list, topic page frame, account-menu entry, `guide.css`, topics 1 and 2 (run, parts) |
+| G3 *(done)* | Search: index of topics (title, keywords, body) plus the parts catalog, result list, keyboard handling |
+| G4 *(done)* | Topics 3 to 9 with their live figures |
+| G5 *(done)* | Links (tutorial last line, a "Learn more" link on a few screens), en and pt-BR check, specs, e2e, width pass |

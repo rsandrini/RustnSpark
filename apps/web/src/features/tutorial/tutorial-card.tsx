@@ -114,6 +114,9 @@ export function TutorialCard() {
       {allDone ? (
         <footer className="tutorial-foot">
           <p>{t('tutorial.allDone')}</p>
+          <Link className="tutorial-go" to="/guide">
+            {t('tutorial.guide')}
+          </Link>
           <button
             type="button"
             className="btn primary"

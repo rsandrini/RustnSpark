@@ -97,7 +97,7 @@ the balance must all work; only then go back to a starter shield with a larger b
 
 ## P4
 
-- [ ] **A wiki / game guide.** A place that explains the details of the game: what is the
+- [x] **A wiki / game guide.** (done: `/guide` from the account menu, nine topics with live numbers from `GET /v1/guide/rules`, search over topics, sections and part names; see `docs/design/guide-plan.md`) A place that explains the details of the game: what is the
   difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
   reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
   100%, money, scrap / crystals / cores); how fuel, repair, scavenging, mining and missions work;

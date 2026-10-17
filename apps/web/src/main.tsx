@@ -21,6 +21,7 @@ import './styles/auth.css';
 import './styles/report.css';
 import './styles/ship.css';
 import './styles/tutorial.css';
+import './styles/guide.css';
 
 const container = document.getElementById('root');
 if (!container) {

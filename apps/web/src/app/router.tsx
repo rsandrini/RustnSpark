@@ -18,6 +18,7 @@ import { NoticeBanner } from '../ui/NoticeBanner';
 import { NotFoundPage } from '../pages/not-found.page';
 import { ForgotPasswordPage } from '../features/auth/forgot-password.page';
 import { ResetPasswordPage } from '../features/auth/reset-password.page';
+import { GuidePage } from '../features/guide/guide.page';
 import { TutorialCard } from '../features/tutorial/tutorial-card';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
@@ -127,6 +128,16 @@ export const routes = [
           </ProtectedRoute>
         ),
       },
+      ...(['/guide', '/guide/:topic'] as const).map((path) => ({
+        path,
+        element: (
+          <ProtectedRoute>
+            <RequireFaction>
+              <GuidePage />
+            </RequireFaction>
+          </ProtectedRoute>
+        ),
+      })),
       // Bare bookmarks from before the four-place navigation.
       { path: '/board', element: <RedirectTo to="/missions" /> },
       { path: '/transit', element: <RedirectTo to="/ship" /> },

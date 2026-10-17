@@ -74,6 +74,14 @@ export function AccountMenu() {
           >
             {t('nav.profile')}
           </Link>
+          <Link
+            className="shell-menu-item"
+            role="menuitem"
+            to="/guide"
+            onClick={() => setOpen(false)}
+          >
+            {t('nav.guide')}
+          </Link>
           {user?.tutorialDone === true && (
             <button
               type="button"

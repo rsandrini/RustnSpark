@@ -96,6 +96,258 @@
       "shapes": "Ponto = central · dois pontos pequenos = dividido · três = universal"
     }
   },
+  "guide": {
+    "title": "Guia",
+    "line": "{{count}} tópicos",
+    "searchLabel": "Pesquisar no guia",
+    "searchPlaceholder": "Pesquisar: escudo, raridade, tanque...",
+    "noResults": "Nada encontrado para \"{{query}}\". Tente outra palavra.",
+    "topicsHeading": "Tópicos",
+    "partsHeading": "Peças",
+    "sectionsHeading": "Seções",
+    "partResult": "Peça · {{class}}",
+    "back": "Todos os tópicos",
+    "liveHeading": "Números ao vivo",
+    "liveNote": "Estes vêm das regras atuais do jogo.",
+    "open": "Abrir {{where}}",
+    "where": {
+      "ship": "Nave",
+      "port": "Porto",
+      "missions": "Missões",
+      "map": "Mapa"
+    },
+    "topics": {
+      "run": {
+        "title": "Como funciona uma corrida",
+        "summary": "Monte uma nave, pegue uma missão, voe, leia o que aconteceu, repare e vá de novo.",
+        "keywords": "começo inicio ciclo basico tutorial primeiros passos iniciante",
+        "sections": {
+          "build": {
+            "title": "Montar",
+            "text": "Monte a nave em Nave com as peças que você tem: arraste-as para a grade, ou use o Layout automático. As peças precisam se tocar e suas portas precisam combinar (veja Portas e conectores)."
+          },
+          "plan": {
+            "title": "Planejar",
+            "text": "Escolha uma missão em Missões. Cada linha mostra o tempo e o combustível da viagem para a sua nave e o que a missão exige dela. Sua nave só pode pegar uma missão quando todos os requisitos estiverem cumpridos."
+          },
+          "fly": {
+            "title": "Voar",
+            "text": "Despache a nave e ela voa no relógio do servidor, então você pode fechar o jogo e voltar depois. Lutas e imprevistos no caminho dependem dos números da sua nave e de um pouco de sorte."
+          },
+          "read": {
+            "title": "Ler e repetir",
+            "text": "Quando a nave pousa você recebe um relatório: o veredito, o pagamento, o que a viagem desgastou e o que você encontrou. Depois repare, reabasteça, melhore e vá de novo."
+          }
+        }
+      },
+      "parts": {
+        "title": "Peças e a ficha da nave",
+        "summary": "O que cada tipo de peça faz e o que significam os números da ficha da nave.",
+        "keywords": "motor químico iônico propulsor tanque combustível bateria reator painel solar arma canhão defesa escudo armadura casco carga sensor ponte utilitário suporte de vida ficha status poder de fogo mobilidade alcance energia estrutura",
+        "sections": {
+          "sheet": {
+            "title": "A ficha da nave",
+            "text": "Poder de fogo é o quanto você bate forte. Armadura e escudo são as reservas com que uma luta começa. Carga é o espaço para cargas e minério. Mobilidade é a velocidade da nave. Alcance é a distância de rota que um tanque cheio cobre. Condição é a saúde média das peças. Energia é o que as peças geram menos o que gastam em cruzeiro. Estrutura é quanto do orçamento de estrutura as peças usam. O orçamento vem da ponte: uma ponte maior carrega mais."
+          },
+          "engines": {
+            "title": "Motores",
+            "text": "Motores químicos empurram forte e queimam combustível. Motores iônicos não queimam combustível, mas precisam de energia elétrica de baterias ou painéis solares e empurram mais suavemente. O painel de ajuste de motores em Nave permite rodar os químicos até {{chemMax}} vezes e os iônicos até {{ionMax}} vezes a saída normal, ao custo de mais desgaste. O triângulo laranja do motor marca o escape: deixe esse lado livre."
+          },
+          "tanks": {
+            "title": "Tanques de combustível",
+            "text": "Tanques guardam o combustível que os motores químicos queimam. O alcance na ficha diz até onde um tanque cheio leva. Uma nave só com motores iônicos não precisa de tanque."
+          },
+          "power": {
+            "title": "Baterias, painéis solares e reatores",
+            "text": "Painéis solares e reatores geram energia; muitas peças a usam. A energia em cruzeiro não deve ficar negativa. Baterias guardam energia e cobrem o gasto extra numa luta; a ficha diz quantos turnos elas duram."
+          },
+          "weapons": {
+            "title": "Armas",
+            "text": "Armas aumentam o poder de fogo. Como os motores, têm uma direção (o triângulo laranja marca a boca) e precisam das portas conectadas para funcionar."
+          },
+          "defense": {
+            "title": "Escudo e armadura",
+            "text": "Numa luta o dano encontra primeiro o escudo; ele recupera {{shieldRegen}} pontos no começo de cada turno. Depois vem a armadura: ela reduz cada golpe em {{armorCut}} por ponto de classificação e absorve o resto como uma reserva de {{armorPool}} pontos por ponto de classificação. O que passa machuca o casco e as peças."
+          },
+          "cargo": {
+            "title": "Carga e peças reserva",
+            "text": "O espaço de carga guarda o que uma missão carrega e o minério que você extrai. Peças reserva soltas não usam carga: elas vão em {{spareSlots}} vagas separadas, uma vaga por peça."
+          },
+          "sensors": {
+            "title": "Sensores",
+            "text": "Sensores ajudam a perceber uma emboscada antes dela começar e a escapar de uma luta."
+          },
+          "utility": {
+            "title": "Cascos e peças utilitárias",
+            "text": "Os cascos seguram a nave e dão corpo a ela; suporte de vida e bombas mantêm outros sistemas funcionando. Uma peça que não está conectada ao resto não conta para nada."
+          },
+          "bridge": {
+            "title": "A ponte",
+            "text": "Sem ponte, sem voo. A raridade da ponte é o seu nível de ponte: ela decide quão raras ficam as peças nas lojas e quanto as missões pagam. Você pode aumentá-la ou diminuí-la na aba Melhorar de um porto."
+          }
+        }
+      },
+      "ports": {
+        "title": "Portas e conectores",
+        "summary": "Os pontos nas bordas das peças: o que significam e como consertar um vermelho.",
+        "keywords": "conector conexão porta verde vermelho azul incorreto disponível desconectado formato tipo",
+        "sections": {
+          "colors": {
+            "title": "Lendo as cores",
+            "text": "Verde: conectada, as duas peças se falam. Vermelho: incorreta, a porta encontra uma porta de outro tipo ou aponta para algo que não pode usar. Azul: disponível, uma porta livre sem nada ao lado (isso é normal)."
+          },
+          "kinds": {
+            "title": "Tipos de conector",
+            "text": "O tipo é desenhado pela quantidade de pontos na borda. Só tipos iguais se conectam. Girar uma peça gira as portas dela junto."
+          },
+          "fix": {
+            "title": "Consertando uma porta vermelha",
+            "text": "Mova ou gire a peça para a porta dela encontrar uma porta compatível, ou coloque uma peça que tenha uma. O Layout automático tenta isso por você. Uma peça desconectada não conta para nada, e a nave pode não ter permissão para voar até o problema ser resolvido."
+          }
+        }
+      },
+      "rarity": {
+        "title": "Raridade, tamanho e nível de ponte",
+        "summary": "Por que algumas peças são mais fortes, por que o tamanho importa e o que a ponte decide.",
+        "keywords": "comum incomum raro épico lendário nível tamanho células grade ponte preço",
+        "sections": {
+          "rarity": {
+            "title": "Raridade",
+            "text": "As peças vêm em cinco raridades: comum, incomum, raro, épico e lendário. Cada degrau é mais forte e custa mais. Uma peça que você já tem pode ser melhorada para a próxima raridade (veja Melhorando peças)."
+          },
+          "size": {
+            "title": "Tamanho",
+            "text": "As peças ocupam uma ou mais células da grade. Uma peça maior dá mais do seu atributo, mas usa mais estrutura e pesa mais."
+          },
+          "bridge": {
+            "title": "Nível de ponte",
+            "text": "A raridade da sua ponte é o seu nível de ponte. Quanto mais alto, mais raras as peças que aparecem nas lojas e melhor as missões pagam. Melhorar a ponte é o caminho para subir."
+          }
+        }
+      },
+      "missions": {
+        "title": "Missões",
+        "summary": "Os tipos de missão, como saber se você pode pegar uma e como funcionam a reserva e a validade.",
+        "keywords": "entrega transporte escolta mineração resgate corrida elegível requisito reservar expira recompensa pagamento carga quadro",
+        "sections": {
+          "types": {
+            "title": "Tipos de missão",
+            "text": "Entrega e Transporte levam mercadorias ou passageiros. Escolta protege outra nave. Mineração extrai um material para um contrato. Resgate ajuda uma nave em apuros. Corrida coloca você contra naves rivais numa rota: a nave mais rápida leva a maior parte do prêmio."
+          },
+          "eligible": {
+            "title": "Posso pegar?",
+            "text": "Cada missão lista o que exige da sua nave, com um visto quando você cumpre e um xis, com o seu número e o número exigido, quando não cumpre. Você só pode aceitar uma missão quando todas as linhas estão com visto. Só elegíveis, ligado por padrão, esconde as demais."
+          },
+          "hold": {
+            "title": "Reserva e validade",
+            "text": "Reservar guarda uma oferta para você enquanto se prepara. As ofertas expiram: a contagem na linha diz quanto tempo você tem para começar."
+          },
+          "cargo": {
+            "title": "Cargas e pagamento",
+            "text": "Algumas entregas exigem no mínimo certa quantidade de carga, algumas levam uma quantidade fixa, e as cargas abertas enchem o espaço que você tem e costumam pagar {{unitPay}} por unidade acima do mínimo. O pagamento cresce com a distância, o perigo e o seu nível de ponte."
+          }
+        }
+      },
+      "fuel": {
+        "title": "Combustível, reparo e desgaste",
+        "summary": "O que voar custa: combustível, desgaste das peças, reparos e o que acontece quando o tanque seca.",
+        "keywords": "combustível reabastecer preço reparo desgaste condição morta sucata à deriva resgate vender",
+        "sections": {
+          "fuel": {
+            "title": "Combustível",
+            "text": "O combustível custa {{fuelPrice}} por unidade num porto. O combustível da viagem aparece na linha da missão. Uma nave só com motores iônicos não gasta nada. Se o tanque secar, a nave fica à deriva: você pode esperar um resgate ou chamar um agora, e a missão é perdida. Um resgate custa a partir de {{rescueCost}}."
+          },
+          "wear": {
+            "title": "Desgaste",
+            "text": "Toda viagem desgasta as peças, mais em zonas perigosas e em lutas. Uma peça desgastada rende menos, e uma peça com 1% ou menos está morta até ser reparada."
+          },
+          "repair": {
+            "title": "Reparo",
+            "text": "Num porto, abra Reparo. O preço segue o valor da peça. A sucata ajuda: cada sucata repara {{pointsPerScrap}} pontos, até {{scrapMax}} sucatas por peça. O reparo leva {{hubSeconds}} segundos por ponto num centro e {{outpostSeconds}} num posto avançado."
+          },
+          "sell": {
+            "title": "Vender",
+            "text": "Um porto compra uma peça por {{sellPercent}} do valor, ajustado pela condição. Peças desgastadas valem menos, então repare antes de vender."
+          }
+        }
+      },
+      "upgrading": {
+        "title": "Melhorando peças",
+        "summary": "Como transformar uma peça na próxima raridade sem comprar uma nova.",
+        "keywords": "melhorar upgrade raridade dinheiro sucata cristais fragmentos de núcleo materiais acréscimo",
+        "sections": {
+          "rules": {
+            "title": "O que é preciso",
+            "text": "A peça precisa estar com 100% de condição para ser melhorada. Você paga a diferença de preço para a próxima raridade mais um acréscimo ({{markups}}) e entrega materiais."
+          },
+          "materials": {
+            "title": "Materiais",
+            "text": "Peças comuns pedem sucata. Peças incomuns pedem cristais raros. Peças raras e épicas pedem fragmentos de núcleo além de cristais. As quantidades crescem com o valor e o tamanho da peça."
+          },
+          "fragments": {
+            "title": "De onde vêm os fragmentos",
+            "text": "Fragmentos de núcleo aparecem quando você recupera sucata nas zonas mais distantes e como recompensa em missões que passam por elas."
+          }
+        }
+      },
+      "work": {
+        "title": "Recuperar sucata e minerar",
+        "summary": "Ganhar fora das missões: vasculhar destroços ou extrair minério.",
+        "keywords": "recuperar sucata vasculhar mineração minerar minério broca a pé nave espera achar saque",
+        "sections": {
+          "scavenging": {
+            "title": "Recuperar sucata",
+            "text": "Num porto você pode vasculhar destroços com a nave ({{scavengeShip}}) ou a pé ({{scavengeFoot}}). Você pode achar sucata, peças e materiais; as zonas mais distantes dão achados melhores. A pé suas chances são menores. Depois de uma busca você espera {{scavengeCooldown}} até a próxima. Com a nave, piratas podem encontrar você."
+          },
+          "mining": {
+            "title": "Mineração",
+            "text": "Minerar exige uma broca de mineração instalada. Uma extração livre leva {{miningJob}} e traz o que o lugar dá; uma missão de mineração pede um material específico e só paga se você trouxer a quantidade completa. A riqueza depende do lugar."
+          }
+        }
+      },
+      "danger": {
+        "title": "Perigo, facções e dinheiro",
+        "summary": "Risco, zonas e piratas; quem manda nos lugares; e como funcionam os créditos.",
+        "keywords": "risco zona pirata luta combate facção luna sun exploradores piratas dinheiro créditos preço aliado hostil",
+        "sections": {
+          "risk": {
+            "title": "Risco e zonas",
+            "text": "Todo lugar tem uma faixa de risco: baixo, médio ou alto. Quanto mais distante a zona, mais perigosa a viagem, e melhores os achados e o pagamento. Piratas podem atacar no caminho; as lutas são resolvidas turno a turno por poder de fogo, defesa, mobilidade e sorte, e você pode vencer, escapar ou perder."
+          },
+          "factions": {
+            "title": "Facções",
+            "text": "Cada lugar é governado por uma facção: Autoridade Luna, Comerciantes do Sol, Exploradores ou os piratas. Os preços são melhores com aliados e bem piores em mãos hostis. Sua facção é a sua bandeira desde o início."
+          },
+          "money": {
+            "title": "Créditos",
+            "text": "Você começa com {{startCredits}}. Missões, recuperação de sucata e vendas rendem créditos; peças, combustível, reparos e melhorias os gastam."
+          }
+        }
+      }
+    },
+    "figures": {
+      "shieldRegen": "Recuperação do escudo por turno",
+      "armorPool": "Reserva de armadura por ponto",
+      "armorCut": "Redução por ponto de armadura",
+      "spareSlots": "Vagas de peças reserva",
+      "chemMax": "Limite de ajuste do motor químico",
+      "ionMax": "Limite de ajuste do motor iônico",
+      "fuelPrice": "Preço do combustível por unidade",
+      "rescueCost": "Chamada de resgate",
+      "pointsPerScrap": "Pontos reparados por sucata",
+      "scrapMax": "Máximo de sucata por peça",
+      "hubSeconds": "Tempo de reparo por ponto (centro, segundos)",
+      "outpostSeconds": "Tempo de reparo por ponto (posto, segundos)",
+      "sellPercent": "Valor de venda",
+      "scavengeShip": "Busca com a nave",
+      "scavengeFoot": "Busca a pé",
+      "scavengeCooldown": "Espera entre buscas",
+      "miningJob": "Tempo de extração livre",
+      "startCredits": "Créditos iniciais",
+      "unitPay": "Carga aberta, pagamento por unidade extra",
+      "markups": "Acréscimo da melhoria sobre a diferença de preço"
+    }
+  },
   "tutorial": {
     "title": "Primeiros passos",
     "progress": "{{done}}/{{total}}",
@@ -136,7 +388,8 @@
         "title": "Teste outros trabalhos",
         "hint": "No Porto: reabasteça, recupere sucata ou minere."
       }
-    }
+    },
+    "guide": "Ler o Guia"
   },
   "hangar": {
     "callouts": {
@@ -926,6 +1179,7 @@
     "loading": "Carregando..."
   },
   "nav": {
+    "guide": "Guia",
     "gettingStarted": "Primeiros passos",
     "label": "Navegação do jogo",
     "hangar": "Nave",

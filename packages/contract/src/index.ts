@@ -276,6 +276,14 @@ export const GuideRulesResponseSchema = z.object({
 });
 export type GuideRulesResponse = z.infer<typeof GuideRulesResponseSchema>;
 
+/** GET /v1/parts/catalog: every active part with its name in the player's language (the Guide's search). */
+export const PartCatalogListItemSchema = z.object({
+  partType: z.string(),
+  displayName: z.string(),
+  partClass: z.string(),
+});
+export type PartCatalogListItem = z.infer<typeof PartCatalogListItemSchema>;
+
 export const PlaceArtSlotSchema = z.enum(['wide', 'square', 'icon']);
 export type PlaceArtSlot = z.infer<typeof PlaceArtSlotSchema>;
 

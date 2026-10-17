@@ -96,6 +96,258 @@
       "shapes": "Dot = central · two small dots = split · three = universal"
     }
   },
+  "guide": {
+    "title": "Guide",
+    "line": "{{count}} topics",
+    "searchLabel": "Search the guide",
+    "searchPlaceholder": "Search: shield, rarity, fuel tank...",
+    "noResults": "Nothing found for \"{{query}}\". Try another word.",
+    "topicsHeading": "Topics",
+    "partsHeading": "Parts",
+    "sectionsHeading": "Sections",
+    "partResult": "Part · {{class}}",
+    "back": "All topics",
+    "liveHeading": "Live numbers",
+    "liveNote": "These come from the game's current rules.",
+    "open": "Open {{where}}",
+    "where": {
+      "ship": "My Ship",
+      "port": "Port",
+      "missions": "Missions",
+      "map": "Map"
+    },
+    "topics": {
+      "run": {
+        "title": "How a run goes",
+        "summary": "Build a ship, take a mission, fly it, read what happened, repair and go again.",
+        "keywords": "start begin loop basics tutorial first steps beginner",
+        "sections": {
+          "build": {
+            "title": "Build",
+            "text": "Assemble the ship on My Ship from the parts you own: drag them onto the grid, or press Auto layout. Parts must touch, and their ports must line up (see Ports and connectors)."
+          },
+          "plan": {
+            "title": "Plan",
+            "text": "Pick a mission on Missions. Each row shows the trip's time and fuel for your ship and what the mission asks of it. Your ship can take a mission only when every requirement is met."
+          },
+          "fly": {
+            "title": "Fly",
+            "text": "Dispatch the ship and it flies on the server's clock, so you can close the game and come back. Fights and mishaps on the way are decided by your ship's numbers and some luck."
+          },
+          "read": {
+            "title": "Read and repeat",
+            "text": "When the ship lands you get a report: the verdict, the pay, what the trip wore down and anything you found. Then repair, refuel, upgrade, and go again."
+          }
+        }
+      },
+      "parts": {
+        "title": "Parts and the ship sheet",
+        "summary": "What each kind of part does, and what the numbers on the ship sheet mean.",
+        "keywords": "engine chemical ion thruster tank fuel battery reactor solar panel weapon cannon defense shield armor hull frame cargo hold sensor bridge utility life support sheet stats firepower mobility range energy structure",
+        "sections": {
+          "sheet": {
+            "title": "The ship sheet",
+            "text": "Firepower is how hard you hit. Armor and shield are the pools a fight starts with. Cargo is the space for loads and ore. Mobility is how fast the ship flies. Range is the route distance a full tank covers. Condition is the average health of the parts. Energy is what your parts generate minus what they use while cruising. Structure is how much of the ship's structure budget the parts use. The budget comes from the bridge: a bigger bridge carries more."
+          },
+          "engines": {
+            "title": "Engines",
+            "text": "Chemical engines push hard and burn fuel. Ion engines burn no fuel but need electric power from batteries or solar panels and push more gently. The engine tuning panel on My Ship lets you run chemical engines up to {{chemMax}} times and ion engines up to {{ionMax}} times their normal output, at the price of extra wear. The orange triangle on an engine marks its exhaust: keep that side free."
+          },
+          "tanks": {
+            "title": "Fuel tanks",
+            "text": "Tanks hold the fuel that chemical engines burn. The range on the ship sheet tells you how far a full tank takes you. A ship with only ion engines needs no tank at all."
+          },
+          "power": {
+            "title": "Batteries, solar panels and reactors",
+            "text": "Solar panels and reactors generate energy; many parts use it. Cruising energy should not be negative. Batteries store energy and cover the extra draw in a fight; the sheet says how many rounds they last."
+          },
+          "weapons": {
+            "title": "Weapons",
+            "text": "Weapons add firepower. Like engines they have a facing (the orange triangle marks the muzzle) and need their ports connected to work."
+          },
+          "defense": {
+            "title": "Shield and armor",
+            "text": "In a fight damage meets the shield first; the shield recovers {{shieldRegen}} points at the start of each round. Then the armor: it cuts every hit by {{armorCut}} per point of armor rating and soaks the rest as a pool of {{armorPool}} points per rating point. What gets through hurts the hull and the parts."
+          },
+          "cargo": {
+            "title": "Cargo and spare parts",
+            "text": "Cargo space holds what a mission loads and the ore you dig. Loose spare parts do not use cargo: they ride in {{spareSlots}} separate slots, one slot per part."
+          },
+          "sensors": {
+            "title": "Sensors",
+            "text": "Sensors help you spot an ambush before it starts and help you slip away from a fight."
+          },
+          "utility": {
+            "title": "Hull frames and utility parts",
+            "text": "Hull frames hold the ship together and give it body; life support and pumps keep other systems working. A part that is not connected to the rest counts for nothing."
+          },
+          "bridge": {
+            "title": "The bridge",
+            "text": "No bridge, no flight. The bridge's rarity is your bridge level: it decides how rare the parts in the shops get and how well missions pay. You can make it bigger or smaller from the Upgrade tab at a port."
+          }
+        }
+      },
+      "ports": {
+        "title": "Ports and connectors",
+        "summary": "The dots on the edges of parts: what they mean and how to fix a red one.",
+        "keywords": "connector connection port green red blue incorrect available disconnected shape kind",
+        "sections": {
+          "colors": {
+            "title": "Reading the colours",
+            "text": "Green: connected, the two parts talk to each other. Red: incorrect, a port meets a port of a different kind or points at nothing it can use. Blue: available, an open port with nothing next to it (that is fine)."
+          },
+          "kinds": {
+            "title": "Kinds of connector",
+            "text": "A kind is drawn by how many dots sit on the edge. Only matching kinds connect. Rotating a part turns its ports with it."
+          },
+          "fix": {
+            "title": "Fixing a red port",
+            "text": "Move or rotate the part so its port meets a matching port, or place a part that has one. Auto layout tries this for you. A part that is not connected counts for nothing, and the ship may not be allowed to fly until the problem is fixed."
+          }
+        }
+      },
+      "rarity": {
+        "title": "Rarity, size and the bridge level",
+        "summary": "Why some parts are stronger, why size matters, and what the bridge decides.",
+        "keywords": "common uncommon rare epic legendary tier size cells grid bridge level price",
+        "sections": {
+          "rarity": {
+            "title": "Rarity",
+            "text": "Parts come in five rarities: common, uncommon, rare, epic and legendary. Each step up is stronger and costs more. A part you already own can be upgraded to the next rarity (see Upgrading parts)."
+          },
+          "size": {
+            "title": "Size",
+            "text": "Parts cover one or more cells of the grid. A bigger part gives more of its stat but uses more structure and adds weight."
+          },
+          "bridge": {
+            "title": "Bridge level",
+            "text": "Your bridge's rarity is your bridge level. The higher it is, the rarer the parts that appear in shops, and the better missions pay. Upgrading the bridge is the way to move up."
+          }
+        }
+      },
+      "missions": {
+        "title": "Missions",
+        "summary": "The kinds of mission, how to know if you can take one, and how holding and expiry work.",
+        "keywords": "delivery transport escort mining rescue race eligible requirement hold expire reward pay cargo board",
+        "sections": {
+          "types": {
+            "title": "Kinds of mission",
+            "text": "Delivery and Transport move goods or passengers. Escort protects another ship. Mining digs a material for a contract. Rescue helps a ship in trouble. Race pits you against rival ships over a route: the faster ship wins the larger share of the prize."
+          },
+          "eligible": {
+            "title": "Can I take it?",
+            "text": "Each mission lists what it asks of your ship, with a tick when you meet it and a cross, with your number and the number needed, when you do not. You can only accept a mission when every line is ticked. Only eligible, on by default, hides the rest."
+          },
+          "hold": {
+            "title": "Hold and expiry",
+            "text": "Hold keeps an offer for you while you prepare. Offers expire: the countdown on the row says how long you have to start."
+          },
+          "cargo": {
+            "title": "Loads and pay",
+            "text": "Some deliveries need at least a number of cargo units, some load a fixed amount, and open loads fill the space you have and usually pay {{unitPay}} per unit beyond the minimum. Pay grows with distance, danger and your bridge level."
+          }
+        }
+      },
+      "fuel": {
+        "title": "Fuel, repair and wear",
+        "summary": "What flying costs: fuel, wear on the parts, repairs, and what happens when the tank runs dry.",
+        "keywords": "fuel refuel price repair wear condition dead scrap adrift rescue sell",
+        "sections": {
+          "fuel": {
+            "title": "Fuel",
+            "text": "Fuel costs {{fuelPrice}} per unit at a port. A trip's fuel is shown on the mission row. A ship with only ion engines burns none. If the tank runs dry the ship drifts: you can wait for a rescue or call one now, and the mission is lost. A rescue costs from {{rescueCost}}."
+          },
+          "wear": {
+            "title": "Wear",
+            "text": "Every trip wears the parts down, more in dangerous zones and in fights. A worn part performs worse, and a part at 1% or below is dead until repaired."
+          },
+          "repair": {
+            "title": "Repair",
+            "text": "At a port, open Repair. The price follows the part's value. Scrap helps: each scrap repairs {{pointsPerScrap}} points, up to {{scrapMax}} scrap per part. Repair takes {{hubSeconds}} seconds per point at a hub and {{outpostSeconds}} at an outpost."
+          },
+          "sell": {
+            "title": "Selling",
+            "text": "A port buys a part for {{sellPercent}} of its value, scaled by its condition. Worn parts are worth less, so repair before you sell."
+          }
+        }
+      },
+      "upgrading": {
+        "title": "Upgrading parts",
+        "summary": "How to turn a part into the next rarity without buying a new one.",
+        "keywords": "upgrade rarity money scrap crystals core fragments materials markup",
+        "sections": {
+          "rules": {
+            "title": "What it takes",
+            "text": "A part must be at 100% condition to be upgraded. You pay the price gap to the next rarity plus a markup ({{markups}}), and hand over materials."
+          },
+          "materials": {
+            "title": "Materials",
+            "text": "Common parts need scrap. Uncommon parts need rare crystals. Rare and epic parts need core fragments as well as crystals. The amounts grow with the part's value and size."
+          },
+          "fragments": {
+            "title": "Where fragments come from",
+            "text": "Core fragments turn up when you scavenge in the farther zones and as rewards on missions that cross them."
+          }
+        }
+      },
+      "work": {
+        "title": "Scavenging and mining",
+        "summary": "Earning outside missions: pick through wreckage, or dig for ore.",
+        "keywords": "scavenge scavenging mining mine ore drill foot ship cooldown find loot",
+        "sections": {
+          "scavenging": {
+            "title": "Scavenging",
+            "text": "At a port you can search for wreckage with the ship ({{scavengeShip}}) or on foot ({{scavengeFoot}}). You can find scrap, parts and materials; the farther zones give better finds. On foot your chances are lower. After a search you wait {{scavengeCooldown}} before the next. With the ship, pirates can find you."
+          },
+          "mining": {
+            "title": "Mining",
+            "text": "Mining needs a mining rig installed. A free dig takes {{miningJob}} and brings back what the place gives; a mining mission asks for a named material and pays only if you bring the full amount. Richness depends on the place."
+          }
+        }
+      },
+      "danger": {
+        "title": "Danger, factions and money",
+        "summary": "Risk, zones and pirates; who runs the places; and how credits work.",
+        "keywords": "risk zone pirate fight combat faction luna sun explorers pirates money credits price ally hostile",
+        "sections": {
+          "risk": {
+            "title": "Risk and zones",
+            "text": "Every place has a risk band: low, medium or high. The farther the zone, the more dangerous the trip, and the better the finds and pay. Pirates can attack on the way; fights are settled round by round from firepower, defense, mobility and luck, and you can win, escape or lose."
+          },
+          "factions": {
+            "title": "Factions",
+            "text": "Each place is run by a faction: Luna Authority, Sun Traders, Explorers, or the pirates. Prices are better with allies and much worse in hostile hands. Your faction is your flag from the start."
+          },
+          "money": {
+            "title": "Credits",
+            "text": "You start with {{startCredits}}. Missions, scavenging and selling earn credits; parts, fuel, repair and upgrades spend them."
+          }
+        }
+      }
+    },
+    "figures": {
+      "shieldRegen": "Shield recovery per round",
+      "armorPool": "Armor pool per rating point",
+      "armorCut": "Hit cut per armor rating point",
+      "spareSlots": "Spare-part slots",
+      "chemMax": "Chemical engine tuning limit",
+      "ionMax": "Ion engine tuning limit",
+      "fuelPrice": "Fuel price per unit",
+      "rescueCost": "Rescue call",
+      "pointsPerScrap": "Points repaired per scrap",
+      "scrapMax": "Most scrap per part",
+      "hubSeconds": "Repair time per point (hub, seconds)",
+      "outpostSeconds": "Repair time per point (outpost, seconds)",
+      "sellPercent": "Selling value",
+      "scavengeShip": "Search with the ship",
+      "scavengeFoot": "Search on foot",
+      "scavengeCooldown": "Wait between searches",
+      "miningJob": "Free dig time",
+      "startCredits": "Starting credits",
+      "unitPay": "Open cargo, pay per extra unit",
+      "markups": "Upgrade markup over the price gap"
+    }
+  },
   "tutorial": {
     "title": "Getting started",
     "progress": "{{done}}/{{total}}",
@@ -136,7 +388,8 @@
         "title": "Try other work",
         "hint": "At the Port: refuel, scavenge or mine."
       }
-    }
+    },
+    "guide": "Read the Guide"
   },
   "hangar": {
     "callouts": {
@@ -926,6 +1179,7 @@
     "loading": "Loading..."
   },
   "nav": {
+    "guide": "Guide",
     "gettingStarted": "Getting started",
     "label": "Game navigation",
     "hangar": "Ship",
