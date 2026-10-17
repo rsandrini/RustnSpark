@@ -368,3 +368,220 @@
     color-mix(in oklab, var(--brass) 28%, transparent) 8px
   );
 }
+
+/* ---- upgrade: the rules, what each part becomes, and what it asks for ------------------------------ */
+.upgrade-rules {
+  padding: 12px 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  font-size: var(--text-sm);
+}
+.upgrade-rules > b {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.upgrade-rules ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 2px;
+  color: var(--ink-2);
+}
+.upgrade-why {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px dashed var(--rule-3);
+  border-radius: var(--radius);
+}
+.upgrade-why:empty {
+  display: none;
+}
+.upgrade-why p {
+  margin: 0;
+}
+.upgrade-why-list {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.upgrade-actions {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.upgrade-actions > .sub {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.upgrade-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-xs);
+}
+.upgrade-materials li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius-pill);
+  font-variant-numeric: tabular-nums;
+}
+.upgrade-materials li::before {
+  font-weight: 700;
+}
+.upgrade-materials .req-met::before {
+  content: '✓';
+  color: var(--ok);
+}
+.upgrade-materials .req-unmet {
+  border-color: color-mix(in oklab, var(--bad) 50%, transparent);
+  color: var(--bad);
+}
+.upgrade-materials .req-unmet::before {
+  content: '✗';
+}
+
+/* ---- scavenging and mining: the hero, the facts, the two ways to search ------------------------------ */
+.action-hero {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+.action-hero h2 {
+  margin: 0 0 4px;
+}
+.action-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.action-tiles li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper-2);
+}
+.action-tiles small {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.action-tiles b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.scav-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+}
+.scav-modes legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.action-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  cursor: pointer;
+  transition: border-color var(--dur-fast);
+}
+.action-card:hover {
+  border-color: var(--rule-3);
+}
+.action-card.on {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 1px var(--brass);
+}
+.action-card input[type='radio'] {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+.action-card > span {
+  display: grid;
+  gap: 2px;
+}
+.scav-more summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.action-cta {
+  display: flex;
+  justify-content: center;
+}
+@media (max-width: 700px) {
+  .action-hero,
+  .scav-modes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* a countdown or a warning line under the tabs */
+.notice {
+  font-variant-numeric: tabular-nums;
+}
+.notice.warn {
+  border-color: color-mix(in oklab, var(--coral) 50%, transparent);
+}
+
+/* what the upgrade confirmation asks for, line by line */
+.upgrade-price {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--paper-3);
+  font-variant-numeric: tabular-nums;
+}
+.upgrade-price .req-unmet {
+  color: var(--bad);
+}
+
+/* the two ways to search: the picture is a header, not the whole card */
+.action-card .action-art {
+  width: 100%;
+  height: 150px;
+}
+.action-hero h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-2xl);
+  text-transform: lowercase;
+}

@@ -103,8 +103,8 @@ exists, it starts off). 4 "Your ship needs" row: **both** Port and Store. 5 desc
 | P1 *(done)* | Frame: slim serif title header, Buy / Service / Work groups with a second row of tabs, no second wallet chip, notice strips | `port.page.tsx`, `ui/PortTabs.tsx`, `ui/ShipStage.tsx`, new `styles/port.css` |
 | P2 *(done)* | Market panel: price-ascending default, "Affordable now" chip (off), "More filters" popover, "your ship needs" row, lighter card (description behind (i), gauge only when worn, the before-buy connector grid stays), "Need N ¢ more" | `market-panel.tsx`, `part-card.tsx` (shared with Store) |
 | P3 *(done)* | Goods, Repair, Refuel: the repair and refuel rules moved out of the legacy sheet into `port.css` (rows, summary, brass fuel gauge, mono numbers); section headings in serif and mono. The repair slider and quote logic are unchanged. | `port.css`, `index.css` |
-| P4 | Upgrade, Scavenging, Mining | `port.page.tsx` |
-| P5 | 320 to 768 px pass, specs, browser smoke, before/after screenshots | specs, e2e |
+| P4 *(done)* | Upgrade (rules box, what-it-becomes line, material chips with a tick or a cross), Scavenging and Mining (mono fact tiles, brass-ringed mode cards with a smaller picture, serif headings): the rules moved into `port.css`. The ship/foot radio cards stay (they carry the hints and the art); a segmented control would have dropped content. | `port.css`, `index.css` |
+| P5 *(done)* | No sideways overflow on all seven tabs at 320, 375, 414, 768 and 1280 px; 430 web specs; browser smoke and economy 14 of 14 | specs, e2e |
 
 The Port rules in the 5,900-line legacy sheet (about 48 selectors, 21 of them card rules) move into
 `styles/port.css` as each part is rebuilt, so the sheet shrinks instead of growing.
