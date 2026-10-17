@@ -2295,7 +2295,7 @@ const FAMILIES: Family[] = [
         rarity: 'RARE',
         mass: 3,
         structureCost: 4,
-        basePrice: 100,
+        basePrice: 400,
         scrapValue: 100,
         partHp: 51,
         name: { en: 'Composite Hull Frame', 'pt-BR': 'Estrutura de Casco Composta' },
