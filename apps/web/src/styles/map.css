@@ -141,6 +141,86 @@
   pointer-events: none;
 }
 
+/* the map and its docked panel */
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.map-panel {
+  min-width: 0;
+  max-height: min(68vh, 620px);
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.map-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.map-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.map-places-list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.map-place {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.map-place:hover {
+  border-color: var(--brass);
+}
+.map-place-name {
+  font-weight: 600;
+}
+.map-place-type {
+  grid-column: 1;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.map-place .risk {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+@media (max-width: 960px) {
+  .map-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .map-panel {
+    max-height: none;
+  }
+}
+
 /* phones: the map keeps a readable size and scrolls inside its own box until zoom and pan exist */
 @media (max-width: 860px) {
   .map-stage {
@@ -153,4 +233,14 @@
     height: 100%;
     touch-action: pan-x pan-y;
   }
+}
+
+/* in the docked panel the place picture is a short banner, so the trip and missions stay in view */
+.map-place-card .place-art-square {
+  width: 100%;
+  max-width: none;
+  aspect-ratio: auto;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
 }

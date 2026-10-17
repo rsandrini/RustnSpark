@@ -1422,6 +1422,7 @@
     }
   },
   "map": {
+    "places": "Places",
     "line": "Sector map · {{count}} places",
     "lineAt": "You are at {{place}}",
     "title": "Sector map",

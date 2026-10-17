@@ -45,11 +45,11 @@ describe('map (S10.5)', () => {
     expect(svg.querySelectorAll('text.nlabel')).toHaveLength(12);
     const labels = Array.from(svg.querySelectorAll('text.nlabel')).map((text) => text.textContent);
     expect(labels).toContain('Porto Ceres');
-    expect(screen.getByText('Low risk')).toBeInTheDocument();
-    expect(screen.getByText('Medium risk')).toBeInTheDocument();
-    expect(screen.getByText('High risk')).toBeInTheDocument();
+    expect(screen.getAllByText('Low risk').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Medium risk').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('High risk').length).toBeGreaterThan(0);
     expect(screen.getAllByText('You are here').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Porto Ceres' })).not.toBeInTheDocument();
   });
 
   it('a ship out of fuel floats between two places: no "you are here", a floating marker mid-route', async () => {
@@ -89,7 +89,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
     expect(withinText(dialog, /Porto Ceres — a node/i)).toBeInTheDocument();
     // The top bar's own faction badge (ShipIdentity) also says "Luna Authority" now; this one
     // is the popup's own.
@@ -100,16 +100,35 @@ describe('map (S10.5)', () => {
     const boardLink = dialog.querySelector('a[href="/missions?location=ceres"]');
     expect(boardLink).not.toBeNull();
 
-    const closeButton = dialog.querySelector('button');
-    expect(closeButton).not.toBeNull();
-    fireEvent.click(closeButton as Element);
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Porto Ceres' })).not.toBeInTheDocument(),
+    );
+    // nothing selected: the places list is back
+    expect(screen.getByRole('region', { name: 'Places' })).toBeInTheDocument();
+  });
+
+  it('lists the places, nearest first, until one is selected; a place can be picked from the list', async () => {
+    await renderMap();
+    const list = await screen.findByRole('region', { name: 'Places' });
+    const buttons = within(list).getAllByRole('button');
+    expect(buttons).toHaveLength(12);
+    expect(buttons[0]).toHaveTextContent('Porto Ceres'); // the ship's own place is the nearest
+    fireEvent.click(buttons[1] as Element);
+    expect(await screen.findByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Places' })).not.toBeInTheDocument();
+  });
+
+  it('opens on the place named in ?place=', async () => {
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/map?place=ceres'] });
+    expect(await screen.findByRole('region', { name: 'Porto Ceres' })).toBeInTheDocument();
   });
 
   it('"Open mission board" actually opens the Board tab, not the Ship tab', async () => {
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
     fireEvent.click(within(dialog).getByRole('link', { name: 'Open mission board' }));
 
     await screen.findByRole('heading', { name: 'My Ship' });
@@ -122,7 +141,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
     expect(await within(dialog).findByText('Needs a mining system')).toBeInTheDocument();
     expect(within(dialog).getByText('Mobility too low')).toBeInTheDocument();
   });
@@ -221,7 +240,7 @@ describe('map (S10.5)', () => {
     const { svg } = await renderMap();
 
     fireEvent.click(node(svg, 'Estaleiro Tycho'));
-    const dialog = await screen.findByRole('dialog', { name: 'Estaleiro Tycho' });
+    const dialog = await screen.findByRole('region', { name: 'Estaleiro Tycho' });
     expect(await within(dialog).findByText('Missions to here')).toBeInTheDocument();
     expect(within(dialog).getByText('Parts Run')).toBeInTheDocument();
     expect(within(dialog).queryByText('Elsewhere Run')).toBeNull();
@@ -236,7 +255,7 @@ describe('map (S10.5)', () => {
   it('does not offer a trip to the place you are already at', async () => {
     const { svg } = await renderMap();
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    await screen.findByRole('region', { name: 'Porto Ceres' });
     expect(screen.queryByTestId('travel')).toBeNull();
   });
 
@@ -245,7 +264,7 @@ describe('map (S10.5)', () => {
 
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
 
-    expect(await screen.findByRole('dialog', { name: 'Estaleiro Tycho' })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Estaleiro Tycho' })).toBeInTheDocument();
   });
 
   it('marks the ship location as you-are-here', async () => {
@@ -254,7 +273,7 @@ describe('map (S10.5)', () => {
     expect(svg.querySelector('[aria-label="Porto Ceres — You are here"]')).not.toBeNull();
 
     fireEvent.click(node(svg, 'Porto Ceres — You are here'));
-    const dialog = await screen.findByRole('dialog', { name: 'Porto Ceres' });
+    const dialog = await screen.findByRole('region', { name: 'Porto Ceres' });
     expect(dialog.textContent).toContain('You are here');
   });
 
@@ -307,49 +326,52 @@ describe('map (S10.5)', () => {
   it.each([
     ['SCAVENGE', 'Scavenging'],
     ['MINING', 'Mining'],
-  ])('a %s job is done at the place: the ship stays there with a tag saying what it does, no flight path', async (type, tag) => {
-    const now = Date.now();
-    server.use(
-      http.get('/v1/missions/active', () =>
-        HttpResponse.json([
-          {
-            id: 'm-scav',
-            templateId: 'job_template',
-            type,
-            factionId: 'luna',
-            originId: 'ceres',
-            destinationId: 'ceres',
-            legs: [],
-            cargo: {},
-            reward: 0,
-            expiresAt: new Date(now + 3_600_000).toISOString(),
-            status: 'IN_TRANSIT',
-            playerId: 'player-1',
-            privatePlayerId: null,
-            shipId: 'ship-1',
-            acceptedAt: new Date(now - 60_000).toISOString(),
-            arrivalAt: new Date(now + 600_000).toISOString(),
-            deadlineAt: null,
-            seed: 's',
-            version: 1,
-            legWindows: [
-              {
-                legIndex: 0,
-                routeId: 'ceres-gate',
-                from: new Date(now - 300_000).toISOString(),
-                to: new Date(now + 300_000).toISOString(),
-              },
-            ],
-          },
-        ]),
-      ),
-    );
-    const { svg } = await renderMap();
-    await waitFor(() => expect(svg.querySelector('[aria-label*="You are here"]')).not.toBeNull());
-    expect(svg.querySelector('polyline.flight-path')).toBeNull();
-    expect(svg.querySelector('[aria-label="Your ship"]')).toBeNull();
-    expect(svg.querySelector('.you-tag')).toHaveTextContent(tag);
-  });
+  ])(
+    'a %s job is done at the place: the ship stays there with a tag saying what it does, no flight path',
+    async (type, tag) => {
+      const now = Date.now();
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json([
+            {
+              id: 'm-scav',
+              templateId: 'job_template',
+              type,
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'ceres',
+              legs: [],
+              cargo: {},
+              reward: 0,
+              expiresAt: new Date(now + 3_600_000).toISOString(),
+              status: 'IN_TRANSIT',
+              playerId: 'player-1',
+              privatePlayerId: null,
+              shipId: 'ship-1',
+              acceptedAt: new Date(now - 60_000).toISOString(),
+              arrivalAt: new Date(now + 600_000).toISOString(),
+              deadlineAt: null,
+              seed: 's',
+              version: 1,
+              legWindows: [
+                {
+                  legIndex: 0,
+                  routeId: 'ceres-gate',
+                  from: new Date(now - 300_000).toISOString(),
+                  to: new Date(now + 300_000).toISOString(),
+                },
+              ],
+            },
+          ]),
+        ),
+      );
+      const { svg } = await renderMap();
+      await waitFor(() => expect(svg.querySelector('[aria-label*="You are here"]')).not.toBeNull());
+      expect(svg.querySelector('polyline.flight-path')).toBeNull();
+      expect(svg.querySelector('[aria-label="Your ship"]')).toBeNull();
+      expect(svg.querySelector('.you-tag')).toHaveTextContent(tag);
+    },
+  );
 
   it('highlights corridors from the server hot flag, with no threshold of its own', async () => {
     const { svg } = await renderMap();

@@ -1,4 +1,4 @@
-# Phase 3, screen 3: Map (plan, nothing built yet)
+# Phase 3, screen 3: Map (MP1-MP3 built; decisions all as recommended; zoom and pan later)
 
 Scope rule, as for Port and Missions: **the logic does not change.** Same queries, same trip quote and
 "fly there" flow, same suggestions, same test ids and roles. Markup, layout and styling. Zoom and pan are a
@@ -81,9 +81,9 @@ deliveries logic, the work-at-place tag, the floating marker, node keyboard acce
 
 | step | what | touches |
 |---|---|---|
-| MP1 | Frame: slim header strip, mono line, legend row, hairline map panel, node restyle into `map.css` | `map.page.tsx`, new `styles/map.css` |
-| MP2 | Docked panel replaces the modal (desktop and phone), `?place=` link, nearest-places list; `PlaceDetails` restyled | `map.page.tsx`, `map.css` |
-| MP3 | 320 to 1280 px pass, specs (`map.spec.tsx`: the popup tests become panel tests, about 8 expectations), browser smoke, screenshots | specs, e2e |
+| MP1 *(done)* | Frame: slim header strip, mono line, legend row, hairline map panel, node restyle into `map.css` | `map.page.tsx`, new `styles/map.css` |
+| MP2 *(done)* | Docked panel replaces the modal (desktop and phone), `?place=` link, nearest-places list; `PlaceDetails` restyled | `map.page.tsx`, `map.css` |
+| MP3 *(done)* | 320 to 1280 px pass, specs (`map.spec.tsx`: the popup tests become panel tests, about 8 expectations), browser smoke, screenshots | specs, e2e |
 | MP4 *(optional, later)* | Zoom and pan | `map.page.tsx`, `map.css` |
 
 ## 6. Cost and risk

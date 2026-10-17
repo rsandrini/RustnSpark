@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
@@ -18,7 +18,6 @@ import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
-import { Popup } from '../../ui/Popup';
 import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
 import { RiskBadge } from '../../ui/RiskBadge';
@@ -46,7 +45,20 @@ export interface MapPageProps {
 
 export function MapPage({ guided = false }: MapPageProps) {
   const { t, i18n } = useTranslation();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The selected place lives in the URL (?place=<id>) so other screens can link to it.
+  const [params, setParams] = useSearchParams();
+  const selectedId = params.get('place');
+  const setSelectedId = (id: string | null) =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (id === null) next.delete('place');
+        else next.set('place', id);
+        return next;
+      },
+      { replace: true },
+    );
+  const panelRef = useRef<HTMLElement>(null);
   const factions = useFactions().byId;
 
   const worldQuery = useQuery({
@@ -118,6 +130,16 @@ export function MapPage({ guided = false }: MapPageProps) {
     return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
   })();
 
+  useEffect(() => {
+    if (
+      selectedId !== null &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 960px)').matches
+    ) {
+      panelRef.current?.scrollIntoView?.({ block: 'start' });
+    }
+  }, [selectedId]);
+
   if (worldQuery.isLoading || shipsQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
   }
@@ -138,7 +160,14 @@ export function MapPage({ guided = false }: MapPageProps) {
       : { rest: `${title.slice(0, at)} `, last: title.slice(at + 1) };
   })();
 
-  const selectNode = (id: string) => setSelectedId((current) => (current === id ? null : id));
+  // Every place, nearest to the ship first (coordinates only: no distance claim is made).
+  const nearest = [...world.locations].sort((a, b) => {
+    if (shipPlace === undefined) return 0;
+    const dist = (p: WorldLocation) => Math.hypot(p.x - shipPlace.x, p.y - shipPlace.y);
+    return dist(a) - dist(b);
+  });
+
+  const selectNode = (id: string) => setSelectedId(selectedId === id ? null : id);
 
   const handleNodeKeyDown = (event: ReactKeyboardEvent, id: string) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -187,165 +216,193 @@ export function MapPage({ guided = false }: MapPageProps) {
         </span>
       </div>
 
-      <div className="stage map-stage">
-        <svg
-          viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
-          role="group"
-          aria-label={t('map.title')}
-        >
-          {world.routes.map((route) => {
-            const from = byId.get(route.nodeAId);
-            const to = byId.get(route.nodeBId);
-            if (from === undefined || to === undefined) return null;
-            return (
-              <line
-                key={route.id}
-                className={`edge${route.hot ? ' hot' : ''}`}
-                x1={from.x}
-                y1={from.y}
-                x2={to.x}
-                y2={to.y}
+      <div className="map-layout">
+        <div className="stage map-stage">
+          <svg
+            viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
+            role="group"
+            aria-label={t('map.title')}
+          >
+            {world.routes.map((route) => {
+              const from = byId.get(route.nodeAId);
+              const to = byId.get(route.nodeBId);
+              if (from === undefined || to === undefined) return null;
+              return (
+                <line
+                  key={route.id}
+                  className={`edge${route.hot ? ' hot' : ''}`}
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                />
+              );
+            })}
+            {journey !== null && inFlight && (
+              <polyline
+                className="flight-path"
+                points={journey.stops.map((stop) => `${stop.x},${stop.y}`).join(' ')}
               />
-            );
-          })}
-          {journey !== null && inFlight && (
-            <polyline
-              className="flight-path"
-              points={journey.stops.map((stop) => `${stop.x},${stop.y}`).join(' ')}
-            />
-          )}
-          {world.locations.map((location) => {
-            const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
-            const isDestination = inFlight && flight?.destinationId === location.id;
-            const label = isHere
-              ? `${nameOf(location)} — ${t('map.youAreHere')}`
-              : nameOf(location);
-            const factionVar = FACTION_VAR[location.factionId] ?? '--neutro';
-            const factionColor = factions[location.factionId]?.color;
-            return (
-              <g
-                key={location.id}
-                className={`node-hit${selectedId === location.id ? ' sel' : ''}`}
-                role="button"
-                tabIndex={0}
-                aria-label={label}
-                data-risk={location.risk}
-                onClick={() => selectNode(location.id)}
-                onKeyDown={(event) => handleNodeKeyDown(event, location.id)}
-              >
-                <circle
-                  className="nhit"
-                  cx={location.x}
-                  cy={location.y}
-                  r={NODE_RADIUS + 16}
-                  fill="transparent"
-                />
-                {/* The ring already carries the faction color; the core's own fill is the risk
-                    band (owner: the risk legend had nothing left on the node to point at once
-                    the ring stopped meaning risk) — two independent channels on one glyph. */}
-                <circle
-                  className={`ncore risk-${location.risk}`}
-                  cx={location.x}
-                  cy={location.y}
-                  r={NODE_RADIUS}
-                />
-                <circle
-                  className="nring"
-                  cx={location.x}
-                  cy={location.y}
-                  r={NODE_RADIUS + 3}
-                  style={{ stroke: factionColor ?? `var(${factionVar})` }}
-                />
-                {isHere && (
-                  <>
-                    <circle
-                      className="here-pulse"
-                      cx={location.x}
-                      cy={location.y}
-                      r={NODE_RADIUS + 6}
-                    />
-                    <g
-                      className="you-tag"
-                      transform={`translate(${location.x} ${location.y - 34})`}
-                    >
-                      <rect x={-50} y={-11} width={100} height={18} rx={9} />
-                      <text y={2}>
-                        {workAtPlace === undefined
-                          ? t('map.youAreHere')
-                          : t(`map.working.${workAtPlace.type}`)}
-                      </text>
-                      <path d="M-5,7 L0,13 L5,7 Z" />
-                    </g>
-                  </>
-                )}
-                {isDestination && (
+            )}
+            {world.locations.map((location) => {
+              const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
+              const isDestination = inFlight && flight?.destinationId === location.id;
+              const label = isHere
+                ? `${nameOf(location)} — ${t('map.youAreHere')}`
+                : nameOf(location);
+              const factionVar = FACTION_VAR[location.factionId] ?? '--neutro';
+              const factionColor = factions[location.factionId]?.color;
+              return (
+                <g
+                  key={location.id}
+                  className={`node-hit${selectedId === location.id ? ' sel' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={label}
+                  data-risk={location.risk}
+                  onClick={() => selectNode(location.id)}
+                  onKeyDown={(event) => handleNodeKeyDown(event, location.id)}
+                >
                   <circle
-                    className="dest-ring"
+                    className="nhit"
                     cx={location.x}
                     cy={location.y}
-                    r={NODE_RADIUS + 8}
+                    r={NODE_RADIUS + 16}
+                    fill="transparent"
                   />
-                )}
-                <text className="nlabel" x={location.x} y={location.y + 24}>
-                  {nameOf(location)}
-                </text>
-                <text className="nsub" x={location.x} y={location.y + 35}>
-                  {t(`map.types.${location.type}`, { defaultValue: location.type })}
-                </text>
-                {location.missionCount > 0 && (
-                  <text className="miss-count" x={location.x} y={location.y - 16}>
-                    {location.missionCount}
+                  {/* The ring already carries the faction color; the core's own fill is the risk
+                    band (owner: the risk legend had nothing left on the node to point at once
+                    the ring stopped meaning risk) — two independent channels on one glyph. */}
+                  <circle
+                    className={`ncore risk-${location.risk}`}
+                    cx={location.x}
+                    cy={location.y}
+                    r={NODE_RADIUS}
+                  />
+                  <circle
+                    className="nring"
+                    cx={location.x}
+                    cy={location.y}
+                    r={NODE_RADIUS + 3}
+                    style={{ stroke: factionColor ?? `var(${factionVar})` }}
+                  />
+                  {isHere && (
+                    <>
+                      <circle
+                        className="here-pulse"
+                        cx={location.x}
+                        cy={location.y}
+                        r={NODE_RADIUS + 6}
+                      />
+                      <g
+                        className="you-tag"
+                        transform={`translate(${location.x} ${location.y - 34})`}
+                      >
+                        <rect x={-50} y={-11} width={100} height={18} rx={9} />
+                        <text y={2}>
+                          {workAtPlace === undefined
+                            ? t('map.youAreHere')
+                            : t(`map.working.${workAtPlace.type}`)}
+                        </text>
+                        <path d="M-5,7 L0,13 L5,7 Z" />
+                      </g>
+                    </>
+                  )}
+                  {isDestination && (
+                    <circle
+                      className="dest-ring"
+                      cx={location.x}
+                      cy={location.y}
+                      r={NODE_RADIUS + 8}
+                    />
+                  )}
+                  <text className="nlabel" x={location.x} y={location.y + 24}>
+                    {nameOf(location)}
                   </text>
-                )}
+                  <text className="nsub" x={location.x} y={location.y + 35}>
+                    {t(`map.types.${location.type}`, { defaultValue: location.type })}
+                  </text>
+                  {location.missionCount > 0 && (
+                    <text className="miss-count" x={location.x} y={location.y - 16}>
+                      {location.missionCount}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            {floatPoint !== null && (
+              <g
+                className="ship-marker floating"
+                transform={`translate(${floatPoint.x} ${floatPoint.y})`}
+                role="img"
+                aria-label={t('map.floating')}
+              >
+                <circle className="ship-halo" r={13} />
+                <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
+                <g className="you-tag" transform="translate(0 -26)">
+                  <rect x={-62} y={-11} width={124} height={18} rx={9} />
+                  <text y={2}>{t('stage.floating')}</text>
+                  <path d="M-5,7 L0,13 L5,7 Z" />
+                </g>
               </g>
-            );
-          })}
-          {floatPoint !== null && (
-            <g
-              className="ship-marker floating"
-              transform={`translate(${floatPoint.x} ${floatPoint.y})`}
-              role="img"
-              aria-label={t('map.floating')}
-            >
-              <circle className="ship-halo" r={13} />
-              <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
-              <g className="you-tag" transform="translate(0 -26)">
-                <rect x={-62} y={-11} width={124} height={18} rx={9} />
-                <text y={2}>{t('stage.floating')}</text>
-                <path d="M-5,7 L0,13 L5,7 Z" />
+            )}
+            {position !== null && inFlight && (
+              <g
+                className="ship-marker"
+                transform={`translate(${position.x} ${position.y}) rotate(${position.heading})`}
+                role="img"
+                aria-label={t('map.shipHere')}
+              >
+                <circle className="ship-halo" r={13} />
+                <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
               </g>
-            </g>
-          )}
-          {position !== null && inFlight && (
-            <g
-              className="ship-marker"
-              transform={`translate(${position.x} ${position.y}) rotate(${position.heading})`}
-              role="img"
-              aria-label={t('map.shipHere')}
-            >
-              <circle className="ship-halo" r={13} />
-              <path className="ship-glyph" d="M11,0 L-8,-7 L-4,0 L-8,7 Z" />
-            </g>
-          )}
-        </svg>
-      </div>
+            )}
+          </svg>
+        </div>
 
-      <Popup
-        open={selected !== undefined}
-        title={selected === undefined ? '' : nameOf(selected)}
-        onClose={() => setSelectedId(null)}
-      >
-        {selected !== undefined && (
-          <PlaceDetails
-            canTravel={shipLocation !== null && !inFlight}
-            place={selected}
-            description={descriptionOf(selected)}
-            isHere={selected.id === shipLocation && !inFlight}
-            shipLocation={shipLocation}
-            byId={byId}
-          />
-        )}
-      </Popup>
+        <aside className="map-panel" ref={panelRef}>
+          {selected === undefined ? (
+            <section className="map-places" aria-label={t('map.places')}>
+              <h2 className="map-panel-title">{t('map.places')}</h2>
+              <p className="sub">{t('map.hint')}</p>
+              <ul className="map-places-list">
+                {nearest.map((place) => (
+                  <li key={place.id}>
+                    <button
+                      type="button"
+                      className="map-place"
+                      onClick={() => selectNode(place.id)}
+                    >
+                      <span className="map-place-name">{nameOf(place)}</span>
+                      <span className="map-place-type">
+                        {t(`map.types.${place.type}`, { defaultValue: place.type })}
+                      </span>
+                      <RiskBadge band={place.risk} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : (
+            <section className="map-place-card" aria-label={nameOf(selected)}>
+              <header className="map-panel-head">
+                <h2 className="map-panel-title">{nameOf(selected)}</h2>
+                <button type="button" className="btn" onClick={() => setSelectedId(null)}>
+                  {t('ui.close')}
+                </button>
+              </header>
+              <PlaceDetails
+                canTravel={shipLocation !== null && !inFlight}
+                place={selected}
+                description={descriptionOf(selected)}
+                isHere={selected.id === shipLocation && !inFlight}
+                shipLocation={shipLocation}
+                byId={byId}
+              />
+            </section>
+          )}
+        </aside>
+      </div>
     </main>
   );
 }

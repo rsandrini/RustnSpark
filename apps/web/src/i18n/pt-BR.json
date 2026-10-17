@@ -1422,6 +1422,7 @@
     }
   },
   "map": {
+    "places": "Lugares",
     "line": "Mapa do setor · {{count}} lugares",
     "lineAt": "Você está em {{place}}",
     "title": "Mapa do setor",
