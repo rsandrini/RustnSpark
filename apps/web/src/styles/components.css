@@ -1385,3 +1385,39 @@ tbody tr:hover td {
     animation: none;
   }
 }
+
+/* touch targets (phase 4): on phones and any touch screen a control is at least a finger tall (40 px) */
+@media (max-width: 860px), (pointer: coarse) {
+  :is(.btn, .chip, .seg, .tab, .tutorial-pill, .needs-dismiss, .guide-back, .brand, .avatar, summary),
+  select,
+  input.input,
+  input[type='search'],
+  input[type='range'] {
+    min-height: 40px;
+  }
+  :is(a.btn, a.brand, a.guide-back, .avatar, .chip) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :is(.avatar, .chip, .btn, .needs-dismiss) {
+    min-width: 40px;
+  }
+  summary {
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* reduced motion (phase 4): one rule for every animation and transition in the game */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

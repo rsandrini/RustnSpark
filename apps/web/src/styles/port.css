@@ -297,7 +297,9 @@
   font-size: var(--text-2xl);
   text-transform: lowercase;
 }
-.port-nav ~ section > h3 {
+.port-nav ~ section > h3,
+.port-nav ~ section > h2.port-subhead {
+  margin: 1em 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 500;

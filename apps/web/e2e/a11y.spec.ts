@@ -9,15 +9,25 @@ import { openPortTab, registerAndLaunch } from './support';
  */
 const found: string[] = [];
 
+/** The slice of axe-core's API used inside the page (the library is injected as a script). */
+interface AxeInPage {
+  run: (
+    context: Document,
+    options: { resultTypes: string[] },
+  ) => Promise<{
+    violations: Array<{ id: string; impact?: string | null; nodes: Array<{ target: string[] }> }>;
+  }>;
+}
+
 async function audit(page: Page, label: string): Promise<void> {
   await page.waitForTimeout(400);
   await page.evaluate(axe.source);
   const results = await page.evaluate(async () => {
-    // @ts-expect-error axe is injected by the line above
-    const outcome = await window.axe.run(document, { resultTypes: ['violations'] });
-    return outcome.violations.map((violation: { id: string; impact: string; nodes: { target: string[] }[] }) => ({
+    const runner = (window as unknown as { axe: AxeInPage }).axe;
+    const outcome = await runner.run(document, { resultTypes: ['violations'] });
+    return outcome.violations.map((violation) => ({
       id: violation.id,
-      impact: violation.impact,
+      impact: String(violation.impact),
       targets: violation.nodes.slice(0, 4).map((node) => node.target.join(' ')),
       count: violation.nodes.length,
     }));

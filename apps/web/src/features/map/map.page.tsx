@@ -25,6 +25,7 @@ import { useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
+import { PageTitle } from '../../ui/PageTitle';
 import { MAX_SCALE, MIN_SCALE } from './map-view';
 import { useMapCamera } from './use-map-camera';
 
@@ -156,13 +157,6 @@ export function MapPage({ guided = false }: MapPageProps) {
     pickLocalized(location.description, i18n.language);
 
   const shipPlace = shipLocation === null ? undefined : byId.get(shipLocation);
-  const titleWords = (() => {
-    const title = t('map.title');
-    const at = title.lastIndexOf(' ');
-    return at === -1
-      ? { rest: '', last: title }
-      : { rest: `${title.slice(0, at)} `, last: title.slice(at + 1) };
-  })();
 
   // Every place, nearest to the ship first (coordinates only: no distance claim is made).
   const nearest = [...world.locations].sort((a, b) => {
@@ -184,21 +178,20 @@ export function MapPage({ guided = false }: MapPageProps) {
     <main className="app wide" data-guided={guided ? '' : undefined}>
       {/* One slim strip and one mono line, no copy: "you are here" and the in-flight ship are
           shown on the map itself (the you-tag label and the moving marker). */}
-      <header className="map-head">
-        <h1 className="map-title">
-          {titleWords.rest}
-          <em>{titleWords.last}</em>
-        </h1>
-        <p className="map-line">
-          {t('map.line', { count: world.locations.length })}
-          {shipPlace !== undefined && (
-            <>
-              {SEPARATOR}
-              <b className="map-line-here">{t('map.lineAt', { place: nameOf(shipPlace) })}</b>
-            </>
-          )}
-        </p>
-      </header>
+      <PageTitle
+        title={t('map.title')}
+        line={
+          <>
+            {t('map.line', { count: world.locations.length })}
+            {shipPlace !== undefined && (
+              <>
+                {SEPARATOR}
+                <b>{t('map.lineAt', { place: nameOf(shipPlace) })}</b>
+              </>
+            )}
+          </>
+        }
+      />
       <EmptyShipNotice />
 
       <div className="legend">

@@ -53,7 +53,7 @@ Where the rules live now: `index.css` base only; `components.css` the kit and sh
 - *Done when:* no screen changed visually (screenshots at 1280 and 390), tests green, and a short note in
   `docs/design/` says where each family of rules now lives.
 
-### H3: Accessibility
+### H3: Accessibility (done 2026-10-17: a real-browser axe spec with colour contrast over 25 screens and states at both widths, clean; the findings fixed: landmarks for the status strip and the language switch, heading levels, solid gauge labels, the account menu as a disclosure; arrow-key tab lists with a roving tabindex; a keyboard spec)
 - **Automated:** extend the axe spec to every redesigned screen and state: Ship (idle and with a mission), Port tabs,
   Missions (row, Details open, pinned row), Map (panel open, empty), Report (three views), Profile, Onboarding,
   Auth (login, register, forgot), Guide (topic, search results), the tutorial card (open and pill), the account menu.
@@ -66,7 +66,7 @@ Where the rules live now: `index.css` base only; `components.css` the kit and sh
   so nothing important is hidden and nothing decorative is announced.
 - *Done when:* axe reports no violations on the list above and the keyboard spec passes.
 
-### H4: Motion, width and language
+### H4: Motion, width and language (done 2026-10-17: one reduced-motion rule and a spec; six widths x two languages with no sideways scroll; controls at least 40 px on touch screens, enforced by the width spec; the Map header now uses `PageTitle`)
 - **Reduced motion:** every animation (map pulse and ship marker, landing ship, stage scenes, the tutorial card, the
   yard rotate icon) respects `prefers-reduced-motion: reduce`; one shared rule in `components.css` plus any
   exceptions listed.

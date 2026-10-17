@@ -745,7 +745,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             })}
           </div>
 
-          <h2>{t('port.materials')}</h2>
+          <h2 className="port-subhead">{t('port.materials')}</h2>
           {materials.length === 0 && <p className="sub">{t('inventory.noMaterials')}</p>}
           <div className="pcard-grid">
             {materials.map((holding) => {
