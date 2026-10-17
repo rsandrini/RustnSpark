@@ -122,7 +122,7 @@ describe('mission board (S6.2)', () => {
 
   it('gives every location at least one mission (GDD §12)', async () => {
     const locations = await prisma.location.findMany({ select: { id: true } });
-    expect(locations.length).toBe(15);
+    expect(locations.length).toBe(16);
     for (const location of locations) {
       const rows = await board!.getBoard(location.id, 1);
       expect(rows.length).toBeGreaterThanOrEqual(1);

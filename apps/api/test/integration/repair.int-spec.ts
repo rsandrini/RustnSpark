@@ -283,9 +283,7 @@ describe('repair job API (S8.4)', () => {
     const scrap = await prisma.playerMaterial.findMany({
       where: { playerId: player.seeded.player.id, materialId: 'scrap' },
     });
-    expect(scrap.map((entry) => [entry.materialId, entry.quantity])).toEqual([
-      ['scrap', 1],
-    ]);
+    expect(scrap.map((entry) => [entry.materialId, entry.quantity])).toEqual([['scrap', 1]]);
     const gone = await prisma.partInstance.findUnique({ where: { id: other.id } });
     expect(gone).toBeNull();
 

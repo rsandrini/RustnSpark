@@ -2,8 +2,35 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/glob
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
 const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
-  PartInstance: ['id', 'partType', 'ownerPlayerId', 'condition', 'location', 'shipId', 'propRoll', 'connectors'],
-  Ship: ['id', 'ownerPlayerId', 'name', 'layout', 'fuel', 'status', 'currentLocationId', 'stance', 'energyMode', 'chemLevel', 'ionLevel', 'floatRouteId', 'floatFromId', 'floatProgress', 'rescueAt', 'formatId', 'formatBridgeType'],
+  PartInstance: [
+    'id',
+    'partType',
+    'ownerPlayerId',
+    'condition',
+    'location',
+    'shipId',
+    'propRoll',
+    'connectors',
+  ],
+  Ship: [
+    'id',
+    'ownerPlayerId',
+    'name',
+    'layout',
+    'fuel',
+    'status',
+    'currentLocationId',
+    'stance',
+    'energyMode',
+    'chemLevel',
+    'ionLevel',
+    'floatRouteId',
+    'floatFromId',
+    'floatProgress',
+    'rescueAt',
+    'formatId',
+    'formatBridgeType',
+  ],
   PlayerMaterial: ['playerId', 'materialId', 'quantity'],
 };
 

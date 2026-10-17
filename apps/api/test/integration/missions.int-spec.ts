@@ -154,7 +154,7 @@ describe('missions accept/hold API (S6.4)', () => {
   // §9.1 round-4 fix: a brand-new player's very first board must not include a mission that
   // leaves the safe core (GDD §2 zone 0-1), even though it's otherwise perfectly eligible; a
   // player past the D43 "new" threshold sees the same offer once it's no longer filtered.
-  it('caps a new player\'s board to the safe core; a veteran sees the same dangerous offer', async () => {
+  it("caps a new player's board to the safe core; a veteran sees the same dangerous offer", async () => {
     await freshSeededApp();
     const { token, seeded } = await onboardPlayer();
     const server = httpServer(testApp.app);
@@ -253,7 +253,7 @@ describe('missions accept/hold API (S6.4)', () => {
   // only the text" — `eligibility.reasons` only ever lists FAILING checks, so an eligible
   // offer (e.g. the delivery above) never told the pilot what it required at all.
   // `info.requirements` is the same checks, always present with a `met` flag.
-  it("exposes info.requirements as the full checklist, not just the failing half (S10.6 follow-up)", async () => {
+  it('exposes info.requirements as the full checklist, not just the failing half (S10.6 follow-up)', async () => {
     await freshSeededApp();
     const { token } = await onboardPlayer();
     const server = httpServer(testApp.app);

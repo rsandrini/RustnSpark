@@ -866,17 +866,19 @@ describe('hangar (S10.4)', () => {
     });
 
     const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
-    const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
-    const toClient = (px: number, py: number) => ({
-      clientX: (px - vb[0]!) / vb[2]!,
-      clientY: (py - vb[1]!) / vb[2]!,
-    });
+    // The view fits itself to the ship once the data is in: read the viewBox when each pointer event
+    // is built (not once up front), so a late refit cannot leave the coordinates stale (this test
+    // used to fail now and then under load).
+    const toClient = (px: number, py: number) => {
+      const vb = (svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ').map(Number);
+      return { clientX: (px - vb[0]!) / vb[2]!, clientY: (py - vb[1]!) / vb[2]! };
+    };
 
     // Float cargo-a from its middle straight onto the bridge at (0,0): it cannot fit, so the
     // ghost reads bad and releasing leaves the part where it began.
     fireEvent.pointerDown(cargo, toClient(3, 2.5));
     fireEvent.pointerMove(svg, toClient(1, 0.5));
-    expect(container.querySelector('.ghost-body.bad')).not.toBeNull();
+    await waitFor(() => expect(container.querySelector('.ghost-body.bad')).not.toBeNull());
 
     fireEvent.pointerUp(svg, toClient(1, 0.5));
 

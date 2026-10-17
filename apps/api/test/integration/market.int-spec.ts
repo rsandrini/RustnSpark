@@ -504,7 +504,7 @@ describe('market API (S8.2)', () => {
       sellOffers: Array<{ partInstanceId: string }>;
       sellMinCondition: number;
     };
-    expect(board.sellMinCondition).toBe(1);
+    expect(board.sellMinCondition).toBe(15);
     const quoted = board.sellOffers.map((offer) => offer.partInstanceId);
     expect(quoted).not.toContain(wreck.id);
     expect(quoted).toContain(worn.id);

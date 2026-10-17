@@ -490,6 +490,41 @@ describe('ship dispatch API (S7.2)', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('a ship with no bridge cannot dispatch (NO_BRIDGE): nothing leaves port, the mission stays accepted', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const mission = await createMission(player, [40]);
+    // take only the bridge out of the ship: every other part stays installed
+    const installed = await prisma.partInstance.findMany({
+      where: { shipId: player.shipId, ownerPlayerId: player.seeded.player.id },
+      include: { partCatalog: true },
+    });
+    const bridge = installed.find((part) => part.partCatalog.partClass === 'BRIDGE');
+    expect(bridge).toBeDefined();
+    await prisma.partInstance.update({
+      where: { id: bridge!.id },
+      data: { location: 'INVENTORY', shipId: null },
+    });
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    const layout = (ship.layout as Array<{ partInstanceId: string }>).filter(
+      (placement) => placement.partInstanceId !== bridge!.id,
+    );
+    await prisma.ship.update({ where: { id: player.shipId }, data: { layout } });
+
+    const response = await dispatch(player.token, player.shipId, mission.id);
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ message: { error: 'SHIP_NOT_VIABLE' } });
+    const problems = (response.body as { message: { problems: Array<{ code: string }> } }).message
+      .problems;
+    expect(problems.map((problem) => problem.code)).toContain('NO_BRIDGE');
+
+    const after = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(after.status).toBe('IN_PORT');
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    expect(stored.status).toBe('ACCEPTED');
+    expect(await queue.getJob(mission.id)).toBeFalsy();
+  });
+
   it('refuses a ship with more spare parts than the bridge has slots for, however small they are', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -575,6 +610,9 @@ describe('ship dispatch API (S7.2)', () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const mission = await createMission(player, [30, 10]);
+    // The starter hull is heavy enough that the starter ship's rounded mobility sits on its floor of 1,
+    // where a dead engine could not make it any slower: a light hull lifts it above the floor.
+    await prisma.partCatalog.update({ where: { partType: 'hull' }, data: { mass: 2 } });
     const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
     const layout = ship.layout as { partInstanceId: string; gx: number; gy: number; rot: number }[];
     const engine = await prisma.partInstance.findFirstOrThrow({

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { PrismaClient } from '@prisma/client';
 import { seed } from '../../prisma/seed.js';
+import { ISOLATION_OVERRIDES } from '../../prisma/seed-data/world-builder.js';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
 const CANONICAL_FACTION_COLORS: Readonly<Record<string, string>> = {
@@ -114,8 +115,8 @@ describe('database seed (S3.4)', () => {
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
     expect(counts.gameConfig).toBe(188);
-    expect(counts.locations).toBe(15);
-    expect(counts.routes).toBe(20);
+    expect(counts.locations).toBe(16);
+    expect(counts.routes).toBe(21);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
@@ -189,7 +190,7 @@ describe('database seed (S3.4)', () => {
     }
 
     // The settled world (12) and the three far places beyond it, all one connected graph.
-    expect(visited.size).toBe(15);
+    expect(visited.size).toBe(16);
   });
 
   it('has no duplicate routes between the same unordered node pair', async () => {
@@ -202,7 +203,7 @@ describe('database seed (S3.4)', () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
-    expect(seen.size).toBe(20);
+    expect(seen.size).toBe(21);
   });
 
   it('produces route distances in the 400–1,200 range', async () => {
@@ -227,11 +228,15 @@ describe('database seed (S3.4)', () => {
   it('covers every zone 0–3 and assigns isolation from the config map', async () => {
     await seed(prisma);
 
-    const locations = await prisma.location.findMany({ select: { zone: true, isolation: true } });
+    const locations = await prisma.location.findMany({
+      select: { id: true, zone: true, isolation: true },
+    });
     const zones = new Set<number>();
     for (const location of locations) {
       zones.add(location.zone);
-      expect(location.isolation).toBe(ISOLATION_BY_ZONE[location.zone]);
+      expect(location.isolation).toBe(
+        ISOLATION_OVERRIDES[location.id] ?? ISOLATION_BY_ZONE[location.zone],
+      );
     }
     expect(zones.has(0)).toBe(true);
     expect(zones.has(1)).toBe(true);

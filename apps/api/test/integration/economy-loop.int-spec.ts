@@ -206,7 +206,11 @@ describe('economy milestone M8', () => {
       },
     });
     const installedBefore = await prisma.partInstance.findMany({
-      where: { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED', shipId: player.shipId },
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INSTALLED',
+        shipId: player.shipId,
+      },
       select: { id: true },
     });
     const autoAssembleResponse = await request(httpServer(testApp.app))

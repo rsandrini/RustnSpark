@@ -258,7 +258,7 @@ describe('art uploads (factions and places)', () => {
       'sun',
     ]);
     expect(body.factions[0]!.displayName.en).not.toBe('');
-    expect(body.counts).toMatchObject({ parts: expect.any(Number), places: 15, factions: 4 });
+    expect(body.counts).toMatchObject({ parts: expect.any(Number), places: 16, factions: 4 });
     expect(body.counts.parts).toBeGreaterThan(200);
     // nothing but those two keys: no player data, no tuning values
     expect(Object.keys(body).sort()).toEqual(['counts', 'factions']);
