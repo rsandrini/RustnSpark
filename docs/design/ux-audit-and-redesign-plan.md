@@ -1,6 +1,6 @@
 # UX audit and redesign plan (P5)
 
-Status: **proposal; a clickable demo exists (`docs/design/demo/index.html`, also published as a private page).** Owner answers so far: lowercase serif headlines kept as in Lumen (to test), fonts may be self-hosted, Hallmark stays read from the repo (a global install is allowed). Still open: approval of the navigation (section 3), to be judged on the demo. Scope: the whole game, **admin excluded**.
+Status: **done (2026-10-17): phases 1 to 4 are built; see `frontend-rules.md` for the result and `phase-2-shell-plan.md`, `phase-3-*.md` and `phase-4-hardening-plan.md` for the steps.** Original status: proposal; a clickable demo exists (`docs/design/demo/index.html`, also published as a private page).** Owner answers so far: lowercase serif headlines kept as in Lumen (to test), fonts may be self-hosted, Hallmark stays read from the repo (a global install is allowed). Still open: approval of the navigation (section 3), to be judged on the demo. Scope: the whole game, **admin excluded**.
 Date: 2026-10-16. Evidence: screenshots in `docs/design/before/` (desktop 1440x900 and phone 390x844, a fresh
 Luna pilot on the dev stack; `capture-screens.mjs` retakes them) plus the router and page code.
 

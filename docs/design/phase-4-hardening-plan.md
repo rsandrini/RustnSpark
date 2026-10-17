@@ -77,7 +77,7 @@ Where the rules live now: `index.css` base only; `components.css` the kit and sh
 - *Done when:* a scripted run (the screenshot and overflow scripts used during phase 3, promoted to a Playwright
   spec) passes at all six widths in both languages.
 
-### H5: Close-out
+### H5: Close-out (done 2026-10-17: `frontend-rules.md` records the rules and the checks; the redesign plan is marked done)
 - Update `docs/design/ux-audit-and-redesign-plan.md` with the final state, mark phase 4 done in `docs/TODO.md`, and
   record the rules a future screen must follow (tokens only, one stylesheet per screen, PageTitle or stage header,
   the keyboard and axe checklist).
