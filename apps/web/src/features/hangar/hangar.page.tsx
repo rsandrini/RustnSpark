@@ -24,6 +24,7 @@ import {
 } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
+import { tablistKeys } from '../../ui/tablist';
 import { useTutorialVisit } from '../tutorial/tutorial-store';
 import { hexPlaceholder } from '../../ui/ShipIdentity';
 import { ActiveShipStage } from '../ship/active-ship-stage';
@@ -667,13 +668,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               {/* A nested sub-menu (Parts/Store) inside the Ship tab: a different accent colour
                   and a bit of breathing room from the Ship/Board/Port tabs above it, so it
                   reads as a level down rather than a continuation of the same tab strip. */}
-              <div className="segment side-tabs" role="tablist">
+              <div className="segment side-tabs" role="tablist" onKeyDown={tablistKeys}>
                 {(['parts', 'store'] as const).map((id) => (
                   <button
                     key={id}
                     type="button"
                     role="tab"
                     aria-selected={sideTab === id}
+                    tabIndex={sideTab === id ? 0 : -1}
                     className={`seg${sideTab === id ? ' on' : ''}`}
                     onClick={() => setSideTab(id)}
                   >

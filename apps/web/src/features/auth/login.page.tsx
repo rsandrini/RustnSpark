@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client';
 import { useLogin } from './auth.hooks';
 import { HeroShip, LandingStory, useLanding } from './landing';
 import { RegisterForm } from './register-form';
+import { tablistKeys } from '../../ui/tablist';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -52,10 +53,16 @@ export function LoginPage() {
             )}
           </div>
           <section className="panel landing-auth" aria-labelledby="auth-title">
-            <div className="auth-tabs" role="tablist" aria-label={t('landing.authTabs')}>
+            <div
+              className="auth-tabs"
+              role="tablist"
+              aria-label={t('landing.authTabs')}
+              onKeyDown={tablistKeys}
+            >
               <Link
                 role="tab"
                 aria-selected={!registering}
+                tabIndex={registering ? -1 : 0}
                 className={`auth-tab${registering ? '' : ' active'}`}
                 to="/login"
               >
@@ -64,6 +71,7 @@ export function LoginPage() {
               <Link
                 role="tab"
                 aria-selected={registering}
+                tabIndex={registering ? 0 : -1}
                 className={`auth-tab${registering ? ' active' : ''}`}
                 to="/register"
               >

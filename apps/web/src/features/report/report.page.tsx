@@ -18,6 +18,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
 import { pathOfLegs } from '../../ui/RouteMap';
 import { PageTitle } from '../../ui/PageTitle';
+import { tablistKeys } from '../../ui/tablist';
 import { ReportOverview } from './report-overview';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
@@ -146,13 +147,19 @@ export function ReportPage({ guided = false }: ReportPageProps) {
 
       {report !== undefined && (
         <>
-          <div className="segment report-tabs" role="tablist" aria-label={t('report.title')}>
+          <div
+            className="segment report-tabs"
+            role="tablist"
+            aria-label={t('report.title')}
+            onKeyDown={tablistKeys}
+          >
             {tabs.map((name) => (
               <button
                 key={name}
                 type="button"
                 role="tab"
                 aria-selected={tab === name}
+                tabIndex={tab === name ? 0 : -1}
                 className={`seg${tab === name ? ' on' : ''}`}
                 onClick={() => setTab(name)}
               >

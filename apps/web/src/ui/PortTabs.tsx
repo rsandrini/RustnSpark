@@ -1,3 +1,5 @@
+import { tablistKeys } from './tablist';
+
 export interface PortTab {
   id: string;
   label: string;
@@ -18,13 +20,19 @@ export interface PortTabsProps {
 // anywhere else the shell needs one row of destinations.
 export function PortTabs({ tabs, activeId, onChange, variant = 'tabs', label }: PortTabsProps) {
   return (
-    <div className={variant === 'segment' ? 'segment' : 'tabs'} role="tablist" aria-label={label}>
+    <div
+      className={variant === 'segment' ? 'segment' : 'tabs'}
+      role="tablist"
+      aria-label={label}
+      onKeyDown={tablistKeys}
+    >
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           role="tab"
           aria-selected={tab.id === activeId}
+          tabIndex={tab.id === activeId ? 0 : -1}
           className={`${variant === 'segment' ? 'seg' : 'tab'}${tab.id === activeId ? ' on' : ''}`}
           onClick={() => onChange(tab.id)}
         >
