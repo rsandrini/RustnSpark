@@ -27,6 +27,7 @@ import { useNow } from '../../ui/useNow';
 import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 
+const SEPARATOR = ' · ';
 const NODE_RADIUS = 9;
 const VIEW_PADDING = 70;
 
@@ -157,7 +158,12 @@ export function MapPage({ guided = false }: MapPageProps) {
         </h1>
         <p className="map-line">
           {t('map.line', { count: world.locations.length })}
-          {shipPlace !== undefined && ` · ${t('map.lineAt', { place: nameOf(shipPlace) })}`}
+          {shipPlace !== undefined && (
+            <>
+              {SEPARATOR}
+              <b className="map-line-here">{t('map.lineAt', { place: nameOf(shipPlace) })}</b>
+            </>
+          )}
         </p>
       </header>
       <EmptyShipNotice />

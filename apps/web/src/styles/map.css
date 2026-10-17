@@ -28,6 +28,11 @@
   text-transform: uppercase;
 }
 
+.map-line-here {
+  color: var(--brass);
+  font-weight: 600;
+}
+
 .legend {
   display: flex;
   flex-wrap: wrap;
