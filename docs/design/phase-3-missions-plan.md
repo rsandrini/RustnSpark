@@ -1,4 +1,4 @@
-# Phase 3, screen 2: Missions (plan, nothing built yet)
+# Phase 3, screen 2: Missions (built: M1-M4; decisions all as recommended)
 
 Scope rule, as for Port: **the logic does not change.** Same API calls, same accept / hold / release flows, same
 eligibility from the server, same test ids and roles. This is markup, defaults and styling.
@@ -80,10 +80,10 @@ here" links (`/missions?location=...`).
 
 | step | what | touches |
 |---|---|---|
-| M1 | Frame: slim header, mono count line, sort select, empty states | `board.page.tsx`, `hangar.page.tsx` (slim stage on this tab), `missions.css` |
-| M2 | The row: summary columns, requirement chips, Details disclosure around the existing card | new `mission-row.tsx`, `mission-card.tsx` (small), `missions.css` |
-| M3 | Pinned "Your mission" row, disabled-state labels, dimmed rows | `board.page.tsx`, `mission-row.tsx` |
-| M4 | 320 to 1280 px pass, specs, browser smoke, screenshots | `board.spec.tsx` (575 lines, about 10 expectations on card counts and texts), e2e |
+| M1 *(done)* | Frame: slim header, mono count line, sort select, empty states | `board.page.tsx`, `hangar.page.tsx` (slim stage on this tab), `missions.css` |
+| M2 *(done)* | The row: summary columns, requirement chips, Details disclosure around the existing card | new `mission-row.tsx`, `mission-card.tsx` (small), `missions.css` |
+| M3 *(done)* | Pinned "Your mission" row, disabled-state labels, dimmed rows | `board.page.tsx`, `mission-row.tsx` |
+| M4 *(done: no sideways overflow at 320, 768, 1280; 431 web specs; browser smoke and race spec pass; the `mcard` CSS rules stay in the legacy sheet for now because Transit shares them)* | 320 to 1280 px pass, specs, browser smoke, screenshots | `board.spec.tsx` (575 lines, about 10 expectations on card counts and texts), e2e |
 
 ## 6. Cost and risk
 `board.spec.tsx` keeps most of its checks because each row contains one `MissionCard` (so `.mcard` counts stay);
