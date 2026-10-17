@@ -36,7 +36,10 @@ Admin stays out of scope (owner, from the start).
   `continue-on-error` then.
 - *Done when:* three consecutive full runs are green locally and CI is green on the head.
 
-### H2: Legacy CSS clean-up (the big one, done in slices)
+### H2: Legacy CSS clean-up (done 2026-10-17: `index.css` 5,900 -> 447 lines; 51 unused rules deleted, the admin rules in `admin.css`, every screen's rules in its own file, the shared UI rules in `components.css`, the 14 colour aliases retired; checked pixel for pixel on 30 screen states at two widths with `apps/web/visual`)
+
+Where the rules live now: `index.css` base only; `components.css` the kit and shared UI (buttons, badges, tabs, popups, forms, gauges, rows, wallet, language switch); `shell.css` top bar, tab bar, status strip; `ship.css` the yard, the sheet, the tray and Transit's ship parts; `parts.css` the part card, part details and market filters; `port.css` Port; `missions.css` Missions, the mission card and Transit; `map.css`; `report.css`; `profile.css`; `onboarding.css`; `auth.css`; `guide.css`; `tutorial.css`; `admin.css`. Legacy rules sit at the top of each file, the redesign rules after them (they were written to override them).
+
 - Slice by area, not by file: Transit and the mission card (the `mcard` rules Missions shares), the part card and
   tray, the yard (`hangar-*`, `yard-*`), the market and Port leftovers, the admin shell (stays where it is), generic
   utilities (`.btn`, `.chip`, `.pill`, `.badge`, `.panel`, `.stack`, `.field`, `.input`).
