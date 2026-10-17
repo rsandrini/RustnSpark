@@ -96,10 +96,10 @@ describe('world map API (S10.5)', () => {
     expect(response.status).toBe(200);
     const body = response.body as WorldResponseBody;
 
-    expect(body.locations).toHaveLength(16);
+    expect(body.locations).toHaveLength(26);
     expect(body.routes.length).toBeGreaterThanOrEqual(10);
     const ids = new Set(body.locations.map((location) => location.id));
-    expect(ids.size).toBe(16);
+    expect(ids.size).toBe(26);
     expect(ids.has('ceres')).toBe(true);
     expect(ids.has('cair')).toBe(true);
 
@@ -121,7 +121,8 @@ describe('world map API (S10.5)', () => {
     for (const route of body.routes) {
       expect(ids.has(route.nodeAId)).toBe(true);
       expect(ids.has(route.nodeBId)).toBe(true);
-      expect(route.distance).toBeGreaterThanOrEqual(400);
+      // the local places hang off a main place on a short hop (under 300)
+      expect(route.distance).toBeGreaterThanOrEqual(100);
       expect(route.danger).toBeGreaterThanOrEqual(0);
       expect(route.danger).toBeLessThanOrEqual(10);
       // The server owns the "hot corridor" threshold; the client just reads the flag.

@@ -1959,6 +1959,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.short_trip_below',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 5000,
+    unit: 'distance',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_below),
+    description: {
+      en: 'A trip shorter than this (total distance) takes at least the short-trip minimum below.',
+      'pt-BR': 'Uma viagem mais curta que isto (distância total) leva pelo menos o mínimo de viagem curta abaixo.',
+    },
+  },
+  {
+    key: 'missions.short_trip_min_seconds',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 3600,
+    unit: 'seconds',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_min_seconds),
+    description: {
+      en: 'The least time a very short trip takes (game seconds, before the time scale). 0 = no minimum.',
+      'pt-BR': 'O menor tempo que uma viagem muito curta leva (segundos de jogo, antes da escala de tempo). 0 = sem mínimo.',
+    },
+  },
+  {
     key: 'missions.duration_class_cutoffs',
     group: 'missions',
     type: 'json',

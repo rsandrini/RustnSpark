@@ -432,6 +432,8 @@ export class DispatchService {
         totalDistance,
         mobility: flight.sheet.mob,
         durationK: rules.missions.duration_k,
+        shortTripBelow: rules.missions.short_trip_below,
+        shortTripMinSeconds: rules.missions.short_trip_min_seconds,
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
       });

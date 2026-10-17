@@ -51,6 +51,8 @@ function netPerHour(
     totalDistance: totalDistanceOf(offer),
     mobility: sheet.mob,
     durationK: ctx.rules.missions.duration_k,
+    shortTripBelow: ctx.rules.missions.short_trip_below,
+    shortTripMinSeconds: ctx.rules.missions.short_trip_min_seconds,
     timeScale: ctx.rules.missions.time_scale,
     classCutoffs: ctx.rules.missions.duration_class_cutoffs,
   });

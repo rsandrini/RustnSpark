@@ -20,6 +20,8 @@ export interface WorldLocation {
   readonly displayName: LocalizedText;
   readonly description: LocalizedText;
   readonly type: string;
+  /** How early the map shows the place: main (always), regional (zoomed in), local (zoomed in close). */
+  readonly detail: string;
   readonly x: number;
   readonly y: number;
   readonly zone: number;
@@ -82,6 +84,7 @@ export class WorldService {
         displayName: bilingual(location.displayName),
         description: bilingual(location.description),
         type: location.type,
+        detail: location.detail,
         x: location.x,
         y: location.y,
         zone: location.zone,

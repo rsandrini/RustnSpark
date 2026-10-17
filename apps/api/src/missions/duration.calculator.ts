@@ -8,6 +8,9 @@ export interface MissionDurationInput {
   readonly mobility: number;
   readonly durationK: number;
   readonly timeScale: number;
+  /** A trip shorter than this in total distance takes at least `shortTripMinSeconds` (both 0 = no floor). */
+  readonly shortTripBelow?: number;
+  readonly shortTripMinSeconds?: number;
   readonly classCutoffs: Readonly<Record<string, number>>;
 }
 
@@ -25,7 +28,12 @@ function classify(seconds: number, cutoffs: Readonly<Record<string, number>>): D
 }
 
 export function missionDuration(input: MissionDurationInput): MissionDuration {
-  const rounded = Math.round((input.totalDistance / input.mobility) * input.durationK);
+  const flown = Math.round((input.totalDistance / input.mobility) * input.durationK);
+  const short =
+    input.shortTripBelow !== undefined &&
+    input.shortTripMinSeconds !== undefined &&
+    input.totalDistance < input.shortTripBelow;
+  const rounded = short ? Math.max(flown, input.shortTripMinSeconds) : flown;
   const durationSeconds = rounded * input.timeScale;
   return {
     durationSeconds,

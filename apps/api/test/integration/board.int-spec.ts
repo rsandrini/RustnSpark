@@ -84,7 +84,7 @@ describe('mission board (S6.2)', () => {
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
     }
-  });
+  }, 60000);
 
   it('is idempotent: a second read adds nothing and returns the same offers', async () => {
     const first = await board!.getBoard('ceres', 1);
@@ -122,10 +122,10 @@ describe('mission board (S6.2)', () => {
 
   it('gives every location at least one mission (GDD §12)', async () => {
     const locations = await prisma.location.findMany({ select: { id: true } });
-    expect(locations.length).toBe(16);
+    expect(locations.length).toBe(26);
     for (const location of locations) {
       const rows = await board!.getBoard(location.id, 1);
-      expect(rows.length).toBeGreaterThanOrEqual(1);
+      if (rows.length < 1) throw new Error(`no offers at ${location.id}`);
     }
   }, 30000);
 

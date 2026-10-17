@@ -80,11 +80,19 @@ export class PartUpgradeService {
     if (part.location !== 'INSTALLED' || part.shipId === null) return;
     const ship = await this.prisma.ship.findUnique({
       where: { id: part.shipId },
-      select: { status: true },
+      select: { status: true, currentLocationId: true },
     });
     if (!ship) throw new NotFoundException('ship not found');
     if (ship.status === 'ON_MISSION') throw new ConflictException({ error: 'SHIP_ON_MISSION' });
     if (ship.status !== 'IN_PORT') throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
+    // a place that turns upgrades off (a service stop) refuses them
+    const place = await this.prisma.location.findUnique({
+      where: { id: ship.currentLocationId },
+      select: { services: true },
+    });
+    if (((place?.services ?? {}) as Record<string, unknown>).upgrade === false) {
+      throw new ConflictException({ error: 'SERVICE_UNAVAILABLE' });
+    }
   }
 
   private async plan(playerId: string, partInstanceId: string) {

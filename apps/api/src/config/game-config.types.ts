@@ -129,6 +129,8 @@ export type ConfigKey =
   | 'missions.starter_max_zone'
   | 'missions.duration_class_cutoffs'
   | 'missions.duration_k'
+  | 'missions.short_trip_below'
+  | 'missions.short_trip_min_seconds'
   | 'missions.hold_max'
   | 'missions.open_cargo_unit_pay'
   | 'missions.time_scale'
@@ -514,6 +516,8 @@ export type GameRules = Readonly<{
     hold_max: number;
     open_cargo_unit_pay: number;
     duration_k: number;
+    short_trip_below: number;
+    short_trip_min_seconds: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;

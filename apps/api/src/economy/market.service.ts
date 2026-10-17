@@ -108,6 +108,16 @@ export class MarketService {
     return ship;
   }
 
+  /** Whether a place offers a service: only an explicit `false` in its `services` closes it (a missing flag is open). */
+  private async serviceOpen(locationId: string, key: 'buy' | 'sell'): Promise<boolean> {
+    const location = await this.prisma.location.findUnique({
+      where: { id: locationId },
+      select: { services: true },
+    });
+    const services = (location?.services ?? {}) as Record<string, unknown>;
+    return services[key] !== false;
+  }
+
   // Trade POSTs are port actions: a ship in transit trades nothing (S7.7 lock family).
   // Reads stay open, and ADRIFT still trades — stripping installed parts off a drifting
   // hull is the designed path into the restart kit (inventory.service).
@@ -134,6 +144,8 @@ export class MarketService {
 
   async market(locationId: string, playerId: string): Promise<MarketResponse> {
     await this.assertShipAtLocation(playerId, locationId);
+    const buyOpen = await this.serviceOpen(locationId, 'buy');
+    const sellOpen = await this.serviceOpen(locationId, 'sell');
     const context = await this.pricing.contextForLocation(locationId, playerId);
     const catalogs = await this.prisma.partCatalog.findMany({
       // A bridge is never sold: a bigger one comes from Expand in the Upgrade tab.
@@ -150,9 +162,11 @@ export class MarketService {
     // draw from this same in-stock pool, not the full catalog, or a rarity excluded from "new"
     // listings could still turn up used (owner report, round 6 — this is exactly what happened
     // before this fix).
-    const inStockCatalogs = catalogs.filter((row) =>
-      inStockToday(locationId, day, row.partType, row.rarity, rarityChance),
-    );
+    const inStockCatalogs = buyOpen
+      ? catalogs.filter((row) =>
+          inStockToday(locationId, day, row.partType, row.rarity, rarityChance),
+        )
+      : [];
     const listings: MarketListing[] = inStockCatalogs.map((row) => ({
       listingId: catalogListingId(locationId, row.partType),
       kind: 'catalog' as const,
@@ -193,7 +207,7 @@ export class MarketService {
     }
 
     const sold = await this.soldListingIds(listings.map((l) => l.listingId));
-    const shelf = listings.filter((l) => !sold.has(l.listingId));
+    const shelf = buyOpen ? listings.filter((l) => !sold.has(l.listingId)) : [];
 
     const owned = await this.prisma.partInstance.findMany({
       where: { ownerPlayerId: playerId, location: 'INVENTORY' },
@@ -201,7 +215,7 @@ export class MarketService {
       orderBy: { id: 'asc' },
     });
     const sellMinCondition = this.config.snapshot().rules.economy.sell_min_condition;
-    const sellOffers = owned
+    const sellOffers = (sellOpen ? owned : [])
       // A part too damaged to sell gets no quote: the port never takes it, not even for nothing.
       .filter((part) => part.condition >= sellMinCondition)
       .map((part) => ({
@@ -247,6 +261,9 @@ export class MarketService {
     // must be docked at the listing's port, and a ship in transit trades nothing.
     const ship = await this.assertShipAtLocation(playerId, parsed.locationId);
     this.assertNotOnMission(ship);
+    if (!(await this.serviceOpen(parsed.locationId, 'buy'))) {
+      throw new ConflictException({ error: 'SERVICE_UNAVAILABLE' });
+    }
     const context = await this.pricing.contextForLocation(parsed.locationId, playerId);
     const catalog = await this.prisma.partCatalog.findUnique({
       where: { partType: parsed.partType },
@@ -390,6 +407,9 @@ export class MarketService {
     if (!pricingShip) throw new NotFoundException('player has no ship');
     await this.assertShipAtLocation(playerId, pricingShip.currentLocationId);
     this.assertNotOnMission(pricingShip);
+    if (!(await this.serviceOpen(pricingShip.currentLocationId, 'sell'))) {
+      throw new ConflictException({ error: 'SERVICE_UNAVAILABLE' });
+    }
 
     // Fast path before pricing so a mid-flight ship fails with SHIP_ON_MISSION (the
     // S7.7 lock error) rather than a stale-price 409; the locked re-check inside the

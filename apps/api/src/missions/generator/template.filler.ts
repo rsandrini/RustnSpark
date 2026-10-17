@@ -181,11 +181,23 @@ export function miningMaterialsFor<M extends FillerMaterial>(
 }
 
 /**
- * Places no ordinary mission may end at: the far deep fields. They are reached by long, hostile
+ * Places no ordinary mission may end at: the far deep fields and the far stations beyond them. They are reached by long, hostile
  * routes a starter ship cannot fly, so a template only goes there when it names them itself
  * (`destinationIds` / `destinationTypes`).
  */
-const OPT_IN_PLACE_TYPES: ReadonlySet<string> = new Set(['deep_field']);
+const OPT_IN_PLACE_TYPES: ReadonlySet<string> = new Set(['deep_field', 'far_station', 'far_field']);
+
+/**
+ * The small service stops next to the main places (repair and refuel, no market). An ordinary mission may end at
+ * one, but a new pilot's first mission never does: it should end somewhere they can trade.
+ */
+const SERVICE_STOP_TYPES: ReadonlySet<string> = new Set([
+  'drydock',
+  'scrapyard',
+  'fuel_depot',
+  'mining_claim',
+  'waystation',
+]);
 
 /** Whether `destination` is a place this template may end at (no condition = anywhere). */
 function matchesDestination(destination: FillerLocation, template: FillerTemplate): boolean {
@@ -439,7 +451,8 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     destination = reachable.length > 0 ? rng.child('destination').pick(reachable) : undefined;
   } else {
     const { maxDistance } = input.starter;
-    const sorted = [...reachable].sort(byDistance);
+    const tradeable = reachable.filter((location) => !SERVICE_STOP_TYPES.has(location.type));
+    const sorted = [...(tradeable.length > 0 ? tradeable : reachable)].sort(byDistance);
     const withinCap =
       maxDistance > 0
         ? sorted.filter((location) => pathLength(location.id) <= maxDistance)

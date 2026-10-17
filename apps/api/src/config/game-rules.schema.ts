@@ -246,6 +246,8 @@ const missionsSchema = z.object({
   hold_max: z.number().int().min(0).max(10),
   open_cargo_unit_pay: z.number().min(0).max(10000),
   duration_k: z.number().min(0.1).max(10),
+  short_trip_below: z.number().min(0).max(5000),
+  short_trip_min_seconds: z.number().min(0).max(3600),
   duration_class_cutoffs: z.record(z.string(), z.number().min(60).max(86400)),
   time_scale: z.number().min(0.001).max(100),
   board_min_per_location: z.number().int().min(0).max(20),

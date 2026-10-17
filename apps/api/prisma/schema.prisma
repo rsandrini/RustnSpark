@@ -315,6 +315,8 @@ model Location {
   isolation           Float
   mood                Float
   services            Json
+  // How early the map shows the place: main (always), regional (zoomed in) or local (zoomed in close).
+  detail              String            @default("main")
   // Uploaded images {wide?, square?, icon?} -> file names in ART_DIR; absent = the built-in default.
   art                 Json?
   faction             Faction           @relation(fields: [factionId], references: [id])

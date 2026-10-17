@@ -271,6 +271,7 @@ const EXTRA_PLACES = [
       'pt-BR': 'Ziggy - Poeira estelar — local vazio no setor.',
     },
     type: 'empty',
+    detail: 'regional',
     x: 10,
     y: 350,
     zone: 1,

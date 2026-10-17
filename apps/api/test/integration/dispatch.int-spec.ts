@@ -169,8 +169,10 @@ describe('ship dispatch API (S7.2)', () => {
     expect(shipResponse.status).toBe(200);
     const mob = (shipResponse.body as { sheet: { mob: number } }).sheet.mob;
     const { rules } = configService.snapshot();
+    // a 40-unit trip is a very short one: it takes at least the short-trip minimum
+    const flown = Math.round((40 / mob) * rules.missions.duration_k);
     const expectedSeconds =
-      Math.round((40 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
+      Math.max(flown, rules.missions.short_trip_min_seconds) * rules.missions.time_scale;
 
     const response = await dispatch(player.token, player.shipId, mission.id);
     expect(response.status).toBe(200);
@@ -609,7 +611,7 @@ describe('ship dispatch API (S7.2)', () => {
   it('a blocked engine does not ground the ship: it flies, with no thrust from that engine (slower)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    const mission = await createMission(player, [30, 10]);
+    const mission = await createMission(player, [300, 300]);
     // The starter hull is heavy enough that the starter ship's rounded mobility sits on its floor of 1,
     // where a dead engine could not make it any slower: a light hull lifts it above the floor.
     await prisma.partCatalog.update({ where: { partType: 'hull' }, data: { mass: 2 } });
@@ -626,7 +628,7 @@ describe('ship dispatch API (S7.2)', () => {
       .set(auth(player.token));
     const { rules } = configService.snapshot();
     const secondsAt = (mob: number): number =>
-      Math.round((40 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
+      Math.round((600 / mob) * rules.missions.duration_k) * rules.missions.time_scale;
     const healthySeconds = secondsAt((healthy.body as { sheet: { mob: number } }).sheet.mob);
 
     // Universal ports on the engine (so turning it never disconnects it), then turn it until the

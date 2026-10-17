@@ -549,6 +549,26 @@ describe('S6.2 — template filler (pure generation)', () => {
       expect(starterIn('starter|p1|alpha|0', worldWithDelta, 100).destinationId).toBe('delta');
     });
 
+    it('never ends the first mission at a service stop (a drydock has no market), even when it is the nearest', () => {
+      const stop: FillerLocation = { id: 'dock', type: 'drydock', zone: 1, factionId: 'luna' };
+      const base = world();
+      const withStop: FixtureWorld = {
+        ...base,
+        locations: [...base.locations, stop],
+        routes: [
+          ...base.routes,
+          { id: 'alpha-dock', nodeAId: 'alpha', nodeBId: 'dock', distance: 120, danger: 1 },
+        ],
+        routeEnvironments: [
+          ...base.routeEnvironments,
+          { routeId: 'alpha-dock', environmentId: 'open', order: 0 },
+        ],
+      };
+      for (let epoch = 0; epoch < 10; epoch += 1) {
+        expect(starterIn(`starter|p1|alpha|${epoch}`, withStop, 0).destinationId).toBe('beta');
+      }
+    });
+
     it('does not change ordinary generation (no constraint, same seed, same result)', () => {
       const plain = fill('alpha|3|v1', LOC_ALPHA);
       expect(plain).toEqual(fill('alpha|3|v1', LOC_ALPHA));

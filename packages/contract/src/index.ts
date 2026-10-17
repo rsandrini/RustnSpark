@@ -524,6 +524,8 @@ export const WorldLocationSchema = z.object({
   displayName: LocalizedTextSchema,
   description: LocalizedTextSchema,
   type: z.string(),
+  /** How early the map shows the place: main (always), regional (zoomed in), local (zoomed in close). */
+  detail: z.enum(['main', 'regional', 'local']),
   x: z.number(),
   y: z.number(),
   zone: z.number(),

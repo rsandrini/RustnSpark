@@ -68,4 +68,24 @@ describe('mission duration calculator (S7.2)', () => {
       }).durationClass,
     ).toBe('long');
   });
+
+  it('a very short trip takes at least the short-trip minimum; a longer one is not touched', () => {
+    const cutoffs = { fast: 600, medium: 1800 };
+    const base = { mobility: 10, durationK: 2, timeScale: 1, classCutoffs: cutoffs };
+    const floor = { shortTripBelow: 400, shortTripMinSeconds: 300 };
+    // 100 units at mobility 10 is 20 s of flying: the floor lifts it to 5 minutes
+    expect(missionDuration({ ...base, totalDistance: 100, ...floor }).durationSeconds).toBe(300);
+    // the floor is in game seconds, before the time scale
+    expect(
+      missionDuration({ ...base, totalDistance: 100, timeScale: 0.001, ...floor }).durationSeconds,
+    ).toBeCloseTo(0.3);
+    // at or over the threshold the flight time stands (400 / 10 * 2 = 80)
+    expect(missionDuration({ ...base, totalDistance: 400, ...floor }).durationSeconds).toBe(80);
+    // a trip already longer than the floor is left alone
+    expect(
+      missionDuration({ ...base, mobility: 0.5, totalDistance: 399, ...floor }).durationSeconds,
+    ).toBe(1596);
+    // without the rule there is no floor
+    expect(missionDuration({ ...base, totalDistance: 100 }).durationSeconds).toBe(20);
+  });
 });

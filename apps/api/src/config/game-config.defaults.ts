@@ -304,6 +304,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Open-cargo deliveries pay this much for each unit carried beyond the minimum (a template may set its own).
     open_cargo_unit_pay: 20,
     duration_k: 2.25,
+    // A very short trip (under `short_trip_below` units of distance in all) still takes at least this long, so a
+    // hop to a place next door is a few minutes of flying, not a few seconds. 0 = no minimum.
+    short_trip_below: 400,
+    short_trip_min_seconds: 300,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.

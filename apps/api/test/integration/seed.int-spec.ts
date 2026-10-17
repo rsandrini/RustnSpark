@@ -114,9 +114,9 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(188);
-    expect(counts.locations).toBe(16);
-    expect(counts.routes).toBe(21);
+    expect(counts.gameConfig).toBe(190);
+    expect(counts.locations).toBe(26);
+    expect(counts.routes).toBe(32);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
@@ -190,7 +190,7 @@ describe('database seed (S3.4)', () => {
     }
 
     // The settled world (12) and the three far places beyond it, all one connected graph.
-    expect(visited.size).toBe(16);
+    expect(visited.size).toBe(26);
   });
 
   it('has no duplicate routes between the same unordered node pair', async () => {
@@ -203,15 +203,18 @@ describe('database seed (S3.4)', () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
-    expect(seen.size).toBe(21);
+    expect(seen.size).toBe(32);
   });
 
   it('produces route distances in the 400–1,200 range', async () => {
     await seed(prisma);
 
-    // The settled world only: the far zones are long on purpose (2,000+).
+    // The settled world only: the far zones are long on purpose (2,000+) and the local places are
+    // short on purpose (under 300).
     const far = await prisma.location.findMany({
-      where: { type: 'deep_field' },
+      where: {
+        OR: [{ type: { in: ['deep_field', 'far_station', 'far_field'] } }, { detail: 'local' }],
+      },
       select: { id: true },
     });
     const farIds = far.map((place) => place.id);
@@ -294,7 +297,12 @@ describe('database seed (S3.4)', () => {
       expect(description['pt-BR']).not.toBe(description.en);
       expect(description['pt-BR']).not.toMatch(new RegExp(`\\b${row.type}\\b`));
       // The generated places end their text the same way; the hand-written far places do not.
-      if (row.type !== 'deep_field') expect(description['pt-BR']).toMatch(/no setor\.$/);
+      if (
+        !['deep_field', 'far_station', 'far_field'].includes(row.type) &&
+        row.detail !== 'local'
+      ) {
+        expect(description['pt-BR']).toMatch(/no setor\.$/);
+      }
     }
   });
 

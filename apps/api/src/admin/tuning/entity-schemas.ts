@@ -525,6 +525,16 @@ const LOCATION_FIELDS: EntitySchemaField[] = [
     required: true,
     description: localeMap('Available services', 'Serviços disponíveis'),
   },
+  {
+    name: 'detail',
+    type: 'enum',
+    required: true,
+    enumValues: ['main', 'regional', 'local'],
+    description: localeMap(
+      'Map detail: main places always show, regional ones when zoomed in, local ones zoomed in close',
+      'Detalhe no mapa: os principais sempre aparecem, os regionais com zoom, os locais com zoom próximo',
+    ),
+  },
 ];
 
 const ROUTE_FIELDS: EntitySchemaField[] = [
