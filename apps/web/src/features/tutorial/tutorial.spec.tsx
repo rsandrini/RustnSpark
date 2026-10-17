@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { resetEconomyState } from '../../test/msw/handlers';
+import { resetEconomyState, ship } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
 import { markVisited } from './tutorial-store';
 
@@ -84,6 +84,28 @@ describe('newcomer tutorial', () => {
     expect(pill).toHaveTextContent('/7');
     fireEvent.click(pill);
     expect(await screen.findByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+  });
+
+  it('ticks "Read the ports" only when every part is connected and the yard has been opened', async () => {
+    markVisited('player-1', 'yard');
+    const built = (disconnectedPartIds: string[]) =>
+      http.get('/v1/ships', () =>
+        HttpResponse.json([
+          { ...ship(), disconnectedPartIds, sheet: { ...ship().sheet, structureUsed: 10 } },
+        ]),
+      );
+    server.use(built(['part-1']));
+    const first = renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const card = await screen.findByTestId('tutorial-card');
+    expect(within(card).getByText('Read the ports').closest('li')).not.toHaveClass('done');
+    first.unmount();
+
+    server.use(built([]));
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const again = await screen.findByTestId('tutorial-card');
+    await waitFor(() =>
+      expect(within(again).getByText('Read the ports').closest('li')).toHaveClass('done'),
+    );
   });
 
   it('ticks a step when its screen has been opened', async () => {

@@ -366,7 +366,7 @@
       },
       "ports": {
         "title": "Leia as portas",
-        "hint": "Portas verdes estão conectadas, vermelhas estão erradas. Abra o estaleiro e confira."
+        "hint": "Abra o estaleiro: nenhuma porta deve ficar vermelha. Conserte as vermelhas (mova ou gire uma peça) e isto é marcado."
       },
       "mission": {
         "title": "Pegue uma missão",

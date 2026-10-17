@@ -42,7 +42,10 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     queryFn: () => client.get<ReportListResponse>('/v1/reports'),
   });
 
-  const built = (ships.data?.[0]?.sheet.structureUsed ?? 0) > 0;
+  const ship = ships.data?.[0];
+  const built = (ship?.sheet.structureUsed ?? 0) > 0;
+  // "Read the ports" is only done with every part connected: a red port has to be fixed, not just seen.
+  const connected = built && (ship?.disconnectedPartIds ?? []).length === 0;
   const reportItems = reports.data?.items ?? [];
   const hasReport = reportItems.length > 0;
   const hasMission = (active.data ?? []).length > 0 || hasReport;
@@ -51,7 +54,7 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
 
   const done: Record<StepId, boolean> = {
     build: built,
-    ports: built && visited.includes('yard'),
+    ports: connected && visited.includes('yard'),
     mission: hasMission,
     dispatch: dispatched,
     report: visited.includes('report'),

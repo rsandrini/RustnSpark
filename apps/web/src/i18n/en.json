@@ -366,7 +366,7 @@
       },
       "ports": {
         "title": "Read the ports",
-        "hint": "Green ports are connected, red ones are wrong. Open the yard and check them."
+        "hint": "Open the yard: no port should be red. Fix any red ones (move or rotate a part), and this ticks."
       },
       "mission": {
         "title": "Take a mission",

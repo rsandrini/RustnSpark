@@ -266,7 +266,7 @@ const starterLayout = (): Placement[] => [
   { partInstanceId: 'part-cargo-a', gx: 2, gy: 2, rot: 0 },
 ];
 
-const ship = (): ShipResponse => ({
+export const ship = (): ShipResponse => ({
   id: 'ship-1',
   ownerPlayerId: 'player-1',
   name: 'luna starter',
