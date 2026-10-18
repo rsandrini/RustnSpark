@@ -380,13 +380,17 @@
         "title": "Read your report",
         "hint": "See what happened, what it paid and what the trip wore down."
       },
+      "refuel": {
+        "title": "Top up the tank",
+        "hint": "The flight burned a little fuel. At the Port, open Refuel and fill the tank."
+      },
       "repair": {
         "title": "Repair the wear",
         "hint": "At the Port, open Repair and fix what the trip wore down."
       },
       "work": {
         "title": "Try other work",
-        "hint": "At the Port: refuel, scavenge or mine."
+        "hint": "At the Port: scavenge for parts or mine for ore."
       }
     },
     "guide": "Read the Guide"
@@ -1770,6 +1774,7 @@
       "fuel_depot": "Fuel depot",
       "mining_claim": "Mining claim",
       "waystation": "Waystation",
+      "test_pad": "Test pad",
       "far_station": "Far station",
       "far_field": "Far field"
     },

@@ -131,6 +131,7 @@ export type ConfigKey =
   | 'missions.duration_k'
   | 'missions.short_trip_below'
   | 'missions.short_trip_min_seconds'
+  | 'missions.short_trip_exempt_below'
   | 'missions.hold_max'
   | 'missions.open_cargo_unit_pay'
   | 'missions.time_scale'
@@ -518,6 +519,8 @@ export type GameRules = Readonly<{
     duration_k: number;
     short_trip_below: number;
     short_trip_min_seconds: number;
+    /** A trip shorter than this (total distance) is not given the short-trip minimum: the test pad of a first mission. */
+    short_trip_exempt_below: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;

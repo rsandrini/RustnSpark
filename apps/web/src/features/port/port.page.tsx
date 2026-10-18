@@ -381,7 +381,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       setRefuelUnits(null);
       setActionError(null);
       setNotice(t('port.refueled', { units: response.units, cost: response.cost }));
-      if (user !== null) markVisited(user.id, 'worked');
+      if (user !== null) markVisited(user.id, 'refuelled');
       afterTrade();
     },
     onError: (error) => setActionError(errorText(t, error, t('port.failed'))),

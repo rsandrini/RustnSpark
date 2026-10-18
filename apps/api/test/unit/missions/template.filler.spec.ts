@@ -569,6 +569,52 @@ describe('S6.2 — template filler (pure generation)', () => {
       }
     });
 
+    it('the very first mission goes to the test pad next to the home port; later ones and ordinary missions never do', () => {
+      const pad: FillerLocation = { id: 'alpha_pad', type: 'test_pad', zone: 1, factionId: 'luna' };
+      const base = world();
+      const withPad: FixtureWorld = {
+        ...base,
+        locations: [...base.locations, pad],
+        routes: [
+          ...base.routes,
+          {
+            id: 'alpha-alpha_pad',
+            nodeAId: 'alpha',
+            nodeBId: 'alpha_pad',
+            distance: 30,
+            danger: 0,
+          },
+        ],
+        routeEnvironments: [
+          ...base.routeEnvironments,
+          { routeId: 'alpha-alpha_pad', environmentId: 'open', order: 0 },
+        ],
+      };
+      const first = (seed: string, firstMission: boolean) =>
+        fillMission({
+          seed,
+          origin: LOC_ALPHA,
+          world: withPad,
+          rules,
+          now: NOW,
+          starter: { types: ['DELIVERY'], maxZone: 1, maxDistance: 600, firstMission },
+        });
+      for (let epoch = 0; epoch < 10; epoch += 1) {
+        expect(first(`starter|p1|alpha|${epoch}`, true).destinationId).toBe('alpha_pad');
+        expect(first(`starter|p1|alpha|${epoch}`, false).destinationId).not.toBe('alpha_pad');
+        // an ordinary board mission never ends at a pad either
+        expect(
+          fillMission({
+            seed: `alpha|${epoch}|v1`,
+            origin: LOC_ALPHA,
+            world: withPad,
+            rules,
+            now: NOW,
+          }).destinationId,
+        ).not.toBe('alpha_pad');
+      }
+    });
+
     it('never picks a template that only ends at a far station, which a new pilot cannot reach', () => {
       const far: FillerLocation = {
         id: 'thule',

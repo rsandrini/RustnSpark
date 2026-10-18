@@ -7,6 +7,8 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 //
 // The local places are service stops, not markets: repair and refuel only, no market, no upgrades (the
 // `services` flags say so, and the market and the upgrade refuse a place that turns them off).
+// Next to each of the three starting places there is also a TEST PAD: a tiny place seconds away, used by the
+// new pilot's very first mission (there and back in seconds) and by nothing else.
 // The far places are a long trip beyond what a starter ship's tank can reach, and they are named by their
 // own mission templates only (their types are in the generator's opt-in list), so no ordinary mission ever
 // ends there.
@@ -224,6 +226,57 @@ const PLACES: Place[] = [
     isolation: 2,
     services: FAR_FIELD_SERVICES,
   },
+  ...[
+    {
+      home: 'ceres',
+      faction: 'luna',
+      at: { x: 262, y: 351 },
+      zone: 0,
+      name: { en: 'Ceres Test Pad', 'pt-BR': 'Plataforma de Testes de Ceres' },
+      description: {
+        en: 'A launch pad a hop from Ceres Port where new pilots shake a ship down: seconds out, seconds back.',
+        'pt-BR':
+          'Uma plataforma de lançamento a um salto de Porto Ceres, onde pilotos novos testam a nave: segundos de ida, segundos de volta.',
+      },
+    },
+    {
+      home: 'hedus',
+      faction: 'sun',
+      at: { x: 733, y: 262 },
+      zone: 2,
+      name: { en: 'Hedus Test Pad', 'pt-BR': 'Plataforma de Testes de Hedus' },
+      description: {
+        en: 'A pad on the Hedus garrison ring where recruits take a ship up for a first, short flight: seconds out, seconds back.',
+        'pt-BR':
+          'Uma plataforma no anel da guarnição de Hedus, onde recrutas levam a nave para um primeiro voo curto: segundos de ida, segundos de volta.',
+      },
+    },
+    {
+      home: 'cair',
+      faction: 'explorers',
+      at: { x: 162, y: 482 },
+      zone: 0,
+      name: { en: 'Cair Test Pad', 'pt-BR': 'Plataforma de Testes de Cair' },
+      description: {
+        en: 'A scrap-built pad beside Cair Refuge where new explorers try their ship out: seconds out, seconds back.',
+        'pt-BR':
+          'Uma plataforma de sucata ao lado do Refúgio Cair, onde exploradores novos experimentam a nave: segundos de ida, segundos de volta.',
+      },
+    },
+  ].map((pad): Place => ({
+    id: `${pad.home}_pad`,
+    name: pad.name,
+    description: pad.description,
+    type: 'test_pad',
+    detail: 'local',
+    x: pad.at.x,
+    y: pad.at.y,
+    zone: pad.zone,
+    factionId: pad.faction,
+    // the isolation of its zone (what the seed's zone map says for the places around it)
+    isolation: pad.zone === 2 ? 1.4 : 0.9,
+    services: LOCAL_SERVICES,
+  })),
 ];
 
 // Node ids stay lexicographically ordered (nodeAId < nodeBId), like every route.
@@ -240,6 +293,10 @@ const ROUTES: Array<{
   { nodeAId: 'gate', nodeBId: 'gate_depot', distance: 180, danger: 3, environment: 'open' },
   { nodeAId: 'hedus', nodeBId: 'hedus_claim', distance: 240, danger: 3, environment: 'debris' },
   { nodeAId: 'marsa', nodeBId: 'marsa_station', distance: 130, danger: 3, environment: 'open' },
+  // the test pads: seconds away, and safe
+  { nodeAId: 'ceres', nodeBId: 'ceres_pad', distance: 30, danger: 0, environment: 'open' },
+  { nodeAId: 'hedus', nodeBId: 'hedus_pad', distance: 30, danger: 0, environment: 'open' },
+  { nodeAId: 'cair', nodeBId: 'cair_pad', distance: 30, danger: 0, environment: 'open' },
   { nodeAId: 'maw', nodeBId: 'thule', distance: 3000, danger: 10, environment: 'radiation' },
   {
     nodeAId: 'nadir',
@@ -322,6 +379,25 @@ const TEMPLATES: Array<{
       cargo: 4,
     },
   },
+  ...[
+    { home: 'ceres', faction: 'luna' },
+    { home: 'hedus', faction: 'sun' },
+    { home: 'cair', faction: 'explorers' },
+  ].map((pad) => ({
+    id: `pad_return_${pad.home}`,
+    displayName: { en: 'Back from the Pad', 'pt-BR': 'De Volta da Plataforma' },
+    description: {
+      en: 'A quick hop back to the port after a test flight.',
+      'pt-BR': 'Um salto rápido de volta ao porto depois de um voo de teste.',
+    },
+    type: 'DELIVERY' as const,
+    factionId: pad.faction,
+    requirements: {
+      originTypes: ['test_pad'],
+      originFactions: [pad.faction],
+      destinationIds: [pad.home],
+    },
+  })),
 ];
 
 export async function seedMapExtension(prisma: PrismaClient): Promise<void> {

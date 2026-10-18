@@ -114,9 +114,9 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(190);
-    expect(counts.locations).toBe(26);
-    expect(counts.routes).toBe(32);
+    expect(counts.gameConfig).toBe(191);
+    expect(counts.locations).toBe(29);
+    expect(counts.routes).toBe(35);
     expect(counts.environments).toBe(4);
     expect(counts.factions).toBe(4);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
@@ -190,7 +190,7 @@ describe('database seed (S3.4)', () => {
     }
 
     // The settled world (12) and the three far places beyond it, all one connected graph.
-    expect(visited.size).toBe(26);
+    expect(visited.size).toBe(29);
   });
 
   it('has no duplicate routes between the same unordered node pair', async () => {
@@ -203,7 +203,7 @@ describe('database seed (S3.4)', () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     }
-    expect(seen.size).toBe(32);
+    expect(seen.size).toBe(35);
   });
 
   it('produces route distances in the 400–1,200 range', async () => {

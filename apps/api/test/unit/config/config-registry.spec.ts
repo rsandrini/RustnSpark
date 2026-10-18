@@ -113,6 +113,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'missions.hold_max',
   'missions.open_cargo_unit_pay',
   'missions.short_trip_below',
+  'missions.short_trip_exempt_below',
   'missions.short_trip_min_seconds',
   'missions.starter_guarantee_max_completed',
   'missions.starter_max_distance',

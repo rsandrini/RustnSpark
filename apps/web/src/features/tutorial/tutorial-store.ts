@@ -1,12 +1,12 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 /** The steps ticked from what the pilot did in the browser: opening a screen (`yard`, `report`) or
-    actually doing something (`repaired`: paid for a repair; `worked`: refuelled, scavenged or mined).
+    actually doing something (`refuelled`: paid for fuel; `repaired`: paid for a repair; `worked`: scavenged or mined).
     Opening a tab alone does not tick a step that asks for an action. Kept in the browser, per account;
     whether the tutorial is skipped or finished lives on the server (the player's `tutorialDone`). */
-export type VisitKey = 'yard' | 'report' | 'repaired' | 'worked';
+export type VisitKey = 'yard' | 'report' | 'refuelled' | 'repaired' | 'worked';
 
-const VISIT_KEYS: readonly VisitKey[] = ['yard', 'report', 'repaired', 'worked'];
+const VISIT_KEYS: readonly VisitKey[] = ['yard', 'report', 'refuelled', 'repaired', 'worked'];
 
 const listeners = new Set<() => void>();
 const cache = new Map<string, readonly VisitKey[]>();

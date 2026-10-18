@@ -1989,6 +1989,20 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'missions.short_trip_exempt_below',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 1000,
+    unit: 'distance',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_exempt_below),
+    description: {
+      en: 'A trip shorter than this (total distance) is not given the short-trip minimum: it takes what the distance says (the test pad of a first mission, a few seconds there and back).',
+      'pt-BR':
+        'Uma viagem mais curta que isto (distância total) não recebe o mínimo de viagem curta: leva o que a distância diz (a plataforma de testes da primeira missão, poucos segundos de ida e volta).',
+    },
+  },
+  {
     key: 'missions.duration_class_cutoffs',
     group: 'missions',
     type: 'json',

@@ -161,7 +161,7 @@ describe('ship dispatch API (S7.2)', () => {
   it('dispatches an accepted mission: duration, IN_TRANSIT, ON_MISSION, presence windows, delayed job', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
-    const mission = await createMission(player, [30, 10]);
+    const mission = await createMission(player, [75, 25]);
 
     const shipResponse = await request(httpServer(testApp.app))
       .get(`/v1/ships/${player.shipId}`)
@@ -169,8 +169,8 @@ describe('ship dispatch API (S7.2)', () => {
     expect(shipResponse.status).toBe(200);
     const mob = (shipResponse.body as { sheet: { mob: number } }).sheet.mob;
     const { rules } = configService.snapshot();
-    // a 40-unit trip is a very short one: it takes at least the short-trip minimum
-    const flown = Math.round((40 / mob) * rules.missions.duration_k);
+    // a 100-unit trip is a very short one (but not under the pad exemption): it takes at least the short-trip minimum
+    const flown = Math.round((100 / mob) * rules.missions.duration_k);
     const expectedSeconds =
       Math.max(flown, rules.missions.short_trip_min_seconds) * rules.missions.time_scale;
 

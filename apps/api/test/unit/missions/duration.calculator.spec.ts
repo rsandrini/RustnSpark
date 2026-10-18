@@ -85,6 +85,15 @@ describe('mission duration calculator (S7.2)', () => {
     expect(
       missionDuration({ ...base, mobility: 0.5, totalDistance: 399, ...floor }).durationSeconds,
     ).toBe(1596);
+    // a trip under the exemption (the first mission's test pad) is not floored: it takes what the distance says
+    expect(
+      missionDuration({
+        ...base,
+        totalDistance: 30,
+        ...floor,
+        shortTripExemptBelow: 60,
+      }).durationSeconds,
+    ).toBe(6);
     // without the rule there is no floor
     expect(missionDuration({ ...base, totalDistance: 100 }).durationSeconds).toBe(20);
   });

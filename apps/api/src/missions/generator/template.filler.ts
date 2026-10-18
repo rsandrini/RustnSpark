@@ -99,6 +99,11 @@ export interface StarterConstraint {
   readonly types: readonly MissionType[];
   readonly maxZone: number;
   readonly maxDistance: number;
+  /**
+   * The pilot's very first mission: it goes to the small test pad next to the home port when there is
+   * one (seconds there and back), not to a trading place.
+   */
+  readonly firstMission?: boolean;
 }
 
 export interface FillMissionInput {
@@ -185,7 +190,12 @@ export function miningMaterialsFor<M extends FillerMaterial>(
  * routes a starter ship cannot fly, so a template only goes there when it names them itself
  * (`destinationIds` / `destinationTypes`).
  */
-const OPT_IN_PLACE_TYPES: ReadonlySet<string> = new Set(['deep_field', 'far_station', 'far_field']);
+const OPT_IN_PLACE_TYPES: ReadonlySet<string> = new Set([
+  'deep_field',
+  'far_station',
+  'far_field',
+  'test_pad',
+]);
 
 /**
  * The small service stops next to the main places (repair and refuel, no market). An ordinary mission may end at
@@ -200,11 +210,18 @@ const SERVICE_STOP_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 /** Whether `destination` is a place this template may end at (no condition = anywhere). */
-function matchesDestination(destination: FillerLocation, template: FillerTemplate): boolean {
+function matchesDestination(
+  destination: FillerLocation,
+  template: FillerTemplate,
+  allowTestPad = false,
+): boolean {
   const requirements = requirementsOf(template);
   const named =
     requirements.destinationIds !== undefined || requirements.destinationTypes !== undefined;
-  if (OPT_IN_PLACE_TYPES.has(destination.type) && !named) return false;
+  if (OPT_IN_PLACE_TYPES.has(destination.type) && !named) {
+    // the first mission may go to the test pad next to the home port, and nowhere else that is opt-in
+    if (!(allowTestPad && destination.type === 'test_pad')) return false;
+  }
   const typeMatch =
     requirements.destinationTypes === undefined ||
     requirements.destinationTypes.includes(destination.type);
@@ -438,7 +455,8 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const reachable = world.locations
     .filter((location) => {
       if (location.id === origin.id) return false;
-      if (!matchesDestination(location, template)) return false;
+      if (!matchesDestination(location, template, input.starter?.firstMission === true))
+        return false;
       const candidatePath = shortestPath(origin.id, location.id, adjacency);
       return candidatePath !== null && withinStarterZone(candidatePath);
     })
@@ -459,8 +477,15 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     destination = reachable.length > 0 ? rng.child('destination').pick(reachable) : undefined;
   } else {
     const { maxDistance } = input.starter;
-    const tradeable = reachable.filter((location) => !SERVICE_STOP_TYPES.has(location.type));
-    const sorted = [...(tradeable.length > 0 ? tradeable : reachable)].sort(byDistance);
+    const pads =
+      input.starter.firstMission === true
+        ? reachable.filter((location) => location.type === 'test_pad')
+        : [];
+    const tradeable = reachable.filter(
+      (location) => !SERVICE_STOP_TYPES.has(location.type) && location.type !== 'test_pad',
+    );
+    const choices = pads.length > 0 ? pads : tradeable.length > 0 ? tradeable : reachable;
+    const sorted = [...choices].sort(byDistance);
     const withinCap =
       maxDistance > 0
         ? sorted.filter((location) => pathLength(location.id) <= maxDistance)

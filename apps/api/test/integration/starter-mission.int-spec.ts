@@ -31,7 +31,7 @@ interface Offer {
   destinationId: string;
   playerId: string | null;
   privatePlayerId: string | null;
-  legs: Array<{ zone: number }>;
+  legs: Array<{ zone: number; distance: number }>;
   eligibility: { eligible: boolean; reasons: Array<{ code: string }> };
 }
 
@@ -131,6 +131,9 @@ describe('private start-safe mission (D43)', () => {
       expect(starter.type).toBe('DELIVERY');
       expect(starter.status).toBe('AVAILABLE');
       expect(starter.originId).toBe(player.home);
+      // the very first mission is a hop to the small test pad next to the home port: seconds there and back
+      expect(starter.destinationId).toBe(`${player.home}_pad`);
+      expect(starter.legs.reduce((sum, leg) => sum + leg.distance, 0)).toBeLessThan(60);
       expect(starter.playerId).toBeNull(); // not held or accepted: just offered
       // The safe core (GDD §2: zones 0-1 have no PvP), and never riskier than the home port
       // itself: Sun lives in zone 2, so its starter route may use zone 2.

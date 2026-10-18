@@ -166,6 +166,8 @@ export class BoardService {
     readonly playerId: string;
     readonly locationId: string;
     readonly types: readonly MissionType[];
+    /** The pilot's very first mission (nothing completed yet): it goes to the test pad next to the home port. */
+    readonly firstMission?: boolean;
     readonly isTakeable: (draft: MissionDraft) => boolean;
   }): Promise<boolean> {
     const { rules } = this.config.snapshot();
@@ -207,6 +209,7 @@ export class BoardService {
               types: input.types,
               maxZone: rules.missions.starter_max_zone,
               maxDistance: rules.missions.starter_max_distance,
+              ...(input.firstMission === true ? { firstMission: true } : {}),
             },
           });
         } catch (error) {

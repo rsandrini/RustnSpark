@@ -29,6 +29,10 @@ for (const faction of FACTIONS) {
     // --- map ---------------------------------------------------------------------------------
     await page.goto('/map');
     await expect(page.getByRole('heading', { name: 'Sector map' })).toBeVisible();
+    // the map opens centred and zoomed on the port the ship is stopped at: Fit map shows the whole sector
+    await expect(page.getByRole('button', { name: 'Fit map' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Fit map' }).click();
+    await expect(page.getByRole('button', { name: 'Fit map' })).toBeDisabled();
     await expect(page.locator('svg g.node-hit')).toHaveCount(18);
     // zoom and pan: the buttons work, and Fit map returns to the whole sector
     await page.getByRole('button', { name: 'Zoom in' }).click();

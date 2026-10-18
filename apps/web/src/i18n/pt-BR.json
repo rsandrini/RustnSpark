@@ -380,13 +380,17 @@
         "title": "Leia seu relatório",
         "hint": "Veja o que aconteceu, quanto pagou e o que a viagem desgastou."
       },
+      "refuel": {
+        "title": "Complete o tanque",
+        "hint": "O voo gastou um pouco de combustível. No Porto, abra Reabastecer e encha o tanque."
+      },
       "repair": {
         "title": "Repare o desgaste",
         "hint": "No Porto, abra Reparo e conserte o que a viagem desgastou."
       },
       "work": {
         "title": "Teste outros trabalhos",
-        "hint": "No Porto: reabasteça, recupere sucata ou minere."
+        "hint": "No Porto: recupere sucata ou minere."
       }
     },
     "guide": "Ler o Guia"
@@ -1770,6 +1774,7 @@
       "fuel_depot": "Depósito de combustível",
       "mining_claim": "Concessão de mineração",
       "waystation": "Estação de passagem",
+      "test_pad": "Plataforma de testes",
       "far_station": "Estação distante",
       "far_field": "Campo distante"
     },

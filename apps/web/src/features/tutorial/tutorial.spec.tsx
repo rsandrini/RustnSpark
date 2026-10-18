@@ -51,7 +51,7 @@ describe('newcomer tutorial', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const card = await screen.findByTestId('tutorial-card');
     expect(within(card).getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
-    expect(within(card).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(card).getAllByRole('listitem')).toHaveLength(8);
     expect(within(card).getByRole('link', { name: 'Take me there' })).toBeInTheDocument();
   });
 
@@ -89,7 +89,7 @@ describe('newcomer tutorial', () => {
     const card = await screen.findByTestId('tutorial-card');
     fireEvent.click(within(card).getByRole('button', { name: 'Hide' }));
     const pill = await screen.findByRole('button', { name: /Getting started/ });
-    expect(pill).toHaveTextContent('/7');
+    expect(pill).toHaveTextContent('/8');
     fireEvent.click(pill);
     expect(await screen.findByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
   });
@@ -136,10 +136,12 @@ describe('newcomer tutorial', () => {
   });
 
   it('ticks them once a repair is paid and some work has been done', async () => {
+    markVisited('player-1', 'refuelled');
     markVisited('player-1', 'repaired');
     markVisited('player-1', 'worked');
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const card = await screen.findByTestId('tutorial-card');
+    expect(within(card).getByText('Top up the tank').closest('li')).toHaveClass('done');
     expect(within(card).getByText('Repair the wear').closest('li')).toHaveClass('done');
     expect(within(card).getByText('Try other work').closest('li')).toHaveClass('done');
   });

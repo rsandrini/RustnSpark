@@ -313,6 +313,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // hop to a place next door is a few minutes of flying, not a few seconds. 0 = no minimum.
     short_trip_below: 400,
     short_trip_min_seconds: 300,
+    // ...except a trip this short (the first-mission test pad next to a home port): a few seconds there and back.
+    short_trip_exempt_below: 60,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.

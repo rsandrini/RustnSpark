@@ -292,6 +292,7 @@ export class TravelService {
             durationK: rules.missions.duration_k,
             shortTripBelow: rules.missions.short_trip_below,
             shortTripMinSeconds: rules.missions.short_trip_min_seconds,
+            shortTripExemptBelow: rules.missions.short_trip_exempt_below,
             timeScale: rules.missions.time_scale,
             classCutoffs: rules.missions.duration_class_cutoffs,
           }).durationSeconds

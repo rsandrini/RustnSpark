@@ -3,7 +3,8 @@ import { client } from '../../api/client';
 import type { ActiveMission, ReportListResponse, ShipResponse } from '../../api/generated';
 import { useVisited } from './tutorial-store';
 
-export type StepId = 'build' | 'ports' | 'mission' | 'dispatch' | 'report' | 'repair' | 'work';
+export type StepId =
+  'build' | 'ports' | 'mission' | 'dispatch' | 'report' | 'refuel' | 'repair' | 'work';
 
 export interface TutorialStep {
   id: StepId;
@@ -18,6 +19,7 @@ export const STEP_ORDER: readonly StepId[] = [
   'mission',
   'dispatch',
   'report',
+  'refuel',
   'repair',
   'work',
 ];
@@ -58,7 +60,9 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     mission: hasMission,
     dispatch: dispatched,
     report: visited.includes('report'),
-    // these two ask for an action: opening the tab is not enough
+    // these three ask for an action: opening the tab is not enough (the first flight burns a little
+    // fuel, so the tank is never quite full after it: top it up)
+    refuel: visited.includes('refuelled'),
     repair: visited.includes('repaired'),
     work: visited.includes('worked'),
   };
@@ -69,8 +73,9 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     dispatch: '/ship',
     // the link to the report only appears once the mission is complete and there is a report to read
     report: latest === undefined ? null : `/report/${latest}`,
-    repair: '/port',
-    work: '/port',
+    refuel: '/port?tab=refuel',
+    repair: '/port?tab=repair',
+    work: '/port?tab=scavenging',
   };
   return STEP_ORDER.map((id) => ({ id, done: done[id], to: to[id] }));
 }
