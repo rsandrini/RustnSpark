@@ -323,6 +323,19 @@ export function missionEvent(input: {
               you: standing.you,
               ...(standing.trouble !== undefined ? { trouble: standing.trouble } : {}),
             })),
+            ...(input.race.legs !== undefined
+              ? {
+                  legs: input.race.legs.map((leg) => ({
+                    standings: leg.standings.map((row) => ({
+                      name: row.name,
+                      you: row.you,
+                      legSeconds: roundInt(row.legSeconds),
+                      totalSeconds: roundInt(row.totalSeconds),
+                      trouble: row.trouble,
+                    })),
+                  })),
+                }
+              : {}),
           },
         }
       : {}),

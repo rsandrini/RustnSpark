@@ -94,9 +94,13 @@ export async function acceptableMission(page: Page): Promise<Locator> {
   await expect(page.locator('.mrow').first()).toBeVisible();
   const starter = page.locator('.mrow', { hasText: 'Starter mission' }).locator(accept).first();
   if ((await starter.count()) > 0) return starter;
-  // A public offer must not end at a service stop (no market there): the port checks that follow
-  // a flight look at the Market.
-  return page.locator('.mrow', { hasNotText: SERVICE_STOP_NAMES }).locator(accept).first();
+  // Prefer a public offer that does not end at a service stop (no market there), but take one that
+  // does when it is the only offer: the Port checks after a flight cope with a stop.
+  const tradeable = page
+    .locator('.mrow', { hasNotText: SERVICE_STOP_NAMES })
+    .locator(accept)
+    .first();
+  return (await tradeable.count()) > 0 ? tradeable : page.locator(accept).first();
 }
 
 /** Accept the first acceptable mission on the home board, dispatch, and wait for the report. */

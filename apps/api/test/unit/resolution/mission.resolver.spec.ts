@@ -665,6 +665,12 @@ describe('RACE missions', () => {
     const result = out.events.find((event) => event.type === 'race_result');
     expect(result?.race?.place).toBe(1);
     expect(result?.race?.standings).toHaveLength(4);
+    // the race is stored leg by leg: one standing per leg, the last one is the final order
+    const legs = result?.race?.legs;
+    expect(legs).toHaveLength(raceMission().legs.length);
+    expect(legs?.[legs.length - 1]?.standings.map((row) => row.totalSeconds)).toEqual(
+      result?.race?.standings.map((row) => row.seconds),
+    );
     expect(out.status).toBe('success');
     const payout = out.events.find((event) => event.type === 'mission_payout');
     expect(payout?.effects.credits).toBeGreaterThan(0);

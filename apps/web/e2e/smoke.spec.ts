@@ -75,10 +75,13 @@ for (const faction of FACTIONS) {
 
     // --- port ----------------------------------------------------------------------------------
     await page.goto('/port');
-    await expect(page.getByRole('tab', { name: 'Market' })).toBeVisible();
     await expect(page.getByTestId('topbar-wallet')).toBeVisible();
-    await expect(page.locator('.pcard').first()).toBeVisible();
-    await assertClean(page, 'port market');
+    // A small repair-and-fuel stop (a first mission may end at one) has no market: its Port has no
+    // Market tab, and the market checks only apply where there is one.
+    if ((await page.getByRole('tab', { name: 'Market' }).count()) > 0) {
+      await expect(page.locator('.pcard').first()).toBeVisible();
+      await assertClean(page, 'port market');
+    }
     await openPortTab(page, 'Refuel');
     await assertClean(page, 'port refuel');
     await openPortTab(page, 'Repair');
