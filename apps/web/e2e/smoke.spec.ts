@@ -90,8 +90,15 @@ for (const faction of FACTIONS) {
     await assertClean(page, 'port refuel');
     await openPortTab(page, 'Repair');
     await assertClean(page, 'port repair');
-    await openPortTab(page, 'Scavenging');
-    await assertClean(page, 'port scavenging');
+    // (the work tabs only exist where there is work to do: a test pad has none)
+    const work = page.getByRole('tab', { name: /^Work/ });
+    if ((await work.count()) > 0) {
+      await work.click();
+      if ((await page.getByRole('tab', { name: 'Scavenging' }).count()) > 0) {
+        await openPortTab(page, 'Scavenging');
+        await assertClean(page, 'port scavenging');
+      }
+    }
 
     // --- profile -------------------------------------------------------------------------------
     await page.goto('/profile');

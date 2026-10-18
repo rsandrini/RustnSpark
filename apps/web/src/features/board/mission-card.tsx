@@ -387,7 +387,7 @@ function RaceField({
               <td>
                 {row.mobility === null ? t('board.race.none') : speed(row.mobility)}
                 {row.level > 1 && (
-                  <small className="race-trouble">
+                  <small className="race-trouble race-push">
                     {' '}
                     {t('board.race.pushing', {
                       level: new Intl.NumberFormat(i18n.language, {

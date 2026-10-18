@@ -324,6 +324,9 @@ tr.ev-transit td:first-child {
 .race-trouble {
   color: var(--brass);
 }
+.race-push {
+  display: block;
+}
 .race-legs {
   margin: 6px 0 0;
   padding-left: 1.4em;
