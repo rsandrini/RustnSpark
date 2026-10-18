@@ -1746,6 +1746,11 @@
     "title": "Sector map",
     "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",
+    "quest": {
+      "flag": "Planned trip: {{title}}",
+      "card": "Quest details",
+      "open": "Open the mission on the Ship screen"
+    },
     "missions": "{{count}} missions on the board",
     "noMissions": "No offers on the board",
     "zone": "Zone {{zone}}",

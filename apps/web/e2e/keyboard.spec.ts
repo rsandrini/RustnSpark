@@ -72,7 +72,7 @@ test('a map place opens with Enter and the Guide search works from the keyboard'
 }) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/map');
-  const place = page.locator('svg g[role="button"]').first();
+  const place = page.locator('svg g.node-hit').first();
   await place.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('button', { name: 'Close' })).toBeVisible();

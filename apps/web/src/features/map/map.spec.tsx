@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
-import { setShipStatus, world } from '../../test/msw/handlers';
+import { resetActiveState, setShipStatus, world } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -50,7 +50,7 @@ describe('map (S10.5)', () => {
   it('renders all 12 nodes, routes and the risk legend', async () => {
     const { svg } = await renderWholeMap();
 
-    expect(svg.querySelectorAll('g[role="button"]')).toHaveLength(12);
+    expect(svg.querySelectorAll('g.node-hit')).toHaveLength(12);
     expect(svg.querySelectorAll('line.edge')).toHaveLength(17);
     expect(svg.querySelectorAll('text.nlabel')).toHaveLength(12);
     const labels = Array.from(svg.querySelectorAll('text.nlabel')).map((text) => text.textContent);
@@ -98,7 +98,7 @@ describe('map (S10.5)', () => {
   it('shows main places zoomed out, regional ones zoomed in and local ones zoomed in close, plus the selected place', async () => {
     const { svg } = await renderWholeMap();
     const shown = () =>
-      Array.from(svg.querySelectorAll('g[role="button"]')).map((node) =>
+      Array.from(svg.querySelectorAll('g.node-hit')).map((node) =>
         node.getAttribute('aria-label'),
       );
     expect(shown()).toHaveLength(12);
@@ -154,6 +154,23 @@ describe('map (S10.5)', () => {
     fireEvent.click(fit);
     await waitFor(() => expect(fit).toBeDisabled());
     expect(box()[2]).toBeGreaterThan(w);
+  });
+
+  it('highlights the trip of an accepted mission; its flag shows the quest card with a link to the Ship screen', async () => {
+    resetActiveState(); // an accepted mission, not dispatched
+    const { svg } = await renderWholeMap();
+    await waitFor(() =>
+      expect(svg.querySelectorAll('[data-testid="planned-trip"]').length).toBe(1),
+    );
+    expect(svg.querySelector('.planned-path')).not.toBeNull();
+    expect(screen.queryByTestId('quest-tip')).not.toBeInTheDocument();
+
+    fireEvent.focus(screen.getByRole('button', { name: 'Planned trip: Ceres run' }));
+    const tip = await screen.findByTestId('quest-tip');
+    expect(tip).toHaveTextContent('Deliver cargo from Ceres to Hedus.');
+    expect(
+      within(tip).getByRole('link', { name: 'Open the mission on the Ship screen' }),
+    ).toHaveAttribute('href', '/ship');
   });
 
   it('opens the side panel on a node click with board link, then closes', async () => {

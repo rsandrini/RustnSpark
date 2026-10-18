@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
 import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
+import { pathOfLegs } from '../../ui/RouteMap';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
@@ -33,6 +34,9 @@ const HINT_RADIUS = 3;
 
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
 const SHIP_FOCUS_SCALE = 2.6;
+
+/** How long the quest card stays after the pointer leaves, so the pointer can reach its link. */
+const TIP_HIDE_DELAY_MS = 250;
 import { useMapCamera } from './use-map-camera';
 
 const SEPARATOR = ' · ';
@@ -140,6 +144,51 @@ export function MapPage({ guided = false }: MapPageProps) {
     const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
     return { nodeIds, stops: journeyStops(nodeIds, world.locations) };
   }, [flight, world]);
+  // The trip of each accepted (not yet dispatched) mission, drawn as a highlighted path with a small flag
+  // on it: hover or focus the flag for the quest's short description and a link to its details.
+  const plannedTrips = useMemo(() => {
+    if (world === undefined) return [];
+    return (activeQuery.data ?? [])
+      .filter((mission) => mission.status === 'ACCEPTED' || mission.status === 'HELD')
+      .map((mission) => {
+        const nodeIds = pathOfLegs(mission.legs, world, mission.originId);
+        return { mission, stops: nodeIds.length > 1 ? journeyStops(nodeIds, world.locations) : [] };
+      })
+      .filter((trip) => trip.stops.length > 1);
+  }, [activeQuery.data, world]);
+  const [tipId, setTipId] = useState<string | null>(null);
+  const [tipAt, setTipAt] = useState<{ left: number; top: number } | null>(null);
+  const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTip = (missionId: string, point: { x: number; y: number }) => {
+    if (tipTimer.current !== null) clearTimeout(tipTimer.current);
+    const svg = camera.svgRef.current;
+    const stage = svg?.parentElement;
+    const matrix = svg?.getScreenCTM?.();
+    if (svg !== null && svg !== undefined && stage != null && matrix != null) {
+      const spot = svg.createSVGPoint();
+      spot.x = point.x;
+      spot.y = point.y;
+      const onScreen = spot.matrixTransform(matrix);
+      const box = stage.getBoundingClientRect();
+      setTipAt({ left: onScreen.x - box.left, top: onScreen.y - box.top });
+    } else {
+      setTipAt(null);
+    }
+    setTipId(missionId);
+  };
+  const hideTip = () => {
+    if (tipTimer.current !== null) clearTimeout(tipTimer.current);
+    tipTimer.current = setTimeout(() => setTipId(null), TIP_HIDE_DELAY_MS);
+  };
+  const keepTip = () => {
+    if (tipTimer.current !== null) clearTimeout(tipTimer.current);
+  };
+  useEffect(
+    () => () => {
+      if (tipTimer.current !== null) clearTimeout(tipTimer.current);
+    },
+    [],
+  );
   const position =
     flight !== undefined && journey !== null
       ? positionAt(journey.stops, flight.legWindows, now)
@@ -305,6 +354,45 @@ export function MapPage({ guided = false }: MapPageProps) {
                 />
               );
             })}
+            {plannedTrips.map(({ mission, stops }) => {
+              const points = stops.map((stop) => `${stop.x},${stop.y}`).join(' ');
+              // the flag sits on the middle of the path
+              const at = Math.floor((stops.length - 1) / 2);
+              const from = stops[at]!;
+              const to = stops[at + 1]!;
+              const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+              const title = pickLocalized(mission.brief.title, i18n.language);
+              return (
+                <g
+                  key={`planned-${mission.id}`}
+                  className="planned-trip"
+                  data-testid="planned-trip"
+                >
+                  <polyline className="planned-path" points={points} />
+                  <polyline
+                    className="planned-hit"
+                    points={points}
+                    onPointerEnter={() => showTip(mission.id, middle)}
+                    onPointerLeave={hideTip}
+                  />
+                  <g
+                    className="quest-flag"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('map.quest.flag', { title })}
+                    transform={`translate(${middle.x} ${middle.y}) scale(${nodeScale})`}
+                    onPointerEnter={() => showTip(mission.id, middle)}
+                    onPointerLeave={hideTip}
+                    onFocus={() => showTip(mission.id, middle)}
+                    onBlur={hideTip}
+                    onClick={() => showTip(mission.id, middle)}
+                  >
+                    <circle r={11} />
+                    <path d="M-3,-6 L-3,6 M-3,-6 L6,-3 L-3,1" />
+                  </g>
+                </g>
+              );
+            })}
             {journey !== null && inFlight && (
               <polyline
                 className="flight-path"
@@ -442,6 +530,28 @@ export function MapPage({ guided = false }: MapPageProps) {
               </g>
             )}
           </svg>
+          {plannedTrips.map(({ mission }) =>
+            tipId === mission.id ? (
+              <div
+                key={`tip-${mission.id}`}
+                className="quest-tip"
+                role="dialog"
+                aria-label={t('map.quest.card')}
+                data-testid="quest-tip"
+                style={tipAt === null ? undefined : { left: tipAt.left, top: tipAt.top }}
+                onPointerEnter={keepTip}
+                onPointerLeave={hideTip}
+                onFocus={keepTip}
+                onBlur={hideTip}
+              >
+                <b>{pickLocalized(mission.brief.title, i18n.language)}</b>
+                <p>{pickLocalized(mission.brief.description, i18n.language)}</p>
+                <Link className="btn tiny" to="/ship">
+                  {t('map.quest.open')}
+                </Link>
+              </div>
+            ) : null,
+          )}
         </div>
 
         <aside className="map-panel" ref={panelRef}>

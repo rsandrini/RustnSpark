@@ -1746,6 +1746,11 @@
     "title": "Mapa do setor",
     "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",
+    "quest": {
+      "flag": "Viagem planejada: {{title}}",
+      "card": "Detalhes da missão",
+      "open": "Abrir a missão na tela da Nave"
+    },
     "missions": "{{count}} missões no quadro",
     "noMissions": "Sem ofertas no quadro",
     "zone": "Zona {{zone}}",

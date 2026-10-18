@@ -349,3 +349,57 @@
   opacity: 0.55;
   pointer-events: none;
 }
+
+/* The trip of an accepted mission: a highlighted path with a flag on it; hover or focus the flag for the quest card. */
+.planned-path {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--brass) 70%, transparent));
+  pointer-events: none;
+}
+.planned-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  cursor: help;
+}
+.quest-flag {
+  cursor: pointer;
+}
+.quest-flag circle {
+  fill: var(--paper-3);
+  stroke: var(--brass);
+  stroke-width: 2;
+}
+.quest-flag path {
+  fill: var(--brass);
+  stroke: var(--brass);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.quest-flag:focus-visible circle {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.quest-tip {
+  position: absolute;
+  z-index: 3;
+  width: min(280px, calc(100% - 24px));
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  box-shadow: 0 8px 24px color-mix(in oklab, black 55%, transparent);
+  transform: translate(-50%, 14px);
+}
+.quest-tip p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
