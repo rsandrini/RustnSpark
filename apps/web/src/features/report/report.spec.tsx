@@ -383,6 +383,58 @@ describe('report (S10.8)', () => {
     expect(rows[2]).toContain('Comet Runner');
   });
 
+  it('a race report tells the race leg by leg: who led, where you were, who had trouble', async () => {
+    const leg = (rows: Array<[string, boolean, number, number, boolean]>) => ({
+      standings: rows.map(([name, you, legSeconds, totalSeconds, trouble]) => ({
+        name,
+        you,
+        legSeconds,
+        totalSeconds,
+        trouble,
+      })),
+    });
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'success',
+            stats: {
+              ...STATS,
+              race: {
+                place: 2,
+                timeScale: 1,
+                standings: [
+                  { name: 'Vega Dart', mobility: 4.1, seconds: 400, you: false },
+                  { name: '', mobility: 3.2, seconds: 600, you: true },
+                ],
+                legs: [
+                  leg([
+                    ['', true, 100, 100, false],
+                    ['Vega Dart', false, 120, 120, false],
+                  ]),
+                  leg([
+                    ['Vega Dart', false, 280, 400, false],
+                    ['', true, 500, 600, true],
+                  ]),
+                ],
+              },
+            },
+            view: 'summary',
+            lines: [{ text: 'Done', segments: [{ t: 'text', value: 'Done' }] }],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    const legs = await screen.findByTestId('race-legs');
+    const items = Array.from(legs.querySelectorAll('li')).map((item) => item.textContent);
+    expect(items[0]).toBe('Leg 1 — you lead');
+    expect(items[1]).toContain('Leg 2 — Vega Dart leads, you are 2º');
+    expect(items[1]).toContain('your engines failed here and cost you time');
+  });
+
   it('never says a shield took 0 damage on a ship that never had one', async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>

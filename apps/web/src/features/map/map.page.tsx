@@ -27,6 +27,9 @@ import { journeyNodeIds, journeyStops, positionAt } from '../transit/journey';
 import { transitPollInterval } from '../transit/poll';
 import { PageTitle } from '../../ui/PageTitle';
 import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE } from './map-view';
+
+/** The radius of the dot that marks a place hidden at this zoom. */
+const HINT_RADIUS = 3;
 import { useMapCamera } from './use-map-camera';
 
 const SEPARATOR = ' · ';
@@ -293,6 +296,21 @@ export function MapPage({ guided = false }: MapPageProps) {
                 points={journey.stops.map((stop) => `${stop.x},${stop.y}`).join(' ')}
               />
             )}
+            {/* A small dot where a place is hidden at this zoom, so the map shows that something is
+                there to zoom in to (drawn under the shown places, not interactive). */}
+            {world.locations
+              .filter((location) => !shownAtZoom(location))
+              .map((location) => (
+                <circle
+                  key={`hint-${location.id}`}
+                  className="node-hint"
+                  data-testid="map-hidden-place"
+                  aria-hidden="true"
+                  cx={location.x}
+                  cy={location.y}
+                  r={HINT_RADIUS * nodeScale}
+                />
+              ))}
             {world.locations.filter(shownAtZoom).map((location) => {
               const isHere = location.id === shipLocation && !inFlight && floatPoint === null;
               const isDestination = inFlight && flight?.destinationId === location.id;

@@ -94,6 +94,8 @@ describe('map (S10.5)', () => {
     expect(shown()).toHaveLength(12);
     expect(shown()).not.toContain('Alcance Halcyon');
     expect(screen.getByText(/2 more when you zoom in/)).toBeInTheDocument();
+    // a dot marks each place that is hidden at this zoom
+    expect(svg.querySelectorAll('[data-testid="map-hidden-place"]')).toHaveLength(2);
 
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' })); // x2.25: regional ones appear
@@ -103,6 +105,7 @@ describe('map (S10.5)', () => {
     expect(shown()).toContain('Doca Seca de Ceres');
     expect(shown()).toHaveLength(14);
     expect(screen.queryByText(/more when you zoom in/)).not.toBeInTheDocument();
+    expect(svg.querySelectorAll('[data-testid="map-hidden-place"]')).toHaveLength(0);
   });
 
   it('a place that is selected stays on the map even when the zoom would hide it', async () => {

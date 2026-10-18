@@ -558,6 +558,8 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 interface Rival {
   name: string;
   mobility: number;
+  /** The engine level it runs at for the whole race (absent = 1, as listed). */
+  level?: number;
 }
 
 /** The rivals of an accepted race, fastest first — frozen in the mission when the offer was made. */
@@ -575,12 +577,20 @@ function RaceRivals({ cargo }: { cargo: unknown }) {
       <ul>
         {rivals.map((rival) => (
           <li key={rival.name}>
-            {t('transit.race.rival', {
-              name: rival.name,
-              mobility: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
-                scaleSpeed(rival.mobility, display),
-              ),
-            })}
+            {t(
+              rival.level !== undefined && rival.level > 1
+                ? 'transit.race.rivalPushed'
+                : 'transit.race.rival',
+              {
+                name: rival.name,
+                mobility: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                  scaleSpeed(rival.mobility, display),
+                ),
+                level: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+                  rival.level ?? 1,
+                ),
+              },
+            )}
           </li>
         ))}
       </ul>

@@ -342,3 +342,10 @@
     height: min(60vh, 460px);
   }
 }
+
+/* A place hidden at this zoom: a small dim dot where it is, so the map shows there is more to find. */
+.node-hint {
+  fill: var(--muted);
+  opacity: 0.55;
+  pointer-events: none;
+}

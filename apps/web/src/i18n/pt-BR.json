@@ -1510,6 +1510,11 @@
         "mishap": "teve problemas",
         "overheat": "motores superaqueceram"
       },
+      "raceLegsTitle": "Etapa por etapa",
+      "raceLeg": "Etapa {{leg}} — {{leader}} na frente, você está em {{place}}º",
+      "raceLegLead": "Etapa {{leg}} — você lidera",
+      "raceLegYouTrouble": " · seus motores falharam aqui e custaram tempo",
+      "raceLegRivalTrouble": " · problemas para {{names}}",
       "damageCombat": "Dano em lutas",
       "travelWear": "Desgaste no caminho",
       "wearValue": "{{points}} pontos · {{parts}} peça(s)"
@@ -1598,7 +1603,8 @@
     "scavengeTitle": "Saque de destroços",
     "race": {
       "title": "Seus rivais",
-      "rival": "{{name}} — velocidade {{mobility}}"
+      "rival": "{{name}} — velocidade {{mobility}}",
+      "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando ×{{level}}"
     }
   },
   "board": {
@@ -1713,11 +1719,12 @@
       "entry": "Entrada: velocidade {{mobility}} ou mais. Prêmios:",
       "prize": "{{place}}º {{amount}}",
       "expected": "Esperado",
-      "expectedHint": "Onde esta nave costuma terminar. O resultado real depende da forma, da sorte e de problemas no dia.",
+      "expectedHint": "Onde esta nave costuma terminar. O resultado real depende da sorte em cada etapa e de falhas de motor.",
       "best": "Melhor dia",
-      "bestHint": "Um grande dia: melhor forma e sorte.",
+      "bestHint": "Um grande dia: a melhor sorte em todas as etapas.",
       "none": "—",
-      "dynamic": "Cada corrida é diferente: forma, sorte e problemas movem os tempos em torno destes valores.",
+      "dynamic": "Cada corrida é diferente: a sorte em cada etapa e as falhas de motor movem os tempos em torno destes valores. Um rival mantém a mesma velocidade e o mesmo nível de motor até o fim, como você.",
+      "pushing": "forçando ×{{level}}",
       "finish": "Chegada"
     },
     "requirementNumbers": "Sua nave: {{actual}} · precisa de {{needed}}",

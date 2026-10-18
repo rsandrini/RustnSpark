@@ -651,6 +651,42 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
               ))}
             </tbody>
           </table>
+          {stats.race.legs !== undefined && stats.race.legs.length > 0 && (
+            <div data-testid="race-legs">
+              <b>{t('report.debrief.raceLegsTitle')}</b>
+              <ol className="race-legs">
+                {stats.race.legs.map((leg, index) => {
+                  const leader = leg.standings[0];
+                  const youIndex = leg.standings.findIndex((row) => row.you);
+                  const youRow = leg.standings[youIndex];
+                  const rivalsHit = leg.standings.filter((row) => !row.you && row.trouble);
+                  return (
+                    <li key={`leg-${index}`}>
+                      {leader?.you === true
+                        ? t('report.debrief.raceLegLead', { leg: index + 1 })
+                        : t('report.debrief.raceLeg', {
+                            leg: index + 1,
+                            leader: leader?.name ?? '',
+                            place: youIndex + 1,
+                          })}
+                      {youRow?.trouble === true && (
+                        <small className="race-trouble">
+                          {t('report.debrief.raceLegYouTrouble')}
+                        </small>
+                      )}
+                      {rivalsHit.length > 0 && (
+                        <small className="race-trouble">
+                          {t('report.debrief.raceLegRivalTrouble', {
+                            names: rivalsHit.map((row) => row.name).join(', '),
+                          })}
+                        </small>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
         </div>
       )}
 

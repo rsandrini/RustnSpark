@@ -322,7 +322,7 @@ export function MissionCard({
 }
 
 // A race offer's grid: every rival's speed and how long it should take over this route (its
-// expected time and its best day: form, luck and trouble make the real result differ), with the
+// expected time and its best day: luck on each leg and engine failures make the real result differ), with the
 // viewer's own ship ranked among them, plus the prize per place.
 function RaceField({
   race,
@@ -344,6 +344,7 @@ function RaceField({
       key: rival.name,
       name: rival.name,
       mobility: rival.mobility,
+      level: rival.level,
       expected: rival.durationSeconds,
       best: rival.bestSeconds,
       you: false,
@@ -352,6 +353,7 @@ function RaceField({
       key: 'you',
       name: t('board.race.you'),
       mobility: null as number | null,
+      level: 1,
       expected: race.you?.durationSeconds ?? null,
       best: race.you?.bestSeconds ?? null,
       you: true,
@@ -376,7 +378,19 @@ function RaceField({
               <td>
                 {t('board.race.rank', { place: index + 1 })} {row.name}
               </td>
-              <td>{row.mobility === null ? t('board.race.none') : speed(row.mobility)}</td>
+              <td>
+                {row.mobility === null ? t('board.race.none') : speed(row.mobility)}
+                {row.level > 1 && (
+                  <small className="race-trouble">
+                    {' '}
+                    {t('board.race.pushing', {
+                      level: new Intl.NumberFormat(i18n.language, {
+                        maximumFractionDigits: 1,
+                      }).format(row.level),
+                    })}
+                  </small>
+                )}
+              </td>
               <td>
                 {row.expected === null ? t('board.race.none') : formatDuration(row.expected, t)}
               </td>

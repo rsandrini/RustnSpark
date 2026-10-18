@@ -92,6 +92,8 @@ test.describe('race mission', () => {
     const standings = page.getByTestId('debrief-race');
     await expect(standings).toBeVisible();
     expect(await standings.locator('tbody tr').count()).toBeGreaterThanOrEqual(4);
+    // the race is told leg by leg
+    await expect(page.getByTestId('race-legs')).toBeVisible();
     await page.goto('/port');
     expect(await walletOf(page)).toBeGreaterThanOrEqual(before);
   });

@@ -1510,6 +1510,11 @@
         "mishap": "had trouble",
         "overheat": "engines overheated"
       },
+      "raceLegsTitle": "Leg by leg",
+      "raceLeg": "Leg {{leg}} — {{leader}} leads, you are {{place}}º",
+      "raceLegLead": "Leg {{leg}} — you lead",
+      "raceLegYouTrouble": " · your engines failed here and cost you time",
+      "raceLegRivalTrouble": " · trouble for {{names}}",
       "damageCombat": "Fight damage",
       "travelWear": "Wear on the way",
       "wearValue": "{{points}} points · {{parts}} part(s)"
@@ -1598,7 +1603,8 @@
     "scavengeTitle": "Scavenging",
     "race": {
       "title": "Your rivals",
-      "rival": "{{name}} — speed {{mobility}}"
+      "rival": "{{name}} — speed {{mobility}}",
+      "rivalPushed": "{{name}} — speed {{mobility}}, pushing ×{{level}}"
     }
   },
   "board": {
@@ -1713,11 +1719,12 @@
       "entry": "Entry: speed {{mobility}} or more. Prizes:",
       "prize": "{{place}}º {{amount}}",
       "expected": "Expected",
-      "expectedHint": "Where this ship usually finishes. The real result depends on form, luck and trouble on the day.",
+      "expectedHint": "Where this ship usually finishes. The real result depends on luck on each leg and on engine failures.",
       "best": "Best day",
-      "bestHint": "A great day: best form and luck.",
+      "bestHint": "A great day: the best luck on every leg.",
       "none": "—",
-      "dynamic": "Every race is different: form, luck and trouble move the times around these figures.",
+      "dynamic": "Every race is different: luck on each leg and engine failures move the times around these figures. A rival keeps the same speed and engine level to the end, like you.",
+      "pushing": "pushing ×{{level}}",
       "finish": "Finish"
     },
     "requirementNumbers": "Your ship: {{actual}} · needs {{needed}}",
