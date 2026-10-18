@@ -23,8 +23,9 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 - [ ] Late game (parked): the fusion torch engine and the fusion reactor family above nuclear, and a
   pre-warning before a bridge is destroyed. Needs the early and mid economy to hold first.
-- [ ] Starter shield + battery in the free kit with a larger bridge budget (2x2 bridge limits): test it as
-  its own A/B once the game, sim and balance all work. *(Deferred on purpose by the owner.)*
+- [ ] Playtest the new start (2026-10-18): a new pilot gets 750 credits (the old 200 + a basic shield + a small battery),
+  both parts are always on the shelf, and the market tip recommends them. Check on a fresh account whether
+  players take them and whether the first fights feel fair; then decide on the bigger-bridge test.
 - [ ] Sim: chem and hybrid builds still stall now and then on an empty wallet; the ion build's repair
   share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level. The sim
   also exports from the dev DB, so re-run it on the new map (short and far places, the 5-minute floor).

@@ -16,6 +16,11 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
 }
@@ -281,9 +286,9 @@ describe('refuel API (S8.3)', () => {
       cost: 0,
       fuel: fuelCap,
       fuelCap,
-      credits: 200,
+      credits: START,
     });
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
     const events = await prisma.playerEvent.findMany({
       where: { playerId: player.seeded.player.id, type: 'refuel' },
     });
@@ -322,7 +327,7 @@ describe('refuel API (S8.3)', () => {
       message: { error: 'SHIP_ON_MISSION' },
     });
     expect(await currentFuel(player.shipId)).toBe(0);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
   });
 
   it('rejects a negative balance (GDD §14) before buying fuel', async () => {
@@ -380,7 +385,7 @@ describe('refuel API (S8.3)', () => {
       message: 'IDEMPOTENCY_KEY_REQUIRED',
     });
     expect(await currentFuel(player.shipId)).toBe(0);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
 
     const keyed = await refuel(player.token, player.shipId, randomUUID(), {
       mode: 'partial',

@@ -2088,6 +2088,8 @@
     "needs": {
       "weapon": "A weapon: it has no firepower, so it cannot take combat work.",
       "defense": "Armor or a shield: nothing protects the hull in a fight.",
+      "shield": "Recommended: a shield. It takes the hits before the hull does. You start with the money for one.",
+      "battery": "Recommended: a battery. A shield and a weapon draw their power from it in a fight.",
       "power": "More power: its engines and systems draw more than it makes.",
       "cargo": "A cargo hold: it cannot carry deliveries."
     }

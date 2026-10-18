@@ -133,6 +133,15 @@ describe('market API (S8.2)', () => {
     }
   });
 
+  it('a new pilot always finds a common shield and a common battery on the home shelf (the market tip recommends both)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const body = (await getMarket(player.token, 'ceres')).body as MarketListingBody;
+    const catalog = body.listings.filter((entry) => entry.kind === 'catalog');
+    expect(catalog.some((entry) => entry.partType === 'shield_basic')).toBe(true);
+    expect(catalog.some((entry) => entry.partType === 'battery_small')).toBe(true);
+  });
+
   it('GET market and buy reject 409 SHIP_NOT_AT_LOCATION when the ship is elsewhere', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

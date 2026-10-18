@@ -196,9 +196,17 @@ export function MarketPanel({
     if (currentSheet === undefined) return [];
     const lacking: Array<{ id: string; partClass: string }> = [];
     if (currentSheet.pdf <= 0) lacking.push({ id: 'weapon', partClass: 'WEAPON' });
-    if (currentSheet.bli <= 0 && currentSheet.esc <= 0) {
+    // Recommended for a first fight (the pilot starts with the money for both): a shield soaks the
+    // hits before the hull does, and it needs a battery to run.
+    const hasClass = (partClass: string): boolean =>
+      (installedParts ?? []).some((part) => part.catalog.partClass === partClass);
+    const needShield = installedParts !== undefined && !hasClass('SHIELD');
+    const needBattery = installedParts !== undefined && !hasClass('BATTERY');
+    if (currentSheet.bli <= 0 && currentSheet.esc <= 0 && !needShield) {
       lacking.push({ id: 'defense', partClass: 'DEFENSE' });
     }
+    if (needShield) lacking.push({ id: 'shield', partClass: 'SHIELD' });
+    if (needBattery) lacking.push({ id: 'battery', partClass: 'BATTERY' });
     if (currentSheet.energyCont < 0) lacking.push({ id: 'power', partClass: 'REACTOR' });
     if (currentSheet.crg <= 0) lacking.push({ id: 'cargo', partClass: 'CARGO' });
     return lacking.filter(
@@ -206,7 +214,7 @@ export function MarketPanel({
         !dismissedNeeds.has(need.id) &&
         listings.some((listing) => listing.catalog.partClass === need.partClass),
     );
-  }, [currentSheet, listings, dismissedNeeds]);
+  }, [currentSheet, installedParts, listings, dismissedNeeds]);
   const extraFilters = [rarity !== 'all', size !== 'all', condition !== 'all'].filter(
     Boolean,
   ).length;

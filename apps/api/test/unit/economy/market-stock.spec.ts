@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import { inStockToday } from '../../../src/economy/market-stock.js';
 
 describe('inStockToday', () => {
@@ -7,9 +8,9 @@ describe('inStockToday', () => {
   });
 
   it('is never in stock at chance 0 (LEGENDARY default)', () => {
-    expect(inStockToday('ceres', '2026-09-30', 'hull_legendary', 'LEGENDARY', { LEGENDARY: 0 })).toBe(
-      false,
-    );
+    expect(
+      inStockToday('ceres', '2026-09-30', 'hull_legendary', 'LEGENDARY', { LEGENDARY: 0 }),
+    ).toBe(false);
   });
 
   it('defaults an unlisted rarity to always in stock', () => {
@@ -38,10 +39,43 @@ describe('inStockToday', () => {
     const chances = { RARE: 0.5 };
     const results = new Set(
       Array.from({ length: 50 }, (_, index) =>
-        inStockToday('ceres', `2026-01-${String((index % 28) + 1).padStart(2, '0')}`, 'shield_basic_rare', 'RARE', chances),
+        inStockToday(
+          'ceres',
+          `2026-01-${String((index % 28) + 1).padStart(2, '0')}`,
+          'shield_basic_rare',
+          'RARE',
+          chances,
+        ),
       ),
     );
     expect(results.has(true)).toBe(true);
     expect(results.has(false)).toBe(true);
+  });
+});
+
+// The pilot starts with the money for a basic shield and a small battery, and the market tip
+// recommends both: a common part must be on every shelf, every day, whatever the bridge.
+describe('common parts are always on the shelf', () => {
+  const { economy } = GAME_CONFIG_DEFAULTS;
+  const chances = [economy.market_rarity_chance, ...Object.values(economy.market_rarity_by_bridge)];
+
+  it('has a chance of 1 for COMMON in the fallback table and in every bridge row', () => {
+    for (const chance of chances) expect(chance['COMMON']).toBe(1);
+  });
+
+  it('keeps the common shield and the common battery in stock on any day at any port', () => {
+    for (const chance of chances) {
+      for (const day of ['2026-10-18', '2027-01-01', '2027-06-30']) {
+        for (const partType of ['shield_basic', 'battery_small']) {
+          expect(inStockToday('anywhere', day, partType, 'COMMON', chance)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('starts a pilot with the money for both, on top of the old 200', () => {
+    const shield = 400;
+    const battery = 150;
+    expect(economy.start_credits).toBeGreaterThanOrEqual(200 + shield + battery);
   });
 });

@@ -154,7 +154,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
       EPIC: 1.5,
       LEGENDARY: 1.5,
     },
-    start_credits: 200,
+    // A new pilot starts with the money for a basic shield (400) and a small battery (150) on top of
+    // the old 200 (owner, 2026-10-18): recommended for the first fights, but theirs to spend as they like.
+    start_credits: 750,
     rescue_cost: 800,
     // A floating ship can wait for a rescue (half the price) or call one now (that price plus a
     // charge per unit of distance to the nearest base).

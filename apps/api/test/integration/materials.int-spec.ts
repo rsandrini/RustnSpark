@@ -15,6 +15,11 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
 }
@@ -214,10 +219,10 @@ describe('materials API (S8.7)', () => {
       materialId: 'common_ore',
       quantity: 3,
       price: unitPrice * 3,
-      credits: 200 + unitPrice * 3,
+      credits: START + unitPrice * 3,
     });
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(7);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200 + unitPrice * 3);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START + unitPrice * 3);
 
     const events = await prisma.playerEvent.findMany({
       where: { playerId: player.seeded.player.id, type: 'market.sell_material' },
@@ -265,7 +270,7 @@ describe('materials API (S8.7)', () => {
       message: { error: 'PRICE_CHANGED', actual: unitPrice * 3 },
     });
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(10);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
   });
 
   it('rejects selling more than held with 400 and no credit', async () => {
@@ -285,7 +290,7 @@ describe('materials API (S8.7)', () => {
       message: { error: 'INSUFFICIENT_MATERIALS' },
     });
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(2);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
 
     const zero = await sellMaterial(player.token, randomUUID(), {
       materialId: 'common_ore',
@@ -300,7 +305,7 @@ describe('materials API (S8.7)', () => {
       message: ['quantity must not be less than 1'],
     });
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(2);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
 
     const unknown = await sellMaterial(player.token, randomUUID(), {
       materialId: 'not_a_material',
@@ -342,7 +347,7 @@ describe('materials API (S8.7)', () => {
       message: { error: 'CREDIT_OVERFLOW' },
     });
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(10);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
   });
 
   it('selling is allowed while the balance is negative (GDD §14)', async () => {
@@ -390,7 +395,7 @@ describe('materials API (S8.7)', () => {
     expect(replay.status).toBe(200);
     expect(replay.body).toEqual(first.body);
     expect(await heldQuantity(player.seeded.player.id, 'common_ore')).toBe(7);
-    expect(await currentCredits(player.seeded.player.id)).toBe(200 + unitPrice * 3);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START + unitPrice * 3);
     await expect(
       prisma.playerEvent.count({
         where: { playerId: player.seeded.player.id, type: 'market.sell_material' },

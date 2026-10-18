@@ -7,6 +7,7 @@
  * keeps flying the same board.
  */
 import { describe, expect, it } from '@jest/globals';
+import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import { missionDuration } from '../../../src/missions/duration.calculator.js';
 import { buyPrice, sellPrice } from '../../../src/economy/price.calculator.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
@@ -156,6 +157,9 @@ function hullIdOf(snapshot: Snapshot): string {
   if (hull === undefined) throw new Error('fixture ship has no hull');
   return hull.id;
 }
+
+/** What a new pilot starts with: the tests below compare the wallet with it. */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
 
 describe('scavenge job', () => {
   const snapshot = fixtureSnapshot();
@@ -344,13 +348,14 @@ describe('market: buying', () => {
     const price = buyPrice(priceInputAt(snapshot, 'luna', 'ceres', 100, 100), ctx.rules);
     const out = buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull');
     expect(out).toEqual({ ok: true, price, partId: 'bought-1', condition: 100 });
-    expect(state.wallet).toBe(200 - price);
+    expect(state.wallet).toBe(START - price);
     expect(state.ledger.total('purchase')).toBe(-price);
     expect(state.storage).toEqual([{ id: 'bought-1', partType: 'hull', condition: 100 }]);
   });
 
   it('refuses what the wallet cannot pay and changes nothing', () => {
     const state = starterPlayer(snapshot, 'luna');
+    state.wallet = 200; // a pilot who has already spent most of the starting money
     const out = buyListing(
       state,
       snapshot,
@@ -377,7 +382,7 @@ describe('market: buying', () => {
     expect(
       buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:tycho:hull_x'),
     ).toEqual({ ok: false, reason: 'NOT_ON_SHELF' });
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
   });
 });
 
@@ -440,7 +445,7 @@ describe('market: the shelf', () => {
     expect(
       buyListing(state, snapshot, ctx.rules, ctx.catalogByType, 'catalog:ceres:hull_legendary'),
     ).toEqual({ ok: false, reason: 'NOT_ON_SHELF' });
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
     expect(state.storage).toEqual([]);
   });
 
@@ -532,7 +537,7 @@ describe('market: selling', () => {
     const out = sellPart(state, snapshot, ctx.rules, 'wreck');
     expect(out).toEqual({ ok: false, reason: 'TOO_DAMAGED_TO_SELL' });
     expect(state.storage).toHaveLength(1);
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
   });
 
   it('credits sellPrice on the part’s own condition into the sale line', () => {
@@ -541,7 +546,7 @@ describe('market: selling', () => {
     const price = sellPrice(priceInputAt(snapshot, 'luna', 'ceres', 100, 85), ctx.rules);
     const out = sellPart(state, snapshot, ctx.rules, 'used');
     expect(out).toMatchObject({ ok: true, price });
-    expect(state.wallet).toBe(200 + price);
+    expect(state.wallet).toBe(START + price);
     expect(state.ledger.total('sale')).toBe(price);
     expect(state.storage).toEqual([]);
   });
@@ -599,7 +604,7 @@ describe('fitting', () => {
     expect(out).toEqual({ ok: true });
     expect(state.ship.parts.some((part) => part.id === 'new-hull')).toBe(true);
     expect(state.storage.some((part) => part.id === hullId)).toBe(true);
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
   });
 
   it('refuses an unknown hold part and a missing installed slot', () => {
@@ -627,7 +632,7 @@ describe('upgrade', () => {
 
     const damaged = upgrade(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     expect(damaged).toEqual({ ok: false, reason: 'NOT_FULL_CONDITION' });
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
 
     if (hullPart !== undefined) hullPart.condition = 100;
     state.storage.push({ id: 'loose-1', partType: 'hull', condition: 100 });
@@ -645,7 +650,7 @@ describe('upgrade', () => {
       ok: false,
       reason: 'MAX_TIER',
     });
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
     expect(state.ledger.total('upgrade')).toBe(0);
 
     // The bare fixture has no UNCOMMON row, so the chain stops before pricing.
@@ -676,7 +681,7 @@ describe('upgrade', () => {
     // (220 − 100) × the COMMON multiplier 1.1, and ceil(sqrt(120)/5) = 3 scrap.
     expect(quote.cost).toBe(132);
     expect(quote.needs).toEqual([{ material: 'scrap', quantity: 3 }]);
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
     expect(state.ship.parts.find((part) => part.id === hullId)?.partType).toBe('hull');
   });
 
@@ -801,7 +806,8 @@ describe('spending plan', () => {
   it('never spends into the reserve: a broke starter is told to save', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
-    const state = starterPlayer(snapshot, 'luna'); // wallet 200, tank already full
+    const state = starterPlayer(snapshot, 'luna'); // tank already full
+    state.wallet = 200; // broke: the starting money is already spent
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
     expect(plan.action).toEqual({ kind: 'none', reason: 'reserve' });
     // The sell pass still protects what the next upgrade will ask for.
@@ -820,7 +826,7 @@ describe('spending plan', () => {
       storageId: 'rig-9',
       reason: 'fit-mining-rig',
     });
-    expect(state.wallet).toBe(200);
+    expect(state.wallet).toBe(START);
     expect(state.ship.parts.some((part) => part.id === 'rig-9')).toBe(false);
   });
 

@@ -18,6 +18,11 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
 }
@@ -263,7 +268,7 @@ describe('rescue API (S8.6)', () => {
       message: { error: 'SHIP_ON_MISSION' },
     });
 
-    expect(await currentCredits(player.seeded.player.id)).toBe(200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(START);
     await expect(
       prisma.playerEvent.count({
         where: { playerId: player.seeded.player.id, type: 'wallet.debit' },
@@ -406,6 +411,8 @@ describe('rescue API (S8.6)', () => {
     })();
     await setStatus(player.shipId, 'ADRIFT');
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 0 } });
+    // a pilot who has spent most of the starting money: the rescue then leaves the balance negative
+    await setCredits(player.seeded.player.id, 200);
 
     const rescued = await rescue(player.token, player.shipId, randomUUID());
     expect(rescued.status).toBe(200);

@@ -13,6 +13,11 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
 }
@@ -127,7 +132,7 @@ describe('Admin tuning reaches gameplay over HTTP (S3.7, D33)', () => {
     const beforeProfile = await request(httpServer(testApp.app))
       .get('/v1/players/me')
       .set(auth(before.token));
-    expect((beforeProfile.body as { credits: number }).credits).toBe(200);
+    expect((beforeProfile.body as { credits: number }).credits).toBe(START);
 
     await tune('economy.start_credits', 3333);
 

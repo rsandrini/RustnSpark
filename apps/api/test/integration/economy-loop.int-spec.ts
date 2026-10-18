@@ -18,6 +18,10 @@ import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
 
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
@@ -300,7 +304,7 @@ describe('economy milestone M8', () => {
     expect(redispatched.status).toBe(200);
 
     // Money invariant: the balance is exactly the sum of the recorded wallet movements
-    // (the seeded player starts at 0; onboarding's 200 is movement #1) — no silent
+    // (the seeded player starts at 0; onboarding's start credits are movement #1) — no silent
     // writes anywhere along the loop.
     const credits = await currentCredits(player.seeded.player.id);
     const movement = await walletMovement(player.seeded.player.id);
@@ -315,7 +319,11 @@ describe('economy milestone M8', () => {
       }),
     ).resolves.toBe(5);
     expect(movement).toBe(
-      200 + result.credited + salePrice - (refueled.body as { cost: number }).cost - listing.price,
+      START +
+        result.credited +
+        salePrice -
+        (refueled.body as { cost: number }).cost -
+        listing.price,
     );
   }, 30_000);
 
@@ -375,6 +383,6 @@ describe('economy milestone M8', () => {
     const credits = await currentCredits(player.seeded.player.id);
     const movement = await walletMovement(player.seeded.player.id);
     expect(credits).toBe(movement);
-    expect(movement).toBe(200 + 2 * (unit * 4));
+    expect(movement).toBe(START + 2 * (unit * 4));
   }, 30_000);
 });

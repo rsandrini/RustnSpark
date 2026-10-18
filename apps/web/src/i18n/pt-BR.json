@@ -2087,6 +2087,8 @@
     "chipClear": " ×",
     "needs": {
       "weapon": "Uma arma: sem poder de fogo, ela não pega trabalho de combate.",
+      "shield": "Recomendado: um escudo. Ele absorve os golpes antes do casco. Você começa com o dinheiro para um.",
+      "battery": "Recomendado: uma bateria. O escudo e a arma tiram a energia dela numa luta.",
       "defense": "Blindagem ou escudo: nada protege o casco numa luta.",
       "power": "Mais energia: motores e sistemas gastam mais do que ela produz.",
       "cargo": "Um porão de carga: ela não carrega entregas."

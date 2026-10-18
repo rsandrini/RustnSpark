@@ -227,6 +227,42 @@ describe('market panel: descriptions and filters', () => {
     expect(screen.queryByTestId('ship-needs')).toBeNull();
   });
 
+  it('recommends a shield to a ship that has none, when the shelf sells one (and a battery likewise)', async () => {
+    const shelf = (await (await fetch('/v1/locations/ceres/market')).json()) as {
+      listings: Array<Record<string, unknown> & { catalog: Record<string, unknown> }>;
+    };
+    const hull = shelf.listings[0]!;
+    const listing = (partType: string, partClass: string, name: string, price: number) => ({
+      ...hull,
+      listingId: `catalog:ceres:${partType}`,
+      partType,
+      partClass,
+      displayName: { en: name, 'pt-BR': name },
+      catalog: { ...hull.catalog, partType, partClass },
+      price,
+    });
+    server.use(
+      http.get('/v1/locations/:id/market', ({ params }) =>
+        HttpResponse.json({
+          locationId: String(params.id),
+          listings: [
+            ...shelf.listings,
+            listing('shield_basic', 'SHIELD', 'Basic Shield', 400),
+            listing('battery_small', 'BATTERY', 'Small Battery', 150),
+          ],
+          sellMinCondition: 1,
+          sellOffers: [],
+        }),
+      ),
+    );
+    await renderPortMarket();
+    await screen.findByText('Plated Hull');
+    const needs = await screen.findByTestId('ship-needs');
+    expect(within(needs).getByText(/Recommended: a shield/)).toBeInTheDocument();
+    // the mock ship already carries a battery, so only the shield is recommended
+    expect(within(needs).queryByText(/Recommended: a battery/)).toBeNull();
+  });
+
   it('shows the pilot balance in the Hangar store', async () => {
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     await waitFor(() => {

@@ -13,6 +13,11 @@ import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
 
+import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
+
+/** What a new pilot starts with (the default `economy.start_credits`). */
+const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+
 const HOME_LOCATIONS: Readonly<Record<string, string>> = {
   luna: 'ceres',
   sun: 'hedus',
@@ -135,7 +140,7 @@ describe('parts and ships API (S4.3)', () => {
         expect(ship.fuel).toBeGreaterThan(0);
 
         const player = await prisma.player.findUniqueOrThrow({ where: { id: ship.ownerPlayerId } });
-        expect(player.credits).toBe(200);
+        expect(player.credits).toBe(START);
         expect(player.factionId).toBe(faction);
 
         const parts = await prisma.partInstance.findMany({ where: { ownerPlayerId: player.id } });
