@@ -30,6 +30,11 @@ function read(playerId: string): readonly VisitKey[] {
   return visited;
 }
 
+/** Forgets what was read from the browser's storage (tests clear the storage between cases). */
+export function clearVisitedCache(): void {
+  cache.clear();
+}
+
 export function markVisited(playerId: string, key: VisitKey): void {
   const current = read(playerId);
   if (current.includes(key)) return;

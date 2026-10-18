@@ -9,6 +9,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
+import { ShipNeedsList, lackingParts } from './ship-needs';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
@@ -37,6 +38,8 @@ export interface MarketPanelProps {
   shipId?: string;
   installedParts?: readonly InstalledPartForCompare[];
   currentSheet?: ShipSheet;
+  /** Show the "Your ship needs" note above the offers (default). The Hangar shows it itself, on the Ship screen. */
+  showNeeds?: boolean;
 }
 
 // The buy side of a port: a filterable list of offers with the full explanation of each part
@@ -50,6 +53,7 @@ export function MarketPanel({
   shipId,
   installedParts,
   currentSheet,
+  showNeeds = true,
 }: MarketPanelProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
@@ -192,29 +196,15 @@ export function MarketPanel({
 
   // What the ship lacks, read off its sheet (no server call): each need names the class of part
   // that would fix it and only shows when this shelf has such parts.
-  const needs = useMemo(() => {
-    if (currentSheet === undefined) return [];
-    const lacking: Array<{ id: string; partClass: string }> = [];
-    if (currentSheet.pdf <= 0) lacking.push({ id: 'weapon', partClass: 'WEAPON' });
-    // Recommended for a first fight (the pilot starts with the money for both): a shield soaks the
-    // hits before the hull does, and it needs a battery to run.
-    const hasClass = (partClass: string): boolean =>
-      (installedParts ?? []).some((part) => part.catalog.partClass === partClass);
-    const needShield = installedParts !== undefined && !hasClass('SHIELD');
-    const needBattery = installedParts !== undefined && !hasClass('BATTERY');
-    if (currentSheet.bli <= 0 && currentSheet.esc <= 0 && !needShield) {
-      lacking.push({ id: 'defense', partClass: 'DEFENSE' });
-    }
-    if (needShield) lacking.push({ id: 'shield', partClass: 'SHIELD' });
-    if (needBattery) lacking.push({ id: 'battery', partClass: 'BATTERY' });
-    if (currentSheet.energyCont < 0) lacking.push({ id: 'power', partClass: 'REACTOR' });
-    if (currentSheet.crg <= 0) lacking.push({ id: 'cargo', partClass: 'CARGO' });
-    return lacking.filter(
-      (need) =>
-        !dismissedNeeds.has(need.id) &&
-        listings.some((listing) => listing.catalog.partClass === need.partClass),
-    );
-  }, [currentSheet, installedParts, listings, dismissedNeeds]);
+  const needs = useMemo(
+    () =>
+      lackingParts(currentSheet, installedParts).filter(
+        (need) =>
+          !dismissedNeeds.has(need.id) &&
+          listings.some((listing) => listing.catalog.partClass === need.partClass),
+      ),
+    [currentSheet, installedParts, listings, dismissedNeeds],
+  );
   const extraFilters = [rarity !== 'all', size !== 'all', condition !== 'all'].filter(
     Boolean,
   ).length;
@@ -255,33 +245,11 @@ export function MarketPanel({
         </p>
       )}
 
-      {needs.length > 0 && (
-        <div className="needs-row" role="note" data-testid="ship-needs">
-          <span className="label needs-tag">{t('market.needsTitle')}</span>
-          <ul>
-            {needs.map((need) => (
-              <li key={need.id}>
-                <span>{t(`market.needs.${need.id}`)}</span>
-                <button
-                  type="button"
-                  className="btn tiny"
-                  onClick={() => setPartClass(need.partClass)}
-                >
-                  {t('market.needsShow')}
-                </button>
-                <button
-                  type="button"
-                  className="needs-dismiss"
-                  aria-label={t('market.needsDismiss', { need: t(`market.needs.${need.id}`) })}
-                  onClick={() => setDismissedNeeds((was) => new Set([...was, need.id]))}
-                >
-                  {t('market.needsDismissMark')}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ShipNeedsList
+        needs={showNeeds ? needs : []}
+        onShow={(need) => setPartClass(need.partClass)}
+        onDismiss={(need) => setDismissedNeeds((was) => new Set([...was, need.id]))}
+      />
 
       <div className="market-filters" role="search">
         <div className="market-controls">

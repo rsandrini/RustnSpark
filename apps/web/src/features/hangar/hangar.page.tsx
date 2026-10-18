@@ -39,6 +39,7 @@ import { TrayPartRow } from './tray-part-row';
 import { EngineTuning } from './engine-tuning';
 import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
+import { ShipNeedsNote } from '../market/ship-needs';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
@@ -724,6 +725,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     // against the wrong baseline (found in review). `ship.sheet` is always the
                     // real, saved one, matching what the server itself computes against.
                     currentSheet={ship.sheet}
+                    showNeeds={false}
                   />
                 ) : (
                   <p className="muted">{t('hangar.side.storeUnavailable')}</p>
@@ -973,6 +975,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </section>
 
             <section aria-label={t('hangar.sheet')} className="hangar-sheet">
+              <ShipNeedsNote
+                sheet={ship.sheet}
+                installedParts={parts.filter((part) => part.location === 'INSTALLED')}
+                canShop={ship.status === 'IN_PORT'}
+                onShow={(partClass) => {
+                  setStoreClass(partClass);
+                  setSideTab('store');
+                }}
+              />
               {allWarnings.length > 0 && (
                 <details open className="panel collapsible" data-testid="flight-warnings">
                   <summary>

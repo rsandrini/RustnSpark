@@ -102,7 +102,7 @@ export function TutorialCard() {
             <div>
               <b>{t(`tutorial.steps.${step.id}.title`)}</b>
               <p>{t(`tutorial.steps.${step.id}.hint`)}</p>
-              {step.id === nextId && (
+              {step.id === nextId && step.to !== null && (
                 <Link className="tutorial-go" to={step.to}>
                   {t('tutorial.go')}
                 </Link>

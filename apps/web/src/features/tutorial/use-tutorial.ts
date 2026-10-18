@@ -8,8 +8,8 @@ export type StepId = 'build' | 'ports' | 'mission' | 'dispatch' | 'report' | 're
 export interface TutorialStep {
   id: StepId;
   done: boolean;
-  /** Where "Take me there" goes. */
-  to: string;
+  /** Where "Take me there" goes; null when there is nowhere to go yet (no report until the mission is done). */
+  to: string | null;
 }
 
 export const STEP_ORDER: readonly StepId[] = [
@@ -62,12 +62,13 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     repair: visited.includes('repaired'),
     work: visited.includes('worked'),
   };
-  const to: Record<StepId, string> = {
+  const to: Record<StepId, string | null> = {
     build: '/ship',
     ports: '/ship',
     mission: '/missions',
     dispatch: '/ship',
-    report: latest === undefined ? '/profile' : `/report/${latest}`,
+    // the link to the report only appears once the mission is complete and there is a report to read
+    report: latest === undefined ? null : `/report/${latest}`,
     repair: '/port',
     work: '/port',
   };

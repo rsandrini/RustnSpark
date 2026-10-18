@@ -3,9 +3,14 @@ import { http, HttpResponse } from 'msw';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
-import { resetEconomyState, ship } from '../../test/msw/handlers';
+import {
+  resetActiveState,
+  resetBoardState,
+  resetEconomyState,
+  ship,
+} from '../../test/msw/handlers';
 import { routes } from '../../app/router';
-import { markVisited } from './tutorial-store';
+import { clearVisitedCache, markVisited } from './tutorial-store';
 
 let tutorialDone = false;
 const saved: boolean[] = [];
@@ -33,7 +38,10 @@ const pilot = () => [
 describe('newcomer tutorial', () => {
   beforeEach(() => {
     resetEconomyState();
+    resetActiveState();
+    resetBoardState();
     window.localStorage.clear();
+    clearVisitedCache();
     tutorialDone = false;
     saved.length = 0;
     server.use(...pilot());
@@ -101,7 +109,8 @@ describe('newcomer tutorial', () => {
     first.unmount();
 
     server.use(built([]));
-    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    renderWithRouter(routes, { initialEntries: ['/map'] });
+    fireEvent.click(await screen.findByRole('button', { name: /Getting started/ }));
     const again = await screen.findByTestId('tutorial-card');
     await waitFor(() =>
       expect(within(again).getByText('Check the connections').closest('li')).toHaveClass('done'),
@@ -133,5 +142,25 @@ describe('newcomer tutorial', () => {
     const card = await screen.findByTestId('tutorial-card');
     expect(within(card).getByText('Repair the wear').closest('li')).toHaveClass('done');
     expect(within(card).getByText('Try other work').closest('li')).toHaveClass('done');
+  });
+
+  it('the "Read your report" link points at the latest report once there is one', async () => {
+    markVisited('player-1', 'yard');
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json([
+          { ...ship(), disconnectedPartIds: [], sheet: { ...ship().sheet, structureUsed: 10 } },
+        ]),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByTestId('tutorial-card');
+    await waitFor(
+      () =>
+        expect(
+          within(screen.getByTestId('tutorial-card')).getByRole('link', { name: 'Take me there' }),
+        ).toHaveAttribute('href', '/report/m-1'),
+      { timeout: 4000 },
+    );
   });
 });
