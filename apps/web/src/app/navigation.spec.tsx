@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../test/utils';
 import { server } from '../test/msw/server';
-import { resetActiveState, resetBoardState } from '../test/msw/handlers';
+import { resetActiveState, resetBoardState, setShipStatus } from '../test/msw/handlers';
 import { routes } from './router';
 
 const onboarded = () =>
@@ -29,6 +29,7 @@ describe('navigation flow (S10.10)', () => {
   beforeEach(() => {
     resetBoardState();
     resetActiveState();
+    setShipStatus('IN_PORT');
     server.use(onboarded());
   });
 
@@ -43,6 +44,24 @@ describe('navigation flow (S10.10)', () => {
     // Owner request: Port and Board are reachable straight from the top nav again (reversing
     // the round-3 fold), between My Ship and Map.
     expect(hrefs).toEqual(['/ship', '/port', '/missions', '/map']);
+  });
+
+  it('Port and Missions are off while the ship travels or works, instead of bouncing the pilot back to the Ship', async () => {
+    setShipStatus('ON_MISSION');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    await waitFor(() =>
+      expect(within(gameNav()).queryByRole('link', { name: 'Port' })).not.toBeInTheDocument(),
+    );
+    const nav = gameNav();
+    expect(within(nav).queryByRole('link', { name: 'Missions' })).not.toBeInTheDocument();
+    expect(within(nav).getByText('Port').closest('.nav-link')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    // the Ship and the Map stay open
+    expect(within(nav).getByRole('link', { name: 'Ship' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Map' })).toBeInTheDocument();
   });
 
   it('the top-right account menu has Profile and Logout, and Admin only for an admin account', async () => {

@@ -1186,6 +1186,7 @@
     "guide": "Guide",
     "gettingStarted": "Getting started",
     "label": "Game navigation",
+    "busy": "Not while the ship is travelling or working: wait for it to arrive.",
     "hangar": "Ship",
     "map": "Map",
     "board": "Missions",

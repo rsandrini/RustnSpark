@@ -53,6 +53,10 @@
   color: var(--ink);
   background: var(--paper-2);
 }
+.shell-nav .nav-link.disabled:hover {
+  color: var(--muted);
+  background: none;
+}
 .shell-nav .nav-link.on {
   color: var(--ink);
   background: var(--paper-3);

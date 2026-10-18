@@ -1,5 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { client } from '../api/client';
+import type { ShipResponse } from '../api/generated';
 
 // The game's four places, in this order: Ship, Port, Missions, Map (phase 2 of the redesign). The
 // ids are the i18n keys under `nav.*` ("hangar" is the Ship, "board" the Missions); the paths are
@@ -18,10 +21,18 @@ const GAME_LINKS = [
  */
 export function GameNav({ bar = false }: { bar?: boolean }) {
   const { t } = useTranslation();
+  // The Port and Missions need the ship at rest in a port; while it travels or works the pilot is
+  // sent back to the Ship screen, so those two are shown off instead of bouncing the pilot back.
+  const ships = useQuery({
+    queryKey: ['ships'],
+    queryFn: () => client.get<ShipResponse[]>('/v1/ships'),
+  });
+  const ship = ships.data?.[0];
+  const away = ship !== undefined && ship.status !== 'IN_PORT';
   return (
     <nav className={bar ? 'shell-tabbar' : 'shell-nav'} aria-label={t('nav.label')}>
-      {GAME_LINKS.map(({ id, to, icon }) => (
-        <NavLink key={id} to={to} className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}>
+      {GAME_LINKS.map(({ id, to, icon }) => {
+        const mark = (
           <svg
             className="nav-icon"
             viewBox="0 0 24 24"
@@ -35,9 +46,26 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
           >
             <path d={icon} />
           </svg>
-          <span>{t(`nav.${id}`)}</span>
-        </NavLink>
-      ))}
+        );
+        if (away && (id === 'port' || id === 'board')) {
+          return (
+            <span key={id} className="nav-link disabled" aria-disabled="true" title={t('nav.busy')}>
+              {mark}
+              <span>{t(`nav.${id}`)}</span>
+            </span>
+          );
+        }
+        return (
+          <NavLink
+            key={id}
+            to={to}
+            className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}
+          >
+            {mark}
+            <span>{t(`nav.${id}`)}</span>
+          </NavLink>
+        );
+      })}
     </nav>
   );
 }
