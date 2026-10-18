@@ -28,68 +28,75 @@ So the rules are not the same: the player runs a route, the rivals run a number.
    tuning rule (more thrust, a chance of a failure that costs time and wear), the same luck.
 2. **Settled leg by leg**: each leg gives every ship a time, so there is a standing after every leg,
    not only a final table.
-3. **Dynamic**: rivals may push their engines on some legs (and pay for it); the player's own push is
-   the same lever. Pace changes during the race, places swap.
+3. **Dynamic but fair**: a rival may run pushed engines for the whole race (and pay for it, like the
+   player); within a race, places swap leg by leg because of the per-leg luck and mishaps.
 4. **Feedback**: the report tells the story leg by leg; the Ship screen shows where you are while
    flying; the board explains the rules so the pilot can plan the push.
 
 ## 3. The model (one pure function, used for everyone)
 
-For each ship `s` and each leg `i` (distance `d_i`, terrain from the route's environments):
+**Nobody changes behavior during the race.** The player sets the engine levels before the start and
+cannot touch them on the way, so a rival is the same: its **speed and its engine level are fixed
+when the offer is made, frozen in `cargo.race.competitors`, shown on the board, and used to the
+end.** The race is then decided by exactly two rolls, the same for every ship, and nothing else.
+
+For ship `s` on leg `i` (distance `d_i`):
 
 ```
-speed(s,i)  = mobility(s) x form(s) x terrain_speed(i) x push_gain(level(s,i))
-time(s,i)   = d_i / speed(s,i) x duration_k x luck(s,i)
-            + (mishap(s,i) ? mishap_penalty x time_without_mishap : 0)
-cumulative(s,i) = sum of time(s,1..i)
+base(s,i) = d_i / speed(s) x duration_k          speed = mobility x terrain_speed(i) x push_gain(level(s))
+time(s,i) = base(s,i) x luck(s,i)                luck(s,i) = 1 + uniform(-leg_luck, +leg_luck)
+          + mishap(s,i) ? base(s,i) x mishap_penalty : 0        mishap(s,i) = random < mishap_chance(level(s))
+total(s)  = sum over legs
 ```
 
-- `terrain_speed(i)` and `push_gain(level)` are the **existing** formulas (route environments, and the
-  engine tuning in `applyEngineLevels`), not new ones: one source for the player and the rivals.
-- `luck(s,i)` is drawn per leg (smaller spread than today, so the sum over the trip stays about the
-  same).
-- `mishap(s,i)`: for a pushing ship, the existing `mishapChance(group, level, condition, rules)`;
-  for a ship at level 1, the small base chance (`race.mishap_chance`, per leg, divided over the legs).
-- **Rival push policy** (the dynamic part). Each rival has a *temperament* frozen with the offer
-  (`steady`, `bold`, `cautious`), and on each leg picks a level from the **standing so far**:
-  trailing ships push harder (catch-up), leaders ease; a `bold` rival pushes more often. The choice
-  is made with the seeded rng of the race, so it is deterministic and the report replays it.
-  Rivals use the same `mishapChance` as the player at their level, with a nominal engine condition
-  (they are not worn), so pushing really is a gamble for them too.
-- **The player's real legs** stay the source of truth for the player: leg time from the flight
-  (route, tuned thrust), a push failure on leg `i` costs time on leg `i` (not a flat share at the
-  end). Encounters that delay the player (a fight) cost the same seconds on that leg.
-- **Same rule for all** also covers the **route**: a rival crosses the same legs, so a slow
-  environment slows everyone, and a long route with a rough leg changes who is ahead.
+- **We never roll the distance.** Distance is the route's; what is rolled is the *time* each ship
+  takes on each leg (`luck`) and whether an engine fails on that leg (`mishap`).
+- `terrain_speed(i)`, `push_gain(level)` and `mishap_chance(level)` are the **existing** formulas
+  (route environments; `applyEngineLevels`; `mishapChance` in the leg resolver). One source for the
+  player and the rivals. A rival uses a nominal engine condition (not worn).
+- The old hidden "form" roll at the end is **dropped**: a rival's speed is what the board shows, so
+  what you see is what races. (Its randomness moves into the per-leg `luck`.)
+- A rival's `level` is drawn at the offer (mostly 1, sometimes a push), by the offer's seed: the board
+  shows "speed 3.1, pushing 1.3". A pushing rival is faster on average and fails more often, exactly
+  like the player's own choice.
+- The player's real legs stay the source of truth for the player (route, tuned thrust, delays from
+  fights); a push failure on leg `i` costs `mishap_penalty` of leg `i`, not a flat share at the end.
+
+### What decides a race when everyone has the same speed
+
+Same speed, same level, same route: `base` is identical, so only the two rolls differ.
+- **Luck.** Each ship's total is the sum of its leg times, each stretched or shrunk by an independent
+  draw within +-`leg_luck` (8% by default). The order is a coin toss weighted by the draws; with more
+  legs the draws average out (the spread of the total shrinks roughly by the square root of the
+  number of legs), so a long multi-leg race is *less* random than a one-leg sprint.
+- **Mishaps.** Each leg is a small chance of a failure that adds 30% to that leg. At level 1 the chance
+  is the base rate; pushing raises it. So equal ships are separated by luck and by who got hit.
+- **Ties** go to the rival (as today). The player's place is the rank of the totals.
+- **Faster ships win more often, not always.** A ship 10% faster beats an equal-luck field most of the
+  time, and a bad leg can still cost it a place. That is the dial: raise `leg_luck` for more upsets
+  and more position swaps between legs; lower it for a race decided by speed.
 
 Output of the pure function:
 
 ```
-RaceTimeline { legs: [{ index, standings: [{ name, you, legSeconds, totalSeconds, level, trouble? }] }],
+RaceTimeline { legs: [{ index, standings: [{ name, you, legSeconds, totalSeconds, mishap }] }],
                final: RaceResult }   // same RaceResult as today (place, prizeShare, standings)
 ```
 
-`final` keeps today's shape, so the prize rules and the places stay as they are.
-
 ## 4. Decisions (recommendation first; "as recommended" approves all)
 
-1. **Where do the rivals' temperaments come from?** Generated with the offer and frozen in
-   `cargo.race.competitors` (a new `temperament` field). Old offers without it count as `steady`.
-   *Recommended.* (The alternative, drawing it at resolve time, breaks the "what you saw on the board
-   is the race you fly" promise.)
+1. **Rivals' behavior is fixed for the whole race** (owner): speed and engine level drawn at the offer,
+   frozen, shown on the board. No reaction to the standings. *Decided.* Old offers without a level
+   count as level 1.
 2. **Live position during the flight.** The worker resolves at the end of the trip, so during the
-   flight the Ship screen shows a **projection**: the rivals' timeline is deterministic (computed from
-   the frozen field and the route), the player is projected at their listed speed. It is labelled
-   "projected". The report shows the exact result. *Recommended for v1.* (Exact live positions would
-   need the mission to resolve leg by leg while flying, a much larger change to the job system.)
-3. **Does a rival retire (DNF)?** No: a mishap costs time, like the player's. *Recommended*, keeps
-   every race with a full standings table.
-4. **Balance.** Prize shares (1.6 / 0.8 / 0.4) and `field_follow` stay; the per-leg spreads are set
-   so the *total* spread matches today's (the check below). The sim gets a race scenario to confirm
-   the win rate by speed and by push level.
-5. **Player-side push stays per run** (bridge levels), not per leg: a per-leg player choice needs the
-   interactive flight we do not have. The "dynamic" part for the player is the choice of level
-   before the start and the fact that rivals now react.
+   flight the Ship screen shows a **projection** (rivals' timeline from the frozen field and the route,
+   the player at their listed speed), labelled "projected". The report shows the exact result.
+   *Recommended for v1.* (Exact live positions need the mission to resolve leg by leg while flying.)
+3. **Does a rival retire (DNF)?** No: a mishap costs time, like the player's. *Recommended.*
+4. **Balance.** Prize shares (1.6 / 0.8 / 0.4) and `field_follow` stay; `leg_luck` is set so the
+   *total* spread over a typical route matches today's; the sim confirms the win rate by speed and
+   by push level. `leg_luck` is Admin-tunable.
+5. **Player push stays per run** (bridge levels): same as the rivals, fixed before the start.
 
 ## 5. Work, in order
 
@@ -97,13 +104,13 @@ RaceTimeline { legs: [{ index, standings: [{ name, you, legSeconds, totalSeconds
 engine-tuning and terrain formulas (move whatever is private into a shared module). Tests first: same
 seed gives the same timeline; the final equals the sum of the legs; a faster ship wins more often
 over many seeds; pushing is faster on average and fails sometimes; a rough leg slows everyone; old
-offers (no temperament) still resolve; a one-leg race equals the old final within the spread.
+offers (no engine level) still resolve; a one-leg race equals the old final within the spread.
 
 **R2 - Wiring and storage.** `mission.resolver.ts`: build the player's per-leg times from the leg
 events (including `engine_push` per leg and delays), call the timeline, store it in the
-`race_result` event (`race.legs`). `generateCompetitors` adds `temperament`; `parseCompetitors`
-defaults it. Contract: `race.legs` optional in the report event schema (old reports have none).
-New admin-tunable rules under `race.*` (per-leg luck spread, push policy weights, temperament
+`race_result` event (`race.legs`). `generateCompetitors` adds a fixed engine `level`; `parseCompetitors`
+defaults it to 1. Contract: `race.legs` optional in the report event schema (old reports have none).
+New admin-tunable rules under `race.*` (per-leg luck spread, the share of rivals that push and their level range
 shares), registered with the usual registry entries and a migration for the DB.
 
 **R3 - Report.** The debrief shows the final table as today plus a **leg-by-leg strip**: after each
@@ -112,7 +119,7 @@ failed on leg 3, -40 s", "Vega Dart pushed and held"). Falls back to the final t
 is missing. Bilingual (en + pt-BR), no hard-coded strings; keyboard and axe pass.
 
 **R4 - Board and Ship.** The board card explains the rule in one line and shows the rivals'
-temperaments ("bold" / "cautious") next to speed, so the pilot can choose a push level; the Ship
+each rival's engine level ("pushing 1.3") next to speed, so the pilot can choose a push level; the Ship
 screen shows the projected standings strip while flying ("projected").
 
 **R5 - Close.** Guide topic text and the Admin tuning screen for the new `race.*` keys; the race
@@ -121,7 +128,7 @@ e2e extended (the report shows the leg strip); sim race check; a short balance n
 
 ## 6. Risks and how we cover them
 
-- **Old data**: reports and offers made before this have no `legs` / `temperament`; every reader
+- **Old data**: reports and offers made before this have no `legs` / `level`; every reader
   treats them as optional, and a test covers each.
 - **Determinism**: the report replays from the stored log, so every random draw uses a labelled
   child of the race rng (`rival-3|leg-2|luck`), never an order-dependent stream.
