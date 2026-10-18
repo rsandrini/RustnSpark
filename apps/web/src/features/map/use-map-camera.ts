@@ -133,6 +133,10 @@ export function useMapCamera(bounds: Bounds | null) {
     zoomIn: () => zoomAround(ZOOM_STEP),
     zoomOut: () => zoomAround(1 / ZOOM_STEP),
     reset: () => setView(null),
+    /** Centres the view on a point at a zoom (kept inside the map). */
+    focusOn: (point: { x: number; y: number }, scale: number) => {
+      if (bounds !== null) setView(clampView(bounds, { scale, cx: point.x, cy: point.y }));
+    },
     stageHandlers: {
       onPointerDown,
       onPointerMove,

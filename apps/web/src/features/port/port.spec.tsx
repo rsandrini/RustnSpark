@@ -38,6 +38,13 @@ function rowButton(label: string | RegExp): Element {
   return button;
 }
 
+async function renderPortAt(entry: string): Promise<void> {
+  renderWithRouter(routes, { initialEntries: [entry] });
+  await screen.findByRole('heading', { name: 'My Ship' });
+  // the tab row shows the group of the open tab: Repair / Refuel / Upgrade for ?tab=refuel
+  await screen.findByRole('tab', { name: 'Refuel' });
+}
+
 async function renderPort(): Promise<void> {
   // Port is a nested route now (owner request: the old Ship/Port/Board switcher duplicated the
   // top nav and got removed) — land on it directly instead of clicking a tab that no longer
@@ -78,6 +85,11 @@ describe('port (S10.9)', () => {
     resetEconomyState();
     setShipActivity(null);
     server.use(onboarded());
+  });
+
+  it('opens the tab named in the address (the board links to ?tab=refuel)', async () => {
+    await renderPortAt('/hangar/port?tab=refuel');
+    expect(screen.getByRole('tab', { name: 'Refuel' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('a service stop (no market, no upgrades) offers only repair and refuel', async () => {

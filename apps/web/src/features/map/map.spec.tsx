@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
-import { setShipStatus } from '../../test/msw/handlers';
+import { setShipStatus, world } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -36,9 +36,19 @@ async function renderMap() {
   return { ...view, svg };
 }
 
+/** The map as first opened is zoomed on the ship's port; most tests want the whole sector, so they press Fit map. */
+async function renderWholeMap() {
+  const rendered = await renderMap();
+  const fit = screen.getByRole('button', { name: 'Fit map' });
+  await waitFor(() => expect(fit).toBeEnabled());
+  fireEvent.click(fit);
+  await waitFor(() => expect(fit).toBeDisabled());
+  return rendered;
+}
+
 describe('map (S10.5)', () => {
   it('renders all 12 nodes, routes and the risk legend', async () => {
-    const { svg } = await renderMap();
+    const { svg } = await renderWholeMap();
 
     expect(svg.querySelectorAll('g[role="button"]')).toHaveLength(12);
     expect(svg.querySelectorAll('line.edge')).toHaveLength(17);
@@ -86,7 +96,7 @@ describe('map (S10.5)', () => {
   });
 
   it('shows main places zoomed out, regional ones zoomed in and local ones zoomed in close, plus the selected place', async () => {
-    const { svg } = await renderMap();
+    const { svg } = await renderWholeMap();
     const shown = () =>
       Array.from(svg.querySelectorAll('g[role="button"]')).map((node) =>
         node.getAttribute('aria-label'),
@@ -117,7 +127,7 @@ describe('map (S10.5)', () => {
   });
 
   it('zooms with the buttons and Fit map returns to the whole map', async () => {
-    const { svg } = await renderMap();
+    const { svg } = await renderWholeMap();
     const width = () => Number((svg.getAttribute('viewBox') ?? '').split(' ')[2]);
     const whole = width();
     expect(screen.getByRole('button', { name: 'Zoom out' })).toBeDisabled();
@@ -127,6 +137,23 @@ describe('map (S10.5)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     fireEvent.click(screen.getByRole('button', { name: 'Fit map' }));
     expect(width()).toBe(whole);
+  });
+
+  it('opens centred and zoomed on the port the ship is stopped at, and Fit map shows the whole sector', async () => {
+    const { svg } = await renderMap();
+    const box = () => (svg.getAttribute('viewBox') ?? '').split(' ').map(Number);
+    const fit = screen.getByRole('button', { name: 'Fit map' });
+    await waitFor(() => expect(fit).toBeEnabled());
+    const [x, y, w, h] = box() as [number, number, number, number];
+    const ceres = world().locations.find((place) => place.id === 'ceres')!;
+    // the port sits inside the window, near its middle unless the window is held back by the map edge
+    expect(ceres.x).toBeGreaterThan(x);
+    expect(ceres.x).toBeLessThan(x + w);
+    expect(ceres.y).toBeGreaterThan(y);
+    expect(ceres.y).toBeLessThan(y + h);
+    fireEvent.click(fit);
+    await waitFor(() => expect(fit).toBeDisabled());
+    expect(box()[2]).toBeGreaterThan(w);
   });
 
   it('opens the side panel on a node click with board link, then closes', async () => {

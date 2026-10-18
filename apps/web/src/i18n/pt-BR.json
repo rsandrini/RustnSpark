@@ -1694,7 +1694,7 @@
       "fuel": "Combustível"
     },
     "fuelUses": "consome {{needed}}",
-    "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: reabasteça primeiro.",
+    "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: <refuel>reabasteça primeiro</refuel>.",
     "needsTitle": "Você precisa de:",
     "needs": {
       "DELIVERY": "espaço de carga para o pacote (veja Carga no Hangar).",

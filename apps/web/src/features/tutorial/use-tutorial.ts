@@ -58,8 +58,9 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     mission: hasMission,
     dispatch: dispatched,
     report: visited.includes('report'),
-    repair: visited.includes('repair'),
-    work: ['refuel', 'scavenging', 'mining'].some((key) => visited.some((v) => v === key)),
+    // these two ask for an action: opening the tab is not enough
+    repair: visited.includes('repaired'),
+    work: visited.includes('worked'),
   };
   const to: Record<StepId, string> = {
     build: '/ship',

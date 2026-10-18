@@ -1694,7 +1694,7 @@
       "fuel": "Fuel needed"
     },
     "fuelUses": "uses {{needed}}",
-    "lowFuel": "Your ship does not carry enough fuel for this trip: refuel first.",
+    "lowFuel": "Your ship does not carry enough fuel for this trip: <refuel>refuel first</refuel>.",
     "needsTitle": "You need:",
     "needs": {
       "DELIVERY": "cargo space for the load (see Cargo in the Hangar).",

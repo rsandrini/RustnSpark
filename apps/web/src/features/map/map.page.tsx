@@ -30,6 +30,9 @@ import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE } from './map-view';
 
 /** The radius of the dot that marks a place hidden at this zoom. */
 const HINT_RADIUS = 3;
+
+/** How far the map zooms in on the port the ship is stopped at when it opens. */
+const SHIP_FOCUS_SCALE = 2.6;
 import { useMapCamera } from './use-map-camera';
 
 const SEPARATOR = ' · ';
@@ -118,6 +121,20 @@ export function MapPage({ guided = false }: MapPageProps) {
   );
   const selected = selectedId === null ? undefined : byId.get(selectedId);
 
+  // Opening the map centres and zooms on the port the ship is stopped at (a trip under way, or a place
+  // named in the address, keeps the whole-map view). Once: "Fit map" and the pilot's own panning stay.
+  const focusedOnShip = useRef(false);
+  const { focusOn } = camera;
+  const shipPlace = shipLocation === null ? undefined : byId.get(shipLocation);
+  const tripUnderWay = flight !== undefined;
+  const queryReady = activeQuery.data !== undefined && shipsQuery.data !== undefined;
+  useEffect(() => {
+    if (focusedOnShip.current || bounds === null || !queryReady || shipPlace === undefined) return;
+    focusedOnShip.current = true;
+    if (tripUnderWay || selectedId !== null) return;
+    focusOn(shipPlace, SHIP_FOCUS_SCALE);
+  }, [bounds, queryReady, shipPlace, tripUnderWay, selectedId, focusOn]);
+
   const journey = useMemo(() => {
     if (flight === undefined || world === undefined) return null;
     const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
@@ -174,8 +191,6 @@ export function MapPage({ guided = false }: MapPageProps) {
   const nameOf = (location: WorldLocation) => pickLocalized(location.displayName, i18n.language);
   const descriptionOf = (location: WorldLocation) =>
     pickLocalized(location.description, i18n.language);
-
-  const shipPlace = shipLocation === null ? undefined : byId.get(shipLocation);
 
   // Every place, nearest to the ship first (coordinates only: no distance claim is made).
   const nearest = [...world.locations].sort((a, b) => {

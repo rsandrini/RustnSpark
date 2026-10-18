@@ -247,10 +247,10 @@ describe('board (S10.6)', () => {
     const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
     expect(gauge).toHaveClass('bad');
     expect(gauge).toHaveAttribute('aria-valuenow', '5');
-    expect(
-      screen.getAllByText('Your ship does not carry enough fuel for this trip: refuel first.')
-        .length,
-    ).toBeGreaterThan(0);
+    // "refuel first" is a link to the Port's Refuel tab
+    const links = screen.getAllByRole('link', { name: 'refuel first' });
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0]).toHaveAttribute('href', '/port?tab=refuel');
   });
 
   it('says refuelling is not enough when the tanks themselves cannot hold what the trip burns', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
@@ -26,7 +26,7 @@ import type {
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
-import { useTutorialVisit } from '../tutorial/tutorial-store';
+import { markVisited } from '../tutorial/tutorial-store';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
@@ -106,11 +106,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<PortTabId>('market');
-  useTutorialVisit(
-    user?.id,
-    tab === 'repair' || tab === 'refuel' || tab === 'scavenging' || tab === 'mining' ? tab : null,
+  // `/port?tab=refuel` opens that tab (the board's "refuel first" link uses it).
+  const [searchParams] = useSearchParams();
+  const wantedTab = searchParams.get('tab');
+  const [tab, setTab] = useState<PortTabId>(
+    PORT_GROUPS.some((group) => (group.tabs as readonly string[]).includes(wantedTab ?? ''))
+      ? (wantedTab as PortTabId)
+      : 'market',
   );
+
   // The last tab opened in each group, so going back to a group lands where the pilot was.
   const [lastInGroup, setLastInGroup] = useState<Partial<Record<PortGroupId, PortTabId>>>({});
   const selectTab = (next: PortTabId) => {
@@ -377,6 +381,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       setRefuelUnits(null);
       setActionError(null);
       setNotice(t('port.refueled', { units: response.units, cost: response.cost }));
+      if (user !== null) markVisited(user.id, 'worked');
       afterTrade();
     },
     onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
@@ -394,6 +399,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       ),
     onSuccess: (response) => {
       repairKey.clear();
+      if (user !== null) markVisited(user.id, 'repaired');
       setRepairPlan(null);
       // The paid plan is spent: leaving it selected would compare its (old) total with the wallet
       // that was just debited and report "not enough money" for a repair that already went through.
@@ -481,6 +487,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }),
     onSuccess: () => {
       setActionError(null);
+      if (user !== null) markVisited(user.id, 'worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
@@ -506,6 +513,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`),
     onSuccess: () => {
       setActionError(null);
+      if (user !== null) markVisited(user.id, 'worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       if (embedded && onGoToShip !== undefined) {

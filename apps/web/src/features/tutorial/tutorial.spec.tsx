@@ -115,4 +115,23 @@ describe('newcomer tutorial', () => {
     const step = within(card).getByText('Read your report').closest('li');
     expect(step).toHaveClass('done');
   });
+
+  it('ticks "Repair the wear" and "Try other work" only when the pilot did it, not when the Port tab was opened', async () => {
+    const first = renderWithRouter(routes, { initialEntries: ['/hangar/port?tab=repair'] });
+    await screen.findByRole('tab', { name: /^Repair/ });
+    first.unmount();
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const card = await screen.findByTestId('tutorial-card');
+    expect(within(card).getByText('Repair the wear').closest('li')).not.toHaveClass('done');
+    expect(within(card).getByText('Try other work').closest('li')).not.toHaveClass('done');
+  });
+
+  it('ticks them once a repair is paid and some work has been done', async () => {
+    markVisited('player-1', 'repaired');
+    markVisited('player-1', 'worked');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const card = await screen.findByTestId('tutorial-card');
+    expect(within(card).getByText('Repair the wear').closest('li')).toHaveClass('done');
+    expect(within(card).getByText('Try other work').closest('li')).toHaveClass('done');
+  });
 });

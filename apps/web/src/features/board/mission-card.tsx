@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import type {
   DisplayResponse,
   MissionOffer,
@@ -246,12 +247,17 @@ export function MissionCard({
         )}
         {burnsFuel && notEnoughFuel && info.estimate !== null && (
           <p className="error-text">
-            {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap
-              ? t('board.lowFuelCapacity', {
-                  needed: Math.round(info.estimate.fuelNeeded),
-                  cap: Math.round(fuelCap),
-                })
-              : t('board.lowFuel')}
+            {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap ? (
+              t('board.lowFuelCapacity', {
+                needed: Math.round(info.estimate.fuelNeeded),
+                cap: Math.round(fuelCap),
+              })
+            ) : (
+              <Trans
+                i18nKey="board.lowFuel"
+                components={{ refuel: <Link to="/port?tab=refuel" /> }}
+              />
+            )}
           </p>
         )}
 
