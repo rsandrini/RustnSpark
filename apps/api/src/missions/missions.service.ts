@@ -229,7 +229,12 @@ export class MissionsService implements OnModuleInit {
     // is read again to include it.
     const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
     if (!created) return offers;
-    const withStarter = await this.board.getBoard(locationId, viewer.tier, playerId, viewer.bridgeRarity);
+    const withStarter = await this.board.getBoard(
+      locationId,
+      viewer.tier,
+      playerId,
+      viewer.bridgeRarity,
+    );
     return this.withEligibility(
       this.capForNewPlayer(withStarter, playerId, isNewPlayer, rules),
       viewer,
@@ -381,7 +386,14 @@ export class MissionsService implements OnModuleInit {
     for (const mission of due) {
       try {
         const job = await this.missionQueue.getJob(mission.id);
-        const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission, this.config.snapshot().rules));
+        const data =
+          job?.data ??
+          (await rebuildDispatchData(
+            this.prisma,
+            this.parts,
+            mission,
+            this.config.snapshot().rules,
+          ));
         await this.resolveService.resolve(data);
       } catch (error) {
         this.logger.warn(
@@ -856,13 +868,13 @@ function offerInfo(
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.
   const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);
-  const windowOf = (mobility: number, form: number, trouble: boolean) => {
+  const windowOf = (mobility: number) => {
+    // every ship can have an engine failure (the same per-leg rule for all), so every range allows for it
     const window = raceWindow({
       distance: totalDistance,
       mobility,
       rules,
-      form,
-      canHaveTrouble: trouble,
+      canHaveTrouble: true,
     });
     return {
       durationSeconds: scaled(window.expected),
@@ -882,12 +894,14 @@ function offerInfo(
         ).map((rival) => ({
           name: rival.name,
           mobility: rival.mobility,
-          ...windowOf(rival.mobility, rules.race.form_spread, true),
+          level: rival.level ?? 1,
+          // a pushed rival runs faster by its level, the same thrust gain a player's tuning gets
+          ...windowOf(rival.mobility * (rival.level ?? 1)),
         }))
       : [];
   const you =
     row.type === 'RACE' && yourMobility !== null && yourMobility > 0
-      ? windowOf(yourMobility, 0, tuned?.pushed === true)
+      ? windowOf(yourMobility)
       : null;
   return {
     title: bilingual(template?.displayName),

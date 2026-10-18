@@ -192,6 +192,16 @@ export interface MissionEvent {
       /** What went wrong for this ship on the day, if anything. */
       readonly trouble?: 'mishap' | 'overheat';
     }[];
+    /** The order after each leg (leading ship first); absent on races settled before legs were kept. */
+    readonly legs?: readonly {
+      readonly standings: readonly {
+        readonly name: string;
+        readonly you: boolean;
+        readonly legSeconds: number;
+        readonly totalSeconds: number;
+        readonly trouble: boolean;
+      }[];
+    }[];
   };
   /** v2, `engine_tuning` only: how an engine group was run this leg (see `MissionEngineTuning`). */
   readonly tuning?: MissionEngineTuning;
@@ -282,10 +292,14 @@ export function missionEvent(input: {
             hit: round.hit,
             damage: roundInt(round.damage),
             armorAbsorbed: roundInt(round.armorAbsorbed),
-            ...(round.armorReduced !== undefined ? { armorReduced: roundInt(round.armorReduced) } : {}),
+            ...(round.armorReduced !== undefined
+              ? { armorReduced: roundInt(round.armorReduced) }
+              : {}),
             shieldAbsorbed: roundInt(round.shieldAbsorbed),
             hullDamage: roundInt(round.hullDamage),
-            ...(round.shieldAfter !== undefined ? { shieldAfter: roundInt(round.shieldAfter) } : {}),
+            ...(round.shieldAfter !== undefined
+              ? { shieldAfter: roundInt(round.shieldAfter) }
+              : {}),
             ...(round.armorAfter !== undefined ? { armorAfter: roundInt(round.armorAfter) } : {}),
           })),
         }

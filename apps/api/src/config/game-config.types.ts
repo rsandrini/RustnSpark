@@ -155,7 +155,7 @@ export type ConfigKey =
   | 'race.mishap_penalty'
   | 'race.mishap_chance'
   | 'race.field_follow'
-  | 'race.form_spread'
+  | 'race.rival_push_chance'
   | 'race.reference_mob'
   | 'race.speed_spread'
   | 'race.time_jitter'
@@ -484,18 +484,18 @@ export type GameRules = Readonly<{
     reference_mob: number;
     /** How far a rival's speed strays from the reference (0.35 = ±35%). */
     speed_spread: number;
-    /** Per-ship luck on the day: finish time varies ±this share. */
+    /** Per-ship, per-leg luck: each leg's time varies ±this share. */
     time_jitter: number;
     /** Share of the base reward for 1st, 2nd and 3rd place (4th and below: nothing). */
     prize_share_1: number;
     prize_share_2: number;
     prize_share_3: number;
-    /** A rival's form on the day: its speed varies ±this share around its listed speed. */
     field_follow: number;
-    form_spread: number;
-    /** Chance a rival has trouble in the race and loses time (the player's engine failures come from the engine tuning). */
+    /** Share of rivals that run pushed engines for the whole race (a level above 1, up to the chemical top). */
+    rival_push_chance: number;
+    /** Chance a ship has an engine failure somewhere in the race (spread over its legs); a pushed engine adds its own chance from the engine tuning. */
     mishap_chance: number;
-    /** Time lost to trouble, as a share of the finishing time. */
+    /** Time lost to an engine failure, as a share of that leg's time. */
     mishap_penalty: number;
   }>;
   rescue: Readonly<{

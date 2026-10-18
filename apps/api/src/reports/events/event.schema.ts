@@ -189,6 +189,21 @@ function eventMembers(
                 trouble: z.enum(['mishap', 'overheat']).optional(),
               }),
             ),
+            legs: z
+              .array(
+                object({
+                  standings: z.array(
+                    object({
+                      name: z.string(),
+                      you: z.boolean(),
+                      legSeconds: num,
+                      totalSeconds: num,
+                      trouble: z.boolean(),
+                    }),
+                  ),
+                }),
+              )
+              .optional(),
           });
         }
         if (type === 'engine_tuning') {

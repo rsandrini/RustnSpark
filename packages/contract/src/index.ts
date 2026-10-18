@@ -630,6 +630,8 @@ export const OfferInfoSchema = z.object({
         z.object({
           name: z.string(),
           mobility: z.number(),
+          /** The engine level the rival runs at for the whole race (1 = as listed, above 1 = pushed). */
+          level: z.number(),
           /** Where the rival usually finishes (listed speed, no luck). */
           durationSeconds: z.number(),
           /** Its best and worst day. */
@@ -846,6 +848,22 @@ export const ReportStatsSchema = z.object({
           trouble: z.enum(['mishap', 'overheat']).optional(),
         }),
       ),
+      /** The order after each leg (leading ship first); absent on races settled before legs were kept. */
+      legs: z
+        .array(
+          z.object({
+            standings: z.array(
+              z.object({
+                name: z.string(),
+                you: z.boolean(),
+                legSeconds: z.number(),
+                totalSeconds: z.number(),
+                trouble: z.boolean(),
+              }),
+            ),
+          }),
+        )
+        .optional(),
     })
     .nullable(),
   loot: z.array(z.object({ materialId: z.string(), name: z.string(), quantity: z.number() })),

@@ -1,10 +1,15 @@
-# Race: one rule for everyone, settled leg by leg (plan, not built)
+# Race: one rule for everyone, settled leg by leg (built, 2026-10-18)
+
+Status: R1-R3 and the board / Ship rival levels are built (resolver, storage, report leg strip, rivals' engine
+level on the board and the Ship screen, `race.rival_push_chance` replaces `race.form_spread`). Not built: the
+*projected* standings strip on the Ship screen while flying (decision 2); and terrain does not change speed in this
+game (duration is distance / mobility), so the model has no terrain term.
 
 Owner: "we need to have the same rule for all, so it should affect all players. We can also have
 some players forcing their engines along the race. This will keep it more dynamic." And: calculate
 between legs, for a more accurate grid and feedback for the player.
 
-## 1. What exists today (facts, from the code)
+## 1. What existed before this change (facts, from the code)
 
 - `resolveRace` (`apps/api/src/resolution/race/race.resolver.ts`) runs **once, at the end**, with the
   whole trip as one number: `finish = total distance / mobility x duration_k`.

@@ -52,6 +52,15 @@ export interface ReportStats {
       readonly you: boolean;
       readonly trouble?: 'mishap' | 'overheat';
     }[];
+    readonly legs?: readonly {
+      readonly standings: readonly {
+        readonly name: string;
+        readonly you: boolean;
+        readonly legSeconds: number;
+        readonly totalSeconds: number;
+        readonly trouble: boolean;
+      }[];
+    }[];
   } | null;
   /** How the engines were run (engine tuning): per group, the level, the legs it was pushed or
       eased, the failures and the chance the pushed legs went clean. Empty when run as listed. */

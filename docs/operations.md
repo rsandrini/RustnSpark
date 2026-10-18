@@ -171,7 +171,7 @@ shows a certificate warning. Without `certs/server.crt` nginx serves plain HTTP 
   zones), `scavenging.handicap_factor` (a ship that cannot fly still scavenges, at this share of
   the chance to find anything). The drop *table* itself (Tuning → Drop tables, `scavenging_common`)
   is admin data: seeds do not overwrite it, so after upgrading edit it (new default 80/17/3).
-- `race.form_spread`, `race.mishap_chance`, `race.mishap_penalty`, `race.overdrive_speed`,
+- `race.mishap_chance`, `race.mishap_penalty`, `race.overdrive_speed`,
   `race.overdrive_fuel`, `race.overdrive_risk`: how dynamic a race is, and what pushing the engines
   (overdrive) costs.
 

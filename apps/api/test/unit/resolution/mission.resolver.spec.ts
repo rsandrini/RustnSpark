@@ -685,7 +685,7 @@ describe('RACE missions', () => {
     );
     const calm: GameRules = {
       ...rules,
-      race: { ...rules.race, time_jitter: 0, form_spread: 0, mishap_chance: 0 },
+      race: { ...rules.race, time_jitter: 0, mishap_chance: 0 },
     };
     const prize = (mob: number): number =>
       resolveMission({

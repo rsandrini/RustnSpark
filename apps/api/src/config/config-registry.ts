@@ -1734,8 +1734,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 0.5,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.time_jitter),
     description: {
-      en: 'Luck on the day: every ship finish time varies by up to this share.',
-      'pt-BR': 'Sorte do dia: o tempo de chegada de cada nave varia até esta fração.',
+      en: "Luck on each leg: every ship's time on a leg varies by up to this share (drawn per ship, per leg).",
+      'pt-BR':
+        'Sorte em cada etapa: o tempo de cada nave numa etapa varia até esta fração (sorteado por nave, por etapa).',
     },
   },
   {
@@ -1788,16 +1789,16 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
-    key: 'race.form_spread',
+    key: 'race.rival_push_chance',
     group: 'race',
     type: 'number',
     min: 0,
-    max: 0.5,
-    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.form_spread),
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.rival_push_chance),
     description: {
-      en: "A rival's form on the day: its speed varies by up to this share around its listed speed (0.1 = ±10%).",
+      en: 'Share of rivals that run their engines pushed for the whole race: faster, and they can fail like a pushed player ship (0.3 = three in ten).',
       'pt-BR':
-        'A forma de um rival no dia: sua velocidade varia até esta fração em torno da velocidade listada (0.1 = ±10%).',
+        'Fração dos rivais que correm com os motores forçados a corrida toda: mais rápidos, e podem falhar como a nave de um jogador que força (0.3 = três em dez).',
     },
   },
   {
@@ -1808,9 +1809,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 1,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.mishap_chance),
     description: {
-      en: "Chance a rival in a race has trouble and loses time (the player's own engine failures come from the engine tuning).",
+      en: 'Chance a ship (you and the rivals alike) has an engine failure somewhere in a race, spread over its legs; a pushed engine adds its own chance from the engine tuning.',
       'pt-BR':
-        'Chance de uma nave numa corrida ter problemas e perder tempo (só rivais; as falhas de motor do jogador vêm do ajuste dos motores).',
+        'Chance de uma nave (você e os rivais) ter uma falha de motor em algum ponto da corrida, dividida entre as etapas; um motor forçado soma a chance do ajuste dos motores.',
     },
   },
   {
@@ -1821,8 +1822,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 2,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.race.mishap_penalty),
     description: {
-      en: 'Time lost to trouble in a race, as a share of the finishing time (0.3 = +30%).',
-      'pt-BR': 'Tempo perdido com problemas numa corrida, como fração do tempo final (0.3 = +30%).',
+      en: "Time lost to an engine failure in a race, as a share of that leg's time (0.3 = +30%).",
+      'pt-BR':
+        'Tempo perdido com uma falha de motor numa corrida, como fração do tempo da etapa (0.3 = +30%).',
     },
   },
   {
@@ -1968,7 +1970,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_below),
     description: {
       en: 'A trip shorter than this (total distance) takes at least the short-trip minimum below.',
-      'pt-BR': 'Uma viagem mais curta que isto (distância total) leva pelo menos o mínimo de viagem curta abaixo.',
+      'pt-BR':
+        'Uma viagem mais curta que isto (distância total) leva pelo menos o mínimo de viagem curta abaixo.',
     },
   },
   {
@@ -1981,7 +1984,8 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_min_seconds),
     description: {
       en: 'The least time a very short trip takes (game seconds, before the time scale). 0 = no minimum.',
-      'pt-BR': 'O menor tempo que uma viagem muito curta leva (segundos de jogo, antes da escala de tempo). 0 = sem mínimo.',
+      'pt-BR':
+        'O menor tempo que uma viagem muito curta leva (segundos de jogo, antes da escala de tempo). 0 = sem mínimo.',
     },
   },
   {

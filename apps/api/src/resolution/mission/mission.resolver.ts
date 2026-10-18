@@ -309,7 +309,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       rewardBase(
         {
           tier: input.mission.tier,
-          ...(input.mission.bridgeRarity === undefined ? {} : { bridgeRarity: input.mission.bridgeRarity }),
+          ...(input.mission.bridgeRarity === undefined
+            ? {}
+            : { bridgeRarity: input.mission.bridgeRarity }),
           danger: maxDanger,
           distance: totalDistance,
           missionType: input.mission.type ?? 'delivery',
@@ -363,8 +365,11 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       competitors: input.mission.race.competitors,
       // The unrounded speed: a rival's 2.6 must not be beaten or tied by a ship rounded up to 3.
       playerMobility: rawMobility(input.snapshot.sheet.pot, input.snapshot.sheet.mass, input.rules),
-      playerMishaps: events.filter((event) => event.type === 'engine_push').length,
-      totalDistance,
+      // the legs the pushed engines failed on (each failure costs time on its own leg)
+      playerPushLegs: events
+        .filter((event) => event.type === 'engine_push')
+        .map((event) => event.leg),
+      legDistances: input.mission.legs.map((leg) => leg.distance),
       rules: input.rules,
       rng: root.child('race'),
     });
@@ -379,6 +384,7 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           place: result.place,
           timeScale: input.rules.missions.time_scale,
           standings: result.standings,
+          legs: result.legs,
         },
       }),
     );
@@ -390,7 +396,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       const base = rewardBase(
         {
           tier: input.mission.tier,
-          ...(input.mission.bridgeRarity === undefined ? {} : { bridgeRarity: input.mission.bridgeRarity }),
+          ...(input.mission.bridgeRarity === undefined
+            ? {}
+            : { bridgeRarity: input.mission.bridgeRarity }),
           danger: maxDanger,
           distance: totalDistance,
           missionType: 'race',

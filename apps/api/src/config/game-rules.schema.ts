@@ -220,7 +220,7 @@ const raceSchema = z.object({
   prize_share_2: z.number().min(0).max(10),
   prize_share_3: z.number().min(0).max(10),
   field_follow: z.number().min(0).max(1),
-  form_spread: z.number().min(0).max(0.5),
+  rival_push_chance: z.number().min(0).max(1),
   mishap_chance: z.number().min(0).max(1),
   mishap_penalty: z.number().min(0).max(2),
 });

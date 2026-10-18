@@ -275,13 +275,16 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prize_share_1: 1.6,
     prize_share_2: 0.8,
     prize_share_3: 0.4,
-    // Each rival has a form on the day (speed varies ±this), a small chance of trouble that costs
-    // them time, and the player's own engine failures come from the engine tuning.
+    // One rule for every ship, leg by leg: luck (time_jitter) per leg, a per-race chance of an engine
+    // failure (mishap_chance, spread over the legs) that costs mishap_penalty of that leg, and a pushed
+    // engine's own failure chance from the engine tuning. A rival's speed and engine level are fixed
+    // for the whole race.
     // The rivals follow the player's own speed part of the way: at 0 the field is fixed around
     // reference_mob, at 1 it is always as fast as the player's ship. 0.6 keeps a faster ship ahead
     // without leaving the field behind.
     field_follow: 0.6,
-    form_spread: 0.1,
+    // Share of rivals that run their engines pushed for the whole race (faster, and they can fail).
+    rival_push_chance: 0.3,
     mishap_chance: 0.08,
     mishap_penalty: 0.3,
   },
