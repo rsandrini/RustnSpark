@@ -44,7 +44,7 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
 
   const ship = ships.data?.[0];
   const built = (ship?.sheet.structureUsed ?? 0) > 0;
-  // "Read the ports" is only done with every part connected: a red port has to be fixed, not just seen.
+  // "Check the connections" is only done with every part connected: a red port has to be fixed, not just seen.
   const connected = built && (ship?.disconnectedPartIds ?? []).length === 0;
   const reportItems = reports.data?.items ?? [];
   const hasReport = reportItems.length > 0;

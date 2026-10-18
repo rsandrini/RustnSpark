@@ -365,8 +365,8 @@
         "hint": "Em Nave, use o Layout automático, ou posicione as peças você mesmo."
       },
       "ports": {
-        "title": "Leia as portas",
-        "hint": "Abra o estaleiro: nenhuma porta deve ficar vermelha. Conserte as vermelhas (mova ou gire uma peça) e isto é marcado."
+        "title": "Confira as conexões",
+        "hint": "Abra o estaleiro: nenhum ponto de conexão das peças deve ficar vermelho. Conserte os vermelhos (mova ou gire uma peça) e este passo é marcado."
       },
       "mission": {
         "title": "Pegue uma missão",

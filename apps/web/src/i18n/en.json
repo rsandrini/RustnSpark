@@ -365,8 +365,8 @@
         "hint": "On My Ship, press Auto layout, or place the parts yourself."
       },
       "ports": {
-        "title": "Read the ports",
-        "hint": "Open the yard: no port should be red. Fix any red ones (move or rotate a part), and this ticks."
+        "title": "Check the connections",
+        "hint": "Open the yard: no connection point on a part should be red. Fix any red ones (move or rotate a part), and this ticks."
       },
       "mission": {
         "title": "Take a mission",

@@ -29,7 +29,7 @@ The pilot can ignore the card, collapse it, or skip the whole thing.
 | # | step | how it ticks (no new API) |
 |---|---|---|
 | 1 | Build your ship: press **Auto layout** (or place the parts yourself) | the ship has installed parts |
-| 2 | Read the ports: green is connected, red is wrong | the ship sheet says ready to fly **and** the pilot has opened the yard once (visit) |
+| 2 | Check the connections: green is connected, red is wrong | the ship sheet says ready to fly **and** the pilot has opened the yard once (visit) |
 | 3 | Take a mission from the board | an active mission exists, or any report exists |
 | 4 | Dispatch and wait for the result | a report exists |
 | 5 | Read your first report | the report page was opened (visit) |

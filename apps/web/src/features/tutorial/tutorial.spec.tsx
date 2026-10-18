@@ -86,7 +86,7 @@ describe('newcomer tutorial', () => {
     expect(await screen.findByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
   });
 
-  it('ticks "Read the ports" only when every part is connected and the yard has been opened', async () => {
+  it('ticks "Check the connections" only when every part is connected and the yard has been opened', async () => {
     markVisited('player-1', 'yard');
     const built = (disconnectedPartIds: string[]) =>
       http.get('/v1/ships', () =>
@@ -97,14 +97,14 @@ describe('newcomer tutorial', () => {
     server.use(built(['part-1']));
     const first = renderWithRouter(routes, { initialEntries: ['/ship'] });
     const card = await screen.findByTestId('tutorial-card');
-    expect(within(card).getByText('Read the ports').closest('li')).not.toHaveClass('done');
+    expect(within(card).getByText('Check the connections').closest('li')).not.toHaveClass('done');
     first.unmount();
 
     server.use(built([]));
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const again = await screen.findByTestId('tutorial-card');
     await waitFor(() =>
-      expect(within(again).getByText('Read the ports').closest('li')).toHaveClass('done'),
+      expect(within(again).getByText('Check the connections').closest('li')).toHaveClass('done'),
     );
   });
 
