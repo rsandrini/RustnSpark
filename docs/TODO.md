@@ -9,8 +9,7 @@ ships (the commit has the history). Raise questions before starting anything mar
 - [ ] **Keep the CI/CD green.** Every push to `develop` must end with the aggregate `CI` job
   green: quality, unit, web, integration (`test:cov` with the coverage thresholds and the Prisma
   migration diff), compose-check, docker-lifecycle, security and oracle-fixtures-fresh. State on
-  2026-10-14: green on the head (`c6d7341`) after the heap (8 GB), resolve transaction (30 s),
-  connection pool (20) and repair-test fixes. *Standing rules:* (1) the **browser smoke does not
+  2026-10-18: green on the head (`cac994f`), all jobs including the browser smoke. *Standing rules:* (1) the **browser smoke does not
   gate the aggregate** (`continue-on-error`), so a red smoke is a real regression that goes
   unnoticed (the far fields broke the map count and the race board for eight commits): read it on
   every run, and promote it to required once it has stayed green for a week (the last 30 runs are all green, since 2026-10-16; **flip `continue-on-error` on or after 2026-10-24 if it is still green**, owner decision 2026-10-17) (see the comment in
@@ -20,143 +19,13 @@ ships (the commit has the history). Raise questions before starting anything mar
   test prints the rejection reasons when it fails; (4) never edit `baselines.json` by hand
   (regenerate it with `tools/oracle/gen_fixtures.py`).
 
-## P2 — Simulations
+## Open
 
-- [x] **Check the simulations: is the economy bot simulation feature complete? Run it and get
-  insights.** (done; see the status section below) Specs: `docs/superpowers/specs/2026-10-11-economy-bot-simulation-design.md`, plan:
-  `docs/superpowers/plans/2026-10-11-economy-bot-simulation-plan.md`, code in `apps/api/sim`. First
-  verify it against the plan (what is built, what is missing), then run it and report what it says
-  about progression through the bridge rarities and the economy. *Known drift to fix first:* the
-  game now has one generic `scrap` material, and the sim still models per-part scrap
-  (`scrap_<type>`); scavenging now picks cheap parts far more often, caps a run at two part finds
-  and caps the price of a find by zone (`scavenging.max_part_finds`, `price_weight_power`,
-  `find_price_cap`), so measure the value of an average run per zone against a mission's reward. Also measure
-  the combat outcome mix with the new rules (`combat.stalemate_by_hull`, `escalation_*`,
-  `loss_bridge_wear`): the dev logs had 78% draws before; check that wins, losses and the rate of
-  destroyed ships (a lost fight now wears the bridge) are where we want them.
-
-### P2 status — balance round (2026-10-15)
-
-Done: the sim is trustworthy (builds `chem`, `chem-shield`, `ion-shield`, `hybrid`; foot scavenging;
-partial repair; idle-part removal; fuel reserve; store schema v2). The economy math (repair grows with
-ship value ×33 from tier 1 to 5, reward ×6) drove one config round, applied to the DB by migration
-`20261015020000_balance_round_wear_repair_fuel` and to the factory defaults: `repair_factor` 0.62,
-`maintenance_per_tier` 60, `fuel_price` 0.65, `wear.base_min/max` 1/1.7, `environment_damage_factor` 1,
-`hull_to_condition` 0.3, `pirate_zone_strength` {0.35, 0.5, 0.65, 1.1}. Results (sim experiments
-46→47): wear per mission 57–76 → 18–32, repair share of reward 53–69% → 23–44%, stalls 0–2 of 6,
-ion L2 day ~17 and L3 day ~35. Rules learned: repair must not go below ~0.6 × part price (the
-buy-used/repair/sell exploit floor), so wear is the lever, not a repair price curve.
-
-- [x] Re-baseline on the new defaults: experiment 48 (16 cells, stored). Chem stalls 4-7 of 8 -> 1,
-  wear per mission 57-76 -> 21-38, repair share 53-87% -> 34-50%.
-- [x] Reward ladder, first step (migration `20261015030000_balance_round_reward_ladder`):
-  `reward_danger_divisor` 8 -> 4, `loss_wear_scale` {0.1, 0.3, 0.4, 0.7}. Zone 3 net per mission went
-  42 -> 823 credits (zone 2: 668 -> 1055).
-- [x] Fast pace (owner: "keep the pace a lot faster"), migration `20261015040000_balance_round_fast_pace`:
-  `reward_base` 300, `reward_danger_divisor` 3, `loss_wear_scale[3]` 0.5, zone 3 pirate strength 1.0.
-  Zone 3 net is now 1.35x zone 2, chem fuel 30% -> 20% of reward. *Finding:* level days did not move
-  (chem L2 ~day 11 / L3 ~21, ion L2 ~17 / L3 ~42) although wallets are full at L2 (6.8k chem, 21k ion):
-  money is not the gate, the market's bridge-gated rarity shelves and the upgrade materials are.
-- [x] Pace investigation (sim experiments 53-68): neither shelf rarity (`market_rarity_by_bridge` up) nor
-  halved upgrade materials moved the level days, and the pilot is income-bound early. A real sim
-  artifact was found and fixed: the bot did one fit/buy/upgrade per loop turn, a player does several
-  per stop; chaining them (up to 8 per stop) took ion L2 17 -> 14 days and L3 42 -> 26. Today (balanced
-  pilot, 2 h/day): chem L2 ~11 / L3 ~18, hybrid ~9 / ~19, ion ~14 / ~26. An early-income dial exists
-  (`reward_base` 450 + `reward_per_tier` 90: L2 ~15% sooner, chem repair share +6 points) but is NOT
-  applied. To halve L2 again the early net per mission has to double; that is a design call.
-- [x] Bot: buys a mining rig when only `MINER` work is on the board.
-- [x] Balance round 4 (migration `20261016000000_balance_round_epic_sink`, sim experiment `epic-v1`, 8 runs x
-  300 missions per build, game-clock hours, median): Epic parts cost x2 and Legendary x3 (money is the
-  path past Rare), rare/epic bridges see epic parts more often, `reward_base` 450 / `reward_per_tier` 90,
-  `fuel_price` 0.45. Time to Epic (L4): chem never -> 56 h, hybrid 132 h (1 of 8) -> 56 h, ion 187 -> 91 h;
-  Legendary (L5): chem never -> 107 h, ion 232 -> 191 h. End wallets 200-450k -> 35-85k. Cost: repair is
-  49-62% of reward at the top (parts cost more); fuel is 12% of reward on chem.
-- [x] Fuel share of reward on chem 29-37% -> 12%; the "prefer shorter routes" bot gap is no longer needed.
-- [x] Sim robustness: a fill slot (second solar panel) buys the next tier up when the wanted tier is on no
-  reachable shelf, instead of wandering (ion's early levels depended on shelf luck).
-- [x] Map: a separate next step (owner): expand it for a complete v1, with zoom and panning, very short and
-  long distances. The dev-only `ziggy` route was shortened 5000 -> 900 so it stops inflating zone 1.
-- [ ] Late game (parked): fusion torch engine + fusion reactor family above nuclear (see GLOSSARY once
-  written); needs the early and mid economy to hold first.
-
-**Deferred on purpose (owner): the bigger bridge / starter shield test.** First the game, the sim and
-the balance must all work; only then go back to a starter shield with a larger bridge budget.
-
-## P3 — Missions
-
-- [x] **Mission rewards follow the bridge rarity (the part-price ladder)** — first slice of P3, owner
-  decision "rewards follow the part-price ladder". New rule `economy.reward_by_bridge`
-  {COMMON 1, UNCOMMON 1, RARE 1.4, EPIC 2.2, LEGENDARY 3.2}, applied in `rewardBase` (board estimate,
-  accept-time figure and the resolver's payout all see it; older rule sets have no table = x1).
-  Before it, 80% of the missions flew at ship tier 5 (value >= 18000, reached at L3) so pay was flat
-  from L3 to L5 while repair kept growing. Sim (8 runs x 300 missions): repair share of reward
-  chem 37-44% -> 18-26%, ion 64% -> 40%; ion Legendary 164 -> 130 game hours; chem pace unchanged. The
-  stronger table [1, 1.2, 1.8, 3, 5] over-pays (repair 11-22%).
-- [x] P3 closed by the owner after the reward slice: requirements, fuel and repair scaling by bridge rarity
-  were not needed (the sim shows repair at 18-40% of reward).
-
-## P4
-
-- [x] **A wiki / game guide.** (done: `/guide` from the account menu, nine topics with live numbers from `GET /v1/guide/rules`, search over topics, sections and part names; see `docs/design/guide-plan.md`) A place that explains the details of the game: what is the
-  difference between defense, armor, shields, hull frames, engines (chemical and ion), batteries,
-  reactors, weapons; how rarity, size and the bridge level work; how upgrading works (condition at
-  100%, money, scrap / crystals / cores); how fuel, repair, scavenging, mining and missions work;
-  what ports, connectors and incorrect ports mean; what each mission type needs. *Needs design:*
-  in-game pages (a "Guide" route in the web app, bilingual en + pt-BR, no hard-coded strings) or
-  markdown rendered in the app; keep it in sync with the Admin-tunable numbers by reading values
-  from the API where it quotes them (for example the repair and upgrade rules), not hard-coding
-  them. The part descriptions (`hangar.partClasses`, the part-class help texts) are a starting point.
-
-- [x] **A simple tutorial for newcomers.** (done: a self-ticking checklist card, skip / finish saved on the player (`tutorialDone`), reopened from the account menu; see `docs/design/tutorial-plan.md`) Something short that shows, step by step: how to build a
-  ship (place parts, connect them, fix red ports), how to refuel, repair, scavenge and mine, and
-  how to get and accept tasks. *Needs design:* an in-game guided flow for a new pilot (a checklist
-  that ticks as the pilot does each thing, or a few highlighted steps), shown after onboarding and
-  skippable, bilingual (en + pt-BR). It pairs with the starter changes above (a full tank, a short
-  first mission) so the first minutes work. It can link to the wiki for details.
-
-- [x] **Mining animation.** (done: the ship stage shows a free dig; port art animated) The mining job and its screen need an animation (like the ship scene
-  for scavenging / travel). *Where:* `apps/web/src/ui/ActionArt.tsx` (the port action art),
-  the mining tab in `port.page.tsx`, and the ship stage in `apps/web/src/ui/ShipStage.tsx`.
-
-- [x] **Admin parts browser.** Filters, search, sort and column choice live in the URL and survive a save
-  (`EntityScreen.tsx`, round 6). Comparison (round 7): tick parts in the list (`?sel=`), a table of the
-  numeric stats with the best value marked and hand-rolled SVG bars for the stats ticked
-  (`PartCompare.tsx`, parts only).
-
-## Parked / not yet scheduled (owner steers, 2026-10-16)
-
+- [ ] Late game (parked): the fusion torch engine and the fusion reactor family above nuclear, and a
+  pre-warning before a bridge is destroyed. Needs the early and mid economy to hold first.
 - [ ] Starter shield + battery in the free kit with a larger bridge budget (2x2 bridge limits): test it as
-  its own A/B once the game, sim and balance all work.
-- [ ] Map expansion for a complete v1: very short and very long distances, new places. *(Zoom and pan are done: wheel, pinch, drag and buttons.)*
-- [ ] Late game: far *missions* (the three `deep_field` places have mining only), the fusion torch engine
-  and the fusion reactor family, and a pre-warning before a bridge is destroyed.
-- [x] Seed sync of dev-only data (done 2026-10-17: seed == dev DB, checked table by table; `ziggy`, its route and race template, the hull edits, `sell_min_condition` 15, the universal bridge rules and `drift` isolation 1.6 are in the seed; the dev DB's older texts and `upgrade_materials` were refreshed from the seed). Was: the `ziggy` location, route and `race_explorers_ziggy` template, hull
-  edits, `sell_min_condition` 15 and the 1x1 bridge connector rules only exist in the dev DB.
-- [x] Tests (done 2026-10-17): a no-bridge dispatch test; the flaky ghost-drop spec fixed (stale viewBox); the soak test prints nothing now (not reproducible). Still watch: the race e2e needs a race offer on the dev board.
+  its own A/B once the game, sim and balance all work. *(Deferred on purpose by the owner.)*
 - [ ] Sim: chem and hybrid builds still stall now and then on an empty wallet; the ion build's repair
-  share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level.
-
-## P5 — Look and feel
-
-- [ ] **Upgrade the CSS to https://github.com/nutlope/hallmark: investigate first, to choose which
-  one will be used.** *Investigation done (2026-10-16); waiting for the owner's pick.* Findings:
-  - Hallmark is **not a stylesheet or component library**. It is a design *skill* for Claude Code / Cursor /
-    Codex (MIT, `npx skills add nutlope/hallmark`): 21 token themes (`[data-theme]`), 57 "slop test" gates,
-    and four verbs: build, `audit` (punch list, no edits), `redesign`, `study` (extract a design's DNA into
-    a portable `design.md`). There is nothing to install in the app and no runtime dependency.
-  - Its themes target marketing and editorial pages (hero, nav and footer archetypes); most are light
-    "paper" themes. The dark ones are `midnight`, `terminal`, `aurora`, `manifesto`, `lumen` (Night).
-  - Our sheet: one 5,943-line `index.css`, 37 custom properties and 568 `var()` uses, but also 109 hex and
-    75 rgb literals (68 distinct hex colours) that bypass the tokens, no deliberate type pairing
-    (`inherit` / Georgia / monospace), 0 `!important`, reduced-motion handled, 21 keyframes, 4 breakpoints.
-  - Options: **A** keep our identity and use Hallmark as an audit + discipline tool (audit key screens,
-    lift the hex literals into named tokens, the 8-state rule for interactive controls, a 320-414 px
-    mobile floor); **B** adopt a dark theme's token set and type pairing as the new base (rarity and
-    faction colours stay ours); **C** `redesign` the whole UI (not recommended: 6k lines, 48 web specs
-    tied to markup and classes).
-  - Recommendation: **A first**, then decide on a B-lite (a type pairing and token structure from
-    `midnight`/`aurora`) from the audit's punch list. No code changes until the owner picks.
-  - **Owner pick (2026-10-16): a black theme, Hallmark "Lumen" (Night Foundry); redesign the whole game,
-    admin excluded; analyse the routes and menus first.** The audit, the proposed navigation, the Lumen
-    mapping and the phased plan are in `docs/design/ux-audit-and-redesign-plan.md` (screenshots in
-    `docs/design/before/`). Navigation approved on the demo (`docs/design/demo/`); **phase 1 (tokens, fonts, component kit) and phase 2 (shell and navigation: routes, header, status strip, phone tab bar) are done**; next: phase 3, the screens (the owner picks the order; Store stays in My Ship).
+  share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level. The sim
+  also exports from the dev DB, so re-run it on the new map (short and far places, the 5-minute floor).
+- [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
