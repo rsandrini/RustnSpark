@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { FACTIONS, LEAKED_KEY, assertClean, registerAndLaunch, openPortTab } from './support';
+import {
+  FACTIONS,
+  LEAKED_KEY,
+  assertClean,
+  registerAndLaunch,
+  openPortTab,
+  acceptableMission,
+} from './support';
 
 /**
  * One player's whole loop against the real stack, for each playable faction, in both a desktop
@@ -37,7 +44,7 @@ for (const faction of FACTIONS) {
     await expect(page.locator('.mrow').first()).toBeVisible();
     // D43: on default settings a freshly onboarded player must always have a mission they can
     // accept — a private start-safe one when the shared board has nothing takeable.
-    const accept = page.locator('.mrow', { hasText: 'Starter mission' }).locator('button:has-text("Accept"):not([disabled])').first();
+    const accept = await acceptableMission(page);
     await expect(
       accept,
       `${faction}: a freshly onboarded player has no acceptable mission on the home board`,

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export const FACTIONS = ['luna', 'sun', 'explorers'] as const;
 
@@ -81,14 +81,28 @@ export async function walletOf(page: Page): Promise<number> {
   return Number(text.replace(/[^\d-]/g, ''));
 }
 
+/** The names of the small repair-and-fuel stops, which have no market. */
+const SERVICE_STOP_NAMES = /Drydock|Slipway|Slag Heap|Fuel Depot|Ore Claim|Waystation/;
+
+/**
+ * The mission to take from the home board: the player's private starter mission when there is
+ * one, else the first offer they can accept. The starter mission only exists when the shared
+ * board has nothing takeable, so a random public offer is a normal first mission too.
+ */
+export async function acceptableMission(page: Page): Promise<Locator> {
+  const accept = 'button:has-text("Accept"):not([disabled])';
+  await expect(page.locator('.mrow').first()).toBeVisible();
+  const starter = page.locator('.mrow', { hasText: 'Starter mission' }).locator(accept).first();
+  if ((await starter.count()) > 0) return starter;
+  // A public offer must not end at a service stop (no market there): the port checks that follow
+  // a flight look at the Market.
+  return page.locator('.mrow', { hasNotText: SERVICE_STOP_NAMES }).locator(accept).first();
+}
+
 /** Accept the first acceptable mission on the home board, dispatch, and wait for the report. */
 export async function flyOneMission(page: Page): Promise<void> {
   await page.goto('/missions');
-  await page
-    .locator('.mrow', { hasText: 'Starter mission' })
-    .locator('button:has-text("Accept"):not([disabled])')
-    .first()
-    .click();
+  await (await acceptableMission(page)).click();
   await expect(page).toHaveURL(/\/ship/);
   await page.getByRole('button', { name: 'Dispatch' }).click();
   // The transit screen sends the pilot to the report when the flight ends.

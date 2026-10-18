@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import axe from 'axe-core';
-import { openPortTab, registerAndLaunch } from './support';
+import { acceptableMission, openPortTab, registerAndLaunch } from './support';
 
 /**
  * Accessibility in a real browser (phase 4, H3): axe-core with every rule, colour contrast included (jsdom
@@ -91,11 +91,7 @@ test('the game screens and their states', async ({ page }, info) => {
 
   // a flown mission gives the report and the profile history
   await page.goto('/missions');
-  await page
-    .locator('.mrow', { hasText: 'Starter mission' })
-    .locator('button:has-text("Accept"):not([disabled])')
-    .first()
-    .click();
+  await (await acceptableMission(page)).click();
   await page.getByRole('button', { name: 'Dispatch' }).click();
   await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
   await expect(page.getByTestId('debrief')).toBeVisible();
