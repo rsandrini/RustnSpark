@@ -569,6 +569,27 @@ describe('S6.2 — template filler (pure generation)', () => {
       }
     });
 
+    it('never picks a template that only ends at a far station, which a new pilot cannot reach', () => {
+      const far: FillerLocation = {
+        id: 'thule',
+        type: 'far_station',
+        zone: 3,
+        factionId: 'explorers',
+      };
+      const haulFar: FillerTemplate = {
+        id: 'haul_far',
+        type: 'DELIVERY',
+        factionId: 'luna',
+        active: true,
+        requirements: { originFactions: ['luna'], destinationTypes: ['far_station'] },
+      };
+      const base = world([DELIVERY_LUNA, haulFar]);
+      const withFar: FixtureWorld = { ...base, locations: [...base.locations, far] };
+      for (let epoch = 0; epoch < 20; epoch += 1) {
+        expect(starterIn(`starter|p1|alpha|${epoch}`, withFar, 0).templateId).toBe('delivery_luna');
+      }
+    });
+
     it('does not change ordinary generation (no constraint, same seed, same result)', () => {
       const plain = fill('alpha|3|v1', LOC_ALPHA);
       expect(plain).toEqual(fill('alpha|3|v1', LOC_ALPHA));

@@ -214,6 +214,12 @@ function matchesDestination(destination: FillerLocation, template: FillerTemplat
   return typeMatch && idMatch;
 }
 
+/** Whether this template can only end at a far, opt-in place (a new pilot cannot fly there). */
+function endsAtOptInPlace(template: FillerTemplate, world: FillerWorld): boolean {
+  const named = world.locations.filter((location) => matchesDestination(location, template));
+  return named.length > 0 && named.every((location) => OPT_IN_PLACE_TYPES.has(location.type));
+}
+
 function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
   const requirements = requirementsOf(template);
   const factionMatch =
@@ -408,7 +414,9 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const { origin, world, rules, now } = input;
 
   const eligible = eligibleTemplates(origin, world).filter(
-    (candidate) => input.starter === undefined || input.starter.types.includes(candidate.type),
+    (candidate) =>
+      input.starter === undefined ||
+      (input.starter.types.includes(candidate.type) && !endsAtOptInPlace(candidate, world)),
   );
   const template = eligible.length > 0 ? rng.child('template').pick(eligible) : undefined;
   if (template === undefined) {

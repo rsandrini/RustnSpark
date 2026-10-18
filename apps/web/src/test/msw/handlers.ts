@@ -1707,8 +1707,7 @@ export const world = (): WorldResponse => ({
     },
     type: type as string,
     // the map shows the main places always, regional ones zoomed in, local ones zoomed in close
-    detail: (id === 'ceres_dock' ? 'local' : id === 'halcyon' ? 'regional' : 'main') as
-      'main' | 'regional' | 'local',
+    detail: id === 'ceres_dock' ? 'local' : id === 'halcyon' ? 'regional' : 'main',
     x: x as number,
     y: y as number,
     zone: zone as number,
