@@ -501,6 +501,13 @@
   background: var(--info);
 }
 
+/* Refuelling: when the tank level changes the bar fills over about a second, to show it is filling. */
+@media (prefers-reduced-motion: no-preference) {
+  .gauge.fuel .gauge-fill {
+    transition: width 1s ease-out;
+  }
+}
+
 .gauge.big {
   height: 26px;
 }
