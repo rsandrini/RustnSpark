@@ -7,6 +7,7 @@ import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import type {
   InventoryItem,
+  LocalizedText,
   MarketResponse,
   MaterialsResponse,
   DiscardResponse,
@@ -41,6 +42,7 @@ import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { PartDetail } from '../parts/part-detail';
+import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
 import { useBridgeResize } from './bridge-resize-panel';
 import type { PartInfoData } from '../parts/part-detail';
 
@@ -284,7 +286,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
   const wallet = user?.credits ?? 0;
   // Upgrade tab: by default only what the pilot can pay for right now.
-  const [onlyAffordable, setOnlyAffordable] = useState(true);
+  const [onlyAffordable, setOnlyAffordable] = useState(false);
   const broke = wallet < 0;
   const afterTrade = () => {
     // Profile only (wallet): a session refresh per trade would rotate the refresh token.
@@ -1151,6 +1153,26 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             if (quotes === undefined && upgradeCandidates.length > 0) {
               return <p className="sub">{t('loading')}</p>;
             }
+            // What the pilot holds against what the cards ask for: the credits, and each material any card names.
+            const holdings = new Map<string, { name: LocalizedText; have: number }>();
+            for (const quote of quotes?.values() ?? []) {
+              for (const need of quote.materials ?? []) {
+                holdings.set(need.materialId, { name: need.displayName, have: need.have });
+              }
+            }
+            const haveStrip = (
+              <p className="upgrade-have" data-testid="upgrade-have">
+                <b>{t('port.upgradeYouHave')}</b> <span>{money(wallet)}</span>
+                {[...holdings.entries()].map(([id, held]) => (
+                  <span key={id}>
+                    {t('port.upgradeHeld', {
+                      name: pickLocalized(held.name, i18n.language),
+                      have: held.have,
+                    })}
+                  </span>
+                ))}
+              </p>
+            );
             const filterChips = upgradable.length > 0 && (
               <div className="chips" role="group" aria-label={t('port.upgradeFilter')}>
                 <button
@@ -1175,6 +1197,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             if (cards.length === 0) {
               return (
                 <>
+                  {haveStrip}
                   {filterChips}
                   <p className="sub">
                     {upgradable.length > 0
@@ -1187,8 +1210,178 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 </>
               );
             }
+            // The cards by readiness: ready to pay, short of credits only, short of materials (whatever else).
+            const groups: Record<UpgradeReadiness, InventoryItem[]> = {
+              ready: [],
+              credits: [],
+              materials: [],
+            };
+            for (const item of eligible) {
+              const quote = quotes?.get(item.id);
+              if (quote !== undefined) groups[readinessOf(upgradeNeeds(quote, wallet))].push(item);
+            }
+            const renderCard = (item: InventoryItem) => {
+              const quote = quotes?.get(item.id);
+              if (quote === undefined) return null;
+              if (!quote.eligible) {
+                // Not upgradable now (top rarity, needs repair...): the bridge still shows,
+                // with its own size controls.
+                return (
+                  <PartCard
+                    key={item.id}
+                    part={item}
+                    actions={<div className="upgrade-actions">{bridgeResize.actionsFor(item)}</div>}
+                  />
+                );
+              }
+              const name = partName(item);
+              const nextName =
+                quote.nextDisplayName !== undefined
+                  ? pickLocalized(quote.nextDisplayName, i18n.language)
+                  : '';
+              // Say exactly what becomes what: "Small Fuel Tank · Common → Small Fuel Tank · Uncommon".
+              const fromTo = t('port.upgradeFromTo', {
+                from: `${name} · ${t(`parts.rarities.${item.rarity}`, { defaultValue: item.rarity })}`,
+                to: `${nextName} · ${t(`parts.rarities.${quote.nextRarity ?? ''}`, { defaultValue: quote.nextRarity ?? '' })}`,
+              });
+              // Round-10 owner request: "Upgrade UI should show diff between current
+              // part and upgraded part" — the next tier doesn't exist as an owned
+              // instance yet, so it's a virtual PartInfoData (same trick Market uses
+              // for a catalog listing), replacing this exact instance.
+              const nextPartInfo: PartInfoData | undefined =
+                quote.nextCatalog !== undefined &&
+                quote.nextRarity !== undefined &&
+                quote.nextDisplayName !== undefined
+                  ? {
+                      displayName: quote.nextDisplayName,
+                      description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
+                      rarity: quote.nextRarity,
+                      catalog: quote.nextCatalog,
+                      condition: 100,
+                    }
+                  : undefined;
+              const needs = upgradeNeeds(quote, wallet);
+              const missingNow = firstMissing(needs);
+              return (
+                <PartCard
+                  key={item.id}
+                  part={item}
+                  price={quote.cost}
+                  priceCaption={t('port.upgradeCost')}
+                  hoverPart={nextPartInfo}
+                  infoExtra={
+                    nextPartInfo !== undefined && (
+                      <section className="upgrade-next" aria-label={fromTo}>
+                        <h4>{fromTo}</h4>
+                        <PartDetail part={nextPartInfo} versus={item} />
+                      </section>
+                    )
+                  }
+                  actions={
+                    <div className="upgrade-actions">
+                      <span className="sub">{fromTo}</span>
+                      <ul className="upgrade-needs" data-testid="upgrade-needs">
+                        {needs.map((need) => (
+                          <li key={need.id} className={need.met ? 'req-met' : 'req-unmet'}>
+                            <span
+                              className={`badge ${need.met ? 'ok' : 'warn'}`}
+                              aria-hidden="true"
+                            >
+                              {need.met ? '✓' : '✗'}
+                            </span>
+                            {need.kind === 'credits'
+                              ? t('port.upgradeNeedCredits', {
+                                  have: money(need.have),
+                                  needed: money(need.needed),
+                                })
+                              : t('port.upgradeMaterial', {
+                                  name: pickLocalized(
+                                    need.name ?? { en: need.id, 'pt-BR': need.id },
+                                    i18n.language,
+                                  ),
+                                  have: need.have,
+                                  needed: need.needed,
+                                })}
+                            {!need.met && (
+                              <b className="upgrade-missing">
+                                {' '}
+                                {need.kind === 'credits'
+                                  ? t('port.upgradeMissingCredits', { amount: money(need.missing) })
+                                  : t('port.upgradeMissing', { amount: need.missing })}
+                              </b>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      {needs
+                        .filter((need) => need.kind === 'material' && !need.met)
+                        .map((need) => (
+                          <p key={`where-${need.id}`} className="sub upgrade-where">
+                            {t(`port.upgradeWhere.${need.id}`, {
+                              defaultValue: t('port.upgradeWhere.other'),
+                            })}
+                            {need.id === 'scrap' && (
+                              <>
+                                {' '}
+                                <button
+                                  type="button"
+                                  className="link"
+                                  onClick={() => setTab('scavenging')}
+                                >
+                                  {t('port.upgradeGoWork')}
+                                </button>
+                              </>
+                            )}
+                          </p>
+                        ))}
+                      <button
+                        type="button"
+                        className="btn primary"
+                        disabled={
+                          upgradePart.isPending ||
+                          (quote.cost ?? 0) > wallet ||
+                          (quote.materials ?? []).some((need) => need.have < need.needed)
+                        }
+                        onClick={() =>
+                          setUpgradeConfirm({
+                            partInstanceId: item.id,
+                            name,
+                            nextName,
+                            rarity: item.rarity,
+                            nextRarity: quote.nextRarity ?? item.rarity,
+                            cost: quote.cost ?? 0,
+                            materials: (quote.materials ?? []).map((need) => ({
+                              materialId: need.materialId,
+                              name: pickLocalized(need.displayName, i18n.language),
+                              have: need.have,
+                              needed: need.needed,
+                            })),
+                          })
+                        }
+                      >
+                        {missingNow === undefined
+                          ? t('port.upgrade')
+                          : missingNow.kind === 'credits'
+                            ? t('port.upgradeNeedMoreCredits', {
+                                amount: money(missingNow.missing),
+                              })
+                            : t('port.upgradeNeedMore', {
+                                amount: missingNow.missing,
+                                name: pickLocalized(
+                                  missingNow.name ?? { en: '', 'pt-BR': '' },
+                                  i18n.language,
+                                ),
+                              })}
+                      </button>
+                      {bridgeResize.actionsFor(item)}
+                    </div>
+                  }
+                />
+              );
+            };
             return (
               <>
+                {haveStrip}
                 {filterChips}
                 {eligible.length === 0 && (
                   <p className="sub">
@@ -1197,117 +1390,34 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                       : t('port.upgradeNoneWhy')}
                   </p>
                 )}
-                <div className="pcard-grid">
-                  {cards.map((item) => {
-                    const quote = quotes?.get(item.id);
-                    if (quote === undefined) return null;
-                    if (!quote.eligible) {
-                      // Not upgradable now (top rarity, needs repair...): the bridge still shows,
-                      // with its own size controls.
-                      return (
-                        <PartCard
-                          key={item.id}
-                          part={item}
-                          actions={
-                            <div className="upgrade-actions">{bridgeResize.actionsFor(item)}</div>
-                          }
-                        />
-                      );
-                    }
-                    const name = partName(item);
-                    const nextName =
-                      quote.nextDisplayName !== undefined
-                        ? pickLocalized(quote.nextDisplayName, i18n.language)
-                        : '';
-                    // Say exactly what becomes what: "Small Fuel Tank · Common → Small Fuel Tank · Uncommon".
-                    const fromTo = t('port.upgradeFromTo', {
-                      from: `${name} · ${t(`parts.rarities.${item.rarity}`, { defaultValue: item.rarity })}`,
-                      to: `${nextName} · ${t(`parts.rarities.${quote.nextRarity ?? ''}`, { defaultValue: quote.nextRarity ?? '' })}`,
-                    });
-                    // Round-10 owner request: "Upgrade UI should show diff between current
-                    // part and upgraded part" — the next tier doesn't exist as an owned
-                    // instance yet, so it's a virtual PartInfoData (same trick Market uses
-                    // for a catalog listing), replacing this exact instance.
-                    const nextPartInfo: PartInfoData | undefined =
-                      quote.nextCatalog !== undefined &&
-                      quote.nextRarity !== undefined &&
-                      quote.nextDisplayName !== undefined
-                        ? {
-                            displayName: quote.nextDisplayName,
-                            description: quote.nextDescription ?? { en: '', 'pt-BR': '' },
-                            rarity: quote.nextRarity,
-                            catalog: quote.nextCatalog,
-                            condition: 100,
-                          }
-                        : undefined;
-                    return (
-                      <PartCard
-                        key={item.id}
-                        part={item}
-                        price={quote.cost}
-                        priceCaption={t('port.upgradeCost')}
-                        hoverPart={nextPartInfo}
-                        infoExtra={
-                          nextPartInfo !== undefined && (
-                            <section className="upgrade-next" aria-label={fromTo}>
-                              <h4>{fromTo}</h4>
-                              <PartDetail part={nextPartInfo} versus={item} />
-                            </section>
-                          )
-                        }
-                        actions={
-                          <div className="upgrade-actions">
-                            <span className="sub">{fromTo}</span>
-                            {(quote.materials ?? []).length > 0 && (
-                              <ul className="upgrade-materials" data-testid="upgrade-materials">
-                                {(quote.materials ?? []).map((need) => (
-                                  <li
-                                    key={need.materialId}
-                                    className={need.have >= need.needed ? 'req-met' : 'req-unmet'}
-                                  >
-                                    {t('port.upgradeMaterial', {
-                                      name: pickLocalized(need.displayName, i18n.language),
-                                      have: need.have,
-                                      needed: need.needed,
-                                    })}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                            <button
-                              type="button"
-                              className="btn primary"
-                              disabled={
-                                upgradePart.isPending ||
-                                (quote.cost ?? 0) > wallet ||
-                                (quote.materials ?? []).some((need) => need.have < need.needed)
-                              }
-                              onClick={() =>
-                                setUpgradeConfirm({
-                                  partInstanceId: item.id,
-                                  name,
-                                  nextName,
-                                  rarity: item.rarity,
-                                  nextRarity: quote.nextRarity ?? item.rarity,
-                                  cost: quote.cost ?? 0,
-                                  materials: (quote.materials ?? []).map((need) => ({
-                                    materialId: need.materialId,
-                                    name: pickLocalized(need.displayName, i18n.language),
-                                    have: need.have,
-                                    needed: need.needed,
-                                  })),
-                                })
-                              }
-                            >
-                              {t('port.upgrade')}
-                            </button>
-                            {bridgeResize.actionsFor(item)}
-                          </div>
-                        }
-                      />
-                    );
-                  })}
-                </div>
+                {eligible.length > 0 && (
+                  <p className="sub" data-testid="upgrade-counts">
+                    {t('port.upgradeCounts', {
+                      ready: groups.ready.length,
+                      credits: groups.credits.length,
+                      materials: groups.materials.length,
+                    })}
+                  </p>
+                )}
+                {(['ready', 'credits', 'materials'] as const).map((group) =>
+                  groups[group].length === 0 ? null : (
+                    <section
+                      key={group}
+                      className="upgrade-group"
+                      data-testid={`upgrade-group-${group}`}
+                    >
+                      <h3>{t(`port.upgradeGroup.${group}`)}</h3>
+                      <div className="pcard-grid">{groups[group].map(renderCard)}</div>
+                    </section>
+                  ),
+                )}
+                {cards.some((item) => !eligible.some((entry) => entry.id === item.id)) && (
+                  <div className="pcard-grid">
+                    {cards
+                      .filter((item) => !eligible.some((entry) => entry.id === item.id))
+                      .map(renderCard)}
+                  </div>
+                )}
                 {whyNot}
               </>
             );

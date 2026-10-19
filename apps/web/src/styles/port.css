@@ -650,3 +650,59 @@
   font-size: var(--text-2xl);
   text-transform: lowercase;
 }
+
+/* Upgrade: what the pilot holds, the groups of cards, and the needs list on a card (credits first, then materials). */
+.upgrade-have {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.upgrade-have b {
+  color: var(--ink);
+}
+.upgrade-group {
+  display: grid;
+  gap: 10px;
+}
+.upgrade-group h3 {
+  margin: 8px 0 0;
+  font-size: var(--text-md);
+}
+.upgrade-needs {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+.upgrade-needs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.upgrade-needs .req-unmet {
+  color: var(--bad);
+}
+.upgrade-missing {
+  font-weight: 700;
+}
+.upgrade-where {
+  margin: 0;
+}
+.upgrade-where .link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brass);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.upgrade-where .link:hover {
+  color: var(--ink);
+}

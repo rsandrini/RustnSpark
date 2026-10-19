@@ -33,7 +33,7 @@ const onboarded = () =>
 function rowButton(label: string | RegExp): Element {
   const row = screen.getByText(label).closest('.pcard');
   if (row === null) throw new Error('row not found');
-  const button = row.querySelector('button:not(.info-btn)');
+  const button = row.querySelector('button:not(.info-btn):not(.link)');
   if (button === null) throw new Error('button not found');
   return button;
 }
@@ -769,28 +769,74 @@ describe('port (S10.9)', () => {
   // Round-10 owner request: "Upgrade UI should show diff between current part and upgraded
   // part" — the same before/after popup Market already has, built from a virtual part at the
   // next tier (which doesn't exist as an owned instance yet).
-  it('the upgrade tab starts on "only what I can afford", which still lists what is within reach', async () => {
+  it('the upgrade tab lists everything upgradable, with the "only what I can afford" filter off', async () => {
     await renderPort();
     openPortTab('Upgrade');
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Only what I can afford' })).toHaveAttribute(
       'aria-pressed',
-      'true',
+      'false',
     );
   });
 
-  it('with too few credits the list says so, and turning the filter off shows everything upgradable', async () => {
+  it('with too few credits the card says how many are missing, and the filter hides it', async () => {
     setWallet(1);
     await renderPort();
     openPortTab('Upgrade');
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    // the card says what it needs and what is missing, and the button says so too
+    const needs = (await screen.findAllByTestId('upgrade-needs'))[0]!;
+    expect(
+      within(needs)
+        .getByText(/Credits: 1 ¢ of/)
+        .closest('li'),
+    ).toHaveClass('req-unmet');
+    expect(within(needs).getByText(/missing/)).toBeInTheDocument();
+    expect(rowButton('Plated Hull')).toBeDisabled();
+    expect(rowButton('Plated Hull')).toHaveTextContent(/^Need .* ¢ more$/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Only what I can afford' }));
     expect(
       await screen.findByText(/Nothing you can upgrade with your credits/),
     ).toBeInTheDocument();
     expect(screen.queryByText('Plated Hull')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Only what I can afford' }));
-    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
   });
+
+  it('shows what the pilot holds and groups the cards by what is missing', async () => {
+    server.use(
+      http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>
+        HttpResponse.json({
+          partInstanceId: String(params.id),
+          eligible: true,
+          nextPartType: 'hull_uncommon',
+          nextDisplayName: { en: 'Reinforced Hull', 'pt-BR': 'Casco Reforçado' },
+          cost: 100,
+          materials: [
+            {
+              materialId: 'scrap',
+              displayName: { en: 'Scrap', 'pt-BR': 'Sucata' },
+              needed: 4,
+              have: 1,
+            },
+          ],
+          nextRarity: 'UNCOMMON',
+        }),
+      ),
+    );
+    await renderPort();
+    openPortTab('Upgrade');
+    await screen.findByText('Plated Hull');
+    const have = await screen.findByTestId('upgrade-have');
+    expect(have).toHaveTextContent('You have');
+    expect(have).toHaveTextContent('Scrap: 1');
+    // every card lacks scrap, so they all sit under "Missing materials", with the counts above
+    expect(await screen.findByTestId('upgrade-group-materials')).toHaveTextContent(
+      'Missing materials',
+    );
+    expect(screen.queryByTestId('upgrade-group-ready')).not.toBeInTheDocument();
+    expect(screen.getByTestId('upgrade-counts')).toHaveTextContent('0 ready');
+  });
+
   it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
     server.use(
       http.post('/v1/ships/:id/preview', async ({ request }) => {
@@ -937,10 +983,18 @@ describe('port (S10.9)', () => {
     await renderPort();
     openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
-    const list = (await screen.findAllByTestId('upgrade-materials'))[0]!;
+    const list = (await screen.findAllByTestId('upgrade-needs'))[0]!;
     expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
+    expect(list).toHaveTextContent('(missing 3)');
     expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
+    // credits are listed first, as a need like the others
+    expect(list.querySelector('li')).toHaveTextContent('Credits:');
+    // and where to get it
+    expect(
+      screen.getAllByText(/Scrap comes from scavenging and from repairs/).length,
+    ).toBeGreaterThan(0);
     expect(rowButton('Plated Hull')).toBeDisabled();
+    expect(rowButton('Plated Hull')).toHaveTextContent('Need 3 more Scrap (any part)');
   });
 
   it('shows what each material is: its description sits on its card', async () => {

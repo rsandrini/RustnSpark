@@ -1367,6 +1367,26 @@
     "scavengeFoot": "Go scavenging on foot",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
+    "upgradeNeedCredits": "Credits: {{have}} of {{needed}}",
+    "upgradeMissingCredits": "(missing {{amount}})",
+    "upgradeMissing": "(missing {{amount}})",
+    "upgradeNeedMoreCredits": "Need {{amount}} more",
+    "upgradeNeedMore": "Need {{amount}} more {{name}}",
+    "upgradeGoWork": "Open Work",
+    "upgradeYouHave": "You have",
+    "upgradeHeld": "{{name}}: {{have}}",
+    "upgradeCounts": "{{ready}} ready · {{credits}} need credits · {{materials}} need materials",
+    "upgradeGroup": {
+      "ready": "Ready to upgrade",
+      "credits": "Missing credits",
+      "materials": "Missing materials"
+    },
+    "upgradeWhere": {
+      "scrap": "Scrap comes from scavenging and from repairs.",
+      "rare_crystals": "Rare crystals are found by scavenging in the farther zones.",
+      "core_fragment": "Core fragments are found by scavenging in the farther zones and on missions that cross them.",
+      "other": "Find it by scavenging or on missions."
+    },
     "refuelAddValue": "+{{units}}",
     "refuelAfterValue": "{{after}} / {{cap}}",
     "upgradeRulesTitle": "How upgrading works",

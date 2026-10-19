@@ -1367,6 +1367,26 @@
     "scavengeFoot": "Vasculhar a pé",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
+    "upgradeNeedCredits": "Créditos: {{have}} de {{needed}}",
+    "upgradeMissingCredits": "(faltam {{amount}})",
+    "upgradeMissing": "(faltam {{amount}})",
+    "upgradeNeedMoreCredits": "Faltam {{amount}}",
+    "upgradeNeedMore": "Faltam {{amount}} de {{name}}",
+    "upgradeGoWork": "Abrir Trabalho",
+    "upgradeYouHave": "Você tem",
+    "upgradeHeld": "{{name}}: {{have}}",
+    "upgradeCounts": "{{ready}} prontas · {{credits}} precisam de créditos · {{materials}} precisam de materiais",
+    "upgradeGroup": {
+      "ready": "Prontas para melhorar",
+      "credits": "Faltam créditos",
+      "materials": "Faltam materiais"
+    },
+    "upgradeWhere": {
+      "scrap": "Sucata vem de recuperação e de reparos.",
+      "rare_crystals": "Cristais raros são achados recuperando nas zonas mais distantes.",
+      "core_fragment": "Fragmentos de núcleo são achados recuperando nas zonas mais distantes e em missões que as cruzam.",
+      "other": "Ache recuperando ou em missões."
+    },
     "refuelAddValue": "+{{units}}",
     "refuelAfterValue": "{{after}} / {{cap}}",
     "upgradeRulesTitle": "Como funciona o upgrade",

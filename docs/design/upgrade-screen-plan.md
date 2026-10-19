@@ -1,4 +1,9 @@
-# Upgrade screen: show what is missing (plan, not built)
+# Upgrade screen: show what is missing (built, 2026-10-20)
+
+Built as recommended: the "You have" strip, the needs list on each card (credits first, each line met or not with what is
+missing), the button that names what is missing, the cards grouped as Ready / Missing credits / Missing materials with
+counts, and where-to-get-it hints. The "Only what I can afford" filter now starts off. A part that needs repair still
+shows in the list below the grid (with its Repair button), not as a card.
 
 Owner (2026-10-19): "today it is too hard to understand what is missing in the upgrade screen; in my case it is
 money."
