@@ -247,7 +247,7 @@ describe('market panel: descriptions and filters', () => {
           locationId: String(params.id),
           listings: [
             ...shelf.listings,
-            listing('shield_basic', 'SHIELD', 'Basic Shield', 400),
+            listing('shield_basic', 'DEFENSE', 'Basic Shield', 400),
             listing('battery_small', 'BATTERY', 'Small Battery', 150),
           ],
           sellMinCondition: 1,

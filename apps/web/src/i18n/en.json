@@ -524,6 +524,7 @@
       "selected": "Selected: {{name}}",
       "saved": "Layout saved.",
       "saving": "Saving layout...",
+      "arranging": "Arranging the parts...",
       "previewing": "Updating stats...",
       "noPreview": "Place at least one part to compute the sheet."
     },

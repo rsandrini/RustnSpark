@@ -7,7 +7,7 @@ import { UpdateLocaleDto } from './dto/update-locale.dto.js';
 import { UpdateTutorialDto } from './dto/update-tutorial.dto.js';
 import { OnboardingDto } from './dto/onboarding.dto.js';
 import { OnboardingService } from './onboarding.service.js';
-import { PlayersService, type PlayerProfile } from './players.service.js';
+import { PlayersService, type PlayerProfile, type TutorialProgress } from './players.service.js';
 
 // No @Public() anywhere here: the global JwtAuthGuard's default-deny applies (R28), and the
 // player is identified by the token claims rather than a path param (no OwnershipGuard needed).
@@ -21,6 +21,11 @@ export class PlayersController {
   @Get('me')
   getMe(@CurrentUser() user: CurrentUserPayload): Promise<PlayerProfile> {
     return this.playersService.getProfile(user.playerId);
+  }
+
+  @Get('me/tutorial-progress')
+  getTutorialProgress(@CurrentUser() user: CurrentUserPayload): Promise<TutorialProgress> {
+    return this.playersService.getTutorialProgress(user.playerId);
   }
 
   @Post('me/locale')

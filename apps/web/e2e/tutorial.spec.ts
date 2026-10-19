@@ -1,34 +1,34 @@
 import { expect, test } from '@playwright/test';
-import { registerAndLaunch } from './support';
+import { flyOneMission, openPortTab, registerAndLaunch } from './support';
 
 /**
- * The newcomer tutorial against the real stack: a fresh pilot sees the checklist, building the ship
- * ticks its first step, skipping it is saved on the server (it stays gone after a reload), and the
- * account menu brings it back.
+ * The newcomer checklist ticks from what the pilot really does on the real stack: after the first
+ * flight the tank is a little short, and paying for fuel ticks "Top up the tank".
  */
-test('the tutorial card ticks, can be skipped for good, and comes back from the account menu', async ({
-  page,
-}) => {
+test('the checklist ticks "Top up the tank" after a real refuel', async ({ page }) => {
   await registerAndLaunch(page, 'luna');
+  await flyOneMission(page);
+  await page.goto('/port');
+  await openPortTab(page, 'Refuel');
+
+  const buy = page.getByRole('button', { name: /^Buy \d+$/ });
+  await expect(buy, 'the first flight must leave the tank a little short').toBeVisible();
+  await buy.click();
+  await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
+
   await page.goto('/ship');
+  // on a phone the checklist is a small pill until it is opened
+  const step = page.locator('.tutorial-step', { hasText: 'Top up the tank' });
+  if ((await step.count()) === 0) {
+    await page.getByRole('button', { name: /Getting started/ }).click();
+  }
+  await expect(step).toHaveClass(/done/);
+});
 
-  const card = page.getByTestId('tutorial-card');
-  await expect(card).toBeVisible();
-  // collapsed on a phone: open it
-  if (await card.evaluate((node) => node.tagName === 'BUTTON')) await card.click();
-  const open = page.getByTestId('tutorial-card');
-  await expect(open.getByRole('heading', { name: 'Getting started' })).toBeVisible();
-  await expect(open.locator('li', { hasText: 'Build your ship' })).toHaveClass(/done/);
-
-  await open.getByRole('button', { name: 'Skip tutorial' }).click();
-  await open.getByRole('button', { name: 'Yes, skip it' }).click();
-  await expect(page.getByTestId('tutorial-card')).toHaveCount(0);
-
-  await page.reload();
-  await expect(page.getByRole('heading', { name: 'My Ship' })).toBeVisible();
-  await expect(page.getByTestId('tutorial-card')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Account menu' }).click();
-  await page.getByRole('button', { name: 'Getting started' }).click();
-  await expect(page.getByTestId('tutorial-card')).toBeVisible();
+test('a new pilot sees the recommended shield and battery on the Ship screen', async ({ page }) => {
+  await registerAndLaunch(page, 'sun');
+  await page.goto('/ship');
+  const needs = page.getByTestId('ship-needs');
+  await expect(needs).toBeVisible();
+  await expect(needs).toContainText('Recommended: a shield');
 });

@@ -9,7 +9,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
-import { ShipNeedsList, lackingParts } from './ship-needs';
+import { ShipNeedsList, isShield, lackingParts } from './ship-needs';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
@@ -201,7 +201,11 @@ export function MarketPanel({
       lackingParts(currentSheet, installedParts).filter(
         (need) =>
           !dismissedNeeds.has(need.id) &&
-          listings.some((listing) => listing.catalog.partClass === need.partClass),
+          listings.some((listing) =>
+            need.id === 'shield'
+              ? isShield(listing.catalog)
+              : listing.catalog.partClass === need.partClass,
+          ),
       ),
     [currentSheet, installedParts, listings, dismissedNeeds],
   );

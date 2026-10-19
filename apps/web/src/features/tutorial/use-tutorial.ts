@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { client } from '../../api/client';
-import type { ActiveMission, ReportListResponse, ShipResponse } from '../../api/generated';
+import type {
+  ActiveMission,
+  ReportListResponse,
+  ShipResponse,
+  TutorialProgress,
+} from '../../api/generated';
 import { useVisited } from './tutorial-store';
 
 export type StepId =
@@ -44,6 +49,14 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     queryFn: () => client.get<ReportListResponse>('/v1/reports'),
   });
 
+  // What the pilot really did (refuelled, repaired, scavenged or mined), from the game's own records: it
+  // survives a cleared browser and counts what was done before the checklist existed.
+  const progress = useQuery({
+    queryKey: ['tutorial-progress'],
+    enabled,
+    queryFn: () => client.get<TutorialProgress>('/v1/players/me/tutorial-progress'),
+  });
+
   const ship = ships.data?.[0];
   const built = (ship?.sheet.structureUsed ?? 0) > 0;
   // "Check the connections" is only done with every part connected: a red port has to be fixed, not just seen.
@@ -62,9 +75,9 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     report: visited.includes('report'),
     // these three ask for an action: opening the tab is not enough (the first flight burns a little
     // fuel, so the tank is never quite full after it: top it up)
-    refuel: visited.includes('refuelled'),
-    repair: visited.includes('repaired'),
-    work: visited.includes('worked'),
+    refuel: progress.data?.refuelled === true || visited.includes('refuelled'),
+    repair: progress.data?.repaired === true || visited.includes('repaired'),
+    work: progress.data?.worked === true || visited.includes('worked'),
   };
   const to: Record<StepId, string | null> = {
     build: '/ship',

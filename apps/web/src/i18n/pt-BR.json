@@ -524,6 +524,7 @@
       "selected": "Selecionado: {{name}}",
       "saved": "Layout salvo.",
       "saving": "Salvando layout...",
+      "arranging": "Arrumando as peças...",
       "previewing": "Atualizando status...",
       "noPreview": "Posicione ao menos uma peça para calcular a folha."
     },

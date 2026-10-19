@@ -121,6 +121,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     setTab(next);
     setLastInGroup((was) => ({ ...was, [groupOf(next)]: next }));
   };
+  // A refuel, repair or job counts for the newcomer checklist: ticked at once here, and the server's own
+  // record (which the checklist also reads) is refreshed.
+  const tutorialTick = (key: 'refuelled' | 'repaired' | 'worked') => {
+    if (user !== null) markVisited(user.id, key);
+    void queryClient.invalidateQueries({ queryKey: ['tutorial-progress'] });
+  };
   const [confirm, setConfirm] = useState<ConfirmTrade | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -381,7 +387,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       setRefuelUnits(null);
       setActionError(null);
       setNotice(t('port.refueled', { units: response.units, cost: response.cost }));
-      if (user !== null) markVisited(user.id, 'refuelled');
+      tutorialTick('refuelled');
       afterTrade();
     },
     onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
@@ -399,7 +405,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       ),
     onSuccess: (response) => {
       repairKey.clear();
-      if (user !== null) markVisited(user.id, 'repaired');
+      tutorialTick('repaired');
       setRepairPlan(null);
       // The paid plan is spent: leaving it selected would compare its (old) total with the wallet
       // that was just debited and report "not enough money" for a repair that already went through.
@@ -487,7 +493,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }),
     onSuccess: () => {
       setActionError(null);
-      if (user !== null) markVisited(user.id, 'worked');
+      tutorialTick('worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['scavenge'] });
@@ -513,7 +519,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`),
     onSuccess: () => {
       setActionError(null);
-      if (user !== null) markVisited(user.id, 'worked');
+      tutorialTick('worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       if (embedded && onGoToShip !== undefined) {

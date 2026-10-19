@@ -715,6 +715,14 @@ export type DispatchResponse = z.infer<typeof DispatchResponseSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Reports
+/** GET /v1/players/me/tutorial-progress — the checklist's action steps, from the player's own records. */
+export const TutorialProgressSchema = z.object({
+  refuelled: z.boolean(),
+  repaired: z.boolean(),
+  worked: z.boolean(),
+});
+export type TutorialProgress = z.infer<typeof TutorialProgressSchema>;
+
 // ---------------------------------------------------------------------------------------------
 
 export const ReportViewNameSchema = z.enum(['summary', 'narrative', 'log']);

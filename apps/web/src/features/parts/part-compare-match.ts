@@ -5,7 +5,7 @@ import type { LocalizedText } from '../../api/generated';
 export interface InstalledPartForCompare {
   id: string;
   displayName: LocalizedText;
-  catalog: { partClass: string; w: number; h: number };
+  catalog: { partClass: string; w: number; h: number; partType?: string };
 }
 
 /**
@@ -18,7 +18,9 @@ export function rankReplaceCandidates(
   installed: readonly InstalledPartForCompare[],
   candidate: { catalog: { partClass: string; w: number; h: number } },
 ): InstalledPartForCompare[] {
-  const sameClass = installed.filter((part) => part.catalog.partClass === candidate.catalog.partClass);
+  const sameClass = installed.filter(
+    (part) => part.catalog.partClass === candidate.catalog.partClass,
+  );
   const sameFootprint = sameClass.filter(
     (part) => part.catalog.w === candidate.catalog.w && part.catalog.h === candidate.catalog.h,
   );

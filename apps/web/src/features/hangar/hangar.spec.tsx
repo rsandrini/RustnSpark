@@ -1031,6 +1031,31 @@ describe('hangar (S10.4)', () => {
     expect(sentIds).toHaveLength(6);
   });
 
+  it('shows that Auto layout is working while the server arranges the parts, then clears', async () => {
+    server.use(onboarded());
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.post('/v1/ships/:id/auto-assemble', async () => {
+        await gate;
+        return HttpResponse.json(shipEcho([]), { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Auto layout' }));
+    const busy = await screen.findByTestId('auto-busy');
+    expect(busy).toHaveTextContent('Arranging the parts...');
+    expect(screen.getByRole('button', { name: 'Arranging the parts...' })).toBeDisabled();
+
+    release();
+    await waitFor(() => expect(screen.queryByTestId('auto-busy')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Auto layout' })).toBeEnabled();
+  });
+
   it('rotate turns the part in place: same cell, no nudging, even for a 1×1 part (its ports turn)', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });

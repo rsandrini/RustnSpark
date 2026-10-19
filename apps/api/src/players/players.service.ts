@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type Player } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
+import { REFUEL_EVENT } from '../economy/refuel.service.js';
+import { REPAIR_STARTED_EVENT } from '../economy/repair.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 // The public shape of a player's own profile: no account PII (email stays on Account).
@@ -28,6 +30,16 @@ export function toPlayerProfile(player: Player, role: string): PlayerProfile {
   };
 }
 
+/** What the pilot has really done that the newcomer checklist asks for, read from the game's own records. */
+export interface TutorialProgress {
+  /** Paid for fuel at least once. */
+  refuelled: boolean;
+  /** Paid for a repair at least once. */
+  repaired: boolean;
+  /** Started a scavenging or mining job at least once. */
+  worked: boolean;
+}
+
 @Injectable()
 export class PlayersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -40,6 +52,18 @@ export class PlayersService {
     });
     if (!player || !player.account) throw new NotFoundException('player not found');
     return toPlayerProfile(player, player.account.role);
+  }
+
+  /** The checklist's action steps, from the player's own records (so they survive a cleared browser or a new device). */
+  async getTutorialProgress(playerId: string): Promise<TutorialProgress> {
+    const [refuels, repairs, jobs] = await Promise.all([
+      this.prisma.playerEvent.count({ where: { playerId, type: REFUEL_EVENT } }),
+      this.prisma.playerEvent.count({ where: { playerId, type: REPAIR_STARTED_EVENT } }),
+      this.prisma.missionInstance.count({
+        where: { playerId, type: { in: ['SCAVENGE', 'MINING'] } },
+      }),
+    ]);
+    return { refuelled: refuels > 0, repaired: repairs > 0, worked: jobs > 0 };
   }
 
   async updateLocale(playerId: string, locale: Locale): Promise<PlayerProfile> {

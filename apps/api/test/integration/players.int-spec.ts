@@ -127,6 +127,30 @@ describe('players/me endpoints (S2.3)', () => {
     }
   });
 
+  it("reports the checklist actions from the pilot's own records: refuelled, repaired, worked", async () => {
+    const { seeded, token } = await seedAndToken();
+    const server = httpServer(testApp.app);
+    const progress = () =>
+      request(server)
+        .get('/v1/players/me/tutorial-progress')
+        .set('Authorization', `Bearer ${token}`);
+
+    expect((await progress()).body).toEqual({ refuelled: false, repaired: false, worked: false });
+
+    await prisma.playerEvent.create({
+      data: { playerId: seeded.player.id, type: 'refuel', creditsDelta: -5 },
+    });
+    expect((await progress()).body).toEqual({ refuelled: true, repaired: false, worked: false });
+
+    await prisma.playerEvent.create({
+      data: { playerId: seeded.player.id, type: 'repair.started', creditsDelta: -20 },
+    });
+    expect((await progress()).body).toEqual({ refuelled: true, repaired: true, worked: false });
+
+    const unauthenticated = await request(server).get('/v1/players/me/tutorial-progress');
+    expect(unauthenticated.status).toBe(401);
+  });
+
   it('rejects a tutorial update without an access token', async () => {
     const response = await request(httpServer(testApp.app))
       .post('/v1/players/me/tutorial')

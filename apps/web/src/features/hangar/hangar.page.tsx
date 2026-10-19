@@ -733,6 +733,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </section>
 
             <section className="hangar-main" style={{ position: 'relative' }}>
+              {auto.isPending && (
+                <div className="yard-busy" role="status" data-testid="auto-busy">
+                  <span className="yard-spinner" aria-hidden="true" />
+                  <span>{t('hangar.state.arranging')}</span>
+                </div>
+              )}
               <ShipYard
                 lookById={lookById}
                 cells={ship.yard.cells}
@@ -798,13 +804,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   type="button"
                   className="btn"
                   disabled={auto.isPending || modifyBlocked}
+                  aria-busy={auto.isPending}
                   onClick={() => {
                     setSaved(false);
                     setSaveError(null);
                     auto.mutate();
                   }}
                 >
-                  {t('hangar.actions.auto')}
+                  {auto.isPending ? t('hangar.state.arranging') : t('hangar.actions.auto')}
                 </button>
                 <button
                   type="button"

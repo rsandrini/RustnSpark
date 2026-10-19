@@ -30,6 +30,7 @@ import type {
   RepairStartResponse,
   RescueResponse,
   ReportListResponse,
+  TutorialProgress,
   ReportResponse,
   ScavengeInfo,
   ShipFormat,
@@ -853,6 +854,9 @@ export const handlers = [
     return HttpResponse.json(mission ?? {}, { status: 200 });
   }),
 
+  http.get('/v1/players/me/tutorial-progress', () =>
+    ok<TutorialProgress>({ refuelled: false, repaired: false, worked: false }),
+  ),
   http.get('/v1/missions/active', () => {
     if (activeState === null) return ok<ActiveMission[]>([]);
     if (activeState.arrivalAt !== null && Date.parse(activeState.arrivalAt) <= Date.now()) {

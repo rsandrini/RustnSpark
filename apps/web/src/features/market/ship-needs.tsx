@@ -9,6 +9,11 @@ export interface ShipNeed {
   partClass: string;
 }
 
+/** Whether a catalog entry is a shield: shields share the DEFENSE class with armor, so the family name tells. */
+export function isShield(catalog: { partClass: string; partType?: string }): boolean {
+  return catalog.partClass === 'DEFENSE' && (catalog.partType ?? '').startsWith('shield');
+}
+
 /**
  * What the ship lacks, read off its sheet and installed parts (no server call). A weapon, armor or a
  * shield, power and cargo are needs of the sheet; a shield and a battery are also *recommended* for a
@@ -22,14 +27,15 @@ export function lackingParts(
   if (sheet === undefined) return [];
   const lacking: ShipNeed[] = [];
   if (sheet.pdf <= 0) lacking.push({ id: 'weapon', partClass: 'WEAPON' });
-  const hasClass = (partClass: string): boolean =>
-    (installedParts ?? []).some((part) => part.catalog.partClass === partClass);
-  const needShield = installedParts !== undefined && !hasClass('SHIELD');
-  const needBattery = installedParts !== undefined && !hasClass('BATTERY');
+  // A shield is a DEFENSE part (armor plates are too), told apart by its family name (shield_basic, ...).
+  const hasShield = (installedParts ?? []).some((part) => isShield(part.catalog));
+  const hasBattery = (installedParts ?? []).some((part) => part.catalog.partClass === 'BATTERY');
+  const needShield = installedParts !== undefined && !hasShield;
+  const needBattery = installedParts !== undefined && !hasBattery;
   if (sheet.bli <= 0 && sheet.esc <= 0 && !needShield) {
     lacking.push({ id: 'defense', partClass: 'DEFENSE' });
   }
-  if (needShield) lacking.push({ id: 'shield', partClass: 'SHIELD' });
+  if (needShield) lacking.push({ id: 'shield', partClass: 'DEFENSE' });
   if (needBattery) lacking.push({ id: 'battery', partClass: 'BATTERY' });
   if (sheet.energyCont < 0) lacking.push({ id: 'power', partClass: 'REACTOR' });
   if (sheet.crg <= 0) lacking.push({ id: 'cargo', partClass: 'CARGO' });

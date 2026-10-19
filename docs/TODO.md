@@ -30,19 +30,3 @@ ships (the commit has the history). Raise questions before starting anything mar
   share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level. The sim
   also exports from the dev DB, so re-run it on the new map (short and far places, the 5-minute floor).
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
-
-## Issues to solve later (owner, 2026-10-19)
-
-- [ ] **Tutorial: "Top up the tank" never completes, and the steps after it neither** (Repair the wear, Try other
-  work). The steps tick from `markVisited(user.id, 'refuelled' | 'repaired' | 'worked')` in the Port's mutations
-  (`port.page.tsx`) and read in `use-tutorial.ts`. Not investigated yet: check that the mutation that really runs
-  in the browser is the one that marks (full refuel vs partial, the embedded Port on the Ship screen, a pilot id
-  that is not set yet), and add a browser test that refuels and sees the tick.
-- [ ] **Market / Ship tip "Recommended: a shield..." never goes away.** `lackingParts` (`market/ship-needs.tsx`)
-  looks for an *installed* SHIELD / BATTERY. A bought part arrives loose in the hold until the pilot places it,
-  so the tip stays while it is only owned; and it may not clear even after it is placed. Decide: hide it once the
-  part is owned (loose or installed), and check the class names the server sends.
-- [ ] **Auto layout has no feedback while it works.** Add a busy state (a loading overlay or a disabled button
-  with a spinner) on the Ship screen's Auto layout, so the pilot sees something is happening. *Where:* the
-  auto-layout action in `features/hangar/hangar.page.tsx`.
-
