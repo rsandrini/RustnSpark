@@ -30,3 +30,15 @@ ships (the commit has the history). Raise questions before starting anything mar
   share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level. The sim
   also exports from the dev DB, so re-run it on the new map (short and far places, the 5-minute floor).
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
+
+## Issues to solve later (owner, 2026-10-19)
+
+- [ ] **A mission that needs more fuel than the ship can ever carry must show a WARNING, not "requirements match".**
+  Today a ship with 300 fuel capacity can accept a mission that needs 800 fuel: the card reads as if the
+  requirements are met. The board already knows both numbers (`info.estimate.fuelNeeded` and the ship's
+  `fuelCap`, used by the "refuelling is not enough" line in `features/board/mission-card.tsx`), so: show a clear
+  warning on the card and in the requirements list, say that refuelling will not be enough (more tank capacity
+  or a shorter route), and decide whether accepting should be blocked or only warned. Check the server side too:
+  `FUEL_INSUFFICIENT` is raised at dispatch, but the eligibility / accept step may not use the tank capacity.
+  Add a test for a trip longer than the tank.
+
