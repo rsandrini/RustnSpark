@@ -410,6 +410,13 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
           )}
 
           {mission.type === 'RACE' && <RaceRivals cargo={mission.cargo} />}
+          {mission.type === 'RACE' && mission.status === 'IN_TRANSIT' && (
+            <RaceProjection
+              projection={mission.info?.race?.projection}
+              legEnds={mission.legWindows.map((window) => Date.parse(window.to))}
+              now={now}
+            />
+          )}
 
           {/* Before the launch the pilot can tune the engines for THIS trip: time, fuel, power and
               the chance the run goes clean, all from the server's own maths. */}
@@ -560,6 +567,61 @@ interface Rival {
   mobility: number;
   /** The engine level it runs at for the whole race (absent = 1, as listed). */
   level?: number;
+}
+
+/**
+ * While the ship flies: the order after the last leg it has finished, as the race is projected to go
+ * (the same draws the settlement will use, for the ship as it is tuned now). It is exact unless a pushed
+ * engine fails on the way; the report has the real result.
+ */
+function RaceProjection({
+  projection,
+  legEnds,
+  now,
+}: {
+  projection: NonNullable<NonNullable<ActiveMission['info']>['race']>['projection'];
+  legEnds: readonly number[];
+  now: number;
+}) {
+  const { t } = useTranslation();
+  if (projection === undefined || projection.length === 0) return null;
+  const done = legEnds.filter((end) => end <= now).length;
+  const legs = projection.length;
+  if (done === 0) {
+    return (
+      <section
+        className="mcard-race"
+        data-testid="race-projection"
+        aria-label={t('transit.race.projected')}
+      >
+        <b>{t('transit.race.projected')}</b>
+        <small className="sub">{t('transit.race.projectedStart', { legs })}</small>
+      </section>
+    );
+  }
+  const leg = Math.min(done, legs);
+  const standings = projection[leg - 1]?.standings ?? [];
+  return (
+    <section
+      className="mcard-race"
+      data-testid="race-projection"
+      aria-label={t('transit.race.projected')}
+    >
+      <b>{t('transit.race.projected')}</b>
+      <small className="sub">{t('transit.race.projectedAfter', { leg, legs })}</small>
+      <ol className="race-legs">
+        {standings.map((row, index) => (
+          <li key={`${row.name}-${index}`} className={row.you ? 'race-you' : undefined}>
+            {t('board.race.rank', { place: index + 1 })} {row.you ? t('board.race.you') : row.name}
+            {row.trouble && (
+              <small className="race-trouble"> {t('transit.race.projectedTrouble')}</small>
+            )}
+          </li>
+        ))}
+      </ol>
+      <small className="sub">{t('transit.race.projectedNote')}</small>
+    </section>
+  );
 }
 
 /** The rivals of an accepted race, fastest first — frozen in the mission when the offer was made. */

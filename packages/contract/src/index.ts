@@ -647,6 +647,23 @@ export const OfferInfoSchema = z.object({
           worstSeconds: z.number(),
         })
         .nullable(),
+      /** While the ship flies: the order after each leg as the race is projected to go (same draws as the
+          settlement, for the ship as it is tuned now); absent otherwise. */
+      projection: z
+        .array(
+          z.object({
+            standings: z.array(
+              z.object({
+                name: z.string(),
+                you: z.boolean(),
+                legSeconds: z.number(),
+                totalSeconds: z.number(),
+                trouble: z.boolean(),
+              }),
+            ),
+          }),
+        )
+        .optional(),
       minMobility: z.number(),
       prizeShares: z.array(z.number()),
     })

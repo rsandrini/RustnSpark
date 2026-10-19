@@ -1,8 +1,10 @@
 # Race: one rule for everyone, settled leg by leg (built, 2026-10-18)
 
-Status: R1-R3 and the board / Ship rival levels are built (resolver, storage, report leg strip, rivals' engine
-level on the board and the Ship screen, `race.rival_push_chance` replaces `race.form_spread`). Not built: the
-*projected* standings strip on the Ship screen while flying (decision 2); and terrain does not change speed in this
+Status: built, including the projected standings on the Ship screen while flying (R1-R5). Earlier note: R1-R3 and the board / Ship rival levels were built (resolver, storage, report leg strip, rivals' engine
+level on the board and the Ship screen, `race.rival_push_chance` replaces `race.form_spread`). The
+*projected* standings now show on the Ship screen while flying: `info.race.projection` is computed with the
+mission's own seed (exact unless a pushed engine fails), and the screen shows the order after the last finished
+leg. Terrain does not change speed in this
 game (duration is distance / mobility), so the model has no terrain term.
 
 Owner: "we need to have the same rule for all, so it should affect all players. We can also have

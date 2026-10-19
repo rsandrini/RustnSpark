@@ -32,7 +32,8 @@ import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bridgeRarityOf } from '../economy/reward.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
-import { fieldFor } from '../resolution/race/race.resolver.js';
+import { fieldFor, resolveRace } from '../resolution/race/race.resolver.js';
+import { createRng } from '../common/rng/rng.js';
 import { parseCompetitors } from './resolution-input.js';
 import { missionDuration } from './duration.calculator.js';
 import { missionReward } from './mission.reward.js';
@@ -905,6 +906,23 @@ function offerInfo(
     row.type === 'RACE' && yourMobility !== null && yourMobility > 0
       ? windowOf(yourMobility)
       : null;
+  // While the ship flies the race is shown as it is projected to go, leg by leg: the same draws the
+  // resolution will use (the mission's own seed), for the ship as it is tuned now. It is exact unless
+  // a pushed engine fails on the way (that is only known when the flight is settled).
+  const projection =
+    row.type === 'RACE' &&
+    row.status === 'IN_TRANSIT' &&
+    yourMobility !== null &&
+    yourMobility > 0 &&
+    drawn.length > 0
+      ? resolveRace({
+          competitors: drawn,
+          playerMobility: yourMobility,
+          legDistances: legs.map((leg) => leg.distance ?? 0),
+          rules,
+          rng: createRng(row.seed).child('race'),
+        }).legs
+      : undefined;
   return {
     title: bilingual(template?.displayName),
     description: bilingual(template?.description),
@@ -928,6 +946,7 @@ function offerInfo(
         ? {
             rivals,
             you,
+            ...(projection === undefined ? {} : { projection }),
             minMobility: rules.race.min_mobility,
             prizeShares: [
               rules.race.prize_share_1,

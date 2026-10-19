@@ -1609,7 +1609,12 @@
     "race": {
       "title": "Your rivals",
       "rival": "{{name}} — speed {{mobility}}",
-      "rivalPushed": "{{name}} — speed {{mobility}}, pushing ×{{level}}"
+      "rivalPushed": "{{name}} — speed {{mobility}}, pushing ×{{level}}",
+      "projected": "The race so far (projected)",
+      "projectedStart": "The race is under way over {{legs}} legs. The order shows up here as each leg is finished.",
+      "projectedAfter": "After leg {{leg}} of {{legs}}:",
+      "projectedTrouble": "engine trouble on a leg",
+      "projectedNote": "Projected: it holds unless an engine you pushed fails on the way. The report has the real result."
     }
   },
   "board": {

@@ -276,6 +276,74 @@ describe('transit (S10.7)', () => {
     expect(items).toEqual(['Vega Dart — speed 41', 'Comet Runner — speed 24']);
   });
 
+  it('a race in flight shows the projected order after the last finished leg', async () => {
+    const leg = (rows: Array<[string, boolean]>) => ({
+      standings: rows.map(([name, you], index) => ({
+        name,
+        you,
+        legSeconds: 100,
+        totalSeconds: 100 * (index + 1),
+        trouble: false,
+      })),
+    });
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(
+          [
+            mission({
+              type: 'RACE',
+              status: 'IN_TRANSIT',
+              arrivalAt: iso(60_000),
+              legWindows: [
+                { legIndex: 0, routeId: 'ceres-gate', from: iso(-120_000), to: iso(-60_000) },
+                { legIndex: 1, routeId: 'gate-hedus', from: iso(-60_000), to: iso(60_000) },
+              ],
+              cargo: { race: { competitors: [{ id: 'r1', name: 'Vega Dart', mobility: 4.1 }] } },
+              info: {
+                title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
+                description: { en: 'Race.', 'pt-BR': 'Corrida.' },
+                legCount: 2,
+                totalDistance: 800,
+                peakDanger: 1,
+                peakZone: 0,
+                estimate: null,
+                material: null,
+                requirements: [],
+                race: {
+                  rivals: [],
+                  you: null,
+                  minMobility: 1,
+                  prizeShares: [1.6, 0.8, 0.4],
+                  projection: [
+                    leg([
+                      ['', true],
+                      ['Vega Dart', false],
+                    ]),
+                    leg([
+                      ['Vega Dart', false],
+                      ['', true],
+                    ]),
+                  ],
+                },
+              },
+            }),
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/transit'] });
+    const box = await screen.findByTestId('race-projection');
+    // the first leg is finished, the second is not: the order is the one after leg 1
+    expect(box).toHaveTextContent('After leg 1 of 2:');
+    const order = within(box)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+    expect(order[0]).toContain('You');
+    expect(order[1]).toContain('Vega Dart');
+    expect(box).toHaveTextContent('Projected');
+  });
+
   it("an accepted mission shows the engine tuning with this trip's time and fuel; dispatch sends only the mission", async () => {
     let body: Record<string, unknown> | null = null;
     server.use(

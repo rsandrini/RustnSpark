@@ -1609,7 +1609,12 @@
     "race": {
       "title": "Seus rivais",
       "rival": "{{name}} — velocidade {{mobility}}",
-      "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando ×{{level}}"
+      "rivalPushed": "{{name}} — velocidade {{mobility}}, forçando ×{{level}}",
+      "projected": "A corrida até agora (projeção)",
+      "projectedStart": "A corrida está em andamento em {{legs}} etapas. A ordem aparece aqui a cada etapa concluída.",
+      "projectedAfter": "Depois da etapa {{leg}} de {{legs}}:",
+      "projectedTrouble": "problema de motor numa etapa",
+      "projectedNote": "Projeção: vale a menos que um motor forçado falhe no caminho. O relatório tem o resultado real."
     }
   },
   "board": {

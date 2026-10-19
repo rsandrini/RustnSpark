@@ -161,6 +161,40 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(report.status).toBe(200);
   }, 30_000);
 
+  it('while the ship flies the active mission carries the race as projected, and the settlement matches it', async () => {
+    const setup = await raceWith(0.5);
+    await prisma.ship.update({ where: { id: setup.shipId }, data: { fuel: 10_000 } });
+    const sent = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${setup.shipId}/dispatch`)
+      .set('Authorization', `Bearer ${setup.token}`)
+      .send({ missionId: setup.mission.id });
+    expect(sent.status).toBe(200);
+
+    const active = await request(httpServer(testApp.app))
+      .get('/v1/missions/active')
+      .set('Authorization', `Bearer ${setup.token}`);
+    expect(active.status).toBe(200);
+    const race = (
+      active.body as Array<{
+        info: { race: { projection?: Array<{ standings: unknown[] }> } };
+      }>
+    )[0]!.info.race;
+    // one leg, four ships (three rivals and the player)
+    expect(race.projection).toHaveLength(1);
+    expect(race.projection![0]!.standings).toHaveLength(4);
+
+    // no push failure on the way, so the settlement is exactly what was projected
+    const job = (await queue.getJob(setup.mission.id)) as Job<DispatchJobData>;
+    await processor.process(job);
+    const log = await prisma.missionLog.findUniqueOrThrow({
+      where: { missionId: setup.mission.id },
+    });
+    const settled = (
+      log.legs as { events: { type: string; race?: { legs?: unknown } }[] }
+    ).events.find((event) => event.type === 'race_result')?.race?.legs;
+    expect(settled).toEqual(race.projection);
+  }, 30_000);
+
   it('being slower than the whole field finishes last and earns nothing', async () => {
     const setup = await raceWith(9);
     const before = (await prisma.player.findUniqueOrThrow({ where: { id: setup.playerId } }))
