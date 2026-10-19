@@ -134,6 +134,10 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     onSuccess: (response) => {
       setDispatchServerTime(response.serverTime);
       setActionError(null);
+      // Watch this flight from the moment it leaves: a flight of a few seconds (the first one to the test
+      // pad) can be over before the page ever sees it in the active list, and the pilot must still be
+      // taken to its report.
+      watched.current = response.missionId;
       invalidateActive();
     },
     onError: (error) => {

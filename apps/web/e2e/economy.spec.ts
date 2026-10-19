@@ -35,9 +35,9 @@ test('buy a part, see it in your goods, sell it back for less than you paid', as
   await sell.click();
   await page.getByRole('dialog').getByRole('button', { name: 'Sell' }).click();
   await expect(page.getByText(/^Sold /)).toBeVisible();
-  const afterSell = await walletOf(page);
-  expect(afterSell).toBeGreaterThan(afterBuy);
-  expect(afterSell).toBeLessThan(before + 1);
+  // the wallet in the top bar catches up a beat after the "Sold" notice
+  await expect.poll(() => walletOf(page)).toBeGreaterThan(afterBuy);
+  expect(await walletOf(page)).toBeLessThan(before + 1);
 });
 
 test('after a flight: refuel opens on what the pilot can afford, and paying debits the wallet', async ({

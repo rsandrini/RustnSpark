@@ -691,6 +691,42 @@ describe('transit (S10.7)', () => {
     );
   });
 
+  it('takes the pilot to the report of a flight that was over before the page ever saw it in the air', async () => {
+    // a flight of a few seconds (the first one, to the test pad): by the time the lists are read again the mission is
+    // gone from the active list and its report is stored
+    let dispatched = false;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        HttpResponse.json(dispatched ? [] : [mission()], { status: 200 }),
+      ),
+      http.post('/v1/ships/:id/dispatch', () => {
+        dispatched = true;
+        return HttpResponse.json({ missionId: 'm-1', arrivalAt: iso(-1000), serverTime: iso(0) });
+      }),
+      http.get('/v1/reports', () =>
+        HttpResponse.json(
+          {
+            items: dispatched
+              ? [
+                  {
+                    missionId: 'm-1',
+                    outcome: 'success',
+                    credits: 10,
+                    legs: 1,
+                    createdAt: new Date().toISOString(),
+                  },
+                ]
+              : [],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    const { router } = renderWithRouter(routes, { initialEntries: ['/transit'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/report/m-1'));
+  });
+
   it('lets the pilot back out: cancel an accepted mission, release a held one', async () => {
     renderWithRouter(routes, { initialEntries: ['/transit'] });
     expect(await screen.findByText('Mission accepted — ready for departure.')).toBeInTheDocument();
