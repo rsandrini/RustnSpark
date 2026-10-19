@@ -59,8 +59,11 @@ for (const faction of FACTIONS) {
     // --- transit: dispatch, then the worker resolves it --------------------------------------
     await expect(page).toHaveURL(/\/ship/);
     await page.getByRole('button', { name: 'Dispatch' }).click();
-    await expect(page.getByTestId('in-transit')).toBeVisible();
-    await assertClean(page, 'transit');
+    // The first flight is a hop to the test pad, only seconds long: the flight view may already be gone
+    // by the time we look, so either the flight or the report is fine.
+    const flying = page.getByTestId('in-transit');
+    await expect(flying.or(page.getByRole('heading', { name: 'Mission report' }))).toBeVisible();
+    if (await flying.isVisible()) await assertClean(page, 'transit');
     await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 
     // --- report: all three views ---------------------------------------------------------------

@@ -98,9 +98,7 @@ describe('map (S10.5)', () => {
   it('shows main places zoomed out, regional ones zoomed in and local ones zoomed in close, plus the selected place', async () => {
     const { svg } = await renderWholeMap();
     const shown = () =>
-      Array.from(svg.querySelectorAll('g.node-hit')).map((node) =>
-        node.getAttribute('aria-label'),
-      );
+      Array.from(svg.querySelectorAll('g.node-hit')).map((node) => node.getAttribute('aria-label'));
     expect(shown()).toHaveLength(12);
     expect(shown()).not.toContain('Alcance Halcyon');
     expect(screen.getByText(/2 more when you zoom in/)).toBeInTheDocument();
@@ -146,11 +144,9 @@ describe('map (S10.5)', () => {
     await waitFor(() => expect(fit).toBeEnabled());
     const [x, y, w, h] = box() as [number, number, number, number];
     const ceres = world().locations.find((place) => place.id === 'ceres')!;
-    // the port sits inside the window, near its middle unless the window is held back by the map edge
-    expect(ceres.x).toBeGreaterThan(x);
-    expect(ceres.x).toBeLessThan(x + w);
-    expect(ceres.y).toBeGreaterThan(y);
-    expect(ceres.y).toBeLessThan(y + h);
+    // the port is in the middle of the window, even though it is near the edge of the map
+    expect(Math.abs(ceres.x - (x + w / 2))).toBeLessThan(1);
+    expect(Math.abs(ceres.y - (y + h / 2))).toBeLessThan(1);
     fireEvent.click(fit);
     await waitFor(() => expect(fit).toBeDisabled());
     expect(box()[2]).toBeGreaterThan(w);

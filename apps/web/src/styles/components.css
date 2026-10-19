@@ -938,10 +938,12 @@ body:has(.modal-backdrop) .part-hover-card {
 .route-map .rm-route {
   stroke: var(--rule-3);
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 .route-map .rm-path {
   stroke: var(--brass);
   stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
   stroke-linejoin: round;
   stroke-linecap: round;
 }

@@ -1031,6 +1031,44 @@ describe('hangar (S10.4)', () => {
     expect(sentIds).toHaveLength(6);
   });
 
+  it('Auto layout takes the new bridge along when the ship has none aboard (a just-expanded bridge is loose)', async () => {
+    server.use(onboarded());
+    const base = (await (await fetch('/v1/inventory')).json()) as Array<{ id: string }>;
+    const shipNow = (await (await fetch('/v1/ships')).json()) as Array<{
+      layout: Array<{ partInstanceId: string }>;
+    }>;
+    // the bridge left the ship (it was expanded): it sits in the hold, the rest is still placed
+    server.use(
+      http.get('/v1/inventory', () =>
+        HttpResponse.json(
+          base.map((item) =>
+            item.id === 'part-bridge' ? { ...item, location: 'INVENTORY', shipId: null } : item,
+          ),
+        ),
+      ),
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          shipNow.map((entry) => ({
+            ...entry,
+            layout: entry.layout.filter((placement) => placement.partInstanceId !== 'part-bridge'),
+          })),
+        ),
+      ),
+    );
+    let sentIds: string[] = [];
+    server.use(
+      http.post('/v1/ships/:id/auto-assemble', async ({ request }) => {
+        sentIds = ((await request.json()) as { partInstanceIds?: string[] }).partInstanceIds ?? [];
+        return HttpResponse.json(shipEcho([]), { status: 200 });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByRole('heading', { name: 'My Ship' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Auto layout' }));
+    await waitFor(() => expect(sentIds.length).toBeGreaterThan(0));
+    expect(sentIds).toContain('part-bridge');
+  });
+
   it('shows that Auto layout is working while the server arranges the parts, then clears', async () => {
     server.use(onboarded());
     let release: () => void = () => undefined;

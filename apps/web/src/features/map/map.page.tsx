@@ -35,6 +35,9 @@ const HINT_RADIUS = 3;
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
 const SHIP_FOCUS_SCALE = 2.6;
 
+/** Room kept around a trip under way when the map opens centred on it. */
+const TRIP_FOCUS_MARGIN = 140;
+
 /** How long the quest card stays after the pointer leaves, so the pointer can reach its link. */
 const TIP_HIDE_DELAY_MS = 250;
 import { useMapCamera } from './use-map-camera';
@@ -125,25 +128,46 @@ export function MapPage({ guided = false }: MapPageProps) {
   );
   const selected = selectedId === null ? undefined : byId.get(selectedId);
 
-  // Opening the map centres and zooms on the port the ship is stopped at (a trip under way, or a place
-  // named in the address, keeps the whole-map view). Once: "Fit map" and the pilot's own panning stay.
+  const journey = useMemo(() => {
+    if (flight === undefined || world === undefined) return null;
+    const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
+    return { nodeIds, stops: journeyStops(nodeIds, world.locations) };
+  }, [flight, world]);
+  // Opening the map centres and zooms on the port the ship is stopped at; with a trip under way it centres
+  // on the trip and zooms to fit it (a place named in the address keeps the whole-map view). Once: "Fit
+  // map" and the pilot's own panning stay.
   const focusedOnShip = useRef(false);
   const { focusOn } = camera;
   const shipPlace = shipLocation === null ? undefined : byId.get(shipLocation);
   const tripUnderWay = flight !== undefined;
   const queryReady = activeQuery.data !== undefined && shipsQuery.data !== undefined;
   useEffect(() => {
-    if (focusedOnShip.current || bounds === null || !queryReady || shipPlace === undefined) return;
+    if (focusedOnShip.current || bounds === null || !queryReady) return;
+    if (tripUnderWay) {
+      if (journey === null) return;
+      focusedOnShip.current = true;
+      if (selectedId !== null) return;
+      const stops = journey.stops;
+      const minX = Math.min(...stops.map((stop) => stop.x));
+      const maxX = Math.max(...stops.map((stop) => stop.x));
+      const minY = Math.min(...stops.map((stop) => stop.y));
+      const maxY = Math.max(...stops.map((stop) => stop.y));
+      const fit = Math.min(
+        bounds.width / (maxX - minX + 2 * TRIP_FOCUS_MARGIN),
+        bounds.height / (maxY - minY + 2 * TRIP_FOCUS_MARGIN),
+      );
+      focusOn(
+        { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+        Math.min(MAX_SCALE, Math.max(1, fit)),
+      );
+      return;
+    }
+    if (shipPlace === undefined) return;
     focusedOnShip.current = true;
-    if (tripUnderWay || selectedId !== null) return;
+    if (selectedId !== null) return;
     focusOn(shipPlace, SHIP_FOCUS_SCALE);
-  }, [bounds, queryReady, shipPlace, tripUnderWay, selectedId, focusOn]);
+  }, [bounds, queryReady, shipPlace, tripUnderWay, journey, selectedId, focusOn]);
 
-  const journey = useMemo(() => {
-    if (flight === undefined || world === undefined) return null;
-    const nodeIds = journeyNodeIds(flight.originId, flight.legWindows, world.routes);
-    return { nodeIds, stops: journeyStops(nodeIds, world.locations) };
-  }, [flight, world]);
   // The trip of each accepted (not yet dispatched) mission, drawn as a highlighted path with a small flag
   // on it: hover or focus the flag for the quest's short description and a link to its details.
   const plannedTrips = useMemo(() => {

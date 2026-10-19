@@ -15,7 +15,9 @@ interface BridgeLevel {
  * The formats to offer right after the bridge changed: the ones of the new bridge's own level, not
  * the whole history of what it unlocks. Of the formats the bridge unlocks, those whose rarity floor
  * equals the bridge's rarity and whose size floor equals its size; when none sits exactly there
- * (the catalog has gaps), the highest tier available instead.
+ * (the catalog has gaps), the highest tier available instead: both the best formats of the highest
+ * rarity the bridge unlocks (whatever their size) and the best formats of the biggest size it
+ * unlocks, so a 2x2 bridge of a high rarity still sees its rarity's shapes next to the big ones.
  */
 export function formatsForBridge<T extends FormatLevel>(
   unlocked: readonly T[],
@@ -30,8 +32,11 @@ export function formatsForBridge<T extends FormatLevel>(
   if (unlocked.length === 0) return [];
   const bestSize = Math.max(...unlocked.map((format) => format.minBridgeSize));
   const ofSize = unlocked.filter((format) => format.minBridgeSize === bestSize);
-  const bestRank = Math.max(...ofSize.map(rank));
-  return ofSize.filter((format) => rank(format) === bestRank);
+  const bestRankOfSize = Math.max(...ofSize.map(rank));
+  const biggest = ofSize.filter((format) => rank(format) === bestRankOfSize);
+  const bestRank = Math.max(...unlocked.map(rank));
+  const highest = unlocked.filter((format) => rank(format) === bestRank);
+  return [...new Set([...highest, ...biggest])];
 }
 
 /** Whether the installed bridge is not the one the ship's format was last picked for. */

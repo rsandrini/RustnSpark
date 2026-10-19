@@ -45,13 +45,26 @@ export function boxOf(bounds: Bounds, view: View): Box {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** Keeps the window inside the map (a zoomed-out view is always centred). */
+/**
+ * Keeps the view on the map. The whole-map view is always centred; once zoomed in, the CENTRE of the view
+ * may sit anywhere on the map (the window may reach past the edge into empty space), so a place near the
+ * edge can still be put in the middle of the screen.
+ */
 export function clampView(bounds: Bounds, view: View): View {
   const scale = clamp(view.scale, MIN_SCALE, MAX_SCALE);
   const w = bounds.width / scale;
   const h = bounds.height / scale;
-  const cx = clamp(view.cx, bounds.minX + w / 2, bounds.minX + bounds.width - w / 2);
-  const cy = clamp(view.cy, bounds.minY + h / 2, bounds.minY + bounds.height - h / 2);
+  const free = scale > MIN_SCALE;
+  const cx = clamp(
+    view.cx,
+    free ? bounds.minX : bounds.minX + w / 2,
+    free ? bounds.minX + bounds.width : bounds.minX + bounds.width - w / 2,
+  );
+  const cy = clamp(
+    view.cy,
+    free ? bounds.minY : bounds.minY + h / 2,
+    free ? bounds.minY + bounds.height : bounds.minY + bounds.height - h / 2,
+  );
   return { scale, cx, cy };
 }
 

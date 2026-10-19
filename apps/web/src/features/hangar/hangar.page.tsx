@@ -378,13 +378,23 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     // Auto layout re-arranges the parts that are IN the ship. Only an empty ship (a new pilot, or
     // after a rescue) has nothing to arrange, and then it assembles the loose kit; spares in
     // storage are never pulled onto a ship that already has parts.
-    mutationFn: () =>
-      client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {
+    mutationFn: () => {
+      const inShip = effectiveLayout.map((placement) => placement.partInstanceId);
+      // A ship whose bridge was just expanded or shrunk has none aboard: the new bridge sits loose in the
+      // hold. Auto layout then takes it along (the biggest one), or nothing could be arranged around it.
+      const hasBridge = inShip.some((id) => catalogById.get(id)?.partClass === 'BRIDGE');
+      const looseBridge = hasBridge
+        ? undefined
+        : parts
+            .filter((part) => part.location === 'INVENTORY' && part.catalog.partClass === 'BRIDGE')
+            .sort((a, b) => b.catalog.w * b.catalog.h - a.catalog.w * a.catalog.h)[0];
+      return client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/auto-assemble`, {
         partInstanceIds:
           effectiveLayout.length > 0
-            ? effectiveLayout.map((placement) => placement.partInstanceId)
+            ? [...inShip, ...(looseBridge === undefined ? [] : [looseBridge.id])]
             : parts.filter((part) => part.location === 'INVENTORY').map((part) => part.id),
-      }),
+      });
+    },
     onSuccess: (updated) => {
       setLayout(updated.layout);
       setSaved(false);

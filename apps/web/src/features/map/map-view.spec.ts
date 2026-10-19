@@ -37,10 +37,13 @@ describe('map camera', () => {
     expect(zoomAt(bounds, fitView(bounds), 0.1, { x: 5, y: 5 }).scale).toBe(1);
   });
 
-  it('pans and stops at the edge; a view showing everything stays centred', () => {
+  it('pans until the centre reaches the edge; a view showing everything stays centred', () => {
     const zoomed = zoomAt(bounds, fitView(bounds), 4, { x: 500, y: 250 });
     const moved = panBy(bounds, zoomed, -10_000, 0);
-    expect(boxOf(bounds, moved).x).toBe(0);
+    // zoomed in, the CENTRE of the view may reach the edge of the map (so a place there can be centred)
+    const box = boxOf(bounds, moved);
+    expect(box.x + box.w / 2).toBe(0);
+    // the whole-map view stays centred
     expect(clampView(bounds, { scale: 1, cx: 10, cy: 10 })).toEqual(fitView(bounds));
   });
 

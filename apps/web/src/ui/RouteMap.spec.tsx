@@ -52,4 +52,37 @@ describe('RouteMap', () => {
     renderWithProviders(<RouteMap world={world} path={[]} />);
     expect(screen.queryByTestId('route-map')).not.toBeInTheDocument();
   });
+
+  it('is centred on the trip, not on the whole sector, and a short hop is not blown up', () => {
+    // a far-apart sector with one short hop at the bottom right
+    const wide: WorldResponse = {
+      locations: [
+        place('a', 0, 0),
+        place('b', 1000, 0),
+        place('c', 950, 980),
+        place('d', 1000, 1000),
+      ],
+      routes: [{ id: 'r1', nodeAId: 'c', nodeBId: 'd', distance: 70, danger: 0, hot: false }],
+    };
+    renderWithProviders(<RouteMap path={['c', 'd']} world={wide} />);
+    const svg = screen.getByTestId('route-map').querySelector('svg')!;
+    const [x, y, w, h] = svg.getAttribute('viewBox')!.split(' ').map(Number) as [
+      number,
+      number,
+      number,
+      number,
+    ];
+    // a window smaller than the whole map (320 x 170), around the hop at the bottom right
+    expect(w).toBeLessThan(320);
+    expect(h).toBeLessThan(170);
+    const nodes = Array.from(svg.querySelectorAll('circle.rm-node.end')).map((node) => ({
+      cx: Number(node.getAttribute('cx')),
+      cy: Number(node.getAttribute('cy')),
+    }));
+    expect(nodes).toHaveLength(2);
+    const midX = (nodes[0]!.cx + nodes[1]!.cx) / 2;
+    const midY = (nodes[0]!.cy + nodes[1]!.cy) / 2;
+    expect(Math.abs(midX - (x + w / 2))).toBeLessThan(0.5);
+    expect(Math.abs(midY - (y + h / 2))).toBeLessThan(0.5);
+  });
 });

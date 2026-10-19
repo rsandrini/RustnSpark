@@ -31,6 +31,21 @@ describe('formatsForBridge', () => {
     expect(ids(formatsForBridge(unlocked, { rarity: 'RARE', w: 1, h: 1 }))).toEqual(['wide']);
   });
 
+  it('a big bridge of a high rarity sees its rarity shapes next to the big format', () => {
+    // a 2x2 bridge of UNCOMMON rarity: no UNCOMMON format needs a 2x2 bridge, so both the
+    // uncommon shapes and the biggest format are offered (not just the common big one)
+    expect(
+      ids(
+        formatsForBridge(
+          ALL.filter((entry) => entry.id !== 'huge'),
+          { rarity: 'UNCOMMON', w: 2, h: 2 },
+        ),
+      ),
+    ).toEqual(['big', 'tall', 'wide']);
+    // a RARE 2x2 bridge unlocks the rare big format as well: that one is the exact level
+    expect(ids(formatsForBridge(ALL, { rarity: 'RARE', w: 2, h: 2 }))).toEqual(['huge']);
+  });
+
   it('is empty when nothing is unlocked', () => {
     expect(formatsForBridge([], { rarity: 'COMMON', w: 1, h: 1 })).toEqual([]);
   });

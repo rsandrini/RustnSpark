@@ -40,6 +40,9 @@ const WIDTH = 320;
 const HEIGHT = 170;
 const COMPACT_HEIGHT = 110;
 const MARKER = 5;
+/** Room kept around the trip, and the least of the sector a small map shows (so a short hop is not blown up). */
+const FOCUS_MARGIN = 34;
+const MIN_FOCUS_SHARE = 0.34;
 
 function pointAt(points: readonly { x: number; y: number }[], progress: number) {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y));
@@ -92,8 +95,33 @@ export function RouteMap({
   });
   const origin = place(path[0] ?? '');
   const destination = place(path[path.length - 1] ?? '');
-  const name = (l: typeof origin) => (l === undefined ? '' : pickLocalized(l.displayName, i18n.language));
-  const ship = progress === undefined || pathPoints.length < 2 ? null : pointAt(pathPoints, progress);
+  const name = (l: typeof origin) =>
+    l === undefined ? '' : pickLocalized(l.displayName, i18n.language);
+  const ship =
+    progress === undefined || pathPoints.length < 2 ? null : pointAt(pathPoints, progress);
+
+  // The map is centred on the trip, not on the whole sector: the window is the trip's own box with a margin,
+  // never smaller than a share of the sector, and always in the map's aspect ratio. Markers and text keep
+  // their size on screen (`k` is how much of the sector the window shows).
+  const xsOnPath = pathPoints.map((p) => p.x);
+  const ysOnPath = pathPoints.map((p) => p.y);
+  const boxMinX = Math.min(...xsOnPath);
+  const boxMaxX = Math.max(...xsOnPath);
+  const boxMinY = Math.min(...ysOnPath);
+  const boxMaxY = Math.max(...ysOnPath);
+  const centreX = (boxMinX + boxMaxX) / 2;
+  const centreY = (boxMinY + boxMaxY) / 2;
+  const windowWidth = Math.min(
+    WIDTH,
+    Math.max(
+      WIDTH * MIN_FOCUS_SHARE,
+      boxMaxX - boxMinX + 2 * FOCUS_MARGIN,
+      ((boxMaxY - boxMinY + 2 * FOCUS_MARGIN) * WIDTH) / height,
+    ),
+  );
+  const windowHeight = (windowWidth * height) / WIDTH;
+  const k = windowWidth / WIDTH;
+  const view = `${centreX - windowWidth / 2} ${centreY - windowHeight / 2} ${windowWidth} ${windowHeight}`;
 
   return (
     <figure
@@ -101,7 +129,7 @@ export function RouteMap({
       data-testid="route-map"
     >
       <svg
-        viewBox={`0 0 ${WIDTH} ${height}`}
+        viewBox={view}
         role="img"
         aria-label={t('routeMap.label', { from: name(origin), to: name(destination) })}
       >
@@ -129,10 +157,16 @@ export function RouteMap({
                 className={`rm-node${onPath.has(loc.id) ? ' on' : ''}${end ? ' end' : ''}`}
                 cx={p.x}
                 cy={p.y}
-                r={end ? MARKER : MARKER - 2}
+                r={(end ? MARKER : MARKER - 2) * k}
               />
               {end && (
-                <text className="rm-label" x={p.x} y={p.y - MARKER - 3} textAnchor="middle">
+                <text
+                  className="rm-label"
+                  x={p.x}
+                  y={p.y - (MARKER + 3) * k}
+                  textAnchor="middle"
+                  style={{ fontSize: 10 * k }}
+                >
                   {pickLocalized(loc.displayName, i18n.language)}
                 </text>
               )}
@@ -141,8 +175,8 @@ export function RouteMap({
         })}
         {ship !== null && (
           <g className="rm-ship-wrap" style={{ transform: `translate(${ship.x}px, ${ship.y}px)` }}>
-            {animated && <circle className="rm-ship-pulse" r={MARKER - 1} />}
-            <circle className="rm-ship" r={MARKER - 1} />
+            {animated && <circle className="rm-ship-pulse" r={(MARKER - 1) * k} />}
+            <circle className="rm-ship" r={(MARKER - 1) * k} />
           </g>
         )}
       </svg>
