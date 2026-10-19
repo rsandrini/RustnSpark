@@ -120,6 +120,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'missions.starter_max_zone',
   'missions.time_scale',
   'onboarding.home_locations',
+  'onboarding.start_fuel_fraction',
   'onboarding.starter_parts',
   'parts.replacement_condition',
   'parts.replacement_types',

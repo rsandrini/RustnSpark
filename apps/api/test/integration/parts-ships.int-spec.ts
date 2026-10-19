@@ -122,7 +122,7 @@ describe('parts and ships API (S4.3)', () => {
 
   describe('onboarding', () => {
     it.each(['luna', 'sun', 'explorers'] as const)(
-      'creates the %s ship with the starter kit loose (D44), a full tank, and a kit that assembles into a viable ship',
+      'creates the %s ship with the starter kit loose (D44), a low starting tank, and a kit that assembles into a viable ship',
       async (faction) => {
         await freshSeededApp();
         const { token } = await seedAndToken();
@@ -165,7 +165,10 @@ describe('parts and ships API (S4.3)', () => {
         expect(assembled.sheet.pot).toBeGreaterThan(0);
         expect(assembled.sheet.hp).toBeGreaterThan(0);
         expect(assembled.sheet.mob).toBeGreaterThanOrEqual(1);
-        expect(assembled.fuel).toBe(assembled.sheet.fuelCap);
+        // a new ship starts with a share of its tank (the tutorial's first step is to fill it)
+        expect(assembled.fuel).toBe(
+          Math.floor(assembled.sheet.fuelCap * GAME_CONFIG_DEFAULTS.onboarding.start_fuel_fraction),
+        );
       },
     );
 

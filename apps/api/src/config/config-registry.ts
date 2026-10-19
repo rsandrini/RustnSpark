@@ -2372,6 +2372,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'onboarding.start_fuel_fraction',
+    group: 'onboarding',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.start_fuel_fraction),
+    description: {
+      en: 'The share of the tank a new ship starts with (1 = full). The tutorial asks the new pilot to refuel first.',
+      'pt-BR':
+        'A fração do tanque com que uma nave nova começa (1 = cheio). O tutorial pede ao piloto novo que reabasteça primeiro.',
+    },
+  },
+  {
     key: 'onboarding.home_locations',
     group: 'onboarding',
     type: 'json',

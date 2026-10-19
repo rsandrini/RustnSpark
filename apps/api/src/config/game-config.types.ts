@@ -137,6 +137,7 @@ export type ConfigKey =
   | 'missions.time_scale'
   | 'onboarding.home_locations'
   | 'onboarding.starter_parts'
+  | 'onboarding.start_fuel_fraction'
   | 'parts.replacement_condition'
   | 'parts.replacement_types'
   | 'parts.starter_condition'
@@ -569,6 +570,8 @@ export type GameRules = Readonly<{
   onboarding: Readonly<{
     starter_parts: readonly string[];
     home_locations: Readonly<Record<string, string>>;
+    /** The share of the tank a new ship starts with (the tutorial's first step is to fill it). */
+    start_fuel_fraction: number;
   }>;
   world: Readonly<{
     seed: string;

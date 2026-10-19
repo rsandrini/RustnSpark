@@ -141,13 +141,14 @@ describe('newcomer tutorial', () => {
     markVisited('player-1', 'worked');
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const card = await screen.findByTestId('tutorial-card');
-    expect(within(card).getByText('Top up the tank').closest('li')).toHaveClass('done');
+    expect(within(card).getByText('Fill the tank').closest('li')).toHaveClass('done');
     expect(within(card).getByText('Repair the wear').closest('li')).toHaveClass('done');
     expect(within(card).getByText('Try other work').closest('li')).toHaveClass('done');
   });
 
   it('the "Read your report" link points at the latest report once there is one', async () => {
     markVisited('player-1', 'yard');
+    markVisited('player-1', 'refuelled');
     server.use(
       http.get('/v1/ships', () =>
         HttpResponse.json([

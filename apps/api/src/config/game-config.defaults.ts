@@ -396,6 +396,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
       'reactor_solar',
     ],
     home_locations: { luna: 'ceres', sun: 'hedus', explorers: 'cair' },
+    // A new ship starts with a quarter of its tank: enough for the first flight to the test pad, and the
+    // tutorial's first step is to refuel (owner, 2026-10-19).
+    start_fuel_fraction: 0.25,
   },
   world: {
     seed: 'rust-and-spark-world-seed-v0.1',

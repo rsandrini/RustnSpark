@@ -381,8 +381,8 @@
         "hint": "Veja o que aconteceu, quanto pagou e o que a viagem desgastou."
       },
       "refuel": {
-        "title": "Complete o tanque",
-        "hint": "O voo gastou um pouco de combustível. No Porto, abra Reabastecer e encha o tanque."
+        "title": "Encha o tanque",
+        "hint": "Seu tanque começa baixo. No Porto, abra Reabastecer e encha-o antes de voar."
       },
       "repair": {
         "title": "Repare o desgaste",

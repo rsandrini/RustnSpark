@@ -291,6 +291,7 @@ const partsSchema = z.object({
 const onboardingSchema = z.object({
   starter_parts: z.array(z.string().min(1)),
   home_locations: z.record(z.string(), z.string().min(1)),
+  start_fuel_fraction: z.number().min(0).max(1),
 });
 
 const worldSchema = z.object({

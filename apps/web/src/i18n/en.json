@@ -381,8 +381,8 @@
         "hint": "See what happened, what it paid and what the trip wore down."
       },
       "refuel": {
-        "title": "Top up the tank",
-        "hint": "The flight burned a little fuel. At the Port, open Refuel and fill the tank."
+        "title": "Fill the tank",
+        "hint": "Your tank starts low. At the Port, open Refuel and fill it before you fly."
       },
       "repair": {
         "title": "Repair the wear",

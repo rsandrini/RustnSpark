@@ -155,10 +155,17 @@ export class OnboardingService {
 
     // The kit arrives as loose parts (D44): the player assembles the ship in the Hangar. The
     // auto-layout above only proves the kit *can* fly; nothing is installed here. The tank is
-    // filled for the kit's capacity so the ship is ready the moment it is assembled.
+    // started with a share of the kit's capacity (`start_fuel_fraction`): enough for the first flight to
+    // the test pad, and the tutorial's first step is to fill it.
     await tx.ship.update({
       where: { id: shipId },
-      data: { layout: [], fuel: sheet.fuelCap },
+      data: {
+        layout: [],
+        fuel: Math.min(
+          sheet.fuelCap,
+          Math.max(1, Math.floor(sheet.fuelCap * rules.onboarding.start_fuel_fraction)),
+        ),
+      },
     });
   }
 }

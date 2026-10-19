@@ -278,7 +278,8 @@ describe('refuel API (S8.3)', () => {
     const player = await onboardPlayer();
     const fuelCap = await fuelCapOf(player.shipId);
 
-    // Onboarding ships start with a full tank and 200 credits.
+    // A new ship starts with a low tank: fill it first, then refuelling is a free no-op.
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: fuelCap } });
     const response = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
     expect(response.status).toBe(200);
     expect(response.body as RefuelBody).toMatchObject({

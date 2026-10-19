@@ -21,10 +21,10 @@ export interface TutorialStep {
 export const STEP_ORDER: readonly StepId[] = [
   'build',
   'ports',
+  'refuel',
   'mission',
   'dispatch',
   'report',
-  'refuel',
   'repair',
   'work',
 ];
@@ -73,8 +73,8 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
     mission: hasMission,
     dispatch: dispatched,
     report: visited.includes('report'),
-    // these three ask for an action: opening the tab is not enough (the first flight burns a little
-    // fuel, so the tank is never quite full after it: top it up)
+    // these three ask for an action: opening the tab is not enough (a new ship starts with a low tank,
+    // so the first step is to fill it)
     refuel: progress.data?.refuelled === true || visited.includes('refuelled'),
     repair: progress.data?.repaired === true || visited.includes('repaired'),
     work: progress.data?.worked === true || visited.includes('worked'),

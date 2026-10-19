@@ -105,6 +105,8 @@ describe('travel without a quest', () => {
   it('quotes a trip without creating anything, then flies it as a TRAVEL mission that pays nothing', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
+    // a new ship starts with a low tank: fill it for the long trip
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 10_000 } });
 
     const q = await quote(player.token, 'hedus');
     expect(q.status).toBe(200);
