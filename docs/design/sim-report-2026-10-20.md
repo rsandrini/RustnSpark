@@ -23,7 +23,7 @@ read as orders of magnitude, not to the hour.
 | round 4 (chem / hybrid / ion) | 17 / 16 / 57 | 31 / 34 / 70 | 56 / 56 / 91 | 107 / 107 / 191 | 49-62% | 12% |
 | reward-by-bridge round (p3) | 16 / 16 / 19 | 37 / 32 / 30 | 53 / 50 / 70 | 106 / 105 / 164 | 37-64% | 13% |
 
-Everyone reaches Legendary in the 300 missions (round 4: 17 of 32 runs did not, and 3 stalled). Stalls: 0 in the final
+Every run reaches Legendary within the 300 missions (round 4: 27 of 32 did, and 3 stalled). Stalls: 0 in the final
 run, 1 of 32 in the first one (a chem run at mission 26 that could not pay the fuel), within the 0-3 of 32 of earlier
 rounds. Epic comes at 44-61 h (the owner's target was a fast v1 to Epic), Legendary at 60-134 h.
 
