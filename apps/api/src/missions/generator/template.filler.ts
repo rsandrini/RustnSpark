@@ -239,6 +239,8 @@ function endsAtOptInPlace(template: FillerTemplate, world: FillerWorld): boolean
 
 function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
   const requirements = requirementsOf(template);
+  // A test pad offers only what names it (its way back to the port): never the ordinary templates.
+  if (origin.type === 'test_pad' && requirements.originTypes?.includes('test_pad') !== true) return false;
   const factionMatch =
     requirements.originFactions === undefined ||
     requirements.originFactions.includes(origin.factionId);

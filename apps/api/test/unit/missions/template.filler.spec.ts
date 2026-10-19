@@ -615,6 +615,44 @@ describe('S6.2 — template filler (pure generation)', () => {
       }
     });
 
+    it('a test pad offers only its way back, never an ordinary template', () => {
+      const pad: FillerLocation = { id: 'alpha_pad', type: 'test_pad', zone: 1, factionId: 'luna' };
+      const back: FillerTemplate = {
+        id: 'pad_return_alpha',
+        type: 'DELIVERY',
+        factionId: 'luna',
+        active: true,
+        requirements: {
+          originTypes: ['test_pad'],
+          originFactions: ['luna'],
+          destinationIds: ['alpha'],
+        },
+      };
+      const base = world([DELIVERY_LUNA, RESCUE_LUNA, MINING_EXPLORERS, back]);
+      const withPad: FixtureWorld = {
+        ...base,
+        locations: [...base.locations, pad],
+        routes: [
+          ...base.routes,
+          { id: 'alpha-alpha_pad', nodeAId: 'alpha', nodeBId: 'alpha_pad', distance: 30, danger: 0 },
+        ],
+        routeEnvironments: [
+          ...base.routeEnvironments,
+          { routeId: 'alpha-alpha_pad', environmentId: 'open', order: 0 },
+        ],
+      };
+      for (let epoch = 0; epoch < 20; epoch += 1) {
+        const draft = fillMission({
+          seed: `pad|${epoch}`,
+          origin: pad,
+          world: withPad,
+          rules,
+          now: NOW,
+        });
+        expect(draft.templateId).toBe('pad_return_alpha');
+      }
+    });
+
     it('never picks a template that only ends at a far station, which a new pilot cannot reach', () => {
       const far: FillerLocation = {
         id: 'thule',

@@ -26,7 +26,10 @@ describe('starterPlayer', () => {
     ]);
     expect(state.ship.parts.every((part) => part.condition === condition)).toBe(true);
     const sheet = deriveSheet(installedParts(state.ship, catalogIndex(snapshot)), snapshot.rules);
-    expect(state.ship.fuel).toBe(sheet.fuelCap);
+    // a share of the tank, like the onboarding kit
+    expect(state.ship.fuel).toBe(
+      Math.floor(sheet.fuelCap * snapshot.rules.onboarding.start_fuel_fraction),
+    );
     expect(sheet.fuelCap).toBe(300);
     expect(state.missionsDone).toBe(0);
     expect(state.storage).toEqual([]);

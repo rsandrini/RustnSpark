@@ -138,12 +138,17 @@ export function starterPlayer(
   const ship: ShipState = {
     id: 'sim-ship',
     parts,
-    // Filled at the dock, exactly like the onboarding kit fills the tank.
+    // A new ship starts with a share of its tank, exactly like the onboarding kit
+    // (`onboarding.start_fuel_fraction`).
     fuel: 0,
     stance: 'NEUTRAL',
     energyMode: 'FULL',
   };
-  ship.fuel = deriveSheet(installedParts(ship, catalogByType), rules).fuelCap;
+  const fuelCap = deriveSheet(installedParts(ship, catalogByType), rules).fuelCap;
+  ship.fuel = Math.min(
+    fuelCap,
+    Math.max(1, Math.floor(fuelCap * rules.onboarding.start_fuel_fraction)),
+  );
   return {
     factionId,
     locationId: homeLocationOf(snapshot, factionId),

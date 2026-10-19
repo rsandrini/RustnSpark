@@ -28,9 +28,9 @@ check(
   `final level ${quiet.finalLevel}, ended ${quiet.endReason}`,
 );
 check(
-  'never-spends books no market money',
-  quiet.ledgerTotals.fuel === 0 &&
-    quiet.ledgerTotals.repair === 0 &&
+  // (fuel is the one exception: a new ship starts with a quarter of its tank, so even this bot has to fill it)
+  'never-spends books no market money beyond fuel',
+  quiet.ledgerTotals.repair === 0 &&
     quiet.ledgerTotals.purchase === 0 &&
     quiet.ledgerTotals.upgrade === 0,
   `fuel ${quiet.ledgerTotals.fuel} repair ${quiet.ledgerTotals.repair} ` +

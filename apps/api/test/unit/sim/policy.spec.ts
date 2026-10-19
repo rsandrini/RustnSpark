@@ -96,7 +96,7 @@ describe('refuel', () => {
 
   it('caps the purchase at the tank: never refuels past fuelCap', () => {
     const state = starterPlayer(snapshot, 'luna');
-    const cap = state.ship.fuel;
+    const cap = 300; // the starter ship's whole tank (a new ship starts with a share of it)
     state.ship.fuel = cap - 10;
     const result = refuel(state, snapshot, rules, catalogByType, CHEAP_PORT);
     expect(result.units).toBe(10);
@@ -105,6 +105,7 @@ describe('refuel', () => {
 
   it('buys nothing (and charges nothing) when the tank is already full', () => {
     const state = starterPlayer(snapshot, 'luna');
+    state.ship.fuel = 300; // fill the starter ship's tank
     const walletBefore = state.wallet;
     const result = refuel(state, snapshot, rules, catalogByType, CHEAP_PORT);
     expect(result.units).toBe(0);

@@ -909,6 +909,7 @@ describe('spending plan', () => {
     const snapshot = econSnapshot();
     const ctx = missionContext(snapshot);
     const state = starterPlayer(snapshot, 'luna');
+    state.ship.fuel = 300; // a full tank: the reserve's refill is 0
     const hull = state.ship.parts.find((part) => part.partType === 'hull');
     if (hull !== undefined) hull.condition = 100;
     // One credit under the dearest thing the plan could do — today's own cheapest listing

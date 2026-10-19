@@ -26,7 +26,8 @@ ships (the commit has the history). Raise questions before starting anything mar
 - [ ] Playtest the new start (2026-10-18): a new pilot gets 750 credits (the old 200 + a basic shield + a small battery),
   both parts are always on the shelf, and the market tip recommends them. Check on a fresh account whether
   players take them and whether the first fights feel fair; then decide on the bigger-bridge test.
-- [ ] Sim: chem and hybrid builds still stall now and then on an empty wallet; the ion build's repair
-  share is 40-68% of reward at the top; `sim/` could model utility parts outside the ship level. The sim
-  also exports from the dev DB, so re-run it on the new map (short and far places, the 5-minute floor).
+- [ ] Sim (checked 2026-10-20, see `docs/design/sim-report-2026-10-20.md`): the economy is still good. Open: late money piles up
+  (wallet 57-340k at Legendary; decide on a sink or a lower top reward), the pad way-back pays about 550 for 27 s (scale the
+  reward down under `short_trip_exempt_below`), the ion build still spends 54% on repair, and the greedy / safe temperaments
+  and `sim-replay` were not run.
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
