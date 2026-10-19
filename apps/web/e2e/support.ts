@@ -113,6 +113,18 @@ export async function flyOneMission(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/report\//, { timeout: 90_000 });
 }
 
+/** A new ship starts with a low tank (the tutorial's first step is to fill it): fill it before a real trip. */
+export async function fillTank(page: Page): Promise<void> {
+  await page.goto('/port?tab=refuel');
+  const buy = page.getByRole('button', { name: /^Buy \d+$/ });
+  await expect(buy).toBeVisible();
+  // the slider opens on what the wallet covers: ask for the whole tank when the button is there
+  const whole = page.getByRole('button', { name: 'Fill tank' }).first();
+  if ((await whole.count()) > 0 && (await whole.isEnabled())) await whole.click();
+  await buy.click();
+  await expect(page.getByText(/^Filled \d+ units/)).toBeVisible();
+}
+
 const PORT_TAB_GROUP: Record<string, string> = {
   Market: 'Buy',
   'Your goods': 'Buy',

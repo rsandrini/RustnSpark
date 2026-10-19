@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { registerAndLaunch, walletOf } from './support';
+import { fillTank, registerAndLaunch, walletOf } from './support';
 // Named to sort first: it needs a board whose luna offers were generated after the tuning.
 
 // A real race, end to end on the real stack: the board shows the rival field, the pilot accepts,
@@ -67,6 +67,8 @@ test.describe('race mission', () => {
       'needs a board generated after the tuning; desktop runs first',
     );
     await registerAndLaunch(page, 'luna');
+    // a new ship starts with a low tank: fill it for a real trip
+    await fillTank(page);
     await page.goto('/port');
     const before = await walletOf(page);
 
