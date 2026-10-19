@@ -1692,6 +1692,7 @@
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
       "MINER": "Uma plataforma de mineração instalada",
       "SPEED": "Mobilidade acima da velocidade de referência de resgate",
+      "FUEL_CAPACITY": "ATENÇÃO: o tanque precisa comportar o combustível da viagem toda (reabastecer não basta)",
       "RACE_SPEED": "Velocidade da nave (mobilidade) igual ou acima do mínimo de entrada desta corrida"
     },
     "controlledBy": "Controlado por {{faction}}",

@@ -442,6 +442,71 @@ describe('board (S10.6)', () => {
     expect(within(fuelRow).getByText('Fuel needed')).toBeInTheDocument();
   });
 
+  it('warns on a mission whose trip needs more fuel than the tank holds (FUEL_CAPACITY row, unmet, with the numbers)', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'b-eq',
+              templateId: 'tpl-b-eq',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'gate',
+              legs: [],
+              cargo: {},
+              reward: 900,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-eq',
+              version: 1,
+              // Same as reward — the "Est." line must not repeat it.
+              rewardEstimate: 900,
+              eligibility: { eligible: true, reasons: [] },
+              info: {
+                title: { en: 'Far Haul', 'pt-BR': 'Carga Distante' },
+                description: { en: 'Same numbers, no point saying it twice.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 300,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 100, fuelNeeded: 800 },
+                material: null,
+                requirements: [
+                  {
+                    code: 'FUEL_CAPACITY',
+                    message: 'tank',
+                    met: false,
+                    needed: 800,
+                    actual: 300,
+                    unit: 'fuel',
+                  },
+                ],
+                race: null,
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findAllByText('Far Haul');
+
+    // the checklist warns, with the numbers, instead of reading as if the requirements were met
+    const row = (await screen.findAllByTestId('req-FUEL_CAPACITY'))[0]!;
+    expect(row).toHaveTextContent('Your ship: 300 · needs 800');
+    expect(row.closest('li')).toHaveClass('req-unmet');
+    expect(row.closest('li')).toHaveTextContent('WARNING');
+  });
+
   it("shows a race offer's field: every rival's speed and time, you ranked among them, and the prizes", async () => {
     server.use(
       http.get('/v1/locations/:id/missions', () =>

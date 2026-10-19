@@ -297,6 +297,33 @@ describe('missions accept/hold API (S6.4)', () => {
     expect(miner?.met).toBe(false);
   });
 
+  it('warns on a mission whose trip needs more fuel than the tank can ever hold (FUEL_CAPACITY), and only then', async () => {
+    await freshSeededApp();
+    const { token } = await onboardPlayer();
+    const server = httpServer(testApp.app);
+    const leg = (distance: number) => [
+      { distance, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } },
+    ];
+    const short = await createMission({ type: 'DELIVERY', legs: leg(40) });
+    const huge = await createMission({ type: 'DELIVERY', legs: leg(40_000) });
+
+    type Row = {
+      id: string;
+      info: {
+        requirements: Array<{ code: string; met: boolean; needed?: number; actual?: number }>;
+      };
+    };
+    const board = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(board.status).toBe(200);
+    const rows = new Map((board.body as Row[]).map((row) => [row.id, row]));
+    const fuelRow = (id: string) =>
+      rows.get(id)?.info.requirements.find((entry) => entry.code === 'FUEL_CAPACITY');
+    expect(fuelRow(short.id)).toBeUndefined();
+    const warning = fuelRow(huge.id);
+    expect(warning?.met).toBe(false);
+    expect(warning!.needed!).toBeGreaterThan(warning!.actual!);
+  });
+
   it('holds, re-holds idempotently, and releases a mission (max 1 hold, timer untouched)', async () => {
     await freshSeededApp();
     const { token } = await onboardPlayer();

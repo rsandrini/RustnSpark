@@ -1692,7 +1692,8 @@
       "MIN_MOBILITY": "Mobility above the escort minimum",
       "MINER": "A mining rig installed",
       "SPEED": "Mobility above the rescue reference speed",
-      "RACE_SPEED": "Ship speed (mobility) at or above this race's entry minimum"
+      "RACE_SPEED": "Ship speed (mobility) at or above this race's entry minimum",
+      "FUEL_CAPACITY": "WARNING: the tank must hold the fuel for the whole trip (refuelling is not enough)"
     },
     "controlledBy": "Controlled by {{faction}}",
     "expiredLabel": "Expired",

@@ -40,6 +40,7 @@ import { missionReward } from './mission.reward.js';
 import { missionStatusAfter } from './mission.state-machine.js';
 import {
   checkMissionRequirements,
+  fuelCapacityCheck,
   missionRequirementChecklist,
   type RequirementCheck,
 } from './requirements.checker.js';
@@ -864,10 +865,17 @@ function offerInfo(
   const requirements =
     sheet === null || parts === null
       ? []
-      : missionRequirementChecklist(
-          { missionType: row.type, requirements: requirementsJson, sheet, parts },
-          rules,
-        );
+      : [
+          ...missionRequirementChecklist(
+            { missionType: row.type, requirements: requirementsJson, sheet, parts },
+            rules,
+          ),
+          // a trip that burns more fuel than the tank holds can never be flown: warn on the card (the row
+          // only appears when it is a problem, so a normal mission's checklist stays as it was)
+          ...(estimate !== null && estimate.fuelNeeded > sheet.fuelCap
+            ? [fuelCapacityCheck(estimate.fuelNeeded, sheet.fuelCap)]
+            : []),
+        ];
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.
   const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);

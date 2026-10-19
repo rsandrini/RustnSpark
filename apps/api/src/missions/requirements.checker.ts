@@ -11,7 +11,8 @@ export type RequirementReasonCode =
   | 'MIN_MOBILITY'
   | 'MINER'
   | 'SPEED'
-  | 'RACE_SPEED';
+  | 'RACE_SPEED'
+  | 'FUEL_CAPACITY';
 
 export interface RequirementReason {
   code: RequirementReasonCode;
@@ -97,13 +98,28 @@ function parseHints(requirements: unknown): RequirementHints {
 
 /** What a numeric requirement compares: the ship has `actual` of `needed` (mobility in game units,
     unrounded — the web shows it on the display scale, like the ship sheet). */
-export type RequirementUnit = 'mobility' | 'cargo' | 'mining';
+export type RequirementUnit = 'mobility' | 'cargo' | 'mining' | 'fuel';
 
 export interface RequirementCheck extends RequirementReason {
   met: boolean;
   needed?: number;
   actual?: number;
   unit?: RequirementUnit;
+}
+
+/**
+ * The trip needs more fuel than the tank can ever hold: refuelling will not be enough (a bigger tank or a
+ * shorter route is). A warning row of the checklist; the pilot may still hold or accept the mission.
+ */
+export function fuelCapacityCheck(fuelNeeded: number, fuelCap: number): RequirementCheck {
+  return {
+    code: 'FUEL_CAPACITY',
+    message: 'The tank cannot hold the fuel this trip needs.',
+    met: fuelCap >= fuelNeeded,
+    needed: fuelNeeded,
+    actual: fuelCap,
+    unit: 'fuel',
+  };
 }
 
 /**

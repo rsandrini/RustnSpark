@@ -1,7 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import type { MissionType } from '@prisma/client';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
-import { checkMissionRequirements } from '../../../src/missions/requirements.checker.js';
+import {
+  checkMissionRequirements,
+  fuelCapacityCheck,
+} from '../../../src/missions/requirements.checker.js';
 import { deriveSheet } from '../../../src/ships/sheet.deriver.js';
 import { buildInstalled } from '../ships/fixtures/catalog.js';
 
@@ -283,7 +286,9 @@ describe('S6.3 — mission requirement checker (GDD §12 pass/fail table)', () =
 describe('S6.3 — full requirement checklist (met and unmet), round 10', () => {
   it('DELIVERY checklist reports cargo met or unmet, never omitted on success', () => {
     const ok = check('DELIVERY', buildInstalled(STARTER));
-    expect(ok.checklist).toMatchObject([{ code: 'CARGO_TYPE', met: true, unit: 'cargo', needed: 1 }]);
+    expect(ok.checklist).toMatchObject([
+      { code: 'CARGO_TYPE', met: true, unit: 'cargo', needed: 1 },
+    ]);
 
     const bad = check('DELIVERY', buildInstalled(NO_CARGO));
     expect(bad.checklist).toMatchObject([
@@ -322,5 +327,22 @@ describe('S6.3 — full requirement checklist (met and unmet), round 10', () => 
     // a template can raise (or lower) its own entry minimum
     expect(check('RACE', buildInstalled(RESCUE_OK), { minMobility: 99 }).eligible).toBe(false);
     expect(check('RACE', buildInstalled(STARTER), { minMobility: 1 }).eligible).toBe(true);
+  });
+});
+
+describe('fuelCapacityCheck: a trip longer than the tank is a warning row', () => {
+  it('is unmet when the trip burns more than the tank holds, and says so in numbers', () => {
+    expect(fuelCapacityCheck(800, 300)).toMatchObject({
+      code: 'FUEL_CAPACITY',
+      met: false,
+      needed: 800,
+      actual: 300,
+      unit: 'fuel',
+    });
+  });
+
+  it('is met when the tank holds the whole trip (it may still need refuelling first)', () => {
+    expect(fuelCapacityCheck(300, 300).met).toBe(true);
+    expect(fuelCapacityCheck(120, 300).met).toBe(true);
   });
 });
