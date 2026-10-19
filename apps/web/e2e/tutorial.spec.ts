@@ -19,6 +19,13 @@ test('the checklist ticks "Top up the tank" after a real refuel', async ({ page 
   await page.goto('/ship');
   // on a phone the checklist is a small pill until it is opened
   const step = page.locator('.tutorial-step', { hasText: 'Top up the tank' });
+  // wait for the checklist to render, as the open card or as the small pill
+  await expect(
+    page
+      .locator('.tutorial-step')
+      .or(page.getByRole('button', { name: /Getting started/ }))
+      .first(),
+  ).toBeVisible();
   if ((await step.count()) === 0) {
     await page.getByRole('button', { name: /Getting started/ }).click();
   }
