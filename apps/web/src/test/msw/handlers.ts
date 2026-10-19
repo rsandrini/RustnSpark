@@ -454,6 +454,18 @@ function missingKey(request: Request): Response | null {
 const sellQuote = (part: InventoryItem): number =>
   Math.max(1, Math.round((part.catalog.basePrice * part.condition) / 100));
 
+/** What the tutorial-progress endpoint reports; tests change it to show what the pilot already did. */
+export let tutorialProgressState: TutorialProgress = {
+  refuelled: false,
+  repaired: false,
+  worked: false,
+  missionTaken: false,
+  dispatched: false,
+};
+export function setTutorialProgress(over: Partial<TutorialProgress>): void {
+  tutorialProgressState = { ...tutorialProgressState, ...over };
+}
+
 export function resetEconomyState(): void {
   wallet = 4820;
   fuelState = 25;
@@ -461,6 +473,13 @@ export function resetEconomyState(): void {
   rescueDueAt = null;
   rescueWaitMs = 600_000;
   inventoryState = starterInventory();
+  tutorialProgressState = {
+    refuelled: false,
+    repaired: false,
+    worked: false,
+    missionTaken: false,
+    dispatched: false,
+  };
   materialsState = [
     {
       materialId: 'iron',
@@ -854,9 +873,7 @@ export const handlers = [
     return HttpResponse.json(mission ?? {}, { status: 200 });
   }),
 
-  http.get('/v1/players/me/tutorial-progress', () =>
-    ok<TutorialProgress>({ refuelled: false, repaired: false, worked: false }),
-  ),
+  http.get('/v1/players/me/tutorial-progress', () => ok<TutorialProgress>(tutorialProgressState)),
   http.get('/v1/missions/active', () => {
     if (activeState === null) return ok<ActiveMission[]>([]);
     if (activeState.arrivalAt !== null && Date.parse(activeState.arrivalAt) <= Date.now()) {

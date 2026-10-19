@@ -353,6 +353,7 @@
     "progress": "{{done}}/{{total}}",
     "collapse": "Hide",
     "go": "Take me there",
+    "whatToDo": "What to do",
     "skip": "Skip tutorial",
     "skipConfirm": "Skip the tutorial for good? You can bring it back from the account menu.",
     "skipYes": "Yes, skip it",
@@ -362,35 +363,43 @@
     "steps": {
       "build": {
         "title": "Build your ship",
-        "hint": "On My Ship, press Auto layout, or place the parts yourself."
+        "hint": "On My Ship, press Auto layout, or place the parts yourself.",
+        "detail": "Your ship starts as loose parts in the tray. Open My Ship and press Auto layout, or drag each part onto the grid yourself, so the ship has a bridge, an engine, a tank and the rest in place."
       },
       "ports": {
         "title": "Check the connections",
-        "hint": "Open the yard: no connection point on a part should be red. Fix any red ones (move or rotate a part), and this ticks."
+        "hint": "Open the yard: no connection point on a part should be red. Fix any red ones (move or rotate a part), and this ticks.",
+        "detail": "Parts talk to each other through the small dots on their edges (ports). Green means connected, red means a wrong match. Move or turn a part until none is red, so every part is connected to the bridge."
       },
       "mission": {
         "title": "Take a mission",
-        "hint": "Open Missions and accept one your ship can take."
+        "hint": "Open Missions and accept one your ship can take.",
+        "detail": "Open Missions, pick an offer your ship can take (the green Eligible tag) and press Accept. The first one is a short hop to a test pad next to your port."
       },
       "dispatch": {
         "title": "Dispatch it",
-        "hint": "Send the ship out and wait for the result."
+        "hint": "Send the ship out and wait for the result.",
+        "detail": "Open My Ship and press Dispatch. The ship leaves the port and the mission runs by itself; the first one takes only seconds."
       },
       "report": {
         "title": "Read your report",
-        "hint": "See what happened, what it paid and what the trip wore down."
+        "hint": "See what happened, what it paid and what the trip wore down.",
+        "detail": "When the mission ends, open its report: what happened on the way, what it paid and what it wore down."
       },
       "refuel": {
         "title": "Fill the tank",
-        "hint": "Your tank starts low. At the Port, open Refuel and fill it before you fly."
+        "hint": "Your tank starts low. At the Port, open Refuel and fill it before you fly.",
+        "detail": "A new ship starts with a quarter of its tank. Go to the Port, open Service, then Refuel, and buy fuel until the tank is full: a ship without fuel cannot fly."
       },
       "repair": {
         "title": "Repair the wear",
-        "hint": "At the Port, open Repair and fix what the trip wore down."
+        "hint": "At the Port, open Repair and fix what the trip wore down.",
+        "detail": "Flights wear parts down. At the Port open Service, then Repair, and pay to fix what is worn. If nothing is worn yet, this one comes after your first real mission."
       },
       "work": {
         "title": "Try other work",
-        "hint": "At the Port: scavenge for parts or mine for ore."
+        "hint": "At the Port: scavenge for parts or mine for ore.",
+        "detail": "Besides missions you can earn at the Port: scavenge wreckage for parts and scrap, or mine ore if the ship has a mining rig. Open Work and start one."
       }
     },
     "guide": "Read the Guide"

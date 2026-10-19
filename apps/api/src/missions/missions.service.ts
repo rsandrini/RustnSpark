@@ -224,11 +224,13 @@ export class MissionsService implements OnModuleInit {
       playerId,
       locationId,
     );
-    if (offers.some((offer) => offer.eligibility.eligible)) return offers;
+    // A pilot who has completed nothing always gets their private first mission (the hop to the test pad),
+    // even when a public offer is takeable: a new ship starts with a low tank, and a public offer is
+    // usually a trip it could not fly yet. Later, only when nothing on the board is takeable.
+    if (completed > 0 && offers.some((offer) => offer.eligibility.eligible)) return offers;
 
-    // D43: nothing on the board is takeable for this player. A new player must always have a
-    // first mission, so a private start-safe one is created (or already exists) and the board
-    // is read again to include it.
+    // D43: a new player must always have a first mission, so a private start-safe one is created (or
+    // already exists) and the board is read again to include it.
     const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
     if (!created) return offers;
     const withStarter = await this.board.getBoard(

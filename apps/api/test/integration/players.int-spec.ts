@@ -135,17 +135,23 @@ describe('players/me endpoints (S2.3)', () => {
         .get('/v1/players/me/tutorial-progress')
         .set('Authorization', `Bearer ${token}`);
 
-    expect((await progress()).body).toEqual({ refuelled: false, repaired: false, worked: false });
+    expect((await progress()).body).toEqual({
+      refuelled: false,
+      repaired: false,
+      worked: false,
+      missionTaken: false,
+      dispatched: false,
+    });
 
     await prisma.playerEvent.create({
       data: { playerId: seeded.player.id, type: 'refuel', creditsDelta: -5 },
     });
-    expect((await progress()).body).toEqual({ refuelled: true, repaired: false, worked: false });
+    expect((await progress()).body).toMatchObject({ refuelled: true, repaired: false, worked: false });
 
     await prisma.playerEvent.create({
       data: { playerId: seeded.player.id, type: 'repair.started', creditsDelta: -20 },
     });
-    expect((await progress()).body).toEqual({ refuelled: true, repaired: true, worked: false });
+    expect((await progress()).body).toMatchObject({ refuelled: true, repaired: true, worked: false });
 
     const unauthenticated = await request(server).get('/v1/players/me/tutorial-progress');
     expect(unauthenticated.status).toBe(401);

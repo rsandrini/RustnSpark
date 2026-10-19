@@ -54,6 +54,8 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
   const progress = useQuery({
     queryKey: ['tutorial-progress'],
     enabled,
+    // the first flight is seconds long: keep the checklist current while it is on screen
+    refetchInterval: 4000,
     queryFn: () => client.get<TutorialProgress>('/v1/players/me/tutorial-progress'),
   });
 
@@ -63,8 +65,14 @@ export function useTutorialSteps(playerId: string | undefined, enabled: boolean)
   const connected = built && (ship?.disconnectedPartIds ?? []).length === 0;
   const reportItems = reports.data?.items ?? [];
   const hasReport = reportItems.length > 0;
-  const hasMission = (active.data ?? []).length > 0 || hasReport;
-  const dispatched = hasReport || (active.data ?? []).some((m) => m.status === 'IN_TRANSIT');
+  // The pilot's own records say what was ever done (a mission is gone from the active list once it ends, and
+  // the reports list may be a little behind), so they count first; what is on screen counts too.
+  const hasMission =
+    progress.data?.missionTaken === true || (active.data ?? []).length > 0 || hasReport;
+  const dispatched =
+    progress.data?.dispatched === true ||
+    hasReport ||
+    (active.data ?? []).some((m) => m.status === 'IN_TRANSIT');
   const latest = reportItems[0]?.missionId;
 
   const done: Record<StepId, boolean> = {

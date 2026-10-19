@@ -66,8 +66,11 @@
 .tutorial-step.done p {
   display: none;
 }
-.tutorial-step:not(.next):not(.done) p {
+.tutorial-step:not(.next):not(.done) p:not(.tutorial-detail) {
   display: none;
+}
+.tutorial-step.done p.tutorial-detail {
+  display: block;
 }
 .tutorial-tick {
   display: grid;
@@ -147,4 +150,32 @@
   .tutorial-pill {
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+/* the (i) next to a step's title: hover for the short text, press for the explanation under the step */
+.tutorial-info {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0;
+  border: 1px solid var(--rule-3);
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.tutorial-info:hover,
+.tutorial-info[aria-expanded='true'] {
+  color: var(--ink);
+  border-color: var(--brass);
+}
+.tutorial-detail {
+  color: var(--ink-2);
 }

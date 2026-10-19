@@ -34,6 +34,8 @@ export function TutorialCard() {
   const [opened, setOpened] = useState<{ path: string; collapsed: boolean } | null>(null);
   const explicit = opened !== null && opened.path === pathname ? opened.collapsed : null;
   const [confirmSkip, setConfirmSkip] = useState(false);
+  // the (i) of a step opens a longer explanation of what to do
+  const [explained, setExplained] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const visible = user?.tutorialDone === false;
   const steps = useTutorialSteps(user?.id, visible);
@@ -101,7 +103,24 @@ export function TutorialCard() {
             </span>
             <div>
               <b>{t(`tutorial.steps.${step.id}.title`)}</b>
+              <button
+                type="button"
+                className="tutorial-info"
+                title={t(`tutorial.steps.${step.id}.detail`)}
+                // the same name on each: it sits inside its own step, and a name with the step's title in it would
+                // be taken for that step's own action ("Dispatch it" is not the Dispatch button)
+                aria-label={t('tutorial.whatToDo')}
+                aria-expanded={explained === step.id}
+                onClick={() => setExplained((was) => (was === step.id ? null : step.id))}
+              >
+                {t('parts.infoGlyph')}
+              </button>
               <p>{t(`tutorial.steps.${step.id}.hint`)}</p>
+              {explained === step.id && (
+                <p className="tutorial-detail" data-testid={`tutorial-detail-${step.id}`}>
+                  {t(`tutorial.steps.${step.id}.detail`)}
+                </p>
+              )}
               {step.id === nextId && step.to !== null && (
                 <Link className="tutorial-go" to={step.to}>
                   {t('tutorial.go')}

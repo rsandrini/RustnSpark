@@ -38,6 +38,10 @@ export interface TutorialProgress {
   repaired: boolean;
   /** Started a scavenging or mining job at least once. */
   worked: boolean;
+  /** Took a mission (accepted it, whatever became of it). */
+  missionTaken: boolean;
+  /** Sent the ship out on a mission at least once. */
+  dispatched: boolean;
 }
 
 @Injectable()
@@ -56,14 +60,36 @@ export class PlayersService {
 
   /** The checklist's action steps, from the player's own records (so they survive a cleared browser or a new device). */
   async getTutorialProgress(playerId: string): Promise<TutorialProgress> {
-    const [refuels, repairs, jobs] = await Promise.all([
+    const [refuels, repairs, jobs, taken, flown] = await Promise.all([
       this.prisma.playerEvent.count({ where: { playerId, type: REFUEL_EVENT } }),
       this.prisma.playerEvent.count({ where: { playerId, type: REPAIR_STARTED_EVENT } }),
       this.prisma.missionInstance.count({
         where: { playerId, type: { in: ['SCAVENGE', 'MINING'] } },
       }),
+      // a mission taken: still held by the pilot in a state past the board (a backed-out one is back on the board)
+      this.prisma.missionInstance.count({
+        where: {
+          playerId,
+          type: { notIn: ['SCAVENGE', 'MINING', 'TRAVEL'] },
+          status: { notIn: ['AVAILABLE', 'HELD', 'EXPIRED'] },
+        },
+      }),
+      // a flight: dispatch stamps the arrival time
+      this.prisma.missionInstance.count({
+        where: {
+          playerId,
+          type: { notIn: ['SCAVENGE', 'MINING', 'TRAVEL'] },
+          arrivalAt: { not: null },
+        },
+      }),
     ]);
-    return { refuelled: refuels > 0, repaired: repairs > 0, worked: jobs > 0 };
+    return {
+      refuelled: refuels > 0,
+      repaired: repairs > 0,
+      worked: jobs > 0,
+      missionTaken: taken > 0,
+      dispatched: flown > 0,
+    };
   }
 
   async updateLocale(playerId: string, locale: Locale): Promise<PlayerProfile> {

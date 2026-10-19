@@ -352,6 +352,7 @@
     "title": "Primeiros passos",
     "progress": "{{done}}/{{total}}",
     "collapse": "Ocultar",
+    "whatToDo": "O que fazer",
     "go": "Leve-me até lá",
     "skip": "Pular tutorial",
     "skipConfirm": "Pular o tutorial de vez? Você pode trazê-lo de volta pelo menu da conta.",
@@ -362,35 +363,43 @@
     "steps": {
       "build": {
         "title": "Monte sua nave",
-        "hint": "Em Nave, use o Layout automático, ou posicione as peças você mesmo."
+        "hint": "Em Nave, use o Layout automático, ou posicione as peças você mesmo.",
+        "detail": "Sua nave começa como peças soltas na bandeja. Abra Minha Nave e use o Layout automático, ou arraste cada peça para a grade, para a nave ter ponte, motor, tanque e o resto no lugar."
       },
       "ports": {
         "title": "Confira as conexões",
-        "hint": "Abra o estaleiro: nenhum ponto de conexão das peças deve ficar vermelho. Conserte os vermelhos (mova ou gire uma peça) e este passo é marcado."
+        "hint": "Abra o estaleiro: nenhum ponto de conexão das peças deve ficar vermelho. Conserte os vermelhos (mova ou gire uma peça) e este passo é marcado.",
+        "detail": "As peças conversam pelos pontinhos nas bordas (portas). Verde é conectado, vermelho é encaixe errado. Mova ou gire uma peça até nenhuma ficar vermelha, para todas estarem ligadas à ponte."
       },
       "mission": {
         "title": "Pegue uma missão",
-        "hint": "Abra Missões e aceite uma que sua nave possa fazer."
+        "hint": "Abra Missões e aceite uma que sua nave possa fazer.",
+        "detail": "Abra Missões, escolha uma oferta que sua nave pode pegar (a etiqueta verde Elegível) e toque em Aceitar. A primeira é um salto curto até uma plataforma de testes perto do seu porto."
       },
       "dispatch": {
         "title": "Despache",
-        "hint": "Mande a nave partir e espere o resultado."
+        "hint": "Mande a nave partir e espere o resultado.",
+        "detail": "Abra Minha Nave e toque em Despachar. A nave sai do porto e a missão roda sozinha; a primeira leva só alguns segundos."
       },
       "report": {
         "title": "Leia seu relatório",
-        "hint": "Veja o que aconteceu, quanto pagou e o que a viagem desgastou."
+        "hint": "Veja o que aconteceu, quanto pagou e o que a viagem desgastou.",
+        "detail": "Quando a missão termina, abra o relatório: o que aconteceu no caminho, quanto pagou e o que desgastou."
       },
       "refuel": {
         "title": "Encha o tanque",
-        "hint": "Seu tanque começa baixo. No Porto, abra Reabastecer e encha-o antes de voar."
+        "hint": "Seu tanque começa baixo. No Porto, abra Reabastecer e encha-o antes de voar.",
+        "detail": "Uma nave nova começa com um quarto do tanque. Vá ao Porto, abra Serviço, depois Reabastecer, e compre combustível até encher o tanque: nave sem combustível não voa."
       },
       "repair": {
         "title": "Repare o desgaste",
-        "hint": "No Porto, abra Reparo e conserte o que a viagem desgastou."
+        "hint": "No Porto, abra Reparo e conserte o que a viagem desgastou.",
+        "detail": "Os voos desgastam as peças. No Porto abra Serviço, depois Reparo, e pague para consertar o que está gasto. Se ainda não há desgaste, este passo vem depois da sua primeira missão de verdade."
       },
       "work": {
         "title": "Teste outros trabalhos",
-        "hint": "No Porto: recupere sucata ou minere."
+        "hint": "No Porto: recupere sucata ou minere.",
+        "detail": "Além das missões, dá para ganhar no Porto: recuperar sucata de destroços, ou minerar se a nave tiver uma plataforma de mineração. Abra Trabalho e comece um."
       }
     },
     "guide": "Ler o Guia"

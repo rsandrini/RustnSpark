@@ -27,7 +27,7 @@ export const DETAIL_MIN_SCALE: Record<'main' | 'regional' | 'local', number> = {
 };
 
 export const MIN_SCALE = 1;
-export const MAX_SCALE = 6;
+export const MAX_SCALE = 16;
 export const ZOOM_STEP = 1.5;
 
 export const fitView = (bounds: Bounds): View => ({

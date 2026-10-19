@@ -33,7 +33,7 @@ import { DETAIL_MIN_SCALE, MAX_SCALE, MIN_SCALE } from './map-view';
 const HINT_RADIUS = 3;
 
 /** How far the map zooms in on the port the ship is stopped at when it opens. */
-const SHIP_FOCUS_SCALE = 2.6;
+const SHIP_FOCUS_SCALE = 5;
 
 /** Room kept around a trip under way when the map opens centred on it. */
 const TRIP_FOCUS_MARGIN = 140;

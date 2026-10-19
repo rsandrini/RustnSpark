@@ -7,6 +7,7 @@ import {
   resetActiveState,
   resetBoardState,
   resetEconomyState,
+  setTutorialProgress,
   ship,
 } from '../../test/msw/handlers';
 import { routes } from '../../app/router';
@@ -165,5 +166,42 @@ describe('newcomer tutorial', () => {
         ).toHaveAttribute('href', '/report/m-1'),
       { timeout: 4000 },
     );
+  });
+
+  it('every step has an (i) that explains what to do, in plain words', async () => {
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const card = await screen.findByTestId('tutorial-card');
+    // "Try other work" is the one nobody can guess
+    const info = within(
+      within(card).getByText('Try other work').closest('li') as HTMLElement,
+    ).getByRole('button', { name: 'What to do' });
+    fireEvent.click(info);
+    expect(await screen.findByTestId('tutorial-detail-work')).toHaveTextContent(
+      'scavenge wreckage for parts and scrap, or mine ore',
+    );
+    // and the same text on hover
+    expect(info).toHaveAttribute('title', expect.stringContaining('scavenge wreckage'));
+    // pressing it again closes it
+    fireEvent.click(info);
+    expect(screen.queryByTestId('tutorial-detail-work')).not.toBeInTheDocument();
+  });
+
+  it('"Take a mission" and "Dispatch it" stay ticked from the pilot\'s own records after the flight is over', async () => {
+    // the mission is gone from the active list and the reports list has not caught up: the records still say it was done
+    setTutorialProgress({ missionTaken: true, dispatched: true });
+    server.use(
+      http.get('/v1/missions/active', () => HttpResponse.json([])),
+      http.get('/v1/reports', () => HttpResponse.json({ items: [], nextCursor: null })),
+    );
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByTestId('tutorial-card');
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('tutorial-card')).getByText('Take a mission').closest('li'),
+      ).toHaveClass('done'),
+    );
+    expect(
+      within(screen.getByTestId('tutorial-card')).getByText('Dispatch it').closest('li'),
+    ).toHaveClass('done');
   });
 });

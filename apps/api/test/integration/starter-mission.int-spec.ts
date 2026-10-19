@@ -151,6 +151,11 @@ describe('private start-safe mission (D43)', () => {
       const player = await onboard(faction);
       const offers = await board(player);
       expect(offers.some((offer) => offer.eligibility.eligible)).toBe(true);
+      // and the first mission is the hop to the test pad even when a public offer is takeable: a new
+      // ship starts with a low tank and could not fly most public trips yet
+      const mine = offers.filter((offer) => offer.privatePlayerId === player.playerId);
+      expect(mine).toHaveLength(1);
+      expect(mine[0]!.destinationId).toBe(`${player.home}_pad`);
     },
   );
 

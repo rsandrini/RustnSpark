@@ -39,3 +39,21 @@ test('a new pilot sees the recommended shield and battery on the Ship screen', a
   await expect(needs).toBeVisible();
   await expect(needs).toContainText('Recommended: a shield');
 });
+
+test('the checklist ticks "Take a mission", "Dispatch it" and "Read your report" after the first flight', async ({
+  page,
+}) => {
+  await registerAndLaunch(page, 'explorers');
+  await flyOneMission(page); // ends on the report
+  await page.goto('/ship');
+  // on a phone the checklist is a small pill until it is opened
+  const first = page.locator('.tutorial-step').first();
+  await expect(
+    first.or(page.getByRole('button', { name: /Getting started/ })).first(),
+  ).toBeVisible();
+  if ((await first.count()) === 0)
+    await page.getByRole('button', { name: /Getting started/ }).click();
+  for (const title of ['Take a mission', 'Dispatch it', 'Read your report']) {
+    await expect(page.locator('.tutorial-step', { hasText: title })).toHaveClass(/done/);
+  }
+});

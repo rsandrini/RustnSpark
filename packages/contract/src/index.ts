@@ -720,6 +720,8 @@ export const TutorialProgressSchema = z.object({
   refuelled: z.boolean(),
   repaired: z.boolean(),
   worked: z.boolean(),
+  missionTaken: z.boolean(),
+  dispatched: z.boolean(),
 });
 export type TutorialProgress = z.infer<typeof TutorialProgressSchema>;
 
