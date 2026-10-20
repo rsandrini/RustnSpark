@@ -117,6 +117,14 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       : 'market',
   );
 
+  // A link that points at a tab while the Port is already open (the checklist, a card's "refuel") moves to it.
+  useEffect(() => {
+    if (wantedTab === null) return;
+    if (PORT_GROUPS.some((group) => (group.tabs as readonly string[]).includes(wantedTab))) {
+      setTab(wantedTab as PortTabId);
+    }
+  }, [wantedTab, searchParams]);
+
   // The last tab opened in each group, so going back to a group lands where the pilot was.
   const [lastInGroup, setLastInGroup] = useState<Partial<Record<PortGroupId, PortTabId>>>({});
   const selectTab = (next: PortTabId) => {

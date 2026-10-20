@@ -232,15 +232,19 @@ export class MissionsService implements OnModuleInit {
     // D43: a new player must always have a first mission, so a private start-safe one is created (or
     // already exists) and the board is read again to include it.
     const created = await this.ensureStarterOffer(playerId, locationId, viewer, completed);
-    if (!created) return offers;
+    if (!created && completed > 0) return offers;
     const withStarter = await this.board.getBoard(
       locationId,
       viewer.tier,
       playerId,
       viewer.bridgeRarity,
     );
+    // Nothing completed yet: the board is the test flight and nothing else, so the first mission is never a
+    // public trip of 5 or 15 minutes picked by mistake.
+    const own = withStarter.filter((row) => row.privatePlayerId === playerId);
+    const shown = completed === 0 && own.length > 0 ? own : withStarter;
     return this.withEligibility(
-      this.capForNewPlayer(withStarter, playerId, isNewPlayer, rules),
+      this.capForNewPlayer(shown, playerId, isNewPlayer, rules),
       viewer,
       playerId,
       locationId,

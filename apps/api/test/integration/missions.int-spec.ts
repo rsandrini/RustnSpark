@@ -72,6 +72,18 @@ describe('missions accept/hold API (S6.4)', () => {
     return { seeded, token, shipId: (onboarded.body as { id: string }).id };
   }
 
+  /** A pilot past the newcomer threshold: their board is the public one, not the lone first test flight. */
+  async function makeVeteran(playerId: string): Promise<void> {
+    const { starter_guarantee_max_completed: threshold } = configService.snapshot().rules.missions;
+    for (let i = 0; i < threshold; i += 1) {
+      const done = await createMission({ reward: 1 });
+      await prisma.missionInstance.update({
+        where: { id: done.id },
+        data: { status: 'DONE', playerId },
+      });
+    }
+  }
+
   async function createMission(
     overrides: {
       type?: MissionType;
@@ -171,7 +183,8 @@ describe('missions accept/hold API (S6.4)', () => {
     const asNew = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
     expect(asNew.status).toBe(200);
     const newIds = (asNew.body as Array<{ id: string }>).map((row) => row.id);
-    expect(newIds).toContain(safe.id);
+    // nothing completed yet: the board is the pilot's own first test flight, no public offer beside it
+    expect(newIds).not.toContain(safe.id);
     expect(newIds).not.toContain(dangerous.id);
 
     // Past D43's own "new player" threshold (starter_guarantee_max_completed): the cap lifts.
@@ -194,7 +207,8 @@ describe('missions accept/hold API (S6.4)', () => {
   // server composes template requirements + accept's own preconditions per offer.
   it('reports upfront board eligibility: requirements, origin and one-active preconditions (S10.6)', async () => {
     await freshSeededApp();
-    const { token, shipId } = await onboardPlayer();
+    const { token, shipId, seeded } = await onboardPlayer();
+    await makeVeteran(seeded.player.id);
     const server = httpServer(testApp.app);
 
     interface EligibilityBody {
@@ -255,7 +269,8 @@ describe('missions accept/hold API (S6.4)', () => {
   // `info.requirements` is the same checks, always present with a `met` flag.
   it('exposes info.requirements as the full checklist, not just the failing half (S10.6 follow-up)', async () => {
     await freshSeededApp();
-    const { token } = await onboardPlayer();
+    const { token, seeded } = await onboardPlayer();
+    await makeVeteran(seeded.player.id);
     const server = httpServer(testApp.app);
 
     interface RequirementCheckBody {
@@ -299,7 +314,8 @@ describe('missions accept/hold API (S6.4)', () => {
 
   it('warns on a mission whose trip needs more fuel than the tank can ever hold (FUEL_CAPACITY), and only then', async () => {
     await freshSeededApp();
-    const { token } = await onboardPlayer();
+    const { token, seeded } = await onboardPlayer();
+    await makeVeteran(seeded.player.id);
     const server = httpServer(testApp.app);
     const leg = (distance: number) => [
       { distance, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } },

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
@@ -95,6 +95,13 @@ describe('port (S10.9)', () => {
   it('opens the tab named in the address (the board links to ?tab=refuel)', async () => {
     await renderPortAt('/hangar/port?tab=refuel');
     expect(screen.getByRole('tab', { name: 'Refuel' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('a link to another tab, followed while the Port is open, moves to that tab', async () => {
+    const { router } = renderWithRouter(routes, { initialEntries: ['/port?tab=refuel'] });
+    await screen.findByRole('tab', { name: 'Refuel' });
+    await act(() => router.navigate('/port?tab=scavenging'));
+    expect(await screen.findByTestId('scavenging')).toBeInTheDocument();
   });
 
   it('a service stop (no market, no upgrades) offers only repair and refuel', async () => {
