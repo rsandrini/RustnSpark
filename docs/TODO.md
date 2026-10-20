@@ -27,7 +27,18 @@ ships (the commit has the history). Raise questions before starting anything mar
   both parts are always on the shelf, and the market tip recommends them. Check on a fresh account whether
   players take them and whether the first fights feel fair; then decide on the bigger-bridge test.
 - [ ] Sim (checked 2026-10-20, see `docs/design/sim-report-2026-10-20.md`): the economy is still good. Open: late money piles up
-  (wallet 57-340k at Legendary; decide on a sink or a lower top reward), the pad way-back pays about 550 for 27 s (scale the
-  reward down under `short_trip_exempt_below`), the ion build still spends 54% on repair, and the greedy / safe temperaments
+  (wallet 57-340k at Legendary; decide on a sink or a lower top reward), the ion build still spends 54% on repair, and the greedy / safe temperaments
   and `sim-replay` were not run.
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
+
+## Planned (owner, 2026-10-20; plans written, not built)
+- [ ] **Fuel on the mission card**: show what you have and what the trip needs in one sentence, three clear states
+  (enough, refuel first, too far for this tank), marks on the bar, a chip on the mission rows. Plan:
+  `docs/design/mission-fuel-display-plan.md`.
+- [ ] **More varied boards**: 8 offers on big ports, 4 on small places, every eligible type once before any repeats,
+  and more mission templates. Plan: `docs/design/board-diversity-plan.md`.
+- [ ] **Balance, round 5**: the game feels too easy and money is quick to farm (owner, 2026-10-20); wait for the owner's
+  tests, then use the sim (`docs/design/sim-report-2026-10-20.md`: late money 57-340k at Legendary).
+- Done 2026-10-20: every credit amount x10 (a fresh database is needed: the seed fills prices only when empty); the pad's
+  way back pays a tenth (`missions.short_trip_reward_factor`).
+
