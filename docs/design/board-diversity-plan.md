@@ -7,7 +7,7 @@ small locations."
 - Every location tops its board up to `missions.board_min_per_location` (4) live offers when it is read
   (`board.service.ts`, one advisory lock per location), refreshed as offers expire (about 15 minutes).
 - The generator picks a template at random among those that fit the place (`template.filler.ts`), at most
-  `missions.board_max_per_type` (2) of one type and never two offers of the same type and destination
+  `missions.board_max_same_type` (2) of one type and never two offers of the same type and destination
   (the "boards are a mix" rule).
 - A place's size is already on the map as `detail` (main / regional / local): 18 main, 2 regional, 9 local (6 service
   stops, 3 test pads) after the map extension.
@@ -20,7 +20,7 @@ small locations."
    pad keeps its own rule (only its way back). New config: `missions.board_min_by_detail` (`{ main, regional, local }`),
    Admin-tunable; the old key stays as the fallback for places with no detail.
 2. **Diversity rules scale with the board**: at 8 offers the cap of 2 per type would be too tight (5 types x 2 = 10 is
-   fine, but a faction with few types would run out), so: `board_max_per_type` becomes a share (at most half the board,
+   fine, but a faction with few types would run out), so: `board_max_same_type` becomes a share (at most half the board,
    rounded up: 4 of 8, 2 of 4), and the existing "no same type and destination twice" stays.
 3. **A new rule: every type the place can serve appears at least once** before any type repeats (a round-robin over
    the eligible types), so a big port always shows delivery, transport, escort, mining, rescue and race when it can.
