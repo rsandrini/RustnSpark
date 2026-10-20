@@ -60,3 +60,17 @@ rarity (the repair share fell from 49-62% to 22-26%, as that round predicted), n
 The economy is still good: faster than round 4 and no stalls to speak of, with Epic early and Legendary reachable in
 every build. The one thing to decide is the late money (finding 1); the pad reward (finding 2) is cheap to fix when you
 want it. The experiments are stored in `sim-data/sim.db` (`oct20-base`, `oct20-revert`, `oct20-final`).
+
+## 5. Addendum: prices x10 and the pad reward (same day)
+Every credit amount of the game became ten times larger (owner request: "big numbers"): part and material prices, rewards,
+fuel, the repair minimum and the upkeep per tier, rescue, combat pay, start credits (7500), the ship-value tiers, the
+scavenging price caps and the open-cargo pay. The divisors of the upgrade materials (`gap` rules divide the square root
+of the price gap) were multiplied by sqrt(10) (5 -> 15.82, 6 -> 19) so the amounts a pilot has to bring stay the same.
+The pad's way back now pays a tenth of the usual reward (`missions.short_trip_reward_factor` 0.1).
+
+Check with the same experiment on the new snapshot (`oct20-x10`): median hours to Epic 42 / 43 / 47 / 59 and to Legendary
+61 / 63 / 92 / 142 (chem / chem-shield / hybrid / ion) against 44 / 47 / 50 / 61 and 60 / 71 / 97 / 134 before: the same
+pace, the repair share the same (18-26%, ion 50%). The wallets at Legendary are about ten times larger (0.5-2.4 million
+against 57-340 thousand), as they should be. The balance is unchanged, only the numbers are bigger. A fresh database is
+needed to get the new prices (the seed fills prices only into an empty database; the one migration-made row, the generic
+scrap, moves by `20261020000000_scrap_price_x10`).
