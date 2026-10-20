@@ -29,6 +29,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'deadlineAt',
     'seed',
     'privatePlayerId',
+    'giverId',
     'version',
   ],
 };

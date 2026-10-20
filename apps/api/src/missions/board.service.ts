@@ -3,6 +3,8 @@ import type { MissionInstance, MissionType, Prisma } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { createRng } from '../common/rng/rng.js';
+import { giverShapeOf, pickGiver, type GiverShape } from './generator/giver.picker.js';
 import { missionSeed } from './generator/mission.generator.js';
 import { boardSize, maxOffersOfOneType } from './board-size.js';
 import {
@@ -49,6 +51,15 @@ async function loadWorld(tx: Prisma.TransactionClient) {
       tx.material.findMany({ where: { active: true, fixedPrice: false } }),
     ]);
   return { locations, routes, routeEnvironments, environments, templates, materials };
+}
+
+/** The active quest givers of a faction, as the generator sees them. */
+async function loadGivers(
+  tx: Prisma.TransactionClient,
+  factionId: string,
+): Promise<readonly GiverShape[]> {
+  const rows = await tx.questGiver.findMany({ where: { factionId, active: true } });
+  return rows.map(giverShapeOf);
 }
 
 // The world tables are read-only for a top-up, so a multi-location top-up (the map's
@@ -199,6 +210,7 @@ export class BoardService {
       const origin = await tx.location.findUnique({ where: { id: locationId } });
       if (origin === null) return false;
       const world = await loadWorld(tx);
+      const givers = await loadGivers(tx, origin.factionId);
       // How many private offers this player has had here: each new seed differs from the last.
       const previous = await tx.missionInstance.count({
         where: { privatePlayerId: playerId, originId: locationId },
@@ -206,9 +218,23 @@ export class BoardService {
 
       for (let attempt = 0; attempt < STARTER_ATTEMPTS; attempt += 1) {
         let draft: MissionDraft;
+        const seed = `starter|${playerId}|${locationId}|${previous + attempt}`;
+        // The first flight is the faction mentor's; later starter offers are an ordinary giver's.
+        const giver =
+          input.firstMission === true
+            ? givers.find((entry) => entry.role === 'MENTOR')
+            : pickGiver({
+                givers,
+                locationId,
+                liveGiverIds: [],
+                boardSize: 1,
+                eligibleTypes: new Set(input.types),
+                rng: createRng(seed).child('giver'),
+              });
         try {
           draft = fillMission({
-            seed: `starter|${playerId}|${locationId}|${previous + attempt}`,
+            seed,
+            ...(giver === undefined ? {} : { giver }),
             origin,
             world,
             rules,
@@ -297,6 +323,18 @@ export class BoardService {
     });
     const maxSameType = maxOffersOfOneType(boardMin, rules);
     const eligibleTypes = eligibleTypesAt(location, worldTables);
+    const givers = await loadGivers(tx, location.factionId);
+    const liveGiverIds: (string | null)[] = (
+      await tx.missionInstance.findMany({
+        where: {
+          originId: locationId,
+          status: 'AVAILABLE',
+          expiresAt: { gt: now },
+          privatePlayerId: null,
+        },
+        select: { giverId: true },
+      })
+    ).map((row) => row.giverId);
     while (available < boardMin) {
       try {
         let draft: MissionDraft;
@@ -306,8 +344,36 @@ export class BoardService {
           const missingTypes = new Set(
             [...eligibleTypes].filter((type) => !live.some((offer) => offer.type === type)),
           );
+          // A seed this place already used (a rejected attempt of an earlier top-up burned some epochs) would
+          // repeat an old offer: move on to the next epoch instead.
+          let seed = missionSeed({ locationId, epoch, configVersion });
+          while ((await tx.missionInstance.count({ where: { originId: locationId, seed } })) > 0) {
+            epoch += 1;
+            seed = missionSeed({ locationId, epoch, configVersion });
+          }
+          const avoidTypes = new Set(
+            [...eligibleTypes].filter(
+              (type) => live.filter((offer) => offer.type === type).length >= maxSameType,
+            ),
+          );
+          const wantTypes =
+            missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
+              ? missingTypes
+              : undefined;
+          const giver = pickGiver({
+            givers,
+            locationId,
+            liveGiverIds,
+            boardSize: boardMin,
+            eligibleTypes,
+            ...(wantTypes === undefined ? {} : { wantTypes }),
+            avoidTypes,
+            rng: createRng(seed).child('giver'),
+          });
           draft = fillMission({
-            seed: missionSeed({ locationId, epoch, configVersion }),
+            seed,
+            ...(giver === undefined ? {} : { giver }),
+            avoidTypes,
             origin: location,
             world: worldTables,
             rules,
@@ -327,6 +393,7 @@ export class BoardService {
           epoch += 1;
         }
         live.push({ type: draft.type, destinationId: draft.destinationId, cargo: draft.cargo });
+        liveGiverIds.push(draft.giverId ?? null);
         await tx.missionInstance.create({ data: draft });
       } catch (error) {
         // S3.4 guarantees every seeded location can serve a template; if the data

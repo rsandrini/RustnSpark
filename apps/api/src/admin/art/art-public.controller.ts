@@ -2,6 +2,9 @@ import { Controller, Get, Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { portraitUrlOf } from '../../missions/giver-ref.js';
+import { parsePools } from '../../missions/voice.js';
+import { bilingual } from '../../parts/parts.service.js';
 import { ArtService, type ArtUrls } from './art.service.js';
 
 /** A faction as players see it: names, pitch, colour and any uploaded images — all admin-owned. */
@@ -13,12 +16,32 @@ export interface PublicFaction {
   readonly playable: boolean;
   /** Uploaded banner/logo/background URLs; null = no uploads (built-in defaults apply). */
   readonly art: ArtUrls | null;
+  /** The faction's mentor, for the faction choice screen (absent in the sign-in page's list). */
+  readonly mentor?: {
+    readonly name: string;
+    readonly title: { readonly en: string; readonly 'pt-BR': string };
+    readonly portraitUrl: string | null;
+    readonly welcome: { readonly en: string; readonly 'pt-BR': string } | null;
+  } | null;
 }
 
 /** What the sign-in page may show anyone: the factions as the admin has them and a few catalog counts. */
 export interface PublicLanding {
   readonly factions: PublicFaction[];
   readonly counts: { readonly parts: number; readonly places: number; readonly factions: number };
+}
+
+function mentorCardOf(
+  mentor: { name: string; title: unknown; art: unknown; lines: unknown } | undefined,
+): PublicFaction['mentor'] {
+  if (mentor === undefined) return null;
+  const welcome = parsePools(mentor.lines)['tutorial.welcome']?.[0];
+  return {
+    name: mentor.name,
+    title: bilingual(mentor.title),
+    portraitUrl: portraitUrlOf(mentor.art),
+    welcome: welcome === undefined ? null : { en: welcome.en, 'pt-BR': welcome['pt-BR'] },
+  };
 }
 
 /** What every signed-in player needs: which entities have uploaded images (the rest keep defaults). */
@@ -33,10 +56,12 @@ export class ArtPublicController {
   // what the admin edits is what players see.
   @Get('factions')
   async factions(): Promise<{ factions: PublicFaction[] }> {
-    const [rows, art] = await Promise.all([
+    const [rows, art, mentors] = await Promise.all([
       this.prisma.faction.findMany({ orderBy: { id: 'asc' } }),
       this.art.listUrls('factions'),
+      this.prisma.questGiver.findMany({ where: { role: 'MENTOR', active: true } }),
     ]);
+    const mentorOf = new Map(mentors.map((mentor) => [mentor.factionId, mentor]));
     return {
       factions: rows.map((row) => ({
         id: row.id,
@@ -45,6 +70,7 @@ export class ArtPublicController {
         color: row.color,
         playable: row.playable,
         art: art[row.id] ?? null,
+        mentor: mentorCardOf(mentorOf.get(row.id)),
       })),
     };
   }

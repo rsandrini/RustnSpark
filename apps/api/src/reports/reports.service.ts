@@ -18,6 +18,8 @@ import {
   UnsupportedMissionLogSchemaError,
   type ParsedMissionEvent,
 } from './events/event.schema.js';
+import type { GiverRef, LocalizedText } from '@rustandspark/contract';
+import { closingLineOf, giverRefOf } from '../missions/giver-ref.js';
 import { computeReportStats, type ReportStats } from './report.stats.js';
 import { type EntityNames } from './templates/template.engine.js';
 
@@ -59,6 +61,9 @@ export interface ReportMission {
   readonly reward: number;
   /** The routes the trip follows, in order (for the map): one per leg. */
   readonly routeIds: readonly string[];
+  /** Who gave the mission and their closing line for how it ended (absent for older missions). */
+  readonly giver?: GiverRef;
+  readonly giverLine?: LocalizedText | null;
 }
 
 /** The route of each stored leg (a leg without one is skipped). */
@@ -277,9 +282,16 @@ export class ReportsService {
         destinationId: true,
         reward: true,
         legs: true,
+        seed: true,
+        giverId: true,
         template: { select: { displayName: true } },
       },
     });
+    // Who gave the mission, with their closing line for how it ended.
+    const giverRow =
+      mission?.giverId == null
+        ? null
+        : await this.prisma.questGiver.findUnique({ where: { id: mission.giverId } });
     return {
       locale,
       outcome: log.outcome,
@@ -294,6 +306,12 @@ export class ReportsService {
               reward: mission.reward,
               routeIds: routeIdsOf(mission.legs),
               title: bilingual(mission.template.displayName),
+              ...(giverRow === null
+                ? {}
+                : {
+                    giver: giverRefOf(giverRow),
+                    giverLine: closingLineOf(giverRow, log.outcome, mission.seed),
+                  }),
             },
           }),
       ...result,

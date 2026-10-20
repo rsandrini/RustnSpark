@@ -1,4 +1,6 @@
 import { EnginePreviewService } from './engine-preview.service.js';
+import { GiversService } from './givers.service.js';
+import { MentorController } from './mentor.controller.js';
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { EnvModule, EnvService } from '../common/env/env.module.js';
@@ -56,9 +58,16 @@ import { TravelService } from './travel.service.js';
       },
     }),
   ],
-  controllers: [MissionsController, TravelController, ScavengeJobController, MiningJobController],
+  controllers: [
+    MissionsController,
+    TravelController,
+    ScavengeJobController,
+    MiningJobController,
+    MentorController,
+  ],
   providers: [
     BoardService,
+    GiversService,
     MissionsService,
     DispatchService,
     EnginePreviewService,
@@ -74,6 +83,6 @@ import { TravelService } from './travel.service.js';
     WalletService,
     PlayerEventService,
   ],
-  exports: [BoardService, MissionsService, DispatchService, MissionProducer],
+  exports: [BoardService, MissionsService, DispatchService, MissionProducer, GiversService],
 })
 export class MissionsModule {}

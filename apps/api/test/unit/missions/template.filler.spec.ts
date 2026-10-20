@@ -762,3 +762,67 @@ describe('S6.2 — isMiningEligible (round 10, independent mining jobs)', () => 
     expect(a.reward).toBeGreaterThan(delivery.reward);
   });
 });
+
+describe('quest givers in the template filler', () => {
+  const giverWith = (types: Record<string, number>, minZone = 0, maxZone = 3) => ({
+    id: 'g1',
+    role: 'GIVER' as const,
+    weight: 10,
+    locationIds: [] as string[],
+    personality: { types, minZone, maxZone, tone: 'formal' },
+  });
+  const run = (seed: string, giver: ReturnType<typeof giverWith>) =>
+    fillMission({ seed, origin: LOC_ALPHA, world: world(), rules, now: NOW, giver });
+
+  it('stamps the giver on the draft and offers only what their personality names', () => {
+    for (let i = 0; i < 25; i += 1) {
+      const draft = run(`g${i}`, giverWith({ RESCUE: 1 }));
+      expect(draft.giverId).toBe('g1');
+      expect(draft.type).toBe('RESCUE');
+    }
+  });
+
+  it("falls back to the place's own types when the giver offers nothing it can post", () => {
+    const draft = run('mismatch', giverWith({ RACE: 1 }));
+    expect(['DELIVERY', 'RESCUE']).toContain(draft.type);
+    expect(draft.giverId).toBe('g1');
+  });
+
+  it('keeps the trip inside the zone band when somewhere reachable fits it', () => {
+    // alpha is zone 0, beta zone 1, gamma zone 2: a giver capped at zone 1 never sends a delivery to gamma
+    for (let i = 0; i < 25; i += 1) {
+      const draft = run(`z${i}`, giverWith({ DELIVERY: 1 }, 0, 1));
+      expect(draft.destinationId).toBe('beta');
+    }
+  });
+
+  it('skips the types a board already holds as many of as it allows, while anything else fits', () => {
+    for (let i = 0; i < 25; i += 1) {
+      const draft = fillMission({
+        seed: `avoid${i}`,
+        origin: LOC_ALPHA,
+        world: world(),
+        rules,
+        now: NOW,
+        avoidTypes: new Set(['DELIVERY']),
+      });
+      expect(draft.type).toBe('RESCUE');
+    }
+    // nothing else fits: the avoided type is still offered rather than failing
+    const only = fillMission({
+      seed: 'avoid-only',
+      origin: LOC_ALPHA,
+      world: world([DELIVERY_LUNA]),
+      rules,
+      now: NOW,
+      avoidTypes: new Set(['DELIVERY']),
+    });
+    expect(only.type).toBe('DELIVERY');
+  });
+
+  it('is unchanged without a giver', () => {
+    const plain = fill('same', LOC_ALPHA);
+    expect(plain.giverId).toBeUndefined();
+    expect(fill('same', LOC_ALPHA)).toEqual(plain);
+  });
+});

@@ -5,6 +5,7 @@ import type { GameRules } from '../../config/game-config.types.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
 import { generateCompetitors } from '../../resolution/race/race.resolver.js';
+import { type GiverShape, typeWeight, weightedPick } from './giver.picker.js';
 
 // Board offer lifetime: the prototype board shows offers expiring in 6–40 minutes
 // (prototypes/quadro-missoes-esboco.html); TTL is drawn per mission inside that window.
@@ -118,6 +119,13 @@ export interface FillMissionInput {
    * first, so a board shows every type it can before any type repeats.
    */
   readonly preferTypes?: ReadonlySet<MissionType>;
+  /**
+   * Who offers it: the type is drawn from the giver's own weights (among the types the place can post) and the trip
+   * stays inside their zone band when anywhere reachable does. The draft carries `giverId`.
+   */
+  readonly giver?: GiverShape;
+  /** Types the board already holds as many of as it allows: not offered while anything else fits. */
+  readonly avoidTypes?: ReadonlySet<MissionType>;
 }
 
 export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
@@ -443,16 +451,37 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   const rng = createRng(input.seed);
   const { origin, world, rules, now } = input;
 
-  const eligible = eligibleTemplates(origin, world).filter(
+  const allowed = eligibleTemplates(origin, world).filter(
     (candidate) =>
       input.starter === undefined ||
       (input.starter.types.includes(candidate.type) && !endsAtOptInPlace(candidate, world)),
   );
+  const unfilled = allowed.filter((candidate) => input.avoidTypes?.has(candidate.type) !== true);
+  const eligible = unfilled.length > 0 ? unfilled : allowed;
   const preferred =
     input.preferTypes === undefined
       ? []
       : eligible.filter((candidate) => input.preferTypes?.has(candidate.type) === true);
-  const pool = preferred.length > 0 ? preferred : eligible;
+  const basePool = preferred.length > 0 ? preferred : eligible;
+  const { giver } = input;
+  // A giver offers what their personality says: of the templates the place can post (the types the board still
+  // lacks first), the type is drawn by the giver's weights.
+  const ofGiver = (candidates: readonly FillerTemplate[]): FillerTemplate[] =>
+    giver === undefined
+      ? [...candidates]
+      : candidates.filter((candidate) => typeWeight(giver, candidate.type) > 0);
+  let pool: readonly FillerTemplate[] = basePool;
+  if (giver !== undefined) {
+    const narrowed = [ofGiver(preferred), ofGiver(eligible)].find((list) => list.length > 0);
+    if (narrowed !== undefined) {
+      const type = weightedPick(
+        [...new Set(narrowed.map((candidate) => candidate.type))],
+        (candidateType) => typeWeight(giver, candidateType),
+        rng.child('giverType'),
+      );
+      pool = narrowed.filter((candidate) => candidate.type === type);
+    }
+  }
   const template = pool.length > 0 ? rng.child('template').pick(pool) : undefined;
   if (template === undefined) {
     throw new MissionGenerationError(`No eligible mission template at location ${origin.id}`);
@@ -470,15 +499,29 @@ export function fillMission(input: FillMissionInput): MissionDraft {
         (zoneOf.get(route.nodeAId) ?? Number.POSITIVE_INFINITY) <= allowedZone &&
         (zoneOf.get(route.nodeBId) ?? Number.POSITIVE_INFINITY) <= allowedZone,
     );
-  const reachable = world.locations
-    .filter((location) => {
-      if (location.id === origin.id) return false;
-      if (!matchesDestination(location, template, input.starter?.firstMission === true))
-        return false;
-      const candidatePath = shortestPath(origin.id, location.id, adjacency);
-      return candidatePath !== null && withinStarterZone(candidatePath);
-    })
-    .sort(byId);
+  const peakZoneOf = (path: FillerRoute[]): number =>
+    Math.max(
+      ...path.flatMap((route) => [zoneOf.get(route.nodeAId) ?? 0, zoneOf.get(route.nodeBId) ?? 0]),
+    );
+  const reachableWhere = (inBand: (path: FillerRoute[]) => boolean): FillerLocation[] =>
+    world.locations
+      .filter((location) => {
+        if (location.id === origin.id) return false;
+        if (!matchesDestination(location, template, input.starter?.firstMission === true))
+          return false;
+        const candidatePath = shortestPath(origin.id, location.id, adjacency);
+        return candidatePath !== null && withinStarterZone(candidatePath) && inBand(candidatePath);
+      })
+      .sort(byId);
+  // The giver's zone band (a cautious one stays near home, a daring one goes far) holds when anywhere reachable fits it.
+  const banded =
+    giver === undefined
+      ? []
+      : reachableWhere((path) => {
+          const peak = peakZoneOf(path);
+          return peak >= giver.personality.minZone && peak <= giver.personality.maxZone;
+        });
+  const reachable = banded.length > 0 ? banded : reachableWhere(() => true);
   // A first mission is a short one: of everywhere reachable inside the safe zones, the NEAREST
   // destination within the distance cap is offered — deterministic, so the first result comes
   // fast and from the same nearby place every time (the usual board keeps the whole map in play
@@ -581,5 +624,6 @@ export function fillMission(input: FillMissionInput): MissionDraft {
     deadlineAt,
     seed: input.seed,
     version: 0,
+    ...(giver === undefined ? {} : { giverId: giver.id }),
   };
 }

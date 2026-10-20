@@ -284,8 +284,8 @@ const GIVERS: readonly GiverSeed[] = [
     lines: {
       first_flight: [
         L(
-          'New hands get the pad first: a hop out and a hop back, just to feel the ship. Top up the tank and off you go.',
-          'Mãos novas começam pelo pátio: um salto de ida e um de volta, só para sentir a nave. Encha o tanque e vá.',
+          'New hands get the pad first: a test flight, a hop out and a hop back, just to feel the ship. Top up the tank and off you go.',
+          'Mãos novas começam pelo pátio: um voo de teste, um salto de ida e um de volta, só para sentir a nave. Encha o tanque e vá.',
         ),
       ],
       ...tutorial({
@@ -459,8 +459,8 @@ const GIVERS: readonly GiverSeed[] = [
     lines: {
       first_flight: [
         L(
-          'Before the frontier, the pad. A short hop out and back, to see if your ship holds together. Fill the tank. Then go.',
-          'Antes da fronteira, o pátio. Um salto curto de ida e volta, para ver se sua nave se aguenta. Encha o tanque. Depois vá.',
+          'Before the frontier, the pad. A test flight: a short hop out and back, to see if your ship holds together. Fill the tank. Then go.',
+          'Antes da fronteira, o pátio. Um voo de teste: um salto curto de ida e volta, para ver se sua nave se aguenta. Encha o tanque. Depois vá.',
         ),
       ],
       ...tutorial({

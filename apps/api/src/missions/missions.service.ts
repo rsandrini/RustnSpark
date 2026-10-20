@@ -32,6 +32,8 @@ import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bridgeRarityOf } from '../economy/reward.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
+import type { GiverRef } from '@rustandspark/contract';
+import { GiversService } from './givers.service.js';
 import { fieldFor, resolveRace } from '../resolution/race/race.resolver.js';
 import { createRng } from '../common/rng/rng.js';
 import { parseCompetitors } from './resolution-input.js';
@@ -81,7 +83,10 @@ export interface BoardEligibility {
  */
 export interface OfferInfo {
   readonly title: { readonly en: string; readonly 'pt-BR': string };
+  /** The giver's brief in their own voice when they have one, else the template's description. */
   readonly description: { readonly en: string; readonly 'pt-BR': string };
+  /** Who offers it; absent for offers made before givers existed. */
+  readonly giver?: GiverRef | null;
   readonly legCount: number;
   readonly totalDistance: number;
   readonly peakDanger: number;
@@ -146,6 +151,8 @@ export type ActiveMission = MissionInstance & {
     readonly title: { readonly en: string; readonly 'pt-BR': string };
     readonly description: { readonly en: string; readonly 'pt-BR': string };
   };
+  /** Who gave it (the brief is already in their voice). */
+  readonly giver?: GiverRef | null;
   /** Everything the board card shows for this mission (time, fuel, requirements, material, race),
       for the pilot's ship as it is now: an accepted mission must stay as readable as an offer. */
   readonly info: OfferInfo;
@@ -193,6 +200,7 @@ export class MissionsService implements OnModuleInit {
     private readonly resolveService: MissionResolveService,
     @InjectQueue(MISSION_QUEUE_NAME) private readonly missionQueue: Queue<DispatchJobData>,
     private readonly ownershipRegistry: OwnershipResolverRegistry,
+    private readonly givers: GiversService,
   ) {}
 
   // Missions own 'mission' ownership (S9.3): reports resolve the owning player
@@ -358,9 +366,10 @@ export class MissionsService implements OnModuleInit {
         ...row,
         info: infoById.get(row.id)!,
         legWindows: windows.get(row.id) ?? [],
+        giver: infoById.get(row.id)?.giver ?? null,
         brief: {
           title: bilingual(template?.displayName),
-          description: bilingual(template?.description),
+          description: infoById.get(row.id)?.description ?? bilingual(template?.description),
         },
       };
     });
@@ -742,6 +751,8 @@ export class MissionsService implements OnModuleInit {
     const active = await this.prisma.missionInstance.count({
       where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
     });
+    // Who offers each mission, and what they say about it (the template's text where they say nothing).
+    const voices = await this.givers.voices(rows);
     const sheet = viewer.ship === undefined ? null : deriveSheet(viewer.installed, rules);
     const viability = sheet === null ? null : checkViability(sheet, viewer.installed, rules);
     // The estimates (time, fuel, a race window) are for the ship as the pilot has tuned its engines.
@@ -786,20 +797,25 @@ export class MissionsService implements OnModuleInit {
           reasons.push(...check.reasons);
         }
       }
+      const info = offerInfo(
+        row,
+        wordsById.get(row.templateId),
+        materialsById,
+        sheet,
+        viewer.ship === undefined ? null : viewer.installed,
+        requirementsById.get(row.templateId),
+        viability,
+        rules,
+        tuned,
+      );
+      const voice = voices.get(row.id);
       return {
         ...row,
         eligibility: { eligible: reasons.length === 0, reasons },
-        info: offerInfo(
-          row,
-          wordsById.get(row.templateId),
-          materialsById,
-          sheet,
-          viewer.ship === undefined ? null : viewer.installed,
-          requirementsById.get(row.templateId),
-          viability,
-          rules,
-          tuned,
-        ),
+        info:
+          voice === undefined
+            ? info
+            : { ...info, giver: voice.giver, description: voice.description ?? info.description },
       };
     });
   }
