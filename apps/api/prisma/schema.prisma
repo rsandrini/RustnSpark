@@ -160,6 +160,12 @@ enum PartClass {
   BRIDGE
 }
 
+// A GIVER hands out missions on boards; a MENTOR is the faction's guide (onboarding voice and first flight).
+enum GiverRole {
+  GIVER
+  MENTOR
+}
+
 enum MissionType {
   DELIVERY
   TRANSPORT
@@ -290,6 +296,7 @@ model Faction {
   locations        Location[]
   missionTemplates MissionTemplate[]
   missionInstances MissionInstance[]
+  questGivers      QuestGiver[]
 }
 
 model Environment {
@@ -391,6 +398,31 @@ model PartCatalog {
   instances        PartInstance[]
 }
 
+// The people behind the missions (docs/design/quest-givers-plan.md). Admin owns every field. A partial unique index
+// (migration) allows one active MENTOR per faction.
+model QuestGiver {
+  id          String            @id
+  factionId   String
+  role        GiverRole         @default(GIVER)
+  active      Boolean           @default(true)
+  // A person's name is not translated.
+  name        String
+  title       Json
+  // Uploaded images {portrait?} -> file names in ART_DIR; absent = the faction symbol.
+  art         Json?
+  // {types: {DELIVERY: weight, ...}, minZone, maxZone, tone}: what they offer.
+  personality Json
+  // Pools of bilingual lines by key ("offer.DELIVERY", "report.success", "tutorial.refuel", ...).
+  lines       Json
+  // Where they work; empty = any place of their faction.
+  locationIds String[]
+  weight      Int               @default(10)
+  faction     Faction           @relation(fields: [factionId], references: [id])
+  missions    MissionInstance[]
+
+  @@index([factionId, active])
+}
+
 model MissionTemplate {
   id              String            @id
   displayName     Json
@@ -442,6 +474,9 @@ model MissionInstance {
   // accepts it. NULL for every normal (shared) board offer. Plain column, no relation: it is
   // never joined, only compared.
   privatePlayerId String?
+  // Who offers it (null for offers made before givers existed, or by a faction with none).
+  giverId         String?
+  giver           QuestGiver?     @relation(fields: [giverId], references: [id], onDelete: SetNull)
   // Optimistic lock (S6.4 state machine increments on every transition).
   version       Int             @default(0)
   template      MissionTemplate @relation(fields: [templateId], references: [id])
@@ -463,6 +498,7 @@ model MissionInstance {
   @@index([originId, status, expiresAt])
   // A player's private offers at a location (D43).
   @@index([privatePlayerId, originId, status])
+  @@index([giverId])
   // S11.3: analytics windows — generation per zone (createdAt) and consumption (acceptedAt).
   @@index([createdAt])
   @@index([acceptedAt])

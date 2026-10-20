@@ -48,6 +48,7 @@ async function countRows(prisma: PrismaClient): Promise<Record<string, number>> 
     materials,
     missionTemplates,
     dropTables,
+    questGivers,
   ] = await Promise.all([
     prisma.gameConfig.count(),
     prisma.location.count(),
@@ -58,6 +59,7 @@ async function countRows(prisma: PrismaClient): Promise<Record<string, number>> 
     prisma.material.count(),
     prisma.missionTemplate.count(),
     prisma.dropTable.count(),
+    prisma.questGiver.count(),
   ]);
   return {
     gameConfig,
@@ -69,6 +71,7 @@ async function countRows(prisma: PrismaClient): Promise<Record<string, number>> 
     materials,
     missionTemplates,
     dropTables,
+    questGivers,
   };
 }
 
@@ -124,11 +127,53 @@ describe('database seed (S3.4)', () => {
     expect(counts.materials).toBe(3 + 1 + 1);
     expect(counts.missionTemplates).toBeGreaterThanOrEqual(5);
     expect(counts.dropTables).toBeGreaterThanOrEqual(3);
+    // Per playable faction: one mentor and the first givers (the content grows in Admin).
+    expect(counts.questGivers).toBeGreaterThanOrEqual(9);
 
     const classicSquare = await prisma.shipFormat.findUnique({ where: { id: 'classic_square' } });
     expect(classicSquare).not.toBeNull();
     expect((classicSquare!.cells as [number, number][]).length).toBe(400);
     expect(classicSquare!.minRarity).toBe('COMMON');
+  });
+
+  it('gives every playable faction exactly one active mentor and a generic giver for each mission type', async () => {
+    await seed(prisma);
+    const types = ['DELIVERY', 'TRANSPORT', 'ESCORT', 'MINING', 'RESCUE', 'RACE'];
+    for (const factionId of ['luna', 'sun', 'explorers']) {
+      const givers = await prisma.questGiver.findMany({ where: { factionId, active: true } });
+      expect(givers.filter((giver) => giver.role === 'MENTOR')).toHaveLength(1);
+      for (const type of types) {
+        const offering = givers.filter(
+          (giver) =>
+            giver.role === 'GIVER' &&
+            giver.locationIds.length === 0 &&
+            ((giver.personality as { types: Record<string, number> }).types[type] ?? 0) > 0,
+        );
+        expect({ factionId, type, offering: offering.length > 0 }).toEqual({
+          factionId,
+          type,
+          offering: true,
+        });
+      }
+    }
+  });
+
+  it('allows only one active mentor per faction (database guard)', async () => {
+    await seed(prisma);
+    await expect(
+      prisma.questGiver.create({
+        data: {
+          id: 'second_mentor',
+          factionId: 'luna',
+          role: 'MENTOR',
+          name: 'Second',
+          title: { en: 'x', 'pt-BR': 'x' },
+          personality: { types: {}, minZone: 0, maxZone: 0, tone: 'formal' },
+          lines: {},
+          locationIds: [],
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it('is idempotent: a second seed run makes no changes', async () => {
