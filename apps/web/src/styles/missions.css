@@ -962,6 +962,9 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 }
 .fuel-action {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   font-size: var(--text-sm);
 }
 .fuel-chip {
