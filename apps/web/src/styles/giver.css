@@ -1,0 +1,109 @@
+/*
+ * Quest givers (docs/design/quest-givers-plan.md): the badge with a face, the mentor's speech
+ * bubble and the Admin pieces. Sizes follow the plan: 48 px on a row, 96 px on the open card;
+ * the tutorial header sits in between. Placeholder until a portrait is uploaded: the faction
+ * symbol (uploaded logo, else the giver's initial) on the faction colour, so every build looks
+ * finished (plan §1).
+ */
+.giver-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+
+.giver-portrait,
+.giver-fac {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* The placeholder disc: faction colour as ink, a tint of the same colour as fill. */
+.giver-fac {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  background: color-mix(in oklab, currentColor 14%, transparent);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.giver-fac.luna {
+  color: var(--luna);
+}
+.giver-fac.sun {
+  color: var(--sun);
+}
+.giver-fac.explorers {
+  color: var(--explorers);
+}
+.giver-fac.pirata {
+  color: var(--pirata);
+}
+.giver-fac.neutro {
+  color: var(--neutro);
+}
+
+.giver-fac-logo {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+}
+
+.giver-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.giver-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.giver-title {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* The open mission card (96 px portrait per the plan). */
+.giver-badge.card .giver-portrait,
+.giver-badge.card .giver-fac {
+  width: 96px;
+  height: 96px;
+}
+.giver-badge.card .giver-name {
+  font-size: var(--text-lg);
+}
+.giver-badge.card .giver-title {
+  font-size: var(--text-sm);
+}
+
+/* The getting-started card header (plan §9). */
+.giver-badge.tutorial .giver-portrait,
+.giver-badge.tutorial .giver-fac {
+  width: 64px;
+  height: 64px;
+}
+
+/* The mentor's line (SpeechBubble): a short aside above the plain checklist text. */
+.speech-bubble {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
