@@ -110,3 +110,37 @@ Rough size: steps 1-4 are the core (about the size of the board-variety change);
    fully random per faction.
 4. Report closing line in phase 1 (**recommended**) vs. later.
 5. Reward bias per personality: **leave out of v1** (recommended), types and risk band only.
+
+## 9. The faction mentor: the onboarding guide has a face (added 2026-10-20)
+
+Owner idea: the **main person of each faction** (its leader or chief instructor) gives the onboarding
+instructions, together with the getting-started guide.
+
+- **Same table, one more role.** `QuestGiver` gets `role`: `GIVER` (default) or `MENTOR`. Exactly one active
+  mentor per faction (Admin refuses to deactivate the last one). The mentor can also hand out the first-flight
+  mission (the trainer of §1 becomes the mentor), so the person who teaches you is the person who sends you.
+- **Where the mentor speaks**
+  - *Faction choice screen*: a short welcome from each faction's leader when its card is selected (who they are,
+    what the faction stands for), replacing the flat description paragraph.
+  - *Getting-started card* (the checklist): the mentor's portrait at the top and a speech line for the current
+    step ("Fill the tank first, pilot. A dry ship goes nowhere."). Step titles and the (i) detail stay plain and
+    factual, so the instructions are never only flavour; the mentor adds the reason and the tone.
+  - *Moments*: welcome (first Ship screen), each step's nudge, each step's "done" line, the "all done" farewell
+    that hands the pilot to the open board, and one line when the pilot first fails a mission or runs out of fuel
+    ("Everyone drifts once. Here is how to avoid it.").
+  - The mentor reappears on the board as the author of the first flight and then steps back; later the same
+    person can return at milestones (new ship tier), as a cheap way to mark progress.
+- **Content shape**: pools keyed `tutorial.welcome`, `tutorial.<step>` (build, ports, refuel, mission, dispatch,
+  report, repair, work), `tutorial.<step>.done`, `tutorial.finished`, `tutorial.first_failure`, `tutorial.low_fuel`,
+  bilingual, with the same placeholder rules. About 20 lines per faction (60 total), drafted by me, edited in
+  Admin. A missing line falls back to today's plain tutorial text, so nothing breaks.
+- **Rules kept**: the tutorial still ticks from the pilot's own records (no change to the progress endpoint); the
+  mentor is presentation only. The step order and links are unchanged.
+- **Web**: the existing tutorial card gets a `GiverBadge` header and a speech bubble (collapsed on the phone pill
+  until opened, like the checklist). The pre-faction screens use the faction's mentor portrait from its pick card.
+- **Build order**: after step 4 of §7 (the badge exists), add `role` + the tutorial pools (small schema change),
+  then the card and faction-screen changes, then the 60 lines. About half a day on top of the core.
+
+Open points for this part (recommended first): (a) the mentor is **also** the first-flight giver (yes);
+(b) the mentor stays out of ordinary boards after the first flight (yes, they are the guide, not a vendor);
+(c) the leader is **one named person per faction** rather than a pool (yes, a recognisable face).
