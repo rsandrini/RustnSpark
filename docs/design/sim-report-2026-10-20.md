@@ -74,3 +74,12 @@ pace, the repair share the same (18-26%, ion 50%). The wallets at Legendary are 
 against 57-340 thousand), as they should be. The balance is unchanged, only the numbers are bigger. A fresh database is
 needed to get the new prices (the seed fills prices only into an empty database; the one migration-made row, the generic
 scrap, moves by `20261020000000_scrap_price_x10`).
+
+## 6. Addendum: bigger boards and more templates (same day)
+With 8 offers on the main ports (6 regional, 4 small), the type round-robin and eight new escort / rescue / race templates,
+the same experiment (`oct20-boards`): median hours to Epic 36 / 38 / 40 / 53 and to Legendary 59 / 59 / 83 / 131
+(chem / chem-shield / hybrid / ion) against 42 / 43 / 47 / 59 and 61 / 63 / 92 / 142 before. About 10% faster: a bigger
+board lets the bot pick better jobs. Repair share unchanged (22-29%, ion 45%), no stalls. The mission mix is more
+varied: escorts 435 (were 240), races 560 (430), rescues 163 (132), deliveries 1979 (2034). The wallets at Legendary are
+1.2-2.8 million (0.5-2.4 million): the "too easy" feeling gets a little stronger with the bigger boards, which is
+input for balance round 5.
