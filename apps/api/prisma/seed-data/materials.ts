@@ -9,7 +9,7 @@ const MATERIALS = [
       'pt-BR': 'Minério bruto amplamente disponível e comercializado em todos os portos.',
     },
     rarity: 'COMMON' as const,
-    basePrice: 20,
+    basePrice: 200,
   },
   {
     id: 'uncommon_minerals',
@@ -19,7 +19,7 @@ const MATERIALS = [
       'pt-BR': 'Minerais refinados usados em componentes de naves e indústria.',
     },
     rarity: 'UNCOMMON' as const,
-    basePrice: 60,
+    basePrice: 600,
   },
   {
     id: 'rare_crystals',
@@ -29,7 +29,7 @@ const MATERIALS = [
       'pt-BR': 'Cristais exóticos valorizados em reatores e sensores de ponta.',
     },
     rarity: 'RARE' as const,
-    basePrice: 200,
+    basePrice: 2000,
   },
   // Upgrade piece: found in dangerous places, never dug up. Epic and legendary upgrades ask for a
   // number of them directly (there are no cores to craft); it sells at a fixed price at any port.
@@ -42,7 +42,7 @@ const MATERIALS = [
         'Um estilhaço de um núcleo antigo de nave, achado em lugares perigosos. Melhorar uma peça para épica ou lendária exige vários deles. Vende por preço fixo em qualquer porto.',
     },
     rarity: 'EPIC' as const,
-    basePrice: 60,
+    basePrice: 600,
     fixedPrice: true,
   },
 ];
@@ -73,7 +73,7 @@ export async function seedScrapMaterials(prisma: PrismaClient): Promise<void> {
           'Restos gastos de peças de nave. Melhorias pedem sucata, e qualquer porto compra por um preço fixo.',
       },
       rarity: 'COMMON',
-      basePrice: 10,
+      basePrice: 100,
       fixedPrice: true,
     },
   });

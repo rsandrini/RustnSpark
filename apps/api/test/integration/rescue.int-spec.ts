@@ -22,6 +22,10 @@ import { GAME_CONFIG_DEFAULTS } from '../../src/config/game-config.defaults.js';
 
 /** What a new pilot starts with (the default `economy.start_credits`). */
 const START = GAME_CONFIG_DEFAULTS.economy.start_credits;
+/** What waiting for a rescue costs, and what each unit of distance adds to calling it now. */
+const WAIT =
+  GAME_CONFIG_DEFAULTS.economy.rescue_cost * GAME_CONFIG_DEFAULTS.economy.rescue_wait_fraction;
+const PER_UNIT = GAME_CONFIG_DEFAULTS.economy.rescue_distance_price;
 
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
@@ -49,7 +53,7 @@ interface RefuelBody {
 }
 
 // S8.6 acceptance (plan line 484): a rescue (here with no recorded float spot: the base is where
-// the ship is docked, so the distance charge is 0 and 'now' costs the 400 ¢ reference) may drive the balance
+// the ship is docked, so the distance charge is 0 and 'now' costs the waiting price) may drive the balance
 // negative (GDD §14), replacement parts are free, loose, common parts for what is missing or dead. While negative, spending (refuel) is blocked —
 // navigation and mining stay open, missions repay the debt (resolve-processor spec).
 describe('rescue API (S8.6)', () => {
@@ -203,7 +207,7 @@ describe('rescue API (S8.6)', () => {
     });
   }
 
-  it('a rescue called now costs 400 here (no distance) and may drive the balance negative (GDD §14)', async () => {
+  it('a rescue called now costs the waiting price here (no distance) and may drive the balance negative (GDD §14)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await setCredits(player.seeded.player.id, 100);
@@ -215,8 +219,8 @@ describe('rescue API (S8.6)', () => {
     expect(response.body as RescueBody).toMatchObject({
       shipId: player.shipId,
       status: 'IN_PORT',
-      cost: 400,
-      credits: -300,
+      cost: WAIT,
+      credits: 100 - WAIT,
       replacementParts: [],
       viability: { viable: true },
     });
@@ -227,13 +231,13 @@ describe('rescue API (S8.6)', () => {
     expect(shipAfter.status).toBe('IN_PORT');
     expect(shipAfter.fuel).toBe(shipBefore.fuel);
     expect(shipAfter.currentLocationId).toBe(shipBefore.currentLocationId);
-    expect(await currentCredits(player.seeded.player.id)).toBe(-300);
+    expect(await currentCredits(player.seeded.player.id)).toBe(100 - WAIT);
 
     const debits = await prisma.playerEvent.findMany({
       where: { playerId: player.seeded.player.id, type: 'wallet.debit' },
     });
     expect(debits).toHaveLength(1);
-    expect(debits[0]!.creditsDelta).toBe(-400);
+    expect(debits[0]!.creditsDelta).toBe(-WAIT);
     expect(String((debits[0]!.payload as { reason: string }).reason)).toBe(
       `rescue:${player.shipId}`,
     );
@@ -244,7 +248,7 @@ describe('rescue API (S8.6)', () => {
     expect(rescueEvents).toHaveLength(1);
     expect(rescueEvents[0]!.payload).toMatchObject({
       shipId: player.shipId,
-      cost: 400,
+      cost: WAIT,
       replacementParts: [],
     });
   });
@@ -296,7 +300,7 @@ describe('rescue API (S8.6)', () => {
     expect(first.status).toBe(200);
     expect(replay.status).toBe(200);
     expect(replay.body).toEqual(first.body);
-    expect(await currentCredits(player.seeded.player.id)).toBe(100000 - 400);
+    expect(await currentCredits(player.seeded.player.id)).toBe(100000 - WAIT);
     await expect(
       prisma.playerEvent.count({
         where: { playerId: player.seeded.player.id, type: 'wallet.debit' },
@@ -319,15 +323,15 @@ describe('rescue API (S8.6)', () => {
       data: { location: 'INVENTORY', shipId: null },
     });
     await setStatus(player.shipId, 'ADRIFT');
-    await setCredits(player.seeded.player.id, 500);
+    await setCredits(player.seeded.player.id, 5000);
 
     const response = await rescue(player.token, player.shipId, randomUUID());
     expect(response.status).toBe(200);
     const body = response.body as RescueBody;
     // only the engine is missing: no bridge, no tank, no life support, no hull or cargo
     expect(body.replacementParts).toEqual([rules.parts.replacement_types['engine']]);
-    expect(body.cost).toBe(400);
-    expect(body.credits).toBe(500 - 400);
+    expect(body.cost).toBe(WAIT);
+    expect(body.credits).toBe(5000 - WAIT);
     expect(body.status).toBe('IN_PORT');
 
     // everything that was installed stays installed (the pilot swaps the new engine in)
@@ -412,11 +416,11 @@ describe('rescue API (S8.6)', () => {
     await setStatus(player.shipId, 'ADRIFT');
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 0 } });
     // a pilot who has spent most of the starting money: the rescue then leaves the balance negative
-    await setCredits(player.seeded.player.id, 200);
+    await setCredits(player.seeded.player.id, 2000);
 
     const rescued = await rescue(player.token, player.shipId, randomUUID());
     expect(rescued.status).toBe(200);
-    expect((rescued.body as RescueBody).credits).toBe(200 - 400);
+    expect((rescued.body as RescueBody).credits).toBe(2000 - WAIT);
 
     const blocked = await refuel(player.token, player.shipId, randomUUID(), { mode: 'full' });
     expect(blocked.status).toBe(409);
@@ -429,7 +433,7 @@ describe('rescue API (S8.6)', () => {
     const ration = Math.round(fuelCap * 0.25);
     expect((rescued.body as RescueBody).fuel).toBe(ration);
     expect((await shipRow(player.shipId)).fuel).toBe(ration);
-    expect(await currentCredits(player.seeded.player.id)).toBe(-200);
+    expect(await currentCredits(player.seeded.player.id)).toBe(2000 - WAIT);
 
     // Missions pay the debt back (GDD §14); with a positive balance buying works again.
     await setCredits(player.seeded.player.id, 5000);
@@ -495,8 +499,8 @@ describe('rescue API (S8.6)', () => {
         progress: 0.5,
       });
       expect(ship['rescue']).toMatchObject({
-        waitCost: 400,
-        nowCost: 400 + Math.round(plan.distance),
+        waitCost: WAIT,
+        nowCost: WAIT + Math.round(plan.distance * PER_UNIT),
         waitSeconds: 600,
         dueAt: null,
         baseId: plan.baseId,
@@ -512,7 +516,7 @@ describe('rescue API (S8.6)', () => {
       const response = await rescue(player.token, player.shipId, randomUUID(), 'now');
       expect(response.status).toBe(200);
       const body = response.body as RescueBody & { baseId: string };
-      expect(body.cost).toBe(400 + Math.round(plan.distance));
+      expect(body.cost).toBe(WAIT + Math.round(plan.distance * PER_UNIT));
       expect(body.baseId).toBe(plan.baseId);
       const ship = await shipRow(player.shipId);
       expect(ship).toMatchObject({
@@ -560,8 +564,8 @@ describe('rescue API (S8.6)', () => {
         .post(`/v1/ships/${player.shipId}/rescue/settle`)
         .set(auth(player.token));
       expect(arrived.status).toBe(200);
-      expect(arrived.body).toMatchObject({ status: 'IN_PORT', cost: 400, baseId: plan.baseId });
-      expect(await currentCredits(player.seeded.player.id)).toBe(4600);
+      expect(arrived.body).toMatchObject({ status: 'IN_PORT', cost: WAIT, baseId: plan.baseId });
+      expect(await currentCredits(player.seeded.player.id)).toBe(5000 - WAIT);
       expect(await shipRow(player.shipId)).toMatchObject({
         status: 'IN_PORT',
         currentLocationId: plan.baseId,
@@ -578,7 +582,7 @@ describe('rescue API (S8.6)', () => {
 
       const now = await rescue(player.token, player.shipId, randomUUID(), 'now');
       expect(now.status).toBe(200);
-      expect((now.body as RescueBody).cost).toBe(400 + Math.round(plan.distance));
+      expect((now.body as RescueBody).cost).toBe(WAIT + Math.round(plan.distance * PER_UNIT));
       expect((await shipRow(player.shipId)).rescueAt).toBeNull();
     });
   });

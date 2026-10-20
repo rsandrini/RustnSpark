@@ -35,6 +35,7 @@ import { buildFillerWorld } from '../../../sim/core/world.js';
 import {
   atOrBelowTarget,
   sellList,
+  REPAIR_BILL_FALLBACK_CREDITS,
   spendPlan,
   type SpendAction,
 } from '../../../sim/bots/policy.js';
@@ -914,7 +915,7 @@ describe('spending plan', () => {
     if (hull !== undefined) hull.condition = 100;
     // One credit under the dearest thing the plan could do — today's own cheapest listing
     // (the used shelf really has one) or the upgrade quote — so the reserve (the refill: the
-    // tank is full, 0 — plus the standing repair fallback of 500) leaves nothing affordable.
+    // tank is full, 0 — plus the standing repair fallback) leaves nothing affordable.
     const quote = upgradeQuote(state, snapshot, ctx.rules, ctx.catalogByType, hullIdOf(snapshot));
     const cheapestCash = Math.min(
       quote.cost ?? Number.POSITIVE_INFINITY,
@@ -927,11 +928,11 @@ describe('spending plan', () => {
       ),
     );
     expect(Number.isFinite(cheapestCash)).toBe(true);
-    state.wallet = 500 + cheapestCash - 1; // available = cheapestCash − 1 → no option fits
+    state.wallet = REPAIR_BILL_FALLBACK_CREDITS + cheapestCash - 1; // available = cheapestCash − 1 → no option fits
     const plan = spendPlan(state, snapshot, ctx.rules, ctx.catalogByType, []);
     expect(plan.action).toMatchObject({ kind: 'none' });
     expect((plan.action as { reason: string }).reason).toMatch(/^saving /);
-    expect(state.wallet).toBe(500 + cheapestCash - 1);
+    expect(state.wallet).toBe(REPAIR_BILL_FALLBACK_CREDITS + cheapestCash - 1);
   });
 });
 

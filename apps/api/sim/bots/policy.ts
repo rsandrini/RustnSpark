@@ -346,7 +346,7 @@ export const MINE_RATIO_MIN = 0.5;
 /** The trailing window both ratios are measured over. */
 export const RATIO_WINDOW = 20;
 /** Repair bills this run has paid; until the first one, the reserve uses the fallback. */
-export const REPAIR_BILL_FALLBACK_CREDITS = 500;
+export const REPAIR_BILL_FALLBACK_CREDITS = 5000;
 /** How many recent repair bills average into the reserve. */
 export const REPAIR_SAMPLE = 5;
 /** Playtime cap: 400 hours of game time (the spec's exhaustion end). */

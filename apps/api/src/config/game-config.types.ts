@@ -132,6 +132,7 @@ export type ConfigKey =
   | 'missions.short_trip_below'
   | 'missions.short_trip_min_seconds'
   | 'missions.short_trip_exempt_below'
+  | 'missions.short_trip_reward_factor'
   | 'missions.hold_max'
   | 'missions.open_cargo_unit_pay'
   | 'missions.time_scale'
@@ -522,6 +523,8 @@ export type GameRules = Readonly<{
     short_trip_min_seconds: number;
     /** A trip shorter than this (total distance) is not given the short-trip minimum: the test pad of a first mission. */
     short_trip_exempt_below: number;
+    /** A trip under `short_trip_exempt_below` pays only this share of the usual reward (the test pad's way back). */
+    short_trip_reward_factor: number;
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;

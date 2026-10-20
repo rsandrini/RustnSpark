@@ -63,9 +63,11 @@ describe('floating ship', () => {
   });
 
   it('prices waiting at half the reference tow and calling it now at that plus the distance', () => {
-    expect(rescuePrices(0, rules)).toEqual({ wait: 400, now: 400 });
-    expect(rescuePrices(300, rules)).toEqual({ wait: 400, now: 700 });
-    const dearer = { ...rules, economy: { ...rules.economy, rescue_distance_price: 2 } };
-    expect(rescuePrices(300, dearer).now).toBe(1000);
+    const { rescue_cost: cost, rescue_distance_price: perUnit } = rules.economy;
+    const wait = cost * rules.economy.rescue_wait_fraction;
+    expect(rescuePrices(0, rules)).toEqual({ wait, now: wait });
+    expect(rescuePrices(300, rules)).toEqual({ wait, now: wait + 300 * perUnit });
+    const dearer = { ...rules, economy: { ...rules.economy, rescue_distance_price: perUnit * 2 } };
+    expect(rescuePrices(300, dearer).now).toBe(wait + 300 * perUnit * 2);
   });
 });

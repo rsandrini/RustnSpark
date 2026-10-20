@@ -120,6 +120,23 @@ export function fixtureSnapshot(): Snapshot {
         ...GAME_CONFIG_DEFAULTS.onboarding,
         starter_parts: ['bridge', 'engine_chem_small', 'tank_small', 'cargo', 'hull'],
       },
+      economy: {
+        ...GAME_CONFIG_DEFAULTS.economy,
+        // The fixture's catalog prices are at the old money scale (the game's are ten times larger now),
+        // so the materials an upgrade asks for use the old divisors (a gap rule divides sqrt(price gap)).
+        upgrade_materials: {
+          COMMON: [{ material: 'scrap', mode: 'gap', k: 5 }],
+          UNCOMMON: [{ material: 'rare_crystals', mode: 'gap', k: 5 }],
+          RARE: [
+            { material: 'core_fragment', mode: 'size', k: 5 },
+            { material: 'rare_crystals', mode: 'gap', k: 6 },
+          ],
+          EPIC: [
+            { material: 'core_fragment', mode: 'size', k: 25 },
+            { material: 'rare_crystals', mode: 'gap', k: 6 },
+          ],
+        },
+      },
     },
     catalog: STARTER_CATALOG,
     locations: [

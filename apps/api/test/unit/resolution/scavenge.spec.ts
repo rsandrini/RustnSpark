@@ -84,9 +84,9 @@ describe('scavenging finds (W8)', () => {
   describe('the P0 review rules: a run is a bonus, not a salary', () => {
     // A cheap and an expensive part of every rarity: only price tells them apart.
     const PRICED = [
-      { partType: 'cheap', rarity: 'COMMON', basePrice: 100 },
-      { partType: 'dear', rarity: 'COMMON', basePrice: 10000 },
-      { partType: 'huge', rarity: 'COMMON', basePrice: 80000 },
+      { partType: 'cheap', rarity: 'COMMON', basePrice: 1000 },
+      { partType: 'dear', rarity: 'COMMON', basePrice: 100000 },
+      { partType: 'huge', rarity: 'COMMON', basePrice: 800000 },
     ];
     const run = (context: ScavengeContext, runs = 800) => many(context, runs).flat();
 

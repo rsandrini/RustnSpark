@@ -680,7 +680,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'number',
     min: 0.1,
-    max: 20,
+    max: 200,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.fuel_price),
     description: {
@@ -729,7 +729,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 1000,
+    max: 10000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.maintenance_per_tier),
     description: {
       en: 'Base maintenance cost per ship tier.',
@@ -741,7 +741,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 10000,
+    max: 100000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.reward_base),
     description: {
       en: 'Base mission reward before modifiers.',
@@ -753,7 +753,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 2000,
+    max: 20000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.reward_per_tier),
     description: {
       en: 'Extra mission reward per ship tier.',
@@ -826,7 +826,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 1000,
+    max: 10000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.combat_win_base),
     description: {
       en: 'Base credits awarded for winning a combat encounter.',
@@ -838,7 +838,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 500,
+    max: 5000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.combat_win_per_tier),
     description: {
       en: 'Extra credits per tier awarded for winning combat.',
@@ -850,7 +850,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 1000,
+    max: 10000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.combat_loss_penalty),
     description: {
       en: 'Credits deducted after losing a combat encounter.',
@@ -862,7 +862,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'json',
     min: 0,
-    max: 100000,
+    max: 1000000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.ship_tier_thresholds),
     description: {
       en: 'Ship tier thresholds: the total base price of the installed parts at which the ship reaches tier 2, 3, 4 and 5 (tier sets the mission pay).',
@@ -875,7 +875,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 10000,
+    max: 100000,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.start_credits),
     description: {
@@ -888,7 +888,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'integer',
     min: 0,
-    max: 10000,
+    max: 100000,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_cost),
     description: {
@@ -930,7 +930,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'number',
     min: 0,
-    max: 100,
+    max: 1000,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.rescue_distance_price),
     description: {
@@ -957,7 +957,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'economy',
     type: 'number',
     min: 0,
-    max: 1000,
+    max: 10000,
     unit: '¢',
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.repair_min_base_price),
     description: {
@@ -1940,7 +1940,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     group: 'missions',
     type: 'number',
     min: 0,
-    max: 10000,
+    max: 100000,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.open_cargo_unit_pay),
     description: {
       en: 'Credits paid for each unit of cargo carried beyond the minimum on an open-cargo delivery (a mission template may set its own unitPay).',
@@ -2000,6 +2000,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       en: 'A trip shorter than this (total distance) is not given the short-trip minimum: it takes what the distance says (the test pad of a first mission, a few seconds there and back).',
       'pt-BR':
         'Uma viagem mais curta que isto (distância total) não recebe o mínimo de viagem curta: leva o que a distância diz (a plataforma de testes da primeira missão, poucos segundos de ida e volta).',
+    },
+  },
+  {
+    key: 'missions.short_trip_reward_factor',
+    group: 'missions',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_reward_factor),
+    description: {
+      en: 'A trip shorter than the short-trip exemption pays only this share of the usual reward (the test pad\'s way back is a hop of seconds). 1 = full pay.',
+      'pt-BR':
+        'Uma viagem mais curta que a isenção de viagem curta paga só esta fração da recompensa normal (a volta da plataforma de testes é um salto de segundos). 1 = pagamento cheio.',
     },
   },
   {

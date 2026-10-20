@@ -73,9 +73,9 @@ describe('common parts are always on the shelf', () => {
     }
   });
 
-  it('starts a pilot with the money for both, on top of the old 200', () => {
-    const shield = 400;
-    const battery = 150;
-    expect(economy.start_credits).toBeGreaterThanOrEqual(200 + shield + battery);
+  it('starts a pilot with the money for both, on top of the old 2000', () => {
+    const shield = 4000;
+    const battery = 1500;
+    expect(economy.start_credits).toBeGreaterThanOrEqual(2000 + shield + battery);
   });
 });

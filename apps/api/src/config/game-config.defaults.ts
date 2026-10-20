@@ -87,13 +87,13 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     hull_frame_share: 0.7,
   },
   economy: {
-    fuel_price: 0.45,
+    fuel_price: 4.5,
     repair_price: 3,
     repair_price_ref: 3,
     repair_factor: 0.62,
-    maintenance_per_tier: 60,
-    reward_base: 450,
-    reward_per_tier: 90,
+    maintenance_per_tier: 600,
+    reward_base: 4500,
+    reward_per_tier: 900,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
     // too subtly to notice — halving both divisors roughly doubles the spread between an
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
@@ -103,10 +103,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
     reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.2, LEGENDARY: 3.2 },
-    combat_win_base: 150,
-    combat_win_per_tier: 50,
-    combat_loss_penalty: 120,
-    ship_tier_thresholds: { 2: 1200, 3: 3500, 4: 8000, 5: 18000 },
+    combat_win_base: 1500,
+    combat_win_per_tier: 500,
+    combat_loss_penalty: 1200,
+    ship_tier_thresholds: { 2: 12000, 3: 35000, 4: 80000, 5: 180000 },
     // Round-5 upgrade mechanic: upgrading a part in place costs the price gap to its next
     // rarity tier, marked up a bit over just selling it and buying the next one (the premium
     // for staying installed and not having to re-slot it). Round-7 owner request: the markup
@@ -117,16 +117,18 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // first core's worth, 15 for the second; there are no cores to craft any more). Amounts stay
     // small and grow with the part's value: `gap` = ceil(√(price gap) ÷ k), `size` = k × (1 for parts up
     // to 2 cells, 2 up to 4, 3 up to 9, 4 beyond).
+    // (A `gap` rule divides the square root of the price gap: prices became ten times larger, so its k became
+    // sqrt(10) times larger — 5 -> 15.82, 6 -> 19 — and the amounts asked for stay the same.)
     upgrade_materials: {
-      COMMON: [{ material: 'scrap', mode: 'gap', k: 5 }],
-      UNCOMMON: [{ material: 'rare_crystals', mode: 'gap', k: 5 }],
+      COMMON: [{ material: 'scrap', mode: 'gap', k: 15.82 }],
+      UNCOMMON: [{ material: 'rare_crystals', mode: 'gap', k: 15.82 }],
       RARE: [
         { material: 'core_fragment', mode: 'size', k: 5 },
-        { material: 'rare_crystals', mode: 'gap', k: 6 },
+        { material: 'rare_crystals', mode: 'gap', k: 19 },
       ],
       EPIC: [
         { material: 'core_fragment', mode: 'size', k: 25 },
-        { material: 'rare_crystals', mode: 'gap', k: 6 },
+        { material: 'rare_crystals', mode: 'gap', k: 19 },
       ],
     },
     // Where the fragments come from: scavenging in the farther zones, and rewards on missions that cross them.
@@ -154,19 +156,20 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
       EPIC: 1.5,
       LEGENDARY: 1.5,
     },
-    // A new pilot starts with the money for a basic shield (400) and a small battery (150) on top of
-    // the old 200 (owner, 2026-10-18): recommended for the first fights, but theirs to spend as they like.
-    start_credits: 750,
-    rescue_cost: 800,
+    // Every credit amount of the game is ten times what it was (2026-10-20: "big numbers"); the balance is the same.
+    // A new pilot starts with the money for a basic shield (4000) and a small battery (1500) on top of
+    // the old 2000 (owner, 2026-10-18): recommended for the first fights, but theirs to spend as they like.
+    start_credits: 7500,
+    rescue_cost: 8000,
     // A floating ship can wait for a rescue (half the price) or call one now (that price plus a
     // charge per unit of distance to the nearest base).
     rescue_wait_fraction: 0.5,
     rescue_wait_seconds: 600,
-    rescue_distance_price: 1,
+    rescue_distance_price: 10,
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player
     // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
     rescue_fuel_fraction: 0.25,
-    repair_min_base_price: 50,
+    repair_min_base_price: 500,
     // Parts below this condition (%) are refused at every port AND are what "discard"
     // destroys (they cannot be sold, only scrapped). 1 = only a dead (0%) part qualifies; the game runs on 15.
     sell_min_condition: 15,
@@ -307,7 +310,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   missions: {
     hold_max: 1,
     // Open-cargo deliveries pay this much for each unit carried beyond the minimum (a template may set its own).
-    open_cargo_unit_pay: 20,
+    open_cargo_unit_pay: 200,
     duration_k: 2.25,
     // A very short trip (under `short_trip_below` units of distance in all) still takes at least this long, so a
     // hop to a place next door is a few minutes of flying, not a few seconds. 0 = no minimum.
@@ -315,6 +318,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     short_trip_min_seconds: 300,
     // ...except a trip this short (the first-mission test pad next to a home port): a few seconds there and back.
     short_trip_exempt_below: 60,
+    // ...and such a trip (the test pad's way back) pays only this share of the usual reward: it is a hop of seconds.
+    short_trip_reward_factor: 0.1,
     duration_class_cutoffs: { fast: 600, medium: 1800 },
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.
@@ -364,7 +369,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // has no cap: the big and expensive parts can drop there, at a very low weight).
     max_part_finds: 2,
     price_weight_power: 1,
-    find_price_cap: { 0: 600, 1: 1200, 2: 2500, 3: 0 },
+    find_price_cap: { 0: 6000, 1: 12000, 2: 25000, 3: 0 },
   },
   parts: {
     starter_condition: 85,

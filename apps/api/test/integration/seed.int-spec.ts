@@ -114,7 +114,7 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(192);
+    expect(counts.gameConfig).toBe(193);
     expect(counts.locations).toBe(29);
     expect(counts.routes).toBe(35);
     expect(counts.environments).toBe(4);

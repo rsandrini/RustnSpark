@@ -44,8 +44,18 @@ export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
   const dangerMod = 1 + input.danger / e.reward_danger_divisor;
   const distanceMod = 1 + (input.distance - e.reward_distance_ref) / e.reward_distance_divisor;
   const typeBonus = e.reward_type_bonus[input.missionType.toLowerCase()] ?? 1;
+  // A hop of seconds (the test pad's way back) pays only a share of the usual reward.
+  const shortTrip =
+    input.distance < rules.missions.short_trip_exempt_below
+      ? rules.missions.short_trip_reward_factor
+      : 1;
   return (
-    tierBase * dangerMod * distanceMod * typeBonus * bridgeRewardMultiplier(input.bridgeRarity, rules)
+    tierBase *
+    dangerMod *
+    distanceMod *
+    typeBonus *
+    bridgeRewardMultiplier(input.bridgeRarity, rules) *
+    shortTrip
   );
 }
 

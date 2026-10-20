@@ -115,6 +115,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'missions.short_trip_below',
   'missions.short_trip_exempt_below',
   'missions.short_trip_min_seconds',
+  'missions.short_trip_reward_factor',
   'missions.starter_guarantee_max_completed',
   'missions.starter_max_distance',
   'missions.starter_max_zone',

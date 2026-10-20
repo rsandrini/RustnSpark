@@ -29,6 +29,21 @@ describe('S5.6 — reward base (D13)', () => {
     ).toBeCloseTo(320, 12);
   });
 
+  it('a hop of seconds (under the short-trip exemption) pays only a share of the usual reward', () => {
+    const usual = rewardBase({ tier: 1, danger: 0, distance: 800, missionType: 'delivery' }, rules);
+    const hop = { tier: 1, danger: 0, distance: 30, missionType: 'delivery' } as const;
+    const withoutRule = {
+      ...rules,
+      missions: { ...rules.missions, short_trip_reward_factor: 1 },
+    };
+    const full = rewardBase(hop, withoutRule);
+    expect(rewardBase(hop, rules)).toBeCloseTo(full * rules.missions.short_trip_reward_factor, 9);
+    expect(rewardBase(hop, rules)).toBeLessThan(usual);
+    // a trip at the threshold is an ordinary one
+    const atThreshold = { ...hop, distance: rules.missions.short_trip_exempt_below };
+    expect(rewardBase(atThreshold, rules)).toBeCloseTo(rewardBase(atThreshold, withoutRule), 9);
+  });
+
   it('scales with tier, danger, distance and type bonus', () => {
     // (200 + 3×120) × (1 + 6/8) × (1 + (1400−800)/1500) × 1
     // = 560 × 1.75 × 1.4 = 1372

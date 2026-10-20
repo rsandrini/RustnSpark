@@ -17,7 +17,15 @@ export const APPENDIX_E_RULES: GameRules = {
   },
   economy: {
     ...GAME_CONFIG_DEFAULTS.economy,
+    // (2026-10-20: every credit amount of the game became ten times larger; the formulas are checked at the old scale)
     combat_win_base: 100,
+    combat_win_per_tier: 50,
+    combat_loss_penalty: 120,
+    ship_tier_thresholds: { 2: 1200, 3: 3500, 4: 8000, 5: 18000 },
+    start_credits: 750,
+    rescue_cost: 800,
+    rescue_distance_price: 1,
+    repair_min_base_price: 50,
     fuel_price: 1.5,
     payout_floor_integrity: 0.5,
     repair_price_ref: 4,
