@@ -242,14 +242,21 @@
 }
 
 /* Race offers: the rival field table. */
+.mcard-race {
+  /* a narrow phone: the field table scrolls inside its card instead of widening the page */
+  max-width: 100%;
+  overflow-x: auto;
+}
 .mcard-race table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin: 6px 0;
   font-size: 13px;
 }
 .mcard-race th,
 .mcard-race td {
+  overflow-wrap: anywhere;
   padding: 3px 6px;
   text-align: left;
   border-bottom: 1px solid var(--rule-2);

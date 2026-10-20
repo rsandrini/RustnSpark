@@ -87,6 +87,13 @@ const rules: GameRules = {
     reward_base: 200,
     reward_by_bridge: {},
     reward_per_tier: 120,
+    // The recorded tapes are at the old money scale (every credit amount of the game is ten times larger since
+    // 2026-10-20): the amounts the life sim reads are put back to it.
+    combat_win_base: 150,
+    combat_win_per_tier: 50,
+    combat_loss_penalty: 120,
+    ship_tier_thresholds: { 2: 1200, 3: 3500, 4: 8000, 5: 18000 },
+    repair_min_base_price: 50,
   },
   combat: {
     ...GAME_CONFIG_DEFAULTS.combat,
