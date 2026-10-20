@@ -12,17 +12,17 @@ endpoints land, so B never waits for A except for the final wiring.
 Everything else depends on these shapes; changing them later is what causes conflicts. A writes them and pushes
 **before** B starts; after that, neither lane changes them without telling the other.
 
-`packages/contract/src/index.ts` (A only, one commit):
-- `GiverRoleSchema = 'GIVER' | 'MENTOR'`
-- `GiverRefSchema = { id, name, title: {en,'pt-BR'}, role, factionId, portraitUrl: string | null }`
-- `OfferInfoSchema` gets `giver: GiverRefSchema.nullable()` and `brief: {en,'pt-BR'}` (the voiced text; falls back
-  to the template description on the server, so the web just renders `brief`).
-- `ActiveMissionSchema` gets the same `giver` (nullable) and `brief`.
-- Report schema gets `giverLine: {en,'pt-BR'} | null` and `giver`.
-- `TutorialProgressSchema` unchanged. New `MentorSchema = GiverRefSchema + { welcome, lines: Record<stepKey, {nudge, done}> }`
-  returned by `GET /v1/players/me/mentor` (so the tutorial card needs no giver lookup of its own) and
-  `PublicFactionSchema` gets `mentor: { name, title, portraitUrl, welcome } | null` for the faction choice screen.
-- Admin entity shape for `quest-givers` is covered by the generic entity API (see §2), no contract change.
+`packages/contract/src/index.ts` (A only, one commit; **done**, see the file for the exact shapes):
+- `GiverRoleSchema` ('GIVER' | 'MENTOR') and `GiverRefSchema` = `{ id, name, title: {en,'pt-BR'}, role, factionId, portraitUrl | null }`.
+- `OfferInfoSchema.giver` and `ActiveMissionSchema.giver` (nullable, optional). The voiced brief is **not a new
+  field**: `info.description` and `brief.description` carry it (the server substitutes the giver's text, else the
+  template description), so the web keeps rendering the same field.
+- `ReportMissionSchema.giver` and `.giverLine` (the closing line for the result; nullable, optional).
+- `MentorSchema` returned by `GET /v1/players/me/mentor` = `{ giver, welcome, finished, steps: Record<MentorStep,
+  {nudge, done}>, firstFailure, lowFuel }` (`MentorStepSchema` = build, ports, refuel, mission, dispatch, report,
+  repair, work). A missing line is `null`/absent: keep today's plain text.
+- `PublicFactionSchema.mentor` = `{ name, title, portraitUrl, welcome } | null` (optional) for the faction screen.
+- Admin entity shape for `quest-givers` is covered by the generic entity API (see §1), no contract change.
 
 B then mocks these in `apps/web/src/test/msw/handlers.ts` (B's file) and builds the UI.
 

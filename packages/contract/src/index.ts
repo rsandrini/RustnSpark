@@ -199,6 +199,58 @@ export const ShipStatusSchema = z.enum(['IN_PORT', 'ON_MISSION', 'ADRIFT']);
 export type ShipStatus = z.infer<typeof ShipStatusSchema>;
 
 // ---------------------------------------------------------------------------------------------
+// Quest givers: the people behind the missions (docs/design/quest-givers-plan.md)
+// ---------------------------------------------------------------------------------------------
+
+/** A GIVER hands out missions; a MENTOR is the faction's guide (the onboarding voice and the first flight). */
+export const GiverRoleSchema = z.enum(['GIVER', 'MENTOR']);
+export type GiverRole = z.infer<typeof GiverRoleSchema>;
+
+/** Who is speaking on a card. The name is not translated; the title is. No portrait = show the faction symbol. */
+export const GiverRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  title: LocalizedTextSchema,
+  role: GiverRoleSchema,
+  factionId: z.string(),
+  /** Served URL of the uploaded portrait; null when none was uploaded. */
+  portraitUrl: z.string().nullable(),
+});
+export type GiverRef = z.infer<typeof GiverRefSchema>;
+
+/** The checklist steps a mentor speaks about (same ids as the Getting started card). */
+export const MentorStepSchema = z.enum([
+  'build',
+  'ports',
+  'refuel',
+  'mission',
+  'dispatch',
+  'report',
+  'repair',
+  'work',
+]);
+export type MentorStep = z.infer<typeof MentorStepSchema>;
+
+/**
+ * GET /v1/players/me/mentor — the pilot's faction mentor and what they say, so the checklist needs no lookup of
+ * its own. A step with no line is simply absent (the web keeps today's plain text).
+ */
+export const MentorSchema = z.object({
+  giver: GiverRefSchema,
+  welcome: LocalizedTextSchema.nullable(),
+  /** Spoken once every step is done. */
+  finished: LocalizedTextSchema.nullable(),
+  steps: z.record(
+    MentorStepSchema,
+    z.object({ nudge: LocalizedTextSchema.nullable(), done: LocalizedTextSchema.nullable() }),
+  ),
+  /** Short asides: after a first failed mission, or when the tank runs dry. */
+  firstFailure: LocalizedTextSchema.nullable(),
+  lowFuel: LocalizedTextSchema.nullable(),
+});
+export type Mentor = z.infer<typeof MentorSchema>;
+
+// ---------------------------------------------------------------------------------------------
 // Faction art (admin-uploadable images; the static files are the defaults)
 // ---------------------------------------------------------------------------------------------
 
@@ -220,6 +272,16 @@ export const PublicFactionSchema = z.object({
       background: z.string().nullable(),
     })
     .nullable(),
+  /** The faction's mentor, for the faction choice screen; null/absent until one is set up. */
+  mentor: z
+    .object({
+      name: z.string(),
+      title: LocalizedTextSchema,
+      portraitUrl: z.string().nullable(),
+      welcome: LocalizedTextSchema.nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 export type PublicFaction = z.infer<typeof PublicFactionSchema>;
 
@@ -603,7 +665,10 @@ export type MissionInstanceData = z.infer<typeof MissionInstanceDataSchema>;
 /** GET /v1/locations/:id/missions — board rows carry the estimate and the upfront verdict. */
 export const OfferInfoSchema = z.object({
   title: LocalizedTextSchema,
+  /** The giver's brief in their own voice when they have one, else the template's description. */
   description: LocalizedTextSchema,
+  /** Who offers it; null/absent for offers made before givers existed. */
+  giver: GiverRefSchema.nullable().optional(),
   legCount: z.number(),
   totalDistance: z.number(),
   peakDanger: z.number(),
@@ -697,6 +762,8 @@ export type MissionBrief = z.infer<typeof MissionBriefSchema>;
 export const ActiveMissionSchema = MissionInstanceDataSchema.extend({
   legWindows: z.array(LegWindowSchema),
   brief: MissionBriefSchema,
+  /** Who gave it (the brief's description is already in their voice); null/absent for older missions. */
+  giver: GiverRefSchema.nullable().optional(),
   /** The board card's figures for this mission (time, fuel, requirements, material, race). */
   info: OfferInfoSchema.optional(),
 });
@@ -905,6 +972,9 @@ export const ReportMissionSchema = z.object({
   /** The routes the trip follows, one per leg (for the map). */
   routeIds: z.array(z.string()).optional(),
   title: LocalizedTextSchema,
+  /** Who gave the mission and their closing line for the result; null/absent when there is none. */
+  giver: GiverRefSchema.nullable().optional(),
+  giverLine: LocalizedTextSchema.nullable().optional(),
 });
 export type ReportMission = z.infer<typeof ReportMissionSchema>;
 
