@@ -4,13 +4,15 @@ import { fuelStatus } from './fuel-status';
 
 /**
  * Fuel on a mission card, in one place: a sentence with the three numbers (what you have, what the trip needs, what the
- * tank holds), a bar with all three on one scale, the verdict in a word and the action that fixes it. Amber means
+ * tank holds), a bar with all three on one scale (the trip's share is drawn from the fuel aboard back towards empty), the verdict in a word and the action that fixes it. Amber means
  * "refuelling fixes it", red means "this tank cannot, ever".
  */
 export function FuelBlock({ have, needed, cap }: { have: number; needed: number; cap: number }) {
   const { t } = useTranslation();
   const status = fuelStatus(have, needed, cap);
   const pct = (amount: number) => `${Math.min(100, (amount / status.scale) * 100)}%`;
+  // The trip burns fuel from the full end of the fill backwards: the part it uses is drawn ending at what is aboard.
+  const left = Math.max(0, status.have - status.needed);
   return (
     <div
       className={`mcard-fuel fuel-${status.state}`}
@@ -36,7 +38,12 @@ export function FuelBlock({ have, needed, cap }: { have: number; needed: number;
         aria-valuenow={status.have}
       >
         <div className="fuel-fill" style={{ width: pct(status.have) }} />
-        <div className="fuel-mark fuel-mark-need" style={{ left: pct(status.needed) }} />
+        <div
+          className="fuel-burn"
+          data-testid="fuel-burn"
+          style={{ left: pct(left), width: pct(status.have - left) }}
+        />
+        <div className="fuel-mark fuel-mark-need" style={{ left: pct(left) }} />
         {status.scale > status.cap && (
           <div className="fuel-mark fuel-mark-cap" style={{ left: pct(status.cap) }} />
         )}
