@@ -899,3 +899,87 @@ main:has(.transit-aside) .ship-stage-overlay-host {
     justify-content: flex-end;
   }
 }
+
+/* Fuel on a mission card: a sentence, a bar with the three amounts, the verdict, the one action. */
+.mcard-fuel.fuel-ok,
+.mcard-fuel.fuel-short,
+.mcard-fuel.fuel-tank {
+  display: grid;
+  gap: 6px;
+}
+.mcard-fuel .fuel-line {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.mcard-fuel .fuel-need {
+  color: var(--brass);
+  font-weight: 700;
+}
+.mcard-fuel .fuel-verdict {
+  margin-left: 4px;
+  font-weight: 700;
+}
+.mcard-fuel.fuel-ok .fuel-verdict {
+  color: var(--ok);
+}
+.mcard-fuel.fuel-short {
+  border-color: var(--risk-md);
+}
+.mcard-fuel.fuel-short .fuel-verdict {
+  color: var(--risk-md);
+}
+.mcard-fuel.fuel-tank {
+  border-color: var(--bad);
+}
+.mcard-fuel.fuel-tank .fuel-verdict {
+  color: var(--bad);
+}
+.fuel-bar {
+  position: relative;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--paper-3);
+  overflow: visible;
+}
+.fuel-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--info);
+}
+.fuel-mark {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  transform: translateX(-1px);
+}
+.fuel-mark-need {
+  background: var(--brass);
+}
+.fuel-mark-cap {
+  background: var(--bad);
+}
+.fuel-action {
+  justify-self: start;
+  font-size: var(--text-sm);
+}
+.fuel-chip {
+  padding: 1px 8px;
+  border: 1px solid var(--rule-3);
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.fuel-chip.fuel-ok {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+.fuel-chip.fuel-short {
+  color: var(--risk-md);
+  border-color: var(--risk-md);
+}
+.fuel-chip.fuel-tank {
+  color: var(--bad);
+  border-color: var(--bad);
+}

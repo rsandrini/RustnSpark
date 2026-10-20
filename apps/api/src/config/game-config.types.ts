@@ -124,6 +124,7 @@ export type ConfigKey =
   | 'mining.richness'
   | 'missions.board_max_same_type'
   | 'missions.board_min_per_location'
+  | 'missions.board_min_by_detail'
   | 'missions.starter_guarantee_max_completed'
   | 'missions.starter_max_distance'
   | 'missions.starter_max_zone'
@@ -528,6 +529,8 @@ export type GameRules = Readonly<{
     duration_class_cutoffs: Readonly<Record<string, number>>;
     time_scale: number;
     board_min_per_location: number;
+    /** Offers on a board by the place's map detail (main / regional / local); the fallback is `board_min_per_location`. */
+    board_min_by_detail: Readonly<Record<string, number>>;
     board_max_same_type: number;
     starter_guarantee_max_completed: number;
     starter_max_distance: number;

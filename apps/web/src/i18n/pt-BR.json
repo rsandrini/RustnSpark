@@ -1734,6 +1734,21 @@
       "time": "Tempo de voo",
       "fuel": "Combustível"
     },
+    "fuel": {
+      "sentence": "Você tem {{have}} · a viagem precisa de <need>{{needed}}</need> · tanque {{cap}}",
+      "state": {
+        "ok": "Suficiente",
+        "short": "Faltam {{missing}}",
+        "tank": "Precisa de um tanque maior"
+      },
+      "refuel": "Reabastecer {{missing}}",
+      "biggerTank": "Achar um tanque maior",
+      "chip": {
+        "ok": "Combustível OK",
+        "short": "Faltam {{missing}}",
+        "tank": "Tanque pequeno"
+      }
+    },
     "fuelUses": "consome {{needed}}",
     "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: <refuel>reabasteça primeiro</refuel>.",
     "needsTitle": "Você precisa de:",

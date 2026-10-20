@@ -1734,6 +1734,21 @@
       "time": "Flight time",
       "fuel": "Fuel needed"
     },
+    "fuel": {
+      "sentence": "You have {{have}} · the trip needs <need>{{needed}}</need> · tank {{cap}}",
+      "state": {
+        "ok": "Enough",
+        "short": "Short by {{missing}}",
+        "tank": "Needs a bigger tank"
+      },
+      "refuel": "Refuel {{missing}}",
+      "biggerTank": "Find a bigger tank",
+      "chip": {
+        "ok": "Fuel OK",
+        "short": "Fuel short {{missing}}",
+        "tank": "Tank too small"
+      }
+    },
     "fuelUses": "uses {{needed}}",
     "lowFuel": "Your ship does not carry enough fuel for this trip: <refuel>refuel first</refuel>.",
     "needsTitle": "You need:",

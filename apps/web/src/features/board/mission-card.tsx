@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import type {
   DisplayResponse,
   MissionOffer,
@@ -12,9 +11,9 @@ import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
-import { Gauge } from '../../ui/Gauge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
+import { FuelBlock } from './fuel-block';
 import { factionName, useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
 
@@ -104,8 +103,6 @@ export function MissionCard({
   const otherReasons = offer.eligibility.reasons.filter(
     (reason) => !requirementCodes.has(reason.code),
   );
-  const notEnoughFuel =
-    info.estimate !== null && fuelHave !== undefined && info.estimate.fuelNeeded > fuelHave;
   // A pure-ion ship (no chemical engine) burns no fuel at all: the fuel row, its bar and the
   // "not enough" note would all say nothing. Unknown sheet (fuelUse not passed) keeps the row.
   const burnsFuel = fuelUse === undefined || fuelUse > 0;
@@ -178,6 +175,24 @@ export function MissionCard({
           </div>
         </dl>
 
+        {/* Fuel sits right under the facts the pilot weighs (reward, time): what is aboard, what the trip needs and
+          what the tank holds, in a sentence and a bar, with the one action that fixes it. */}
+        {info.estimate !== null &&
+          burnsFuel &&
+          fuelHave !== undefined &&
+          fuelCap !== undefined &&
+          fuelCap > 0 && (
+            <FuelBlock have={fuelHave} needed={info.estimate.fuelNeeded} cap={fuelCap} />
+          )}
+        {info.estimate !== null &&
+          burnsFuel &&
+          (fuelHave === undefined || fuelCap === undefined || fuelCap <= 0) && (
+            <div className="mcard-fuel">
+              <span className="k">{t('board.facts.fuel')}</span>
+              <b>{Math.round(info.estimate.fuelNeeded)}</b>
+            </div>
+          )}
+
         <div className="mcard-needs">
           <b>{t('board.needsTitle')}</b>
           {offer.info.requirements.length === 0 ? (
@@ -212,52 +227,6 @@ export function MissionCard({
                   need: offer.info.cargo.need,
                   pay: offer.info.cargo.unitPay,
                 })}
-          </p>
-        )}
-
-        {/* Fuel moved out of the facts grid (owner: cards were "broken" — a fuel bar's label
-          text has no room in a narrow 1/4-width grid cell) and placed after what the mission
-          needs, as its own full-width row. */}
-        {info.estimate !== null && burnsFuel && (
-          <div className={`mcard-fuel${notEnoughFuel ? ' bad' : ''}`}>
-            <span className="k">{t('board.facts.fuel')}</span>
-            {fuelHave !== undefined && fuelCap !== undefined && fuelCap > 0 ? (
-              <>
-                {/* The fuel aboard as a bar, not just a number: the amount this trip would burn is
-                  carved out of the current fill in a highlighted colour. The in-bar label stays
-                  short (a bar has no room for a sentence, even a full-width one); the full
-                  wording is still the accessible name, and "uses N" sits beside the bar where
-                  there's no width limit. */}
-                <Gauge
-                  value={fuelHave}
-                  max={fuelCap}
-                  remainingAfter={fuelHave - info.estimate.fuelNeeded}
-                  tone={notEnoughFuel ? 'bad' : 'fuel'}
-                  ariaLabel={t('board.facts.fuel')}
-                  label={`${Math.round(fuelHave)}/${Math.round(fuelCap)}`}
-                />
-                <span className="mcard-fuel-need">
-                  {t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}
-                </span>
-              </>
-            ) : (
-              <b>{Math.round(info.estimate.fuelNeeded)}</b>
-            )}
-          </div>
-        )}
-        {burnsFuel && notEnoughFuel && info.estimate !== null && (
-          <p className="error-text">
-            {fuelCap !== undefined && info.estimate.fuelNeeded > fuelCap ? (
-              t('board.lowFuelCapacity', {
-                needed: Math.round(info.estimate.fuelNeeded),
-                cap: Math.round(fuelCap),
-              })
-            ) : (
-              <Trans
-                i18nKey="board.lowFuel"
-                components={{ refuel: <Link to="/port?tab=refuel" /> }}
-              />
-            )}
           </p>
         )}
 

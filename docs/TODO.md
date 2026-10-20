@@ -31,12 +31,7 @@ ships (the commit has the history). Raise questions before starting anything mar
   and `sim-replay` were not run.
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
 
-## Planned (owner, 2026-10-20; plans written, not built)
-- [ ] **Fuel on the mission card**: show what you have and what the trip needs in one sentence, three clear states
-  (enough, refuel first, too far for this tank), marks on the bar, a chip on the mission rows. Plan:
-  `docs/design/mission-fuel-display-plan.md`.
-- [ ] **More varied boards**: 8 offers on big ports, 4 on small places, every eligible type once before any repeats,
-  and more mission templates. Plan: `docs/design/board-diversity-plan.md`.
+## Planned / follow-ups (owner, 2026-10-20)
 - [ ] **Balance, round 5**: the game feels too easy and money is quick to farm (owner, 2026-10-20); wait for the owner's
   tests, then use the sim (`docs/design/sim-report-2026-10-20.md`: late money 57-340k at Legendary).
 - Done 2026-10-20: every credit amount x10 (a fresh database is needed: the seed fills prices only when empty); the pad's

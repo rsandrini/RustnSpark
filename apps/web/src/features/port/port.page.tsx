@@ -357,7 +357,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   });
 
   // Refuel: choose how much (slider); the server prices that exact amount before anything is charged.
-  const [refuelUnits, setRefuelUnits] = useState<number | null>(null);
+  // `/port?tab=refuel&units=45` opens the Refuel tab with 45 units chosen (a mission card's "Refuel 45" link).
+  const wantedUnitsParam = Number(searchParams.get('units'));
+  const [refuelUnits, setRefuelUnits] = useState<number | null>(
+    Number.isFinite(wantedUnitsParam) && wantedUnitsParam > 0 ? Math.floor(wantedUnitsParam) : null,
+  );
   const tankSpace =
     ship === undefined ? 0 : Math.max(0, Math.floor(ship.sheet.fuelCap - ship.fuel));
   // One quote gives the price of a unit here; the slider prices itself from it (the same formula the

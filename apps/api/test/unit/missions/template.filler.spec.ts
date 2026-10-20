@@ -1,7 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
+import type { MissionType } from '@prisma/client';
 import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.js';
 import type { GameRules } from '../../../src/config/game-config.types.js';
 import {
+  eligibleTypesAt,
   fillMission,
   miningMaterialsFor,
   isMiningEligible,
@@ -615,6 +617,28 @@ describe('S6.2 — template filler (pure generation)', () => {
       }
     });
 
+    it('prefers a type the board does not have yet, and falls back when none of them fits', () => {
+      const delivery = DELIVERY_LUNA;
+      const rescue = RESCUE_LUNA;
+      const w = world([delivery, rescue]);
+      const types = (seed: string, prefer?: MissionType[]) =>
+        fillMission({
+          seed,
+          origin: LOC_ALPHA,
+          world: w,
+          rules,
+          now: NOW,
+          ...(prefer === undefined ? {} : { preferTypes: new Set(prefer) }),
+        }).type;
+      for (let epoch = 0; epoch < 25; epoch += 1) {
+        expect(types(`prefer|${epoch}`, ['RESCUE'])).toBe('RESCUE');
+        expect(types(`prefer|${epoch}`, ['DELIVERY'])).toBe('DELIVERY');
+        // a preferred type no template fits (escort here): the normal pick
+        expect(['DELIVERY', 'RESCUE']).toContain(types(`prefer|${epoch}`, ['ESCORT']));
+      }
+      expect(eligibleTypesAt(LOC_ALPHA, w)).toEqual(new Set(['DELIVERY', 'RESCUE']));
+    });
+
     it('a test pad offers only its way back, never an ordinary template', () => {
       const pad: FillerLocation = { id: 'alpha_pad', type: 'test_pad', zone: 1, factionId: 'luna' };
       const back: FillerTemplate = {
@@ -634,7 +658,13 @@ describe('S6.2 — template filler (pure generation)', () => {
         locations: [...base.locations, pad],
         routes: [
           ...base.routes,
-          { id: 'alpha-alpha_pad', nodeAId: 'alpha', nodeBId: 'alpha_pad', distance: 30, danger: 0 },
+          {
+            id: 'alpha-alpha_pad',
+            nodeAId: 'alpha',
+            nodeBId: 'alpha_pad',
+            distance: 30,
+            danger: 0,
+          },
         ],
         routeEnvironments: [
           ...base.routeEnvironments,

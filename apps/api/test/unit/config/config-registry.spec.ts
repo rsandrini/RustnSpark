@@ -107,6 +107,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'mining.rarity',
   'mining.richness',
   'missions.board_max_same_type',
+  'missions.board_min_by_detail',
   'missions.board_min_per_location',
   'missions.duration_class_cutoffs',
   'missions.duration_k',

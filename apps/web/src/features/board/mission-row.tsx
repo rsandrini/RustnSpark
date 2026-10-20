@@ -8,6 +8,7 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { useNow } from '../../ui/useNow';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
+import { fuelStatus } from './fuel-status';
 import { MissionCard } from './mission-card';
 
 const DOT = ' · ';
@@ -135,6 +136,23 @@ export function MissionRow({
           {info.estimate !== null && burnsFuel && (
             <span>{t('board.fuelUses', { needed: Math.round(info.estimate.fuelNeeded) })}</span>
           )}
+          {info.estimate !== null &&
+            burnsFuel &&
+            fuelHave !== undefined &&
+            fuelCap !== undefined &&
+            fuelCap > 0 &&
+            (() => {
+              const status = fuelStatus(fuelHave, info.estimate.fuelNeeded, fuelCap);
+              return (
+                <span
+                  className={`fuel-chip fuel-${status.state}`}
+                  data-testid="fuel-chip"
+                  data-state={status.state}
+                >
+                  {t(`board.fuel.chip.${status.state}`, { missing: status.missing })}
+                </span>
+              );
+            })()}
           {destination !== undefined && <RiskBadge band={destination.risk} />}
         </div>
 

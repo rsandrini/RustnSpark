@@ -2103,6 +2103,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
       'pt-BR': 'Número mínimo de missões publicadas por local no quadro.',
     },
   },
+  {
+    key: 'missions.board_min_by_detail',
+    group: 'missions',
+    type: 'json',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.board_min_by_detail),
+    description: {
+      en: 'How many missions a board posts, by the size of the place on the map: main (big ports), regional and local (small places). A place with no size uses the per-location minimum above.',
+      'pt-BR':
+        'Quantas missões um quadro publica, pelo tamanho do local no mapa: principal (portos grandes), regional e local (locais pequenos). Um local sem tamanho usa o mínimo por local acima.',
+    },
+  },
   // DEFERRED (S8 review item 12): the `mission` chance (55%) is reserved. No SCAVENGING
   // MissionType exists in v0.1, so only `common` and `pirate` are read by scavenging.service.
   {

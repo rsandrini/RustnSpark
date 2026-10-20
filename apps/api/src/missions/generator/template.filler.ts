@@ -113,6 +113,11 @@ export interface FillMissionInput {
   readonly rules: GameRules;
   readonly now: Date;
   readonly starter?: StarterConstraint;
+  /**
+   * Types the board does not have yet: when a template of one of them fits the place, the pick is made among those
+   * first, so a board shows every type it can before any type repeats.
+   */
+  readonly preferTypes?: ReadonlySet<MissionType>;
 }
 
 export type MissionDraft = Prisma.MissionInstanceUncheckedCreateInput;
@@ -240,7 +245,8 @@ function endsAtOptInPlace(template: FillerTemplate, world: FillerWorld): boolean
 function matchesOrigin(origin: FillerLocation, template: FillerTemplate): boolean {
   const requirements = requirementsOf(template);
   // A test pad offers only what names it (its way back to the port): never the ordinary templates.
-  if (origin.type === 'test_pad' && requirements.originTypes?.includes('test_pad') !== true) return false;
+  if (origin.type === 'test_pad' && requirements.originTypes?.includes('test_pad') !== true)
+    return false;
   const factionMatch =
     requirements.originFactions === undefined ||
     requirements.originFactions.includes(origin.factionId);
@@ -261,6 +267,11 @@ export function isMiningEligible(
   return templates.some(
     (template) => template.active && template.type === 'MINING' && matchesOrigin(origin, template),
   );
+}
+
+/** The mission types a place can post at all (the types of the templates that fit it). */
+export function eligibleTypesAt(origin: FillerLocation, world: FillerWorld): Set<MissionType> {
+  return new Set(eligibleTemplates(origin, world).map((template) => template.type));
 }
 
 function eligibleTemplates(origin: FillerLocation, world: FillerWorld): FillerTemplate[] {
@@ -437,7 +448,12 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       input.starter === undefined ||
       (input.starter.types.includes(candidate.type) && !endsAtOptInPlace(candidate, world)),
   );
-  const template = eligible.length > 0 ? rng.child('template').pick(eligible) : undefined;
+  const preferred =
+    input.preferTypes === undefined
+      ? []
+      : eligible.filter((candidate) => input.preferTypes?.has(candidate.type) === true);
+  const pool = preferred.length > 0 ? preferred : eligible;
+  const template = pool.length > 0 ? rng.child('template').pick(pool) : undefined;
   if (template === undefined) {
     throw new MissionGenerationError(`No eligible mission template at location ${origin.id}`);
   }

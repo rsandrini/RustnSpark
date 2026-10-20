@@ -324,6 +324,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     time_scale: 1,
     // Several offers per port: one at a time made every board look the same.
     board_min_per_location: 4,
+    // The size of a board follows the size of the place: 8 offers on a main port, 6 on a regional one, 4 on a small
+    // place (the map's `detail`); `board_min_per_location` is the fallback. A test pad keeps one (its way back).
+    board_min_by_detail: { main: 8, regional: 6, local: 4 },
     // No more than this many offers of one type on a board (and never two of the same type for the
     // same destination), so a board is a mix and not four of the same job.
     board_max_same_type: 2,

@@ -4,7 +4,9 @@ import type { GameRules } from '../config/game-config.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { missionSeed } from './generator/mission.generator.js';
+import { boardSize, maxOffersOfOneType } from './board-size.js';
 import {
+  eligibleTypesAt,
   fillMission,
   MissionGenerationError,
   type MissionDraft,
@@ -115,7 +117,12 @@ export class BoardService {
     const { rules, version } = this.config.snapshot();
     const now = new Date();
     const counts = new Map<string, number>();
-    const boardMin = rules.missions.board_min_per_location;
+    // Each board has the size of its place (main ports hold more than small stops).
+    const places = await this.prisma.location.findMany({
+      where: { id: { in: [...locationIds] } },
+      select: { id: true, type: true, detail: true },
+    });
+    const sizeOf = new Map(places.map((place) => [place.id, boardSize(place, rules)]));
 
     // Steady state (every board already full) is a single read: no advisory locks, no
     // writes. This runs on every map/port/board load, so it must not serialize the
@@ -135,8 +142,9 @@ export class BoardService {
     const needsTopUp: string[] = [];
     for (const locationId of new Set(locationIds)) {
       const count = liveByLocation.get(locationId) ?? 0;
-      if (count >= boardMin) counts.set(locationId, count);
-      else needsTopUp.push(locationId);
+      if (count >= (sizeOf.get(locationId) ?? rules.missions.board_min_per_location)) {
+        counts.set(locationId, count);
+      } else needsTopUp.push(locationId);
     }
     if (needsTopUp.length === 0) return counts;
     const sorted = needsTopUp.sort();
@@ -244,7 +252,12 @@ export class BoardService {
     configVersion: number,
     world: () => Promise<World>,
   ): Promise<number> {
-    const boardMin = rules.missions.board_min_per_location;
+    const place = await tx.location.findUnique({
+      where: { id: locationId },
+      select: { type: true, detail: true },
+    });
+    const boardMin =
+      place === null ? rules.missions.board_min_per_location : boardSize(place, rules);
 
     await tx.missionInstance.updateMany({
       where: {
@@ -282,18 +295,26 @@ export class BoardService {
       },
       select: { type: true, destinationId: true, cargo: true },
     });
-    const maxSameType = rules.missions.board_max_same_type;
+    const maxSameType = maxOffersOfOneType(boardMin, rules);
+    const eligibleTypes = eligibleTypesAt(location, worldTables);
     while (available < boardMin) {
       try {
         let draft: MissionDraft;
         let attempt = 0;
         for (;;) {
+          // Every type the place can post appears once before any type repeats.
+          const missingTypes = new Set(
+            [...eligibleTypes].filter((type) => !live.some((offer) => offer.type === type)),
+          );
           draft = fillMission({
             seed: missionSeed({ locationId, epoch, configVersion }),
             origin: location,
             world: worldTables,
             rules,
             now,
+            ...(missingTypes.size > 0 && missingTypes.size < eligibleTypes.size
+              ? { preferTypes: missingTypes }
+              : {}),
           });
           const strictness: Strictness =
             attempt < STRICT_ATTEMPTS

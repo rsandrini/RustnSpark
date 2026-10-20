@@ -63,12 +63,12 @@ describe('mission board (S6.2)', () => {
     expect(stored).toBe(rows.length);
   });
 
-  it('boards are a mix: no two offers of one type for one destination, and at most 2 of a type, over many refreshes', async () => {
+  it('boards are a mix: 8 on a big port, no two offers of one type for one destination, and at most half the board of one type, over many refreshes', async () => {
     const locations = ['ceres', 'vesta', 'hedus', 'marsa', 'cair', 'tycho'];
     for (let round = 0; round < 25; round += 1) {
       for (const locationId of locations) {
         const rows = await board!.getBoard(locationId, 1);
-        expect(rows.length).toBe(4);
+        expect(rows.length).toBe(8);
         const keys = rows.map(
           (row) =>
             `${row.type}>${row.destinationId}>${(row.cargo as { materialId?: string } | null)?.materialId ?? ''}`,
@@ -76,7 +76,7 @@ describe('mission board (S6.2)', () => {
         expect(new Set(keys).size).toBe(keys.length);
         const perType = new Map<string, number>();
         for (const row of rows) perType.set(row.type, (perType.get(row.type) ?? 0) + 1);
-        expect(Math.max(...perType.values())).toBeLessThanOrEqual(2);
+        expect(Math.max(...perType.values())).toBeLessThanOrEqual(4);
       }
       // let every offer run out, so the next read posts a fresh board
       await prisma.missionInstance.updateMany({
@@ -84,6 +84,51 @@ describe('mission board (S6.2)', () => {
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
     }
+  }, 60000);
+
+  it('a board has the size of its place: 8 on a main port, 4 on a small stop, 1 on a test pad', async () => {
+    expect((await board!.getBoard('ceres', 1)).length).toBe(8);
+    expect((await board!.getBoard('ceres_dock', 1)).length).toBe(4);
+    expect((await board!.getBoard('ceres_pad', 1)).length).toBe(1);
+    const counts = await board!.countOffers(['hedus', 'tycho_slip', 'cair_pad']);
+    expect(counts.get('hedus')).toBe(8);
+    expect(counts.get('tycho_slip')).toBe(4);
+    expect(counts.get('cair_pad')).toBe(1);
+  });
+
+  it('a big board shows every type its place can post before any type repeats', async () => {
+    const eligible = new Set<string>();
+    const templates = await prisma.missionTemplate.findMany({ where: { active: true } });
+    const ceres = await prisma.location.findUniqueOrThrow({ where: { id: 'ceres' } });
+    for (const template of templates) {
+      const req = (template.requirements ?? {}) as {
+        originFactions?: string[];
+        originTypes?: string[];
+      };
+      if (req.originFactions !== undefined && !req.originFactions.includes(ceres.factionId))
+        continue;
+      if (req.originTypes !== undefined && !req.originTypes.includes(ceres.type)) continue;
+      eligible.add(template.type);
+    }
+    // TRAVEL and SCAVENGE are pilot-requested, never board offers
+    eligible.delete('TRAVEL');
+    eligible.delete('SCAVENGE');
+    const seen = new Set<string>();
+    for (let round = 0; round < 6; round += 1) {
+      for (const row of await board!.getBoard('ceres', 1)) seen.add(row.type);
+      await prisma.missionInstance.updateMany({
+        where: { status: 'AVAILABLE' },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+    }
+    // over a few renewals the board has shown every type the place can post (a type that needs a place or
+    // destination the world lacks is the only exception, and the world has them for these)
+    for (const type of eligible) expect(seen.has(type)).toBe(true);
+    // and one board holds at least as many different types as its place can offer, up to its size
+    const one = await board!.getBoard('ceres', 1);
+    expect(new Set(one.map((row) => row.type)).size).toBeGreaterThanOrEqual(
+      Math.min(eligible.size, 8) - 1,
+    );
   }, 60000);
 
   it('is idempotent: a second read adds nothing and returns the same offers', async () => {
@@ -96,7 +141,12 @@ describe('mission board (S6.2)', () => {
   it('never duplicates under concurrent reads (pg_advisory_xact_lock)', async () => {
     // Raise the target so a missing lock would be visible: three racers each trying to
     // fill the board to 3 would otherwise interleave and over-insert.
-    await config!.setValue('missions.board_min_per_location', 3, 'tester', 'integration-test');
+    await config!.setValue(
+      'missions.board_min_by_detail',
+      { main: 3, regional: 3, local: 3 },
+      'tester',
+      'integration-test',
+    );
 
     await Promise.all([
       board!.getBoard('hedus', 1),
@@ -111,7 +161,12 @@ describe('mission board (S6.2)', () => {
   }, 15000);
 
   it('fills a port with different offers: no two share both template and destination', async () => {
-    await config!.setValue('missions.board_min_per_location', 6, 'tester', 'integration-test');
+    await config!.setValue(
+      'missions.board_min_by_detail',
+      { main: 6, regional: 6, local: 4 },
+      'tester',
+      'integration-test',
+    );
     for (const port of ['ceres', 'hedus', 'cair']) {
       const rows = await board!.getBoard(port, 1);
       expect(rows.length).toBeGreaterThanOrEqual(6);

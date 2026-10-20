@@ -87,6 +87,11 @@ describe('port (S10.9)', () => {
     server.use(onboarded());
   });
 
+  it('opens the Refuel tab with the amount named in the address chosen (a mission card says "Refuel 7")', async () => {
+    await renderPortAt('/hangar/port?tab=refuel&units=7');
+    expect(await screen.findByRole('button', { name: 'Buy 7' })).toBeInTheDocument();
+  });
+
   it('opens the tab named in the address (the board links to ?tab=refuel)', async () => {
     await renderPortAt('/hangar/port?tab=refuel');
     expect(screen.getByRole('tab', { name: 'Refuel' })).toHaveAttribute('aria-selected', 'true');

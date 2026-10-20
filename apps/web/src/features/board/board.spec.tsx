@@ -203,22 +203,23 @@ describe('board (S10.6)', () => {
     expect(requested).not.toContain('ceres');
   });
 
-  it('shows fuel aboard as a bar with the trip cost carved out, not just a number', async () => {
+  it('says what you have, what the trip needs and what the tank holds, with a bar of the three', async () => {
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');
-    // Default fixture: ship has 25/40 fuel, every offer needs 8 — comfortably affordable.
-    const gauges = screen.getAllByRole('progressbar', { name: 'Fuel needed' });
-    expect(gauges.length).toBeGreaterThan(0);
-    const gauge = gauges[0]!;
-    expect(gauge).toHaveAttribute('aria-valuenow', '25');
-    expect(gauge).toHaveAttribute('aria-valuemax', '40');
-    expect(gauge).not.toHaveClass('bad');
-    expect(gauge.querySelector('.gauge-consume')).not.toBeNull();
-    expect(screen.getAllByText('25/40').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('uses 8').length).toBeGreaterThan(0);
+    // Default fixture: ship has 25/40 fuel, every offer needs 8 — comfortably enough.
+    const block = screen.getAllByTestId('mcard-fuel')[0]!;
+    expect(block).toHaveAttribute('data-state', 'ok');
+    expect(block).toHaveTextContent('You have 25 · the trip needs 8 · tank 40');
+    expect(block.querySelector('.fuel-need')).toHaveTextContent('8');
+    expect(within(block).getByTestId('fuel-verdict')).toHaveTextContent('Enough');
+    const bar = within(block).getByRole('progressbar', { name: 'Fuel needed' });
+    expect(bar).toHaveAttribute('aria-valuenow', '25');
+    expect(bar).toHaveAttribute('aria-valuemax', '40');
+    // an enough tank has nothing to fix: no action link
+    expect(within(block).queryByRole('link')).toBeNull();
   });
 
-  it('flags the fuel bar red when the ship does not carry enough for the trip', async () => {
+  it('is amber and offers to refuel the missing amount when the tank could hold the trip but is short', async () => {
     server.use(
       http.get('/v1/ships', () =>
         HttpResponse.json(
@@ -244,16 +245,16 @@ describe('board (S10.6)', () => {
     );
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');
-    const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
-    expect(gauge).toHaveClass('bad');
-    expect(gauge).toHaveAttribute('aria-valuenow', '5');
-    // "refuel first" is a link to the Port's Refuel tab
-    const links = screen.getAllByRole('link', { name: 'refuel first' });
-    expect(links.length).toBeGreaterThan(0);
-    expect(links[0]).toHaveAttribute('href', '/port?tab=refuel');
+    const block = screen.getAllByTestId('mcard-fuel')[0]!;
+    expect(block).toHaveAttribute('data-state', 'short');
+    // 5 aboard, the trip needs 8: short by 3, and refuelling fixes it
+    expect(within(block).getByTestId('fuel-verdict')).toHaveTextContent('Short by 3');
+    expect(within(block).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '5');
+    const refuel = within(block).getByRole('link', { name: 'Refuel 3' });
+    expect(refuel).toHaveAttribute('href', '/port?tab=refuel&units=3');
   });
 
-  it('says refuelling is not enough when the tanks themselves cannot hold what the trip burns', async () => {
+  it('is red and points to the tanks when the trip needs more than the tank can ever hold', async () => {
     server.use(
       http.get('/v1/ships', () =>
         HttpResponse.json(
@@ -279,10 +280,15 @@ describe('board (S10.6)', () => {
     );
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');
-    const gauge = screen.getAllByRole('progressbar', { name: 'Fuel needed' })[0]!;
-    expect(gauge).toHaveClass('bad');
-    expect(gauge).toHaveAttribute('aria-valuenow', '3');
-    expect(screen.getAllByText(/your tanks hold only 3/).length).toBeGreaterThan(0);
+    const block = screen.getAllByTestId('mcard-fuel')[0]!;
+    expect(block).toHaveAttribute('data-state', 'tank');
+    expect(within(block).getByTestId('fuel-verdict')).toHaveTextContent('Needs a bigger tank');
+    // refuelling cannot fix it: the action is the market's tanks, not the Refuel tab
+    expect(within(block).getByRole('link', { name: 'Find a bigger tank' })).toHaveAttribute(
+      'href',
+      '/port?tab=market',
+    );
+    expect(within(block).queryByRole('link', { name: /^Refuel/ })).toBeNull();
   });
 
   it('a pure-ion ship (no fuel burn) gets no fuel row at all on the cards', async () => {
@@ -380,7 +386,17 @@ describe('board (S10.6)', () => {
     expect(within(pinned).queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
   });
 
-  it('keeps the fuel gauge out of the cramped facts grid, and hides a redundant equal estimate', async () => {
+  it('every mission row carries a fuel chip with the same three states', async () => {
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    const chips = screen.getAllByTestId('fuel-chip');
+    expect(chips.length).toBeGreaterThan(0);
+    // 25 aboard, 8 needed, tank 40
+    expect(chips[0]).toHaveAttribute('data-state', 'ok');
+    expect(chips[0]).toHaveTextContent('Fuel OK');
+  });
+
+  it('keeps the fuel block out of the cramped facts grid, and hides a redundant equal estimate', async () => {
     server.use(
       http.get('/v1/locations/:id/missions', () =>
         HttpResponse.json(
@@ -436,10 +452,12 @@ describe('board (S10.6)', () => {
     // The facts grid (Distance/Legs/Flight time) no longer includes Fuel as a fourth column —
     // its gauge lives in its own full-width row, outside the grid.
     const factsGrid = document.querySelector<HTMLElement>('.mcard-facts')!;
-    expect(within(factsGrid).queryByText('Fuel needed')).toBeNull();
+    expect(within(factsGrid).queryByTestId('mcard-fuel')).toBeNull();
     const fuelRow = document.querySelector<HTMLElement>('.mcard-fuel')!;
     expect(fuelRow).not.toBeNull();
-    expect(within(fuelRow).getByText('Fuel needed')).toBeInTheDocument();
+    // the fuel block sits right under the facts, above what the mission needs
+    expect(factsGrid.nextElementSibling).toBe(fuelRow);
+    expect(within(fuelRow).getByRole('progressbar', { name: 'Fuel needed' })).toBeInTheDocument();
   });
 
   it('warns on a mission whose trip needs more fuel than the tank holds (FUEL_CAPACITY row, unmet, with the numbers)', async () => {

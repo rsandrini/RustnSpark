@@ -1,4 +1,9 @@
-# Fuel on a mission card: show what you have and what the trip needs (plan, not built)
+# Fuel on a mission card: show what you have and what the trip needs (built, 2026-10-20)
+
+Built as recommended: the fuel block sits under the facts (`fuel-block.tsx`: a sentence with the three numbers, a bar with
+the fuel aboard, the trip's mark and the tank's end, the verdict word and the one action), three states from
+`fuel-status.ts` (enough / short, amber, "Refuel N" opening the Refuel tab with N chosen / tank too small, red, "Find a
+bigger tank" to the market), and a fuel chip on every mission row.
 
 Owner (2026-10-20): "fuel required in the missions is badly represented. We can show the current fuel and the amount
 necessary highlighted, or in another way."

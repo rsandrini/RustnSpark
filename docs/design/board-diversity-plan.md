@@ -1,4 +1,9 @@
-# More diversity on the mission boards: 8 offers on big ports, 4 on small places (plan, not built)
+# More diversity on the mission boards: 8 offers on big ports, 4 on small places (built, 2026-10-20)
+
+Built as recommended: `missions.board_min_by_detail` (main 8, regional 6, local 4; a test pad holds 1), the type cap is
+at most half the board, every type a place can post appears once before any type repeats (`preferTypes` in the
+generator), and eight new templates (3 escorts, 2 rescues, 3 races; `prisma/seed-data/board-variety.ts`). The sim was
+re-run to check the pace.
 
 Owner (2026-10-20): "Missions need to have more diversity. We can raise missions to 8 on each big port and keep 4 in
 small locations."
