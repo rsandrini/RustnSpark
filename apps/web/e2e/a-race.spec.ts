@@ -4,7 +4,7 @@ import { fillTank, registerAndLaunch, walletOf } from './support';
 
 // A real race, end to end on the real stack: the board shows the rival field, the pilot accepts,
 // sees the rivals again before dispatch, flies, and the report shows the standings and a prize.
-// The rivals are tuned slow by global-setup, and every other luna template is retired here so a starter ship wins and a
+// The rivals are tuned slow by global-setup, and every other luna template is retired here (the second race template included) so a starter ship wins and a
 // RACE offer is what the board has; everything is put back afterwards.
 const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080';
 let headers: Record<string, string> = {};
@@ -39,7 +39,8 @@ test.describe('race mission', () => {
       active: boolean;
     }[];
     for (const template of templates.filter(
-      (row) => row.factionId === 'luna' && row.type !== 'RACE' && row.active,
+      // every luna template but the tuned race one (a second race template has the default entry speed)
+      (row) => row.factionId === 'luna' && row.id !== 'race_luna' && row.active,
     )) {
       await admin(`/v1/admin/tuning/mission-templates/${template.id}`, {
         method: 'PATCH',
