@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import type { Mentor } from '@rustandspark/contract';
+import type { Mentor } from './giver-types.js';
 import {
   CurrentUser,
   type CurrentUserPayload,

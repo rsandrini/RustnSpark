@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { MissionType } from '@prisma/client';
-import type { GiverRef, LocalizedText, Mentor, MentorStep } from '@rustandspark/contract';
+import type { GiverRef, LocalizedText, Mentor, MentorStep } from './giver-types.js';
 import { bilingual } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { giverRefOf } from './giver-ref.js';

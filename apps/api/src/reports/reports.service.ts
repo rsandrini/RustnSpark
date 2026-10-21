@@ -18,7 +18,7 @@ import {
   UnsupportedMissionLogSchemaError,
   type ParsedMissionEvent,
 } from './events/event.schema.js';
-import type { GiverRef, LocalizedText } from '@rustandspark/contract';
+import type { GiverRef, LocalizedText } from '../missions/giver-types.js';
 import { closingLineOf, giverRefOf } from '../missions/giver-ref.js';
 import { computeReportStats, type ReportStats } from './report.stats.js';
 import { type EntityNames } from './templates/template.engine.js';

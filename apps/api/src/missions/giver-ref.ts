@@ -1,4 +1,4 @@
-import type { GiverRef, LocalizedText } from '@rustandspark/contract';
+import type { GiverRef, LocalizedText } from './giver-types.js';
 import { bilingual } from '../parts/parts.service.js';
 import { parsePools, voiced } from './voice.js';
 

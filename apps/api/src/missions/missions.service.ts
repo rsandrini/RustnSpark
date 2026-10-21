@@ -32,7 +32,7 @@ import { PROVISIONAL_TIER } from './generator/template.filler.js';
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
 import { bridgeRarityOf } from '../economy/reward.calculator.js';
 import { bilingual } from '../parts/parts.service.js';
-import type { GiverRef } from '@rustandspark/contract';
+import type { GiverRef } from './giver-types.js';
 import { GiversService } from './givers.service.js';
 import { fieldFor, resolveRace } from '../resolution/race/race.resolver.js';
 import { createRng } from '../common/rng/rng.js';
