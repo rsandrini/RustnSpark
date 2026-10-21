@@ -49,6 +49,10 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
   'POST /v1/locations/:id/mine':
     'service checks the caller’s ship is at the location and has no active mission',
+  'POST /v1/players/me/dialogue/:sceneId':
+    'the scene is looked up in the caller’s own faction mentor; progress is keyed by the caller’s playerId',
+  'POST /v1/players/me/dialogue/:sceneId/replay':
+    'the scene is looked up in the caller’s own faction mentor; progress is keyed by the caller’s playerId',
   'POST /v1/parts/:id/upgrade': 'service checks the part instance belongs to the caller',
   'POST /v1/parts/:id/upgrade/quote':
     'service checks the part instance belongs to the caller (read-shaped)',
@@ -85,6 +89,7 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/admin/tuning/factions/:id/art/:slot',
   'POST /v1/admin/tuning/locations/:id/art/:slot',
   'POST /v1/admin/tuning/quest-givers/:id/art/:slot',
+  'POST /v1/players/me/dialogue/:sceneId/replay',
   'DELETE /v1/admin/tuning/factions/:id/art/:slot',
   'DELETE /v1/admin/tuning/locations/:id/art/:slot',
   'DELETE /v1/admin/tuning/quest-givers/:id/art/:slot',

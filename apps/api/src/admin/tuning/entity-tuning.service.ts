@@ -7,6 +7,7 @@ import { GameConfigService } from '../../config/game-config.service.js';
 import { GameConfigRepository } from '../../config/game-config.repository.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
 import { parseConnectorRules, validateConnectorRules } from '../../parts/connector-rules.js';
+import { sceneProblems } from '../../dialogue/scenes.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 
@@ -571,6 +572,16 @@ export class EntityTuningService {
             fail(`lines.${key}.${index}`, 'every line needs both an English and a Portuguese text');
           }
         }
+      }
+    }
+
+    if (data.scenes !== undefined) {
+      const problems = sceneProblems(data.scenes);
+      if (problems.length > 0) {
+        throw new GameConfigValidationError(
+          `quest-givers: ${problems[0]}`,
+          problems.map((message) => ({ key: 'scenes', message })),
+        );
       }
     }
 

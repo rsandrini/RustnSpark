@@ -7,6 +7,7 @@ export type EntityFieldType =
   | 'float'
   | 'boolean'
   | 'json'
+  | 'json-list'
   | 'enum'
   | 'locale-map'
   | 'grid-cells'
@@ -75,6 +76,8 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
         : z.array(z.string().min(1)).min(1);
     case 'json':
       return z.record(z.string(), z.unknown());
+    case 'json-list':
+      return z.array(z.unknown());
     case 'enum':
       return z.enum(field.enumValues as [string, ...string[]]);
     case 'locale-map':
@@ -861,6 +864,15 @@ const QUEST_GIVER_FIELDS: EntitySchemaField[] = [
     description: localeMap(
       'Line pools by key (offer.<TYPE>, report.success|partial|failure, first_flight, tutorial.*): lists of {en, pt-BR}',
       'Conjuntos de falas por chave (offer.<TIPO>, report.success|partial|failure, first_flight, tutorial.*): listas de {en, pt-BR}',
+    ),
+  },
+  {
+    name: 'scenes',
+    type: 'json-list',
+    required: false,
+    description: localeMap(
+      'Dialogue scenes the person speaks: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, next, choices}]}]',
+      'Cenas de diálogo que a pessoa fala: [{id, title, trigger, order, start, nodes: [{id, text, position, anchor, blocking, next, choices}]}]',
     ),
   },
   {

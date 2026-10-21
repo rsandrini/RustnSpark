@@ -14,6 +14,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'factionId',
     'debugFastOps',
     'tutorialDone',
+    'dialogueEnabled',
     'createdAt',
   ],
   RefreshToken: [

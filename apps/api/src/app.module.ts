@@ -26,6 +26,7 @@ import { ConfigModule } from './config/config.module.js';
 import { MissionsModule } from './missions/missions.module.js';
 import { WorldModule } from './world/world.module.js';
 import { EconomyModule } from './economy/economy.module.js';
+import { DialogueModule } from './dialogue/dialogue.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { TokenService } from './auth/token.service.js';
@@ -49,6 +50,7 @@ import { TokenService } from './auth/token.service.js';
     WorldModule,
     EconomyModule,
     ReportsModule,
+    DialogueModule,
     AdminModule,
   ],
   providers: [

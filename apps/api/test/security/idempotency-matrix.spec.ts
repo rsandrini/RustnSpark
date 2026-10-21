@@ -74,6 +74,11 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
   'DELETE /v1/admin/tuning/locations/:id/art/:slot': 'resetting an already-reset slot is a no-op',
   'POST /v1/admin/tuning/quest-givers/:id/art/:slot':
     'sets an image to a value: repeating is the same state',
+  'POST /v1/players/me/dialogue/:sceneId':
+    'records where the pilot is in a scene: repeating is the same state',
+  'POST /v1/players/me/dialogue/:sceneId/replay':
+    'marks a scene due again: repeating is the same state',
+  'POST /v1/players/me/dialogue/settings': 'sets dialogues on or off: repeating is the same state',
   'DELETE /v1/admin/tuning/quest-givers/:id/art/:slot':
     'resetting an already-reset slot is a no-op',
 };

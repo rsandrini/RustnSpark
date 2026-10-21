@@ -64,6 +64,9 @@ model Player {
   // The newcomer tutorial card is gone for good: skipped or finished. Reopening it from the
   // account menu sets it back to false.
   tutorialDone    Boolean           @default(false)
+  // The mentor's dialogue scenes (docs/design/mentor-dialogue-plan.md): off = only the checklist.
+  dialogueEnabled Boolean           @default(true)
+  dialogues       PlayerDialogue[]
   createdAt       DateTime          @default(now())
   events          PlayerEvent[]
   idempotencyKeys IdempotencyKey[]
@@ -164,6 +167,14 @@ enum PartClass {
 enum GiverRole {
   GIVER
   MENTOR
+}
+
+// Where a pilot stands in a mentor's dialogue scene: started (OPEN), closed (SKIPPED / DONE) or asked for again (REPLAY).
+enum DialogueStatus {
+  OPEN
+  SKIPPED
+  DONE
+  REPLAY
 }
 
 enum MissionType {
@@ -417,10 +428,27 @@ model QuestGiver {
   // Where they work; empty = any place of their faction.
   locationIds String[]
   weight      Int               @default(10)
+  // Dialogue scenes the person speaks (a mentor's): [{id, title, trigger, order, start, nodes: [...]}].
+  scenes      Json              @default("[]")
   faction     Faction           @relation(fields: [factionId], references: [id])
   missions    MissionInstance[]
 
   @@index([factionId, active])
+}
+
+// One row per (pilot, scene): where they are in it. A database reset starts everyone at the welcome again.
+model PlayerDialogue {
+  id        String         @id @default(dbgenerated("gen_random_uuid()"))
+  playerId  String
+  sceneId   String
+  status    DialogueStatus @default(OPEN)
+  // The last node reached (the scene resumes there).
+  nodeId    String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  player    Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, sceneId])
 }
 
 model MissionTemplate {

@@ -71,6 +71,6 @@ import { ScavengingService } from './scavenging.service.js';
     PlayerEventService,
     Clock,
   ],
-  exports: [PricingService, MarketService, RepairService],
+  exports: [PricingService, MarketService, RepairService, RefuelService],
 })
 export class EconomyModule {}

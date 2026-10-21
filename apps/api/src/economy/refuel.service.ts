@@ -189,6 +189,11 @@ export class RefuelService {
     return { shipId, units, cost, unitPrice, fuel: ship.fuel, fuelCap, space };
   }
 
+  /** The size of a pilot's tank (derived from the installed parts), for callers that only need to read it. */
+  async tankOf(playerId: string, shipId: string): Promise<{ fuelCap: number }> {
+    return { fuelCap: await this.fuelCapOf(playerId, shipId, this.config.snapshot().rules) };
+  }
+
   // fuelCap is derived from installed parts (sum of `fuelCap` stats), so it is
   // recomputed per call — refitting the tank mid-session changes the ceiling.
   private async fuelCapOf(playerId: string, shipId: string, rules: GameRules): Promise<number> {
