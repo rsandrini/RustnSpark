@@ -251,6 +251,96 @@ export const MentorSchema = z.object({
 export type Mentor = z.infer<typeof MentorSchema>;
 
 // ---------------------------------------------------------------------------------------------
+// Dialogue scenes: the mentor talks to the pilot (docs/design/mentor-dialogue-plan.md)
+// ---------------------------------------------------------------------------------------------
+
+/** Where the popup sits: the middle of the screen (dimmed), or beside the thing it talks about. */
+export const DialoguePositionSchema = z.enum(['center', 'bottom', 'left', 'right', 'top']);
+export type DialoguePosition = z.infer<typeof DialoguePositionSchema>;
+
+/** The screen elements a node may point at (each carries a `data-tour` attribute); a missing one centres the popup. */
+export const DialogueAnchorSchema = z.enum([
+  'ship_grid',
+  'auto_layout',
+  'ship_tab',
+  'port_tab',
+  'port_refuel',
+  'missions_tab',
+  'map_tab',
+  'accept_button',
+]);
+export type DialogueAnchor = z.infer<typeof DialogueAnchorSchema>;
+
+/** What a choice may do besides moving to another node. A fixed list, never free code. */
+export const DialogueActionSchema = z.enum([
+  'goto:/ship',
+  'goto:/port',
+  'goto:/port?tab=refuel',
+  'goto:/missions',
+  'goto:/map',
+  'replay',
+  'end',
+]);
+export type DialogueAction = z.infer<typeof DialogueActionSchema>;
+
+export const DialogueChoiceSchema = z.object({
+  label: LocalizedTextSchema,
+  /** The node it leads to; null when it only runs `action`. */
+  next: z.string().nullable(),
+  action: DialogueActionSchema.nullable(),
+});
+export type DialogueChoice = z.infer<typeof DialogueChoiceSchema>;
+
+export const DialogueNodeSchema = z.object({
+  id: z.string(),
+  text: LocalizedTextSchema,
+  position: DialoguePositionSchema,
+  anchor: DialogueAnchorSchema.nullable(),
+  /** A blocking node dims the screen and waits for the pilot; the others leave the game usable. */
+  blocking: z.boolean(),
+  /** The node after this one when there are no choices; null ends the scene. */
+  next: z.string().nullable(),
+  choices: z.array(DialogueChoiceSchema),
+});
+export type DialogueNode = z.infer<typeof DialogueNodeSchema>;
+
+export const DialogueSceneSchema = z.object({
+  id: z.string(),
+  title: LocalizedTextSchema,
+  giver: GiverRefSchema,
+  /** The node to open on (the last one seen when the pilot left mid-scene). */
+  start: z.string(),
+  nodes: z.array(DialogueNodeSchema),
+});
+export type DialogueScene = z.infer<typeof DialogueSceneSchema>;
+
+/**
+ * GET /v1/players/me/dialogue — the scene that is due now (null = nothing to say), whether the pilot has dialogues
+ * on, and the scenes they have seen (for "talk to <name> again" in the profile menu). The server decides when a
+ * scene is due, from the pilot's own records; the web only renders.
+ */
+export const DialogueStateSchema = z.object({
+  enabled: z.boolean(),
+  scene: DialogueSceneSchema.nullable(),
+  replayable: z.array(z.object({ id: z.string(), title: LocalizedTextSchema })),
+});
+export type DialogueState = z.infer<typeof DialogueStateSchema>;
+
+/** POST /v1/players/me/dialogue/:sceneId — `advance` records the node reached, `skip` and `done` close the scene. */
+export const DialogueEventSchema = z.object({
+  event: z.enum(['advance', 'skip', 'done']),
+  nodeId: z.string().optional(),
+});
+export type DialogueEvent = z.infer<typeof DialogueEventSchema>;
+
+/**
+ * POST /v1/players/me/dialogue/settings turns dialogues on or off; POST /v1/players/me/dialogue/:sceneId/replay
+ * (no body, answers 200 {ok: true}) makes a seen scene due again at once.
+ */
+export const DialogueSettingsSchema = z.object({ enabled: z.boolean() });
+export type DialogueSettings = z.infer<typeof DialogueSettingsSchema>;
+
+// ---------------------------------------------------------------------------------------------
 // Faction art (admin-uploadable images; the static files are the defaults)
 // ---------------------------------------------------------------------------------------------
 

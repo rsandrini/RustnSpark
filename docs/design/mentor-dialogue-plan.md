@@ -101,3 +101,14 @@ then wiring, Admin editor, e2e, content.
 5. **Replay and off switch** in the profile menu (recommended).
 6. **Retire the checklist's mentor lines** (`/players/me/mentor` steps) once scenes exist (recommended); keep
    the endpoint for the mentor's identity only.
+
+## Contract (merged 2026-10-21, Lane A; owner approved the recommendations above)
+`packages/contract/src/index.ts`: `DialoguePositionSchema`, `DialogueAnchorSchema`, `DialogueActionSchema`,
+`DialogueChoiceSchema`, `DialogueNodeSchema`, `DialogueSceneSchema`, `DialogueStateSchema`, `DialogueEventSchema`,
+`DialogueSettingsSchema`. Endpoints (all under the token, `/v1/players/me/`):
+- `GET dialogue` -> `DialogueState` `{enabled, scene | null, replayable: [{id, title}]}`
+- `POST dialogue/:sceneId` body `DialogueEvent` -> `{ok: true}` (`advance` with the node reached, `skip`, `done`)
+- `POST dialogue/:sceneId/replay` -> `{ok: true}`
+- `POST dialogue/settings` body `{enabled}` -> `{ok: true}`
+Scenes: `welcome`, `first_ship`, `first_flight`, `after_first_report`, `low_fuel`, `first_failure`. Lane B may mock
+these today; Lane A fills them in the next hours.
