@@ -13,6 +13,7 @@ const TUNABLE_ENTITIES = [
   'environments',
   'mission-templates',
   'drop-tables',
+  'quest-givers',
 ] as const;
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' on' : ''}`;
@@ -136,7 +137,11 @@ export function AdminShell() {
           expanded row. */}
       <nav className="game-nav admin-nav" aria-label={t('admin.title')}>
         <AdminNavDropdown id="stats" label={t('admin.navGroups.stats')} items={statsItems} />
-        <AdminNavDropdown id="editable" label={t('admin.navGroups.editable')} items={editableItems} />
+        <AdminNavDropdown
+          id="editable"
+          label={t('admin.navGroups.editable')}
+          items={editableItems}
+        />
       </nav>
       <main>
         <Outlet />

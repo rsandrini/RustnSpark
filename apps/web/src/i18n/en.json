@@ -888,6 +888,12 @@
         "gruff": "Gruff",
         "friendly": "Friendly",
         "nervous": "Nervous"
+      },
+      "previewLabel": "As the pilot sees them",
+      "sections": {
+        "personality": "What they offer",
+        "lines": "Their voice",
+        "places": "Where they work"
       }
     }
   },
@@ -1000,7 +1006,8 @@
       "routes": "Routes",
       "environments": "Environments",
       "mission-templates": "Mission templates",
-      "drop-tables": "Drop tables"
+      "drop-tables": "Drop tables",
+      "quest-givers": "Quest givers"
     },
     "gridCells": {
       "group": "Format cells",
@@ -1200,7 +1207,8 @@
         "background": "Background",
         "wide": "Wide",
         "square": "Square",
-        "icon": "Icon"
+        "icon": "Icon",
+        "portrait": "Portrait"
       },
       "slotHelp": {
         "banner": "Wide picture behind the faction's card on the selection screen.",
@@ -1208,7 +1216,8 @@
         "background": "Large backdrop for the faction's pages.",
         "wide": "Wide banner behind the place on the port, board and report screens.",
         "square": "Square picture of the place.",
-        "icon": "Small icon of the place."
+        "icon": "Small icon of the place.",
+        "portrait": "The giver's face on the board, report and tutorial card."
       },
       "none": "No image",
       "usingDefault": "Using the built-in default",

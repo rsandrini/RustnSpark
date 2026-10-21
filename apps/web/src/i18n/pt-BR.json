@@ -888,6 +888,12 @@
         "gruff": "Ríspido",
         "friendly": "Amigável",
         "nervous": "Nervoso"
+      },
+      "previewLabel": "Como o piloto os vê",
+      "sections": {
+        "personality": "O que oferecem",
+        "lines": "A voz deles",
+        "places": "Onde trabalham"
       }
     }
   },
@@ -1000,7 +1006,8 @@
       "routes": "Rotas",
       "environments": "Ambientes",
       "mission-templates": "Modelos de missão",
-      "drop-tables": "Tabelas de drop"
+      "drop-tables": "Tabelas de drop",
+      "quest-givers": "Dadores de missão"
     },
     "gridCells": {
       "group": "Células do formato",
@@ -1200,7 +1207,8 @@
         "background": "Fundo",
         "wide": "Larga",
         "square": "Quadrada",
-        "icon": "Ícone"
+        "icon": "Ícone",
+        "portrait": "Retrato"
       },
       "slotHelp": {
         "banner": "Imagem larga atrás do cartão da facção na tela de escolha.",
@@ -1208,7 +1216,8 @@
         "background": "Pano de fundo grande para as páginas da facção.",
         "wide": "Faixa larga atrás do lugar nas telas de porto, quadro e relatório.",
         "square": "Imagem quadrada do lugar.",
-        "icon": "Ícone pequeno do lugar."
+        "icon": "Ícone pequeno do lugar.",
+        "portrait": "O rosto do dador no painel, no relatório e no cartão do tutorial."
       },
       "none": "Sem imagem",
       "usingDefault": "Usando o padrão embutido",

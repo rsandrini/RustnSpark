@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { pickLocalized } from '../../i18n/localized';
 import { tuningApi } from './tuning.api';
+import { GiverLinesEditor, type GiverLinePools } from './GiverLinesEditor';
+import { GiverPersonalityEditor, type GiverPersonality } from './GiverPersonalityEditor';
 
 // Admin editors for the JSON-shaped fields that used to be a raw textarea. Each one reads and
 // writes the SAME JSON the server stores and validates (the server stays the authority), keeps
@@ -93,13 +95,19 @@ function FlagsEditor({
   );
 }
 
-const SERVICE_FLAGS: readonly FlagSpec[] = ['buy', 'sell', 'repair', 'refuel', 'upgrade', 'missions', 'passengers'].map(
-  (key) => ({
-    key,
-    labelKey: `tuning.structured.services.${key}`,
-    helpKey: `tuning.structured.services.${key}Help`,
-  }),
-);
+const SERVICE_FLAGS: readonly FlagSpec[] = [
+  'buy',
+  'sell',
+  'repair',
+  'refuel',
+  'upgrade',
+  'missions',
+  'passengers',
+].map((key) => ({
+  key,
+  labelKey: `tuning.structured.services.${key}`,
+  helpKey: `tuning.structured.services.${key}Help`,
+}));
 
 export function ServicesEditor(props: StructuredEditorProps) {
   return withAdvanced(props, <FlagsEditor {...props} flags={SERVICE_FLAGS} testPrefix="service" />);
@@ -530,4 +538,18 @@ export const STRUCTURED_EDITORS: Record<
   'mission-templates.encounterPolicy': EncounterPolicyEditor,
   'drop-tables.tiers': TiersEditor,
   'factions.relations': RelationsEditor,
+  // The two giver json fields open their own bilingual/zone editors (plan §4–§5); the advanced
+  // JSON fallback inside each editor still covers anything the friendly controls cannot say.
+  'quest-givers.lines': (props) => (
+    <GiverLinesEditor
+      value={props.value as GiverLinePools | null | undefined}
+      onChange={(next) => props.onChange(next)}
+    />
+  ),
+  'quest-givers.personality': (props) => (
+    <GiverPersonalityEditor
+      value={props.value as Partial<GiverPersonality> | null | undefined}
+      onChange={(next) => props.onChange(next)}
+    />
+  ),
 };

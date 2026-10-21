@@ -3,7 +3,10 @@ import type * as dto from '../../api/generated';
 
 export interface ConnectorRulesPreview {
   problem: string | null;
-  combos: { sides: Record<'N' | 'E' | 'S' | 'W', 'none' | 'central' | 'split' | 'universal'>; probability: number }[];
+  combos: {
+    sides: Record<'N' | 'E' | 'S' | 'W', 'none' | 'central' | 'split' | 'universal'>;
+    probability: number;
+  }[];
   samples: { cells: dto.ConnectorCell[] }[];
 }
 
@@ -66,14 +69,23 @@ export const tuningApi = {
     });
   },
 
-  async uploadArt(kind: 'factions' | 'locations', id: string, slot: string, file: Blob): Promise<dto.ArtChange> {
+  async uploadArt(
+    kind: 'factions' | 'locations' | 'quest-givers',
+    id: string,
+    slot: string,
+    file: Blob,
+  ): Promise<dto.ArtChange> {
     return client.post<dto.ArtChange>(
       `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
       file,
     );
   },
 
-  async resetArt(kind: 'factions' | 'locations', id: string, slot: string): Promise<dto.ArtChange> {
+  async resetArt(
+    kind: 'factions' | 'locations' | 'quest-givers',
+    id: string,
+    slot: string,
+  ): Promise<dto.ArtChange> {
     return client.delete<dto.ArtChange>(
       `/v1/admin/tuning/${kind}/${encodeURIComponent(id)}/art/${slot}`,
     );

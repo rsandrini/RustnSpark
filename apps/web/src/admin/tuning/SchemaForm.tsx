@@ -246,6 +246,9 @@ interface SchemaFormProps {
   autoSave?: boolean;
   onAutoSave?: (data: Record<string, unknown>, reason: string) => void;
   autoSaveStatus?: 'idle' | 'saving' | 'saved';
+  /** A live preview above the fields (a giver's badge as the pilot will see it): gets the
+      form's CURRENT values, so it updates on every keystroke. */
+  header?: (values: Record<string, unknown>) => React.ReactNode;
 }
 
 function buildPayload(
@@ -323,6 +326,7 @@ export function SchemaForm({
   autoSave = false,
   onAutoSave,
   autoSaveStatus = 'idle',
+  header,
 }: SchemaFormProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
@@ -719,6 +723,7 @@ export function SchemaForm({
           ))}
         </ul>
       )}
+      {header?.(values)}
       {/* A form with a cell-drawing field (ship formats) is laid out as a left column of details and
           the drawing area centered beside it, instead of a left-aligned grid with every detail
           stacked underneath (owner request). Other forms keep the single paired-field grid. */}

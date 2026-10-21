@@ -6,6 +6,7 @@ import { tuningApi } from './tuning.api';
 import { SchemaForm, type FormSection } from './SchemaForm';
 import { cloneOf } from './entity-shared';
 import { ArtEditor } from './ArtEditor';
+import { GiverPreview } from './GiverPreview';
 import { Popup } from '../../ui/Popup';
 import { rowId } from './EntityScreen';
 import { validationIssuesOf } from '../../api/errors';
@@ -41,7 +42,21 @@ const PART_SECTIONS: readonly FormSection[] = [
   },
   { titleKey: 'tuning.sections.special', fields: ['specialProp'] },
 ];
-const SECTIONS: Record<string, readonly FormSection[]> = { parts: PART_SECTIONS };
+
+// A giver: who they are, what they hand out (mission types + zone band + tone), the bilingual
+// line pools, and where they work. The two json fields open the structured editors, not raw
+// JSON, and the preview above the form shows the badge as it will appear in the game.
+const QUEST_GIVER_SECTIONS: readonly FormSection[] = [
+  { titleKey: 'tuning.sections.identity', fields: ['id', 'name', 'title', 'factionId', 'role'] },
+  { titleKey: 'admin.givers.sections.personality', fields: ['personality'] },
+  { titleKey: 'admin.givers.sections.lines', fields: ['lines'] },
+  { titleKey: 'admin.givers.sections.places', fields: ['locationIds', 'weight'] },
+];
+
+const SECTIONS: Record<string, readonly FormSection[]> = {
+  parts: PART_SECTIONS,
+  'quest-givers': QUEST_GIVER_SECTIONS,
+};
 
 // Parts are saved with the Save button, never automatically: the usual job there is to edit a part
 // and Duplicate it as a new (higher rarity) one, and an auto-save would already have changed the
@@ -196,7 +211,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
       </nav>
       <h2>{title}</h2>
-      {(entityName === 'factions' || entityName === 'locations') &&
+      {(entityName === 'factions' || entityName === 'locations' || entityName === 'quest-givers') &&
         mode === 'edit' &&
         id !== undefined && <ArtEditor kind={entityName} id={id} />}
       <SchemaForm
@@ -214,6 +229,9 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         autoSave={mode === 'edit' && !MANUAL_SAVE_ENTITIES.has(entityName)}
         onAutoSave={handleAutoSave}
         autoSaveStatus={autoSaveStatus}
+        header={
+          entityName === 'quest-givers' ? (values) => <GiverPreview values={values} /> : undefined
+        }
       />
       <Popup
         open={duplicating !== null}
