@@ -7,7 +7,7 @@ describe('GiverPersonalityEditor (admin, plan §3)', () => {
   it('shows every mission type translated, with the stored weight', () => {
     renderWithProviders(
       <GiverPersonalityEditor
-        value={{ types: { DELIVERY: 60 }, riskBand: { min: 0, max: 1 }, tone: 'gruff' }}
+        value={{ types: { DELIVERY: 60 }, minZone: 0, maxZone: 1, tone: 'gruff' }}
         onChange={vi.fn()}
       />,
     );
@@ -22,42 +22,46 @@ describe('GiverPersonalityEditor (admin, plan §3)', () => {
     const onChange = vi.fn();
     renderWithProviders(
       <GiverPersonalityEditor
-        value={{ types: { DELIVERY: 60 }, riskBand: { min: 0, max: 1 }, tone: 'gruff' }}
+        value={{ types: { DELIVERY: 60 }, minZone: 0, maxZone: 1, tone: 'gruff' }}
         onChange={onChange}
       />,
     );
     fireEvent.change(screen.getByTestId('giver-weight-RESCUE'), { target: { value: '10' } });
     expect(onChange).toHaveBeenCalledWith({
       types: { DELIVERY: 60, RESCUE: 10 },
-      riskBand: { min: 0, max: 1 },
+      minZone: 0,
+      maxZone: 1,
       tone: 'gruff',
     });
   });
 
-  it('writes the risk band and the tone', () => {
+  it('writes the zone band and the tone in the server shape', () => {
     const onChange = vi.fn();
     renderWithProviders(
       <GiverPersonalityEditor
-        value={{ types: {}, riskBand: { min: 0, max: 1 }, tone: 'friendly' }}
+        value={{ types: {}, minZone: 0, maxZone: 1, tone: 'friendly' }}
         onChange={onChange}
       />,
     );
-    fireEvent.change(screen.getByTestId('giver-risk-min'), { target: { value: '2' } });
+    fireEvent.change(screen.getByTestId('giver-min-zone'), { target: { value: '2' } });
     expect(onChange).toHaveBeenLastCalledWith({
       types: {},
-      riskBand: { min: 2, max: 1 },
+      minZone: 2,
+      maxZone: 1,
       tone: 'friendly',
     });
-    fireEvent.change(screen.getByTestId('giver-risk-max'), { target: { value: '3' } });
+    fireEvent.change(screen.getByTestId('giver-max-zone'), { target: { value: '3' } });
     expect(onChange).toHaveBeenLastCalledWith({
       types: {},
-      riskBand: { min: 0, max: 3 },
+      minZone: 0,
+      maxZone: 3,
       tone: 'friendly',
     });
     fireEvent.change(screen.getByTestId('giver-tone'), { target: { value: 'formal' } });
     expect(onChange).toHaveBeenLastCalledWith({
       types: {},
-      riskBand: { min: 0, max: 1 },
+      minZone: 0,
+      maxZone: 1,
       tone: 'formal',
     });
   });
@@ -65,7 +69,7 @@ describe('GiverPersonalityEditor (admin, plan §3)', () => {
   it('keeps an unknown owner-typed tone visible in the select instead of blank', () => {
     renderWithProviders(
       <GiverPersonalityEditor
-        value={{ types: {}, riskBand: { min: 0, max: 1 }, tone: 'smuggler' }}
+        value={{ types: {}, minZone: 0, maxZone: 1, tone: 'smuggler' }}
         onChange={vi.fn()}
       />,
     );

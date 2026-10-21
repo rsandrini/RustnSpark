@@ -107,3 +107,28 @@
   font-style: italic;
   overflow-wrap: anywhere;
 }
+
+/* Where the screens mount the pieces (wired in phase 2 of the plan). */
+.mcard-giver {
+  margin: 8px 0;
+}
+
+.mission-giver {
+  margin-bottom: 8px;
+}
+
+.debrief-giver {
+  margin-top: 6px;
+}
+
+.debrief-voice {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-style: italic;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.tutorial-mentor {
+  padding: 0 14px 4px;
+}

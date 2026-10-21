@@ -18,9 +18,10 @@ export interface GiverLinesEditorProps {
   onChange: (next: GiverLinePools) => void;
 }
 
-/** Every pool the server may read (plan §4 + §9); a missing key is fine (template fallback). */
+/** Every pool the server may read (seed-data/quest-givers.ts + givers.service.ts); a missing key
+    is fine (template fallback). Mission types keep their UPPERCASE ids, as the API writes them. */
 export const GIVER_POOL_KEYS: readonly string[] = [
-  ...MissionTypeSchema.options.map((type) => `offer.${type.toLowerCase()}`),
+  ...MissionTypeSchema.options.map((type) => `offer.${type}`),
   'accepted',
   'report.success',
   'report.partial',

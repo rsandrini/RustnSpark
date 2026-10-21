@@ -20,19 +20,19 @@ describe('GiverLinesEditor (admin, plan §4/§5)', () => {
     renderWithProviders(
       <GiverLinesEditor
         value={{
-          'offer.delivery': [{ en: 'Cargo needs a pilot.', 'pt-BR': 'A carga precisa de piloto.' }],
+          'offer.DELIVERY': [{ en: 'Cargo needs a pilot.', 'pt-BR': 'A carga precisa de piloto.' }],
           house_rules: [{ en: 'Keep me.', 'pt-BR': 'Me mantenha.' }],
         }}
         onChange={onChange}
       />,
     );
-    const en = screen.getByTestId('giver-line-offer.delivery-0-en');
-    const pt = screen.getByTestId('giver-line-offer.delivery-0-pt');
+    const en = screen.getByTestId('giver-line-offer.DELIVERY-0-en');
+    const pt = screen.getByTestId('giver-line-offer.DELIVERY-0-pt');
     expect(en).toHaveValue('Cargo needs a pilot.');
     expect(pt).toHaveValue('A carga precisa de piloto.');
     fireEvent.change(en, { target: { value: 'Fresh cargo waiting.' } });
     expect(onChange).toHaveBeenCalledWith({
-      'offer.delivery': [{ en: 'Fresh cargo waiting.', 'pt-BR': 'A carga precisa de piloto.' }],
+      'offer.DELIVERY': [{ en: 'Fresh cargo waiting.', 'pt-BR': 'A carga precisa de piloto.' }],
       house_rules: [{ en: 'Keep me.', 'pt-BR': 'Me mantenha.' }],
     });
   });

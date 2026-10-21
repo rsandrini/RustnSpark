@@ -3,6 +3,7 @@ import type {
   EnginePreview,
   ActiveMission,
   FactionsResponse,
+  GiverRef,
   LandingResponse,
   BuyResponse,
   DispatchResponse,
@@ -14,6 +15,7 @@ import type {
   MarketResponse,
   MaterialHolding,
   MaterialsResponse,
+  Mentor,
   MissionOffer,
   Placement,
   BridgeResizeQuoteResponse,
@@ -625,6 +627,8 @@ export const handlers = [
     return ok<UpdateTutorialResponse>({ tutorialDone: body.done });
   }),
 
+  http.get('/v1/players/me/mentor', () => ok<Mentor | null>(mentorState)),
+
   http.post('/v1/players/me/onboarding', () =>
     ok<ShipResponse>({
       id: 'ship-1',
@@ -715,6 +719,17 @@ export const handlers = [
           color: '#4a90d9',
           playable: true,
           art: null,
+          // The leader who welcomes a pilot on the faction-choice screen (plan §9).
+          mentor: {
+            name: 'Rhea Solano',
+            title: { en: 'Port Console', 'pt-BR': 'Console Portuário' },
+            portraitUrl: null,
+            welcome: {
+              en: 'Luna keeps the lanes honest. Fly for the Authority and the paperwork works for you.',
+              'pt-BR':
+                'Luna mantém as rotas honestas. Voe pela Autoridade e a papelada trabalha por você.',
+            },
+          },
         },
         {
           id: 'pirates',
@@ -1411,6 +1426,58 @@ const reportLine = (text: string) => ({
   segments: [{ t: 'text' as const, value: text }],
 });
 
+/** A luna dispatcher as the API sends her (contract GiverRef) — the board mocks' giver. */
+export const inesGiver: GiverRef = {
+  id: 'ines_moura',
+  name: 'Ines Moura',
+  title: { en: 'Dispatcher', 'pt-BR': 'Despachante' },
+  role: 'GIVER',
+  factionId: 'luna',
+  portraitUrl: null,
+};
+
+/** A mentor with the checklist lines, for the Getting started card and the first flight. */
+export const mentorFixture = (): Mentor => ({
+  giver: {
+    ...inesGiver,
+    id: 'rhea_solano',
+    name: 'Rhea Solano',
+    role: 'MENTOR',
+    title: { en: 'Port Console', 'pt-BR': 'Console Portuário' },
+  },
+  welcome: { en: 'Welcome aboard, pilot.', 'pt-BR': 'Bem-vindo a bordo, piloto.' },
+  finished: {
+    en: 'That was everything. The board is yours.',
+    'pt-BR': 'Isso era tudo. O painel é seu.',
+  },
+  steps: {
+    build: {
+      nudge: { en: 'Start on My Ship.', 'pt-BR': 'Comece na Minha Nave.' },
+      done: { en: 'Ship assembled.', 'pt-BR': 'Nave montada.' },
+    },
+    ports: { nudge: null, done: null },
+    refuel: {
+      nudge: { en: 'Fill the tank first, pilot.', 'pt-BR': 'Encha o tanque primeiro, piloto.' },
+      done: null,
+    },
+    mission: { nudge: null, done: null },
+    dispatch: { nudge: null, done: null },
+    report: { nudge: null, done: null },
+    repair: { nudge: null, done: null },
+    work: { nudge: null, done: null },
+  },
+  firstFailure: { en: 'Everyone drifts once.', 'pt-BR': 'Todos já vacilaram uma vez.' },
+  lowFuel: { en: 'The tank is dry.', 'pt-BR': 'O tanque está seco.' },
+});
+
+// Null (the default profile has no faction yet) until a test sets one.
+let mentorState: Mentor | null = null;
+
+/** The mentor the app sees (per-test; reset alongside the other state). */
+export function setMentor(mentor: Mentor | null): void {
+  mentorState = mentor;
+}
+
 const reportExtras = {
   stats: {
     credits: 1400,
@@ -1443,6 +1510,11 @@ const reportExtras = {
     destinationId: 'hedus',
     reward: 1200,
     title: { en: 'Corporate Delivery', 'pt-BR': 'Entrega Corporativa' },
+    giver: inesGiver,
+    giverLine: {
+      en: 'Good flying. Come back when the tank is full.',
+      'pt-BR': 'Bons voos. Volte quando o tanque estiver cheio.',
+    },
   },
 };
 
@@ -1559,6 +1631,7 @@ const acceptedMission = (): ActiveMission => ({
   seed: 'seed-1',
   version: 1,
   legWindows: [],
+  giver: inesGiver,
   brief: {
     title: { en: 'Ceres run', 'pt-BR': 'Rota de Ceres' },
     description: {
@@ -1619,7 +1692,19 @@ const boardOffer = (
 });
 
 const boardState: MissionOffer[] = [
-  boardOffer({ id: 'b-1' }, { cargo: { mode: 'open', need: 3, unitPay: 20 } }),
+  // b-1 carries the giver (the first offer a newcomer sees on a real board); the others stay
+  // giver-less, like offers made before the feature existed — the web must handle both.
+  boardOffer(
+    { id: 'b-1' },
+    {
+      cargo: { mode: 'open', need: 3, unitPay: 20 },
+      giver: inesGiver,
+      description: {
+        en: 'Quick hop with sealed cargo — I need a pilot who reads the fine print.',
+        'pt-BR': 'Pulo rápido com carga lacrada — preciso de um piloto que leia a letra miúda.',
+      },
+    },
+  ),
   boardOffer({
     id: 'b-2',
     type: 'TRANSPORT',

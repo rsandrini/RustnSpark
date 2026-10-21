@@ -1,3 +1,5 @@
+import type { GiverRef } from '../api/generated';
+import { pickLocalized } from '../i18n/localized';
 import { useFactions } from './factions';
 
 // A quest giver's face on the board card, the board row, the report and the tutorial header
@@ -18,6 +20,16 @@ export interface GiverBadgeProps {
   size?: GiverBadgeSize;
 }
 
+/** Props for the badge from a server giver ref, with the bilingual title already picked. */
+export function giverBadgeOf(giver: GiverRef, language: string): GiverBadgeProps {
+  return {
+    name: giver.name,
+    title: pickLocalized(giver.title, language),
+    portraitUrl: giver.portraitUrl,
+    factionId: giver.factionId,
+  };
+}
+
 // Faction ids are server data; the colour mapping mirrors the prototypes' palette
 // (same map as FactionBadge — the tokens are --luna, --sun, --explorers, --pirata).
 const FACTION_CLASS: Record<string, string> = {
@@ -27,13 +39,7 @@ const FACTION_CLASS: Record<string, string> = {
   pirates: 'pirata',
 };
 
-export function GiverBadge({
-  name,
-  title,
-  portraitUrl,
-  factionId,
-  size = 'row',
-}: GiverBadgeProps) {
+export function GiverBadge({ name, title, portraitUrl, factionId, size = 'row' }: GiverBadgeProps) {
   const faction = useFactions().byId[factionId];
   const factionClass = FACTION_CLASS[factionId] ?? 'neutro';
   const logo = faction?.art?.logo ?? null;

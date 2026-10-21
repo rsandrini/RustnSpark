@@ -843,14 +843,14 @@
       "linePt": "Portuguese",
       "emptyPool": "No lines yet — the template description is used.",
       "pools": {
-        "offer_delivery": "Offer: delivery",
-        "offer_transport": "Offer: transport",
-        "offer_escort": "Offer: escort",
-        "offer_mining": "Offer: mining",
-        "offer_rescue": "Offer: rescue",
-        "offer_travel": "Offer: travel",
-        "offer_scavenge": "Offer: scavenge",
-        "offer_race": "Offer: race",
+        "offer_DELIVERY": "Offer: delivery",
+        "offer_TRANSPORT": "Offer: transport",
+        "offer_ESCORT": "Offer: escort",
+        "offer_MINING": "Offer: mining",
+        "offer_RESCUE": "Offer: rescue",
+        "offer_TRAVEL": "Offer: travel",
+        "offer_SCAVENGE": "Offer: scavenge",
+        "offer_RACE": "Offer: race",
         "accepted": "Accepted",
         "report_success": "Report: success",
         "report_partial": "Report: partial",
@@ -1236,6 +1236,9 @@
     "explorers": "Explorers",
     "pirates": "Pirates",
     "independent": "Independent"
+  },
+  "givers": {
+    "offeredBy": "Offered by {{name}}"
   },
   "ui": {
     "dismiss": "Dismiss",

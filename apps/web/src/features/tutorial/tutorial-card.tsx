@@ -3,7 +3,11 @@ import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../auth/auth.api';
 import { useAuthContext } from '../auth/auth.context';
+import { pickLocalized } from '../../i18n/localized';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
+import { SpeechBubble } from '../../ui/SpeechBubble';
 import { useIsPhone } from '../../ui/useIsPhone';
+import { useMentor } from './use-mentor';
 import { useTutorialSteps } from './use-tutorial';
 
 const COLLAPSED_KEY = 'rs.tutorial.collapsed';
@@ -23,7 +27,7 @@ function storedCollapsed(): boolean | null {
  * final Close both save `tutorialDone = true`, and the account menu's "Getting started" saves false.
  */
 export function TutorialCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
   const phone = useIsPhone();
   const { pathname } = useLocation();
@@ -39,6 +43,9 @@ export function TutorialCard() {
   const [saving, setSaving] = useState(false);
   const visible = user?.tutorialDone === false;
   const steps = useTutorialSteps(user?.id, visible);
+  // The faction mentor (plan §9): a face on the card and a line per moment. Null (no faction
+  // yet, or none set up) leaves the checklist exactly as it was.
+  const mentor = useMentor(visible);
   if (!visible) return null;
 
   const onShip = pathname === '/ship';
@@ -81,6 +88,17 @@ export function TutorialCard() {
   }
 
   const nextId = steps.find((step) => !step.done)?.id;
+  // What the mentor says right now (plan §9): the farewell once everything is done, else the
+  // nudge for the next step. A missing line keeps today's plain card (no bubble).
+  const mentorLine = (() => {
+    if (mentor === null) return null;
+    const text = allDone
+      ? mentor.finished
+      : nextId === undefined
+        ? null
+        : (mentor.steps[nextId]?.nudge ?? null);
+    return text === null ? null : pickLocalized(text, i18n.language);
+  })();
   return (
     <aside className="tutorial-card" data-testid="tutorial-card" aria-label={t('tutorial.title')}>
       <header className="tutorial-head">
@@ -92,6 +110,14 @@ export function TutorialCard() {
           {t('tutorial.collapse')}
         </button>
       </header>
+      {/* The mentor's face and line over the checklist (plan §9); step titles and (i) details
+          stay plain, so the instructions are never only flavour. */}
+      {mentor !== null && (
+        <div className="tutorial-mentor" data-testid="tutorial-mentor">
+          <GiverBadge {...giverBadgeOf(mentor.giver, i18n.language)} size="tutorial" />
+          {mentorLine !== null && <SpeechBubble text={mentorLine} />}
+        </div>
+      )}
       <ol className="tutorial-steps">
         {steps.map((step) => (
           <li

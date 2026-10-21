@@ -24,6 +24,7 @@ import { scaleSpeed, useDisplay } from '../../ui/display';
 import { useAuthContext } from '../auth/auth.context';
 import { useTutorialVisit } from '../tutorial/tutorial-store';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
 import { Popup } from '../../ui/Popup';
 
@@ -517,6 +518,18 @@ function Debrief({ outcome, stats, mission, world, onRef }: DebriefProps) {
               ].join(' · ')}
               {destination !== undefined && <FactionBadge factionId={destination.factionId} />}
             </div>
+          )}
+          {/* The giver's face and their closing line for this result (plan §1): who sent the
+              pilot, and what they say now the mission ended. */}
+          {mission !== undefined && mission.giver != null && (
+            <div className="debrief-giver" data-testid="debrief-giver">
+              <GiverBadge {...giverBadgeOf(mission.giver, i18n.language)} />
+            </div>
+          )}
+          {mission?.giverLine != null && (
+            <p className="debrief-voice" data-testid="debrief-giver-line">
+              {pickLocalized(mission.giverLine, i18n.language)}
+            </p>
           )}
         </div>
         <div className="debrief-credits">

@@ -5,6 +5,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { formatDuration } from '../../ui/duration';
 import { Countdown } from '../../ui/Countdown';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { useNow } from '../../ui/useNow';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
@@ -84,6 +85,8 @@ export function MissionRow({
             </span>
           </p>
           <p className="mrow-badges">
+            {/* The face on the row (48 px, plan §1); none for offers from before givers. */}
+            {info.giver != null && <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} />}
             {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
             {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
               <span className="mrow-expires">

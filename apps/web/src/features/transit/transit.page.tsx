@@ -17,6 +17,7 @@ import { journeyNodeIds } from './journey';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { useNow } from '../../ui/useNow';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { legRouteIds, summarizeLegs } from '../missions/mission-facts';
 import { ActiveShipStage } from '../ship/active-ship-stage';
@@ -377,6 +378,13 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                     </button>
                   )}
                 </p>
+              )}
+              {/* The person who sent the pilot (plan §1); the card path shows the same badge
+                  through MissionCard. */}
+              {mission.giver != null && (
+                <div className="mission-giver" data-testid="mission-giver">
+                  <GiverBadge {...giverBadgeOf(mission.giver, i18n.language)} size="card" />
+                </div>
               )}
               <div className="briefing" data-testid="briefing">
                 <div className="fact fact-route">

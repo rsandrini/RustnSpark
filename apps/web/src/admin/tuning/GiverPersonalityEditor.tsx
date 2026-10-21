@@ -2,12 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { MissionTypeSchema } from '@rustandspark/contract';
 
 // Admin editor for a giver's personality (plan §3): which mission types they hand out and how
-// often, the zone band they stay inside, and the tone tag that picks their lines. It is data,
-// not code — the server intersects these weights with what the place can serve, so a giver with
-// weight 0 never offers that type. rewardBias is out of v1 (plan open point 5).
+// often, the zone band they stay inside, and the tone tag that picks their lines. The shape is
+// the server's own ({types, minZone, maxZone, tone} — entity-schemas.ts and giver.picker.ts), so
+// what is written here is exactly what the picker reads. A weight of 0 means "never offers that
+// type". rewardBias is out of v1 (plan open point 5).
 export interface GiverPersonality {
   types: Record<string, number>;
-  riskBand: { min: number; max: number };
+  minZone: number;
+  maxZone: number;
   tone: string;
 }
 
@@ -21,11 +23,12 @@ const TONES = ['formal', 'gruff', 'friendly', 'nervous'] as const;
 export function GiverPersonalityEditor({ value, onChange }: GiverPersonalityEditorProps) {
   const { t } = useTranslation();
   const types = value?.types ?? {};
-  const band = value?.riskBand ?? { min: 0, max: 1 };
+  const minZone = value?.minZone ?? 0;
+  const maxZone = value?.maxZone ?? 1;
   const tone = value?.tone ?? 'friendly';
 
   const emit = (patch: Partial<GiverPersonality>): void =>
-    onChange({ types, riskBand: band, tone, ...patch });
+    onChange({ types, minZone, maxZone, tone, ...patch });
 
   return (
     <div className="giver-personality-editor" role="group">
@@ -65,9 +68,9 @@ export function GiverPersonalityEditor({ value, onChange }: GiverPersonalityEdit
             type="number"
             min={0}
             max={9}
-            data-testid="giver-risk-min"
-            value={band.min}
-            onChange={(event) => emit({ riskBand: { ...band, min: Number(event.target.value) } })}
+            data-testid="giver-min-zone"
+            value={minZone}
+            onChange={(event) => emit({ minZone: Number(event.target.value) })}
           />
         </label>
         <label>
@@ -76,9 +79,9 @@ export function GiverPersonalityEditor({ value, onChange }: GiverPersonalityEdit
             type="number"
             min={0}
             max={9}
-            data-testid="giver-risk-max"
-            value={band.max}
-            onChange={(event) => emit({ riskBand: { ...band, max: Number(event.target.value) } })}
+            data-testid="giver-max-zone"
+            value={maxZone}
+            onChange={(event) => emit({ maxZone: Number(event.target.value) })}
           />
         </label>
       </div>

@@ -843,14 +843,14 @@
       "linePt": "Português",
       "emptyPool": "Nenhuma linha ainda — a descrição do modelo é usada.",
       "pools": {
-        "offer_delivery": "Oferta: entrega",
-        "offer_transport": "Oferta: transporte",
-        "offer_escort": "Oferta: escolta",
-        "offer_mining": "Oferta: mineração",
-        "offer_rescue": "Oferta: resgate",
-        "offer_travel": "Oferta: viagem",
-        "offer_scavenge": "Oferta: saque",
-        "offer_race": "Oferta: corrida",
+        "offer_DELIVERY": "Oferta: entrega",
+        "offer_TRANSPORT": "Oferta: transporte",
+        "offer_ESCORT": "Oferta: escolta",
+        "offer_MINING": "Oferta: mineração",
+        "offer_RESCUE": "Oferta: resgate",
+        "offer_TRAVEL": "Oferta: viagem",
+        "offer_SCAVENGE": "Oferta: saque",
+        "offer_RACE": "Oferta: corrida",
         "accepted": "Aceite",
         "report_success": "Relatório: sucesso",
         "report_partial": "Relatório: parcial",
@@ -1236,6 +1236,9 @@
     "explorers": "Exploradores",
     "pirates": "Piratas",
     "independent": "Independente"
+  },
+  "givers": {
+    "offeredBy": "Oferecido por {{name}}"
   },
   "ui": {
     "dismiss": "Dispensar",

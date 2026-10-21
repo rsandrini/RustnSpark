@@ -3,8 +3,10 @@ import { Navigate, useNavigate } from 'react-router';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
+import { pickLocalized } from '../../i18n/localized';
 import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
 import { factionBlurb, factionName, useFactions } from '../../ui/factions';
+import { GiverBadge } from '../../ui/GiverBadge';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
@@ -77,29 +79,47 @@ export function OnboardingPage() {
 
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
         <legend className="sr-only">{t('onboarding.title')}</legend>
-        {playable.map((faction) => (
-          <label
-            key={faction}
-            className={`faction-card f-${faction}${selected === faction ? ' on' : ''}`}
-            style={factionCardStyle(faction, factionArt)}
-          >
-            <input
-              type="radio"
-              name="faction"
-              value={faction}
-              checked={selected === faction}
-              onChange={() => setSelected(faction)}
-            />
-            <span className={`fac ${faction}`}>
-              {factionName(byId[faction], i18n.language) ??
-                t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}
-            </span>
-            <span className="desc">
-              {factionBlurb(byId[faction], i18n.language) ??
-                t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}
-            </span>
-          </label>
-        ))}
+        {playable.map((faction) => {
+          // The leader's welcome (plan §9) replaces the flat description while their card is
+          // selected; no mentor (or no welcome line) keeps today's blurb.
+          const mentor = byId[faction]?.mentor ?? null;
+          const welcome =
+            selected === faction && mentor?.welcome != null
+              ? pickLocalized(mentor.welcome, i18n.language)
+              : null;
+          return (
+            <label
+              key={faction}
+              className={`faction-card f-${faction}${selected === faction ? ' on' : ''}`}
+              style={factionCardStyle(faction, factionArt)}
+            >
+              <input
+                type="radio"
+                name="faction"
+                value={faction}
+                checked={selected === faction}
+                onChange={() => setSelected(faction)}
+              />
+              <span className={`fac ${faction}`}>
+                {factionName(byId[faction], i18n.language) ??
+                  t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}
+              </span>
+              {welcome !== null && mentor !== null && (
+                <GiverBadge
+                  name={mentor.name}
+                  title={pickLocalized(mentor.title, i18n.language)}
+                  portraitUrl={mentor.portraitUrl}
+                  factionId={faction}
+                />
+              )}
+              <span className="desc">
+                {welcome ??
+                  factionBlurb(byId[faction], i18n.language) ??
+                  t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}
+              </span>
+            </label>
+          );
+        })}
       </fieldset>
 
       {errorMessage !== null && <p className="error-text">{errorMessage}</p>}

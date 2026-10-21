@@ -10,6 +10,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
 import { FactionBadge } from '../../ui/FactionBadge';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
 import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
@@ -137,6 +138,20 @@ export function MissionCard({
           {destination !== undefined && <RiskBadge band={destination.risk} />}
         </div>
 
+        {/* Who is sending the pilot (plan §1): the face on the card; offers made before givers
+          existed simply show none. */}
+        {info.giver != null && (
+          <div
+            className="mcard-giver"
+            data-testid="mcard-giver"
+            aria-label={t('givers.offeredBy', { name: info.giver.name })}
+          >
+            <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} size="card" />
+          </div>
+        )}
+
+        {/* The giver's brief in their own voice when they have one, else the template text —
+          the server substitutes before the web ever sees it. */}
         <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
 
         {!hideMap && (
