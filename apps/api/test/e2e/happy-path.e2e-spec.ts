@@ -193,6 +193,30 @@ describe('happy path over the API (S9.4)', () => {
     expect(sheet.min).toBeGreaterThanOrEqual(1); // MINER requirement for accept
     expect(sheet.fuelCap).toBeGreaterThan(0);
 
+    // A pilot with nothing completed sees only their own test flight; this run wants the public board, so the
+    // pilot has already finished the newcomer threshold's worth of missions.
+    const { starter_guarantee_max_completed: veteranAfter } =
+      configService.snapshot().rules.missions;
+    const doneTemplate = await prisma.missionTemplate.findFirstOrThrow({ orderBy: { id: 'asc' } });
+    for (let done = 0; done < veteranAfter; done += 1) {
+      await prisma.missionInstance.create({
+        data: {
+          templateId: doneTemplate.id,
+          type: doneTemplate.type,
+          factionId: doneTemplate.factionId,
+          originId: 'cair',
+          destinationId: 'ceres',
+          legs: [],
+          cargo: {},
+          reward: 1,
+          expiresAt: new Date(0),
+          seed: `veteran-${randomUUID()}`,
+          status: 'DONE',
+          playerId,
+        },
+      });
+    }
+
     // --- board: a MINING offer at cair ------------------------------------
     // With 20 live offers the first read almost surely already contains a MINING
     // one; if the pick sequence did not, expiring the board and reading again

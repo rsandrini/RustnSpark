@@ -47,13 +47,17 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'GET /v1/locations/:id/scavenge': 'world odds plus the caller’s own attempt counter only',
   'GET /v1/locations/:id/mine/info': 'world data; whether the location can be mined at all',
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
-  'POST /v1/locations/:id/mine': 'service checks the caller’s ship is at the location and has no active mission',
+  'POST /v1/locations/:id/mine':
+    'service checks the caller’s ship is at the location and has no active mission',
   'POST /v1/parts/:id/upgrade': 'service checks the part instance belongs to the caller',
-  'POST /v1/parts/:id/upgrade/quote': 'service checks the part instance belongs to the caller (read-shaped)',
+  'POST /v1/parts/:id/upgrade/quote':
+    'service checks the part instance belongs to the caller (read-shaped)',
   'POST /v1/parts/:id/expand': 'service checks the part instance belongs to the caller',
-  'POST /v1/parts/:id/expand/quote': 'service checks the part instance belongs to the caller (read-shaped)',
+  'POST /v1/parts/:id/expand/quote':
+    'service checks the part instance belongs to the caller (read-shaped)',
   'POST /v1/parts/:id/shrink': 'service checks the part instance belongs to the caller',
-  'POST /v1/parts/:id/shrink/quote': 'service checks the part instance belongs to the caller (read-shaped)',
+  'POST /v1/parts/:id/shrink/quote':
+    'service checks the part instance belongs to the caller (read-shaped)',
   'POST /v1/missions/:id/accept': 'service checks holder/private owner against the caller',
   'POST /v1/missions/:id/abandon':
     'service only lets the accepting player back out (404 otherwise)',
@@ -80,8 +84,10 @@ const BODYLESS_MUTATIONS = new Set([
   'POST /v1/admin/system/notices/:id/dismiss',
   'POST /v1/admin/tuning/factions/:id/art/:slot',
   'POST /v1/admin/tuning/locations/:id/art/:slot',
+  'POST /v1/admin/tuning/quest-givers/:id/art/:slot',
   'DELETE /v1/admin/tuning/factions/:id/art/:slot',
   'DELETE /v1/admin/tuning/locations/:id/art/:slot',
+  'DELETE /v1/admin/tuning/quest-givers/:id/art/:slot',
 ]);
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
