@@ -27,6 +27,8 @@ export interface EntitySchemaField {
   references?: string;
   /** The literal stored for "no row" (e.g. 'none' for no mitigating part): the select offers it first. */
   referenceNone?: string;
+  /** An id-list may be saved empty (a giver who works anywhere in their faction). */
+  allowEmpty?: boolean;
 }
 
 export interface EntitySchema {
@@ -68,7 +70,9 @@ function buildBaseValidator(field: EntitySchemaField): z.ZodType<unknown> {
     case 'boolean':
       return z.boolean();
     case 'id-list':
-      return z.array(z.string().min(1)).min(1);
+      return field.allowEmpty === true
+        ? z.array(z.string().min(1))
+        : z.array(z.string().min(1)).min(1);
     case 'json':
       return z.record(z.string(), z.unknown());
     case 'enum':
@@ -793,6 +797,96 @@ const SHIP_FORMAT_FIELDS: EntitySchemaField[] = [
   },
 ];
 
+const QUEST_GIVER_FIELDS: EntitySchemaField[] = [
+  {
+    name: 'id',
+    type: 'string',
+    required: true,
+    description: localeMap(
+      'Unique giver id (lowercase, digits, underscore)',
+      'ID único (minúsculas, dígitos, sublinhado)',
+    ),
+  },
+  {
+    name: 'factionId',
+    type: 'string',
+    required: true,
+    references: 'factions',
+    description: localeMap('Faction they belong to', 'Facção a que pertencem'),
+  },
+  {
+    name: 'role',
+    type: 'enum',
+    required: true,
+    enumValues: ['GIVER', 'MENTOR'],
+    description: localeMap(
+      'GIVER hands out missions; MENTOR is the faction guide (onboarding and the first flight). One active mentor per faction.',
+      'GIVER oferece missões; MENTOR é o guia da facção (tutorial e primeiro voo). Um mentor ativo por facção.',
+    ),
+  },
+  {
+    name: 'active',
+    type: 'boolean',
+    required: false,
+    description: localeMap('Active (offers missions / guides)', 'Ativo (oferece missões / guia)'),
+  },
+  {
+    name: 'name',
+    type: 'string',
+    required: true,
+    description: localeMap('Name (not translated)', 'Nome (não traduzido)'),
+  },
+  {
+    name: 'title',
+    type: 'locale-map',
+    required: true,
+    description: localeMap(
+      'Title by locale (Dockmaster...)',
+      'Título por idioma (Mestra de Docas...)',
+    ),
+  },
+  {
+    name: 'personality',
+    type: 'json',
+    required: true,
+    description: localeMap(
+      'What they offer: {types: {DELIVERY: weight, ...}, minZone, maxZone, tone}',
+      'O que oferecem: {types: {DELIVERY: peso, ...}, minZone, maxZone, tone}',
+    ),
+  },
+  {
+    name: 'lines',
+    type: 'json',
+    required: true,
+    description: localeMap(
+      'Line pools by key (offer.<TYPE>, report.success|partial|failure, first_flight, tutorial.*): lists of {en, pt-BR}',
+      'Conjuntos de falas por chave (offer.<TIPO>, report.success|partial|failure, first_flight, tutorial.*): listas de {en, pt-BR}',
+    ),
+  },
+  {
+    name: 'locationIds',
+    type: 'id-list',
+    required: false,
+    allowEmpty: true,
+    references: 'locations',
+    description: localeMap(
+      'Places where they work; empty = anywhere in their faction',
+      'Locais onde trabalham; vazio = qualquer lugar da facção',
+    ),
+  },
+  {
+    name: 'weight',
+    type: 'integer',
+    required: false,
+    min: 1,
+    max: 1000,
+    description: localeMap(
+      'How often they are picked (relative)',
+      'Frequência com que são escolhidos (relativa)',
+    ),
+  },
+];
+
 const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   parts: { entity: 'parts', model: 'partCatalog', fields: PART_FIELDS },
   materials: { entity: 'materials', model: 'material', fields: MATERIAL_FIELDS },
@@ -807,6 +901,7 @@ const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   },
   'drop-tables': { entity: 'drop-tables', model: 'dropTable', fields: DROP_TABLE_FIELDS },
   'ship-formats': { entity: 'ship-formats', model: 'shipFormat', fields: SHIP_FORMAT_FIELDS },
+  'quest-givers': { entity: 'quest-givers', model: 'questGiver', fields: QUEST_GIVER_FIELDS },
 };
 
 export function getEntityNames(): string[] {

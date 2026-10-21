@@ -45,6 +45,17 @@ export class ArtAdminController {
     return this.upload('locations', id, slot, request, user);
   }
 
+  @Post('quest-givers/:id/art/:slot')
+  @HttpCode(200)
+  uploadGiver(
+    @Param('id') id: string,
+    @Param('slot') slot: string,
+    @Req() request: Request,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<{ slot: string; url: string }> {
+    return this.upload('quest-givers', id, slot, request, user);
+  }
+
   @Delete('factions/:id/art/:slot')
   resetFaction(
     @Param('id') id: string,
@@ -61,6 +72,15 @@ export class ArtAdminController {
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<{ slot: string; url: null }> {
     return this.art.reset('locations', id, slot, user.accountId);
+  }
+
+  @Delete('quest-givers/:id/art/:slot')
+  resetGiver(
+    @Param('id') id: string,
+    @Param('slot') slot: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<{ slot: string; url: null }> {
+    return this.art.reset('quest-givers', id, slot, user.accountId);
   }
 
   private upload(

@@ -10,6 +10,14 @@ import { parseConnectorRules, validateConnectorRules } from '../../parts/connect
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 
+const VALID_MISSION_TYPES = [
+  'DELIVERY',
+  'TRANSPORT',
+  'ESCORT',
+  'MINING',
+  'RESCUE',
+  'RACE',
+] as const;
 const ENTITY_CHANGE_CHANNEL = 'entity:changed';
 
 interface PrismaDelegate {
@@ -30,6 +38,7 @@ const ENTITY_MODEL_DELEGATE: Record<string, string> = {
   'mission-templates': 'missionTemplate',
   'drop-tables': 'dropTable',
   'ship-formats': 'shipFormat',
+  'quest-givers': 'questGiver',
 };
 
 const ID_FIELD: Record<string, string> = {
@@ -464,6 +473,9 @@ export class EntityTuningService {
     if (entity === 'mission-templates' && data.factionId !== undefined) {
       await this.validateFactionExists(data.factionId as string);
     }
+    if (entity === 'quest-givers') {
+      await this.validateQuestGiver(data, mode, existingId);
+    }
     if (entity === 'parts' && data.connectorRules !== undefined && data.connectorRules !== null) {
       await this.validateConnectorRules(data, existingId);
     }
@@ -494,6 +506,102 @@ export class EntityTuningService {
         { key: 'connectorRules', message: problem },
       ]);
     }
+  }
+
+  // A giver is Admin-edited data the generator trusts: the personality and the line pools must be well-formed, and
+  // a faction keeps exactly one active mentor (the database refuses a second; this says why, and also refuses
+  // leaving a faction with none).
+  private async validateQuestGiver(
+    data: Record<string, unknown>,
+    mode: 'create' | 'update',
+    existingId?: string,
+  ): Promise<void> {
+    const fail = (key: string, message: string): never => {
+      throw new GameConfigValidationError(`quest-givers: ${message}`, [{ key, message }]);
+    };
+    if (data.id !== undefined && !/^[a-z0-9_]+$/.test(data.id as string)) {
+      fail('id', 'id may only use lowercase letters, digits and underscores');
+    }
+    if (data.factionId !== undefined) await this.validateFactionExists(data.factionId as string);
+
+    if (data.personality !== undefined) {
+      const personality = data.personality as Record<string, unknown>;
+      const types = personality.types;
+      if (typeof types !== 'object' || types === null || Array.isArray(types)) {
+        fail('personality.types', 'types must be an object of mission type to weight');
+      }
+      let offered = 0;
+      for (const [type, weight] of Object.entries(types as Record<string, unknown>)) {
+        if (!(VALID_MISSION_TYPES as readonly string[]).includes(type)) {
+          fail(`personality.types.${type}`, `unknown mission type ${type}`);
+        }
+        if (typeof weight !== 'number' || !(weight >= 0) || weight > 1000) {
+          fail(`personality.types.${type}`, 'a weight is a number from 0 to 1000');
+        }
+        if ((weight as number) > 0) offered += 1;
+      }
+      const role = (data.role as string | undefined) ?? (await this.roleOf(existingId));
+      if (offered === 0 && role !== 'MENTOR') {
+        fail('personality.types', 'a giver must offer at least one mission type');
+      }
+      for (const zone of ['minZone', 'maxZone'] as const) {
+        const value = personality[zone];
+        if (value !== undefined && (typeof value !== 'number' || value < 0 || value > 3)) {
+          fail(`personality.${zone}`, `${zone} is a zone from 0 to 3`);
+        }
+      }
+      const { minZone, maxZone } = personality;
+      if (typeof minZone === 'number' && typeof maxZone === 'number' && minZone > maxZone) {
+        fail('personality.minZone', 'minZone cannot be above maxZone');
+      }
+    }
+
+    if (data.lines !== undefined) {
+      const lines = data.lines as Record<string, unknown>;
+      for (const [key, pool] of Object.entries(lines)) {
+        if (!Array.isArray(pool)) fail(`lines.${key}`, 'a pool is a list of {en, pt-BR} lines');
+        for (const [index, line] of (pool as unknown[]).entries()) {
+          const entry = line as { en?: unknown; 'pt-BR'?: unknown } | null;
+          if (
+            typeof entry?.en !== 'string' ||
+            entry.en.trim() === '' ||
+            typeof entry['pt-BR'] !== 'string' ||
+            entry['pt-BR'].trim() === ''
+          ) {
+            fail(`lines.${key}.${index}`, 'every line needs both an English and a Portuguese text');
+          }
+        }
+      }
+    }
+
+    // One active mentor per faction.
+    const before =
+      existingId === undefined
+        ? null
+        : await this.prisma.questGiver.findUnique({ where: { id: existingId } });
+    const role = (data.role as string | undefined) ?? before?.role;
+    const active = (data.active as boolean | undefined) ?? before?.active ?? true;
+    const factionId = (data.factionId as string | undefined) ?? before?.factionId;
+    if (factionId !== undefined && role === 'MENTOR' && active) {
+      const other = await this.prisma.questGiver.findFirst({
+        where: { factionId, role: 'MENTOR', active: true, id: { not: existingId ?? '' } },
+      });
+      if (other !== null) {
+        fail('role', `${factionId} already has an active mentor (${other.id}); retire it first`);
+      }
+    }
+    if (mode === 'update' && before !== null && before.role === 'MENTOR' && before.active) {
+      const stillMentor = role === 'MENTOR' && active && factionId === before.factionId;
+      if (!stillMentor) {
+        fail('role', 'a faction must keep an active mentor: add the new one first');
+      }
+    }
+  }
+
+  private async roleOf(id: string | undefined): Promise<string | undefined> {
+    if (id === undefined) return undefined;
+    return (await this.prisma.questGiver.findUnique({ where: { id }, select: { role: true } }))
+      ?.role;
   }
 
   private async validateRoute(

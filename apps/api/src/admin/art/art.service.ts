@@ -10,10 +10,15 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 export const ART_KINDS = {
   factions: ['banner', 'logo', 'background'],
   locations: ['wide', 'square', 'icon'],
+  'quest-givers': ['portrait'],
 } as const;
 export type ArtKind = keyof typeof ART_KINDS;
 export type ArtSlot = (typeof ART_KINDS)[ArtKind][number];
-export const ALL_ART_SLOTS: readonly string[] = [...ART_KINDS.factions, ...ART_KINDS.locations];
+export const ALL_ART_SLOTS: readonly string[] = [
+  ...ART_KINDS.factions,
+  ...ART_KINDS.locations,
+  ...ART_KINDS['quest-givers'],
+];
 
 const EXTENSION_OF: Readonly<Record<string, string>> = {
   'image/png': 'png',
@@ -30,7 +35,7 @@ const MIME_OF: Readonly<Record<string, string>> = {
 export const ART_MAX_BYTES = 1_500_000;
 const HASH_LENGTH = 12;
 const FILE_PATTERN =
-  /^[a-z0-9_]+-(banner|logo|background|wide|square|icon)-[a-f0-9]{12}\.(png|jpg|webp|svg)$/;
+  /^[a-z0-9_]+-(banner|logo|background|wide|square|icon|portrait)-[a-f0-9]{12}\.(png|jpg|webp|svg)$/;
 const DEFAULT_ART_DIR = './data/art';
 const ID_PATTERN = /^[a-z0-9_]+$/;
 
@@ -135,7 +140,9 @@ export class ArtService {
     const rows: { id: string; art: unknown }[] =
       kind === 'factions'
         ? await this.prisma.faction.findMany({ select: { id: true, art: true } })
-        : await this.prisma.location.findMany({ select: { id: true, art: true } });
+        : kind === 'locations'
+          ? await this.prisma.location.findMany({ select: { id: true, art: true } })
+          : await this.prisma.questGiver.findMany({ select: { id: true, art: true } });
     const out: Record<string, ArtUrls> = {};
     for (const row of rows) {
       const art = (row.art ?? {}) as StoredArt;
@@ -165,10 +172,13 @@ export class ArtService {
 
   private async require(kind: ArtKind, id: string): Promise<{ id: string; art: unknown }> {
     if (!ID_PATTERN.test(id)) throw new NotFoundException();
+    const select = { id: true, art: true } as const;
     const found =
       kind === 'factions'
-        ? await this.prisma.faction.findUnique({ where: { id }, select: { id: true, art: true } })
-        : await this.prisma.location.findUnique({ where: { id }, select: { id: true, art: true } });
+        ? await this.prisma.faction.findUnique({ where: { id }, select })
+        : kind === 'locations'
+          ? await this.prisma.location.findUnique({ where: { id }, select })
+          : await this.prisma.questGiver.findUnique({ where: { id }, select });
     if (found === null) throw new NotFoundException(`${kind} not found`);
     return found;
   }
@@ -184,7 +194,8 @@ export class ArtService {
     const art = Object.keys(after).length === 0 ? Prisma.DbNull : (after as Prisma.InputJsonValue);
     await this.prisma.$transaction(async (tx) => {
       if (kind === 'factions') await tx.faction.update({ where: { id }, data: { art } });
-      else await tx.location.update({ where: { id }, data: { art } });
+      else if (kind === 'locations') await tx.location.update({ where: { id }, data: { art } });
+      else await tx.questGiver.update({ where: { id }, data: { art } });
       await tx.tuningRevision.create({
         data: {
           actor,

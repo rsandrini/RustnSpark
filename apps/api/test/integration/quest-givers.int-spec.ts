@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
@@ -13,8 +16,15 @@ import { GameConfigService } from '../../src/config/game-config.service.js';
 import { MISSION_QUEUE_NAME } from '../../src/jobs/queues.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
-import { seedAccountWithPlayer } from '../support/auth-fixtures.js';
+import { accessTokenFrom, seedAccountWithPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
+
+const ART_DIR = mkdtempSync(join(tmpdir(), 'rs-giver-art-'));
+process.env.ART_DIR = ART_DIR;
+const PNG = Buffer.concat([
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  Buffer.from('portrait-bytes'),
+]);
 
 const httpServer = (app: INestApplication): Server => app.getHttpServer() as Server;
 const auth = (token: string): { Authorization: string } => ({ Authorization: `Bearer ${token}` });
@@ -53,6 +63,7 @@ describe('quest givers (the people behind the missions)', () => {
   });
   afterAll(async () => {
     await testApp?.close();
+    rmSync(ART_DIR, { recursive: true, force: true });
   });
 
   async function onboard(faction: 'luna' | 'sun' | 'explorers') {
@@ -102,6 +113,28 @@ describe('quest givers (the people behind the missions)', () => {
     expect(res.status).toBe(200);
     return res.body as Offer[];
   };
+
+  async function adminToken(): Promise<string> {
+    const email = `admin-${randomUUID()}@example.com`;
+    await prisma.account.create({
+      data: {
+        email,
+        passwordHash: await testApp.app.get(PasswordService).hash('admin-password-1'),
+        role: 'ADMIN',
+        player: {
+          create: {
+            name: `admin_${randomUUID().replaceAll('-', '').slice(0, 22)}`,
+            credits: 0,
+            locale: 'en',
+          },
+        },
+      },
+    });
+    const login = await request(httpServer(testApp.app))
+      .post('/v1/auth/login')
+      .send({ email, password: 'admin-password-1' });
+    return accessTokenFrom(login);
+  }
 
   async function freshWorld(): Promise<void> {
     await resetDatabase(prisma);
@@ -240,5 +273,189 @@ describe('quest givers (the people behind the missions)', () => {
       });
       expect(offer.info.description.en).toBe((template.description as { en: string }).en);
     }
+  });
+
+  it('an admin uploads a portrait for a giver: it shows on the mentor, the faction list and the board, and resets', async () => {
+    await freshWorld();
+    const email = `admin-${randomUUID()}@example.com`;
+    await prisma.account.create({
+      data: {
+        email,
+        passwordHash: await testApp.app.get(PasswordService).hash('admin-password-1'),
+        role: 'ADMIN',
+        player: {
+          create: {
+            name: `admin_${randomUUID().replaceAll('-', '').slice(0, 22)}`,
+            credits: 0,
+            locale: 'en',
+          },
+        },
+      },
+    });
+    const login = await request(httpServer(testApp.app))
+      .post('/v1/auth/login')
+      .send({ email, password: 'admin-password-1' });
+    const adminToken = accessTokenFrom(login);
+
+    const up = await request(httpServer(testApp.app))
+      .post('/v1/admin/tuning/quest-givers/luna_mentor_ines/art/portrait')
+      .set(auth(adminToken))
+      .set('Content-Type', 'image/png')
+      .send(PNG);
+    expect(up.status).toBe(200);
+    const { url } = up.body as { url: string };
+    expect(url).toMatch(/^\/v1\/art\/luna_mentor_ines-portrait-[a-f0-9]{12}\.png$/);
+    expect((await request(httpServer(testApp.app)).get(url)).status).toBe(200);
+
+    const player = await onboard('luna');
+    const mentor = await request(httpServer(testApp.app))
+      .get('/v1/players/me/mentor')
+      .set(auth(player.token));
+    expect((mentor.body as { giver: Giver }).giver.portraitUrl).toBe(url);
+    const offers = await boardOf(player.token, player.home);
+    expect(offers[0]!.info.giver?.portraitUrl).toBe(url);
+    const factions = await request(httpServer(testApp.app))
+      .get('/v1/factions')
+      .set(auth(player.token));
+    const luna = (
+      factions.body as { factions: Array<{ id: string; mentor?: { portraitUrl: string | null } }> }
+    ).factions.find((f) => f.id === 'luna');
+    expect(luna?.mentor?.portraitUrl).toBe(url);
+
+    const badSlot = await request(httpServer(testApp.app))
+      .post('/v1/admin/tuning/quest-givers/luna_mentor_ines/art/banner')
+      .set(auth(adminToken))
+      .set('Content-Type', 'image/png')
+      .send(PNG);
+    expect(badSlot.status).toBe(400);
+
+    const reset = await request(httpServer(testApp.app))
+      .delete('/v1/admin/tuning/quest-givers/luna_mentor_ines/art/portrait')
+      .set(auth(adminToken));
+    expect(reset.body).toEqual({ slot: 'portrait', url: null });
+    expect((await request(httpServer(testApp.app)).get(url)).status).toBe(404);
+  });
+
+  describe('Admin editing', () => {
+    const validGiver = (id: string, overrides: Record<string, unknown> = {}) => ({
+      id,
+      factionId: 'luna',
+      role: 'GIVER',
+      name: 'Test Giver',
+      title: { en: 'Tester', 'pt-BR': 'Testador' },
+      personality: { types: { RESCUE: 50 }, minZone: 0, maxZone: 3, tone: 'formal' },
+      lines: { 'offer.RESCUE': [{ en: 'Save them.', 'pt-BR': 'Salve-os.' }] },
+      locationIds: [],
+      weight: 10,
+      ...overrides,
+    });
+    const create = (token: string, data: Record<string, unknown>) =>
+      request(httpServer(testApp.app))
+        .post('/v1/admin/tuning/quest-givers')
+        .set(auth(token))
+        .send({ data, reason: 'test' });
+
+    it('creates, lists and edits a giver; one who works anywhere is saved with no places', async () => {
+      await freshWorld();
+      const token = await adminToken();
+      const created = await create(token, validGiver('test_rescuer'));
+      expect(created.status).toBe(201);
+      const list = await request(httpServer(testApp.app))
+        .get('/v1/admin/tuning/quest-givers')
+        .set(auth(token));
+      expect((list.body as Array<{ id: string }>).map((row) => row.id)).toContain('test_rescuer');
+      const patched = await request(httpServer(testApp.app))
+        .patch('/v1/admin/tuning/quest-givers/test_rescuer')
+        .set(auth(token))
+        .send({ data: { weight: 99, locationIds: ['ceres'] }, reason: 'test' });
+      expect(patched.status).toBe(200);
+      expect(
+        (patched.body as { row: { weight: number; locationIds: string[] } }).row,
+      ).toMatchObject({
+        weight: 99,
+        locationIds: ['ceres'],
+      });
+    });
+
+    it('refuses a malformed personality or line pool with a reason', async () => {
+      await freshWorld();
+      const token = await adminToken();
+      const bad = async (overrides: Record<string, unknown>) =>
+        (await create(token, validGiver('bad_one', overrides))).status;
+      expect(
+        await bad({ personality: { types: { NONSENSE: 5 }, minZone: 0, maxZone: 3, tone: 'x' } }),
+      ).toBe(400);
+      expect(
+        await bad({ personality: { types: { RESCUE: -1 }, minZone: 0, maxZone: 3, tone: 'x' } }),
+      ).toBe(400);
+      expect(await bad({ personality: { types: {}, minZone: 0, maxZone: 3, tone: 'x' } })).toBe(
+        400,
+      );
+      expect(
+        await bad({ personality: { types: { RESCUE: 1 }, minZone: 3, maxZone: 1, tone: 'x' } }),
+      ).toBe(400);
+      expect(await bad({ lines: { 'offer.RESCUE': [{ en: 'only english', 'pt-BR': '' }] } })).toBe(
+        400,
+      );
+      expect(await bad({ lines: { 'offer.RESCUE': 'not a list' } })).toBe(400);
+      expect(await bad({ id: 'Bad Id!' })).toBe(400);
+      expect(await bad({ factionId: 'nowhere' })).toBe(400);
+      expect(await prisma.questGiver.count({ where: { id: 'bad_one' } })).toBe(0);
+    });
+
+    it('keeps exactly one active mentor per faction', async () => {
+      await freshWorld();
+      const token = await adminToken();
+      // a second active mentor for luna is refused with the reason
+      const second = await create(token, validGiver('luna_second_mentor', { role: 'MENTOR' }));
+      expect(second.status).toBe(400);
+      expect(JSON.stringify(second.body)).toContain('already has an active mentor');
+      // retiring the only mentor is refused
+      const retire = await request(httpServer(testApp.app))
+        .patch('/v1/admin/tuning/quest-givers/luna_mentor_ines')
+        .set(auth(token))
+        .send({ data: { active: false }, reason: 'test' });
+      expect(retire.status).toBe(400);
+      expect(JSON.stringify(retire.body)).toContain('must keep an active mentor');
+      // an inactive second mentor is fine, and promoting it needs the old one gone first
+      const spare = await create(
+        token,
+        validGiver('luna_spare_mentor', { role: 'MENTOR', active: false }),
+      );
+      expect(spare.status).toBe(201);
+    });
+
+    it('a giver added in Admin starts offering on boards', async () => {
+      await freshWorld();
+      const token = await adminToken();
+      // make the new giver the only one who can post RACE offers at ceres, and heavy
+      await prisma.questGiver.updateMany({
+        where: { role: 'GIVER', factionId: 'luna' },
+        data: { active: false },
+      });
+      expect(
+        (
+          await create(
+            token,
+            validGiver('only_giver', {
+              weight: 1000,
+              personality: {
+                types: { DELIVERY: 1, RESCUE: 1 },
+                minZone: 0,
+                maxZone: 3,
+                tone: 'formal',
+              },
+            }),
+          )
+        ).status,
+      ).toBe(201);
+      await config.refresh();
+      const player = await onboard('luna');
+      await makeVeteran(player.playerId);
+      const offers = await boardOf(player.token, player.home);
+      const publicOffers = offers.filter((offer) => offer.privatePlayerId === null);
+      expect(publicOffers.length).toBeGreaterThan(0);
+      for (const offer of publicOffers) expect(offer.info.giver?.id).toBe('only_giver');
+    });
   });
 });
