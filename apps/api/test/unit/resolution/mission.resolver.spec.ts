@@ -721,6 +721,22 @@ describe('open-cargo deliveries', () => {
     expect(payoutOf(0)).toBe(plain);
     expect(payoutOf(100)).toBeGreaterThan(plain);
   });
+
+  it('a hop of seconds pays a tenth of the extra too, not the full 200 a unit (owner playtest 2026-10-22)', () => {
+    const hop = (cargoExtra: number) => {
+      const out = resolve(
+        'cargo-hop',
+        snapshot(),
+        mission({
+          cargoExtra,
+          legs: [{ distance: 30, danger: 0, zone: 1, env: { id: 'open', level: 1, fuelMult: 1 } }],
+        }),
+      );
+      return out.events.find((event) => event.type === 'mission_payout')?.effects.credits ?? 0;
+    };
+    const factor = rules.missions.short_trip_reward_factor;
+    expect(hop(400) - hop(0)).toBeLessThanOrEqual(400 * factor + 1);
+  });
 });
 
 describe("the pilot's own free mining job", () => {

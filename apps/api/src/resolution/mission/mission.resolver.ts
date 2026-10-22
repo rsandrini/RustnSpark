@@ -6,6 +6,7 @@ import {
   contractedMiningPayout,
   integrityPayout,
   rewardBase,
+  shortTripFactor,
 } from '../../economy/reward.calculator.js';
 import { settleContractedMining } from '../mining/mining.resolver.js';
 import { missionEvent } from '../events/mission-event.js';
@@ -317,7 +318,9 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
           missionType: input.mission.type ?? 'delivery',
         },
         input.rules,
-      ) + (input.mission.cargoExtra ?? 0);
+      ) +
+      // The extra pay for a fuller hold follows the trip: a hop of seconds pays a tenth of it too.
+      (input.mission.cargoExtra ?? 0) * shortTripFactor(totalDistance, input.rules);
 
     if (input.mission.contractedMining !== undefined) {
       const mined = loot

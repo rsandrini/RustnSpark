@@ -29,6 +29,13 @@ export function bridgeRarityOf(
   return parts.find((part) => part.partClass === 'BRIDGE')?.rarity;
 }
 
+/** The share of the usual pay a hop of seconds (the test pad's way back) earns; x1 on a normal trip. */
+export function shortTripFactor(distance: number, rules: GameRules): number {
+  return distance < rules.missions.short_trip_exempt_below
+    ? rules.missions.short_trip_reward_factor
+    : 1;
+}
+
 /**
  * D13 validated base (sim form, before the integrity multiplier):
  * `(reward_base + tier × reward_per_tier) × (1 + danger / reward_danger_divisor)
@@ -45,10 +52,7 @@ export function rewardBase(input: RewardBaseInput, rules: GameRules): number {
   const distanceMod = 1 + (input.distance - e.reward_distance_ref) / e.reward_distance_divisor;
   const typeBonus = e.reward_type_bonus[input.missionType.toLowerCase()] ?? 1;
   // A hop of seconds (the test pad's way back) pays only a share of the usual reward.
-  const shortTrip =
-    input.distance < rules.missions.short_trip_exempt_below
-      ? rules.missions.short_trip_reward_factor
-      : 1;
+  const shortTrip = shortTripFactor(input.distance, rules);
   return (
     tierBase *
     dangerMod *
