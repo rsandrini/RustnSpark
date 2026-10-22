@@ -45,8 +45,11 @@ last ones feel free.
 The share of fights lost falls from 64% (Common bridge) to 5-6% (Epic and up), and the hull stays at 93-97% integrity on
 average. Overall the pilot wins 79-89% of fights (69-72% only for the ion build under greedy and safe play) and succeeds
 in 86-98% of missions. Danger is moderate: an average of 3.5-4.6 on the 0-10 scale, and only 13-27% of the missions go
-above 6 (49% only for a greedy ion pilot). Enemy strength does not follow the ship: pirate strength is a fixed
-number by zone (0.35 / 0.5 / 0.65 / 1.0), so a Rare ship out-guns zone 0-2 for good and combat stops mattering.
+above 6 (49% only for a greedy ion pilot). Correction (2026-10-22, after reading `pirate.generator.ts`): a pirate is built from the player's own
+sheet, scaled by a strength drawn from `pirate_strength_options` (0.55 to 1.1) and capped by the zone
+(`pirate_zone_strength` 0.35 / 0.5 / 0.65 / 1.0). So pirates do follow the ship, but never above parity: in zones 0-2 they
+are 55-65% of the player's firepower and hull, in zone 3 at most 100%. A ship that is already good therefore always
+out-guns what it meets, and what makes a fight dangerous at the top is only the player's own weak spots.
 
 ## 4. What this says about the owner's game
 - It is not the choice of easy quests: a random pilot does as well. The cause is the curve: reward per mission grows
@@ -59,8 +62,8 @@ number by zone (0.35 / 0.5 / 0.65 / 1.0), so a Rare ship out-guns zone 0-2 for g
 ## 5. Options for balance round 5 (nothing applied; pick what you want tested)
 1. **Money sink at the top**: price of Epic and Legendary parts x2-3 (and bridge expansion), so the ceiling is about
    10-20 million instead of 1.5 million; or reward by bridge flattened at the top (`reward_by_bridge` 4-5 from x6 to x3-4).
-2. **Danger that follows the ship**: pirate strength and fight rate scaled by the ship's tier (or by the player's best
-   part), so combat stays a risk at Epic and Legendary; and a wear/hull cost that does not fall as parts get better.
+2. **Danger that goes above parity**: pirate strength options and zone caps raised above 1.0 (pirates are already built from
+   the player's own sheet), so combat stays a risk at Epic and Legendary; and a wear/hull cost that does not fall as parts get better.
 3. **Slower middle**: Epic at 50 h is quick; a longer Rare-to-Epic step (fewer missions per hour via a longer minimum
    trip, or lower reward at Rare) would stretch the ladder to the 120-200 hours of the earlier targets.
 4. **A different sink**: upgrade materials (scrap, crystals, cores) were about 1% of spending: more of the ladder could
