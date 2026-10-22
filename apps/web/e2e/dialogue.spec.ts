@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { registerAndLaunch } from './support';
+import { apiPost, registerAndLaunch } from './support';
 
 // The mentor talks to the pilot (docs/design/mentor-dialogue-plan.md) on the real stack: the welcome opens on the
 // first Ship screen, branches into the faction's story, hands over to the ship scene, and the account menu can play
@@ -103,12 +103,7 @@ test('on a 320 px phone the box is a sheet inside the screen with tappable butto
   };
   await fits();
   // the long lore node, in Portuguese
-  const refreshed = await page.request.post('/v1/auth/refresh');
-  const { accessToken } = (await refreshed.json()) as { accessToken: string };
-  await page.request.post('/v1/players/me/locale', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: { locale: 'pt-BR' },
-  });
+  await apiPost(page, '/v1/players/me/locale', { locale: 'pt-BR' });
   await page.reload();
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 20_000 });
   await page.getByRole('button', { name: 'Continuar' }).click();

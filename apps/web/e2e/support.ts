@@ -43,14 +43,30 @@ export async function assertClean(page: Page, screen: string): Promise<void> {
  * dialogue itself pass `{ dialogues: true }` to `registerAndLaunch`.
  */
 export async function dialoguesOff(page: Page): Promise<void> {
-  const refreshed = await page.request.post('/v1/auth/refresh');
-  const { accessToken } = (await refreshed.json()) as { accessToken: string };
-  const response = await page.request.post('/v1/players/me/dialogue/settings', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: { enabled: false },
-  });
-  expect(response.ok()).toBe(true);
+  await apiPost(page, '/v1/players/me/dialogue/settings', { enabled: false });
   await page.reload();
+}
+
+/**
+ * Calls the API as the signed-in pilot, from inside the page (so the refresh cookie travels the way it does for the
+ * app itself, on any host the stack is served from): refreshes the session for a token, then posts. Fails the spec
+ * with the status and body when the answer is not a success.
+ */
+export async function apiPost(page: Page, path: string, body: unknown): Promise<void> {
+  const result = await page.evaluate(
+    async ({ path: to, body: data }) => {
+      const refreshed = await fetch('/v1/auth/refresh', { method: 'POST', credentials: 'include' });
+      const { accessToken } = (await refreshed.json()) as { accessToken: string };
+      const response = await fetch(to, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify(data),
+      });
+      return { status: response.status, text: await response.text() };
+    },
+    { path, body },
+  );
+  expect(result.status, result.text).toBe(200);
 }
 
 export async function registerAndLaunch(
