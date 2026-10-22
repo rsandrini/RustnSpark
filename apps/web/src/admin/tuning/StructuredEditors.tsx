@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { pickLocalized } from '../../i18n/localized';
 import { tuningApi } from './tuning.api';
 import { GiverLinesEditor, type GiverLinePools } from './GiverLinesEditor';
+import { SceneEditor } from './SceneEditor';
 import { GiverPersonalityEditor, type GiverPersonality } from './GiverPersonalityEditor';
 
 // Admin editors for the JSON-shaped fields that used to be a raw textarea. Each one reads and
@@ -545,6 +546,9 @@ export const STRUCTURED_EDITORS: Record<
       value={props.value as GiverLinePools | null | undefined}
       onChange={(next) => props.onChange(next)}
     />
+  ),
+  'quest-givers.scenes': (props) => (
+    <SceneEditor value={props.value} onChange={(next) => props.onChange(next)} />
   ),
   'quest-givers.personality': (props) => (
     <GiverPersonalityEditor

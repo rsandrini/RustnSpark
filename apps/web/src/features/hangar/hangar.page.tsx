@@ -813,6 +813,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 <button
                   type="button"
                   className="btn"
+                  data-tour="auto_layout"
                   disabled={auto.isPending || modifyBlocked}
                   aria-busy={auto.isPending}
                   onClick={() => {

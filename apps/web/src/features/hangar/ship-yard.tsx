@@ -685,7 +685,7 @@ export function ShipYard({
       : layout.find((p) => p.partInstanceId === iconSourceId) ?? null;
 
   return (
-    <div className="stage hangar-scene" ref={sceneRef}>
+    <div className="stage hangar-scene" ref={sceneRef} data-tour="ship_grid">
       {callouts}
       <div className="yard-tools" role="group" aria-label={t('hangar.zoom.label')}>
         <button

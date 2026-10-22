@@ -308,6 +308,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                     <button
                       type="button"
                       className="btn primary"
+                      data-tour="accept_button"
                       disabled={!canAccept || accept.isPending}
                       onClick={() => accept.mutate(offer)}
                     >

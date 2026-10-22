@@ -9,10 +9,10 @@ import type { ShipResponse } from '../api/generated';
 // the real routes — the old /hangar and /board paths only redirect. Profile, Admin, language and
 // Sign out live in the account menu at the right of the top bar.
 const GAME_LINKS = [
-  { id: 'hangar', to: '/ship', icon: 'M3 12l5-6h8l5 6-5 6H8z M12 10v4 M10 12h4' },
-  { id: 'port', to: '/port', icon: 'M4 20V10l8-6 8 6v10z M9 20v-6h6v6' },
-  { id: 'board', to: '/missions', icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3' },
-  { id: 'map', to: '/map', icon: 'M6 8h.01 M18 6h.01 M14 18h.01 M8 8l8-2 M7 10l6 7 M17 8l-3 9' },
+  { id: 'hangar', to: '/ship', tour: 'ship_tab', icon: 'M3 12l5-6h8l5 6-5 6H8z M12 10v4 M10 12h4' },
+  { id: 'port', to: '/port', tour: 'port_tab', icon: 'M4 20V10l8-6 8 6v10z M9 20v-6h6v6' },
+  { id: 'board', to: '/missions', tour: 'missions_tab', icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3' },
+  { id: 'map', to: '/map', tour: 'map_tab', icon: 'M6 8h.01 M18 6h.01 M14 18h.01 M8 8l8-2 M7 10l6 7 M17 8l-3 9' },
 ] as const;
 
 /**
@@ -31,7 +31,7 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
   const away = ship !== undefined && ship.status !== 'IN_PORT';
   return (
     <nav className={bar ? 'shell-tabbar' : 'shell-nav'} aria-label={t('nav.label')}>
-      {GAME_LINKS.map(({ id, to, icon }) => {
+      {GAME_LINKS.map(({ id, to, tour, icon }) => {
         const mark = (
           <svg
             className="nav-icon"
@@ -49,7 +49,13 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
         );
         if (away && (id === 'port' || id === 'board')) {
           return (
-            <span key={id} className="nav-link disabled" aria-disabled="true" title={t('nav.busy')}>
+            <span
+              key={id}
+              className="nav-link disabled"
+              aria-disabled="true"
+              title={t('nav.busy')}
+              data-tour={tour}
+            >
               {mark}
               <span>{t(`nav.${id}`)}</span>
             </span>
@@ -59,6 +65,7 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
           <NavLink
             key={id}
             to={to}
+            data-tour={tour}
             className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}
           >
             {mark}

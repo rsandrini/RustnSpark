@@ -4,6 +4,8 @@ export interface PortTab {
   id: string;
   label: string;
   badge?: number | string;
+  /** A `data-tour` name: the mentor's dialogue can point at this tab. */
+  tour?: string;
 }
 
 export interface PortTabsProps {
@@ -31,6 +33,7 @@ export function PortTabs({ tabs, activeId, onChange, variant = 'tabs', label }: 
           key={tab.id}
           type="button"
           role="tab"
+          data-tour={tab.tour}
           aria-selected={tab.id === activeId}
           tabIndex={tab.id === activeId ? 0 : -1}
           className={`${variant === 'segment' ? 'seg' : 'tab'}${tab.id === activeId ? ' on' : ''}`}

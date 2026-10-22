@@ -98,27 +98,14 @@ describe('quest givers in the pilot screens', () => {
     ).toBeInTheDocument();
   });
 
-  it('the tutorial card shows the mentor and their line for the next step', async () => {
+  it('the tutorial card is a plain checklist: the mentor speaks in dialogue scenes, not here', async () => {
     setMentor(mentorFixture());
     tutorialDone = false;
     server.use(...pilotWithTutorial());
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const card = await screen.findByTestId('tutorial-card');
-    // The mentor query resolves just after the card's first paint.
-    const mentor = await within(card).findByTestId('tutorial-mentor');
-    expect(within(mentor).getByText('Rhea Solano')).toBeInTheDocument();
-    // The default mock ship is already built and connected, so the checklist sits at refuel
-    // and the mentor nudges toward filling the tank.
-    expect(within(mentor).getByText('Fill the tank first, pilot.')).toBeInTheDocument();
-  });
-
-  it('without a mentor the tutorial card is the plain checklist it always was', async () => {
-    setMentor(null);
-    tutorialDone = false;
-    server.use(...pilotWithTutorial());
-    renderWithRouter(routes, { initialEntries: ['/ship'] });
-    const card = await screen.findByTestId('tutorial-card');
     expect(within(card).queryByTestId('tutorial-mentor')).not.toBeInTheDocument();
+    expect(within(card).queryByText('Fill the tank first, pilot.')).not.toBeInTheDocument();
   });
 
   it('the faction picker replaces the selected card blurb with the leader welcome', async () => {

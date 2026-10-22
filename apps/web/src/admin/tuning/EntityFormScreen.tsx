@@ -50,6 +50,7 @@ const QUEST_GIVER_SECTIONS: readonly FormSection[] = [
   { titleKey: 'tuning.sections.identity', fields: ['id', 'name', 'title', 'factionId', 'role'] },
   { titleKey: 'admin.givers.sections.personality', fields: ['personality'] },
   { titleKey: 'admin.givers.sections.lines', fields: ['lines'] },
+  { titleKey: 'admin.dialogue.section', fields: ['scenes'] },
   { titleKey: 'admin.givers.sections.places', fields: ['locationIds', 'weight'] },
 ];
 

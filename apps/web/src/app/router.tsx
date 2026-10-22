@@ -19,6 +19,7 @@ import { NotFoundPage } from '../pages/not-found.page';
 import { ForgotPasswordPage } from '../features/auth/forgot-password.page';
 import { ResetPasswordPage } from '../features/auth/reset-password.page';
 import { GuidePage } from '../features/guide/guide.page';
+import { DialogueHost } from '../features/dialogue/dialogue-host';
 import { TutorialCard } from '../features/tutorial/tutorial-card';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
@@ -52,6 +53,7 @@ function InGameChrome() {
       <TopBar />
       <NoticeBanner />
       <TutorialCard />
+      <DialogueHost />
     </>
   );
 }

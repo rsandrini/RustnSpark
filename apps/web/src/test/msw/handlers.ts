@@ -15,6 +15,7 @@ import type {
   MarketResponse,
   MaterialHolding,
   MaterialsResponse,
+  DialogueState,
   Mentor,
   MissionOffer,
   Placement,
@@ -628,6 +629,23 @@ export const handlers = [
   }),
 
   http.get('/v1/players/me/mentor', () => ok<Mentor | null>(mentorState)),
+
+  // The mentor's dialogue scenes: nothing due by default; a test sets the state with setDialogue().
+  http.get('/v1/players/me/dialogue', () => ok<DialogueState>(dialogueState)),
+  http.post('/v1/players/me/dialogue/settings', async ({ request }) => {
+    const body = (await request.json()) as { enabled: boolean };
+    dialogueState = { ...dialogueState, enabled: body.enabled };
+    return ok({ ok: true });
+  }),
+  http.post('/v1/players/me/dialogue/:sceneId/replay', () => ok({ ok: true })),
+  http.post('/v1/players/me/dialogue/:sceneId', async ({ request, params }) => {
+    const body = (await request.json()) as { event: string; nodeId?: string };
+    dialogueEvents.push({ sceneId: String(params.sceneId), ...body });
+    if (body.event !== 'advance') {
+      dialogueState = { ...dialogueState, scene: null };
+    }
+    return ok({ ok: true });
+  }),
 
   http.post('/v1/players/me/onboarding', () =>
     ok<ShipResponse>({
@@ -1471,6 +1489,19 @@ export const mentorFixture = (): Mentor => ({
 });
 
 // Null (the default profile has no faction yet) until a test sets one.
+let dialogueState: DialogueState = { enabled: true, scene: null, replayable: [] };
+/** What the web told the mock server about dialogue progress, in order. */
+export const dialogueEvents: Array<{ sceneId: string; event: string; nodeId?: string }> = [];
+
+/** Sets what GET /v1/players/me/dialogue answers (a test's scene, replayable list, on/off). */
+export function setDialogue(next: Partial<DialogueState> | null): void {
+  dialogueState =
+    next === null
+      ? { enabled: true, scene: null, replayable: [] }
+      : { enabled: true, scene: null, replayable: [], ...next };
+  dialogueEvents.length = 0;
+}
+
 let mentorState: Mentor | null = null;
 
 /** The mentor the app sees (per-test; reset alongside the other state). */

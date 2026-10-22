@@ -1,0 +1,129 @@
+/*
+ * The mentor's dialogue box (docs/design/mentor-dialogue-plan.md): a text box that sits in the middle (dimmed), at
+ * the bottom, left, right or top of the screen, optionally ringing the element it talks about. On a phone it is a
+ * bottom sheet. Above the game, below confirmation popups (which make the mentor wait).
+ */
+.dialogue-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+.dialogue-layer.preview {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  min-height: 260px;
+  border: 1px dashed var(--rule-3);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.dialogue-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--paper) 72%, transparent);
+  pointer-events: auto;
+}
+.dialogue-ring {
+  position: fixed;
+  border: 2px solid var(--brass);
+  border-radius: var(--radius);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--brass) 30%, transparent),
+    0 0 18px color-mix(in oklab, var(--brass) 45%, transparent);
+  pointer-events: none;
+}
+.dialogue-box {
+  position: absolute;
+  display: grid;
+  gap: 12px;
+  width: min(560px, calc(100vw - 32px));
+  padding: 16px 18px;
+  background: var(--paper-2);
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+}
+.dialogue-box.pos-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.dialogue-box.pos-bottom {
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dialogue-box.pos-top {
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dialogue-box.pos-left {
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  width: min(380px, calc(100vw - 32px));
+}
+.dialogue-box.pos-right {
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  width: min(380px, calc(100vw - 32px));
+}
+.dialogue-layer.preview .dialogue-box {
+  position: static;
+  transform: none;
+  width: auto;
+  margin: 12px;
+}
+.dialogue-head {
+  display: flex;
+  align-items: center;
+}
+.dialogue-text {
+  margin: 0;
+  min-height: 3.2em;
+  font-size: var(--text-md, 1rem);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.dialogue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dialogue-actions .btn {
+  min-height: 40px;
+}
+.dialogue-skip {
+  margin-left: auto;
+  color: var(--muted);
+}
+.dialogue-ask {
+  flex: 1 1 100%;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+/* a phone: every popup is a bottom sheet (a centred one keeps the dim, but sits low), the ring still shows */
+@media (max-width: 860px) {
+  .dialogue-layer:not(.preview) .dialogue-box {
+    top: auto;
+    right: auto;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    width: calc(100vw - 16px);
+    max-height: 70vh;
+    overflow-y: auto;
+    transform: translateX(-50%);
+  }
+  .dialogue-actions .btn {
+    flex: 1 1 auto;
+  }
+  .dialogue-skip {
+    margin-left: 0;
+  }
+}

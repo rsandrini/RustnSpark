@@ -36,9 +36,27 @@ export async function assertClean(page: Page, screen: string): Promise<void> {
   ).toBeLessThanOrEqual(1);
 }
 
+/**
+ * Turns the mentor's dialogues off for the signed-in pilot, the way a pilot would from the account menu but through
+ * the API (the refresh cookie of the page gives the token), then reloads so nothing is left on the screen. The scenes
+ * open popups over the game; the specs that are about something else do not want them in the way. Specs about the
+ * dialogue itself pass `{ dialogues: true }` to `registerAndLaunch`.
+ */
+export async function dialoguesOff(page: Page): Promise<void> {
+  const refreshed = await page.request.post('/v1/auth/refresh');
+  const { accessToken } = (await refreshed.json()) as { accessToken: string };
+  const response = await page.request.post('/v1/players/me/dialogue/settings', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    data: { enabled: false },
+  });
+  expect(response.ok()).toBe(true);
+  await page.reload();
+}
+
 export async function registerAndLaunch(
   page: Page,
   faction: (typeof FACTIONS)[number],
+  options: { dialogues?: boolean } = {},
 ): Promise<void> {
   const id = `${faction}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
   const heading = page.getByRole('heading', { name: 'Choose your faction' });
@@ -67,6 +85,8 @@ export async function registerAndLaunch(
   await page.locator('label.faction-card', { hasText: new RegExp(faction, 'i') }).click();
   await page.getByRole('button', { name: 'Launch' }).click();
   await expect(page.getByRole('navigation')).toBeVisible();
+
+  if (options.dialogues !== true) await dialoguesOff(page);
 
   // The starter kit arrives loose (D44): assemble it the way a new pilot does, with Auto layout.
   await expect(page).toHaveURL(/\/ship/);

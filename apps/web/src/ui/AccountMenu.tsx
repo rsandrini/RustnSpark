@@ -4,6 +4,8 @@ import { Link } from 'react-router';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthContext } from '../features/auth/auth.context';
 import { useAuth, useLogout } from '../features/auth/auth.hooks';
+import { useDialogueActions, useDialogueState } from '../features/dialogue/use-dialogue';
+import { pickLocalized } from '../i18n/localized';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
@@ -29,6 +31,10 @@ export function AccountMenu() {
   const logout = useLogout();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  // The mentor's scenes: hear one again, or turn the dialogues off (then only the checklist is left).
+  const dialogue = useDialogueState(user?.factionId != null);
+  const dialogueActions = useDialogueActions();
+  const dialogueOn = dialogue.data?.enabled !== false;
   const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
 
   useEffect(() => {
@@ -82,6 +88,34 @@ export function AccountMenu() {
             >
               {t('nav.gettingStarted')}
             </button>
+          )}
+          {dialogue.data !== undefined && (
+            <div className="shell-menu-dialogue" data-testid="menu-dialogue">
+              {dialogue.data.replayable.length > 0 && (
+                <div className="label shell-menu-name">{t('dialogue.menuTitle')}</div>
+              )}
+              {dialogue.data.replayable.map((scene) => (
+                <button
+                  key={scene.id}
+                  type="button"
+                  className="shell-menu-item"
+                  onClick={() => {
+                    setOpen(false);
+                    dialogueActions.replay.mutate(scene.id);
+                  }}
+                >
+                  {t('dialogue.replayLabel', { title: pickLocalized(scene.title, i18n.language) })}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="shell-menu-item"
+                aria-pressed={dialogueOn}
+                onClick={() => dialogueActions.setEnabled.mutate(!dialogueOn)}
+              >
+                {t(dialogueOn ? 'dialogue.turnOff' : 'dialogue.turnOn')}
+              </button>
+            </div>
           )}
           {user?.role === 'ADMIN' && (
             <Link className="shell-menu-item" to="/admin" onClick={() => setOpen(false)}>

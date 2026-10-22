@@ -835,6 +835,74 @@
     "fastOpsOn": "on",
     "fastOpsOff": "off",
     "actionFailed": "That did not work.",
+    "dialogue": {
+      "title": "Dialogue scenes",
+      "help": "What the mentor says to the pilot, scene by scene. A scene starts when its trigger holds (once per pilot) and scenes are offered in order. Each node is one popup; choices can branch or take the pilot somewhere.",
+      "none": "No scenes yet.",
+      "unnamed": "(unnamed)",
+      "sceneId": "Scene id",
+      "trigger": "Starts when",
+      "order": "Order",
+      "start": "First node",
+      "titleEn": "Title (English)",
+      "titlePt": "Title (Portuguese)",
+      "nodeId": "Node id",
+      "position": "Where it sits",
+      "anchor": "Points at",
+      "noAnchor": "Nothing",
+      "blocking": "Dims the screen and waits",
+      "textEn": "Text (English)",
+      "textPt": "Text (Portuguese)",
+      "next": "Then",
+      "endsHere": "The scene ends here",
+      "choiceEn": "Choice (English)",
+      "choicePt": "Choice (Portuguese)",
+      "choiceNext": "Goes to node",
+      "noNext": "No node",
+      "choiceAction": "Action",
+      "noAction": "No action",
+      "addChoice": "Add choice",
+      "removeChoice": "Remove choice",
+      "addNode": "Add node",
+      "removeNode": "Remove node",
+      "addScene": "Add scene",
+      "removeScene": "Remove scene",
+      "preview": "Preview",
+      "section": "Dialogue scenes",
+      "triggers": {
+        "onboarded": "The faction is chosen",
+        "ship_built": "The ship is built",
+        "first_mission_done": "A first mission is finished",
+        "first_failure": "A first mission is lost",
+        "low_fuel": "The tank runs low after a flight"
+      },
+      "positions": {
+        "center": "Centre (dimmed)",
+        "bottom": "Bottom",
+        "left": "Left",
+        "right": "Right",
+        "top": "Top"
+      },
+      "anchors": {
+        "ship_grid": "The ship grid",
+        "auto_layout": "Auto layout button",
+        "ship_tab": "Ship tab",
+        "port_tab": "Port tab",
+        "port_refuel": "Refuel tab",
+        "missions_tab": "Missions tab",
+        "map_tab": "Map tab",
+        "accept_button": "Accept button"
+      },
+      "actions": {
+        "goto_ship": "Go to the Ship",
+        "goto_port": "Go to the Port",
+        "goto_port_tab_refuel": "Go to Refuel",
+        "goto_missions": "Go to Missions",
+        "goto_map": "Go to the Map",
+        "replay": "Play the scene again",
+        "end": "End the scene"
+      }
+    },
     "givers": {
       "linesHelp": "Short lines the giver says, one list per key. An empty pool means the template text is used. {destination}, {cargo} and {reward} are filled in from the offer.",
       "addLine": "Add line",
@@ -1951,6 +2019,7 @@
     "ACCOUNT_BANNED": "This account has been suspended.",
     "ACTIVE_MISSION_EXISTS": "A mission is already under way.",
     "ALREADY_REPAIRING": "This ship is already being repaired.",
+    "SCENE_NOT_SEEN": "You have not been through that scene yet.",
     "ART_BAD_SIZE": "The image is empty or larger than 1.5 MB.",
     "ART_NOT_AN_IMAGE": "That file is not a valid (or not a safe) image.",
     "ART_UNKNOWN_SLOT": "That image slot does not exist.",
@@ -2347,5 +2416,19 @@
       "button": "Create your pilot"
     },
     "authTabs": "Sign in or create an account"
+  },
+  "dialogue": {
+    "continue": "Continue",
+    "close": "Close",
+    "skip": "Skip",
+    "skipAsk": "Skip the whole conversation? You can hear it again from the account menu.",
+    "skipYes": "Yes, skip it",
+    "skipNo": "No, go on",
+    "menuTitle": "Talk again",
+    "menuOn": "Dialogues: on",
+    "menuOff": "Dialogues: off",
+    "turnOff": "Turn dialogues off",
+    "turnOn": "Turn dialogues on",
+    "replayLabel": "Hear it again: {{title}}"
   }
 }

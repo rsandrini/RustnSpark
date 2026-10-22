@@ -17,30 +17,25 @@ async function loginAsAdmin(page: Page): Promise<void> {
   await expect(page).not.toHaveURL(/\/login/);
 }
 
-test('a luna pilot sees their mentor on the Getting started card', async ({ page }) => {
+test('the Getting started card is a plain checklist (the mentor speaks in dialogue scenes)', async ({
+  page,
+}) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/ship');
-  // The checklist is an open card on desktop and a small pill on a phone; either way the
-  // mentor block appears inside it once the mentor query resolves.
-  const mentor = page.getByTestId('tutorial-mentor');
-  const pill = page.getByRole('button', { name: /Getting started/ });
   const card = page.locator('.tutorial-card');
-  // Give the card a chance to render first (it may be collapsed as the pill).
+  const pill = page.getByRole('button', { name: /Getting started/ });
   await expect(card.or(pill).first()).toBeVisible({ timeout: 20_000 });
-  if ((await mentor.count()) === 0 && (await pill.count()) > 0) {
-    // Opening the pill swaps the button for the card; wait for the button if it is there.
-    if (
-      await pill
-        .first()
-        .isVisible()
-        .catch(() => false)
-    )
-      await pill.first().click();
+  if (
+    (await pill.count()) > 0 &&
+    (await pill
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
+    await pill.first().click();
   }
-  await expect(mentor).toBeVisible({ timeout: 20_000 });
-  // The seeded luna mentor greets the new pilot by name and title.
-  await expect(mentor).toContainText('Ines Moura');
-  await expect(mentor).toContainText('Dockmaster of Ceres');
+  await expect(page.locator('.tutorial-step').first()).toBeVisible();
+  await expect(page.getByTestId('tutorial-mentor')).toHaveCount(0);
 });
 
 test('the board names the giver who offered a mission', async ({ page }) => {
@@ -68,4 +63,19 @@ test('an admin can open a giver and see the bilingual line pools', async ({ page
   // The structured line-pool editor renders the bilingual pools for the seeded giver.
   await expect(page.getByText('Offer: delivery')).toBeVisible();
   await expect(page.getByText('Report: success')).toBeVisible();
+});
+
+test("an admin sees the mentor's dialogue scenes and can preview a node", async ({ page }) => {
+  await loginAsAdmin(page);
+  await page.goto('/admin/tuning/entities/quest-givers');
+  const row = page.locator('tr', { hasText: 'Ines Moura' }).first();
+  await expect(row).toBeVisible({ timeout: 15_000 });
+  await row.locator('a').first().click();
+  const editor = page.getByRole('group', { name: 'Dialogue scenes' });
+  await expect(editor).toBeVisible({ timeout: 15_000 });
+  await expect(
+    editor.getByRole('button', { name: /welcome · The faction is chosen/ }),
+  ).toBeVisible();
+  await editor.getByRole('button', { name: 'Preview' }).first().click();
+  await expect(editor.getByTestId('dialogue')).toContainText('Welcome to Ceres');
 });

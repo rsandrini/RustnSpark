@@ -665,6 +665,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             id,
             label: t(`port.tabs.${id}`),
             badge: id === 'repair' ? repairBadge : undefined,
+            tour: id === 'refuel' ? 'port_refuel' : undefined,
           }))}
           activeId={tab}
           onChange={(next) => selectTab(next as PortTabId)}

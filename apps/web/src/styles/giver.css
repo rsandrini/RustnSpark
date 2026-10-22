@@ -95,19 +95,6 @@
   height: 64px;
 }
 
-/* The mentor's line (SpeechBubble): a short aside above the plain checklist text. */
-.speech-bubble {
-  margin: 8px 0;
-  padding: 8px 12px;
-  border: 1px solid var(--rule-2);
-  border-radius: var(--radius);
-  background: var(--paper-2);
-  color: var(--ink-2);
-  font-size: var(--text-sm);
-  font-style: italic;
-  overflow-wrap: anywhere;
-}
-
 /* Where the screens mount the pieces (wired in phase 2 of the plan). */
 .mcard-giver {
   margin: 8px 0;
@@ -127,8 +114,4 @@
   font-style: italic;
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
-}
-
-.tutorial-mentor {
-  padding: 0 14px 4px;
 }

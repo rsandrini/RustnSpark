@@ -835,6 +835,74 @@
     "fastOpsOn": "ligadas",
     "fastOpsOff": "desligadas",
     "actionFailed": "Isso não funcionou.",
+    "dialogue": {
+      "title": "Cenas de diálogo",
+      "help": "O que o mentor diz ao piloto, cena por cena. Uma cena começa quando seu gatilho vale (uma vez por piloto) e as cenas são oferecidas em ordem. Cada nó é um popup; as escolhas podem ramificar ou levar o piloto a algum lugar.",
+      "none": "Nenhuma cena ainda.",
+      "unnamed": "(sem nome)",
+      "sceneId": "Id da cena",
+      "trigger": "Começa quando",
+      "order": "Ordem",
+      "start": "Primeiro nó",
+      "titleEn": "Título (inglês)",
+      "titlePt": "Título (português)",
+      "nodeId": "Id do nó",
+      "position": "Onde fica",
+      "anchor": "Aponta para",
+      "noAnchor": "Nada",
+      "blocking": "Escurece a tela e espera",
+      "textEn": "Texto (inglês)",
+      "textPt": "Texto (português)",
+      "next": "Depois",
+      "endsHere": "A cena termina aqui",
+      "choiceEn": "Escolha (inglês)",
+      "choicePt": "Escolha (português)",
+      "choiceNext": "Vai para o nó",
+      "noNext": "Nenhum nó",
+      "choiceAction": "Ação",
+      "noAction": "Sem ação",
+      "addChoice": "Adicionar escolha",
+      "removeChoice": "Remover escolha",
+      "addNode": "Adicionar nó",
+      "removeNode": "Remover nó",
+      "addScene": "Adicionar cena",
+      "removeScene": "Remover cena",
+      "preview": "Pré-visualizar",
+      "section": "Cenas de diálogo",
+      "triggers": {
+        "onboarded": "A facção foi escolhida",
+        "ship_built": "A nave está montada",
+        "first_mission_done": "Uma primeira missão terminou",
+        "first_failure": "Uma primeira missão foi perdida",
+        "low_fuel": "O tanque está baixo depois de um voo"
+      },
+      "positions": {
+        "center": "Centro (escurecido)",
+        "bottom": "Embaixo",
+        "left": "Esquerda",
+        "right": "Direita",
+        "top": "Em cima"
+      },
+      "anchors": {
+        "ship_grid": "A grade da nave",
+        "auto_layout": "Botão Layout automático",
+        "ship_tab": "Aba Nave",
+        "port_tab": "Aba Porto",
+        "port_refuel": "Aba Reabastecer",
+        "missions_tab": "Aba Missões",
+        "map_tab": "Aba Mapa",
+        "accept_button": "Botão Aceitar"
+      },
+      "actions": {
+        "goto_ship": "Ir para a Nave",
+        "goto_port": "Ir para o Porto",
+        "goto_port_tab_refuel": "Ir para Reabastecer",
+        "goto_missions": "Ir para as Missões",
+        "goto_map": "Ir para o Mapa",
+        "replay": "Tocar a cena de novo",
+        "end": "Encerrar a cena"
+      }
+    },
     "givers": {
       "linesHelp": "Linhas curtas que o doador de missões diz, uma lista por chave. Uma lista vazia significa que o texto do modelo é usado. {destination}, {cargo} e {reward} são preenchidos a partir da oferta.",
       "addLine": "Adicionar linha",
@@ -1951,6 +2019,7 @@
     "ACCOUNT_BANNED": "Esta conta foi suspensa.",
     "ACTIVE_MISSION_EXISTS": "Já há uma missão em andamento.",
     "ALREADY_REPAIRING": "Esta nave já está em reparo.",
+    "SCENE_NOT_SEEN": "Você ainda não passou por essa cena.",
     "ART_BAD_SIZE": "A imagem está vazia ou tem mais de 1,5 MB.",
     "ART_NOT_AN_IMAGE": "Esse arquivo não é uma imagem válida (ou segura).",
     "ART_UNKNOWN_SLOT": "Esse espaço de imagem não existe.",
@@ -2347,5 +2416,19 @@
       "button": "Criar seu piloto"
     },
     "authTabs": "Entrar ou criar uma conta"
+  },
+  "dialogue": {
+    "continue": "Continuar",
+    "close": "Fechar",
+    "skip": "Pular",
+    "skipAsk": "Pular a conversa toda? Você pode ouvi-la de novo no menu da conta.",
+    "skipYes": "Sim, pular",
+    "skipNo": "Não, continuar",
+    "menuTitle": "Conversar de novo",
+    "menuOn": "Diálogos: ligados",
+    "menuOff": "Diálogos: desligados",
+    "turnOff": "Desligar os diálogos",
+    "turnOn": "Ligar os diálogos",
+    "replayLabel": "Ouvir de novo: {{title}}"
   }
 }

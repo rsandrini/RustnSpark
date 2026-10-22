@@ -342,6 +342,8 @@ export function SchemaForm({
         initial[field.name] = Array.isArray(initialData[field.name])
           ? [...(initialData[field.name] as string[])]
           : [];
+      } else if (field.type === 'json-list') {
+        initial[field.name] = Array.isArray(initialData[field.name]) ? initialData[field.name] : [];
       } else if (field.type === 'connector-rules' || field.type === 'grid-cells') {
         initial[field.name] = initialData[field.name] ?? undefined;
       } else {
@@ -526,7 +528,7 @@ export function SchemaForm({
       );
     }
 
-    if (field.type === 'json') {
+    if (field.type === 'json' || field.type === 'json-list') {
       return (
         <textarea
           id={field.name}
@@ -654,6 +656,7 @@ export function SchemaForm({
     const wide =
       field.type === 'locale-map' ||
       field.type === 'json' ||
+      field.type === 'json-list' ||
       field.type === 'grid-cells' ||
       field.type === 'connector-rules';
     return (
