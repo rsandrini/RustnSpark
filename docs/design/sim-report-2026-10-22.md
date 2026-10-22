@@ -73,3 +73,16 @@ that); recommended first pass is 1 + 2 together.
 
 Not checked: the replay against real play (`test/validation/sim-replay.ts`, needs the owner's missions in the DB), the
 quest-giver type weights (bots read the board the same way), and fights by zone.
+
+## 6. Addendum: rounds 5b, 5c and 6 (2026-10-22)
+- **5b**: pirates follow the ship's bridge (`encounter.pirate_strength_by_bridge`), old zone tables back; Epic x1.5, Legendary
+  x2 over round 4's prices. **5c**: pirates softer (Epic x1.2, Legendary x1.45) after the r5b2 retest (the applied x1.35 / x1.7
+  stalled 20-26 of 32 runs, nobody reached Legendary).
+- **r6 retest** (balanced + random pilots, 4 builds, 8 runs x 300 missions, start credits 3000): repair took 70-77% of the
+  income; fights lost 11-15% (standard builds); Legendary in 1 run of 48. Wear 30% lower (`w70`): repair 49-68%, Legendary in
+  about 2 of 3 runs at 97-125 h, stalls 0-1. Wear 50% lower (`w50`): repair 33-49%, every run reaches Legendary at 90-116 h
+  (too easy). Repair factor 0.45: barely moves the repair share (repair follows part price).
+- **Round 6 applied** (migration 20261022220000): wear 30% lower (`base_min` 0.7, `base_max` 1.2, `hull_to_condition` 0.2),
+  pirates back to Epic x1.35 / Legendary x1.7, Epic parts x1.5 and Legendary x2 over 5b's prices. Open: retest the combination;
+  Epic still arrives at ~45-55 h in every variant (target 90-130 h) and the Common/Uncommon start is not touched yet.
+- Start credits 7500 -> 3000 (owner playtest); open-cargo bonus now follows the short-trip factor (the test flight paid 661).

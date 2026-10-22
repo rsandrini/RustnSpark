@@ -52,8 +52,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     dead_at_or_below: 1,
     // Balance round 2026-10-15 (sim experiments 42-47): wear per mission came down from ~60 to
     // ~20-30 points so repair stops eating the reward as the ship gets more valuable.
-    base_min: 1,
-    base_max: 1.7,
+    // Round 6 (2026-10-22, sim r6): 30% less wear, so repair stops taking 70-77% of the income.
+    base_min: 0.7,
+    base_max: 1.2,
     env_multiplier: 1,
     choke_loss_min: 3,
     choke_loss_max: 8,
@@ -81,7 +82,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     environment_damage_factor: 1,
     // Hull points a run lost become condition lost on every part, at this share (1 = a hull at
     // 80% leaves every part 20% worn).
-    hull_to_condition: 0.3,
+    hull_to_condition: 0.2,
     // Of the wear the hull's losses cause, the Hull Frame parts tank this share (the rest passes
     // through to the other parts). 0 = every part wears alike.
     hull_frame_share: 0.7,
@@ -217,7 +218,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 },
     // Balance round 5: pirates follow the ship's bridge. Up to Rare they are what they always were (comfortable);
     // above it they come stronger, so Epic and Legendary pilots meet a real fight in every zone.
-    pirate_strength_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1, EPIC: 1.2, LEGENDARY: 1.45 },
+    pirate_strength_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1, EPIC: 1.35, LEGENDARY: 1.7 },
     pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],

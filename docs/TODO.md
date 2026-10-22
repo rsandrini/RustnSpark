@@ -20,7 +20,8 @@ ships (the commit has the history). Raise questions before starting anything mar
   (regenerate it with `tools/oracle/gen_fixtures.py`).
 
 ## Next (owner playtest, 2026-10-22)
-- [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 5.
+- [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
+- [ ] Balance round 6 is applied (wear -30%, pirates by bridge x1.35/x1.7, Epic x1.5 / Legendary x2 prices): retest in the sim; Epic still comes at ~50 h (target 90-130 h) and the Common/Uncommon start may still be too easy (owner to say what felt easy).
 
 ## Open
 
