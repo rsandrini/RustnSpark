@@ -56,8 +56,8 @@ export const SCENE_TRIGGERS = [
   'repair_due',
   'work_due',
   'checklist_done',
-  'missions_3',
-  'missions_6',
+  'first_pirates',
+  'first_scrap',
 ] as const;
 
 const PLACEHOLDER_GIVER: GiverRef = {

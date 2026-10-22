@@ -17,6 +17,10 @@ export interface DialogueFacts {
   readonly dispatched: boolean;
   readonly repaired: boolean;
   readonly worked: boolean;
+  /** A flight of theirs has met pirates (a fight, an escape or a demand). */
+  readonly metPirates: boolean;
+  /** They have collected scrap at least once. */
+  readonly foundScrap: boolean;
 }
 
 /** Below this share of the tank, after a first flight, the mentor says something about fuel. */
@@ -44,10 +48,10 @@ export function triggerHolds(trigger: Trigger, facts: DialogueFacts): boolean {
       return facts.completed >= 1 && facts.repaired && !facts.worked;
     case 'checklist_done':
       return facts.completed >= 1 && facts.repaired && facts.worked;
-    case 'missions_3':
-      return facts.completed >= 3;
-    case 'missions_6':
-      return facts.completed >= 6;
+    case 'first_pirates':
+      return facts.metPirates;
+    case 'first_scrap':
+      return facts.foundScrap;
     case 'low_fuel':
       return (
         facts.completed >= 1 &&

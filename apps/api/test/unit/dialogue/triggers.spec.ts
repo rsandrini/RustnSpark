@@ -19,6 +19,8 @@ const FRESH: DialogueFacts = {
   dispatched: false,
   repaired: false,
   worked: false,
+  metPirates: false,
+  foundScrap: false,
 };
 const done = (sceneId: string): SceneProgress => ({ sceneId, status: 'DONE', nodeId: null });
 const idOf = (facts: DialogueFacts, progress: SceneProgress[] = []) =>
@@ -65,10 +67,10 @@ describe('dialogue triggers', () => {
     const work = [...repair, done('other_work')];
     expect(idOf(worked, work)).toBe('checklist_done');
     const finished = [...work, done('checklist_done')];
-    // later tips wait for the missions; urgent ones come as they happen
+    // later tips wait for the first pirates and the first scrap; urgent ones come as they happen
     expect(idOf(worked, finished)).toBeUndefined();
-    expect(idOf({ ...worked, completed: 3 }, finished)).toBe('pirates');
-    expect(idOf({ ...worked, completed: 6 }, [...finished, done('pirates')])).toBe('upgrades');
+    expect(idOf({ ...worked, metPirates: true }, finished)).toBe('pirates');
+    expect(idOf({ ...worked, foundScrap: true }, [...finished, done('pirates')])).toBe('upgrades');
     expect(idOf({ ...worked, tankFraction: 0.1 }, finished)).toBe('low_fuel');
     expect(idOf({ ...worked, completed: 2, failed: 1 }, finished)).toBe('first_failure');
     // nothing due once everything has been through
@@ -94,7 +96,10 @@ describe('dialogue triggers', () => {
     expect(
       triggerHolds('checklist_done', { ...FRESH, completed: 1, repaired: true, worked: true }),
     ).toBe(true);
-    expect(triggerHolds('missions_3', { ...FRESH, completed: 2 })).toBe(false);
+    expect(triggerHolds('first_pirates', FRESH)).toBe(false);
+    expect(triggerHolds('first_pirates', { ...FRESH, metPirates: true })).toBe(true);
+    expect(triggerHolds('first_scrap', FRESH)).toBe(false);
+    expect(triggerHolds('first_scrap', { ...FRESH, foundScrap: true })).toBe(true);
   });
 
   it('a skipped scene does not come back, and nobody without a faction hears anything', () => {

@@ -881,8 +881,8 @@
         "repair_due": "Uma missão terminou e nenhum conserto foi pago",
         "work_due": "O primeiro conserto foi feito e ainda não houve coleta ou mineração",
         "checklist_done": "A lista Primeiros passos está completa",
-        "missions_3": "Três missões terminadas",
-        "missions_6": "Seis missões terminadas"
+        "first_pirates": "Um voo encontra piratas pela primeira vez",
+        "first_scrap": "A primeira sucata é coletada"
       },
       "positions": {
         "center": "Centro (escurecido)",

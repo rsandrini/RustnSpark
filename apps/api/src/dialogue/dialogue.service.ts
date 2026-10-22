@@ -14,6 +14,10 @@ const BUILT_PARTS = 4;
 /** The pilot's own jobs are not "missions finished" for the mentor. */
 const OWN_JOB_TYPES = ['SCAVENGE', 'TRAVEL'] as const;
 
+/** The mission events a meeting with pirates leaves in the log. */
+const PIRATE_EVENTS_PATH =
+  '$.events[*] ? (@.type == "combat_win" || @.type == "combat_loss" || @.type == "combat_draw" || @.type == "escaped" || @.type == "pirate_demand")';
+
 export interface DialogueScene {
   readonly id: string;
   readonly title: Localized;
@@ -132,7 +136,7 @@ export class DialogueService {
   }
 
   private async factsOf(playerId: string, factionId: string | null): Promise<DialogueFacts> {
-    const [ship, completed, failed, steps] = await Promise.all([
+    const [ship, completed, failed, steps, pirates, scrap] = await Promise.all([
       this.prisma.ship.findFirst({
         where: { ownerPlayerId: playerId },
         orderBy: { id: 'asc' },
@@ -149,6 +153,14 @@ export class DialogueService {
         where: { playerId, status: 'FAILED', type: { notIn: [...OWN_JOB_TYPES] } },
       }),
       this.players.getTutorialProgress(playerId),
+      // pirates met: a logged flight with any of the events a pirate meeting writes
+      this.prisma.$queryRaw<{ found: boolean }[]>`
+        SELECT EXISTS (
+          SELECT 1 FROM "MissionLog"
+          WHERE "playerId" = ${playerId}
+            AND jsonb_path_exists("legs", ${PIRATE_EVENTS_PATH}::jsonpath)
+        ) AS found`,
+      this.prisma.playerMaterial.count({ where: { playerId, materialId: 'scrap' } }),
     ]);
     const built = ship !== null && Array.isArray(ship.layout) && ship.layout.length >= BUILT_PARTS;
     let tankFraction: number | null = null;
@@ -167,6 +179,8 @@ export class DialogueService {
       dispatched: steps.dispatched,
       repaired: steps.repaired,
       worked: steps.worked,
+      metPirates: pirates[0]?.found === true,
+      foundScrap: scrap > 0,
     };
   }
 }

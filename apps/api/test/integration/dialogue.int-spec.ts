@@ -187,6 +187,59 @@ describe('mentor dialogue scenes', () => {
     expect((await stateOf(player.token)).scene?.id).toBe('first_failure');
   });
 
+  it('the pirates tip waits for a first meeting in a flight log, and the scrap tip for the first scrap', async () => {
+    await freshWorld();
+    const player = await newPlayer('luna', true);
+    const every = ['welcome', 'first_ship', 'first_flight'];
+    for (const id of every) await post(player.token, `/${id}`, { event: 'done' });
+    expect((await stateOf(player.token)).scene).toBeNull();
+
+    const template = await prisma.missionTemplate.findFirstOrThrow({ orderBy: { id: 'asc' } });
+    await prisma.rulesSnapshot.create({ data: { hash: 'dialogue-rules', rules: {} } });
+    const log = async (type: string) => {
+      const mission = await prisma.missionInstance.create({
+        data: {
+          templateId: template.id,
+          type: template.type,
+          factionId: template.factionId,
+          originId: 'ceres',
+          destinationId: 'ceres_pad',
+          legs: [],
+          cargo: {},
+          reward: 1,
+          expiresAt: new Date(0),
+          seed: `d-${randomUUID()}`,
+          status: 'EXPIRED',
+          playerId: player.playerId,
+        },
+      });
+      await prisma.missionLog.create({
+        data: {
+          missionId: mission.id,
+          playerId: player.playerId,
+          seed: 's',
+          rulesHash: 'dialogue-rules',
+          outcome: 'success',
+          shipSnapshot: {},
+          legs: { events: [{ type }] },
+          schemaVersion: 2,
+        },
+      });
+    };
+    // a quiet flight is not a meeting
+    await log('leg_travel');
+    expect((await stateOf(player.token)).scene).toBeNull();
+    await log('combat_win');
+    expect((await stateOf(player.token)).scene?.id).toBe('pirates');
+    await post(player.token, '/pirates', { event: 'done' });
+
+    expect((await stateOf(player.token)).scene).toBeNull();
+    await prisma.playerMaterial.create({
+      data: { playerId: player.playerId, materialId: 'scrap', quantity: 3 },
+    });
+    expect((await stateOf(player.token)).scene?.id).toBe('upgrades');
+  });
+
   it('replays a seen scene, refuses one never seen, and rejects unknown scenes and nodes', async () => {
     await freshWorld();
     const player = await newPlayer('sun', false);

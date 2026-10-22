@@ -46,9 +46,9 @@ export const TRIGGERS = [
   'repair_due',
   'work_due',
   'checklist_done',
-  // Later tips, never before the pilot has flown this many missions.
-  'missions_3',
-  'missions_6',
+  // Later tips, each at the first time the pilot meets the thing.
+  'first_pirates',
+  'first_scrap',
 ] as const;
 
 export type Trigger = (typeof TRIGGERS)[number];

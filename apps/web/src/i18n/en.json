@@ -881,8 +881,8 @@
         "repair_due": "A mission is finished and no repair was paid yet",
         "work_due": "The first repair is done and no scavenging or mining yet",
         "checklist_done": "The Getting started list is complete",
-        "missions_3": "Three missions are finished",
-        "missions_6": "Six missions are finished"
+        "first_pirates": "A flight meets pirates for the first time",
+        "first_scrap": "The first scrap is collected"
       },
       "positions": {
         "center": "Centre (dimmed)",

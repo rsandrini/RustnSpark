@@ -40,7 +40,7 @@ interface Voice {
     readonly d1: Pair;
     readonly d2: Pair;
     readonly e1: Pair;
-    // later tips: pirates, then scrap / rarity / upgrades
+    // later tips: pirates (first meeting), then scrap / rarity / upgrades (first scrap)
     readonly p1: Pair;
     readonly p2: Pair;
     readonly u1: Pair;
@@ -270,7 +270,7 @@ function scenes(voice: Voice): SceneData[] {
     {
       id: 'pirates',
       title: loc(['Pirates in the lanes', 'Piratas nas rotas']),
-      trigger: 'missions_3',
+      trigger: 'first_pirates',
       order: 12,
       start: 'p1',
       nodes: [
@@ -281,7 +281,7 @@ function scenes(voice: Voice): SceneData[] {
     {
       id: 'upgrades',
       title: loc(['Scrap, rarity and upgrades', 'Sucata, raridade e melhorias']),
-      trigger: 'missions_6',
+      trigger: 'first_scrap',
       order: 13,
       start: 'u1',
       nodes: [
@@ -657,6 +657,7 @@ export async function seedDialogueScenes(prisma: PrismaClient): Promise<void> {
           jsonb_array_length("scenes") = 6
           AND NOT "scenes" @> '[{"id": "pick_mission"}]'::jsonb
         )
+        OR "scenes" @> '[{"trigger": "missions_3"}]'::jsonb
       )
     `;
   }
