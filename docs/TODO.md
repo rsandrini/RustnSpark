@@ -19,6 +19,26 @@ ships (the commit has the history). Raise questions before starting anything mar
   test prints the rejection reasons when it fails; (4) never edit `baselines.json` by hand
   (regenerate it with `tools/oracle/gen_fixtures.py`).
 
+## Next (owner playtest, 2026-10-22)
+- [ ] **Dialogue: slow to appear and wrong moments.** The RPG chat is liked, but: the owner built the ship, followed
+  Getting started to the Port for fuel and then to the Missions board, and only there did the guildmaster speak about
+  fuel. The scene about the first flight (`first_flight`, trigger `ship_built`, `apps/api/src/dialogue/triggers.ts`)
+  should open as soon as the ship is built (on the Ship screen, pointing at the Port tab / Refuel), not later. After the
+  fuel step it stopped showing altogether while Getting started kept ticking. Look at: the delays in
+  `apps/web/src/features/dialogue/dialogue-host.tsx` (1.5 s settle, 4 s breather between scenes, the server asked only
+  every 20 s in `use-dialogue.ts`, so a scene that becomes due waits up to 20 s; refetch on navigation and after a build,
+  refuel or accept), the "another popup is open" check, an anchor that is not on the current screen, and whether the
+  scene order skips scenes. Add an e2e that follows the owner's path (build, Getting started, refuel, board) and asserts
+  each scene appears within a few seconds of its trigger.
+- [ ] **Mission card: the route map is far too zoomed out, and the card layout is broken.** The map in the mission card
+  shows a huge area: it needs a really close zoom framing the route of the mission (start to end with a little margin),
+  like the map screen's trip window. The details layout is also wrong since the giver badge was added: the map, then
+  the guildmaster below it, then another column, and the details below all of that. Expected: one tidy layout (map and
+  facts side by side, the giver as a small header line, details under them). Files: `apps/web/src/features/board/mission-card.tsx`,
+  `mission-row.tsx`, `apps/web/src/ui/RouteMap.tsx`, `apps/web/src/styles/missions.css` and `giver.css`; check at 320 px
+  (the widths e2e) and in pt-BR.
+- [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 5.
+
 ## Open
 
 - [ ] Late game (parked): the fusion torch engine and the fusion reactor family above nuclear, and a
@@ -32,8 +52,10 @@ ships (the commit has the history). Raise questions before starting anything mar
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
 
 ## Planned / follow-ups (owner, 2026-10-20)
-- [ ] **Balance, round 5**: the game feels too easy and money is quick to farm (owner, 2026-10-20); wait for the owner's
-  tests, then use the sim (`docs/design/sim-report-2026-10-20.md`: late money 57-340k at Legendary).
+- [ ] **Balance, round 5**: the game was too easy and money was quick to farm (owner, 2026-10-20). Sim check
+  `docs/design/sim-report-2026-10-22.md`, plan `docs/design/balance-round-5-plan.md`. **Applied 2026-10-22** (reward at
+  the top flatter, pirates above parity in zones 2-3, Epic parts x2 and Legendary x3 dearer; migration
+  `20261022000000_balance_round_5`). Retest in the sim on the new numbers and tune; Rare must stay comfortable.
 - Done 2026-10-20: every credit amount x10 (a fresh database is needed: the seed fills prices only when empty); the pad's
   way back pays a tenth (`missions.short_trip_reward_factor`).
 
