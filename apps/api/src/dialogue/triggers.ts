@@ -11,6 +11,12 @@ export interface DialogueFacts {
   readonly failed: number;
   /** Fuel aboard over the tank's size; null without a ship. */
   readonly tankFraction: number | null;
+  /** The checklist's action steps, from the pilot's own records. */
+  readonly refuelled: boolean;
+  readonly missionTaken: boolean;
+  readonly dispatched: boolean;
+  readonly repaired: boolean;
+  readonly worked: boolean;
 }
 
 /** Below this share of the tank, after a first flight, the mentor says something about fuel. */
@@ -26,6 +32,22 @@ export function triggerHolds(trigger: Trigger, facts: DialogueFacts): boolean {
       return facts.completed >= 1;
     case 'first_failure':
       return facts.failed >= 1;
+    case 'needs_fuel':
+      return facts.onboarded && facts.shipBuilt && !facts.refuelled;
+    case 'ready_for_mission':
+      return facts.refuelled && !facts.missionTaken && facts.completed === 0;
+    case 'mission_taken':
+      return facts.missionTaken && !facts.dispatched;
+    case 'repair_due':
+      return facts.completed >= 1 && !facts.repaired;
+    case 'work_due':
+      return facts.completed >= 1 && facts.repaired && !facts.worked;
+    case 'checklist_done':
+      return facts.completed >= 1 && facts.repaired && facts.worked;
+    case 'missions_3':
+      return facts.completed >= 3;
+    case 'missions_6':
+      return facts.completed >= 6;
     case 'low_fuel':
       return (
         facts.completed >= 1 &&

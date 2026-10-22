@@ -268,6 +268,9 @@ export const DialogueAnchorSchema = z.enum([
   'missions_tab',
   'map_tab',
   'accept_button',
+  'dispatch_button',
+  'port_repair',
+  'port_work',
 ]);
 export type DialogueAnchor = z.infer<typeof DialogueAnchorSchema>;
 
@@ -276,6 +279,8 @@ export const DialogueActionSchema = z.enum([
   'goto:/ship',
   'goto:/port',
   'goto:/port?tab=refuel',
+  'goto:/port?tab=repair',
+  'goto:/port?tab=scavenging',
   'goto:/missions',
   'goto:/map',
   'replay',

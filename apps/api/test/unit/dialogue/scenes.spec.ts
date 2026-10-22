@@ -31,11 +31,18 @@ describe('dialogue scenes', () => {
         'welcome',
         'first_ship',
         'first_flight',
+        'pick_mission',
+        'dispatch',
         'after_first_report',
+        'repair_wear',
+        'other_work',
+        'checklist_done',
         'low_fuel',
         'first_failure',
+        'pirates',
+        'upgrades',
       ]);
-      expect(parseScenes(scenes)).toHaveLength(6);
+      expect(parseScenes(scenes)).toHaveLength(13);
     }
   });
 

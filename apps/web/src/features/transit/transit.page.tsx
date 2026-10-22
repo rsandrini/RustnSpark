@@ -310,6 +310,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
         <button
           type="button"
           className="btn primary"
+          data-tour="dispatch_button"
           disabled={dispatch.isPending || ship === undefined || startDeadlinePassed}
           onClick={() => dispatch.mutate()}
         >

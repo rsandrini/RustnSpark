@@ -14,6 +14,11 @@ const FRESH: DialogueFacts = {
   completed: 0,
   failed: 0,
   tankFraction: null,
+  refuelled: false,
+  missionTaken: false,
+  dispatched: false,
+  repaired: false,
+  worked: false,
 };
 const done = (sceneId: string): SceneProgress => ({ sceneId, status: 'DONE', nodeId: null });
 const idOf = (facts: DialogueFacts, progress: SceneProgress[] = []) =>
@@ -38,21 +43,58 @@ describe('dialogue triggers', () => {
   it('goes through the scenes one at a time, in order', () => {
     expect(idOf(FRESH)).toBe('welcome');
     expect(idOf(FRESH, [done('welcome')])).toBe('first_ship');
-    expect(idOf({ ...FRESH, shipBuilt: true }, [done('welcome'), done('first_ship')])).toBe(
-      'first_flight',
-    );
-    const afterFlight = { ...FRESH, shipBuilt: true, completed: 1 };
-    const early = [done('welcome'), done('first_ship'), done('first_flight')];
-    expect(idOf(afterFlight, early)).toBe('after_first_report');
-    expect(
-      idOf({ ...afterFlight, tankFraction: 0.1 }, [...early, done('after_first_report')]),
-    ).toBe('low_fuel');
-    expect(
-      idOf({ ...afterFlight, completed: 2, failed: 1 }, [...early, done('after_first_report')]),
-    ).toBe('first_failure');
+    const built = { ...FRESH, shipBuilt: true };
+    const early = [done('welcome'), done('first_ship')];
+    expect(idOf(built, early)).toBe('first_flight');
+    // the checklist scenes follow what the pilot has actually done
+    const fuelled = { ...built, refuelled: true };
+    const fuel = [...early, done('first_flight')];
+    expect(idOf(fuelled, fuel)).toBe('pick_mission');
+    const taken = { ...fuelled, missionTaken: true };
+    const pick = [...fuel, done('pick_mission')];
+    expect(idOf(taken, pick)).toBe('dispatch');
+    const flown = { ...taken, dispatched: true, completed: 1 };
+    const sent = [...pick, done('dispatch')];
+    expect(idOf(flown, sent)).toBe('after_first_report');
+    const read = [...sent, done('after_first_report')];
+    expect(idOf(flown, read)).toBe('repair_wear');
+    const mended = { ...flown, repaired: true };
+    const repair = [...read, done('repair_wear')];
+    expect(idOf(mended, repair)).toBe('other_work');
+    const worked = { ...mended, worked: true };
+    const work = [...repair, done('other_work')];
+    expect(idOf(worked, work)).toBe('checklist_done');
+    const finished = [...work, done('checklist_done')];
+    // later tips wait for the missions; urgent ones come as they happen
+    expect(idOf(worked, finished)).toBeUndefined();
+    expect(idOf({ ...worked, completed: 3 }, finished)).toBe('pirates');
+    expect(idOf({ ...worked, completed: 6 }, [...finished, done('pirates')])).toBe('upgrades');
+    expect(idOf({ ...worked, tankFraction: 0.1 }, finished)).toBe('low_fuel');
+    expect(idOf({ ...worked, completed: 2, failed: 1 }, finished)).toBe('first_failure');
     // nothing due once everything has been through
     const all = SCENES.map((entry) => done(entry.id));
-    expect(idOf({ ...afterFlight, failed: 1, tankFraction: 0.1 }, all)).toBeUndefined();
+    expect(idOf({ ...worked, completed: 9, failed: 1, tankFraction: 0.1 }, all)).toBeUndefined();
+  });
+
+  it('the checklist scenes are windows: they do not start once the step is behind the pilot', () => {
+    expect(triggerHolds('needs_fuel', { ...FRESH, shipBuilt: true })).toBe(true);
+    expect(triggerHolds('needs_fuel', { ...FRESH, shipBuilt: true, refuelled: true })).toBe(false);
+    expect(triggerHolds('ready_for_mission', { ...FRESH, refuelled: true })).toBe(true);
+    expect(
+      triggerHolds('ready_for_mission', { ...FRESH, refuelled: true, missionTaken: true }),
+    ).toBe(false);
+    expect(triggerHolds('mission_taken', { ...FRESH, missionTaken: true })).toBe(true);
+    expect(triggerHolds('mission_taken', { ...FRESH, missionTaken: true, dispatched: true })).toBe(
+      false,
+    );
+    expect(triggerHolds('repair_due', { ...FRESH, completed: 1 })).toBe(true);
+    expect(triggerHolds('repair_due', { ...FRESH, completed: 1, repaired: true })).toBe(false);
+    expect(triggerHolds('work_due', { ...FRESH, completed: 1, repaired: true })).toBe(true);
+    expect(triggerHolds('work_due', { ...FRESH, completed: 1 })).toBe(false);
+    expect(
+      triggerHolds('checklist_done', { ...FRESH, completed: 1, repaired: true, worked: true }),
+    ).toBe(true);
+    expect(triggerHolds('missions_3', { ...FRESH, completed: 2 })).toBe(false);
   });
 
   it('a skipped scene does not come back, and nobody without a faction hears anything', () => {

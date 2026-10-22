@@ -35,6 +35,17 @@ interface Voice {
     readonly l1: Pair;
     readonly x1: Pair;
     readonly x2: Pair;
+    // the checklist: what Getting started is, dispatching, finishing it
+    readonly wList: Pair;
+    readonly d1: Pair;
+    readonly d2: Pair;
+    readonly e1: Pair;
+    // later tips: pirates, then scrap / rarity / upgrades
+    readonly p1: Pair;
+    readonly p2: Pair;
+    readonly u1: Pair;
+    readonly u2: Pair;
+    readonly u3: Pair;
   };
 }
 
@@ -54,6 +65,8 @@ const LABELS = {
   later: ['Later', 'Depois'],
   next2: ['Next', 'Próximo'],
   manage: ['I will manage', 'Eu me viro'],
+  toRepair: ['Take me to Repair', 'Leve-me ao Conserto'],
+  toWork: ['Take me to other work', 'Leve-me a outro trabalho'],
 } as const satisfies Record<string, Pair>;
 
 const node = (
@@ -102,7 +115,8 @@ function scenes(voice: Voice): SceneData[] {
           blocking: true,
           choices: [choice(LABELS.whatNow, 'w3')],
         }),
-        node('w3', t.w3, 'center', { blocking: true, next: 'w4' }),
+        node('w3', t.w3, 'center', { blocking: true, next: 'w_list' }),
+        node('w_list', t.wList, 'center', { blocking: true, next: 'w4' }),
         node('w4', t.w4, 'center', {
           blocking: true,
           choices: [choice(LABELS.showShip, null, 'end')],
@@ -130,8 +144,8 @@ function scenes(voice: Voice): SceneData[] {
     },
     {
       id: 'first_flight',
-      title: loc(['The first flight', 'O primeiro voo']),
-      trigger: 'ship_built',
+      title: loc(['Fill the tank', 'Encher o tanque']),
+      trigger: 'needs_fuel',
       order: 3,
       start: 'f1',
       nodes: [
@@ -139,9 +153,18 @@ function scenes(voice: Voice): SceneData[] {
           anchor: 'port_tab',
           choices: [
             choice(LABELS.toRefuel, null, 'goto:/port?tab=refuel'),
-            choice(LABELS.next2, 'f2'),
+            choice(LABELS.later, null, 'end'),
           ],
         }),
+      ],
+    },
+    {
+      id: 'pick_mission',
+      title: loc(['Your first mission', 'Sua primeira missão']),
+      trigger: 'ready_for_mission',
+      order: 4,
+      start: 'f2',
+      nodes: [
         node('f2', t.f2, 'bottom', {
           anchor: 'missions_tab',
           choices: [
@@ -157,24 +180,69 @@ function scenes(voice: Voice): SceneData[] {
       ],
     },
     {
+      id: 'dispatch',
+      title: loc(['Send her out', 'Mande-a partir']),
+      trigger: 'mission_taken',
+      order: 5,
+      start: 'd1',
+      nodes: [
+        node('d1', t.d1, 'bottom', { anchor: 'dispatch_button', next: 'd2' }),
+        node('d2', t.d2, 'bottom', { choices: [choice(LABELS.gotIt, null, 'end')] }),
+      ],
+    },
+    {
       id: 'after_first_report',
       title: loc(['After the first report', 'Depois do primeiro relatório']),
       trigger: 'first_mission_done',
-      order: 4,
+      order: 6,
       start: 'r1',
+      nodes: [node('r1', t.r1, 'bottom', { choices: [choice(LABELS.gotIt, null, 'end')] })],
+    },
+    {
+      id: 'repair_wear',
+      title: loc(['Repair the wear', 'Consertar o desgaste']),
+      trigger: 'repair_due',
+      order: 7,
+      start: 'r2',
       nodes: [
-        node('r1', t.r1, 'bottom', { next: 'r2' }),
-        node('r2', t.r2, 'bottom', { next: 'r3' }),
-        node('r3', t.r3, 'bottom', {
-          choices: [choice(LABELS.toPort, null, 'goto:/port'), choice(LABELS.gotIt, null, 'end')],
+        node('r2', t.r2, 'bottom', {
+          anchor: 'port_tab',
+          choices: [
+            choice(LABELS.toRepair, null, 'goto:/port?tab=repair'),
+            choice(LABELS.later, null, 'end'),
+          ],
         }),
       ],
+    },
+    {
+      id: 'other_work',
+      title: loc(['Other work', 'Outro trabalho']),
+      trigger: 'work_due',
+      order: 8,
+      start: 'r3',
+      nodes: [
+        node('r3', t.r3, 'bottom', {
+          anchor: 'port_tab',
+          choices: [
+            choice(LABELS.toWork, null, 'goto:/port?tab=scavenging'),
+            choice(LABELS.later, null, 'end'),
+          ],
+        }),
+      ],
+    },
+    {
+      id: 'checklist_done',
+      title: loc(['The checklist is done', 'O roteiro está completo']),
+      trigger: 'checklist_done',
+      order: 9,
+      start: 'e1',
+      nodes: [node('e1', t.e1, 'center', { choices: [choice(LABELS.gotIt, null, 'end')] })],
     },
     {
       id: 'low_fuel',
       title: loc(['A low tank', 'Tanque baixo']),
       trigger: 'low_fuel',
-      order: 5,
+      order: 10,
       start: 'l1',
       nodes: [
         node('l1', t.l1, 'bottom', {
@@ -190,13 +258,36 @@ function scenes(voice: Voice): SceneData[] {
       id: 'first_failure',
       title: loc(['After a lost mission', 'Depois de uma missão perdida']),
       trigger: 'first_failure',
-      order: 6,
+      order: 11,
       start: 'x1',
       nodes: [
         node('x1', t.x1, 'center', { blocking: true, next: 'x2' }),
         node('x2', t.x2, 'bottom', {
           choices: [choice(LABELS.toPort, null, 'goto:/port'), choice(LABELS.manage, null, 'end')],
         }),
+      ],
+    },
+    {
+      id: 'pirates',
+      title: loc(['Pirates in the lanes', 'Piratas nas rotas']),
+      trigger: 'missions_3',
+      order: 12,
+      start: 'p1',
+      nodes: [
+        node('p1', t.p1, 'bottom', { next: 'p2' }),
+        node('p2', t.p2, 'bottom', { choices: [choice(LABELS.gotIt, null, 'end')] }),
+      ],
+    },
+    {
+      id: 'upgrades',
+      title: loc(['Scrap, rarity and upgrades', 'Sucata, raridade e melhorias']),
+      trigger: 'missions_6',
+      order: 13,
+      start: 'u1',
+      nodes: [
+        node('u1', t.u1, 'bottom', { next: 'u2' }),
+        node('u2', t.u2, 'bottom', { next: 'u3' }),
+        node('u3', t.u3, 'bottom', { choices: [choice(LABELS.gotIt, null, 'end')] }),
       ],
     },
   ];
@@ -278,6 +369,42 @@ const LUNA: Voice = {
       'Repair the ship, refuel, and take something shorter and safer. Learn what went wrong from the report, then go again.',
       'Conserte a nave, reabasteça e pegue algo mais curto e seguro. Aprenda com o relatório o que deu errado e vá de novo.',
     ],
+    wList: [
+      'You will see a Getting started list on your screen. It is a checklist to help you through the first steps. Tick them off in any order; I will speak up when the next one is due.',
+      'Você verá uma lista Primeiros passos na tela. É um roteiro para ajudar nos primeiros passos. Marque em qualquer ordem; eu falo quando for a hora do próximo.',
+    ],
+    d1: [
+      'The contract is accepted. Now press Dispatch and she leaves the dock. Until you do, nothing happens.',
+      'O contrato foi aceito. Agora aperte Partir e ela deixa o cais. Até você apertar, nada acontece.',
+    ],
+    d2: [
+      'While she flies, the board, the Port and the map stay open to you. The report will wait for her return.',
+      'Enquanto ela voa, o quadro, o Porto e o mapa continuam abertos. O relatório espera o retorno dela.',
+    ],
+    e1: [
+      'That is the whole list. You built, fuelled, flew, repaired and worked, like a pilot of the Authority. The checklist closes by itself now; the account menu lets you hear me again.',
+      'Essa é a lista inteira. Você montou, abasteceu, voou, consertou e trabalhou, como um piloto da Autoridade. O roteiro se fecha sozinho agora; o menu da conta permite me ouvir de novo.',
+    ],
+    p1: [
+      'A word of warning, pilot: the lanes have pirates. The danger number on a contract says how many to expect, and the farther from the ports, the worse it gets.',
+      'Um aviso, piloto: as rotas têm piratas. O número de perigo de um contrato diz quantos esperar, e quanto mais longe dos portos, pior fica.',
+    ],
+    p2: [
+      'Weapons and shields decide those fights, and a worn ship fights poorly. Repair before you fly into danger, and take only what your ship can handle.',
+      'Armas e escudos decidem essas lutas, e nave gasta luta mal. Conserte antes de voar para o perigo e aceite só o que sua nave aguenta.',
+    ],
+    u1: [
+      'Your flights bring back more than credits: scrap, crystals and cores from missions and mining. Do not let them sit forgotten.',
+      'Seus voos trazem mais que créditos: sucata, cristais e núcleos de missões e mineração. Não os deixe esquecidos.',
+    ],
+    u2: [
+      'Parts come in five rarities, from Common to Legendary. A better part, and above all a better Bridge, makes a stronger ship and a better-paid pilot. They cost accordingly.',
+      'As peças vêm em cinco raridades, de Comum a Lendária. Uma peça melhor, e sobretudo uma Ponte melhor, faz uma nave mais forte e um piloto mais bem pago. E custam na mesma medida.',
+    ],
+    u3: [
+      'Upgrades turn credits and those materials into the next rarity of a part you own, once it is fully repaired. There is no hurry: fly, save, and upgrade what holds you back.',
+      'Melhorias transformam créditos e esses materiais na próxima raridade de uma peça sua, depois de totalmente consertada. Sem pressa: voe, economize e melhore o que mais limita você.',
+    ],
   },
 };
 
@@ -357,6 +484,42 @@ const SUN: Voice = {
       'Patch her up, top the tank, take something short and safe. The report shows what went wrong. Then back at it!',
       'Remende, encha o tanque, pegue algo curto e seguro. O relatório mostra o que deu errado. Depois, de volta ao trabalho!',
     ],
+    wList: [
+      'See that Getting started list on your screen? A checklist to help you through the first steps. Tick them off at your own pace, friend, and I will chime in at the right moments.',
+      'Está vendo a lista Primeiros passos na tela? É um roteiro para ajudar nos primeiros passos. Marque no seu ritmo, amigo, e eu apareço nos momentos certos.',
+    ],
+    d1: [
+      'Job accepted! Now press Dispatch and she is off. Until then she just sits at the dock, earning nothing.',
+      'Serviço aceito! Agora aperte Partir e ela vai. Até lá ela fica no cais, sem render nada.',
+    ],
+    d2: [
+      'While she flies, look around: the board, the Port, the map. The report arrives when she is home.',
+      'Enquanto ela voa, dê uma olhada: o quadro, o Porto, o mapa. O relatório chega quando ela estiver em casa.',
+    ],
+    e1: [
+      'That is the whole checklist, friend! You built, fuelled, flew, mended and worked. The list folds itself away now. Want me again? The account menu has you covered.',
+      'Essa é a lista inteira, amigo! Você montou, abasteceu, voou, consertou e trabalhou. A lista se recolhe sozinha agora. Quer me ouvir de novo? O menu da conta resolve.',
+    ],
+    p1: [
+      'Word of advice, partner: pirates. They lurk on the lanes, thicker the farther you go. The danger number on a contract tells you what to expect.',
+      'Um conselho, parceiro: piratas. Eles rondam as rotas, mais densos quanto mais longe você vai. O número de perigo do contrato diz o que esperar.',
+    ],
+    p2: [
+      'Weapons and shields win those fights, and a worn ship loses them. Mend before a risky run, and never take a job your ship cannot handle.',
+      'Armas e escudos vencem essas lutas, e nave gasta perde. Conserte antes de uma viagem arriscada e nunca aceite um serviço que sua nave não aguenta.',
+    ],
+    u1: [
+      'Your runs bring back more than coin: scrap, crystals, cores. Hang on to them, they are worth more than they look.',
+      'Suas viagens trazem mais que moedas: sucata, cristais, núcleos. Guarde, valem mais do que parecem.',
+    ],
+    u2: [
+      'Parts come in five rarities, Common to Legendary. Better parts, and above all a better Bridge, mean a stronger ship and fatter pay. They cost more too, naturally.',
+      'As peças vêm em cinco raridades, de Comum a Lendária. Peças melhores, e principalmente uma Ponte melhor, significam nave mais forte e pagamento mais gordo. Custam mais também, claro.',
+    ],
+    u3: [
+      'Upgrades turn coin and those materials into the next rarity of a part you own, once it is fully mended. No rush. Fly, save, and upgrade whatever pinches most.',
+      'Melhorias transformam moedas e esses materiais na próxima raridade de uma peça sua, depois de totalmente consertada. Sem pressa. Voe, economize e melhore o que mais aperta.',
+    ],
   },
 };
 
@@ -433,6 +596,42 @@ const EXPLORERS: Voice = {
       'Mend the ship. Fill the tank. Take something short. Read the report to see where it went wrong. Then go again.',
       'Conserte a nave. Encha o tanque. Pegue algo curto. Leia o relatório para ver onde deu errado. Depois vá de novo.',
     ],
+    wList: [
+      'There is a Getting started list on your screen. A checklist, to help the first steps. Tick it off. I will speak when the next one comes.',
+      'Há uma lista Primeiros passos na tela. Um roteiro, para ajudar nos primeiros passos. Marque. Falo quando vier o próximo.',
+    ],
+    d1: [
+      'Accepted. Now Dispatch. She waits until you do.',
+      'Aceito. Agora Partir. Ela espera até você apertar.',
+    ],
+    d2: [
+      'While she flies, look around. The report will be here when she lands.',
+      'Enquanto ela voa, olhe ao redor. O relatório estará aqui quando ela pousar.',
+    ],
+    e1: [
+      'The list is done. You fly, you mend, you dig. It closes by itself. Need me again, the account menu knows how.',
+      'A lista acabou. Você voa, conserta, cava. Ela se fecha sozinha. Precisando de mim, o menu da conta sabe como.',
+    ],
+    p1: [
+      'Hear this. Pirates. The farther out, the more of them. The danger number on a contract is your warning.',
+      'Ouça. Piratas. Quanto mais longe, mais deles. O número de perigo no contrato é o seu aviso.',
+    ],
+    p2: [
+      'Weapons and shields win. A worn ship loses. Mend before you go. Take what your ship can survive.',
+      'Armas e escudos vencem. Nave gasta perde. Conserte antes de partir. Aceite o que sua nave aguenta.',
+    ],
+    u1: [
+      'You bring back scrap, crystals, cores. Keep them. The frontier is built from them.',
+      'Você traz sucata, cristais, núcleos. Guarde. A fronteira é feita deles.',
+    ],
+    u2: [
+      'Parts come in five rarities, Common to Legendary. Better parts, a better Bridge: a stronger ship, better pay. They cost more.',
+      'As peças vêm em cinco raridades, de Comum a Lendária. Peças melhores, Ponte melhor: nave mais forte, pagamento melhor. Custam mais.',
+    ],
+    u3: [
+      'Upgrades turn coin and those materials into the next rarity of a part you own, once mended. No hurry. Spend where it hurts.',
+      'Melhorias transformam moedas e esses materiais na próxima raridade de uma peça sua, depois de consertada. Sem pressa. Gaste onde dói.',
+    ],
   },
 };
 
@@ -444,14 +643,21 @@ export const MENTOR_SCENES: Readonly<Record<string, readonly SceneData[]>> = {
 };
 
 /**
- * Gives each mentor their scenes while the column is still empty. Admin owns the rows afterwards: a mentor with any
- * scene already is left exactly as it is.
+ * Gives each mentor their scenes while the column is still empty, and brings a mentor still holding the original six
+ * (before the checklist scenes existed: no `pick_mission`) up to the full set. A mentor Admin has changed beyond that
+ * is left exactly as it is: Admin owns the rows from then on.
  */
 export async function seedDialogueScenes(prisma: PrismaClient): Promise<void> {
   for (const [id, list] of Object.entries(MENTOR_SCENES)) {
     await prisma.$executeRaw`
       UPDATE "QuestGiver" SET "scenes" = ${JSON.stringify(list)}::jsonb
-      WHERE "id" = ${id} AND "scenes" = '[]'::jsonb
+      WHERE "id" = ${id} AND (
+        "scenes" = '[]'::jsonb
+        OR (
+          jsonb_array_length("scenes") = 6
+          AND NOT "scenes" @> '[{"id": "pick_mission"}]'::jsonb
+        )
+      )
     `;
   }
 }

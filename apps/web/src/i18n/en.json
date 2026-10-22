@@ -874,7 +874,15 @@
         "ship_built": "The ship is built",
         "first_mission_done": "A first mission is finished",
         "first_failure": "A first mission is lost",
-        "low_fuel": "The tank runs low after a flight"
+        "low_fuel": "The tank runs low after a flight",
+        "needs_fuel": "The ship is built and has not been refuelled yet",
+        "ready_for_mission": "The tank is filled and no mission is taken yet",
+        "mission_taken": "A mission is accepted and not yet dispatched",
+        "repair_due": "A mission is finished and no repair was paid yet",
+        "work_due": "The first repair is done and no scavenging or mining yet",
+        "checklist_done": "The Getting started list is complete",
+        "missions_3": "Three missions are finished",
+        "missions_6": "Six missions are finished"
       },
       "positions": {
         "center": "Centre (dimmed)",
@@ -891,12 +899,17 @@
         "port_refuel": "Refuel tab",
         "missions_tab": "Missions tab",
         "map_tab": "Map tab",
-        "accept_button": "Accept button"
+        "accept_button": "Accept button",
+        "dispatch_button": "Dispatch button",
+        "port_repair": "Repair tab",
+        "port_work": "Scavenging tab"
       },
       "actions": {
         "goto_ship": "Go to the Ship",
         "goto_port": "Go to the Port",
         "goto_port_tab_refuel": "Go to Refuel",
+        "goto_port_tab_repair": "Go to Repair",
+        "goto_port_tab_scavenging": "Go to Scavenging",
         "goto_missions": "Go to Missions",
         "goto_map": "Go to the Map",
         "replay": "Play the scene again",

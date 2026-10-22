@@ -99,6 +99,14 @@ describe('Admin scene editor', () => {
       'first_mission_done',
       'first_failure',
       'low_fuel',
+      'needs_fuel',
+      'ready_for_mission',
+      'mission_taken',
+      'repair_due',
+      'work_due',
+      'checklist_done',
+      'missions_3',
+      'missions_6',
     ]);
     expect(options('Where it sits')).toEqual(['center', 'bottom', 'left', 'right', 'top']);
     expect(options('Points at')).toContain('port_refuel');

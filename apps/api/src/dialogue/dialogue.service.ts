@@ -4,6 +4,7 @@ import { RefuelService } from '../economy/refuel.service.js';
 import { giverRefOf } from '../missions/giver-ref.js';
 import type { GiverRef } from '../missions/giver-types.js';
 import { bilingual } from '../parts/parts.service.js';
+import { PlayersService } from '../players/players.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { parseScenes, type Localized, type NodeData, type SceneData } from './scenes.js';
 import { dueScene, type DialogueFacts, type SceneProgress } from './triggers.js';
@@ -32,6 +33,7 @@ export class DialogueService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly refuel: RefuelService,
+    private readonly players: PlayersService,
   ) {}
 
   async getState(playerId: string): Promise<DialogueState> {
@@ -130,7 +132,7 @@ export class DialogueService {
   }
 
   private async factsOf(playerId: string, factionId: string | null): Promise<DialogueFacts> {
-    const [ship, completed, failed] = await Promise.all([
+    const [ship, completed, failed, steps] = await Promise.all([
       this.prisma.ship.findFirst({
         where: { ownerPlayerId: playerId },
         orderBy: { id: 'asc' },
@@ -146,6 +148,7 @@ export class DialogueService {
       this.prisma.missionInstance.count({
         where: { playerId, status: 'FAILED', type: { notIn: [...OWN_JOB_TYPES] } },
       }),
+      this.players.getTutorialProgress(playerId),
     ]);
     const built = ship !== null && Array.isArray(ship.layout) && ship.layout.length >= BUILT_PARTS;
     let tankFraction: number | null = null;
@@ -153,6 +156,17 @@ export class DialogueService {
       const { fuelCap } = await this.refuel.tankOf(playerId, ship.id);
       tankFraction = fuelCap > 0 ? ship.fuel / fuelCap : null;
     }
-    return { onboarded: factionId !== null, shipBuilt: built, completed, failed, tankFraction };
+    return {
+      onboarded: factionId !== null,
+      shipBuilt: built,
+      completed,
+      failed,
+      tankFraction,
+      refuelled: steps.refuelled,
+      missionTaken: steps.missionTaken,
+      dispatched: steps.dispatched,
+      repaired: steps.repaired,
+      worked: steps.worked,
+    };
   }
 }

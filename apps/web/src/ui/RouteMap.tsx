@@ -122,6 +122,10 @@ export function RouteMap({
   );
   const windowHeight = (windowWidth * height) / WIDTH;
   const k = windowWidth / WIDTH;
+  // Markers and text shrink with the window, but a close-up of a short hop would still look all marker: they shrink
+  // a little more as the window narrows (the full sector keeps them as they were).
+  const m = k * (0.4 + 0.6 * k);
+  const textSize = 10 * k * (0.8 + 0.2 * k);
   const view = `${centreX - windowWidth / 2} ${centreY - windowHeight / 2} ${windowWidth} ${windowHeight}`;
 
   return (
@@ -158,7 +162,7 @@ export function RouteMap({
                 className={`rm-node${onPath.has(loc.id) ? ' on' : ''}${end ? ' end' : ''}`}
                 cx={p.x}
                 cy={p.y}
-                r={(end ? MARKER : MARKER - 2) * k}
+                r={(end ? MARKER : MARKER - 2) * m}
               />
               {end && (
                 <text
@@ -166,9 +170,13 @@ export function RouteMap({
                   x={p.x}
                   // the start's name sits above its marker and the end's below, so two places a hop apart do not
                   // print on top of each other
-                  y={loc.id === path[0] ? p.y - (MARKER + 3) * k : p.y + (MARKER + 11) * k}
+                  y={
+                    loc.id === path[0]
+                      ? p.y - (MARKER + 3) * m - textSize * 0.2
+                      : p.y + (MARKER + 6) * m + textSize
+                  }
                   textAnchor="middle"
-                  style={{ fontSize: 10 * k }}
+                  style={{ fontSize: textSize }}
                 >
                   {pickLocalized(loc.displayName, i18n.language)}
                 </text>
@@ -178,8 +186,8 @@ export function RouteMap({
         })}
         {ship !== null && (
           <g className="rm-ship-wrap" style={{ transform: `translate(${ship.x}px, ${ship.y}px)` }}>
-            {animated && <circle className="rm-ship-pulse" r={(MARKER - 1) * k} />}
-            <circle className="rm-ship" r={(MARKER - 1) * k} />
+            {animated && <circle className="rm-ship-pulse" r={(MARKER - 1) * m} />}
+            <circle className="rm-ship" r={(MARKER - 1) * m} />
           </g>
         )}
       </svg>

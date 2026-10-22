@@ -18,11 +18,16 @@ export const ANCHORS = [
   'missions_tab',
   'map_tab',
   'accept_button',
+  'dispatch_button',
+  'port_repair',
+  'port_work',
 ] as const;
 export const ACTIONS = [
   'goto:/ship',
   'goto:/port',
   'goto:/port?tab=refuel',
+  'goto:/port?tab=repair',
+  'goto:/port?tab=scavenging',
   'goto:/missions',
   'goto:/map',
   'replay',
@@ -34,6 +39,16 @@ export const TRIGGERS = [
   'first_mission_done',
   'first_failure',
   'low_fuel',
+  // The checklist moments (Getting started), each a window: it holds only while the step is the next one to do.
+  'needs_fuel',
+  'ready_for_mission',
+  'mission_taken',
+  'repair_due',
+  'work_due',
+  'checklist_done',
+  // Later tips, never before the pilot has flown this many missions.
+  'missions_3',
+  'missions_6',
 ] as const;
 
 export type Trigger = (typeof TRIGGERS)[number];

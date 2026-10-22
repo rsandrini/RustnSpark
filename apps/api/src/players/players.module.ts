@@ -14,6 +14,6 @@ import { OnboardingService } from './onboarding.service.js';
   imports: [ConfigModule, ShipsModule],
   controllers: [PlayersController],
   providers: [PlayersService, WalletService, PlayerEventService, OnboardingService],
-  exports: [WalletService, PlayerEventService, OnboardingService],
+  exports: [WalletService, PlayerEventService, OnboardingService, PlayersService],
 })
 export class PlayersModule {}

@@ -32,6 +32,9 @@ test('the welcome: the leader, a lore branch, the ship scene pointing at the gri
   await page.getByRole('button', { name: 'What do I do now?' }).click();
   await expect(page.getByRole('dialog')).toContainText('You fly contracts');
   await page.getByRole('button', { name: 'Continue' }).click();
+  // the checklist is introduced as help with the first steps
+  await expect(page.getByRole('dialog')).toContainText('Getting started list');
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('dialog')).toContainText('First, your ship');
   await page.getByRole('button', { name: 'Show me the ship' }).click();
 

@@ -53,6 +53,12 @@ const PORT_GROUPS = [
   { id: 'service', tabs: ['repair', 'refuel', 'upgrade'] },
   { id: 'work', tabs: ['scavenging', 'mining'] },
 ] as const;
+// The tabs a dialogue scene can point at (`data-tour`).
+const PORT_TOUR: Partial<Record<string, string>> = {
+  refuel: 'port_refuel',
+  repair: 'port_repair',
+  scavenging: 'port_work',
+};
 type PortGroupId = (typeof PORT_GROUPS)[number]['id'];
 type PortTabId = (typeof PORT_GROUPS)[number]['tabs'][number];
 
@@ -665,7 +671,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             id,
             label: t(`port.tabs.${id}`),
             badge: id === 'repair' ? repairBadge : undefined,
-            tour: id === 'refuel' ? 'port_refuel' : undefined,
+            tour: PORT_TOUR[id],
           }))}
           activeId={tab}
           onChange={(next) => selectTab(next as PortTabId)}

@@ -959,7 +959,9 @@ body:has(.modal-backdrop) .part-hover-card {
 .route-map .rm-ship {
   fill: var(--info);
   stroke: var(--paper);
-  stroke-width: 1.5;
+  stroke-width: 1.5px;
+  /* the outline stays a hairline however far the map is zoomed in */
+  vector-effect: non-scaling-stroke;
 }
 
 .route-map .rm-ship-wrap {

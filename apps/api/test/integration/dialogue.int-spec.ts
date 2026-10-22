@@ -169,12 +169,16 @@ describe('mentor dialogue scenes', () => {
           expiresAt: new Date(0),
           seed: `d-${randomUUID()}`,
           status,
+          arrivalAt: new Date(),
           playerId: player.playerId,
         },
       });
     await finished('DONE');
     expect((await stateOf(player.token)).scene?.id).toBe('after_first_report');
     await post(player.token, '/after_first_report', { event: 'done' });
+    // the report is read, the wear is next on the checklist
+    expect((await stateOf(player.token)).scene?.id).toBe('repair_wear');
+    await post(player.token, '/repair_wear', { event: 'done' });
     // the starter tank is a quarter full: low
     expect((await stateOf(player.token)).scene?.id).toBe('low_fuel');
     await post(player.token, '/low_fuel', { event: 'done' });

@@ -874,7 +874,15 @@
         "ship_built": "A nave está montada",
         "first_mission_done": "Uma primeira missão terminou",
         "first_failure": "Uma primeira missão foi perdida",
-        "low_fuel": "O tanque está baixo depois de um voo"
+        "low_fuel": "O tanque está baixo depois de um voo",
+        "needs_fuel": "A nave está montada e ainda não foi reabastecida",
+        "ready_for_mission": "O tanque está cheio e nenhuma missão foi aceita",
+        "mission_taken": "Uma missão foi aceita e ainda não partiu",
+        "repair_due": "Uma missão terminou e nenhum conserto foi pago",
+        "work_due": "O primeiro conserto foi feito e ainda não houve coleta ou mineração",
+        "checklist_done": "A lista Primeiros passos está completa",
+        "missions_3": "Três missões terminadas",
+        "missions_6": "Seis missões terminadas"
       },
       "positions": {
         "center": "Centro (escurecido)",
@@ -891,12 +899,17 @@
         "port_refuel": "Aba Reabastecer",
         "missions_tab": "Aba Missões",
         "map_tab": "Aba Mapa",
-        "accept_button": "Botão Aceitar"
+        "accept_button": "Botão Aceitar",
+        "dispatch_button": "Botão Partir",
+        "port_repair": "Aba Conserto",
+        "port_work": "Aba Coleta"
       },
       "actions": {
         "goto_ship": "Ir para a Nave",
         "goto_port": "Ir para o Porto",
         "goto_port_tab_refuel": "Ir para Reabastecer",
+        "goto_port_tab_repair": "Ir para Conserto",
+        "goto_port_tab_scavenging": "Ir para Coleta",
         "goto_missions": "Ir para as Missões",
         "goto_map": "Ir para o Mapa",
         "replay": "Tocar a cena de novo",

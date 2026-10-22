@@ -50,6 +50,14 @@ export const SCENE_TRIGGERS = [
   'first_mission_done',
   'first_failure',
   'low_fuel',
+  'needs_fuel',
+  'ready_for_mission',
+  'mission_taken',
+  'repair_due',
+  'work_due',
+  'checklist_done',
+  'missions_3',
+  'missions_6',
 ] as const;
 
 const PLACEHOLDER_GIVER: GiverRef = {
