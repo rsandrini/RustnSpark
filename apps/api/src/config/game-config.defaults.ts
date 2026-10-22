@@ -93,7 +93,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     repair_factor: 0.62,
     maintenance_per_tier: 600,
     reward_base: 4500,
-    reward_per_tier: 900,
+    reward_per_tier: 700,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but
     // too subtly to notice — halving both divisors roughly doubles the spread between an
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
@@ -102,7 +102,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_distance_divisor: 1500,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
-    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.2, LEGENDARY: 3.2 },
+    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 1.9, LEGENDARY: 2.5 },
     combat_win_base: 1500,
     combat_win_per_tier: 500,
     combat_loss_penalty: 1200,
@@ -213,8 +213,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   encounter: {
     chance_divisor: 20,
-    pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
-    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 },
+    pirate_strength_options: [0.7, 0.85, 1.0, 1.1, 1.25, 1.4],
+    pirate_zone_strength: { 0: 0.7, 1: 0.9, 2: 1.1, 3: 1.4 },
     pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],

@@ -80,7 +80,8 @@ const RARITY_SUFFIX: Record<string, string> = {
  * top tiers cost more than the doubling ladder the tables are written with (Epic x2, Legendary x3).
  * Repair, upgrade gaps and resale all follow the price, so one number moves the whole economy.
  */
-const PRICE_BY_RARITY: Record<string, number> = { EPIC: 2, LEGENDARY: 3 };
+// Round 5 (2026-10-22) doubled and tripled them again: Epic x4 and Legendary x9 over the tables' own steps.
+const PRICE_BY_RARITY: Record<string, number> = { EPIC: 4, LEGENDARY: 9 };
 
 function rowsOf(family: Family): SeedPart[] {
   return family.tiers.map(({ name, description, ...tier }) => ({

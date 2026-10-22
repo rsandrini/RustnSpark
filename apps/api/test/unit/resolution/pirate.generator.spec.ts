@@ -6,7 +6,16 @@ import type { GameRules } from '../../../src/config/game-config.types.js';
 import type { CombatSheet } from '../../../src/resolution/combat/combat.types.js';
 import { generatePirate } from '../../../src/resolution/encounter/pirate.generator.js';
 
-const rules: GameRules = GAME_CONFIG_DEFAULTS;
+// The formula tests pin the signed-off sweep oracle (strengths 0.55-1.1, zone caps 0.35-1.0); the game's own tuning
+// moved above parity in balance round 5 (2026-10-22) and is checked separately at the end of this file.
+const rules: GameRules = {
+  ...GAME_CONFIG_DEFAULTS,
+  encounter: {
+    ...GAME_CONFIG_DEFAULTS.encounter,
+    pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
+    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 },
+  },
+};
 
 const player: CombatSheet = {
   pdf: 5,
@@ -109,5 +118,37 @@ describe('S5.7 — pirate generator', () => {
     const rngEven = pirateRng(0.8, 0, 0, 'even');
     expect(generatePirate({ ...player, pdf: 5 }, rules, rngEven).pdf).toBe(4);
     rngEven.assertDrained();
+  });
+});
+
+describe('balance round 5 — pirates above parity in the late zones', () => {
+  const live = GAME_CONFIG_DEFAULTS.encounter;
+  it('zones 0-1 stay under parity (Rare is comfortable) and zones 2-3 let a pirate out-gun the player', () => {
+    expect(live.pirate_zone_strength['0']).toBeLessThan(1);
+    expect(live.pirate_zone_strength['1']).toBeLessThan(1);
+    expect(live.pirate_zone_strength['2']).toBeGreaterThan(1);
+    expect(live.pirate_zone_strength['3']).toBeGreaterThan(live.pirate_zone_strength['2']!);
+    const strongest = (zone: number) =>
+      Math.max(
+        ...live.pirate_strength_options.filter(
+          (o) => o <= live.pirate_zone_strength[String(zone)]!,
+        ),
+      );
+    expect(strongest(0)).toBeLessThan(1);
+    expect(strongest(2)).toBeGreaterThan(1);
+    expect(strongest(3)).toBe(1.4);
+    const player: CombatSheet = { pdf: 10, bli: 5, esc: 0, sen: 3, hp: 100, mob: 6 };
+    // over many draws a zone-3 pirate sometimes has more firepower than the player (never possible before)
+    let stronger = 0;
+    for (let i = 0; i < 200; i += 1) {
+      const pirate = generatePirate(
+        player,
+        GAME_CONFIG_DEFAULTS,
+        createRng(`late-${i}`),
+        live.pirate_zone_strength['3'],
+      );
+      if (pirate.pdf > player.pdf) stronger += 1;
+    }
+    expect(stronger).toBeGreaterThan(30);
   });
 });

@@ -108,6 +108,9 @@ const rules: GameRules = {
   },
   encounter: {
     ...GAME_CONFIG_DEFAULTS.encounter,
+    // the signed-off pirates (never above 1.1 of the player); balance round 5 (2026-10-22) moved the game's own
+    // above parity, which the economy simulation judges, not these bands
+    pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
     pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
   },
 };
