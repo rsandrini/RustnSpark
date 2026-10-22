@@ -35,6 +35,11 @@ export function AccountMenu() {
   const dialogue = useDialogueState(user?.factionId != null);
   const dialogueActions = useDialogueActions();
   const dialogueOn = dialogue.data?.enabled !== false;
+  // The list is folded away until the pilot opens it: it is rarely needed.
+  const [talkOpen, setTalkOpen] = useState(false);
+  useEffect(() => {
+    if (!open) setTalkOpen(false);
+  }, [open]);
   const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
 
   useEffect(() => {
@@ -91,30 +96,41 @@ export function AccountMenu() {
           )}
           {dialogue.data !== undefined && (
             <div className="shell-menu-dialogue" data-testid="menu-dialogue">
-              {dialogue.data.replayable.length > 0 && (
-                <div className="label shell-menu-name">{t('dialogue.menuTitle')}</div>
-              )}
-              {dialogue.data.replayable.map((scene) => (
-                <button
-                  key={scene.id}
-                  type="button"
-                  className="shell-menu-item"
-                  onClick={() => {
-                    setOpen(false);
-                    dialogueActions.replay.mutate(scene.id);
-                  }}
-                >
-                  {t('dialogue.replayLabel', { title: pickLocalized(scene.title, i18n.language) })}
-                </button>
-              ))}
               <button
                 type="button"
-                className="shell-menu-item"
-                aria-pressed={dialogueOn}
-                onClick={() => dialogueActions.setEnabled.mutate(!dialogueOn)}
+                className="shell-menu-item shell-menu-fold"
+                aria-expanded={talkOpen}
+                onClick={() => setTalkOpen((was) => !was)}
               >
-                {t(dialogueOn ? 'dialogue.turnOff' : 'dialogue.turnOn')}
+                {t('dialogue.menuTitle')} {talkOpen ? '▾' : '▸'}
               </button>
+              {talkOpen && (
+                <>
+                  {dialogue.data.replayable.map((scene) => (
+                    <button
+                      key={scene.id}
+                      type="button"
+                      className="shell-menu-item"
+                      onClick={() => {
+                        setOpen(false);
+                        dialogueActions.replay.mutate(scene.id);
+                      }}
+                    >
+                      {t('dialogue.replayLabel', {
+                        title: pickLocalized(scene.title, i18n.language),
+                      })}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="shell-menu-item"
+                    aria-pressed={dialogueOn}
+                    onClick={() => dialogueActions.setEnabled.mutate(!dialogueOn)}
+                  >
+                    {t(dialogueOn ? 'dialogue.turnOff' : 'dialogue.turnOn')}
+                  </button>
+                </>
+              )}
             </div>
           )}
           {user?.role === 'ADMIN' && (

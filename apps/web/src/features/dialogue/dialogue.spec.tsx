@@ -279,11 +279,19 @@ describe('the mentor dialogue', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     fireEvent.click(await screen.findByRole('button', { name: /account/i }));
     const menu = await screen.findByTestId('menu-dialogue');
+    // folded away until opened
+    expect(within(menu).queryByRole('button', { name: /Hear it again/ })).not.toBeInTheDocument();
+    fireEvent.click(within(menu).getByRole('button', { name: /Talk again/ }));
     fireEvent.click(within(menu).getByRole('button', { name: /Hear it again: The welcome/ }));
     await waitFor(() => expect(replayed).toBe(true));
 
     // the menu closes after a replay; open it again and turn the dialogues off
     fireEvent.click(await screen.findByRole('button', { name: /account/i }));
+    fireEvent.click(
+      within(await screen.findByTestId('menu-dialogue')).getByRole('button', {
+        name: /Talk again/,
+      }),
+    );
     fireEvent.click(
       within(await screen.findByTestId('menu-dialogue')).getByRole('button', {
         name: 'Turn dialogues off',

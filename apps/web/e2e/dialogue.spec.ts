@@ -51,6 +51,8 @@ test('the welcome: the leader, a lore branch, the ship scene pointing at the gri
   // the account menu offers the welcome again, and a switch for all dialogues
   await page.getByRole('button', { name: 'Account menu' }).click();
   const menu = page.getByTestId('menu-dialogue');
+  await expect(menu).not.toContainText('Hear it again');
+  await menu.getByRole('button', { name: /Talk again/ }).click();
   await expect(menu).toContainText('Hear it again: The welcome');
   await menu.getByRole('button', { name: 'Turn dialogues off' }).click();
   await expect(menu.getByRole('button', { name: 'Turn dialogues on' })).toBeVisible();

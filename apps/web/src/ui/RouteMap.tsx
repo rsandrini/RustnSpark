@@ -39,10 +39,10 @@ const PAD = 14;
 const WIDTH = 320;
 const HEIGHT = 170;
 const COMPACT_HEIGHT = 110;
-const MARKER = 5;
-/** Room kept around the trip, and the least of the sector a small map shows (so a short hop is not blown up). */
-const FOCUS_MARGIN = 30;
-const MIN_FOCUS_SHARE = 0.14;
+const MARKER = 4;
+/** The trip takes 1 / FOCUS_SPREAD of the window; the window shows at least this share of the sector. */
+const FOCUS_SPREAD = 1.7;
+const MIN_FOCUS_SHARE = 0.012;
 
 function pointAt(points: readonly { x: number; y: number }[], progress: number) {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y));
@@ -111,21 +111,16 @@ export function RouteMap({
   const boxMaxY = Math.max(...ysOnPath);
   const centreX = (boxMinX + boxMaxX) / 2;
   const centreY = (boxMinY + boxMaxY) / 2;
-  const windowWidth = Math.min(
-    WIDTH,
-    Math.max(
-      WIDTH * MIN_FOCUS_SHARE,
-      boxMaxX - boxMinX + 2 * FOCUS_MARGIN,
-      // the same margin on every side of the window, so the height's share of it is in the map's own proportion
-      ((boxMaxY - boxMinY) * WIDTH) / height + 2 * FOCUS_MARGIN,
-    ),
-  );
+  // The route fills most of the window, however short it is: about a quarter of the window is left empty around it
+  // (for the names), and the window is never wider than the sector or narrower than a small share of it.
+  const needWidth = Math.max(boxMaxX - boxMinX, ((boxMaxY - boxMinY) * WIDTH) / height);
+  const windowWidth = Math.min(WIDTH, Math.max(WIDTH * MIN_FOCUS_SHARE, needWidth * FOCUS_SPREAD));
   const windowHeight = (windowWidth * height) / WIDTH;
   const k = windowWidth / WIDTH;
-  // Markers and text shrink with the window, but a close-up of a short hop would still look all marker: they shrink
-  // a little more as the window narrows (the full sector keeps them as they were).
-  const m = k * (0.4 + 0.6 * k);
-  const textSize = 10 * k * (0.8 + 0.2 * k);
+  // Markers and text keep a size on screen (about the same pixels whatever the zoom): `k` is how much of the sector the
+  // window shows, so a close-up of a short hop draws small markers and a visible line between them.
+  const m = k;
+  const textSize = 10 * k;
   const view = `${centreX - windowWidth / 2} ${centreY - windowHeight / 2} ${windowWidth} ${windowHeight}`;
 
   return (

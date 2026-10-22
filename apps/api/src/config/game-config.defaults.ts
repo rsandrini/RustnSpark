@@ -159,7 +159,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Every credit amount of the game is ten times what it was (2026-10-20: "big numbers"); the balance is the same.
     // A new pilot starts with the money for a basic shield (4000) and a small battery (1500) on top of
     // the old 2000 (owner, 2026-10-18): recommended for the first fights, but theirs to spend as they like.
-    start_credits: 7500,
+    start_credits: 3000,
     rescue_cost: 8000,
     // A floating ship can wait for a rescue (half the price) or call one now (that price plus a
     // charge per unit of distance to the nearest base).

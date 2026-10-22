@@ -73,9 +73,11 @@ describe('common parts are always on the shelf', () => {
     }
   });
 
-  it('starts a pilot with the money for both, on top of the old 2000', () => {
+  it('starts a pilot with a small purse: a first tank and a little over, not a shield and a battery as well', () => {
+    // owner playtest 2026-10-22: 7500 at the start was far too much; the first missions pay for the shelf
     const shield = 4000;
     const battery = 1500;
-    expect(economy.start_credits).toBeGreaterThanOrEqual(2000 + shield + battery);
+    expect(economy.start_credits).toBeGreaterThanOrEqual(2000);
+    expect(economy.start_credits).toBeLessThan(shield + battery);
   });
 });
