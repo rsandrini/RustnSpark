@@ -91,6 +91,8 @@ export interface EscortClient {
 export interface LegMissionContext {
   readonly type: MissionType;
   readonly tier: number;
+  /** Rarity of the ship's bridge: pirates are made stronger against the top ones (`pirate_strength_by_bridge`). */
+  readonly bridgeRarity?: string;
   readonly isolation: number;
   readonly factionRelation: string;
   readonly relation: FactionRelation;
@@ -658,6 +660,9 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     rules,
     encounterRng,
     rules.encounter.pirate_zone_strength[String(input.route.zone)],
+    input.context.bridgeRarity === undefined
+      ? 1
+      : (rules.encounter.pirate_strength_by_bridge[input.context.bridgeRarity] ?? 1),
   );
   const encounter: EncounterOutcome = resolveEncounter(
     {

@@ -445,6 +445,7 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
   return mission.legs.map(() => ({
     type: mission.type,
     tier: mission.tier,
+    ...(mission.bridgeRarity === undefined ? {} : { bridgeRarity: mission.bridgeRarity }),
     isolation: mission.isolation,
     factionRelation: mission.factionRelation,
     relation: mission.relation,

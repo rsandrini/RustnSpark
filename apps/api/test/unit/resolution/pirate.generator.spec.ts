@@ -121,34 +121,52 @@ describe('S5.7 — pirate generator', () => {
   });
 });
 
-describe('balance round 5 — pirates above parity in the late zones', () => {
+describe("balance round 5 — pirates follow the ship's bridge", () => {
   const live = GAME_CONFIG_DEFAULTS.encounter;
-  it('zones 0-1 stay under parity (Rare is comfortable) and zones 2-3 let a pirate out-gun the player', () => {
-    expect(live.pirate_zone_strength['0']).toBeLessThan(1);
-    expect(live.pirate_zone_strength['1']).toBeLessThan(1);
-    expect(live.pirate_zone_strength['2']).toBeGreaterThan(1);
-    expect(live.pirate_zone_strength['3']).toBeGreaterThan(live.pirate_zone_strength['2']!);
-    const strongest = (zone: number) =>
-      Math.max(
-        ...live.pirate_strength_options.filter(
-          (o) => o <= live.pirate_zone_strength[String(zone)]!,
-        ),
-      );
-    expect(strongest(0)).toBeLessThan(1);
-    expect(strongest(2)).toBeGreaterThan(1);
-    expect(strongest(3)).toBe(1.4);
-    const player: CombatSheet = { pdf: 10, bli: 5, esc: 0, sen: 3, hp: 100, mob: 6 };
-    // over many draws a zone-3 pirate sometimes has more firepower than the player (never possible before)
+  const player: CombatSheet = { pdf: 10, bli: 5, esc: 0, sen: 3, hp: 100, mob: 6 };
+
+  it('are what they always were up to a Rare bridge, and grow above it', () => {
+    expect(live.pirate_strength_options).toEqual([0.55, 0.7, 0.8, 0.85, 1.0, 1.1]);
+    expect(live.pirate_zone_strength).toEqual({ 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 });
+    const by = live.pirate_strength_by_bridge;
+    expect([by.COMMON, by.UNCOMMON, by.RARE]).toEqual([1, 1, 1]);
+    expect(by.EPIC).toBeGreaterThan(1);
+    expect(by.LEGENDARY).toBeGreaterThan(by.EPIC!);
+  });
+
+  it('scales what was drawn by the multiplier, without changing the draw', () => {
+    const base = generatePirate(player, GAME_CONFIG_DEFAULTS, createRng('same'), 1.0);
+    const strong = generatePirate(player, GAME_CONFIG_DEFAULTS, createRng('same'), 1.0, 1.7);
+    expect(strong.pdf).toBeGreaterThan(base.pdf);
+    expect(strong.hp).toBeGreaterThan(base.hp);
+    // the same seed draws the same strength and jitter: mobility and sensors are untouched
+    expect(strong.mob).toBe(base.mob);
+    expect(strong.sen).toBe(base.sen);
+    expect(generatePirate(player, GAME_CONFIG_DEFAULTS, createRng('same'), 1.0, 1)).toEqual(base);
+  });
+
+  it('against a Legendary bridge a zone-3 pirate often out-guns the player; against Rare never', () => {
     let stronger = 0;
-    for (let i = 0; i < 200; i += 1) {
-      const pirate = generatePirate(
+    let rareStronger = 0;
+    for (let i = 0; i < 300; i += 1) {
+      const legendary = generatePirate(
         player,
         GAME_CONFIG_DEFAULTS,
-        createRng(`late-${i}`),
+        createRng(`l-${i}`),
         live.pirate_zone_strength['3'],
+        live.pirate_strength_by_bridge.LEGENDARY,
       );
-      if (pirate.pdf > player.pdf) stronger += 1;
+      const rare = generatePirate(
+        player,
+        GAME_CONFIG_DEFAULTS,
+        createRng(`l-${i}`),
+        live.pirate_zone_strength['3'],
+        live.pirate_strength_by_bridge.RARE,
+      );
+      if (legendary.pdf > player.pdf) stronger += 1;
+      if (rare.pdf > player.pdf) rareStronger += 1;
     }
-    expect(stronger).toBeGreaterThan(30);
+    expect(stronger).toBeGreaterThan(60);
+    expect(rareStronger).toBeLessThanOrEqual(30); // only the 1.1 draw, rounding up
   });
 });

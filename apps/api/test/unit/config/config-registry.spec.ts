@@ -80,6 +80,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'encounter.pirate_mob_jitter',
   'encounter.pirate_motive_weights',
   'encounter.pirate_sen_jitter',
+  'encounter.pirate_strength_by_bridge',
   'encounter.pirate_strength_options',
   'encounter.pirate_zone_strength',
   'engine.chem_level_max',

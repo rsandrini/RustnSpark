@@ -213,8 +213,11 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
   },
   encounter: {
     chance_divisor: 20,
-    pirate_strength_options: [0.7, 0.85, 1.0, 1.1, 1.25, 1.4],
-    pirate_zone_strength: { 0: 0.7, 1: 0.9, 2: 1.1, 3: 1.4 },
+    pirate_strength_options: [0.55, 0.7, 0.8, 0.85, 1.0, 1.1],
+    pirate_zone_strength: { 0: 0.35, 1: 0.5, 2: 0.65, 3: 1.0 },
+    // Balance round 5: pirates follow the ship's bridge. Up to Rare they are what they always were (comfortable);
+    // above it they come stronger, so Epic and Legendary pilots meet a real fight in every zone.
+    pirate_strength_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1, EPIC: 1.35, LEGENDARY: 1.7 },
     pirate_motive_weights: { cargo: 4, parts: 4, territory: 2 },
     pirate_mob_jitter: [-1, 0, 1],
     pirate_sen_jitter: [-1, 0, 1],

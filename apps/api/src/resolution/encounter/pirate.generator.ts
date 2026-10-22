@@ -27,6 +27,8 @@ export function generatePirate(
   rng: Rng,
   /** Zone cap on the strength multiplier (safer zones, weaker pirates); absent = no cap. */
   maxStrength?: number,
+  /** How much stronger the pirate is made against this ship (its bridge rarity's entry); 1 = as drawn. */
+  strengthMultiplier = 1,
 ): CombatSheet {
   const e = rules.encounter;
   const allowed =
@@ -35,7 +37,8 @@ export function generatePirate(
       : e.pirate_strength_options.filter((option) => option <= maxStrength);
   // A cap below every option still leaves the weakest pirate, never nobody.
   const options = allowed.length > 0 ? allowed : [Math.min(...e.pirate_strength_options)];
-  const strength = rng.pick(options);
+  // The draw (and so the rng order) is unchanged; the multiplier only scales what was drawn.
+  const strength = rng.pick(options) * strengthMultiplier;
   const mobJitter = rng.pick(e.pirate_mob_jitter);
   const senJitter = rng.pick(e.pirate_sen_jitter);
 

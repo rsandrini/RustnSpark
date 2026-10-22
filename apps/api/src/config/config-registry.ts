@@ -1182,6 +1182,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'encounter.pirate_strength_by_bridge',
+    group: 'encounter',
+    type: 'json',
+    min: 0.1,
+    max: 5.0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_strength_by_bridge),
+    description: {
+      en: 'How much stronger pirates are made against a ship, by the rarity of its bridge (1 = as drawn). Above Rare they grow, so the top ships still have a real fight.',
+      'pt-BR':
+        'Quanto mais fortes os piratas ficam contra uma nave, pela raridade da ponte (1 = como sorteado). Acima de Raro eles crescem, então as naves de topo ainda têm uma luta de verdade.',
+    },
+  },
+  {
     key: 'encounter.pirate_motive_weights',
     group: 'encounter',
     type: 'json',
@@ -2010,7 +2023,7 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 1,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.missions.short_trip_reward_factor),
     description: {
-      en: 'A trip shorter than the short-trip exemption pays only this share of the usual reward (the test pad\'s way back is a hop of seconds). 1 = full pay.',
+      en: "A trip shorter than the short-trip exemption pays only this share of the usual reward (the test pad's way back is a hop of seconds). 1 = full pay.",
       'pt-BR':
         'Uma viagem mais curta que a isenção de viagem curta paga só esta fração da recompensa normal (a volta da plataforma de testes é um salto de segundos). 1 = pagamento cheio.',
     },

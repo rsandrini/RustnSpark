@@ -107,6 +107,7 @@ export type ConfigKey =
   | 'encounter.pirate_mob_jitter'
   | 'encounter.pirate_motive_weights'
   | 'encounter.pirate_sen_jitter'
+  | 'encounter.pirate_strength_by_bridge'
   | 'encounter.pirate_strength_options'
   | 'encounter.pirate_zone_strength'
   | 'escape.enemy_sen_weight'
@@ -421,6 +422,8 @@ export type GameRules = Readonly<{
   encounter: Readonly<{
     chance_divisor: number;
     pirate_strength_options: readonly number[];
+    /** Bridge rarity → how much stronger a pirate is made against that ship (x1 = as drawn; absent = x1). */
+    pirate_strength_by_bridge: Readonly<Record<string, number>>;
     /** Zone → the strongest pirate multiplier met there (safer zones, weaker pirates). */
     pirate_zone_strength: Readonly<Record<string, number>>;
     /** What a pirate who wins wants: relative weights of cargo, parts (from storage), territory. */
