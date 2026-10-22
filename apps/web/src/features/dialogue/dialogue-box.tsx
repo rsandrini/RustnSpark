@@ -108,6 +108,7 @@ export function DialogueBox({
         ref={root}
         className={`dialogue-box pos-${position}`}
         role="dialog"
+        data-dialogue=""
         aria-modal={node.blocking && !preview}
         aria-labelledby={nameId}
         aria-describedby={textId}

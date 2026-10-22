@@ -107,6 +107,22 @@ describe('the mentor dialogue', () => {
     expect(dialogueEvents.at(-1)).toEqual({ sceneId: 'welcome', event: 'done' });
   });
 
+  it('stays open on its own box: it does not close and open again while the pilot reads', async () => {
+    setDialogue({
+      scene: sceneOf('welcome', [
+        node('w1', { blocking: true, position: 'center', next: 'w2' }),
+        node('w2'),
+      ]),
+    });
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const box = await screen.findByRole('dialog', {}, SEEN);
+    // the screen is checked for calm every second or so: the mentor's own box must not count as "something else open"
+    await new Promise((resolve) => setTimeout(resolve, 2800));
+    expect(screen.getByRole('dialog')).toBe(box);
+    expect(box).toHaveTextContent('Words of w1.');
+    expect(dialogueEvents).toEqual([]);
+  });
+
   it('speaks in the language of the pilot', async () => {
     window.localStorage.setItem('rs.language', 'pt-BR');
     setDialogue({ scene: sceneOf('s', [node('a')]) });

@@ -83,4 +83,21 @@ describe('dialogue triggers', () => {
     ];
     expect(idOf(FRESH, both)).toBe('first_ship');
   });
+
+  it('a pilot who flew before the mentor existed gets no introduction and no "first time" scenes', () => {
+    const veteran: DialogueFacts = {
+      ...FRESH,
+      shipBuilt: true,
+      completed: 12,
+      failed: 2,
+      tankFraction: 0.1,
+    };
+    expect(idOf(veteran)).toBeUndefined();
+    // once welcomed, the series carries on as usual
+    expect(idOf(veteran, [done('welcome'), done('first_ship'), done('first_flight')])).toBe(
+      'after_first_report',
+    );
+    // and a replay asked for is still heard
+    expect(idOf(veteran, [{ sceneId: 'welcome', status: 'REPLAY', nodeId: null }])).toBe('welcome');
+  });
 });

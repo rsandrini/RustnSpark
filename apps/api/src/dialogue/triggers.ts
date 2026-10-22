@@ -45,7 +45,8 @@ export interface SceneProgress {
 
 /**
  * The scene due now, or undefined. A scene the pilot asked to hear again comes first, then one they left half-way,
- * then the lowest-`order` scene whose trigger holds and that they have never started. One at a time.
+ * then the lowest-`order` scene whose trigger holds and that they have never started. One at a time. A pilot who
+ * has finished missions without ever being welcomed (they predate the mentor) gets no new scenes.
  */
 export function dueScene(
   scenes: readonly SceneData[],
@@ -64,6 +65,10 @@ export function dueScene(
       return { scene: found, resumeAt };
     }
   }
+  // A pilot who flew before the mentor existed never heard the introduction: the "first time" scenes would make no
+  // sense to them, so the series does not start for a pilot who has finished missions and was never welcomed.
+  const intro = known[0];
+  if (intro !== undefined && !byScene.has(intro.id) && facts.completed >= 1) return undefined;
   const fresh = known.find((scene) => !byScene.has(scene.id) && triggerHolds(scene.trigger, facts));
   return fresh === undefined ? undefined : { scene: fresh, resumeAt: null };
 }

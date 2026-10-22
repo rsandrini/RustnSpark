@@ -40,6 +40,8 @@ export function DialogueHost() {
   // scenes the pilot just closed: not shown again before the server's answer catches up
   const closed = useRef(new Set<string>());
   const [calm, setCalm] = useState(false);
+  // Once a scene is on the screen it stays until the pilot closes it: calm is only needed to open one.
+  const [onScreen, setOnScreen] = useState(false);
   const breatherUntil = useRef(0);
 
   useEffect(() => {
@@ -88,7 +90,11 @@ export function DialogueHost() {
     [scene, record, refresh],
   );
 
-  if (!inGame || scene === null || openScene !== scene.id || nodeId === null || !calm) return null;
+  const showing =
+    inGame && scene !== null && openScene === scene.id && nodeId !== null && (calm || onScreen);
+  useEffect(() => setOnScreen(showing), [showing]);
+
+  if (!showing || scene === null || nodeId === null) return null;
   const node = scene.nodes.find((entry) => entry.id === nodeId);
   if (node === undefined) return null;
 

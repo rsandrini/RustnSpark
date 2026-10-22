@@ -19,6 +19,10 @@ test('the welcome: the leader, a lore branch, the ship scene pointing at the gri
   await expect(box).toContainText('Dockmaster');
   await expect(box).toContainText('Welcome to Ceres');
   await expect(page.locator('.dialogue-backdrop')).toBeVisible();
+  // it stays put while the pilot reads (the screen is re-checked for calm every second or so): no closing and reopening
+  await page.waitForTimeout(3500);
+  await expect(box).toBeVisible();
+  await expect(box).toContainText('Welcome to Ceres');
   await box.getByRole('button', { name: 'Continue' }).click();
 
   // the faction pitch, with a lore branch that comes back to the main line
