@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate } from 'react-router';
 import type { DialogueChoice } from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
 import { DialogueBox } from './dialogue-box';
-import { useDialogueActions, useDialogueState } from './use-dialogue';
+import { DIALOGUE_KEY, useDialogueActions, useDialogueState } from './use-dialogue';
 
 /** A scene waits this long after the page opens, so it never greets a screen that is still loading. */
-const SETTLE_MS = 1500;
+const SETTLE_MS = 800;
 /** After one scene ends the next waits at least this long: never two in a row. */
-const BREATHER_MS = 4000;
+const BREATHER_MS = 2500;
 /** How often the screen is checked for something else asking for the pilot's attention. */
 const CALM_CHECK_MS = 800;
 /** The scene where Skip asks first: the first thing a new pilot meets. */
 const ASK_BEFORE_SKIP = 'welcome';
+
+/** After a change the pilot made, the server is asked again this soon (batching a burst of changes into one ask). */
+const ASK_AGAIN_MS = 400;
 
 /** Another popup is open (a confirmation, a part card): the mentor waits. */
 function somethingElseIsOpen(): boolean {
@@ -33,6 +37,32 @@ export function DialogueHost() {
   const inGame = user?.factionId != null;
   const state = useDialogueState(inGame);
   const { record, replay, refresh } = useDialogueActions();
+  const queryClient = useQueryClient();
+  const { pathname } = useLocation();
+
+  // The facts a scene waits for (a ship built, a tank filled, a mission taken or finished) change on the screens, not
+  // here: ask the server again whenever the pilot moves to another screen and soon after any change they make, so a
+  // scene opens a moment after its trigger instead of at the next poll.
+  useEffect(() => {
+    if (inGame) void queryClient.invalidateQueries({ queryKey: DIALOGUE_KEY });
+  }, [pathname, inGame, queryClient]);
+  useEffect(() => {
+    if (!inGame) return undefined;
+    let timer: number | undefined;
+    const unsubscribe = queryClient.getMutationCache().subscribe((event) => {
+      const own = event.mutation?.options.mutationKey?.[0] === DIALOGUE_KEY[0];
+      if (own || event.type !== 'updated' || event.action.type !== 'success') return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(
+        () => void queryClient.invalidateQueries({ queryKey: DIALOGUE_KEY }),
+        ASK_AGAIN_MS,
+      );
+    });
+    return () => {
+      unsubscribe();
+      window.clearTimeout(timer);
+    };
+  }, [inGame, queryClient]);
 
   const scene = state.data?.enabled === true ? (state.data.scene ?? null) : null;
   const [openScene, setOpenScene] = useState<string | null>(null);

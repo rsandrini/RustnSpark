@@ -5,7 +5,7 @@ import type { DialogueEvent, DialogueState } from '../../api/generated';
 export const DIALOGUE_KEY = ['dialogue'] as const;
 
 /** How often the server is asked again whether a scene is due (a flight ended, a tank ran low). */
-const REFRESH_MS = 20_000;
+const REFRESH_MS = 10_000;
 
 /** The scene due now, whether dialogues are on, and the scenes to hear again (the server decides, the web renders). */
 export function useDialogueState(enabled: boolean) {
@@ -23,6 +23,7 @@ export function useDialogueActions() {
   const queryClient = useQueryClient();
   const refresh = () => queryClient.invalidateQueries({ queryKey: DIALOGUE_KEY });
   const record = useMutation({
+    mutationKey: [...DIALOGUE_KEY, 'record'],
     mutationFn: (input: { sceneId: string } & DialogueEvent) =>
       client.post<{ ok: true }>(`/v1/players/me/dialogue/${input.sceneId}`, {
         event: input.event,
@@ -30,11 +31,13 @@ export function useDialogueActions() {
       }),
   });
   const replay = useMutation({
+    mutationKey: [...DIALOGUE_KEY, 'replay'],
     mutationFn: (sceneId: string) =>
       client.post<{ ok: true }>(`/v1/players/me/dialogue/${sceneId}/replay`, {}),
     onSuccess: refresh,
   });
   const setEnabled = useMutation({
+    mutationKey: [...DIALOGUE_KEY, 'enabled'],
     mutationFn: (enabled: boolean) =>
       client.post<{ ok: true }>('/v1/players/me/dialogue/settings', { enabled }),
     onSuccess: refresh,

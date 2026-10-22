@@ -80,6 +80,26 @@ test('skipping the welcome asks first, and a skipped scene does not come back on
   await expect(next).not.toContainText('Welcome to Hedus');
 });
 
+test('the scenes follow one another within seconds, and the fuel scene is on the Ship screen, not only at the board', async ({
+  page,
+}) => {
+  await registerAndLaunch(page, 'luna', { dialogues: true }); // builds the ship with Auto layout
+  await page.goto('/ship');
+  // welcome (skip asks first), then the ship scene, then the first flight: each a few seconds after the last
+  const welcome = page.getByRole('dialog');
+  await expect(welcome).toContainText('Welcome to Ceres', { timeout: 15_000 });
+  await welcome.getByRole('button', { name: 'Skip' }).click();
+  await page.getByRole('button', { name: 'Yes, skip it' }).click();
+  const ship = page.getByRole('dialog');
+  await expect(ship).toContainText('This is your ship', { timeout: 8_000 });
+  await ship.getByRole('button', { name: 'Skip' }).click();
+  const flight = page.getByRole('dialog');
+  await expect(flight).toContainText('Your tank starts low', { timeout: 8_000 });
+  expect(new URL(page.url()).pathname).toBe('/ship'); // still on the Ship screen: no need to reach the board first
+  await flight.getByRole('button', { name: 'Take me to Refuel' }).click();
+  await expect(page).toHaveURL(/\/port\?tab=refuel|\/port$/);
+});
+
 test('the explorers open with their own leader', async ({ page }) => {
   await registerAndLaunch(page, 'explorers', { dialogues: true });
   await page.goto('/ship');

@@ -41,8 +41,8 @@ const HEIGHT = 170;
 const COMPACT_HEIGHT = 110;
 const MARKER = 5;
 /** Room kept around the trip, and the least of the sector a small map shows (so a short hop is not blown up). */
-const FOCUS_MARGIN = 34;
-const MIN_FOCUS_SHARE = 0.34;
+const FOCUS_MARGIN = 30;
+const MIN_FOCUS_SHARE = 0.14;
 
 function pointAt(points: readonly { x: number; y: number }[], progress: number) {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i]!.x, p.y - points[i]!.y));
@@ -116,7 +116,8 @@ export function RouteMap({
     Math.max(
       WIDTH * MIN_FOCUS_SHARE,
       boxMaxX - boxMinX + 2 * FOCUS_MARGIN,
-      ((boxMaxY - boxMinY + 2 * FOCUS_MARGIN) * WIDTH) / height,
+      // the same margin on every side of the window, so the height's share of it is in the map's own proportion
+      ((boxMaxY - boxMinY) * WIDTH) / height + 2 * FOCUS_MARGIN,
     ),
   );
   const windowHeight = (windowWidth * height) / WIDTH;
@@ -163,7 +164,9 @@ export function RouteMap({
                 <text
                   className="rm-label"
                   x={p.x}
-                  y={p.y - (MARKER + 3) * k}
+                  // the start's name sits above its marker and the end's below, so two places a hop apart do not
+                  // print on top of each other
+                  y={loc.id === path[0] ? p.y - (MARKER + 3) * k : p.y + (MARKER + 11) * k}
                   textAnchor="middle"
                   style={{ fontSize: 10 * k }}
                 >

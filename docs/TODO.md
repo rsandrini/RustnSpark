@@ -20,23 +20,6 @@ ships (the commit has the history). Raise questions before starting anything mar
   (regenerate it with `tools/oracle/gen_fixtures.py`).
 
 ## Next (owner playtest, 2026-10-22)
-- [ ] **Dialogue: slow to appear and wrong moments.** The RPG chat is liked, but: the owner built the ship, followed
-  Getting started to the Port for fuel and then to the Missions board, and only there did the guildmaster speak about
-  fuel. The scene about the first flight (`first_flight`, trigger `ship_built`, `apps/api/src/dialogue/triggers.ts`)
-  should open as soon as the ship is built (on the Ship screen, pointing at the Port tab / Refuel), not later. After the
-  fuel step it stopped showing altogether while Getting started kept ticking. Look at: the delays in
-  `apps/web/src/features/dialogue/dialogue-host.tsx` (1.5 s settle, 4 s breather between scenes, the server asked only
-  every 20 s in `use-dialogue.ts`, so a scene that becomes due waits up to 20 s; refetch on navigation and after a build,
-  refuel or accept), the "another popup is open" check, an anchor that is not on the current screen, and whether the
-  scene order skips scenes. Add an e2e that follows the owner's path (build, Getting started, refuel, board) and asserts
-  each scene appears within a few seconds of its trigger.
-- [ ] **Mission card: the route map is far too zoomed out, and the card layout is broken.** The map in the mission card
-  shows a huge area: it needs a really close zoom framing the route of the mission (start to end with a little margin),
-  like the map screen's trip window. The details layout is also wrong since the giver badge was added: the map, then
-  the guildmaster below it, then another column, and the details below all of that. Expected: one tidy layout (map and
-  facts side by side, the giver as a small header line, details under them). Files: `apps/web/src/features/board/mission-card.tsx`,
-  `mission-row.tsx`, `apps/web/src/ui/RouteMap.tsx`, `apps/web/src/styles/missions.css` and `giver.css`; check at 320 px
-  (the widths e2e) and in pt-BR.
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 5.
 
 ## Open

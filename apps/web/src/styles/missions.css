@@ -827,6 +827,7 @@ main:has(.transit-aside) .ship-stage-overlay-host {
 /* the open card: map on the left, what it asks and the trip figures beside it, the rest below */
 .mrow-details .mcard-head,
 .mrow-details .mcard-route,
+.mrow-details .mcard-giver,
 .mrow-details .mcard-meta {
   display: none; /* the row above already says it */
 }

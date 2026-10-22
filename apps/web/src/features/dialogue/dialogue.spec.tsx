@@ -221,6 +221,20 @@ describe('the mentor dialogue', () => {
     expect(await screen.findByTestId('dialogue', {}, SEEN)).toBeInTheDocument();
   });
 
+  it('asks the server again when the pilot changes screen, so a scene opens a moment after its trigger', async () => {
+    const view = renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByRole('navigation');
+    // nothing due while the pilot builds; then the trigger holds on the server and the pilot moves on
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(screen.queryByTestId('dialogue')).not.toBeInTheDocument();
+    setDialogue({ scene: sceneOf('first_flight', [node('f1')]) });
+    await act(() => view.router.navigate('/port'));
+    // well inside the 10 s poll: it came from the screen change, not from the timer
+    expect(await screen.findByRole('dialog', {}, { timeout: 3500 })).toHaveTextContent(
+      'Words of f1.',
+    );
+  });
+
   it('rings the element a node points at when it is on the screen', async () => {
     const target = document.createElement('button');
     target.setAttribute('data-tour', 'auto_layout');

@@ -85,4 +85,30 @@ describe('RouteMap', () => {
     expect(Math.abs(midX - (x + w / 2))).toBeLessThan(0.5);
     expect(Math.abs(midY - (y + h / 2))).toBeLessThan(0.5);
   });
+
+  it('zooms in close on a short hop (a fifth of the sector or less) and keeps the two names apart', () => {
+    const sector: WorldResponse = {
+      locations: [
+        place('a', 0, 0),
+        place('b', 1000, 0),
+        place('home', 500, 500),
+        place('pad', 510, 500),
+      ],
+      routes: [{ id: 'r1', nodeAId: 'home', nodeBId: 'pad', distance: 30, danger: 0, hot: false }],
+    };
+    renderWithProviders(<RouteMap path={['home', 'pad']} world={sector} compact />);
+    const svg = screen.getByTestId('route-map').querySelector('svg')!;
+    const [, , width] = svg.getAttribute('viewBox')!.split(' ').map(Number) as [
+      number,
+      number,
+      number,
+    ];
+    expect(width).toBeLessThanOrEqual(320 * 0.2);
+    const labels = Array.from(svg.querySelectorAll('text.rm-label'));
+    expect(labels).toHaveLength(2);
+    const [start, end] = labels.map((label) => Number(label.getAttribute('y')));
+    // the start's name above its marker, the end's below: they never print on top of each other
+    // (compared in screen pixels: the window is `width / 320` of the map's own units)
+    expect(Math.abs(start! - end!) / (width / 320)).toBeGreaterThan(8);
+  });
 });
