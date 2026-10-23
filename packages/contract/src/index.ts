@@ -1351,6 +1351,7 @@ export const ScavengeInfoSchema = z.object({
   durationSeconds: z.number(),
   /** How long the same job takes on foot, without the ship. */
   footDurationSeconds: z.number(),
+  shipFuel: z.number(),
   cooldownSeconds: z.number(),
   retryAfterSeconds: z.number(),
   attempts: z.number(),

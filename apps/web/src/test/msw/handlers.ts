@@ -1405,6 +1405,7 @@ export const handlers = [
       scrapPlace: false,
       durationSeconds: 600,
       footDurationSeconds: 300,
+      shipFuel: 4,
       cooldownSeconds: 300,
       retryAfterSeconds: retry,
       attempts: retry > 0 ? 1 : 0,

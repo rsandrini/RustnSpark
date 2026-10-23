@@ -28,8 +28,6 @@ export type ScavengeMode = 'ship' | 'foot';
 export const SCAVENGE_TEMPLATE_ID = 'scavenge_generic';
 const MS_PER_HOUR = 3_600_000;
 const MS_PER_SECOND = 1000;
-// A search around the port burns no fuel: the ship never leaves it.
-const SCAVENGE_FUEL_MULT = 0;
 
 /**
  * Scavenging as a timed job (owner decision, round 2): a mission of type SCAVENGE created at the
@@ -177,7 +175,15 @@ export class ScavengeJobService {
       distance,
       danger,
       zone: location.zone,
-      env: { ...base.env, fuelMult: SCAVENGE_FUEL_MULT },
+      // On foot nothing burns. With the ship a small, fixed amount does (`scavenging.ship_fuel` units): the
+      // multiplier is worked out so this ship's burn over the leg comes to exactly that.
+      env: {
+        ...base.env,
+        fuelMult:
+          onFoot || sheet.fuelUse <= 0 || rules.scavenging.ship_fuel <= 0
+            ? 0
+            : (rules.scavenging.ship_fuel * 100) / (sheet.fuelUse * distance),
+      },
     };
 
     const player = await this.prisma.player.findUniqueOrThrow({

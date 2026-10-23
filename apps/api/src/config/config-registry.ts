@@ -2361,6 +2361,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'scavenging.ship_fuel',
+    group: 'scavenging',
+    type: 'number',
+    min: 0,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.scavenging.ship_fuel),
+    description: {
+      en: 'Fuel units a scavenging search WITH the ship burns from the tank (0 = free). On foot burns none, and a ship that burns no fuel (ion) pays nothing.',
+      'pt-BR':
+        'Unidades de combustível que um saque COM a nave queima do tanque (0 = grátis). A pé não queima nada, e nave que não queima combustível (íons) não paga nada.',
+    },
+  },
+  {
     key: 'parts.starter_condition',
     group: 'parts',
     type: 'integer',

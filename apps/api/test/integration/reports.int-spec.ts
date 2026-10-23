@@ -647,7 +647,8 @@ describe('reports API (S9.3)', () => {
     const res = await report(fixture.token, fixture.missionId, { view: 'summary' });
     const lines = (res.body as ReportBody).lines!;
     // STORED holds a 742-unit leg_travel and a combat_win: the fight must be listed.
-    expect(lines.some((line) => /raiders|answer/i.test(line.text))).toBe(true);
+    // (every fight wording prints the 18 points the shields took)
+    expect(lines.some((line) => /\b18\b/.test(line.text))).toBe(true);
   });
 
   it('labels the report with the mission outcome, so the screen needs no second call', async () => {

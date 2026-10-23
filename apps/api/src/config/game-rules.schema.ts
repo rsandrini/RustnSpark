@@ -275,6 +275,7 @@ const scavengingSchema = z.object({
   tier_min_zone: z.record(z.string(), z.number().int().min(0).max(10)),
   handicap_factor: z.number().min(0).max(1),
   foot_factor: z.number().min(0).max(1),
+  ship_fuel: z.number().min(0).max(1000).default(4),
   scrap_min: z.number().int().min(0).max(10).default(0),
   scrap_max: z.number().int().min(0).max(10).default(0),
   // The defaults below are the OLD behavior (every part of the rolled rarity equally likely, up to

@@ -509,6 +509,13 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   useEffect(() => {
     if (!shipUsable && scavengeMode === 'ship') setScavengeMode('foot');
   }, [shipUsable, scavengeMode]);
+  // The fuel a search with the ship burns (a ship that burns none pays none); the button waits for a tank that has it.
+  const scavengeFuel =
+    ship !== undefined && ship.sheet.fuelUse > 0
+      ? Math.ceil(scavengeInfoQuery.data?.shipFuel ?? 0)
+      : 0;
+  const lacksScavengeFuel =
+    scavengeMode === 'ship' && ship !== undefined && scavengeFuel > Math.floor(ship.fuel);
   const scavenge = useMutation({
     mutationFn: () =>
       client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/scavenge`, {
@@ -887,148 +894,150 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               aria-disabled={repairing}
               {...(repairing ? ({ inert: '' } as object) : {})}
             >
-          {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
-          {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
-          <div className="repair-list">
-            {damaged.map((item) => {
-              const condition = Math.round(item.condition);
-              // The slider starts at the part's current state; nothing is repaired until it moves.
-              const floor = Math.ceil(item.condition);
-              const target = repairTargets[item.id] ?? floor;
-              const changed = target > item.condition;
-              const line = repairQuoteQuery.data?.items.find(
-                (entry) => entry.partInstanceId === item.id,
-              );
-              const name = partName(item);
-              // Two identical parts (two Cargo Holds) are told apart by a stable number.
-              const same = damaged.filter((entry) => partName(entry) === name);
-              const suffix = same.length > 1 ? ` #${same.indexOf(item) + 1}` : '';
-              const rowName = `${name}${suffix}`;
-              return (
-                <div key={item.id} className="repair-row">
-                  <div className="rname">
-                    <PartThumb name={name} rarity={item.rarity} className="small" />
-                    {rowName}
-                    {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
-                    <small>
-                      {item.broken
-                        ? t('port.repairDestroyed')
-                        : t(`hangar.partClasses.${item.catalog.partClass}`)}
-                    </small>
+              {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
+              {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
+              <div className="repair-list">
+                {damaged.map((item) => {
+                  const condition = Math.round(item.condition);
+                  // The slider starts at the part's current state; nothing is repaired until it moves.
+                  const floor = Math.ceil(item.condition);
+                  const target = repairTargets[item.id] ?? floor;
+                  const changed = target > item.condition;
+                  const line = repairQuoteQuery.data?.items.find(
+                    (entry) => entry.partInstanceId === item.id,
+                  );
+                  const name = partName(item);
+                  // Two identical parts (two Cargo Holds) are told apart by a stable number.
+                  const same = damaged.filter((entry) => partName(entry) === name);
+                  const suffix = same.length > 1 ? ` #${same.indexOf(item) + 1}` : '';
+                  const rowName = `${name}${suffix}`;
+                  return (
+                    <div key={item.id} className="repair-row">
+                      <div className="rname">
+                        <PartThumb name={name} rarity={item.rarity} className="small" />
+                        {rowName}
+                        {item.broken && <span className="pcard-note">{t('parts.broken')}</span>}
+                        <small>
+                          {item.broken
+                            ? t('port.repairDestroyed')
+                            : t(`hangar.partClasses.${item.catalog.partClass}`)}
+                        </small>
+                      </div>
+                      <Gauge
+                        value={condition}
+                        max={100}
+                        planned={changed ? target : undefined}
+                        tone={conditionTone(condition)}
+                        ariaLabel={`${rowName}: ${t('port.conditionNow', { value: condition })}`}
+                        label={
+                          changed
+                            ? t('port.conditionToTarget', { from: condition, to: target })
+                            : t('port.conditionNow', { value: condition })
+                        }
+                      />
+                      <input
+                        type="range"
+                        min={floor}
+                        max={100}
+                        step={1}
+                        disabled={item.broken}
+                        value={target}
+                        aria-label={`${rowName} ${t('port.repairSlider', { value: target })}`}
+                        onChange={(event) =>
+                          setRepairTargets((current) => ({
+                            ...current,
+                            [item.id]: Number(event.target.value),
+                          }))
+                        }
+                      />
+                      <div
+                        className={`rcost${changed && line !== undefined && line.cost > wallet ? ' over' : ''}`}
+                        data-testid="repair-line"
+                      >
+                        {[
+                          money(changed ? (line?.cost ?? 0) : 0),
+                          formatDuration(changed ? (line?.durationSeconds ?? 0) : 0, t),
+                        ].join(' · ')}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {damaged.length > 0 && (
+                <div className="panel repair-summary" data-testid="repair-summary">
+                  <div className="statrow">
+                    <span>{t('port.repairWallet')}</span>
+                    <b>{money(wallet)}</b>
                   </div>
-                  <Gauge
-                    value={condition}
-                    max={100}
-                    planned={changed ? target : undefined}
-                    tone={conditionTone(condition)}
-                    ariaLabel={`${rowName}: ${t('port.conditionNow', { value: condition })}`}
-                    label={
-                      changed
-                        ? t('port.conditionToTarget', { from: condition, to: target })
-                        : t('port.conditionNow', { value: condition })
-                    }
-                  />
-                  <input
-                    type="range"
-                    min={floor}
-                    max={100}
-                    step={1}
-                    disabled={item.broken}
-                    value={target}
-                    aria-label={`${rowName} ${t('port.repairSlider', { value: target })}`}
-                    onChange={(event) =>
-                      setRepairTargets((current) => ({
-                        ...current,
-                        [item.id]: Number(event.target.value),
-                      }))
-                    }
-                  />
-                  <div
-                    className={`rcost${changed && line !== undefined && line.cost > wallet ? ' over' : ''}`}
-                    data-testid="repair-line"
-                  >
-                    {[
-                      money(changed ? (line?.cost ?? 0) : 0),
-                      formatDuration(changed ? (line?.durationSeconds ?? 0) : 0, t),
-                    ].join(' · ')}
+                  <div className="statrow">
+                    <span>{t('port.repairFee')}</span>
+                    <b>
+                      {money(changedTargets.length === 0 ? 0 : (repairQuoteQuery.data?.fee ?? 0))}
+                    </b>
+                  </div>
+                  <div className={`statrow total${repairOver ? ' over' : ''}`}>
+                    <span>{t('port.repairTotal')}</span>
+                    <b data-testid="repair-total">
+                      {[money(repairTotalCost), formatDuration(repairTotalSeconds, t)].join(' · ')}
+                    </b>
+                  </div>
+                  {changedTargets.length === 0 && (
+                    <p className="sub">{t('port.repairNothingSelected')}</p>
+                  )}
+                  {repairOver && <p className="error-text">{t('port.repairOverBudget')}</p>}
+                  <div className="row-between" style={{ marginTop: 10 }}>
+                    <span className="stack-h">
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() =>
+                          setRepairTargets(
+                            Object.fromEntries(damagedInstalled.map((entry) => [entry.id, 100])),
+                          )
+                        }
+                      >
+                        {t('port.repairAllTo100')}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        disabled={changedTargets.length === 0}
+                        onClick={() => setRepairTargets({})}
+                      >
+                        {t('port.repairReset')}
+                      </button>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      disabled={
+                        changedTargets.length === 0 ||
+                        repairQuoteQuery.data === undefined ||
+                        // `keepPreviousData` shows the OLD plan's number while a new one is in
+                        // flight (isPlaceholderData): confirming on it could look "affordable" from
+                        // a stale, smaller cost and then fail once the server prices the real
+                        // (current) targets. A background revalidation of an already-current quote
+                        // is fine — only a genuinely stale (different-target) number blocks this.
+                        repairQuoteQuery.isPlaceholderData ||
+                        repairOver ||
+                        repair.isPending
+                      }
+                      onClick={() => {
+                        const quote = repairQuoteQuery.data;
+                        if (quote === undefined) return;
+                        setRepairPlan({
+                          targets: changedTargets,
+                          cost: quote.cost,
+                          seconds: quote.durationSeconds,
+                        });
+                      }}
+                    >
+                      {t('port.repairStart')}
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {damaged.length > 0 && (
-            <div className="panel repair-summary" data-testid="repair-summary">
-              <div className="statrow">
-                <span>{t('port.repairWallet')}</span>
-                <b>{money(wallet)}</b>
-              </div>
-              <div className="statrow">
-                <span>{t('port.repairFee')}</span>
-                <b>{money(changedTargets.length === 0 ? 0 : (repairQuoteQuery.data?.fee ?? 0))}</b>
-              </div>
-              <div className={`statrow total${repairOver ? ' over' : ''}`}>
-                <span>{t('port.repairTotal')}</span>
-                <b data-testid="repair-total">
-                  {[money(repairTotalCost), formatDuration(repairTotalSeconds, t)].join(' · ')}
-                </b>
-              </div>
-              {changedTargets.length === 0 && (
-                <p className="sub">{t('port.repairNothingSelected')}</p>
               )}
-              {repairOver && <p className="error-text">{t('port.repairOverBudget')}</p>}
-              <div className="row-between" style={{ marginTop: 10 }}>
-                <span className="stack-h">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() =>
-                      setRepairTargets(
-                        Object.fromEntries(damagedInstalled.map((entry) => [entry.id, 100])),
-                      )
-                    }
-                  >
-                    {t('port.repairAllTo100')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={changedTargets.length === 0}
-                    onClick={() => setRepairTargets({})}
-                  >
-                    {t('port.repairReset')}
-                  </button>
-                </span>
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={
-                    changedTargets.length === 0 ||
-                    repairQuoteQuery.data === undefined ||
-                    // `keepPreviousData` shows the OLD plan's number while a new one is in
-                    // flight (isPlaceholderData): confirming on it could look "affordable" from
-                    // a stale, smaller cost and then fail once the server prices the real
-                    // (current) targets. A background revalidation of an already-current quote
-                    // is fine — only a genuinely stale (different-target) number blocks this.
-                    repairQuoteQuery.isPlaceholderData ||
-                    repairOver ||
-                    repair.isPending
-                  }
-                  onClick={() => {
-                    const quote = repairQuoteQuery.data;
-                    if (quote === undefined) return;
-                    setRepairPlan({
-                      targets: changedTargets,
-                      cost: quote.cost,
-                      seconds: quote.durationSeconds,
-                    });
-                  }}
-                >
-                  {t('port.repairStart')}
-                </button>
-              </div>
-            </div>
-          )}
             </div>
           </div>
         </section>
@@ -1505,8 +1514,25 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 <small>{t('port.scav.tile.nothing')}</small>
                 <b>
                   {t('port.scav.tile.percent', {
-                    value: Math.round((1 - scavengeInfoQuery.data.nothingChance) * 100),
+                    // the chance the way you search leaves you: on foot, or with a ship that cannot fly, only a share
+                    value: Math.round(
+                      (1 - scavengeInfoQuery.data.nothingChance) *
+                        (scavengeMode === 'foot'
+                          ? display.scavengeFootFactor
+                          : shipHandicapped
+                            ? display.scavengeHandicap
+                            : 1) *
+                        100,
+                    ),
                   })}
+                </b>
+              </li>
+              <li>
+                <small>{t('port.scav.tile.fuel')}</small>
+                <b>
+                  {scavengeMode === 'ship' && scavengeFuel > 0
+                    ? t('port.scav.tile.fuelValue', { units: scavengeFuel })
+                    : t('port.scav.tile.fuelNone')}
                 </b>
               </li>
               <li>
@@ -1538,11 +1564,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 <ActionArt kind={mode === 'foot' ? 'scavenge-foot' : 'scavenge-ship'} />
                 <span>
                   <b>{t(`port.scav.mode.${mode}.name`)}</b>
-                  <span className="sub">
-                    {t(`port.scav.mode.${mode}.hint`, {
-                      percent: Math.round(display.scavengeFootFactor * 100),
-                    })}
-                  </span>
+                  <span className="sub">{t(`port.scav.mode.${mode}.hint`)}</span>
                 </span>
               </label>
             ))}
@@ -1556,14 +1578,14 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               )}
             </p>
           )}
-          {scavengeMode === 'foot' && (
-            <p className="notice warn" data-testid="scavenge-foot">
-              {t('port.scav.footNotice', { percent: Math.round(display.scavengeFootFactor * 100) })}
-            </p>
-          )}
           {scavengeMode === 'ship' && shipHandicapped && (
             <p className="notice warn" data-testid="scavenge-handicap">
-              {t('port.scav.handicap', { percent: Math.round(display.scavengeHandicap * 100) })}
+              {t('port.scav.handicap')}
+            </p>
+          )}
+          {lacksScavengeFuel && (
+            <p className="notice warn" role="status" data-testid="scavenge-no-fuel">
+              {t('port.scav.noFuel', { units: scavengeFuel, have: Math.floor(ship?.fuel ?? 0) })}
             </p>
           )}
           {scavengeInfoQuery.data !== undefined && (
@@ -1609,7 +1631,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               disabled={
                 scavenge.isPending ||
                 (scavengeInfoQuery.data?.retryAfterSeconds ?? 0) > 0 ||
-                (scavengeMode === 'ship' && !shipUsable)
+                (scavengeMode === 'ship' && !shipUsable) ||
+                lacksScavengeFuel
               }
               onClick={() => scavenge.mutate()}
             >

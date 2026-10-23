@@ -370,6 +370,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // On foot (no ship involved: no pirates, no wear, no fuel) finds less: this share of the
     // usual chance to find anything.
     foot_factor: 0.5,
+    // A search with the ship burns a little fuel (units of the tank; on foot and ion ships burn none): the ship does
+    // leave the dock, however briefly (owner, 2026-10-23).
+    ship_fuel: 4,
     scrap_min: 1,
     scrap_max: 2,
     // P0 review (2026-10-14): a run is a bonus, not a salary. At most two part finds; among the

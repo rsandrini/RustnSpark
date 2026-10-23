@@ -178,11 +178,26 @@ describe('scavenging job (W8)', () => {
     expect(mission.type).toBe('SCAVENGE');
   });
 
-  it('a chemical ship with an empty tank can still scavenge (it never flies)', async () => {
+  it('a search with the ship burns a little fuel (scavenging.ship_fuel); an empty tank keeps the ship at the dock', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 0 } });
-    expect((await start(player.token, 'ceres')).status).toBe(200);
+    const refused = await start(player.token, 'ceres');
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ message: { error: 'FUEL_INSUFFICIENT' } });
+    expect(
+      await prisma.missionInstance.count({ where: { playerId: player.seeded.player.id } }),
+    ).toBe(0);
+
+    // with some fuel aboard it goes, and the job's leg is priced at the configured burn
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 30 } });
+    const ok = await start(player.token, 'ceres');
+    expect(ok.status).toBe(200);
+    const mission = await prisma.missionInstance.findFirstOrThrow({
+      where: { playerId: player.seeded.player.id },
+    });
+    const leg = (mission.legs as Array<{ distance: number; env: { fuelMult: number } }>)[0]!;
+    expect(leg.env.fuelMult).toBeGreaterThan(0);
   });
 
   it('a ship under repair blocks ship-mode (SHIP_REPAIRING) but on foot still searches', async () => {
@@ -288,6 +303,7 @@ describe('scavenging job (W8)', () => {
       scrapPlace: true,
       durationSeconds: 600,
       footDurationSeconds: 300,
+      shipFuel: 4,
       retryAfterSeconds: 0,
     });
     const safe = await request(httpServer(testApp.app))

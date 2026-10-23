@@ -172,6 +172,7 @@ export type ConfigKey =
   | 'scavenging.duration_seconds'
   | 'scavenging.foot_duration_seconds'
   | 'scavenging.foot_factor'
+  | 'scavenging.ship_fuel'
   | 'scavenging.scrap_min'
   | 'scavenging.scrap_max'
   | 'scavenging.scrap_share'
@@ -562,6 +563,8 @@ export type GameRules = Readonly<{
     handicap_factor: number;
     /** Share of the usual chance to find anything kept when scavenging on foot (no ship). */
     foot_factor: number;
+    /** Fuel units a search with the ship burns (0 = free); a ship that burns no fuel pays nothing. */
+    ship_fuel: number;
     scrap_min: number;
     scrap_max: number;
     /** The most part finds one run can bring back (the guaranteed scrap is separate). */

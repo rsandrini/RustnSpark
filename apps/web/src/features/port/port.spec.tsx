@@ -299,7 +299,7 @@ describe('port (S10.9)', () => {
     expect(notice).toHaveTextContent(/cannot fly/i);
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
     // The mode fell back to on foot, which needs no usable ship.
-    expect(screen.getByTestId('scavenge-foot')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /On foot/i })).toBeChecked();
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
   });
 
@@ -326,7 +326,7 @@ describe('port (S10.9)', () => {
     const notice = await screen.findByTestId('scavenge-no-ship');
     expect(notice).toHaveTextContent(/repair/i);
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeDisabled();
-    expect(screen.getByTestId('scavenge-foot')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /On foot/i })).toBeChecked();
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
   });
 
@@ -373,7 +373,9 @@ describe('port (S10.9)', () => {
     await renderPort();
     openPortTab('Scavenging');
     const notice = await screen.findByTestId('scavenge-handicap');
-    expect(notice).toHaveTextContent('only 50% of the usual chance');
+    expect(notice).toHaveTextContent('disadvantage');
+    // the chance tile already counts the handicap (70% of finds, half kept)
+    expect(within(screen.getByTestId('scavenging')).getByText('35%')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /With the ship/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Send the ship scavenging/i })).toBeEnabled();
   });
@@ -479,13 +481,17 @@ describe('port (S10.9)', () => {
     const scav = await screen.findByTestId('scavenging');
     expect(await within(scav).findByText('~10 min')).toBeInTheDocument();
     expect(within(scav).getByText(/Zone 1/)).toBeInTheDocument();
+    // a search with the ship burns a little fuel
+    expect(within(scav).getByText('4 units')).toBeInTheDocument();
     expect(within(scav).getByText(/Everything you find is USED/)).toBeInTheDocument();
     expect(within(scav).getByText(/Only where your ship is docked/)).toBeInTheDocument();
 
     // On foot is a choice of its own: its own time, its own warning, its own button.
     fireEvent.click(within(scav).getByRole('radio', { name: /On foot/ }));
     expect(await within(scav).findByText('~5 min')).toBeInTheDocument();
-    expect(within(scav).getByTestId('scavenge-foot')).toHaveTextContent('50%');
+    // the chance tile says what on foot really leaves (70% of the place's finds, half of it kept), and no second figure contradicts it
+    expect(within(scav).getByText('35%')).toBeInTheDocument();
+    expect(within(scav).queryByTestId('scavenge-foot')).not.toBeInTheDocument();
     expect(within(scav).queryByTestId('scavenge-handicap')).not.toBeInTheDocument();
     expect(within(scav).getByRole('button', { name: 'Go scavenging on foot' })).toBeInTheDocument();
     fireEvent.click(within(scav).getByRole('radio', { name: /With the ship/ }));

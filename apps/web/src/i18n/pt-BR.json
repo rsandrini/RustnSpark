@@ -1460,7 +1460,7 @@
       "nextAttempt": "Próximo trabalho em",
       "title": "Vasculhar os destroços",
       "nothing": "Cerca de {{percent}}% das buscas aqui não acham nada (quanto mais seguro o lugar, mais vezes).",
-      "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: só {{percent}}% da chance normal de achar algo.",
+      "handicap": "Sua nave não pode voar agora. Vasculhar não exige voo, mas você busca em desvantagem: a chance acima já considera isso.",
       "noShip": "Sua nave não pode voar — sem ponte, motor ou peças conectadas utilizáveis. Vasculhe a pé: não precisa de nave.",
       "shipRepairing": "Sua nave está em reparo e não pode zarpar enquanto isso. Vasculhe a pé: não precisa de nave.",
       "riskFoot": "Quanto mais arriscado o lugar (zona {{zone}}), melhores e mais raros os achados. A pé, nada pode te atacar. Peças raras só aparecem em lugares perigosos.",
@@ -1468,14 +1468,13 @@
       "mode": {
         "ship": {
           "name": "Com a nave",
-          "hint": "A nave vasculha o lugar: a chance total de achar coisas, mas piratas podem te encontrar. Não gasta combustível."
+          "hint": "A nave vasculha o lugar: a melhor chance de achar coisas, mas piratas podem te encontrar. Gasta um pouco de combustível."
         },
         "foot": {
           "name": "A pé",
-          "hint": "Você busca sem a nave: só {{percent}}% da chance normal, mas sem ataques, sem desgaste e sem combustível."
+          "hint": "Você busca sem a nave: chance menor de achar algo, mas sem ataques, sem desgaste e sem combustível."
         }
       },
-      "footNotice": "A pé você só tem {{percent}}% da chance normal de achar algo. Em troca, nada te ataca e a nave não sofre dano.",
       "more": "Mais sobre a busca de sucata",
       "tile": {
         "time": "Tempo",
@@ -1486,8 +1485,12 @@
         "nothing": "Chance de achar algo",
         "quality": "Condição achada",
         "percent": "{{value}}%",
-        "range": "{{min}}–{{max}}%"
-      }
+        "range": "{{min}}–{{max}}%",
+        "fuel": "Combustível",
+        "fuelValue": "{{units}} unidades",
+        "fuelNone": "Nenhum"
+      },
+      "noFuel": "Combustível insuficiente para vasculhar com a nave: precisa de {{units}} unidades e o tanque tem {{have}}. Reabasteça antes, ou vasculhe a pé."
     },
     "mine": {
       "title": "Minerar o campo",

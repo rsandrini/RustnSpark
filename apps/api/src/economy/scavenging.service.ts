@@ -23,6 +23,8 @@ export interface ScavengeInfo {
   readonly durationSeconds: number;
   /** How long the same job takes on foot (without the ship). */
   readonly footDurationSeconds: number;
+  /** Fuel units a search with the ship burns (a ship that burns none pays nothing). */
+  readonly shipFuel: number;
   readonly cooldownSeconds: number;
   /** Seconds until the next job may start here; 0 when ready. */
   readonly retryAfterSeconds: number;
@@ -84,6 +86,7 @@ export class ScavengingService {
       scrapPlace: SCRAP_PLACE_TYPES.has(location.type),
       durationSeconds: rules.scavenging.duration_seconds,
       footDurationSeconds: rules.scavenging.foot_duration_seconds,
+      shipFuel: rules.scavenging.ship_fuel,
       cooldownSeconds,
       retryAfterSeconds,
       attempts: counter?.attemptCount ?? 0,

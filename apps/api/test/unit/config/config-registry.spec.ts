@@ -166,6 +166,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'scavenging.scrap_max',
   'scavenging.scrap_min',
   'scavenging.scrap_share',
+  'scavenging.ship_fuel',
   'scavenging.tier_min_zone',
   'scavenging.zone_quality_bonus',
   'scavenging.zone_rarity_bias',

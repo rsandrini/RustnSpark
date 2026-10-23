@@ -1460,7 +1460,7 @@
       "nextAttempt": "Next job in",
       "title": "Scavenge the wreckage",
       "nothing": "About {{percent}}% of searches here find nothing (the safer the place, the more often).",
-      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: only {{percent}}% of the usual chance to find anything.",
+      "handicap": "Your ship cannot fly right now. Scavenging does not need flight, but you search at a disadvantage: the chance above already counts it.",
       "noShip": "Your ship cannot fly — no usable bridge, engine or connected parts. Search on foot instead: it needs no ship.",
       "shipRepairing": "Your ship is under repair and cannot sail meanwhile. Search on foot instead: it needs no ship.",
       "riskFoot": "The riskier the place (zone {{zone}}), the better and rarer the finds. On foot nothing can attack you. Rare parts only turn up in dangerous places.",
@@ -1468,14 +1468,13 @@
       "mode": {
         "ship": {
           "name": "With the ship",
-          "hint": "The ship searches the place: the full chance to find things, but pirates may find you. Uses no fuel."
+          "hint": "The ship searches the place: the best chance to find things, but pirates may find you. Burns a little fuel."
         },
         "foot": {
           "name": "On foot",
-          "hint": "You search without the ship: only {{percent}}% of the usual chance, but no attacks, no wear and no fuel."
+          "hint": "You search without the ship: a smaller chance of a find, but no attacks, no wear and no fuel."
         }
       },
-      "footNotice": "On foot you only get {{percent}}% of the usual chance to find anything. In return, nothing attacks you and the ship takes no damage.",
       "more": "More about scavenging",
       "tile": {
         "time": "Time",
@@ -1486,8 +1485,12 @@
         "nothing": "Chance of a find",
         "quality": "Condition found",
         "percent": "{{value}}%",
-        "range": "{{min}}–{{max}}%"
-      }
+        "range": "{{min}}–{{max}}%",
+        "fuel": "Fuel",
+        "fuelValue": "{{units}} units",
+        "fuelNone": "None"
+      },
+      "noFuel": "Not enough fuel to search with the ship: it needs {{units}} units and the tank has {{have}}. Refuel first, or search on foot."
     },
     "mine": {
       "title": "Mine the field",
