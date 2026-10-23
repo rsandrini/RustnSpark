@@ -706,3 +706,38 @@
 .upgrade-where .link:hover {
   color: var(--ink);
 }
+
+/* Repairs under way: the tab's controls are locked and dimmed, and the notice sits over them where it cannot be missed. */
+.repair-lock {
+  position: relative;
+}
+.repair-lock.on .repair-lock-body {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+  pointer-events: none;
+  user-select: none;
+}
+.repair-busy {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 22px;
+  border: 1px solid var(--brass);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 10px 30px color-mix(in oklab, var(--black) 60%, transparent);
+  text-align: center;
+  font-size: var(--text-md, 15px);
+}
+.repair-busy .countdown,
+.repair-busy time {
+  font-family: var(--font-mono);
+  color: var(--brass);
+  font-size: 1.4em;
+}

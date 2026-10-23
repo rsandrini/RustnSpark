@@ -315,6 +315,8 @@ describe('port (S10.9)', () => {
     const notice = await screen.findByTestId('repair-busy');
     expect(notice).toHaveTextContent(/working on the repairs/i);
     expect(notice).toHaveTextContent(/0?[45]:\d\d/);
+    // the controls under the notice are locked
+    expect(notice.parentElement?.querySelector('.repair-lock-body')).toHaveAttribute('inert');
   });
 
   it('a ship under refit loses "with the ship" (the API would refuse it) and falls back to on foot', async () => {

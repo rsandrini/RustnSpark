@@ -213,6 +213,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const shipUsable =
     (readinessQuery.data === undefined || readinessQuery.data.viability.viable) &&
     ship?.activity.kind !== 'repairing';
+  // repairs under way: the Repair tab is locked and says for how long
+  const repairUntil = ship?.activity.repairUntil ?? null;
+  const repairing = repairUntil !== null;
   // The repair plan: only parts the pilot moved past their current condition are repaired.
   const damagedInstalled = useMemo(
     () =>
@@ -868,15 +871,22 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'repair' && (
         <section className="stack" data-testid="repair">
-          {ship?.activity.repairUntil != null && (
-            <p className="notice warn" role="status" data-testid="repair-busy">
-              {t('port.repairBusy')}{' '}
-              <Countdown
-                until={ship.activity.repairUntil}
-                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
-              />
-            </p>
-          )}
+          {/* While repairs run the whole tab is locked (inert and dimmed) and the notice sits over the controls. */}
+          <div className={`repair-lock${repairing ? ' on' : ''}`}>
+            {repairing && (
+              <p className="repair-busy" role="status" data-testid="repair-busy">
+                <b>{t('port.repairBusy')}</b>
+                <Countdown
+                  until={repairUntil}
+                  onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+                />
+              </p>
+            )}
+            <div
+              className="repair-lock-body"
+              aria-disabled={repairing}
+              {...(repairing ? ({ inert: '' } as object) : {})}
+            >
           {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
           {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
           <div className="repair-list">
@@ -1019,6 +1029,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </div>
             </div>
           )}
+            </div>
+          </div>
         </section>
       )}
 
