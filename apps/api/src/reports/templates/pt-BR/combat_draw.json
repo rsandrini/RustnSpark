@@ -1,7 +1,11 @@
 {
   "variants": [
-    "Nenhum dos lados conseguiu terminar — {hp} de casco a menos; o escudo levou {shield}, a blindagem {armor}, o casco {hull}. Os saqueadores recuaram e você também.",
-    "Uma troca longa e feia sem vencedor — {shield} de escudo, {armor} de blindagem, {hull} de casco. As duas naves se afastaram mancando."
+    "Nenhum lado conseguiu terminar — {hp} fora do casco; os escudos levaram {shield}, a blindagem {armor}, o chassi {hull}. Os saqueadores recuaram e você também.",
+    "Uma troca longa e feia sem vencedor — {shield} nos escudos, {armor} na blindagem, {hull} no casco. Ambas as naves se arrastaram embora.",
+    "Os dois lados ficaram sem sorte: {shield} escudos, {armor} blindagem, {hull} chassi. Ninguém venceu, ninguém seguiu.",
+    "A luta travou no escuro — {hp} de casco perdido, {shield} nos escudos e {armor} na blindagem. Vocês se separaram sem uma palavra.",
+    "Sem abate, sem vitória: {shield} nos escudos, {armor} na blindagem, {hull} no casco, e uma rota que continua perigosa.",
+    "Uma luta equilibrada até o fim — {hp} no casco para você, o mesmo ou pior para eles. As duas armas se calaram."
   ],
   "legacy": [
     "Nenhum dos lados conseguiu terminar — {hp} de casco a menos. Os saqueadores recuaram e você também.",

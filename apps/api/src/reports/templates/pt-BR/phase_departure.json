@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Liberou a doca em {origin} e traçou a rota para {destination}.",
+    "Amarras soltas em {origin}. Começa a queima rumo a {destination}.",
+    "Combustível conferido, nave selada — você deixou {origin} para trás, rumo a {destination}.",
+    "A torre de {origin} deu o aval e você apontou o nariz para {destination}.",
+    "Motores acesos em {origin}. Próxima parada no mapa: {destination}.",
+    "Você saiu de {origin} e a longa viagem até {destination} começou."
+  ]
+}

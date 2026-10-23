@@ -5,6 +5,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { tuningApi } from './tuning.api';
 import { GiverLinesEditor, type GiverLinePools } from './GiverLinesEditor';
 import { SceneEditor } from './SceneEditor';
+import { ReportTextEditor } from './ReportTextEditor';
 import { GiverPersonalityEditor, type GiverPersonality } from './GiverPersonalityEditor';
 
 // Admin editors for the JSON-shaped fields that used to be a raw textarea. Each one reads and
@@ -550,6 +551,8 @@ export const STRUCTURED_EDITORS: Record<
   'quest-givers.scenes': (props) => (
     <SceneEditor value={props.value} onChange={(next) => props.onChange(next)} />
   ),
+  'report-templates.variants': (props) => <ReportTextEditor {...props} />,
+  'report-templates.legacy': (props) => <ReportTextEditor {...props} legacy />,
   'quest-givers.personality': (props) => (
     <GiverPersonalityEditor
       value={props.value as Partial<GiverPersonality> | null | undefined}

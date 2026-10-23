@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} overheated while the engines were pushed — condition {condition}, {conditionLost} points gone. The leg burned extra fuel to make up the lost thrust.",
-    "Pushing the drive too hard cost it: {part} is at {condition} after losing {conditionLost} points, and the burn ran thirstier for the rest of the leg."
+    "Pushing the drive too hard cost it: {part} is at {condition} after losing {conditionLost} points, and the burn ran thirstier for the rest of the leg.",
+    "The overdrive bit back — {part} cooked down to {condition} ({conditionLost} points lost) and the tanks paid for the lost thrust.",
+    "You asked for more than {part} could give: condition {condition}, {conditionLost} points burned, and extra fuel to cover the gap.",
+    "A warning light, a smell of hot metal: {part} fell to {condition} ({conditionLost} points). The rest of the leg drank more fuel.",
+    "{part} paid for the push — {conditionLost} points of condition, now {condition} — and the leg ran on thirstier engines."
   ]
 }

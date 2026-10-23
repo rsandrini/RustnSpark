@@ -1,7 +1,11 @@
 {
   "variants": [
     "The escort ate the first volley — {magnitude} never reached you. The rest split across your layers: {shield} shields, {armor} plate, {hull} frame; you still gave up {hp}.",
-    "Your wingman covered the crossfire — {magnitude} absorbed on their side. Yours: {shield}/{armor}/{hull}, hull delta {hp}."
+    "Your wingman covered the crossfire — {magnitude} absorbed on their side. Yours: {shield}/{armor}/{hull}, hull delta {hp}.",
+    "The escort took the worst of it: {magnitude} soaked up before it touched you. What was left cost you {shield} on the shields, {armor} on the plate, {hull} on the frame.",
+    "A good wingman is worth the fee — {magnitude} of the damage landed on them. You took {hp} on the hull.",
+    "Fire came from both sides and the escort drew most of it: {magnitude} on their hull. Your layers held at {shield}/{armor}/{hull}.",
+    "The escort turned into the shots and absorbed {magnitude}. You still lost {hp} of hull to what got through."
   ],
   "legacy": [
     "The escort ate the first volley — {magnitude} never reached you; you still gave up {hp}.",

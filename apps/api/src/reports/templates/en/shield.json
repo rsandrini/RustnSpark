@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} dropped out of the layer stack — the next hit bypasses the shields. Condition {condition} ({conditionLost} points).",
-    "Defense grid gap: {part} at {condition} after {conditionLost} points. Whatever comes next goes straight through."
+    "Defense grid gap: {part} at {condition} after {conditionLost} points. Whatever comes next goes straight through.",
+    "The shield flickered and died: {part} fell to {condition} ({conditionLost} points). The next shot meets only armor.",
+    "{part} lost its grip on the field — condition {condition} after {conditionLost} points. You are bare to the next hit.",
+    "A hole in the screen: {part} at {condition}, {conditionLost} points down. The first hit will land on the plate.",
+    "{part} gave out under strain. Condition {condition} ({conditionLost} points lost); the shields cannot take the next blow."
   ]
 }

@@ -1,3 +1,10 @@
 {
-  "variants": ["{demand}", "Então os saqueadores agiram. {demand}"]
+  "variants": [
+    "{demand}",
+    "Então os saqueadores agiram. {demand}",
+    "A luta acabou e os saqueadores disseram o preço. {demand}",
+    "Eles se aproximaram e não pediram duas vezes. {demand}",
+    "Vencido e abordado, havia pouco a discutir. {demand}",
+    "Os saqueadores tinham você encurralado. {demand}"
+  ]
 }

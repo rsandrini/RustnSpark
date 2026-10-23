@@ -1,6 +1,10 @@
 {
   "variants": [
-    "O porão encheu: mais {quantity} unidades de minério ficaram para trás.",
-    "Sem espaço no compartimento de carga — mais {quantity} unidades de minério não puderam ser trazidas."
+    "O porão está cheio: mais {quantity} unidades de minério ficaram para trás.",
+    "Sem espaço no compartimento de carga — mais {quantity} unidades de minério não puderam ser trazidas.",
+    "Cada canto do porão estava cheio; mais {quantity} unidades de minério ficaram na rocha.",
+    "A broca seguiu cortando, mas a carga estava no limite — {quantity} unidades ficaram no campo.",
+    "Cheio até a escotilha. Mais {quantity} unidades de minério teriam pago, se coubessem.",
+    "O porão disse chega: {quantity} unidades de minério ficaram à deriva."
   ]
 }

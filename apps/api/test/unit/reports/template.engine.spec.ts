@@ -185,24 +185,24 @@ describe('S9.2 — determinism', () => {
   it('drives the variant from the stored index only (narr:<index>)', () => {
     const event = eventOf('combat_win');
     const texts = new Set<string>();
-    for (let index = 0; index < 16; index++) {
+    for (let index = 0; index < 64; index++) {
       const line = renderEventLine(event, index, 'seed-abc', 'en', NAMES);
       texts.add(line.text);
       const variants = loadTemplateVariants('en', 'combat_win');
       const expected = variants[deriveSeed('seed-abc', `narr:${index}`) % variants.length]!;
       expect(line.text).toBe(renderTemplate(expected, event, 'en', NAMES).text);
     }
-    // 16 positions must exercise both variants of a two-variant type.
-    expect(texts.size).toBe(2);
+    // enough positions to exercise several of the variants (the wording rotates, it is not one fixed line)
+    expect(texts.size).toBeGreaterThan(2);
   });
 
   it('changes the variant when the seed changes for some position', () => {
     const event = eventOf('mission_wear');
     const texts = new Set<string>();
-    for (const seed of ['seed-a', 'seed-b', 'seed-c', 'seed-d', 'seed-e', 'seed-f']) {
+    for (const seed of ['seed-a', 'seed-b', 'seed-c', 'seed-d', 'seed-e', 'seed-f', 'seed-g', 'seed-h']) {
       texts.add(renderEventLine(event, 0, seed, 'en', NAMES).text);
     }
-    expect(texts.size).toBe(2);
+    expect(texts.size).toBeGreaterThan(2);
   });
 });
 

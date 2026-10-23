@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "The run from {origin} to {destination} did not finish.",
+    "You never reached {destination}. The trip from {origin} ended short of the dock.",
+    "The route to {destination} closed behind you — the mission ended before the port.",
+    "Turned back or broken down, the ship did not make {destination}.",
+    "{destination} stayed out of reach. The run that began at {origin} stopped here.",
+    "The contract toward {destination} was lost on the way."
+  ]
+}

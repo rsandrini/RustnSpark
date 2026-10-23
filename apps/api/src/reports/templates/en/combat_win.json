@@ -1,7 +1,11 @@
 {
   "variants": [
-    "The raiders broke first — {shield} soaked by the shields, {armor} by the plate, {hull} into the frame. The wreck paid {credits}.",
-    "They had no second answer — {shield} on the shields, {armor} on the armor, {hull} hull stress. Salvage duties: {credits}."
+    "The raiders broke first — {shield} soaked by the shields, {armor} by the plate, {hull} into the frame. Their wreck went to scrap.",
+    "They had no second answer — {shield} on the shields, {armor} on the armor, {hull} hull stress. The raiders drifted off dead.",
+    "A short, mean fight and you won it: shields {shield}, plate {armor}, frame {hull}. No one is chasing you now.",
+    "You held the line. {shield} on the shields, {armor} on the armor, {hull} through to the hull — and the raiders' guns went dark.",
+    "Their volley ran out before your layers did: {shield} shields, {armor} plate, {hull} frame. The lane is yours again.",
+    "The raiders turned too late. You took {shield} on the shields, {armor} on the plate, {hull} on the hull, and left their ship in pieces."
   ],
   "legacy": [
     "The raiders broke first — the wreck paid {credits}.",

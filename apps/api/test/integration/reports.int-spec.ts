@@ -419,7 +419,11 @@ describe('reports API (S9.3)', () => {
     expect(res.status).toBe(200);
     const body = res.body as ReportBody;
     expect(body.view).toBe('log');
-    const texts = body.lines!.map((line) => line.text);
+    // the departure opens the log and the arrival closes it; the events sit between them
+    expect(body.lines![0]!.text).toContain('Origin');
+    expect(body.lines!.at(-1)!.text).toContain('Dest');
+    const events = body.lines!.slice(1, -1);
+    const texts = events.map((line) => line.text);
     expect(texts).toHaveLength(4);
     expect(texts[0]).toMatch(/^\[1 · transit\] /);
     expect(texts[1]).toMatch(/^\[1 · combat\] /);
@@ -427,7 +431,7 @@ describe('reports API (S9.3)', () => {
     expect(texts[2]).toMatch(/^\[2 · loot\] /);
     expect(texts[3]).toMatch(/^\[2 · payment\] /);
     expect(texts[2]).toContain('Common Ore');
-    expect(body.lines![2]!.segments).toContainEqual({
+    expect(events[2]!.segments).toContainEqual({
       t: 'ref',
       kind: 'loot',
       id: 'common_ore',
@@ -446,26 +450,28 @@ describe('reports API (S9.3)', () => {
       'Leg 1 — completed',
       'Leg 2 — completed',
     ]);
-    expect(body.chapters![0]!.lines).toHaveLength(2);
-    expect(body.chapters![1]!.lines).toHaveLength(2);
-    expect(body.chapters![0]!.lines[1]!.detail?.cascade).toEqual({ shield: 18, armor: 9, hp: 4 });
-    expect(body.chapters![0]!.lines[0]!.detail).toBeUndefined();
+    // chapter 1 opens with the departure, the last chapter closes with the arrival
+    expect(body.chapters![0]!.lines).toHaveLength(3);
+    expect(body.chapters![1]!.lines).toHaveLength(3);
+    expect(body.chapters![0]!.lines[2]!.detail?.cascade).toEqual({ shield: 18, armor: 9, hp: 4 });
+    expect(body.chapters![0]!.lines[1]!.detail).toBeUndefined();
     // each event says what kind it is, so the screen can style the timeline
     expect(
       body.chapters![0]!.lines.map((line) => (line as { category?: string }).category),
-    ).toEqual(['transit', 'combat']);
+    ).toEqual(['transit', 'transit', 'combat']);
   });
 
   it('gives each log row its parts (leg, kind, what happened, effect) for a table', async () => {
     const fixture = await setup();
     const res = await report(fixture.token, fixture.missionId, { view: 'log' });
     const rows = (res.body as { lines: Array<Record<string, unknown>> }).lines;
-    expect(rows[1]).toMatchObject({ leg: 0, category: 'combat', categoryLabel: 'combat' });
-    expect(rows[1]).toHaveProperty('description.text');
-    expect(rows[1]).toHaveProperty('effect.text');
+    // row 0 is the departure, so the fight is row 2
+    expect(rows[2]).toMatchObject({ leg: 0, category: 'combat', categoryLabel: 'combat' });
+    expect(rows[2]).toHaveProperty('description.text');
+    expect(rows[2]).toHaveProperty('effect.text');
     // the line itself is unchanged: description and effect still read as one sentence
-    expect(String(rows[1]!.text)).toContain(
-      String((rows[1]!.description as { text: string }).text),
+    expect(String(rows[2]!.text)).toContain(
+      String((rows[2]!.description as { text: string }).text),
     );
   });
 
@@ -625,7 +631,9 @@ describe('reports API (S9.3)', () => {
     for (const locale of ['en', 'pt-BR']) {
       const narrative = await report(fixture.token, missionId, { view: 'narrative', locale });
       expect(narrative.status).toBe(200);
-      const lines = (narrative.body as ReportBody).chapters!.flatMap((chapter) => chapter.lines);
+      const lines = (narrative.body as ReportBody)
+        .chapters!.flatMap((chapter) => chapter.lines)
+        .filter((line) => !(line as { type?: string }).type?.startsWith('phase_'));
       expect(lines).toHaveLength(2);
       for (const line of lines) {
         expect(line.text).not.toMatch(/\b0\b/);
@@ -672,7 +680,9 @@ describe('reports API (S9.3)', () => {
     for (const locale of ['en', 'pt-BR'] as const) {
       const res = await report(fixture.token, missionId, { view: 'narrative', locale });
       expect(res.status).toBe(200);
-      const line = (res.body as ReportBody).chapters![0]!.lines[0]!;
+      const line = (res.body as ReportBody).chapters![0]!.lines.find(
+        (entry) => (entry as { type?: string }).type === 'tank',
+      )!;
       expect(line.text).toContain(expectedName[locale]);
       expect(line.text).not.toContain('part-instance-1');
       // The ref carries the catalog part type (stable key for a detail popup), not the instance.

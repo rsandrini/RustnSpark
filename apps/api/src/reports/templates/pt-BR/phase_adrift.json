@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "À deriva entre {origin} e {destination}, sem nada mais para guiar.",
+    "A nave derivou, morta no espaço, em algum ponto da rota para {destination}.",
+    "Sem empuxo, sem caminho de volta: a viagem a {destination} terminou à deriva.",
+    "{destination} estava fora de alcance — a nave jazia fria e muda na rota desde {origin}.",
+    "Encalhado na rota, esperando um reboque. {destination} teria de esperar.",
+    "O casco silenciou no escuro. A viagem desde {origin} terminou à deriva."
+  ]
+}

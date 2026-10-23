@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "A viagem de {origin} a {destination} não terminou.",
+    "Você nunca chegou a {destination}. A viagem de {origin} acabou antes da doca.",
+    "A rota para {destination} se fechou atrás de você — a missão terminou antes do porto.",
+    "Seja por volta ou pane, a nave não chegou a {destination}.",
+    "{destination} ficou fora de alcance. A viagem que começou em {origin} parou aqui.",
+    "O contrato rumo a {destination} se perdeu no caminho."
+  ]
+}

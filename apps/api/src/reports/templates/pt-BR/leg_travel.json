@@ -1,6 +1,10 @@
 {
   "variants": [
     "Trânsito limpo de {distance} — a propulsão zumbiu, o radar ficou vazio.",
-    "Rotina pura, {distance} de ponta a ponta; a formação se manteve."
+    "Rotina pura, {distance} de ponta a ponta; a formação se manteve.",
+    "{distance} para trás e nada que valha registro: a queima foi firme e as rotas estavam quietas.",
+    "A rota não deu problema nos seus {distance}. Combustível, energia e nervos ficaram no verde.",
+    "Você se acomodou na queima por {distance}. Horas de estrelas, um medidor calmo atrás do outro.",
+    "{distance} de rota aberta, voados conforme o manual — o tipo de trecho que o piloto esquece no próximo porto."
   ]
 }

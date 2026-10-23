@@ -10,6 +10,7 @@ import { seedMaterials, seedScrapMaterials } from './seed-data/materials.js';
 import { seedMissionTemplates } from './seed-data/mission-templates.js';
 import { seedDialogueScenes } from './seed-data/dialogue-scenes.js';
 import { seedParts } from './seed-data/parts.js';
+import { seedReportTemplates } from './seed-data/report-templates.js';
 import { seedQuestGivers } from './seed-data/quest-givers.js';
 import { seedShipFormats } from './seed-data/ship-formats.js';
 import { seedWorld } from './seed-data/world-builder.js';
@@ -33,6 +34,7 @@ export async function seed(prisma?: PrismaClient): Promise<void> {
     await seedBoardVariety(client);
     await seedQuestGivers(client);
     await seedDialogueScenes(client);
+    await seedReportTemplates(client);
     await seedDropTables(client);
     await seedGameConfig(client);
   } finally {

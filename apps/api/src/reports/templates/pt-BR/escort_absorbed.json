@@ -1,7 +1,11 @@
 {
   "variants": [
-    "A escolta absorveu a primeira salva — {magnitude} nunca chegou a você. O resto se repartiu nas suas camadas: {shield} de escudo, {armor} de blindagem, {hull} de casco; você ainda cedeu {hp}.",
-    "Seu par cobriu o cruzamento — {magnitude} absorvidos do lado deles. Seus: {shield}/{armor}/{hull}, variação de casco {hp}."
+    "A escolta engoliu a primeira salva — {magnitude} nunca chegou a você. O resto se dividiu entre suas camadas: {shield} escudos, {armor} blindagem, {hull} chassi; você ainda perdeu {hp}.",
+    "Seu ala cobriu o fogo cruzado — {magnitude} absorvidos do lado deles. Do seu: {shield}/{armor}/{hull}, variação de casco {hp}.",
+    "A escolta levou o pior: {magnitude} absorvidos antes de te tocar. O que sobrou custou {shield} nos escudos, {armor} na blindagem, {hull} no chassi.",
+    "Um bom ala vale a taxa — {magnitude} do dano caiu neles. Você levou {hp} no casco.",
+    "O fogo veio dos dois lados e a escolta atraiu a maior parte: {magnitude} no casco deles. Suas camadas seguraram em {shield}/{armor}/{hull}.",
+    "A escolta virou para os tiros e absorveu {magnitude}. Você ainda perdeu {hp} de casco com o que passou."
   ],
   "legacy": [
     "A escolta absorveu a primeira salva — {magnitude} nunca chegou a você; você ainda cedeu {hp}.",

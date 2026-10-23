@@ -14,6 +14,7 @@ const TUNABLE_ENTITIES = [
   'mission-templates',
   'drop-tables',
   'quest-givers',
+  'report-templates',
 ] as const;
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => `nav-link${isActive ? ' on' : ''}`;

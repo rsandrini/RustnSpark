@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} seized under thrust — condition {condition}, {conditionLost} points gone. Dead weight now; whatever else is still burning has to carry the ship alone.",
-    "The drive quit mid-burn: {part} at {condition} after {conditionLost} points. One less engine to push with."
+    "The drive quit mid-burn: {part} at {condition} after {conditionLost} points. One less engine to push with.",
+    "A grinding noise, then nothing: {part} stopped delivering thrust (condition {condition}, {conditionLost} points lost).",
+    "{part} gave out when it was needed most — condition {condition} after losing {conditionLost} points. The rest of the drive must pull harder.",
+    "The thrust sagged and then cut: {part} is down to {condition} ({conditionLost} points burned away).",
+    "{part} tore itself loose from the burn. Condition {condition}, {conditionLost} points lost; the ship limps on what is left."
   ]
 }

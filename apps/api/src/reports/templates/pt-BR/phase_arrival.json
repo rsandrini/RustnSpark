@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Atracou em {destination}. A viagem desde {origin} terminou.",
+    "O farol de {destination} travou e você deslizou para a baia. Viagem concluída.",
+    "{destination} no radar, depois na janela — você chegou ao porto.",
+    "Propulsores desligados em {destination}. Seja o que a rota custou, você chegou.",
+    "Garras de pouso fechadas em {destination}. A rota desde {origin} ficou para trás.",
+    "Você trouxe a nave até {destination} e cortou os motores."
+  ]
+}

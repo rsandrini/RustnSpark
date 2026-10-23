@@ -1,6 +1,10 @@
 {
   "variants": [
-    "{part} travou o alimentador sob carga — cada segundo tiro vai para lugar nenhum. Condição {condition} ({conditionLost} pontos).",
-    "Artilharia degradada: {part} em {condition}, {conditionLost} pontos a menos. Metade dos canhões não responde."
+    "{part} falha na alimentação sob carga — metade dos tiros não sai. Condição {condition} ({conditionLost} pontos).",
+    "Artilharia degradada: {part} em {condition}, {conditionLost} pontos a menos. Metade dos canos não responde.",
+    "{part} engasgou no saque — condição {condition} após {conditionLost} pontos. Metade da sua salva nunca sairá do trilho.",
+    "As armas gaguejaram: {part} caiu para {condition} ({conditionLost} pontos perdidos). Um tiro em cada dois falha.",
+    "Uma falha de alimentação em {part}: condição {condition}, {conditionLost} pontos perdidos. Seu poder de fogo caiu pela metade.",
+    "{part} não acompanha mais o gatilho — condição {condition} ({conditionLost} pontos a menos)."
   ]
 }

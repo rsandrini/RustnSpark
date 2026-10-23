@@ -6,8 +6,11 @@ import {
   formatNumber,
   formatSigned,
   renderEventLine,
+  renderPhaseLine,
   substituteTokens,
+  type PhaseType,
 } from './templates/template.engine.js';
+import { endPhaseOf } from './report.phases.js';
 import { concatLine, type ReportLog, viewChrome } from './report.types.js';
 
 /**
@@ -81,7 +84,27 @@ export function renderLog(log: ReportLog, locale: Locale, names: EntityNames): L
       return (ac === -1 ? CATEGORY_ORDER.length : ac) - (bc === -1 ? CATEGORY_ORDER.length : bc);
     });
 
-  return ranked.map(({ event, storedIndex }) => {
+  const phaseRow = (type: PhaseType, leg: number): LogLine | null => {
+    const description = renderPhaseLine(type, log.seed, locale, names);
+    if (description === null) return null;
+    const category = chrome.categories['transit'] ?? 'transit';
+    const effect = substituteTokens(chrome.effects.none, {});
+    return {
+      ...concatLine(`[${leg + 1} · ${category}] `, description, ' — ', effect),
+      leg,
+      category: 'transit',
+      categoryLabel: category,
+      type,
+      description,
+      effect,
+    };
+  };
+  const firstLeg = ranked[0]?.event.leg ?? 0;
+  const lastLeg = ranked.at(-1)?.event.leg ?? 0;
+  const departure = ranked.length === 0 ? null : phaseRow('phase_departure', firstLeg);
+  const arrival = ranked.length === 0 ? null : phaseRow(endPhaseOf(log), lastLeg);
+
+  const rows = ranked.map(({ event, storedIndex }) => {
     const category = chrome.categories[event.category] ?? event.category;
     const prefix = `[${event.leg + 1} · ${category}] `;
     const description = renderEventLine(event, storedIndex, log.seed, locale, names);
@@ -97,4 +120,5 @@ export function renderLog(log: ReportLog, locale: Locale, names: EntityNames): L
       effect,
     };
   });
+  return [...(departure === null ? [] : [departure]), ...rows, ...(arrival === null ? [] : [arrival])];
 }

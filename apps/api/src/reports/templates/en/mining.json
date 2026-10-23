@@ -1,6 +1,10 @@
 {
   "variants": [
     "The rig bit clean — {quantity} of {material} into the hold.",
-    "Cut, sealed, stowed: {quantity} of {material} from this field."
+    "Cut, sealed, stowed: {quantity} of {material} from this field.",
+    "The drills screamed through the rock and came back with {quantity} of {material}.",
+    "A good seam: {quantity} of {material} hauled aboard.",
+    "Slow work, steady yield — {quantity} of {material} stacked in the hold.",
+    "The field gave up {quantity} of {material} without a fight."
   ]
 }

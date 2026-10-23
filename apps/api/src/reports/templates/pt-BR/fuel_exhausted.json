@@ -1,6 +1,10 @@
 {
   "variants": [
-    "O tanque secou entre queimadas — sem empuxo, sem discussão, só deriva.",
-    "Exaustão de combustível: a última queimada engasgou e a nave ficou fria."
+    "O tanque secou entre queimas — sem empuxo, sem discussão, só deriva.",
+    "Falta de combustível: a última queima engasgou e a nave esfriou.",
+    "O medidor tocou zero e a propulsão calou. Aqui fora, silêncio significa encalhado.",
+    "Sem combustível para queimar — a nave deslizou no embalo até ele acabar também.",
+    "Os motores falharam uma, duas vezes, e pararam. A rota segue sem você.",
+    "Tanques vazios. As estrelas ficam paradas e você espera alguém te encontrar."
   ]
 }

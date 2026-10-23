@@ -1,6 +1,10 @@
 {
   "variants": [
-    "O contato esfriou e eles deixaram — desengajamento com {hp} de estresse no casco, propulsão ainda quente atrás.",
-    "Você cortou antes da segunda passagem. Custo da saída: {hp} no chassi."
+    "O contato esfriou e eles deixaram você ir — desengajou com {hp} de estresse no casco, a propulsão ainda queimando atrás.",
+    "Você rompeu antes da segunda passada. Custo da saída: {hp} no chassi.",
+    "Você encurtou a luta e correu; o casco pagou {hp} pela saída.",
+    "Uma curva fechada, uma queima quente, e os saqueadores perderam você. O chassi levou {hp} na saída.",
+    "Sem glória, mas você escapou da armadilha com {hp} de dano para contar.",
+    "Você os deixou para trás no escuro. Preço da fuga: {hp} no casco."
   ]
 }

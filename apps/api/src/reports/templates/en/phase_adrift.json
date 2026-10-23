@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Adrift between {origin} and {destination}, with nothing left to steer by.",
+    "The ship drifted, dead in space, somewhere on the road to {destination}.",
+    "No thrust, no way home: the run to {destination} ended adrift.",
+    "{destination} was out of reach — the ship lay cold and silent on the lane from {origin}.",
+    "Stranded on the lane, waiting for a tow. {destination} would have to wait.",
+    "The hull went quiet in the dark. The trip from {origin} ended adrift."
+  ]
+}

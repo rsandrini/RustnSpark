@@ -1,6 +1,10 @@
 {
   "variants": [
-    "Contrato liquidado — {credits} creditados em conta.",
-    "As contas fecharam limpas: {credits} pela viagem."
+    "Contrato quitado — {credits} creditados na conta.",
+    "Os livros fecharam limpos: {credits} pela viagem.",
+    "Papelada assinada na doca, e {credits} caíram na sua conta.",
+    "O cliente pagou na entrega: {credits}, sem regatear.",
+    "Aperto de mão, carimbo, transferência — {credits} são seus.",
+    "O trabalho está encerrado e o livro-caixa concorda: {credits} pelo esforço."
   ]
 }

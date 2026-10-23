@@ -22,6 +22,7 @@ import type { GiverRef, LocalizedText } from '../missions/giver-types.js';
 import { closingLineOf, giverRefOf } from '../missions/giver-ref.js';
 import { computeReportStats, type ReportStats } from './report.stats.js';
 import { type EntityNames } from './templates/template.engine.js';
+import { ReportTemplateStore } from './templates/template.store.js';
 
 const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 50;
@@ -173,6 +174,7 @@ export class ReportsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly registry: OwnershipResolverRegistry,
+    private readonly templates: ReportTemplateStore,
   ) {}
 
   async list(playerId: string, limitRaw?: string, cursorRaw?: string): Promise<ReportListResponse> {
@@ -272,8 +274,8 @@ export class ReportsService {
       throw new BadRequestException({ error: 'UNKNOWN_VIEW' });
     }
     const locale = await this.localeFor(playerId, explicitLocale);
-    const names = await this.entityNames(locale, log.partTypeById);
-    const result = renderReport(log, locale, view as ViewName, names);
+    await this.templates.ensureFresh();
+    const baseNames = await this.entityNames(locale, log.partTypeById);
     const mission = await this.prisma.missionInstance.findUnique({
       where: { id: log.missionId },
       select: {
@@ -287,6 +289,8 @@ export class ReportsService {
         template: { select: { displayName: true } },
       },
     });
+    const names = mission === null ? baseNames : await this.withPlaces(baseNames, mission, locale);
+    const result = renderReport(log, locale, view as ViewName, names);
     // Who gave the mission, with their closing line for how it ended.
     const giverRow =
       mission?.giverId == null
@@ -423,6 +427,28 @@ export class ReportsService {
           )?.locale
         : undefined;
     return resolveRequestLocale(explicit, saved);
+  }
+
+  // Where the mission started and was headed, by name: the phase lines of the story print them.
+  private async withPlaces(
+    names: EntityNames,
+    mission: { originId: string; destinationId: string },
+    locale: Locale,
+  ): Promise<EntityNames> {
+    const rows = await this.prisma.location.findMany({
+      where: { id: { in: [mission.originId, mission.destinationId] } },
+      select: { id: true, displayName: true },
+    });
+    const nameOf = (id: string): string => {
+      const row = rows.find((entry) => entry.id === id);
+      return row === undefined
+        ? id
+        : localizeDisplayName(row.displayName as Record<string, unknown>, locale);
+    };
+    return {
+      ...names,
+      places: { origin: nameOf(mission.originId), destination: nameOf(mission.destinationId) },
+    };
   }
 
   private async entityNames(

@@ -232,6 +232,19 @@ model GameConfig {
   updatedBy   String?
 }
 
+// The wording of the mission report lines, one row per event type (the id is the event type):
+// {en: [...], pt-BR: [...]} variants, and the same for the pre-cascade `legacy` wording. The Admin edits
+// them; the JSON files under src/reports/templates seed the table and stay the fallback for a missing row.
+model ReportTemplate {
+  id        String   @id
+  variants  Json
+  legacy    Json     @default("{}")
+  // Hash of the content the seed last wrote: the seed refreshes a row only while it still matches
+  // (nobody edited it in the Admin).
+  seedHash  String?
+  updatedAt DateTime @updatedAt
+}
+
 model TuningRevision {
   id         BigInt   @id @default(autoincrement())
   at         DateTime @default(now())

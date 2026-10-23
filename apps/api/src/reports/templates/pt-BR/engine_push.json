@@ -1,6 +1,10 @@
 {
   "variants": [
-    "{part} superaqueceu com os motores forçados — condição {condition}, {conditionLost} pontos perdidos. O trecho gastou combustível extra para compensar o empuxo perdido.",
-    "Forçar a propulsão demais custou caro: {part} está em {condition} após perder {conditionLost} pontos, e a queima ficou mais sedenta pelo resto do trecho."
+    "{part} superaqueceu enquanto os motores eram forçados — condição {condition}, {conditionLost} pontos a menos. A perna queimou combustível extra para compensar o empuxo perdido.",
+    "Forçar demais a propulsão custou caro: {part} está em {condition} após perder {conditionLost} pontos, e a queima ficou mais sedenta pelo resto da perna.",
+    "O overdrive mordeu de volta — {part} cozinhou até {condition} ({conditionLost} pontos perdidos) e os tanques pagaram pelo empuxo perdido.",
+    "Você pediu mais do que {part} podia dar: condição {condition}, {conditionLost} pontos queimados, e combustível extra para cobrir a diferença.",
+    "Uma luz de alerta, cheiro de metal quente: {part} caiu para {condition} ({conditionLost} pontos). O resto da perna bebeu mais combustível.",
+    "{part} pagou pelo esforço — {conditionLost} pontos de condição, agora {condition} — e a perna seguiu com motores mais sedentos."
   ]
 }

@@ -1,7 +1,11 @@
 {
   "variants": [
     "They had the angle and used it — {hp} of hull gone; the shields took {shield}, the plate {armor}, the frame {hull}. Engagement settled at {credits}.",
-    "Bad ground, worse timing — {hp} off the hull. Layer by layer: {shield} shields, {armor} armor, {hull} hull. The books recorded {credits}."
+    "Bad ground, worse timing — {hp} off the hull. Layer by layer: {shield} shields, {armor} armor, {hull} hull. The books recorded {credits}.",
+    "The raiders won the exchange: {shield} on the shields, {armor} on the plate, {hull} on the frame. The loss cost {credits}.",
+    "You were outgunned. {hp} of hull lost ({shield} shields, {armor} plate, {hull} frame) and {credits} gone with the cargo run.",
+    "It went wrong fast — every layer gave way: {shield} shields, {armor} armor, {hull} hull. The account was docked {credits}.",
+    "You limped out of it with {hp} of hull torn away and {credits} on the books."
   ],
   "legacy": [
     "They had the angle and used it — {hp} of hull gone. Engagement settled at {credits}.",

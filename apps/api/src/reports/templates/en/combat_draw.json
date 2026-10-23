@@ -1,7 +1,11 @@
 {
   "variants": [
     "Neither side could finish it — {hp} off the hull; the shields took {shield}, the plate {armor}, the frame {hull}. The raiders broke off and so did you.",
-    "A long, ugly exchange with no winner — {shield} on the shields, {armor} on the armor, {hull} into the hull. Both ships limped away."
+    "A long, ugly exchange with no winner — {shield} on the shields, {armor} on the armor, {hull} into the hull. Both ships limped away.",
+    "Both sides ran dry of luck: {shield} shields, {armor} plate, {hull} frame. Nobody won, nobody followed.",
+    "The fight stalled in the dark — {hp} of hull lost, {shield} to the shields and {armor} to the plate. You parted without a word.",
+    "No kill, no victory: {shield} on the shields, {armor} on the armor, {hull} to the hull, and a lane that is still dangerous.",
+    "An even fight to the end — {hp} on the hull for you, the same or worse for them. Both guns fell silent."
   ],
   "legacy": [
     "Neither side could finish it — {hp} off the hull. The raiders broke off and so did you.",

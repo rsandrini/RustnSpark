@@ -1,3 +1,10 @@
 {
-  "variants": ["Among the wreckage you found {find}.", "The search paid off: {find}."]
+  "variants": [
+    "Among the wreckage you found {find}.",
+    "The search paid off: {find}.",
+    "Cutting through the hulk, you came up with {find}.",
+    "Something survived the long cold: {find}.",
+    "A scrap of luck in the drift — {find}.",
+    "The tow line brought back {find}."
+  ]
 }

@@ -1,6 +1,10 @@
 {
   "variants": [
-    "A plataforma cravou limpo — {quantity} de {material} no compartimento.",
-    "Cortou, selou, arrumou: {quantity} de {material} deste campo."
+    "A broca mordeu limpo — {quantity} de {material} para o porão.",
+    "Cortado, selado, guardado: {quantity} de {material} deste campo.",
+    "As brocas gritaram pela rocha e voltaram com {quantity} de {material}.",
+    "Um bom veio: {quantity} de {material} içados a bordo.",
+    "Trabalho lento, rendimento firme — {quantity} de {material} empilhados no porão.",
+    "O campo entregou {quantity} de {material} sem resistência."
   ]
 }

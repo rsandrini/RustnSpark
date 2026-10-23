@@ -917,6 +917,18 @@
         "end": "End the scene"
       }
     },
+    "reportTexts": {
+      "help": "The lines the report picks from, one per mission (chosen by the mission's seed, so a report always reads the same). More lines means less repetition.",
+      "legacyHelp": "Lines for reports saved before the layer split (no shield/armor/hull numbers).",
+      "placeholders": "You can print:",
+      "noPlaceholders": "This kind of event prints no numbers or names.",
+      "en": "English",
+      "pt": "Portuguese",
+      "empty": "No lines yet.",
+      "add": "Add line",
+      "remove": "Remove",
+      "unknown": "Not available for this event: {{names}}"
+    },
     "givers": {
       "linesHelp": "Short lines the giver says, one list per key. An empty pool means the template text is used. {destination}, {cargo} and {reward} are filled in from the offer.",
       "addLine": "Add line",
@@ -1089,7 +1101,8 @@
       "environments": "Environments",
       "mission-templates": "Mission templates",
       "drop-tables": "Drop tables",
-      "quest-givers": "Quest givers"
+      "quest-givers": "Quest givers",
+      "report-templates": "Report texts"
     },
     "gridCells": {
       "group": "Format cells",

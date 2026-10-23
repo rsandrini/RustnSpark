@@ -1,6 +1,10 @@
 {
   "variants": [
     "The hold is full: {quantity} more units of ore stayed behind.",
-    "No room left in the cargo space — {quantity} more units of ore could not be brought back."
+    "No room left in the cargo space — {quantity} more units of ore could not be brought back.",
+    "Every corner of the hold was packed; {quantity} more units of ore stayed in the rock.",
+    "The rig kept cutting but the cargo space was done — {quantity} units left on the field.",
+    "Full to the hatch. {quantity} more units of ore would have paid, if they could have fit.",
+    "The hold said enough: {quantity} units of ore were left drifting behind."
   ]
 }

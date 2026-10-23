@@ -1,6 +1,10 @@
 {
   "variants": [
     "Corrida encerrada: você cruzou a linha em {magnitude}º lugar.",
-    "Todo o grid chegou — você terminou em {magnitude}º."
+    "O pelotão chegou — você terminou em #{magnitude}.",
+    "Bandeiras abaixadas. Seu nome está no placar na posição {magnitude}.",
+    "A última nave a chegar fechou a ordem: você ficou em {magnitude}º lugar.",
+    "Queimas cortadas, cascos esfriando — você terminou a corrida em {magnitude}º.",
+    "O farol de chegada registrou seu transponder: {magnitude}º lugar."
   ]
 }

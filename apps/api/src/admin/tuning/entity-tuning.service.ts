@@ -9,6 +9,8 @@ import { GameConfigValidationError } from '../../config/game-config.types.js';
 import { parseConnectorRules, validateConnectorRules } from '../../parts/connector-rules.js';
 import { sceneProblems } from '../../dialogue/scenes.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { TEMPLATE_PLACEHOLDERS, templateProblems } from '../../reports/templates/template.placeholders.js';
+import { invalidateReportTemplates } from '../../reports/templates/template.store.js';
 import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 
 const VALID_MISSION_TYPES = [
@@ -40,6 +42,7 @@ const ENTITY_MODEL_DELEGATE: Record<string, string> = {
   'drop-tables': 'dropTable',
   'ship-formats': 'shipFormat',
   'quest-givers': 'questGiver',
+  'report-templates': 'reportTemplate',
 };
 
 const ID_FIELD: Record<string, string> = {
@@ -153,6 +156,7 @@ export class EntityTuningService {
     const schema = this.resolveSchema(entity);
     return {
       entity: schema.entity,
+      ...(entity === 'report-templates' ? { placeholders: TEMPLATE_PLACEHOLDERS } : {}),
       fields: schema.fields.map((field) => ({
         name: field.name,
         type: field.type,
@@ -477,6 +481,9 @@ export class EntityTuningService {
     if (entity === 'quest-givers') {
       await this.validateQuestGiver(data, mode, existingId);
     }
+    if (entity === 'report-templates') {
+      await this.validateReportTemplate(data, existingId);
+    }
     if (entity === 'parts' && data.connectorRules !== undefined && data.connectorRules !== null) {
       await this.validateConnectorRules(data, existingId);
     }
@@ -606,6 +613,31 @@ export class EntityTuningService {
       if (!stillMentor) {
         fail('role', 'a faction must keep an active mentor: add the new one first');
       }
+    }
+  }
+
+  // The wording of a report line is read on every report: it must be well-formed in both languages and print
+  // only what that kind of event carries (the same check the tests run on the seed files).
+  private async validateReportTemplate(
+    data: Record<string, unknown>,
+    existingId?: string,
+  ): Promise<void> {
+    const id = (data.id as string | undefined) ?? existingId;
+    if (id === undefined) return;
+    const before =
+      existingId === undefined
+        ? null
+        : await this.prisma.reportTemplate.findUnique({ where: { id: existingId } });
+    const problems = templateProblems(
+      id,
+      data.variants ?? before?.variants,
+      data.legacy ?? before?.legacy ?? {},
+    );
+    if (problems.length > 0) {
+      throw new GameConfigValidationError(
+        `report-templates: ${problems[0]}`,
+        problems.map((message) => ({ key: 'variants', message })),
+      );
     }
   }
 
@@ -778,6 +810,7 @@ export class EntityTuningService {
   }
 
   private async publishChange(entity: string): Promise<void> {
+    if (entity === 'report-templates') invalidateReportTemplates();
     await this.redis
       .publish(ENTITY_CHANGE_CHANNEL, JSON.stringify({ entity }))
       .catch(() => undefined);

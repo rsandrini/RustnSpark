@@ -917,6 +917,18 @@
         "end": "Encerrar a cena"
       }
     },
+    "reportTexts": {
+      "help": "As frases que o relatório sorteia, uma por missão (escolhida pela semente da missão, então um relatório sempre se lê igual). Mais frases, menos repetição.",
+      "legacyHelp": "Frases para relatórios salvos antes da divisão por camadas (sem números de escudo/blindagem/casco).",
+      "placeholders": "Você pode imprimir:",
+      "noPlaceholders": "Este tipo de evento não imprime números nem nomes.",
+      "en": "Inglês",
+      "pt": "Português",
+      "empty": "Nenhuma frase ainda.",
+      "add": "Adicionar frase",
+      "remove": "Remover",
+      "unknown": "Indisponível para este evento: {{names}}"
+    },
     "givers": {
       "linesHelp": "Linhas curtas que o doador de missões diz, uma lista por chave. Uma lista vazia significa que o texto do modelo é usado. {destination}, {cargo} e {reward} são preenchidos a partir da oferta.",
       "addLine": "Adicionar linha",
@@ -1089,7 +1101,8 @@
       "environments": "Ambientes",
       "mission-templates": "Modelos de missão",
       "drop-tables": "Tabelas de drop",
-      "quest-givers": "Dadores de missão"
+      "quest-givers": "Dadores de missão",
+      "report-templates": "Textos do relatório"
     },
     "gridCells": {
       "group": "Células do formato",

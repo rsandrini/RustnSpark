@@ -1,6 +1,10 @@
 {
   "variants": [
-    "{part} perdeu os contatos próximos — a próxima emboscada já está achada. Condição {condition} ({conditionLost} pontos).",
-    "Falha de sensores: {part} em {condition} após {conditionLost} pontos. Algo já está em cima de você."
+    "{part} ficou cego a contatos próximos — a próxima emboscada já foi encontrada. Condição {condition} ({conditionLost} pontos).",
+    "Apagão do sensor: {part} em {condition} após {conditionLost} pontos. Algo já está em cima de você.",
+    "O radar virou ruído: {part} caiu para {condition} ({conditionLost} pontos). Os saqueadores agora se aproximam sem serem vistos.",
+    "{part} perdeu o fio — condição {condition}, {conditionLost} pontos a menos. Uma emboscada é certa agora.",
+    "Estática em todos os canais: {part} em {condition} após perder {conditionLost} pontos. Você não os verá chegar.",
+    "{part} parou de resolver contatos próximos. Condição {condition} ({conditionLost} pontos perdidos); o próximo combate encontra você."
   ]
 }

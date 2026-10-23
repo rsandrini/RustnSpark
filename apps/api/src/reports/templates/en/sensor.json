@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} went blind to close contacts — the next ambush is already found. Condition {condition} ({conditionLost} points).",
-    "Sensor washout: {part} at {condition} after {conditionLost} points. Something is already on top of you."
+    "Sensor washout: {part} at {condition} after {conditionLost} points. Something is already on top of you.",
+    "The scope smeared into noise: {part} fell to {condition} ({conditionLost} points). Raiders can now close unseen.",
+    "{part} lost the thread — condition {condition}, {conditionLost} points down. An ambush is certain now.",
+    "Static on every channel: {part} at {condition} after losing {conditionLost} points. You will not see them coming.",
+    "{part} stopped resolving close contacts. Condition {condition} ({conditionLost} points lost); the next fight finds you."
   ]
 }

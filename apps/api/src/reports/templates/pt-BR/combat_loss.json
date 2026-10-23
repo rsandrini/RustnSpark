@@ -1,7 +1,11 @@
 {
   "variants": [
-    "Eles tiveram o ângulo e o usaram — {hp} de casco a menos; o escudo levou {shield}, a blindagem {armor}, o casco {hull}. Confronto liquidado em {credits}.",
-    "Terreno ruim, pior timing — {hp} fora do casco. Camada a camada: {shield} de escudo, {armor} de blindagem, {hull} de casco. As contas registraram {credits}."
+    "Eles tinham o ângulo e o usaram — {hp} de casco perdido; os escudos levaram {shield}, a blindagem {armor}, o chassi {hull}. Combate encerrado em {credits}.",
+    "Terreno ruim, tempo pior — {hp} fora do casco. Camada por camada: {shield} escudos, {armor} blindagem, {hull} casco. Os livros registraram {credits}.",
+    "Os saqueadores venceram a troca: {shield} nos escudos, {armor} na blindagem, {hull} no chassi. A derrota custou {credits}.",
+    "Você estava em desvantagem. {hp} de casco perdido ({shield} escudos, {armor} blindagem, {hull} chassi) e {credits} se foram com a viagem.",
+    "Deu errado rápido — todas as camadas cederam: {shield} escudos, {armor} blindagem, {hull} casco. A conta foi debitada em {credits}.",
+    "Você saiu mancando com {hp} de casco arrancado e {credits} nos livros."
   ],
   "legacy": [
     "Eles tiveram o ângulo e o usaram — {hp} de casco a menos. Confronto liquidado em {credits}.",

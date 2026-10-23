@@ -1,6 +1,10 @@
 {
   "variants": [
     "Race over: you crossed the line in place {magnitude}.",
-    "The field is in — you finished #{magnitude}."
+    "The field is in — you finished #{magnitude}.",
+    "Flags down. Your name is on the board at position {magnitude}.",
+    "The last ship home settled the order: you took place {magnitude}.",
+    "Burns cut, hulls cooling — you finished the race in place {magnitude}.",
+    "The finish beacon pinged your transponder: place {magnitude}."
   ]
 }

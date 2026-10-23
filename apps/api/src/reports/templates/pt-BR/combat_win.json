@@ -1,7 +1,11 @@
 {
   "variants": [
-    "Os saqueadores cederam primeiro — {shield} no escudo, {armor} na blindagem, {hull} no casco. Os destroços pagaram {credits}.",
-    "Não tiveram resposta — {shield} no escudo, {armor} na blindagem, {hull} de estresse no casco. Trabalho de salvagem: {credits}."
+    "Os saqueadores cederam primeiro — {shield} absorvidos pelos escudos, {armor} pela blindagem, {hull} no casco. O destroço deles virou sucata.",
+    "Não tiveram resposta — {shield} nos escudos, {armor} na blindagem, {hull} de estresse no casco. Os saqueadores foram embora mortos à deriva.",
+    "Uma luta curta e feia, e você venceu: escudos {shield}, blindagem {armor}, casco {hull}. Ninguém mais te persegue.",
+    "Você manteve a linha. {shield} nos escudos, {armor} na blindagem, {hull} direto no casco — e as armas dos saqueadores se calaram.",
+    "A salva deles acabou antes das suas camadas: {shield} nos escudos, {armor} na blindagem, {hull} no casco. A rota é sua de novo.",
+    "Os saqueadores viraram tarde demais. Você levou {shield} nos escudos, {armor} na blindagem, {hull} no casco, e deixou a nave deles em pedaços."
   ],
   "legacy": [
     "Os saqueadores cederam primeiro — os destroços pagaram {credits}.",

@@ -1,6 +1,10 @@
 {
   "variants": [
     "The client's ship folded at full structure — {magnitude} and nothing left to tow.",
-    "Escorted vessel lost: the hull failed outright at {magnitude}. No distress beacon."
+    "Escorted vessel lost: the hull failed outright at {magnitude}. No distress beacon.",
+    "The ship you were guarding broke apart under fire — {magnitude} of structure gone in one pass.",
+    "You were too far to cover them. The client's hull failed at {magnitude} and the contract died with it.",
+    "The escorted vessel went dark. Nothing to tow, nothing to report but the wreck.",
+    "The client never made it out of the crossfire: {magnitude} of hull, then silence."
   ]
 }

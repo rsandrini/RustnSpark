@@ -1,6 +1,10 @@
 {
   "variants": [
     "Contract settled — {credits} credited to the account.",
-    "The books closed clean: {credits} for the run."
+    "The books closed clean: {credits} for the run.",
+    "Paperwork signed at the dock, and {credits} landed in your account.",
+    "The client paid on delivery: {credits}, no haggling.",
+    "Handshake, stamp, transfer — {credits} is yours.",
+    "The job is closed and the ledger agrees: {credits} for the trouble."
   ]
 }

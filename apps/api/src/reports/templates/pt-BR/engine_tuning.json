@@ -1,6 +1,10 @@
 {
   "variants": [
     "{tuning}",
-    "Registro dos motores: {tuning}"
+    "Diário dos motores: {tuning}",
+    "Ajuste para a perna: {tuning}",
+    "Você regulou a propulsão antes da queima. {tuning}",
+    "Anotação do engenheiro de voo — {tuning}",
+    "No convés dos motores: {tuning}"
   ]
 }

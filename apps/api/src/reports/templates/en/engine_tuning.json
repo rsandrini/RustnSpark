@@ -1,6 +1,10 @@
 {
   "variants": [
     "{tuning}",
-    "Engine log: {tuning}"
+    "Engine log: {tuning}",
+    "Setting for the leg: {tuning}",
+    "You trimmed the drive before the burn. {tuning}",
+    "Flight engineer's note — {tuning}",
+    "On the engine deck: {tuning}"
   ]
 }

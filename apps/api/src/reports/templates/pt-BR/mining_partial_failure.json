@@ -1,6 +1,10 @@
 {
   "variants": [
-    "A análise voltou curta — o comprador pagou a menos: {credits}.",
-    "Entrega parcial: parte da carga não passou. {credits} recuperados."
+    "O ensaio veio abaixo — o comprador pagou pelo que faltou: {credits}.",
+    "Entrega parcial: parte da carga não classificou. {credits} recuperados.",
+    "Nem todo o minério chegou ao padrão; o comprador descontou o resto e pagou {credits}.",
+    "A carga ficou aquém do contrato. O que valeu pagou {credits}.",
+    "Um carregamento mais magro que o prometido — o comprador aceitou por {credits} e fechou o caso.",
+    "Parte do minério falhou na inspeção. A conta recebeu {credits}."
   ]
 }

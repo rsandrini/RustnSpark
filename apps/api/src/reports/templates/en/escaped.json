@@ -1,6 +1,10 @@
 {
   "variants": [
     "Contact went cold and they let it go — disengage with {hp} of hull stress, drive still burning behind you.",
-    "You broke off before the second pass. Cost of the exit: {hp} on the frame."
+    "You broke off before the second pass. Cost of the exit: {hp} on the frame.",
+    "You cut the fight short and ran; the hull paid {hp} for the way out.",
+    "A hard turn, a hot burn, and the raiders lost you. The frame took {hp} on the exit.",
+    "No glory in it, but you slipped the trap with {hp} of damage to show for it.",
+    "You left them behind in the dark. Price of the escape: {hp} on the hull."
   ]
 }

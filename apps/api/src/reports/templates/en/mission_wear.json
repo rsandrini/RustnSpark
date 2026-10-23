@@ -1,6 +1,10 @@
 {
   "variants": [
     "Routine grind on the frame — {magnitude} of condition worn between ports.",
-    "The void takes its cut: {magnitude} points off the ship along this leg."
+    "The void takes its cut: {magnitude} points off the ship along this leg.",
+    "Micrometeors, vibration and heat: the hull gave up {magnitude} points of condition.",
+    "Nothing broke, but nothing stays new — {magnitude} points of wear on the way.",
+    "The trip left its mark: {magnitude} points of condition ground off the ship.",
+    "Every burn costs a little. This leg's bill: {magnitude} points of wear."
   ]
 }

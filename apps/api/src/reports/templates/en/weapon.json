@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} misfeeds under load — every second shot goes nowhere. Condition {condition} ({conditionLost} points).",
-    "Gunnery degraded: {part} at {condition}, {conditionLost} points gone. Half the barrels don't answer."
+    "Gunnery degraded: {part} at {condition}, {conditionLost} points gone. Half the barrels don't answer.",
+    "{part} jammed on the draw — condition {condition} after {conditionLost} points. Half your volley will never leave the rail.",
+    "The guns stuttered: {part} fell to {condition} ({conditionLost} points lost). Every other shot misfires.",
+    "A feed fault in {part}: condition {condition}, {conditionLost} points lost. Your firepower is cut in half.",
+    "{part} cannot keep up with the trigger anymore — condition {condition} ({conditionLost} points down)."
   ]
 }

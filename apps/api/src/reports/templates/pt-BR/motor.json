@@ -1,6 +1,10 @@
 {
   "variants": [
     "{part} travou sob empuxo — condição {condition}, {conditionLost} pontos a menos. Peso morto agora; o que ainda estiver queimando tem que carregar a nave sozinho.",
-    "A propulsão parou no meio da queimada: {part} em {condition} após {conditionLost} pontos. Um motor a menos para empurrar."
+    "A propulsão parou no meio da queimada: {part} em {condition} após {conditionLost} pontos. Um motor a menos para empurrar.",
+    "Um rangido, e depois nada: {part} parou de entregar empuxo (condição {condition}, {conditionLost} pontos perdidos).",
+    "{part} cedeu quando mais se precisava — condição {condition} após perder {conditionLost} pontos. O resto da propulsão precisa puxar mais.",
+    "O empuxo caiu e depois cortou: {part} está em {condition} ({conditionLost} pontos queimados).",
+    "{part} se soltou da queima. Condição {condition}, {conditionLost} pontos perdidos; a nave manca com o que sobrou."
   ]
 }

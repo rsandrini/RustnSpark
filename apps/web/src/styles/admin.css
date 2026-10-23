@@ -712,3 +712,19 @@
   fill: currentColor;
   font-size: 12px;
 }
+
+.report-text-line {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+.report-text-line textarea {
+  width: 100%;
+}
+.report-text-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+.report-text-preview {
+  font-style: italic;
+}

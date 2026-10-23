@@ -1,6 +1,10 @@
 {
   "variants": [
-    "Queda de energia — {part} em {condition} após {conditionLost} pontos. Os escudos ficam apagados até o próximo porto.",
-    "{part} descarregou sob carga: condição {condition}, {conditionLost} pontos perdidos. Rede de escudos offline nesta perna."
+    "Queda na célula de energia — {part} em {condition} após {conditionLost} pontos. Os escudos ficam apagados até o próximo porto.",
+    "{part} esvaziou sob carga: condição {condition}, {conditionLost} pontos perdidos. Rede de escudos fora do ar na perna.",
+    "A bateria cedeu no meio da perna: {part} caiu para {condition} ({conditionLost} pontos). Sem ela os escudos não carregam.",
+    "{part} não segurou a carga — condição {condition}, {conditionLost} pontos perdidos. A rede de escudos esfriou.",
+    "Apagão: {part} caiu para {condition} após {conditionLost} pontos de desgaste. Sem escudos pelo resto da viagem.",
+    "As células falharam sob a demanda. {part} está em {condition} ({conditionLost} pontos), e os escudos estão apagados."
   ]
 }

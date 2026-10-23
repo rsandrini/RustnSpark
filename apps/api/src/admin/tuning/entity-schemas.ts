@@ -899,6 +899,36 @@ const QUEST_GIVER_FIELDS: EntitySchemaField[] = [
   },
 ];
 
+const REPORT_TEMPLATE_FIELDS: EntitySchemaField[] = [
+  {
+    name: 'id',
+    type: 'string',
+    required: true,
+    description: localeMap(
+      'The event type this wording is for (leg_travel, combat_win, ...)',
+      'O tipo de evento a que este texto pertence (leg_travel, combat_win, ...)',
+    ),
+  },
+  {
+    name: 'variants',
+    type: 'json',
+    required: true,
+    description: localeMap(
+      'The lines to pick from, per language: { en: [...], pt-BR: [...] }. {placeholders} are filled from the event.',
+      'As frases sorteadas, por idioma: { en: [...], pt-BR: [...] }. Os {marcadores} são preenchidos com os dados do evento.',
+    ),
+  },
+  {
+    name: 'legacy',
+    type: 'json',
+    required: false,
+    description: localeMap(
+      'Lines for reports from before the layer split (no shield/armor/hull numbers); only some event types need them',
+      'Frases para relatórios antigos (sem números de escudo/blindagem/casco); só alguns tipos de evento precisam',
+    ),
+  },
+];
+
 const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   parts: { entity: 'parts', model: 'partCatalog', fields: PART_FIELDS },
   materials: { entity: 'materials', model: 'material', fields: MATERIAL_FIELDS },
@@ -914,6 +944,11 @@ const ENTITY_SCHEMAS: Record<string, EntitySchema> = {
   'drop-tables': { entity: 'drop-tables', model: 'dropTable', fields: DROP_TABLE_FIELDS },
   'ship-formats': { entity: 'ship-formats', model: 'shipFormat', fields: SHIP_FORMAT_FIELDS },
   'quest-givers': { entity: 'quest-givers', model: 'questGiver', fields: QUEST_GIVER_FIELDS },
+  'report-templates': {
+    entity: 'report-templates',
+    model: 'reportTemplate',
+    fields: REPORT_TEMPLATE_FIELDS,
+  },
 };
 
 export function getEntityNames(): string[] {

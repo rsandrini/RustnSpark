@@ -1,3 +1,10 @@
 {
-  "variants": ["{demand}", "Then the raiders made their move. {demand}"]
+  "variants": [
+    "{demand}",
+    "Then the raiders made their move. {demand}",
+    "The fight was over and the raiders named their price. {demand}",
+    "They closed in and did not ask twice. {demand}",
+    "Beaten and boarded, there was little to argue. {demand}",
+    "The raiders had you pinned. {demand}"
+  ]
 }

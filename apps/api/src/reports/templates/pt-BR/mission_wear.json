@@ -1,6 +1,10 @@
 {
   "variants": [
     "Desgaste de rotina no chassi — {magnitude} de condição entre portos.",
-    "O vazio cobra o seu: {magnitude} pontos fora da nave nesta perna."
+    "O vazio cobra o seu: {magnitude} pontos fora da nave nesta perna.",
+    "Micrometeoros, vibração e calor: o casco cedeu {magnitude} pontos de condição.",
+    "Nada quebrou, mas nada fica novo — {magnitude} pontos de desgaste no caminho.",
+    "A viagem deixou sua marca: {magnitude} pontos de condição consumidos da nave.",
+    "Cada queima custa um pouco. A conta desta perna: {magnitude} pontos de desgaste."
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Docked at {destination}. The run from {origin} is done.",
+    "The beacon at {destination} locked on and you eased into the bay. Trip complete.",
+    "{destination} on the scope, then on the viewport — you made port.",
+    "Thrusters off at {destination}. Whatever the road cost, you are in.",
+    "Landing clamps closed at {destination}. The lane from {origin} is behind you.",
+    "You brought the ship into {destination} and cut the engines."
+  ]
+}

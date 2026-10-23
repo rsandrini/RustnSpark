@@ -1499,6 +1499,8 @@ export type EntitySchemaField = z.infer<typeof EntitySchemaFieldSchema>;
 export const EntitySchemaResponseSchema = z.object({
   entity: z.string(),
   fields: z.array(EntitySchemaFieldSchema),
+  /** report-templates only: the {placeholders} each event type's wording may print. */
+  placeholders: z.record(z.string(), z.array(z.string())).optional(),
 });
 export type EntitySchemaResponse = z.infer<typeof EntitySchemaResponseSchema>;
 

@@ -49,6 +49,8 @@ export interface EntityNames {
   readonly materials: Readonly<Record<string, string>>;
   /** Catalog part type → localized name (scavenging finds name a TYPE, not an instance). */
   readonly partTypes?: Readonly<Record<string, string>>;
+  /** Localized names of where the mission started and where it was headed (the phase lines print them). */
+  readonly places?: { readonly origin: string; readonly destination: string };
 }
 
 export const EMPTY_ENTITY_NAMES: EntityNames = { parts: {}, materials: {} };
@@ -77,6 +79,19 @@ interface CachedFile {
 }
 
 const templateCache = new Map<string, CachedFile>();
+
+/** Wording edited in the Admin (the ReportTemplate table), keyed `locale/eventType`. It wins over the
+    repo files, which stay the fallback for a type with no row. */
+export interface TemplateOverride {
+  readonly variants: readonly string[];
+  readonly legacy: readonly string[];
+}
+
+let overrides: ReadonlyMap<string, TemplateOverride> = new Map();
+
+export function setTemplateOverrides(next: ReadonlyMap<string, TemplateOverride>): void {
+  overrides = next;
+}
 
 /** Test hook: forget loaded files so rewritten templates re-read from disk. */
 export function clearTemplateCache(): void {
@@ -125,6 +140,8 @@ function readTemplateJson(locale: Locale, file: string): unknown {
  * shorter report.
  */
 export function loadTemplateVariants(locale: Locale, file: string): readonly string[] {
+  const edited = overrides.get(`${locale}/${file}`);
+  if (edited !== undefined && edited.variants.length > 0) return edited.variants;
   const parsed = readTemplateJson(locale, file);
   const variants =
     typeof parsed === 'object' && parsed !== null
@@ -148,6 +165,8 @@ export function loadTemplateVariants(locale: Locale, file: string): readonly str
  * from this list instead.
  */
 export function loadLegacyVariants(locale: Locale, file: string): readonly string[] {
+  const edited = overrides.get(`${locale}/${file}`);
+  if (edited !== undefined && edited.legacy.length > 0) return edited.legacy;
   const parsed = readTemplateJson(locale, file);
   const legacy =
     typeof parsed === 'object' && parsed !== null
@@ -427,4 +446,28 @@ export function renderEventLine(
 /** Placeholder names used by a template, as a sorted multiset (tests). */
 export function templatePlaceholders(template: string): readonly string[] {
   return [...template.matchAll(PLACEHOLDER_GLOBAL)].map((match) => match[1]!).sort();
+}
+
+/** The lines that mark a phase of the mission (not stored events: drawn when the report is rendered). */
+export type PhaseType = 'phase_departure' | 'phase_arrival' | 'phase_aborted' | 'phase_adrift';
+
+/**
+ * One phase line (leaving, arriving, giving up, adrift) with the places filled in. The variant comes from the
+ * mission seed and the phase, so a report always reads the same. Null when the places are not known.
+ */
+export function renderPhaseLine(
+  type: PhaseType,
+  seed: string | number,
+  locale: Locale,
+  names: EntityNames,
+): ReportLine | null {
+  if (names.places === undefined) return null;
+  const variants = loadTemplateVariants(locale, type);
+  const variant = variants[deriveSeed(seed, `phase:${type}`) % variants.length]!;
+  return substitute(variant, (name) => {
+    if (name !== 'origin' && name !== 'destination') {
+      throw new Error(`unknown phase placeholder {${name}} (${type}, ${locale})`);
+    }
+    return { t: 'text', value: names.places![name] };
+  });
 }

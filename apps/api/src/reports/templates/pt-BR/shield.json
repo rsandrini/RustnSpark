@@ -1,6 +1,10 @@
 {
   "variants": [
-    "{part} saiu da pilha de camadas — o próximo golpe ignora os escudos. Condição {condition} ({conditionLost} pontos).",
-    "Falha na defesa: {part} em {condition} após {conditionLost} pontos. O que vem agora entra direto."
+    "{part} saiu da pilha de camadas — o próximo tiro ignora os escudos. Condição {condition} ({conditionLost} pontos).",
+    "Brecha na rede de defesa: {part} em {condition} após {conditionLost} pontos. O que vier a seguir passa direto.",
+    "O escudo piscou e morreu: {part} caiu para {condition} ({conditionLost} pontos). O próximo tiro encontra só a blindagem.",
+    "{part} perdeu o controle do campo — condição {condition} após {conditionLost} pontos. Você está exposto ao próximo golpe.",
+    "Um buraco na tela: {part} em {condition}, {conditionLost} pontos a menos. O primeiro tiro vai cair na blindagem.",
+    "{part} cedeu sob a tensão. Condição {condition} ({conditionLost} pontos perdidos); os escudos não seguram o próximo golpe."
   ]
 }

@@ -1,6 +1,10 @@
 {
   "variants": [
-    "O comprador pagou integral — {credits} pela carga.",
-    "Carga aceita: {credits} na conta."
+    "O comprador pagou integralmente — {credits} pela carga.",
+    "Carga conferida: {credits} caíram na conta.",
+    "O minério classificou bem e o comprador pagou tudo: {credits}.",
+    "Pesado, ensaiado, aceito — {credits} pelo carregamento.",
+    "A refinaria levou a carga inteira e transferiu {credits}.",
+    "Sem reclamações na balança: {credits} pelo seu minério."
   ]
 }

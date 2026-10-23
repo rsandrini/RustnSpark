@@ -1,7 +1,11 @@
 {
   "variants": [
     "{part} sprang a leak — {fuelLost} fuel gone overboard. Condition {condition} ({conditionLost} points).",
-    "Fuel at the seam: {part} leaking {fuelLost}, condition down to {condition} ({conditionLost} points)."
+    "Fuel at the seam: {part} leaking {fuelLost}, condition down to {condition} ({conditionLost} points).",
+    "A hiss in the dark: {part} split and let go of {fuelLost} fuel. Condition {condition} after {conditionLost} points.",
+    "{part} failed at the weld — {fuelLost} of fuel vented into space. It is at {condition} now ({conditionLost} points lost).",
+    "The gauge fell faster than the burn explained: {part} lost {fuelLost} fuel through the crack (condition {condition}, {conditionLost} points).",
+    "Cold vapor trailed behind you. {part} bled {fuelLost} fuel before the seal held — condition {condition}, {conditionLost} points."
   ],
   "legacy": [
     "{part} sprang a leak. Condition {condition} ({conditionLost} points).",

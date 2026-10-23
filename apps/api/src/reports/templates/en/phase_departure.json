@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Cleared the dock at {origin} and set course for {destination}.",
+    "Lines cast off at {origin}. The burn toward {destination} begins.",
+    "Fuel checked, ship sealed — you left {origin} behind, bound for {destination}.",
+    "The tower at {origin} gave the all-clear and you pointed the nose at {destination}.",
+    "Engines lit at {origin}. Next stop on the chart: {destination}.",
+    "You pulled out of {origin} and the long haul to {destination} was on."
+  ]
+}
