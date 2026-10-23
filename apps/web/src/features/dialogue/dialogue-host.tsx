@@ -39,7 +39,7 @@ export function DialogueHost() {
   const navigate = useNavigate();
   const inGame = user?.factionId != null;
   const state = useDialogueState(inGame);
-  const { record, replay, refresh } = useDialogueActions();
+  const { record, replay, setEnabled, refresh } = useDialogueActions();
   const queryClient = useQueryClient();
   const { pathname } = useLocation();
 
@@ -167,7 +167,13 @@ export function DialogueHost() {
       confirmSkip={scene.id === ASK_BEFORE_SKIP}
       onContinue={() => (node.next === null ? void close('done') : goTo(node.next))}
       onChoose={choose}
-      onSkip={() => void close('skip')}
+      onSkip={() =>
+        // Skipping the welcome is declining the guide: it stays off (the account menu turns it back on), instead of
+        // the next scene opening a moment later
+        void close('skip').then(() => {
+          if (scene.id === ASK_BEFORE_SKIP) setEnabled.mutate(false);
+        })
+      }
     />
   );
 }

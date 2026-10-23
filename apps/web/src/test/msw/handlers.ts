@@ -635,6 +635,7 @@ export const handlers = [
   http.get('/v1/players/me/dialogue', () => ok<DialogueState>(dialogueState)),
   http.post('/v1/players/me/dialogue/settings', async ({ request }) => {
     const body = (await request.json()) as { enabled: boolean };
+    dialogueSettings.push({ enabled: body.enabled });
     dialogueState = { ...dialogueState, enabled: body.enabled };
     return ok({ ok: true });
   }),
@@ -1492,6 +1493,8 @@ export const mentorFixture = (): Mentor => ({
 // Null (the default profile has no faction yet) until a test sets one.
 let dialogueState: DialogueState = { enabled: true, scene: null, replayable: [] };
 /** What the web told the mock server about dialogue progress, in order. */
+/** The on/off choices the pilot sent to the dialogue settings, newest last. */
+export const dialogueSettings: Array<{ enabled: boolean }> = [];
 export const dialogueEvents: Array<{ sceneId: string; event: string; nodeId?: string }> = [];
 
 /** Sets what GET /v1/players/me/dialogue answers (a test's scene, replayable list, on/off). */
@@ -1501,6 +1504,7 @@ export function setDialogue(next: Partial<DialogueState> | null): void {
       ? { enabled: true, scene: null, replayable: [] }
       : { enabled: true, scene: null, replayable: [], ...next };
   dialogueEvents.length = 0;
+  dialogueSettings.length = 0;
 }
 
 let mentorState: Mentor | null = null;

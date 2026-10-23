@@ -2436,7 +2436,7 @@
     "continue": "Continue",
     "close": "Close",
     "skip": "Skip",
-    "skipAsk": "Skip the whole conversation? You can hear it again from the account menu.",
+    "skipAsk": "Skip the guide? It stays off until you turn dialogues on again in the account menu.",
     "skipYes": "Yes, skip it",
     "skipNo": "No, go on",
     "menuTitle": "Talk again",

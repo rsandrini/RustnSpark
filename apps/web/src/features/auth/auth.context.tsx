@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { setAccessToken, setOnUnauthorized } from '../../api/client';
 import { authApi } from './auth.api';
@@ -55,11 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
+  // Another pilot's ship, parts and scenes must never survive a sign-in or sign-out: a cached inventory from the
+  // previous account made auto layout send parts the new pilot does not own (403).
+  const queryClient = useQueryClient();
+
   const clearSession = useCallback(() => {
+    queryClient.clear();
     rememberSignedOut(true);
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
-  }, []);
+  }, [queryClient]);
 
   // A session that died mid-use (an API call answered 401 and the silent refresh failed):
   // clear it and send the player to sign in.
@@ -136,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: LoginCredentials) => {
       const { accessToken } = await authApi.login(credentials);
+      queryClient.clear();
       setAccessToken(accessToken);
       const profile = await loadProfile(accessToken);
       // loadProfile already sent the player back to /login when the profile failed to
@@ -144,18 +151,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A pilot without a faction has no ship yet: onboarding first (S10.2).
       void navigate(profile.factionId ? '/' : '/onboarding');
     },
-    [loadProfile, navigate],
+    [loadProfile, navigate, queryClient],
   );
 
   const register = useCallback(
     async (data: RegisterData) => {
       const { accessToken } = await authApi.register(data);
+      queryClient.clear();
       setAccessToken(accessToken);
       const profile = await loadProfile(accessToken);
       if (profile === null) return;
       void navigate('/onboarding');
     },
-    [loadProfile, navigate],
+    [loadProfile, navigate, queryClient],
   );
 
   const logout = useCallback(async () => {
@@ -164,10 +172,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore logout failures; the session cookie will expire anyway.
     }
+    queryClient.clear();
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
     void navigate('/login');
-  }, [navigate]);
+  }, [navigate, queryClient]);
 
   const value = useMemo(
     () => ({ ...state, login, register, logout, refresh: refreshSession, reloadProfile }),

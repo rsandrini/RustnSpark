@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import type { DialogueNode, DialogueScene } from '../../api/generated';
 import { routes } from '../../app/router';
 import { server } from '../../test/msw/server';
-import { dialogueEvents, resetEconomyState, setDialogue } from '../../test/msw/handlers';
+import { dialogueEvents, dialogueSettings, resetEconomyState, setDialogue } from '../../test/msw/handlers';
 import { renderWithRouter } from '../../test/utils';
 import { useTypewriter } from './typewriter';
 
@@ -187,15 +187,17 @@ describe('the mentor dialogue', () => {
     const box = await screen.findByRole('dialog', {}, SEEN);
     fireEvent.click(within(box).getByRole('button', { name: 'Skip' }));
     expect(
-      within(screen.getByRole('dialog')).getByText(/Skip the whole conversation/),
+      within(screen.getByRole('dialog')).getByText(/Skip the guide/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'No, go on' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Words of w1.');
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.getByText(/Skip the whole conversation/)).toBeInTheDocument();
+    expect(screen.getByText(/Skip the guide/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Yes, skip it' }));
     await waitFor(() => expect(screen.queryByTestId('dialogue')).not.toBeInTheDocument());
     expect(dialogueEvents.at(-1)).toEqual({ sceneId: 'welcome', event: 'skip' });
+    // skipping the welcome turns the guide off, so the next scene does not open a moment later
+    await waitFor(() => expect(dialogueSettings.at(-1)).toEqual({ enabled: false }));
   });
 
   it('skip goes through at once on any other scene', async () => {

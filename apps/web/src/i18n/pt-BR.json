@@ -2436,7 +2436,7 @@
     "continue": "Continuar",
     "close": "Fechar",
     "skip": "Pular",
-    "skipAsk": "Pular a conversa toda? Você pode ouvi-la de novo no menu da conta.",
+    "skipAsk": "Pular o guia? Ele fica desligado até você ligar os diálogos de novo no menu da conta.",
     "skipYes": "Sim, pular",
     "skipNo": "Não, continuar",
     "menuTitle": "Conversar de novo",
