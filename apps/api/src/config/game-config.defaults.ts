@@ -104,8 +104,10 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
     reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 1.9, LEGENDARY: 2.5 },
-    combat_win_base: 1500,
-    combat_win_per_tier: 500,
+    // A won fight pays nothing: pilots are not pirates (owner 2026-10-23); fights cost wear and a lost one a penalty.
+    // The knobs stay for a future exception that makes a fight worth money.
+    combat_win_base: 0,
+    combat_win_per_tier: 0,
     combat_loss_penalty: 1200,
     ship_tier_thresholds: { 2: 12000, 3: 35000, 4: 80000, 5: 180000 },
     // Round-5 upgrade mechanic: upgrading a part in place costs the price gap to its next

@@ -19,6 +19,7 @@ const FRESH: DialogueFacts = {
   dispatched: false,
   repaired: false,
   worked: false,
+  inTutorial: true,
   metPirates: false,
   foundScrap: false,
 };
@@ -40,6 +41,10 @@ describe('dialogue triggers', () => {
     expect(triggerHolds('low_fuel', { ...FRESH, completed: 1, tankFraction: 0.29 })).toBe(true);
     expect(triggerHolds('low_fuel', { ...FRESH, completed: 1, tankFraction: 0.3 })).toBe(false);
     expect(triggerHolds('low_fuel', { ...FRESH, completed: 1, tankFraction: null })).toBe(false);
+    // after the tutorial a low tank never brings the mentor back
+    expect(
+      triggerHolds('low_fuel', { ...FRESH, completed: 1, tankFraction: 0.1, inTutorial: false }),
+    ).toBe(false);
   });
 
   it('goes through the scenes one at a time, in order', () => {

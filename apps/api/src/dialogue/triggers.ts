@@ -17,6 +17,8 @@ export interface DialogueFacts {
   readonly dispatched: boolean;
   readonly repaired: boolean;
   readonly worked: boolean;
+  /** Still in the tutorial phase: the Getting started list is neither finished nor closed or skipped. */
+  readonly inTutorial: boolean;
   /** A flight of theirs has met pirates (a fight, an escape or a demand). */
   readonly metPirates: boolean;
   /** They have collected scrap at least once. */
@@ -53,7 +55,9 @@ export function triggerHolds(trigger: Trigger, facts: DialogueFacts): boolean {
     case 'first_scrap':
       return facts.foundScrap;
     case 'low_fuel':
+      // only while the newcomer list is open: once the tutorial is over, a low tank is the pilot's own business
       return (
+        facts.inTutorial &&
         facts.completed >= 1 &&
         facts.tankFraction !== null &&
         facts.tankFraction < LOW_TANK_FRACTION

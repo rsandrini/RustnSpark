@@ -136,7 +136,7 @@ export class DialogueService {
   }
 
   private async factsOf(playerId: string, factionId: string | null): Promise<DialogueFacts> {
-    const [ship, completed, failed, steps, pirates, scrap] = await Promise.all([
+    const [ship, completed, failed, steps, pirates, scrap, player] = await Promise.all([
       this.prisma.ship.findFirst({
         where: { ownerPlayerId: playerId },
         orderBy: { id: 'asc' },
@@ -161,6 +161,10 @@ export class DialogueService {
             AND jsonb_path_exists("legs", ${PIRATE_EVENTS_PATH}::jsonpath)
         ) AS found`,
       this.prisma.playerMaterial.count({ where: { playerId, materialId: 'scrap' } }),
+      this.prisma.player.findUniqueOrThrow({
+        where: { id: playerId },
+        select: { tutorialDone: true },
+      }),
     ]);
     const built = ship !== null && Array.isArray(ship.layout) && ship.layout.length >= BUILT_PARTS;
     let tankFraction: number | null = null;
@@ -179,6 +183,8 @@ export class DialogueService {
       dispatched: steps.dispatched,
       repaired: steps.repaired,
       worked: steps.worked,
+      inTutorial:
+        !player.tutorialDone && !(completed >= 1 && steps.repaired && steps.worked),
       metPirates: pirates[0]?.found === true,
       foundScrap: scrap > 0,
     };
