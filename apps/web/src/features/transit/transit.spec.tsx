@@ -513,6 +513,13 @@ describe('transit (S10.7)', () => {
       renderWithRouter(routes, { initialEntries: ['/transit'] });
       await screen.findByTestId('in-transit');
       await waitFor(() => expect(screen.queryAllByTestId('route-map')).toHaveLength(maps));
+      // a free job says what it is doing and where, not a flight between two places
+      if (!contracted) {
+        expect(
+          within(screen.getByTestId('in-transit')).getByText(/Mining in Porto Ceres/),
+        ).toBeInTheDocument();
+        expect(screen.queryByText(/Now flying/)).not.toBeInTheDocument();
+      }
     },
   );
 

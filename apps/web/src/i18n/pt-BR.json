@@ -1811,6 +1811,10 @@
       "projectedAfter": "Depois da etapa {{leg}} de {{legs}}:",
       "projectedTrouble": "problema de motor numa etapa",
       "projectedNote": "Projeção: vale a menos que um motor forçado falhe no caminho. O relatório tem o resultado real."
+    },
+    "workingAt": {
+      "scavenging": "Vasculhando em {{place}}",
+      "mining": "Minerando em {{place}}"
     }
   },
   "board": {

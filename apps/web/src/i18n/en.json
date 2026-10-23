@@ -1811,6 +1811,10 @@
       "projectedAfter": "After leg {{leg}} of {{legs}}:",
       "projectedTrouble": "engine trouble on a leg",
       "projectedNote": "Projected: it holds unless an engine you pushed fails on the way. The report has the real result."
+    },
+    "workingAt": {
+      "scavenging": "Scavenging in {{place}}",
+      "mining": "Mining in {{place}}"
     }
   },
   "board": {

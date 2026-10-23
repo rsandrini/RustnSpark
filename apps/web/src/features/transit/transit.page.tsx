@@ -491,9 +491,16 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                 </p>
               ) : (
                 <p className="sub">
-                  {currentIndex !== -1 && windows[0] !== undefined
-                    ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
-                    : t('transit.waitingLeg')}
+                  {inPlaceJob
+                    ? t(
+                        `transit.workingAt.${mission.type === 'MINING' ? 'mining' : 'scavenging'}`,
+                        {
+                          place: locationName(mission.originId),
+                        },
+                      )
+                    : currentIndex !== -1 && windows[0] !== undefined
+                      ? t('transit.nowFlying', { route: legLabel(windows[0].routeId, 0) })
+                      : t('transit.waitingLeg')}
                   {legSeparator}
                   {t('transit.arrivesIn')}{' '}
                   {(mission.arrivalAt ?? '') !== '' && (
