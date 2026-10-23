@@ -83,8 +83,6 @@ test('skipping the welcome asks first, and a skipped scene does not come back on
   await page.waitForTimeout(3000);
   await expect(page.getByTestId('dialogue')).toHaveCount(0);
 });
-  await expect(next).not.toContainText('Welcome to Hedus');
-});
 
 test('the scenes follow one another within seconds, and the fuel scene is on the Ship screen, not only at the board', async ({
   page,
