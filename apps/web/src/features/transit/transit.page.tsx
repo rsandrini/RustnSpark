@@ -255,18 +255,23 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   // Beside the briefing, not under it: the ship scene and the trip's map share a narrow column.
   const inTransit = mission.status !== 'ACCEPTED';
   // With a mission card the map lives inside the card (half of it) and the scene gets the column.
-  const mapInCard = offer !== null && mission.type !== 'SCAVENGE';
+  // A scavenging job and a free mining job are done where the ship is docked: no trip, so no map and no distance.
+  // (Their one leg runs along a neighbouring route only to give the job a length; it goes nowhere.)
+  const inPlaceJob =
+    mission.type === 'SCAVENGE' ||
+    (mission.type === 'MINING' &&
+      (mission.cargo as { contracted?: unknown } | null)?.contracted === false);
+  const mapInCard = offer !== null && !inPlaceJob;
   // A scavenging job has no map but its scene still takes the whole column, the same size as every other mission's.
   const soloScene = offer !== null;
-  const tripMap =
-    mission.type !== 'SCAVENGE' ? (
-      <RouteMap
-        path={inTransit ? nodeIds : plannedNodeIds}
-        world={worldQuery.data}
-        {...(inTransit ? { progress: progress / 100, animated: true } : {})}
-        compact={!mapInCard}
-      />
-    ) : undefined;
+  const tripMap = !inPlaceJob ? (
+    <RouteMap
+      path={inTransit ? nodeIds : plannedNodeIds}
+      world={worldQuery.data}
+      {...(inTransit ? { progress: progress / 100, animated: true } : {})}
+      compact={!mapInCard}
+    />
+  ) : undefined;
   const aside =
     mission.status === 'HELD' || mission.status === 'RESOLVING' ? null : (
       <aside
@@ -367,13 +372,13 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                   <div className="k">{t('transit.facts.route')}</div>
                   <div className="v">{routeLabel}</div>
                 </div>
-                {mission.type !== 'TRAVEL' && mission.type !== 'SCAVENGE' && (
+                {mission.type !== 'TRAVEL' && !inPlaceJob && (
                   <div className="fact">
                     <div className="k">{t('transit.facts.reward')}</div>
                     <div className="v spark">{rewardText}</div>
                   </div>
                 )}
-                {mission.type !== 'SCAVENGE' && (
+                {!inPlaceJob && (
                   <>
                     <div className="fact">
                       <div className="k">{t('transit.facts.distance')}</div>
@@ -408,10 +413,9 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
 
           {/* Before the launch the pilot can tune the engines for THIS trip: time, fuel, power and
               the chance the run goes clean, all from the server's own maths. */}
-          {!embedded &&
-            mission.status === 'ACCEPTED' &&
-            mission.type !== 'SCAVENGE' &&
-            ship !== undefined && <EngineTuning ship={ship} missionId={mission.id} />}
+          {!embedded && mission.status === 'ACCEPTED' && !inPlaceJob && ship !== undefined && (
+            <EngineTuning ship={ship} missionId={mission.id} />
+          )}
 
           {actionError !== null && (
             <p className="error-text" role="alert">

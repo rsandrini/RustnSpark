@@ -478,6 +478,44 @@ describe('transit (S10.7)', () => {
     expect(within(inTransit).getByRole('progressbar')).toBeInTheDocument();
   });
 
+  it.each([
+    [false, 0],
+    [true, 1],
+  ])(
+    'a mining job with contracted=%s: the trip map is shown only for a contracted mission (a free job digs where the ship is docked)',
+    async (contracted, maps) => {
+      server.use(
+        http.get('/v1/missions/active', () =>
+          HttpResponse.json(
+            [
+              mission({
+                type: 'MINING',
+                status: 'IN_TRANSIT',
+                shipId: 'ship-1',
+                originId: 'ceres',
+                destinationId: contracted ? 'hedus' : 'ceres',
+                cargo: { materialId: 'common_ore', contracted },
+                arrivalAt: iso(10 * 60 * 1000),
+                legWindows: [
+                  {
+                    legIndex: 0,
+                    routeId: 'ceres-gate',
+                    from: iso(-1 * 60 * 1000),
+                    to: iso(10 * 60 * 1000),
+                  },
+                ],
+              }),
+            ],
+            { status: 200 },
+          ),
+        ),
+      );
+      renderWithRouter(routes, { initialEntries: ['/transit'] });
+      await screen.findByTestId('in-transit');
+      await waitFor(() => expect(screen.queryAllByTestId('route-map')).toHaveLength(maps));
+    },
+  );
+
   it('the trip progress bar advances on its own, without any interaction', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
