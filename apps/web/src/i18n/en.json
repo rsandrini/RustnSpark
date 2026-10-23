@@ -912,6 +912,7 @@
         "goto_port_tab_scavenging": "Go to Scavenging",
         "goto_missions": "Go to Missions",
         "goto_map": "Go to the Map",
+        "goto_report_latest": "Go to the last report",
         "replay": "Play the scene again",
         "end": "End the scene"
       }
@@ -1399,6 +1400,7 @@
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ each",
     "repairDestroyed": "A destroyed part cannot be repaired: replace it.",
+    "repairBusy": "We are working on the repairs. Done in",
     "repairNoDamage": "Every installed part is at full condition.",
     "repairAll": "Repair all",
     "repairSlider": "Repair to {{value}}%",

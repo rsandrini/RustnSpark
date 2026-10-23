@@ -30,6 +30,7 @@ export const ACTIONS = [
   'goto:/port?tab=scavenging',
   'goto:/missions',
   'goto:/map',
+  'goto:/report/latest',
   'replay',
   'end',
 ] as const;

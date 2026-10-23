@@ -53,6 +53,8 @@ export function ActiveShipStage({
       detail={detail}
       placeName={placeName}
       collapsed={collapsed}
+      // a job on foot leaves the ship docked (a job with the ship locks it ON_MISSION): the ship stays still
+      still={kind === 'scavenging' && ship.status === 'IN_PORT'}
       onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
     />
   );

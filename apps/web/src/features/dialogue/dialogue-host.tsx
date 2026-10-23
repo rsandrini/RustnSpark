@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router';
-import type { DialogueChoice } from '../../api/generated';
+import { client } from '../../api/client';
+import type { DialogueChoice, ReportListResponse } from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
 import { DialogueBox } from './dialogue-box';
 import { DIALOGUE_KEY, useDialogueActions, useDialogueState } from './use-dialogue';
@@ -12,6 +13,8 @@ const SETTLE_MS = 800;
 const BREATHER_MS = 2500;
 /** How often the screen is checked for something else asking for the pilot's attention. */
 const CALM_CHECK_MS = 800;
+/** The action that opens the pilot's newest report. */
+const LATEST_REPORT = '/report/latest';
 /** The scene where Skip asks first: the first thing a new pilot meets. */
 const ASK_BEFORE_SKIP = 'welcome';
 
@@ -145,7 +148,15 @@ export function DialogueHost() {
     }
     // goto:<path>: end the scene and take the pilot there
     const path = choice.action.slice('goto:'.length);
-    void close('done').then(() => navigate(path));
+    void close('done').then(async () => {
+      if (path !== LATEST_REPORT) return navigate(path);
+      // the newest report has an id only the server knows: ask for it, and fall back to My Ship
+      const latest = await client
+        .get<ReportListResponse>('/v1/reports?limit=1')
+        .catch(() => undefined);
+      const id = latest?.items[0]?.missionId;
+      return navigate(id === undefined ? '/ship' : `/report/${id}`);
+    });
   };
 
   return (

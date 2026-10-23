@@ -231,6 +231,12 @@
   transform-origin: right center;
 }
 
+/* a job on foot: the ship waits at the dock, not moving at all */
+.transit-scene.still .scene-ship,
+.transit-scene.still .ship-flame {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .transit-scene.parked .scene-ship,
   .transit-scene.parked .ship-flame,
@@ -276,7 +282,9 @@
 .route-map .rm-node.end {
   fill: var(--paper);
   stroke: var(--brass);
-  stroke-width: 2;
+  /* a hairline ring however far the map is zoomed in (a ring in map units grew into a fat disc on a short hop) */
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Small maps stay small: a glance at the route, never a banner. */

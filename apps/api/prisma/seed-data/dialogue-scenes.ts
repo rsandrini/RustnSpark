@@ -66,6 +66,7 @@ const LABELS = {
   next2: ['Next', 'Próximo'],
   manage: ['I will manage', 'Eu me viro'],
   toRepair: ['Take me to Repair', 'Leve-me ao Conserto'],
+  toReport: ['Show me the report', 'Mostre-me o relatório'],
   toWork: ['Take me to other work', 'Leve-me a outro trabalho'],
 } as const satisfies Record<string, Pair>;
 
@@ -196,7 +197,14 @@ function scenes(voice: Voice): SceneData[] {
       trigger: 'first_mission_done',
       order: 6,
       start: 'r1',
-      nodes: [node('r1', t.r1, 'bottom', { choices: [choice(LABELS.gotIt, null, 'end')] })],
+      nodes: [
+        node('r1', t.r1, 'bottom', {
+          choices: [
+            choice(LABELS.toReport, null, 'goto:/report/latest'),
+            choice(LABELS.gotIt, null, 'end'),
+          ],
+        }),
+      ],
     },
     {
       id: 'repair_wear',
@@ -645,7 +653,8 @@ export const MENTOR_SCENES: Readonly<Record<string, readonly SceneData[]>> = {
 /**
  * Gives each mentor their scenes while the column is still empty, and brings a mentor still holding the original six
  * (before the checklist scenes existed: no `pick_mission`) up to the full set. A mentor Admin has changed beyond that
- * is left exactly as it is: Admin owns the rows from then on.
+ * is left exactly as it is: Admin owns the rows from then on. (One exception while the report button is new: a set whose
+ * "after the first report" scene lacks it is replaced.)
  */
 export async function seedDialogueScenes(prisma: PrismaClient): Promise<void> {
   for (const [id, list] of Object.entries(MENTOR_SCENES)) {
@@ -658,6 +667,10 @@ export async function seedDialogueScenes(prisma: PrismaClient): Promise<void> {
           AND NOT "scenes" @> '[{"id": "pick_mission"}]'::jsonb
         )
         OR "scenes" @> '[{"trigger": "missions_3"}]'::jsonb
+        OR (
+          "scenes" @> '[{"id": "after_first_report"}]'::jsonb
+          AND "scenes"::text NOT LIKE '%goto:/report/latest%'
+        )
       )
     `;
   }

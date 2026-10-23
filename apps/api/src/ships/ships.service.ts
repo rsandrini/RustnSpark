@@ -66,6 +66,8 @@ export interface ShipActivity {
   /** When it ends (arrival or repair completion), if it does. */
   readonly until: string | null;
   readonly missionId: string | null;
+  /** When the repair under way is done (a job on foot can run beside it); null with no repair. */
+  readonly repairUntil: string | null;
 }
 
 export interface ShipResponse {
@@ -123,6 +125,8 @@ export interface ShipActivity {
   /** When it ends (arrival or repair completion), if it does. */
   readonly until: string | null;
   readonly missionId: string | null;
+  /** When the repair under way is done (a job on foot can run beside it); null with no repair. */
+  readonly repairUntil: string | null;
 }
 
 export interface PreviewResponse {
@@ -884,12 +888,14 @@ export class ShipsService implements OnModuleInit {
         kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
         until: mission.arrivalAt?.toISOString() ?? null,
         missionId: mission.id,
+        repairUntil: repair?.completesAt.toISOString() ?? null,
       };
     }
     if (repair !== null) {
-      return { kind: 'repairing', until: repair.completesAt.toISOString(), missionId: null };
+      const repairUntil = repair.completesAt.toISOString();
+      return { kind: 'repairing', until: repairUntil, missionId: null, repairUntil };
     }
-    return { kind: 'idle', until: null, missionId: null };
+    return { kind: 'idle', until: null, missionId: null, repairUntil: null };
   }
 }
 

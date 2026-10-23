@@ -792,4 +792,21 @@ describe('transit (S10.7)', () => {
     ).toBeInTheDocument();
     expect(profileReads).toBeGreaterThan(readsWhileFlying);
   }, 20_000);
+  it('takes the pilot to the report from another screen (the Map) when the flight ends', async () => {
+    const endsAt = Date.now() + 4000;
+    server.use(
+      http.get('/v1/missions/active', () =>
+        Date.now() < endsAt
+          ? HttpResponse.json(
+              [{ ...mission(), status: 'IN_TRANSIT', arrivalAt: iso(endsAt - Date.now()) }],
+              { status: 200 },
+            )
+          : HttpResponse.json([], { status: 200 }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/map'] });
+    expect(
+      await screen.findByRole('heading', { name: 'Mission report' }, { timeout: 12_000 }),
+    ).toBeInTheDocument();
+  }, 20_000);
 });

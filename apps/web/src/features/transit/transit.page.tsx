@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useState } from 'react';
+import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
@@ -14,6 +14,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { journeyNodeIds } from './journey';
+import { watchFlight } from './flight-watcher';
 import { transitPollInterval } from './poll';
 import { Countdown } from '../../ui/Countdown';
 import { useNow } from '../../ui/useNow';
@@ -62,17 +63,11 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   // It is only needed once nothing is in flight, and it must be fetched AFTER the mission ends:
   // a copy read at page load (before the worker finished) would keep showing "no report". So it
   // is enabled by the active list going empty, which fetches fresh data at that moment.
-  const watched = useRef<string | null>(null);
   const activeIsEmpty = activeQuery.isSuccess && (activeQuery.data ?? []).length === 0;
   const latestReportQuery = useQuery({
     queryKey: ['reports', 'latest'],
     enabled: activeIsEmpty,
-    // The mission can leave the active list a beat before its report is stored: while a watched
-    // flight has no report yet, keep asking instead of settling on "no report".
-    refetchInterval: (query) =>
-      watched.current !== null && query.state.data?.items[0]?.missionId !== watched.current
-        ? 2000
-        : false,
+    // the global FlightWatcher polls while a watched flight has no report yet
     queryFn: () => client.get<ReportListResponse>('/v1/reports?limit=1'),
   });
   const worldQuery = useQuery({
@@ -96,28 +91,6 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     ((mission.deadlineAt !== null && Date.parse(mission.deadlineAt) <= now) ||
       Date.parse(mission.expiresAt) <= now);
 
-  // A pilot watching this screen when the mission ends is taken to its report: remember the flight
-  // being watched, and once the active list is empty and the newest report is that mission, go.
-  const navigate = useNavigate();
-  useEffect(() => {
-    if (mission !== null && (mission.status === 'IN_TRANSIT' || mission.status === 'RESOLVING')) {
-      watched.current = mission.id;
-    }
-  }, [mission]);
-  const newestReport = latestReportQuery.data?.items[0];
-  useEffect(() => {
-    if (
-      activeIsEmpty &&
-      !latestReportQuery.isFetching &&
-      watched.current !== null &&
-      newestReport?.missionId === watched.current
-    ) {
-      const finished = watched.current;
-      watched.current = null;
-      void navigate(`/report/${finished}`);
-    }
-  }, [activeIsEmpty, latestReportQuery.isFetching, newestReport?.missionId, navigate]);
-
   const ship = shipsQuery.data?.[0];
 
   const invalidateActive = () => {
@@ -138,7 +111,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
       // Watch this flight from the moment it leaves: a flight of a few seconds (the first one to the test
       // pad) can be over before the page ever sees it in the active list, and the pilot must still be
       // taken to its report.
-      watched.current = response.missionId;
+      watchFlight(response.missionId);
       invalidateActive();
     },
     onError: (error) => {

@@ -912,6 +912,7 @@
         "goto_port_tab_scavenging": "Ir para Coleta",
         "goto_missions": "Ir para as Missões",
         "goto_map": "Ir para o Mapa",
+        "goto_report_latest": "Ir ao último relatório",
         "replay": "Tocar a cena de novo",
         "end": "Encerrar a cena"
       }
@@ -1399,6 +1400,7 @@
     "quantity": "{{quantity}} ×",
     "unitPrice": "{{price}} ¢ cada",
     "repairDestroyed": "Peça destruída não pode ser reparada: troque-a.",
+    "repairBusy": "Estamos trabalhando nos reparos. Prontos em",
     "repairNoDamage": "Todas as peças instaladas estão em perfeito estado.",
     "repairAll": "Reparar tudo",
     "repairSlider": "Reparar para {{value}}%",

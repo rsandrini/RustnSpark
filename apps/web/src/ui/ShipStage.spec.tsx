@@ -52,6 +52,14 @@ describe('ship stage', () => {
     expect(screen.getByTestId('stage-caption')).toHaveTextContent('Repairs under way');
   });
 
+  it('scavenging on foot: the ship waits still, no debris, at the regular scene size instead of the slim header', () => {
+    renderStage({ mode: 'scavenging', placeId: 'ceres', size: 'slim', still: true });
+    const scene = screen.getByTestId('transit-scene');
+    expect(scene).toHaveClass('still');
+    expect(scene).toHaveClass('stage-compact');
+    expect(scene.querySelectorAll('.debris').length).toBe(0);
+  });
+
   it('docked: parked against the place, no drones, no debris', () => {
     renderStage({ mode: 'idle', placeId: 'hedus', detail: 'Docked at Hedus' });
     const scene = screen.getByTestId('transit-scene');

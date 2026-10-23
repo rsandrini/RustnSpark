@@ -23,6 +23,9 @@ export interface ShipStageProps {
       the animated scene — the caption that already exists for every other mode, just also shown
       (not sr-only) for idle, since there's no on-screen scene left to say it visually. */
   collapsed?: boolean;
+  /** The pilot works on foot and the ship stays docked: the scene keeps the ship still (no debris, no idle sway, no
+      flame) at the regular scene size, not the slim header. */
+  still?: boolean;
 }
 
 const DRONES = [
@@ -77,6 +80,7 @@ export function ShipStage({
   placeName,
   onElapsed,
   collapsed = false,
+  still = false,
 }: ShipStageProps) {
   const { t } = useTranslation();
   const placeArt = usePlaceArt();
@@ -118,7 +122,7 @@ export function ShipStage({
   return (
     <div className="ship-stage-wrap">
       <div
-        className={`transit-scene stage-${size} mode-${mode}${moving ? ' moving' : ''}${parked ? ' parked' : ''}`}
+        className={`transit-scene stage-${still && size === 'slim' ? 'compact' : size} mode-${mode}${moving ? ' moving' : ''}${parked ? ' parked' : ''}${still ? ' still' : ''}`}
         data-testid="transit-scene"
         aria-hidden="true"
         style={style}
@@ -133,6 +137,7 @@ export function ShipStage({
           </span>
         )}
         {mode === 'scavenging' &&
+          !still &&
           DEBRIS.map((piece, index) => (
             <span
               key={index}

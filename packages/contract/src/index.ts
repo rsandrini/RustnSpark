@@ -283,6 +283,7 @@ export const DialogueActionSchema = z.enum([
   'goto:/port?tab=scavenging',
   'goto:/missions',
   'goto:/map',
+  'goto:/report/latest',
   'replay',
   'end',
 ]);
@@ -544,6 +545,8 @@ export const ShipResponseSchema = z.object({
     kind: z.enum(['idle', 'flying', 'scavenging', 'mining', 'repairing']),
     until: IsoDate.nullable(),
     missionId: z.string().nullable(),
+    /** When the repair now under way is done, even while a job on foot hides it behind `kind`. */
+    repairUntil: IsoDate.nullable(),
   }),
   routeCoverage: RouteCoverageSchema.nullable(),
 });

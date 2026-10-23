@@ -312,8 +312,9 @@ export const ship = (): ShipResponse => ({
           kind: 'flying',
           until: activeState?.arrivalAt ?? null,
           missionId: activeState?.id ?? null,
+          repairUntil: null,
         }
-      : { kind: 'idle', until: null, missionId: null }),
+      : { kind: 'idle', until: null, missionId: null, repairUntil: null }),
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
@@ -668,7 +669,7 @@ export const handlers = [
       yard: { cells: classicSquareCells() },
       disconnectedPartIds: [],
       routeCoverage: null,
-      activity: { kind: 'idle', until: null, missionId: null },
+      activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
     }),
   ),
 

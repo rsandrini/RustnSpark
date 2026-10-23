@@ -40,6 +40,8 @@ const WIDTH = 320;
 const HEIGHT = 170;
 const COMPACT_HEIGHT = 110;
 const MARKER = 4;
+/** The ship arrow's half-size, against the end markers' MARKER. */
+const SHIP = 3.4;
 /** The trip takes 1 / FOCUS_SPREAD of the window; the window shows at least this share of the sector. */
 const FOCUS_SPREAD = 1.7;
 const MIN_FOCUS_SHARE = 0.012;
@@ -54,11 +56,15 @@ function pointAt(points: readonly { x: number; y: number }[], progress: number) 
       const t = length === 0 ? 0 : Math.min(1, left / length);
       const a = points[i]!;
       const b = points[i + 1]!;
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        angle: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
+      };
     }
     left -= length;
   }
-  return points[0]!;
+  return { x: points[0]!.x, y: points[0]!.y, angle: 0 };
 }
 
 // The trip on the sector map: every place and route faint, the route this trip takes drawn over
@@ -181,8 +187,13 @@ export function RouteMap({
         })}
         {ship !== null && (
           <g className="rm-ship-wrap" style={{ transform: `translate(${ship.x}px, ${ship.y}px)` }}>
-            {animated && <circle className="rm-ship-pulse" r={(MARKER - 1) * m} />}
-            <circle className="rm-ship" r={(MARKER - 1) * m} />
+            {animated && <circle className="rm-ship-pulse" r={SHIP * m} />}
+            {/* a small arrow along the leg the ship is on: nose first, about the size of the end markers */}
+            <polygon
+              className="rm-ship"
+              points={`${SHIP * m * 1.4},0 ${-SHIP * m},${SHIP * m * 0.85} ${-SHIP * m * 0.5},0 ${-SHIP * m},${-SHIP * m * 0.85}`}
+              transform={`rotate(${ship.angle})`}
+            />
           </g>
         )}
       </svg>

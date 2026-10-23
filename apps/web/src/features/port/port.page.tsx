@@ -868,6 +868,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'repair' && (
         <section className="stack" data-testid="repair">
+          {ship?.activity.repairUntil != null && (
+            <p className="notice warn" role="status" data-testid="repair-busy">
+              {t('port.repairBusy')}{' '}
+              <Countdown
+                until={ship.activity.repairUntil}
+                onElapsed={() => void queryClient.invalidateQueries({ queryKey: ['ships'] })}
+              />
+            </p>
+          )}
           {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
           {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
           <div className="repair-list">

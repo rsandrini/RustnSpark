@@ -303,8 +303,22 @@ describe('port (S10.9)', () => {
     expect(screen.getByRole('button', { name: /Go scavenging on foot/i })).toBeEnabled();
   });
 
+  it('the Repair tab says the repairs are under way and how long they take, even beside a job on foot', async () => {
+    setShipActivity({
+      kind: 'scavenging',
+      until: new Date(Date.now() + 600_000).toISOString(),
+      missionId: 'job-1',
+      repairUntil: new Date(Date.now() + 300_000).toISOString(),
+    });
+    await renderPort();
+    openPortTab('Repair');
+    const notice = await screen.findByTestId('repair-busy');
+    expect(notice).toHaveTextContent(/working on the repairs/i);
+    expect(notice).toHaveTextContent(/0?[45]:\d\d/);
+  });
+
   it('a ship under refit loses "with the ship" (the API would refuse it) and falls back to on foot', async () => {
-    setShipActivity({ kind: 'repairing', until: null, missionId: null });
+    setShipActivity({ kind: 'repairing', until: null, missionId: null, repairUntil: null });
     await renderPort();
     openPortTab('Scavenging');
     const notice = await screen.findByTestId('scavenge-no-ship');
