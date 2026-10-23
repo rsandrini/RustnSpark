@@ -256,6 +256,8 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   const inTransit = mission.status !== 'ACCEPTED';
   // With a mission card the map lives inside the card (half of it) and the scene gets the column.
   const mapInCard = offer !== null && mission.type !== 'SCAVENGE';
+  // A scavenging job has no map but its scene still takes the whole column, the same size as every other mission's.
+  const soloScene = offer !== null;
   const tripMap =
     mission.type !== 'SCAVENGE' ? (
       <RouteMap
@@ -268,11 +270,11 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
   const aside =
     mission.status === 'HELD' || mission.status === 'RESOLVING' ? null : (
       <aside
-        className={`transit-aside${mapInCard ? ' transit-aside-solo' : ''}`}
+        className={`transit-aside${soloScene ? ' transit-aside-solo' : ''}`}
         data-testid="transit-aside"
       >
         <ActiveShipStage size="compact" />
-        {!mapInCard && tripMap}
+        {!soloScene && tripMap}
       </aside>
     );
 
