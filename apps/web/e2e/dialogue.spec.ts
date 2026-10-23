@@ -71,17 +71,18 @@ test('skipping the welcome asks first, and a skipped scene does not come back on
   await expect(box).toBeVisible({ timeout: 20_000 });
   await expect(box).toContainText('Tomas Verhoeven');
   await box.getByRole('button', { name: 'Skip' }).click();
-  await expect(page.getByText(/Skip the whole conversation/)).toBeVisible();
+  await expect(page.getByText(/Skip the guide/)).toBeVisible();
   await page.getByRole('button', { name: 'No, go on' }).click();
   await expect(page.getByRole('dialog')).toContainText('Welcome to Hedus');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Yes, skip it' }).click();
   await expect(page.getByTestId('dialogue')).toHaveCount(0);
 
-  // the welcome never returns; the next scene (the ship) is the one that opens
+  // skipping the welcome turns the guide off: nothing opens now, and nothing after a reload
   await page.reload();
-  const next = page.getByRole('dialog');
-  await expect(next).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(3000);
+  await expect(page.getByTestId('dialogue')).toHaveCount(0);
+});
   await expect(next).not.toContainText('Welcome to Hedus');
 });
 
