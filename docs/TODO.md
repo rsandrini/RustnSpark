@@ -21,19 +21,36 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
-- [ ] Balance round 6 is applied (wear -30%, pirates by bridge x1.35/x1.7, Epic x1.5 / Legendary x2 prices): retest in the sim; Epic still comes at ~50 h (target 90-130 h) and the Common/Uncommon start may still be too easy (owner to say what felt easy).
+- [ ] Balance round 6 is applied (wear -30%, pirates by bridge x1.35/x1.7, Epic x1.5 / Legendary x2 prices): retest in the sim; Epic still comes at ~50 h (target 90-130 h) (the Common/Uncommon start is in owner playtest, 2026-10-26).
 
 ## Open
 
 - [ ] Late game (parked): the fusion torch engine and the fusion reactor family above nuclear, and a
   pre-warning before a bridge is destroyed. Needs the early and mid economy to hold first.
-- [ ] Playtest the new start (2026-10-18): a new pilot gets 750 credits (the old 200 + a basic shield + a small battery),
-  both parts are always on the shelf, and the market tip recommends them. Check on a fresh account whether
-  players take them and whether the first fights feel fair; then decide on the bigger-bridge test.
-- [ ] Sim (checked 2026-10-20, see `docs/design/sim-report-2026-10-20.md`): the economy is still good. Open: late money piles up
-  (wallet 57-340k at Legendary; decide on a sink or a lower top reward), the ion build still spends 54% on repair, and the greedy / safe temperaments
-  and `sim-replay` were not run.
+- [ ] Playtest the new start (updated 2026-10-26): a new pilot gets 3000 credits (was 750, then 7500 after the x10 prices) and a
+  starter kit with a weapon and a solar reactor; a basic shield and a small battery are always on the shelf and the market tip
+  recommends them. Check on a fresh account whether players take them and whether the first fights feel fair; then decide on
+  the bigger-bridge test.
+- [ ] Sim (re-checked 2026-10-26, the sim is aligned with the live game and `sim-replay` matches 40/40): the late-money pile-up is gone,
+  the opposite holds now: with round 6 every build stalls at Epic (repair is 72-84% of income, nobody reaches Legendary in 800 missions).
+  The `r8-*` runs (wear 0.5 / 0.6 against the current) decide round 6. Open after that: the ion build spends 79-94% on repair under every
+  wear edit (needs its own lever, not the wear scale).
 - [ ] Watch: the race e2e needs a race offer on the board (run it first on a fresh database, as CI does).
+
+## Online mechanics (owner, 2026-10-26) - *needs design*
+
+The game has no player-to-player layer yet. Raise questions before starting any of these; they touch the
+board, missions, the worker and the web.
+
+- [ ] **Presence at the port:** show how many pilots are in a port right now (and perhaps who, with a privacy switch).
+- [ ] **Scheduled player races:** a race that starts at a fixed time; pilots apply and wait, then compete against each
+  other (today a race is against generated rivals, `resolution/race`). Needs an apply window, a start job and a result.
+- [ ] **Missions together:** invite other pilots to a convoy, a defense or a transport done together (shared reward,
+  roles, what happens if one leaves or is lost).
+- [ ] **Profile stats:** details per pilot in the profile: distance traveled, fuel consumed, damage taken and given,
+  and so on (needs the numbers recorded as they happen; `MissionLog` has part of it).
+- [ ] **Global ranking:** a leaderboard over a few good stats (fastest ship, most powerful, ...); decide the stats, how
+  often it refreshes and how to keep it fair against exploits.
 
 ## Planned / follow-ups (owner, 2026-10-20)
 - [ ] **Balance, round 5**: the game was too easy and money was quick to farm (owner, 2026-10-20). Sim check
