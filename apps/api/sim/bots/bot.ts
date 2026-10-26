@@ -37,6 +37,7 @@ import {
   shipLevel,
   shipValue,
   starterPlayer,
+  type PartWearEntry,
   type PlayerState,
 } from '../core/state.js';
 import { boardAt, buildFillerWorld, createBoard, type Offer } from '../core/world.js';
@@ -154,6 +155,7 @@ export interface RunResult {
   readonly footScavenges: number;
   readonly findsValue: number;
   readonly repairActions: number;
+  readonly partWear: readonly PartWearEntry[];
   readonly finalParts: readonly string[];
   readonly levels: LevelRecord[];
   readonly missions: MissionOutcomeRecord[];
@@ -1035,6 +1037,7 @@ export function playRun(input: PlayRunInput): RunResult {
     footScavenges: state.footScavenges,
     findsValue: state.findsFittedValue,
     repairActions: state.repairActions,
+    partWear: state.partWearLog,
     finalParts: state.ship.parts.map((part) => `${part.partType}@${Math.round(part.condition)}`),
     levels,
     missions: records,

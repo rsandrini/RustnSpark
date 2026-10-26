@@ -33,7 +33,15 @@ export function repairQuote(
   catalogByType: ReadonlyMap<string, CatalogRow>,
   locationId: string,
   targets?: readonly RepairTarget[],
-): { points: number; cost: number; seconds: number; partIds: string[] } {
+): {
+  points: number;
+  cost: number;
+  seconds: number;
+  partIds: string[];
+  /** Each repaired part's points and its share of the bill, plus the port's maintenance fee. */
+  shares: { partId: string; points: number; cost: number }[];
+  maintenanceCost: number;
+} {
   const facts = portFactsOf(snapshot, locationId, state.factionId);
   const parts = state.ship.parts;
   const byId = new Map(parts.map((part) => [part.id, part]));
@@ -48,6 +56,7 @@ export function repairQuote(
   let points = 0;
   const costInput: { basePrice: number; fromCondition: number; toCondition: number }[] = [];
   const partIds: string[] = [];
+  const pointsById: number[] = [];
   for (const part of chosen) {
     const catalog = catalogByType.get(part.partType);
     if (catalog === undefined) continue;
@@ -61,6 +70,7 @@ export function repairQuote(
       toCondition: to,
     });
     partIds.push(part.id);
+    pointsById.push(gained);
   }
 
   const tier = shipTier(
@@ -70,7 +80,25 @@ export function repairQuote(
   const raw = repairCost(costInput, tier, facts.isolation, facts.factionRelation, rules);
   const cost = points <= 0 ? 0 : Math.max(1, Math.round(raw));
   const seconds = points * repairSecondsAt(snapshot, rules, locationId);
-  return { points, cost, seconds, partIds };
+  // The bill split: the parts' own share (the same formula with no maintenance fee), the rest is the fee.
+  const partsOnly = points <= 0 ? 0 : repairCost(costInput, 0, facts.isolation, facts.factionRelation, rules);
+  const weights = costInput.map(
+    (input) =>
+      Math.max(input.basePrice, rules.economy.repair_min_base_price) *
+      Math.max(0, input.toCondition - input.fromCondition),
+  );
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+  const partsCost = Math.min(cost, Math.round(partsOnly));
+  const shares = partIds.map((partId, index) => ({
+    partId,
+    points: pointsById[index] ?? 0,
+    cost: weightSum <= 0 ? 0 : Math.round((partsCost * (weights[index] ?? 0)) / weightSum),
+  }));
+  // Rounding each share can leave a credit or two over or short: the biggest share takes it.
+  const drift = (weightSum <= 0 ? 0 : partsCost) - shares.reduce((sum, share) => sum + share.cost, 0);
+  const biggest = shares.reduce((top, share) => (share.cost > (top?.cost ?? -1) ? share : top), shares[0]);
+  if (biggest !== undefined) biggest.cost += drift;
+  return { points, cost, seconds, partIds, shares, maintenanceCost: cost - partsCost };
 }
 
 /**
@@ -100,6 +128,29 @@ export function repair(
   state.wallet -= quote.cost;
   state.repairActions += 1;
   state.ledger.record('repair', -quote.cost);
+  for (const share of quote.shares) {
+    const part = state.ship.parts.find((entry) => entry.id === share.partId);
+    const row = part === undefined ? undefined : catalogByType.get(part.partType);
+    if (part === undefined || row === undefined) continue;
+    state.partWearLog.push({
+      kind: 'repair',
+      seq: state.repairActions,
+      partType: part.partType,
+      partClass: row.partClass,
+      rarity: row.rarity,
+      loss: Math.round(share.points * 100) / 100,
+      cost: share.cost,
+    });
+  }
+  state.partWearLog.push({
+    kind: 'repair',
+    seq: state.repairActions,
+    partType: 'maintenance',
+    partClass: 'MAINT',
+    rarity: '-',
+    loss: 0,
+    cost: quote.maintenanceCost,
+  });
   const targetIds = new Set(quote.partIds);
   for (const part of state.ship.parts) {
     if (targetIds.has(part.id)) part.condition = FULL_CONDITION;

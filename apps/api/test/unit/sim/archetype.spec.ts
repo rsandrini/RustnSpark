@@ -24,9 +24,13 @@ describe('archetype', () => {
     expect(priorityBasesOf('ion-shield')).toEqual([
       'reactor_solar',
       'engine_ion_micro',
+      'reactor_nuclear_small',
+      'engine_ion_small',
       'battery_small',
       'shield_basic',
     ]);
+    // The hybrid keeps its chemical engines and only adds the micro ion.
+    expect(priorityBasesOf('hybrid')).not.toContain('engine_ion_small');
   });
 
   it('drops chemical engines and tanks from the ion kit only', () => {

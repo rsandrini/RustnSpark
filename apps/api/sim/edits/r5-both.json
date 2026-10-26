@@ -1,0 +1,30 @@
+{
+  "rules": {
+    "economy.reward_per_tier": 700,
+    "economy.reward_by_bridge": {
+      "COMMON": 1,
+      "UNCOMMON": 1,
+      "RARE": 1.4,
+      "EPIC": 1.9,
+      "LEGENDARY": 2.5
+    },
+    "encounter.pirate_strength_options": [
+      0.7,
+      0.85,
+      1.0,
+      1.1,
+      1.25,
+      1.4
+    ],
+    "encounter.pirate_zone_strength": {
+      "0": 0.7,
+      "1": 0.9,
+      "2": 1.1,
+      "3": 1.4
+    }
+  },
+  "catalogPrice": {
+    "EPIC": 2,
+    "LEGENDARY": 3
+  }
+}

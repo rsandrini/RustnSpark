@@ -376,6 +376,12 @@ export const TARGET_KIT_BASES: readonly string[] = [
   'reactor_solar',
 ];
 
+/** Chemical engine family → the ion family of the same footprint that replaces it in the ion archetype. */
+const ION_SWAPS: readonly (readonly [string, string])[] = [
+  ['engine_chem_small', 'engine_ion_micro'],
+  ['engine_chem_medium', 'engine_ion_small'],
+];
+
 /** The kit the archetype grows: ion drops the chemical engines and tank for the ion drive. */
 export function kitBasesOf(archetype: Archetype): readonly string[] {
   const base = usesChemEngine(archetype)
@@ -716,22 +722,28 @@ function spendTargetsOf(
   const fillSuffix = fillRarity === undefined ? null : RARITY_SUFFIX[fillRarity] ?? '';
   // The ion archetype swaps the chemical engine for the ion drive: a replace target, so the
   // viability gate sees the ship without the old engine.
-  if (ion && fillSuffix !== null && !covered.has('engine_ion_micro')) {
-    const chem = state.ship.parts.find((part) => {
-      const row = catalogByType.get(part.partType);
-      return row !== undefined && familyBaseOf(row).startsWith('engine_chem');
-    });
-    const ionRow = catalogByType.get(`engine_ion_micro${fillSuffix}`);
-    const chemRow = chem === undefined ? undefined : catalogByType.get(chem.partType);
-    if (chem !== undefined && chemRow !== undefined && ionRow !== undefined && ionRow.active) {
-      targets.push({
-        rarityIdx: fillIdx,
-        base: 'engine_ion_micro',
-        replaceId: chem.id,
-        nextRow: ionRow,
-        currentRow: chemRow,
-        currentCondition: chem.condition,
+  // Footprint for footprint: the 1x1 chemical engine gives way to the 1x1 micro ion, the 1x2 one to the small ion
+  // (otherwise the ion ship flew on one micro engine, a quarter of the chemical ship's thrust, and the build tested
+  // the wrong thing). Each swap waits for its own chemical engine to still be aboard.
+  if (ion && fillSuffix !== null) {
+    for (const [chemBase, ionBase] of ION_SWAPS) {
+      if (covered.has(ionBase)) continue;
+      const chem = state.ship.parts.find((part) => {
+        const row = catalogByType.get(part.partType);
+        return row !== undefined && familyBaseOf(row) === chemBase;
       });
+      const ionRow = catalogByType.get(`${ionBase}${fillSuffix}`);
+      const chemRow = chem === undefined ? undefined : catalogByType.get(chem.partType);
+      if (chem !== undefined && chemRow !== undefined && ionRow !== undefined && ionRow.active) {
+        targets.push({
+          rarityIdx: fillIdx,
+          base: ionBase,
+          replaceId: chem.id,
+          nextRow: ionRow,
+          currentRow: chemRow,
+          currentCondition: chem.condition,
+        });
+      }
     }
   }
   // The ion drive and the shield both draw continuously: one panel is not enough, so the ion
@@ -753,9 +765,14 @@ function spendTargetsOf(
       });
     }
   }
+  // A micro ion drive is bought as the swap for the chemical engine, never fitted beside it (the ship would keep
+  // the common engine and its tank, and its level would stay at Common for good).
+  const swapPending = (base: string): boolean =>
+    ion && ION_SWAPS.some(([chemBase, ionBase]) => ionBase === base && covered.has(chemBase));
   for (const base of kitBasesOf(archetype)) {
     if (fillSuffix === null) break;
     if (covered.has(base)) continue;
+    if (swapPending(base)) continue;
     const wantedType = `${base}${fillSuffix}`;
     const wantedRow = catalogByType.get(wantedType);
     if (wantedRow === undefined || !wantedRow.active) continue;

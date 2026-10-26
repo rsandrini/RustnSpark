@@ -30,7 +30,19 @@ export function priorityBasesOf(archetype: Archetype): readonly string[] {
       return ['battery_small', 'shield_basic'];
     case 'ion-shield':
     case 'hybrid':
-      return ['reactor_solar', 'engine_ion_micro', 'battery_small', 'shield_basic'];
+      // The ion pilot's real path: the small ion drive draws 6 (two panels' worth) on top of the shield and the
+      // weapons, so a nuclear plant comes before it. Without it the ship stayed on one micro drive (a quarter
+      // of the chemical thrust) and ran in a power deficit that wore the reactors and batteries.
+      return archetype === 'hybrid'
+        ? ['reactor_solar', 'engine_ion_micro', 'battery_small', 'shield_basic']
+        : [
+            'reactor_solar',
+            'engine_ion_micro',
+            'reactor_nuclear_small',
+            'engine_ion_small',
+            'battery_small',
+            'shield_basic',
+          ];
   }
 }
 
@@ -39,7 +51,7 @@ export function usesChemEngine(archetype: Archetype): boolean {
   return archetype !== 'ion-shield';
 }
 
-/** The ion drive and the shield both draw continuously: those builds carry a second panel. */
+/** The hybrid's ion drive and the shield both draw continuously: it carries a second panel (the ion build has a nuclear plant instead). */
 export function wantsSecondPanel(archetype: Archetype): boolean {
-  return archetype === 'ion-shield' || archetype === 'hybrid';
+  return archetype === 'hybrid';
 }

@@ -1,0 +1,1 @@
+{ "rules": { "wear.base_min": 0.7, "wear.base_max": 1.2, "wear.hull_to_condition": 0.2 } }

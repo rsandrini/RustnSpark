@@ -139,6 +139,17 @@ describe('repair', () => {
     expect(state.ship.parts.every((part) => part.condition === 100)).toBe(true);
   });
 
+  it('logs each part’s share of the bill: the shares and the maintenance fee add up to the cost', () => {
+    const state = starterPlayer(snapshot, 'luna');
+    for (const part of state.ship.parts) part.condition = 50;
+    state.wallet = 10_000;
+    const result = repair(state, snapshot, rules, catalogByType, CHEAP_PORT);
+    const rows = state.partWearLog.filter((row) => row.kind === 'repair');
+    expect(rows.reduce((sum, row) => sum + row.cost, 0)).toBe(result.cost);
+    expect(rows.filter((row) => row.partClass === 'MAINT')).toHaveLength(1);
+    expect(rows.filter((row) => row.partClass !== 'MAINT')).toHaveLength(state.ship.parts.length);
+  });
+
   it('does nothing (and charges nothing) on a healthy ship', () => {
     const state = starterPlayer(snapshot, 'luna');
     // The starter kit ships at starter_condition (85), so "healthy" for a no-op repair means 100.

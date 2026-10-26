@@ -139,6 +139,7 @@ function insertRunInto(store: Store, experimentId: number, result: RunResult): n
     footScavenges: result.footScavenges,
     repairActions: result.repairActions,
   });
+  store.insertPartWear(runId, result.partWear);
   store.insertLevels(
     runId,
     result.levels.map((level) => ({

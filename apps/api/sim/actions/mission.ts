@@ -299,6 +299,22 @@ export function takeMission(
   const fuelBurned = Math.max(0, dispatch.fuel - fuelAfter);
   state.ship.fuel = fuelAfter;
 
+  for (const before of partsBefore) {
+    const after = state.ship.parts.find((part) => part.id === before.id);
+    const loss = Math.max(0, before.condition - (after?.condition ?? 0));
+    const row = catalogByType.get(before.partType);
+    if (loss <= 0 || row === undefined) continue;
+    state.partWearLog.push({
+      kind: 'wear',
+      seq: state.missionsDone,
+      partType: before.partType,
+      partClass: row.partClass,
+      rarity: row.rarity,
+      loss: Math.round(loss * 100) / 100,
+      cost: 0,
+    });
+  }
+
   const adrift = outcome.shipStatus === 'ADRIFT';
   const keepLoot = !adrift || keepsLootAdrift(offer);
 

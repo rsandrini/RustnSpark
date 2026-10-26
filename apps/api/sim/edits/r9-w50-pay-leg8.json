@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "wear.base_min": 0.5,
+    "wear.base_max": 0.85,
+    "wear.hull_to_condition": 0.15,
+    "economy.reward_by_bridge": { "COMMON": 1, "UNCOMMON": 1, "RARE": 1.4, "EPIC": 2.5, "LEGENDARY": 3.25 }
+  },
+  "catalogPrice": { "LEGENDARY": 0.6667 }
+}

@@ -45,6 +45,19 @@ export interface ScavengeAttempt {
   lastAtMs: number;
 }
 
+/** One part in one wear (kind 'wear') or repair (kind 'repair') event. */
+export interface PartWearEntry {
+  readonly kind: 'wear' | 'repair';
+  readonly seq: number;
+  readonly partType: string;
+  readonly partClass: string;
+  readonly rarity: string;
+  /** Condition points lost (wear) or restored (repair). */
+  readonly loss: number;
+  /** Credits this part's share of the repair bill came to (0 for wear). */
+  readonly cost: number;
+}
+
 export interface PlayerState {
   factionId: string;
   locationId: string;
@@ -63,6 +76,8 @@ export interface PlayerState {
   footScavenges: number;
   /** Repair actions paid (each one carries the port's maintenance fee). */
   repairActions: number;
+  /** Wear and repair events by part, for the store (analysis only; nothing in the game reads it). */
+  partWearLog: PartWearEntry[];
   /** Base price of the scavenged parts the pilot fitted: what the finds saved from the market. */
   findsFittedValue: number;
   /** Scavenged part ids already counted in `findsFittedValue` (a part counts once). */
@@ -163,6 +178,7 @@ export function starterPlayer(
     miningDone: 0,
     footScavenges: 0,
     repairActions: 0,
+    partWearLog: [],
     findsFittedValue: 0,
     findsCounted: new Set(),
     lastScavengeAt: null,

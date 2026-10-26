@@ -1,0 +1,1 @@
+{ "rules": { "encounter.pirate_strength_by_bridge": { "COMMON": 1, "UNCOMMON": 1, "RARE": 1, "EPIC": 1.5, "LEGENDARY": 2.0 } } }

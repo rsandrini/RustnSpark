@@ -99,6 +99,7 @@ function playerFromSnapshot(
     miningDone: 0,
     footScavenges: 0,
     repairActions: 0,
+    partWearLog: [],
     findsFittedValue: 0,
     findsCounted: new Set<string>(),
     lastScavengeAt: null,

@@ -8,10 +8,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /** Version of `schema.sql` this build writes; `ensureSchema` applies any older file's upgrades. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Schema file for version N is `SCHEMA_FILES[N - 1]`; each applies on top of the one before. */
-const SCHEMA_FILES: readonly string[] = ['./schema.sql', './schema-2.sql'];
+const SCHEMA_FILES: readonly string[] = ['./schema.sql', './schema-2.sql', './schema-3.sql'];
 
 function schemaPath(version: number): string {
   return fileURLToPath(new URL(SCHEMA_FILES[version - 1] ?? '', import.meta.url));
@@ -99,6 +99,17 @@ export interface RunExtras {
   readonly repairActions: number;
 }
 
+/** One part in one wear or repair event (see schema-3.sql). */
+export interface PartWearRow {
+  readonly kind: 'wear' | 'repair';
+  readonly seq: number;
+  readonly partType: string;
+  readonly partClass: string;
+  readonly rarity: string;
+  readonly loss: number;
+  readonly cost: number;
+}
+
 export interface Store {
   readonly db: Database.Database;
   insertExperiment(row: ExperimentRow): number;
@@ -106,6 +117,7 @@ export interface Store {
   setRunExtras(runId: number, extras: RunExtras): void;
   insertLevels(runId: number, rows: readonly LevelRow[]): void;
   insertMissions(runId: number, rows: readonly MissionRow[]): void;
+  insertPartWear(runId: number, rows: readonly PartWearRow[]): void;
   close(): void;
 }
 
@@ -173,6 +185,10 @@ export function openStore(path: string): Store {
   const insertLevelStmt = db.prepare(`
     INSERT INTO levels (run_id, level, t, day, missions, wallet, ship_value)
     VALUES (@run_id, @level, @t, @day, @missions, @wallet, @ship_value)
+  `);
+  const insertPartWearStmt = db.prepare(`
+    INSERT INTO part_wear (run_id, kind, seq, part_type, part_class, rarity, loss, cost)
+    VALUES (@run_id, @kind, @seq, @part_type, @part_class, @rarity, @loss, @cost)
   `);
   const insertMissionStmt = db.prepare(`
     INSERT INTO missions (
@@ -253,6 +269,23 @@ export function openStore(path: string): Store {
             missions: entry.missions,
             wallet: entry.wallet,
             ship_value: entry.shipValue,
+          });
+        }
+      });
+      insertAll(rows);
+    },
+    insertPartWear(runId: number, rows: readonly PartWearRow[]): void {
+      const insertAll = db.transaction((entries: readonly PartWearRow[]) => {
+        for (const entry of entries) {
+          insertPartWearStmt.run({
+            run_id: runId,
+            kind: entry.kind,
+            seq: entry.seq,
+            part_type: entry.partType,
+            part_class: entry.partClass,
+            rarity: entry.rarity,
+            loss: entry.loss,
+            cost: entry.cost,
           });
         }
       });
