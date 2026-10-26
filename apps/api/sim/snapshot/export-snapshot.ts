@@ -15,6 +15,7 @@ import type {
   DropTableRow,
   EnvironmentRow,
   FactionRow,
+  QuestGiverRow,
   Json,
   LocationRow,
   MaterialRow,
@@ -55,7 +56,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
   try {
     const rules = buildRules(await prisma.gameConfig.findMany({ select: { key: true, value: true } }));
 
-    const [catalog, locations, routes, routeEnvironments, environments, templates, materials, dropTable, factions] =
+    const [catalog, locations, routes, routeEnvironments, environments, templates, materials, dropTable, factions, questGivers] =
       await Promise.all([
         prisma.partCatalog.findMany({
           // Connector layouts are the yard grid's business, not the economy's: the simulation
@@ -103,6 +104,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
             isolation: true,
             mood: true,
             services: true,
+            detail: true,
           },
           orderBy: { id: 'asc' },
         }),
@@ -155,6 +157,19 @@ export async function exportSnapshot(): Promise<Snapshot> {
         }),
         prisma.dropTable.findMany({ select: { id: true, source: true, tiers: true }, orderBy: { id: 'asc' } }),
         prisma.faction.findMany({ select: { id: true, playable: true, relations: true }, orderBy: { id: 'asc' } }),
+        prisma.questGiver.findMany({
+          where: { active: true },
+          select: {
+            id: true,
+            factionId: true,
+            role: true,
+            active: true,
+            weight: true,
+            locationIds: true,
+            personality: true,
+          },
+          orderBy: { id: 'asc' },
+        }),
       ]);
 
     const snapshot: Snapshot = {
@@ -174,6 +189,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
           isolation: row.isolation,
           mood: row.mood,
           services: asJson(row.services),
+          detail: row.detail,
         }),
       ),
       routes: routes.map((row): RouteRow => row),
@@ -198,6 +214,7 @@ export async function exportSnapshot(): Promise<Snapshot> {
       factions: factions.map(
         (row): FactionRow => ({ id: row.id, playable: row.playable, relations: asJson(row.relations) }),
       ),
+      questGivers: questGivers.map((row): QuestGiverRow => ({ ...row, personality: asJson(row.personality) })),
     };
 
     await mkdir(SIM_DATA_DIR, { recursive: true });

@@ -167,7 +167,7 @@ describe('scavenge job', () => {
   const ctx = missionContext(snapshot);
   const world = buildFillerWorld(snapshot);
 
-  it('builds a SCAVENGE offer at the ship’s own port that pays nothing and burns no fuel', () => {
+  it('builds a SCAVENGE offer at the ship’s own port that pays nothing and burns only scavenging.ship_fuel', () => {
     const state = starterPlayer(snapshot, 'luna');
     const offer = scavengeOffer({ snapshot, world, state, nowMs: FIRST_MS });
     expect(offer).not.toBeNull();
@@ -178,6 +178,17 @@ describe('scavenge job', () => {
     expect(offer?.destinationId).toBe('ceres');
     // The leg borrows its risk from the port's routes (peak danger 2 here) and never leaves.
     expect(offer?.legs[0]?.danger).toBe(2);
+    // The ship burns a small fixed amount over the search (the live job service's rule): the
+    // multiplier is worked out so this ship's burn over the leg comes to exactly that.
+    const sheet = deriveSheet(installedParts(state.ship, catalogIndex(snapshot)), snapshot.rules);
+    const leg = offer?.legs[0];
+    const burned = (sheet.fuelUse * (leg?.distance ?? 0) * (leg?.env.fuelMult ?? 0)) / 100;
+    expect(burned).toBeCloseTo(snapshot.rules.scavenging.ship_fuel, 5);
+  });
+
+  it('burns nothing on foot', () => {
+    const state = starterPlayer(snapshot, 'luna');
+    const offer = scavengeOffer({ snapshot, world, state, nowMs: FIRST_MS, onFoot: true });
     expect(offer?.legs[0]?.env.fuelMult).toBe(0);
   });
 

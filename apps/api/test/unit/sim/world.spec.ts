@@ -40,6 +40,32 @@ describe('boardAt', () => {
     expect(publicOffers.every((offer) => offer.type === 'DELIVERY')).toBe(true);
   });
 
+  it('posts offers under the faction’s quest givers and sizes the board by the place’s detail', () => {
+    const withGiver = {
+      ...snapshot,
+      locations: snapshot.locations.map((row) =>
+        row.id === 'ceres' ? { ...row, detail: 'local' } : row,
+      ),
+      questGivers: [
+        {
+          id: 'giver_test',
+          factionId: 'luna',
+          role: 'GIVER' as const,
+          active: true,
+          weight: 10,
+          locationIds: [],
+          personality: { types: { DELIVERY: 10 }, minZone: 0, maxZone: 9, tone: 'formal' },
+        },
+      ],
+    };
+    const input = { ...boardInput(), snapshot: withGiver, world: buildFillerWorld(withGiver) };
+    const offers = boardAt({ ...input, locationId: 'ceres', nowMs: TAKEN_AT_MS });
+    const publicOffers = offers.filter((offer) => !offer.starter);
+    const expected = rules.missions.board_min_by_detail['local'] ?? rules.missions.board_min_per_location;
+    expect(publicOffers).toHaveLength(expected);
+    expect(publicOffers.every((offer) => offer.giverId === 'giver_test')).toBe(true);
+  });
+
   it('keeps a private starter offer while the player qualifies', () => {
     const input = boardInput();
     const offers = boardAt({ ...input, locationId: 'ceres', nowMs: TAKEN_AT_MS });

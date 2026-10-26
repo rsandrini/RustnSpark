@@ -89,6 +89,18 @@ Recorded 2026-10-12 (snapshot 2026-10-12T19:40Z, owner's last 40 MissionLog rows
   below its start wallet; a run that levels up pays for it out of the real upgrade costs, and
   the wallet reconciles with the ledger exactly.
 
+Re-recorded 2026-10-26 (snapshot 2026-10-26T18:54Z, last 40 MissionLog rows, rules hashes from
+four tuning states): **40/40 match** (status exact, fuel and wear within 10%). Two things the
+replay needed that the bot does not use: the sim plays each row under the rules *that row* was
+played under (tuning drifts between a log row and today's snapshot), and `takeMission` takes an
+`engine` option (the pilot's chem / ion levels; the bot always flies at 1). Sanity bots all pass.
+
+Kept in line with the live game on 2026-10-26: a ship search burns `scavenging.ship_fuel` units
+(was 0); the board is sized by the place (`board_min_by_detail`), caps one type at half the board,
+asks for the types it lacks and is posted by the faction's quest givers (the snapshot now carries
+`questGivers` and each place's `detail`; an older snapshot still loads and gets a board without
+givers). Re-export the snapshot after any migration.
+
 ## Assumptions every number carries
 
 Stored with each experiment in the store; the report prints them. Currently: fuel and repair

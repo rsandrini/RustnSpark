@@ -24,8 +24,6 @@ export const SCAVENGE_TEMPLATE_ID = 'scavenge_generic';
 const SIM_PLAYER_ID = 'sim';
 /** The offer window only outlives the call, like the live mission's one-hour expiry. */
 const JOB_OFFER_TTL_MS = 3_600_000;
-/** A search around the port burns no fuel: the ship never leaves it. */
-const SCAVENGE_FUEL_MULT = 0;
 const MS_PER_SECOND = 1000;
 
 /** Seconds left on the current port's cooldown (0 when the next attempt is allowed now). */
@@ -85,7 +83,15 @@ export function scavengeOffer(input: JobOfferInput): Offer | null {
     distance,
     danger,
     zone: location.zone,
-    env: { ...base.env, fuelMult: SCAVENGE_FUEL_MULT },
+    // On foot nothing burns; with the ship `scavenging.ship_fuel` units do, worked out the way the
+    // live job service does (`ScavengeJobService`): this ship's burn over the leg comes to exactly that.
+    env: {
+      ...base.env,
+      fuelMult:
+        onFoot || sheet.fuelUse <= 0 || snapshot.rules.scavenging.ship_fuel <= 0
+          ? 0
+          : (snapshot.rules.scavenging.ship_fuel * 100) / (sheet.fuelUse * distance),
+    },
   };
   const attempt = state.scavengeAttempts.get(locationId)?.count ?? 0;
   const seed = `scavenge|${SIM_PLAYER_ID}|${locationId}|${attempt}|${nowMs}`;

@@ -105,6 +105,15 @@ describe('takeMission', () => {
     expect(state.wallet).toBe(snapshot.rules.economy.start_credits + expectedPaid);
   });
 
+  it('burns more fuel and flies faster with the chemical engine pushed past level 1', () => {
+    const plain = starterPlayer(snapshot, 'luna');
+    const pushed = starterPlayer(snapshot, 'luna');
+    const base = takeMission(plain, offerOf(), ctx);
+    const overdrive = takeMission(pushed, offerOf(), ctx, { engine: { chem: 1.35, ion: 1 } });
+    expect(overdrive.fuelBurned).toBeGreaterThan(base.fuelBurned);
+    expect(overdrive.durationSeconds).toBeLessThan(base.durationSeconds);
+  });
+
   it('advances the clock by the mission duration, not a made-up number', () => {
     const state = starterPlayer(snapshot, 'luna');
     const offer = offerOf();

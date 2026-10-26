@@ -86,6 +86,20 @@ export interface LocationRow {
   readonly isolation: number;
   readonly mood: number;
   readonly services: Json;
+  /** Map detail level (main / regional / local): sets the board size. Absent in older snapshots. */
+  readonly detail?: string;
+}
+
+/** `QuestGiver`: who posts the board's offers (the mentor only guides). */
+export interface QuestGiverRow {
+  readonly id: string;
+  readonly factionId: string;
+  readonly role: 'GIVER' | 'MENTOR';
+  readonly active: boolean;
+  readonly weight: number;
+  readonly locationIds: readonly string[];
+  /** `{types: {DELIVERY: weight, ...}, minZone, maxZone, tone}`. */
+  readonly personality: Json;
 }
 
 /** `Route`. */
@@ -168,6 +182,8 @@ export interface Snapshot {
   readonly materials: readonly MaterialRow[];
   readonly dropTable: readonly DropTableRow[];
   readonly factions: readonly FactionRow[];
+  /** Absent in snapshots taken before the quest givers: the board is then made without givers. */
+  readonly questGivers?: readonly QuestGiverRow[];
 }
 
 /** The top-level keys every snapshot must carry (checked by the loader). */
@@ -201,4 +217,5 @@ export interface SnapshotDraft {
   materials: MaterialRow[];
   dropTable: DropTableRow[];
   factions: FactionRow[];
+  questGivers?: QuestGiverRow[];
 }

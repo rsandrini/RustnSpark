@@ -7,6 +7,7 @@
  */
 import { bridgeRarityOf } from '../../src/economy/reward.calculator.js';
 import type { GameRules } from '../../src/config/game-config.types.js';
+import { applyEngineLevels, type EngineLevels } from '../../src/resolution/engine/engine.js';
 import { fuelUnits } from '../../src/economy/fuel-cost.calculator.js';
 import type { DispatchLeg, DispatchSnapshot } from '../../src/missions/dispatch.service.js';
 import { missionDuration } from '../../src/missions/duration.calculator.js';
@@ -149,7 +150,11 @@ export function takeMission(
   state: PlayerState,
   offer: Offer,
   ctx: MissionContext,
-  options: { readonly onFoot?: boolean } = {},
+  options: {
+    readonly onFoot?: boolean;
+    /** The engine levels the pilot flew at (the game's `ship.chemLevel / ionLevel`); the bot flies at 1. */
+    readonly engine?: EngineLevels;
+  } = {},
 ): MissionRunResult {
   const { snapshot, rules, catalogByType } = ctx;
   const onFoot = options.onFoot === true && offer.type === 'SCAVENGE';
@@ -163,7 +168,11 @@ export function takeMission(
 
   const partsBefore: ShipPartState[] = state.ship.parts.map((part) => ({ ...part }));
   const installed = installedParts(state.ship, catalogByType);
-  const sheet = deriveSheet(installed, rules);
+  // Engine tuning changes thrust, fuel burn and power for the whole flight (dispatch.service does the same).
+  const flying =
+    options.engine === undefined ? installed : applyEngineLevels(installed, options.engine, rules);
+  const flyingStats = new Map(flying.map((part) => [part.instance.id, part.catalog]));
+  const sheet = deriveSheet(flying, rules);
 
   // D29: accept finalizes the reward from this ship's tier; resolution pays from the same tier.
   const tier = shipTier(
@@ -234,13 +243,14 @@ export function takeMission(
         id: part.id,
         partType: part.partType,
         condition: part.condition,
-        catalog: catalogStatsOf(row),
+        catalog: flyingStats.get(part.id) ?? catalogStatsOf(row),
         connected: true,
       };
     }),
     legs,
     storage: state.storage.map((part) => ({ id: part.id, partType: part.partType })),
     layered: true,
+    ...(options.engine === undefined ? {} : { engine: options.engine }),
   };
 
   const context = contextFromLive({

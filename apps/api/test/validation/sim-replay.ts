@@ -174,7 +174,7 @@ async function main(): Promise<void> {
     }
 
     const simSnapshot = loadSnapshot(SNAPSHOT_PATH);
-    const simCtx = missionContext(simSnapshot);
+    const ctxByHash = new Map<string, ReturnType<typeof missionContext>>();
     const rulesByHash = new Map<string, GameRules>();
     const factionByPlayer = new Map<string, string>();
 
@@ -236,7 +236,16 @@ async function main(): Promise<void> {
       state.factionId = playerFaction;
       let sim;
       try {
-        sim = takeMission(state, offerFromLog(row, dispatch.legs), simCtx);
+        // The sim plays under the rules the row was played under: tuning drifts between a log row and
+        // today's snapshot (wear, race rivals), and this check is about the code, not the numbers.
+        let rowCtx = ctxByHash.get(row.rulesHash);
+        if (rowCtx === undefined) {
+          rowCtx = missionContext({ ...simSnapshot, rules });
+          ctxByHash.set(row.rulesHash, rowCtx);
+        }
+        sim = takeMission(state, offerFromLog(row, dispatch.legs), rowCtx, {
+          ...(dispatch.engine === undefined ? {} : { engine: dispatch.engine }),
+        });
       } catch (error) {
         process.stdout.write(
           `skip ${row.mission.id}: sim refused (${error instanceof Error ? error.message : '?'})\n`,

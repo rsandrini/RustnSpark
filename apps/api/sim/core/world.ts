@@ -18,6 +18,7 @@ import {
 import type { Strictness } from '../../src/missions/board-variety.js';
 import type { DispatchLeg } from '../../src/missions/dispatch.service.js';
 import {
+  eligibleTypesAt,
   fillMission,
   MissionGenerationError,
 } from '../../src/missions/generator/template.filler.js';
@@ -32,6 +33,13 @@ import type {
   MissionDraft,
 } from '../../src/missions/generator/template.filler.js';
 import { missionSeed } from '../../src/missions/generator/mission.generator.js';
+import { boardSize, maxOffersOfOneType } from '../../src/missions/board-size.js';
+import {
+  giverShapeOf,
+  pickGiver,
+  type GiverShape,
+} from '../../src/missions/generator/giver.picker.js';
+import { createRng } from '../../src/common/rng/rng.js';
 import { checkMissionRequirements } from '../../src/missions/requirements.checker.js';
 import type { ScavengeContext } from '../../src/resolution/scavenge/scavenge.resolver.js';
 import { deriveSheet } from '../../src/ships/sheet.deriver.js';
@@ -81,6 +89,8 @@ export interface Offer {
   readonly starter: boolean;
   readonly requirements: Json;
   readonly encounterPolicy: Json;
+  /** Who posted it (the live board spreads offers over the faction's givers). */
+  readonly giverId?: string;
 }
 
 export interface PortFacts {
@@ -261,7 +271,27 @@ function offerOf(draft: MissionDraft, snapshot: Snapshot, starter: boolean): Off
     starter,
     requirements: template?.requirements ?? {},
     encounterPolicy: template?.encounterPolicy ?? {},
+    ...(draft.giverId == null ? {} : { giverId: draft.giverId }),
   };
+}
+
+/** The active quest givers of each faction as the generator sees them (read once per snapshot). */
+const giversBySnapshot = new WeakMap<Snapshot, ReadonlyMap<string, readonly GiverShape[]>>();
+
+function giversOf(snapshot: Snapshot, factionId: string): readonly GiverShape[] {
+  let byFaction = giversBySnapshot.get(snapshot);
+  if (byFaction === undefined) {
+    const grouped = new Map<string, GiverShape[]>();
+    for (const row of snapshot.questGivers ?? []) {
+      if (!row.active) continue;
+      const list = grouped.get(row.factionId) ?? [];
+      list.push(giverShapeOf(row));
+      grouped.set(row.factionId, list);
+    }
+    byFaction = grouped;
+    giversBySnapshot.set(snapshot, byFaction);
+  }
+  return byFaction.get(factionId) ?? [];
 }
 
 function strictnessAt(attempt: number): Strictness {
@@ -276,6 +306,9 @@ function fillOne(args: {
   readonly origin: FillerLocation;
   readonly seed: string;
   readonly nowMs: number;
+  readonly giver?: GiverShape;
+  readonly avoidTypes?: ReadonlySet<MissionTypeName>;
+  readonly preferTypes?: ReadonlySet<MissionTypeName>;
   readonly starter?: {
     readonly types: readonly MissionTypeName[];
     readonly maxZone: number;
@@ -288,6 +321,9 @@ function fillOne(args: {
     world: args.world,
     rules: args.rules,
     now: new Date(args.nowMs),
+    ...(args.giver === undefined ? {} : { giver: args.giver }),
+    ...(args.avoidTypes === undefined ? {} : { avoidTypes: args.avoidTypes }),
+    ...(args.preferTypes === undefined ? {} : { preferTypes: args.preferTypes }),
     ...(args.starter === undefined
       ? {}
       : {
@@ -370,23 +406,56 @@ export function boardAt(input: BoardAtInput): Offer[] {
     });
   }
 
-  const boardMin = rules.missions.board_min_per_location;
-  const maxSameType = rules.missions.board_max_same_type;
+  // Same sizes and rules as `board.service.ts → topUp`: the board is as big as the place (main /
+  // regional / local), a type holds at most half of it, the types the board lacks come first and
+  // the next offer is posted by one of the faction's quest givers.
+  const place = snapshot.locations.find((row) => row.id === locationId);
+  const boardMin =
+    place === undefined
+      ? rules.missions.board_min_per_location
+      : boardSize({ type: place.type, detail: place.detail ?? null }, rules);
+  const maxSameType = maxOffersOfOneType(boardMin, rules);
+  const eligibleTypes = eligibleTypesAt(origin, world);
+  const givers = giversOf(snapshot, origin.factionId);
   while (live.length < boardMin) {
     let draft: MissionDraft;
     try {
       let attempt = 0;
       for (;;) {
+        const missingTypes = new Set(
+          [...eligibleTypes].filter((type) => !live.some((offer) => offer.type === type)),
+        );
+        const avoidTypes = new Set(
+          [...eligibleTypes].filter(
+            (type) => live.filter((offer) => offer.type === type).length >= maxSameType,
+          ),
+        );
+        const preferTypes =
+          missingTypes.size > 0 && missingTypes.size < eligibleTypes.size ? missingTypes : undefined;
+        const seed = missionSeed({
+          locationId,
+          epoch: boardState.epoch,
+          configVersion: SIM_CONFIG_VERSION,
+        });
+        const giver = pickGiver({
+          givers,
+          locationId,
+          liveGiverIds: live.map((offer) => offer.giverId ?? null),
+          boardSize: boardMin,
+          eligibleTypes,
+          ...(preferTypes === undefined ? {} : { wantTypes: preferTypes }),
+          avoidTypes,
+          rng: createRng(seed).child('giver'),
+        });
         draft = fillOne({
           world,
           rules,
           origin,
-          seed: missionSeed({
-            locationId,
-            epoch: boardState.epoch,
-            configVersion: SIM_CONFIG_VERSION,
-          }),
+          seed,
           nowMs,
+          ...(giver === undefined ? {} : { giver }),
+          avoidTypes,
+          ...(preferTypes === undefined ? {} : { preferTypes }),
         });
         const strictness = strictnessAt(attempt);
         if (isVariedEnough(draft, live, maxSameType, strictness)) break;
