@@ -225,6 +225,8 @@ describe('market panel: descriptions and filters', () => {
 
     fireEvent.click(within(needs).getByRole('button', { name: /^Dismiss: A weapon/ }));
     expect(screen.queryByTestId('ship-needs')).toBeNull();
+    // kept in this browser: a dismissed tip stays gone on the next visit
+    expect(JSON.parse(localStorage.getItem('rs.dismissedShipNeeds') ?? '[]')).toHaveLength(1);
   });
 
   it('recommends a shield to a ship that has none, when the shelf sells one (and a battery likewise)', async () => {

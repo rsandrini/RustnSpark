@@ -3,6 +3,34 @@ import { useTranslation } from 'react-i18next';
 import type { ShipSheet } from '../../api/generated';
 import type { InstalledPartForCompare } from '../parts/part-compare-match';
 
+const DISMISSED_KEY = 'rs.dismissedShipNeeds';
+
+function readDismissedNeeds(): ReadonlySet<string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? '[]');
+    return new Set(
+      Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+/** The needs the pilot dismissed, kept in this browser so a dismissed tip stays gone on every visit. */
+export function useDismissedNeeds(): [ReadonlySet<string>, (need: ShipNeed) => void] {
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(readDismissedNeeds);
+  const dismiss = (need: ShipNeed) => {
+    const next = new Set([...dismissed, need.id]);
+    setDismissed(next);
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify([...next]));
+    } catch {
+      // Storage unavailable: the tip comes back on the next visit.
+    }
+  };
+  return [dismissed, dismiss];
+}
+
 export interface ShipNeed {
   id: string;
   /** The class of part that would fix it. */
@@ -92,14 +120,14 @@ export function ShipNeedsNote({
   canShop: boolean;
   onShow: (partClass: string) => void;
 }) {
-  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(new Set());
+  const [dismissed, dismiss] = useDismissedNeeds();
   if (!canShop) return null;
   const needs = lackingParts(sheet, installedParts).filter((need) => !dismissed.has(need.id));
   return (
     <ShipNeedsList
       needs={needs}
       onShow={(need) => onShow(need.partClass)}
-      onDismiss={(need) => setDismissed((was) => new Set([...was, need.id]))}
+      onDismiss={dismiss}
     />
   );
 }

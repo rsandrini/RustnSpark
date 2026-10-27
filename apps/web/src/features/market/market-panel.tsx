@@ -9,7 +9,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
-import { ShipNeedsList, isShield, lackingParts } from './ship-needs';
+import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
@@ -70,7 +70,7 @@ export function MarketPanel({
   const [sort, setSort] = useState<SortKey>('priceAsc');
   const [affordableOnly, setAffordableOnly] = useState(false);
   const [moreFilters, setMoreFilters] = useState(false);
-  const [dismissedNeeds, setDismissedNeeds] = useState<ReadonlySet<string>>(new Set());
+  const [dismissedNeeds, dismissNeed] = useDismissedNeeds();
   const [rarity, setRarity] = useState<string>('all');
   const [size, setSize] = useState<string>('all');
 
@@ -252,7 +252,7 @@ export function MarketPanel({
       <ShipNeedsList
         needs={showNeeds ? needs : []}
         onShow={(need) => setPartClass(need.partClass)}
-        onDismiss={(need) => setDismissedNeeds((was) => new Set([...was, need.id]))}
+        onDismiss={dismissNeed}
       />
 
       <div className="market-filters" role="search">
