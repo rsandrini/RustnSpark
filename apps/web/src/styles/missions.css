@@ -1004,7 +1004,7 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   border-color: var(--bad);
 }
 
-/* a job on foot: the pilot digs through a scrap pile in place of the docked ship, and scraps fly up and fall back */
+/* a job on foot: a scrap pile in place of the docked ship, with scraps flying up and falling back */
 .scene-dig {
   position: absolute;
   left: 50%;
@@ -1027,22 +1027,6 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   fill: var(--faint);
   opacity: 0.6;
 }
-.dig-helmet,
-.dig-suit {
-  fill: var(--accent, #e8a33d);
-}
-.dig-arm {
-  stroke: var(--accent, #e8a33d);
-  stroke-width: 4;
-  stroke-linecap: round;
-  fill: none;
-  transform-box: fill-box;
-  transform-origin: left top;
-  animation: dig-swing 0.9s ease-in-out infinite alternate;
-}
-.dig-pilot {
-  animation: dig-bob 0.9s ease-in-out infinite alternate;
-}
 .dig-scrap {
   position: absolute;
   left: 52%;
@@ -1055,14 +1039,6 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   opacity: 0;
   animation: dig-throw ease-out infinite;
 }
-@keyframes dig-swing {
-  from { transform: rotate(-18deg); }
-  to { transform: rotate(14deg); }
-}
-@keyframes dig-bob {
-  from { transform: translateY(0); }
-  to { transform: translateY(2px); }
-}
 @keyframes dig-throw {
   0% { opacity: 0; transform: translate(var(--x), 0) rotate(0deg); }
   10% { opacity: 1; }
@@ -1070,6 +1046,6 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   100% { opacity: 0; transform: translate(calc(var(--x) + var(--dx)), 0) rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dig-arm, .dig-pilot, .dig-scrap { animation: none; }
+  .dig-scrap { animation: none; }
   .dig-scrap { opacity: 0.8; }
 }

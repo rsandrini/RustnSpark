@@ -186,11 +186,6 @@ export function ShipStage({
             <svg viewBox="0 0 160 90" width="320" height="180">
               <path className="dig-pile" d="M8 86 L30 62 L48 70 L70 48 L92 66 L112 56 L132 86 Z" />
               <path className="dig-pile-dark" d="M40 86 L60 66 L78 76 L96 62 L112 86 Z" />
-              <g className="dig-pilot">
-                <circle className="dig-helmet" cx="34" cy="38" r="7" />
-                <rect className="dig-suit" x="27" y="45" width="14" height="22" rx="4" />
-                <path className="dig-arm" d="M40 52 L58 62" />
-              </g>
             </svg>
             {SCRAPS.map((scrap, index) => (
               <span
