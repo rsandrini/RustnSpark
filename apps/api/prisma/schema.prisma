@@ -76,6 +76,8 @@ model Player {
   missions        MissionInstance[]
   missionLogs     MissionLog[]
   scavengeCounters ScavengeCounter[]
+  stats           PlayerStats?
+  statsDaily      PlayerStatsDaily[]
 
   // S11.3: new players per analytics window.
   @@index([createdAt])
@@ -721,4 +723,30 @@ model PlayerMaterial {
   material   Material @relation(fields: [materialId], references: [id])
 
   @@id([playerId, materialId])
+}
+
+// Everything recorded per pilot (docs/superpowers/plans/2026-10-27-profile-stats.md). A read
+// model: written in the transaction of the action it counts, never an input to resolution.
+// `totals` is a bag of counters and `records` a bag of bests, both keyed by the dotted names in
+// src/stats/stat-keys.ts, so a new stat needs no migration.
+model PlayerStats {
+  playerId       String    @id @db.VarChar(36)
+  player         Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  totals         Json      @default("{}")
+  records        Json      @default("{}")
+  firstMissionAt DateTime?
+  lastActiveAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// The same counters for one UTC day, so a week or an event window can be summed later.
+model PlayerStatsDaily {
+  playerId String   @db.VarChar(36)
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  day      DateTime @db.Date
+  totals   Json     @default("{}")
+
+  @@id([playerId, day])
+  @@index([day])
 }
