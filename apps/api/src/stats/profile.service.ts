@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { MyStatsResponse, PublicProfileResponse } from '@rustandspark/contract';
+import type { MyStatsResponse, PublicProfileResponse } from './profile.types.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';

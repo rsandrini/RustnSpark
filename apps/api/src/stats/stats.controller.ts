@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import type { MyStatsResponse, PublicProfileResponse } from '@rustandspark/contract';
+import type { MyStatsResponse, PublicProfileResponse } from './profile.types.js';
 import {
   CurrentUser,
   type CurrentUserPayload,

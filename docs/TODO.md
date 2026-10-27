@@ -35,10 +35,13 @@ board, missions, the worker and the web.
   other (today a race is against generated rivals, `resolution/race`). Needs an apply window, a start job and a result.
 - [ ] **Missions together:** invite other pilots to a convoy, a defense or a transport done together (shared reward,
   roles, what happens if one leaves or is lost).
-- [ ] **Profile stats:** details per pilot in the profile: distance traveled, fuel consumed, damage taken and given,
-  and so on (needs the numbers recorded as they happen; `MissionLog` has part of it).
 - [ ] **Global ranking:** a leaderboard over a few good stats (fastest ship, most powerful, ...); decide the stats, how
-  often it refreshes and how to keep it fair against exploits.
+  often it refreshes and how to keep it fair against exploits. The numbers now exist per pilot (`PlayerStats` lifetime and
+  `PlayerStatsDaily` per UTC day, keys in `apps/api/src/stats/stat-keys.ts`); a weekly board can sum the daily rows.
+- [ ] **Profile stats follow-ups** (built 2026-10-27, `docs/superpowers/plans/2026-10-27-profile-stats.md`): `flight.seconds` is
+  never recorded (no accurate dispatch time is stored); `rescue.called` counts every call, so a pilot who presses "wait" twice
+  counts twice; ships have no names yet, the public card shows a placeholder callsign (`TAG-Name-Word`); a hot stat that the
+  ranking chooses may move out of the JSON bag into its own indexed column.
 
 ## Planned / follow-ups (owner, 2026-10-20)
 - [ ] **Balance, round 5**: the game was too easy and money was quick to farm (owner, 2026-10-20). Sim check
