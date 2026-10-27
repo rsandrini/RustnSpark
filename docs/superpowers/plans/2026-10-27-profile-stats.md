@@ -34,6 +34,37 @@
 
 ---
 
+## Work split (two agents)
+
+**Agent A (the core, owner of the shared plumbing)** does Tasks 1, 2, 3, 4, 5, 9. **Agent B (leaf work)** does Tasks 8, 6, 7, 10, 11.
+The file sets are disjoint, so there are no merge conflicts if each agent stages only its own paths.
+
+| Task | Agent | Starts | Needs first |
+|---|---|---|---|
+| 8 Callsign (pure function) | B | now | nothing |
+| 2 Stat keys + visibility | A | now (first, ~minutes) | nothing |
+| 9a Contract schemas only (`packages/contract/src/index.ts`, regenerate web types) | A | right after Task 2 | Task 2 |
+| 10 Web profile | B | after 9a lands (build against the schemas and fixtures; the endpoints come later) | 9a |
+| 1 Schema | A | after 2 and 9a | nothing |
+| 3 PlayerStatsService **and the `StatsModule` imports in `players`, `missions`, `economy` and `auth` modules** | A | after 1 | 1, 2 |
+| 6 Economy counts | B | after Task 3 lands | 3 |
+| 7 Last active on login | B | after Task 3 lands | 3 |
+| 4 Wallet money | A | after 3 | 3 |
+| 5 Run numbers at resolve | A | after 3 | 3 |
+| 9b Profile endpoints | A | after 3 and 8 | 3, 8 |
+| 11 Smoke, docs, TODO | B | last | everything |
+
+**Ownership rules (this is what prevents conflicts)**
+- A alone edits: `prisma/schema.prisma`, `src/stats/*` (except `callsign.ts`), `players/wallet.service.ts`, `missions/resolve.service.ts`, every `*.module.ts`, `app.module.ts`, `worker.ts`, `packages/contract/*`.
+- B alone edits: `src/stats/callsign.ts` and its test, `economy/*.service.ts`, `missions/mining-job.service.ts`, `auth/auth.service.ts`, `apps/web/**`, `apps/web/e2e/**`, `docs/TODO.md`.
+- B never edits a `*.module.ts`: A adds the `StatsModule` import to the four modules in Task 3, so B only injects `PlayerStatsService` in its services.
+- A and B both only use `git add <explicit paths>`. Work on one branch each (`stats-core`, `stats-leaf`), rebase on `develop` before merging, A merges first at each hand-off.
+- The test and lint gates in each task run per package; run the full gate (Task 11) only after both branches are merged.
+
+**Hand-offs A announces:** (1) after Task 2 + 9a: "contract and keys are in"; (2) after Task 3: "service is in, B may start 6 and 7"; (3) after 9b: "endpoints are in, B may wire the web page to the real API and run the smoke".
+
+---
+
 ## File Structure
 
 New module `apps/api/src/stats/`:
