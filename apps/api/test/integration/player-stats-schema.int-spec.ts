@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it } from '@jest/globals';
-import {
-  closeTestPrismaClient,
-  getTestPrismaClient,
-  resetDatabase,
-} from '../support/test-db.js';
+import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
 
 const prisma = getTestPrismaClient();
 

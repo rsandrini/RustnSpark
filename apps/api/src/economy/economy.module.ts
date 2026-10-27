@@ -26,6 +26,7 @@ import { RescueController } from './rescue.controller.js';
 import { RescueService } from './rescue.service.js';
 import { ScavengingController } from './scavenging.controller.js';
 import { ScavengingService } from './scavenging.service.js';
+import { StatsModule } from '../stats/stats.module.js';
 
 // S8.1-S8.7: pricing, market HTTP, instant refuel, the repair job producer, free
 // scavenging, auto-rescue and the materials market live here. Wallet/PlayerEvent are
@@ -33,6 +34,7 @@ import { ScavengingService } from './scavenging.service.js';
 // provide RepairService without pulling PlayersModule's controllers.
 @Module({
   imports: [
+    StatsModule,
     ConfigModule,
     PartsModule,
     ShipsModule,

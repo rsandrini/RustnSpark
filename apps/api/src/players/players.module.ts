@@ -6,12 +6,13 @@ import { PlayersController } from './players.controller.js';
 import { PlayersService } from './players.service.js';
 import { WalletService } from './wallet.service.js';
 import { OnboardingService } from './onboarding.service.js';
+import { StatsModule } from '../stats/stats.module.js';
 
 // R27: WalletService and PlayerEventService live in this module as providers AND exports —
 // Step 3+ game logic consumes them from here. OnboardingService needs ConfigModule and ShipsModule;
 // the S11.4 admin reset re-runs the exact starter path via its exported applyStarterKit.
 @Module({
-  imports: [ConfigModule, ShipsModule],
+  imports: [StatsModule, ConfigModule, ShipsModule],
   controllers: [PlayersController],
   providers: [PlayersService, WalletService, PlayerEventService, OnboardingService],
   exports: [WalletService, PlayerEventService, OnboardingService, PlayersService],

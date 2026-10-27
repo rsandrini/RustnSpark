@@ -28,6 +28,7 @@ import {
   RESOLVE_JOB_ATTEMPTS,
   bullConnectionOptions,
 } from './queues.js';
+import { StatsModule } from '../stats/stats.module.js';
 
 // Imported directly by worker.ts to build the worker application context (no HTTP server).
 // EnvModule is imported here (not just relied on as @Global from elsewhere) because this module
@@ -45,6 +46,7 @@ import {
 // the scheduler upserts one repeatable tick every RECONCILE_INTERVAL_MS on boot.
 @Module({
   imports: [
+    StatsModule,
     EnvModule,
     ConfigModule,
     BullModule.forRootAsync({

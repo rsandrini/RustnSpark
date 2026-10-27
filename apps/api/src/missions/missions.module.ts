@@ -30,6 +30,7 @@ import { ScavengeJobController } from './scavenge-job.controller.js';
 import { ScavengeJobService } from './scavenge-job.service.js';
 import { TravelController } from './travel.controller.js';
 import { TravelService } from './travel.service.js';
+import { StatsModule } from '../stats/stats.module.js';
 
 // The API process enqueues resolve jobs here (S7.2/S7.3 via MissionProducer); the worker
 // process registers the same queue name with MissionProcessor inside JobsModule — separate
@@ -40,6 +41,7 @@ import { TravelService } from './travel.service.js';
 // controller/ownership graph into partial test graphs (board.int-spec).
 @Module({
   imports: [
+    StatsModule,
     ConfigModule,
     PartsModule,
     EnvModule,
