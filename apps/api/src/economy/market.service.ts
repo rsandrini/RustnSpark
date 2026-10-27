@@ -14,6 +14,7 @@ import { InsufficientFundsError, WalletService } from '../players/wallet.service
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Clock } from '../common/clock/clock.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 import { inStockToday } from './market-stock.js';
 import { PricingService } from './pricing.service.js';
 import {
@@ -29,6 +30,8 @@ import {
 
 export const MARKET_BUY_EVENT = 'market.buy';
 export const MARKET_SELL_EVENT = 'market.sell';
+
+const ONE_PART = 1;
 
 export interface MarketListing {
   readonly listingId: string;
@@ -88,6 +91,7 @@ export class MarketService {
     private readonly events: PlayerEventService,
     private readonly clock: Clock,
     private readonly config: GameConfigService,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   // GDD §13: the board and purchases are the port you are docked at — a ship mid-jump
@@ -356,6 +360,7 @@ export class MarketService {
           },
           tx,
         );
+        await this.stats.add(playerId, { 'parts.bought': ONE_PART }, tx);
         return created;
       });
       const after = await this.prisma.player.findUniqueOrThrow({
@@ -493,6 +498,7 @@ export class MarketService {
         },
         tx,
       );
+      await this.stats.add(playerId, { 'parts.sold': ONE_PART }, tx);
       const after = await tx.player.findUniqueOrThrow({
         where: { id: playerId },
         select: { credits: true },

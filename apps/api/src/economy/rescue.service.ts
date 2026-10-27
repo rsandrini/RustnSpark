@@ -8,11 +8,13 @@ import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { WalletService } from '../players/wallet.service.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 import { InventoryService, type ViabilityReport } from './inventory.service.js';
 
 export const RESCUE_EVENT = 'rescue';
 
 const ZERO = 0;
+const ONE_RESCUE = 1;
 
 export interface RescueResponse {
   readonly shipId: string;
@@ -56,6 +58,7 @@ export class RescueService {
     private readonly inventory: InventoryService,
     private readonly ships: ShipsService,
     private readonly clock: Clock,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   /** Calls the rescue: `now` tows at once; `wait` starts the timer (and keeps it if already running). */
@@ -66,6 +69,7 @@ export class RescueService {
     const outcome = await this.prisma.$transaction(async (tx) => {
       const ship = await this.lockAdriftShip(tx, shipId, playerId);
       const { rescue, plan } = await this.ships.adriftOf(ship, rules);
+      await this.stats.add(playerId, { 'rescue.called': ONE_RESCUE }, tx);
 
       if (mode === 'wait') {
         const delay = await this.waitMs(tx, playerId, rules);

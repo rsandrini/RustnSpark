@@ -174,6 +174,32 @@ describe('auth endpoints (S2.3)', () => {
     expect(response.body).toMatchObject({ statusCode: 401, message: 'invalid email or password' });
   });
 
+  it('updates lastActiveAt on a successful login', async () => {
+    const seeded = await seedAccountWithPlayer(prisma, passwordService);
+
+    const login = await request(httpServer(testApp.app))
+      .post('/v1/auth/login')
+      .send({ email: seeded.email, password: seeded.password });
+    expect(login.status).toBe(200);
+
+    const stats = await prisma.playerStats.findUnique({ where: { playerId: seeded.player.id } });
+    expect(stats).not.toBeNull();
+    const lastActiveAt = new Date((stats as { lastActiveAt: Date | null }).lastActiveAt ?? 0);
+    expect(lastActiveAt.getTime()).toBeGreaterThan(Date.now() - 5_000);
+  });
+
+  it('does not create or touch lastActiveAt on a failed login', async () => {
+    const seeded = await seedAccountWithPlayer(prisma, passwordService);
+
+    const login = await request(httpServer(testApp.app))
+      .post('/v1/auth/login')
+      .send({ email: seeded.email, password: 'wrong-password-1' });
+    expect(login.status).toBe(401);
+
+    const stats = await prisma.playerStats.findUnique({ where: { playerId: seeded.player.id } });
+    expect(stats).toBeNull();
+  });
+
   it('rejects a banned account at refresh even with a valid cookie (R29)', async () => {
     const seeded = await seedAccountWithPlayer(prisma, passwordService, { status: 'BANNED' });
     const issued = await testApp.app.get(RefreshTokenService).issue(seeded.account.id);

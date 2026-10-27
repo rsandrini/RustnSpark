@@ -12,6 +12,7 @@ import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
@@ -21,6 +22,7 @@ import { PricingService } from './pricing.service.js';
 export const REFUEL_EVENT = 'refuel';
 
 const ZERO = 0;
+const ONE_REFUEL = 1;
 
 export type RefuelMode = 'full' | 'partial';
 
@@ -59,6 +61,7 @@ export class RefuelService {
     private readonly pricing: PricingService,
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   async refuel(
@@ -130,6 +133,7 @@ export class RefuelService {
           { playerId, type: REFUEL_EVENT, payload: { shipId, units, cost, fuelCap } },
           tx,
         );
+        await this.stats.add(playerId, { 'refuels.count': ONE_REFUEL }, tx);
         return { units, cost, fuel };
       })
       .catch((error: unknown) => {

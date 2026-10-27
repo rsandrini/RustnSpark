@@ -11,6 +11,7 @@ import { PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerEventService } from '../players/player-event.service.js';
 import { InsufficientFundsError, WalletService } from '../players/wallet.service.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 import { shipTier } from '../ships/ship-tier.js';
 import { locationFactor, repairCost } from './repair-cost.calculator.js';
 import { SCRAP_MATERIAL_ID } from './scrap.js';
@@ -19,6 +20,7 @@ export const REPAIR_STARTED_EVENT = 'repair.started';
 export const REPAIR_COMPLETED_EVENT = 'repair.completed';
 
 const MS_PER_SECOND = 1000;
+const ONE_REPAIR = 1;
 
 export interface RepairTargetInput {
   readonly partInstanceId: string;
@@ -73,6 +75,7 @@ export class RepairService {
     private readonly wallet: WalletService,
     private readonly events: PlayerEventService,
     @InjectQueue(REPAIR_QUEUE_NAME) private readonly repairs: Queue<{ repairJobId: string }>,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   /**
@@ -265,6 +268,7 @@ export class RepairService {
           },
           tx,
         );
+        await this.stats.add(playerId, { 'repairs.count': ONE_REPAIR }, tx);
         return created;
       });
     } catch (error) {

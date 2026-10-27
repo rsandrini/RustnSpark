@@ -13,6 +13,7 @@ import { TokenService } from './token.service.js';
 import { createHash, randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../email/email.service.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 
 // R25/R29: bad credentials, a banned account, and every refresh-token failure collapse to one
 // generic message each — the client must not be able to tell which case it hit.
@@ -50,6 +51,7 @@ export class AuthService {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   // S3 C1: register creates the account + player and returns a full session so the client can
@@ -99,6 +101,7 @@ export class AuthService {
     if (!passwordOk || account.status !== 'ACTIVE' || !account.player) {
       throw new UnauthorizedException(LOGIN_FAILURE_MESSAGE);
     }
+    await this.stats.touch(account.player.id);
     return this.buildSession(
       account,
       account.player,
