@@ -1,3 +1,133 @@
+/* Public pilot card and private stats (profile stats feature). */
+.pilot-card,
+.my-stats {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.pilot-header {
+  margin-bottom: 12px;
+}
+
+.pilot-name {
+  margin: 0 0 6px;
+  font-size: var(--text-xl);
+}
+
+.pilot-joined {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.pilot-ship {
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--paper-1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.pilot-ship-title {
+  margin: 0 0 4px;
+  font-size: var(--text-lg);
+}
+
+.pilot-ship-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.pilot-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.pilot-stats,
+.my-stats-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.pilot-stat,
+.my-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.pilot-stat dt,
+.my-stat-row dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.pilot-stat dd,
+.my-stat-row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  text-align: right;
+}
+
+.my-stats-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.my-stats-tabs button {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.my-stats-tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.my-stat-value {
+  display: block;
+}
+
+.my-stat-date {
+  display: block;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.my-stat-highlight dd {
+  font-weight: 600;
+}
+
+.my-stat-highlight .positive {
+  color: var(--ok);
+}
+
+.my-stat-highlight .negative {
+  color: var(--bad);
+}
+
+@media (min-width: 560px) {
+  .pilot-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Mission history's own "Combat" tag (owner: "almost impossible to know... where I had a
    combat") — a clickable pill, not just a label: it IS the easy way into that fight's own
    round-by-round detail (links straight to the report with #combat). */

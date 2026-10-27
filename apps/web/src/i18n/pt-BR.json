@@ -1619,7 +1619,89 @@
     "legCount": "{{count}} trechos",
     "credits": "+{{amount}} ¢",
     "combatTag": "Combate",
-    "combatTagHint": "Esta missão teve uma luta — vá direto para o registro rodada a rodada."
+    "combatTagHint": "Esta missão teve uma luta — vá direto para o registro rodada a rodada.",
+    "stats": {
+      "title": "Estatísticas",
+      "noFlights": "Nenhum voo ainda",
+      "joinedAt": "Entrou em {{date}}",
+      "shipTitle": "Nave",
+      "bridge": "ponte",
+      "missions": "Missões",
+      "successRate": "Taxa de sucesso",
+      "distance": "Distância",
+      "fightsWon": "Combates vencidos",
+      "races": "Corridas",
+      "racesValue": "{{entered}} entradas · {{won}} vitórias · {{podium}} pódios",
+      "bestRacePlace": "Melhor posição",
+      "fastestRace": "Corrida mais rápida",
+      "raceTimeValue": "{{m}}:{{s}}",
+      "scavengeRuns": "Saque",
+      "scavengeRunsValue": "{{ship}} nave · {{foot}} a pé",
+      "tabs": {
+        "flying": "Voo",
+        "combat": "Combate",
+        "money": "Dinheiro",
+        "records": "Recordes"
+      },
+      "money": {
+        "earned": "Ganho",
+        "spent": "Gasto",
+        "net": "Saldo"
+      },
+      "groups": {
+        "missions": {
+          "started": "Iniciadas",
+          "success": "Sucesso",
+          "failed": "Falhas",
+          "aborted": "Abortadas"
+        },
+        "flight": {
+          "distance": "Distância",
+          "legs": "Trechos",
+          "seconds": "Tempo de voo"
+        },
+        "fuel": {
+          "burned": "Queimado",
+          "lost": "Perdido"
+        },
+        "fights": {
+          "won": "Vencidos",
+          "lost": "Perdidos",
+          "escaped": "Fugas",
+          "drawn": "Empates",
+          "pirate": "Piratas",
+          "pvp": "PvP"
+        },
+        "damage": {
+          "taken": "Recebido",
+          "takenShield": "Escudo",
+          "takenArmor": "Blindagem",
+          "takenHull": "Casco",
+          "dealt": "Causado"
+        },
+        "rescue": {
+          "called": "Resgates chamados"
+        },
+        "adrift": {
+          "times": "À deriva"
+        },
+        "pirates": {
+          "partsStolen": "Peças roubadas"
+        }
+      },
+      "records": {
+        "best": {
+          "payout": "Maior pagamento",
+          "runDistance": "Maior distância",
+          "wallet": "Carteira mais cheia",
+          "racePlace": "Melhor posição",
+          "raceSeconds": "Corrida mais rápida"
+        },
+        "worst": {
+          "runDamage": "Pior dano"
+        }
+      }
+    }
   },
   "report": {
     "title": "Relatório da missão",

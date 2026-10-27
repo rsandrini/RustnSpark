@@ -1619,7 +1619,89 @@
     "legCount": "{{count}} legs",
     "credits": "+{{amount}} ¢",
     "combatTag": "Combat",
-    "combatTagHint": "This run had a fight — jump straight to the round-by-round log."
+    "combatTagHint": "This run had a fight — jump straight to the round-by-round log.",
+    "stats": {
+      "title": "Stats",
+      "noFlights": "No flights yet",
+      "joinedAt": "Joined {{date}}",
+      "shipTitle": "Ship",
+      "bridge": "bridge",
+      "missions": "Missions",
+      "successRate": "Success rate",
+      "distance": "Distance",
+      "fightsWon": "Fights won",
+      "races": "Races",
+      "racesValue": "{{entered}} entered · {{won}} won · {{podium}} podiums",
+      "bestRacePlace": "Best place",
+      "fastestRace": "Fastest race",
+      "raceTimeValue": "{{m}}:{{s}}",
+      "scavengeRuns": "Scavenging",
+      "scavengeRunsValue": "{{ship}} ship · {{foot}} on foot",
+      "tabs": {
+        "flying": "Flying",
+        "combat": "Combat",
+        "money": "Money",
+        "records": "Records"
+      },
+      "money": {
+        "earned": "Earned",
+        "spent": "Spent",
+        "net": "Net"
+      },
+      "groups": {
+        "missions": {
+          "started": "Started",
+          "success": "Success",
+          "failed": "Failed",
+          "aborted": "Aborted"
+        },
+        "flight": {
+          "distance": "Distance",
+          "legs": "Legs",
+          "seconds": "Flight time"
+        },
+        "fuel": {
+          "burned": "Burned",
+          "lost": "Lost"
+        },
+        "fights": {
+          "won": "Won",
+          "lost": "Lost",
+          "escaped": "Escaped",
+          "drawn": "Drawn",
+          "pirate": "Pirate",
+          "pvp": "PvP"
+        },
+        "damage": {
+          "taken": "Taken",
+          "takenShield": "Shield",
+          "takenArmor": "Armor",
+          "takenHull": "Hull",
+          "dealt": "Dealt"
+        },
+        "rescue": {
+          "called": "Rescues called"
+        },
+        "adrift": {
+          "times": "Adrift"
+        },
+        "pirates": {
+          "partsStolen": "Parts stolen"
+        }
+      },
+      "records": {
+        "best": {
+          "payout": "Biggest payout",
+          "runDistance": "Longest run",
+          "wallet": "Richest wallet",
+          "racePlace": "Best race place",
+          "raceSeconds": "Fastest race"
+        },
+        "worst": {
+          "runDamage": "Worst damage"
+        }
+      }
+    }
   },
   "report": {
     "title": "Mission report",

@@ -48,7 +48,13 @@ import type {
   UpdateLocaleResponse,
   UpdateTutorialResponse,
   WorldResponse,
+  MyStatsResponse,
+  PublicProfileResponse,
 } from '../../api/generated';
+import {
+  myStatsFixture,
+  publicProfileFixture,
+} from '../../features/profile/profile-fixtures';
 
 let wallet = 4820;
 let fuelState = 25;
@@ -618,6 +624,12 @@ export const handlers = [
   ),
 
   http.get('/v1/players/me', () => ok<PlayerProfileResponse>(profile())),
+
+  http.get('/v1/players/me/stats', () => ok<MyStatsResponse>(myStatsFixture())),
+
+  http.get('/v1/players/by-name/:name/profile', () =>
+    ok<PublicProfileResponse>(publicProfileFixture()),
+  ),
 
   http.post('/v1/players/me/locale', async ({ request }) => {
     const body = (await request.json()) as { locale: string };

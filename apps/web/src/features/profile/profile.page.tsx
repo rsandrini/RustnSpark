@@ -3,10 +3,11 @@ import { Link } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
-import type { ReportListResponse } from '../../api/generated';
+import type { MyStatsResponse, ReportListResponse } from '../../api/generated';
 import { useAuthContext } from '../auth/auth.context';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
+import { MyStats } from './my-stats';
 
 const SEPARATOR = ' · ';
 
@@ -33,6 +34,11 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
     queryFn: () => client.get<ReportListResponse>('/v1/reports'),
   });
 
+  const statsQuery = useQuery({
+    queryKey: ['my-stats'],
+    queryFn: () => client.get<MyStatsResponse>('/v1/players/me/stats'),
+  });
+
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const dateFormat = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' });
 
@@ -50,6 +56,8 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
       />
 
       {user?.factionId != null && <FactionBadge factionId={user.factionId} />}
+
+      {statsQuery.data !== undefined && <MyStats stats={statsQuery.data} />}
 
       <h2 className="profile-history">{t('profile.history')}</h2>
       {reportsQuery.isLoading && <p>{t('loading')}</p>}
