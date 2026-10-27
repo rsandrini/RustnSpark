@@ -203,6 +203,38 @@ describe('board (S10.6)', () => {
     expect(requested).not.toContain('ceres');
   });
 
+  it('blocks Accept on every card while a scavenging run is going', async () => {
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'ship-1',
+              ownerPlayerId: 'player-1',
+              name: 'luna starter',
+              fuel: 25,
+              status: 'IN_PORT',
+              currentLocationId: 'ceres',
+              stance: 'NEUTRAL',
+              layout: [],
+              sheet: { fuelCap: 40 },
+              shipClass: 'MULTIROLE',
+              yard: { cells: classicSquareCells() },
+              activity: { kind: 'scavenging', until: null, missionId: 'm-1', repairUntil: null },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    await screen.findAllByText('Corporate Delivery');
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    for (const button of screen.getAllByRole('button', { name: 'Scavenging…' })) {
+      expect(button).toBeDisabled();
+    }
+  });
+
   it('says what you have, what the trip needs and what the tank holds, with a bar of the three', async () => {
     await renderBoard();
     await screen.findAllByText('Corporate Delivery');

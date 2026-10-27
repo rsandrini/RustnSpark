@@ -282,13 +282,18 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
       <ul className="mrow-list">
         {offers.map((offer) => {
           const mine = offer.playerId === user?.id;
+          // A scavenging run (with the ship or on foot) holds the pilot: no new mission until it ends.
+          const scavenging = ship?.activity.kind === 'scavenging';
           const canAccept =
             ship !== undefined &&
+            !scavenging &&
             offer.eligibility.eligible &&
             (offer.status === 'AVAILABLE' || (offer.status === 'HELD' && mine));
-          const acceptLabel = offer.eligibility.eligible
-            ? t('board.accept')
-            : t('board.notEligible');
+          const acceptLabel = scavenging
+            ? t('board.busyScavenging')
+            : offer.eligibility.eligible
+              ? t('board.accept')
+              : t('board.notEligible');
           return (
             <MissionRow
               key={offer.id}

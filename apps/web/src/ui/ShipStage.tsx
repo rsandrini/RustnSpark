@@ -47,6 +47,15 @@ const CHUNKS = [
   { top: 50, seconds: 2.2, delay: -1.9 },
   { top: 44, seconds: 3.4, delay: -0.5 },
 ];
+// On foot: scraps thrown up out of the pile the pilot digs through, each on its own arc.
+const SCRAPS = [
+  { x: 6, dx: -34, rise: 46, seconds: 1.8, delay: 0 },
+  { x: 12, dx: 22, rise: 56, seconds: 2.2, delay: -0.7 },
+  { x: -4, dx: -52, rise: 38, seconds: 1.6, delay: -1.2 },
+  { x: 16, dx: 40, rise: 44, seconds: 2, delay: -0.3 },
+  { x: 2, dx: -18, rise: 62, seconds: 2.4, delay: -1.6 },
+  { x: 10, dx: 58, rise: 36, seconds: 1.7, delay: -1 },
+];
 const DEBRIS = [
   { top: 14, size: 18, seconds: 7, delay: 0 },
   { top: 68, size: 26, seconds: 11, delay: -4 },
@@ -172,7 +181,35 @@ export function ShipStage({
             ))}
           </>
         )}
-        <div className="scene-ship">
+        {still && (
+          <div className="scene-dig" data-testid="scene-dig">
+            <svg viewBox="0 0 160 90" width="320" height="180">
+              <path className="dig-pile" d="M8 86 L30 62 L48 70 L70 48 L92 66 L112 56 L132 86 Z" />
+              <path className="dig-pile-dark" d="M40 86 L60 66 L78 76 L96 62 L112 86 Z" />
+              <g className="dig-pilot">
+                <circle className="dig-helmet" cx="34" cy="38" r="7" />
+                <rect className="dig-suit" x="27" y="45" width="14" height="22" rx="4" />
+                <path className="dig-arm" d="M40 52 L58 62" />
+              </g>
+            </svg>
+            {SCRAPS.map((scrap, index) => (
+              <span
+                key={index}
+                className="dig-scrap"
+                style={
+                  {
+                    '--x': `${scrap.x}px`,
+                    '--dx': `${scrap.dx}px`,
+                    '--rise': `${scrap.rise}px`,
+                    animationDuration: `${scrap.seconds}s`,
+                    animationDelay: `${scrap.delay}s`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+        )}
+        <div className="scene-ship"{...(still ? { hidden: true } : {})}>
           <svg viewBox="0 0 120 60" width="160" height="80">
             <path className="ship-flame" d="M14,30 L-6,22 L2,30 L-6,38 Z" />
             <path className="ship-hull" d="M118,30 L84,10 L30,14 L14,24 L14,36 L30,46 L84,50 Z" />

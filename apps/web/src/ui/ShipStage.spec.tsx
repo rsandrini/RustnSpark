@@ -58,6 +58,10 @@ describe('ship stage', () => {
     expect(scene).toHaveClass('still');
     expect(scene).toHaveClass('stage-compact');
     expect(scene.querySelectorAll('.debris').length).toBe(0);
+    // the pilot digs through a scrap pile in place of the ship, scraps flying up
+    expect(screen.getByTestId('scene-dig')).toBeInTheDocument();
+    expect(scene.querySelectorAll('.dig-scrap').length).toBeGreaterThan(0);
+    expect(scene.querySelector('.scene-ship')).toHaveAttribute('hidden');
   });
 
   it('docked: parked against the place, no drones, no debris', () => {
