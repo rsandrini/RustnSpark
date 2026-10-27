@@ -170,7 +170,8 @@ function scenes(voice: Voice): SceneData[] {
           anchor: 'missions_tab',
           choices: [
             choice(LABELS.toMissions, null, 'goto:/missions'),
-            choice(LABELS.whatAccept, 'f3'),
+            // the tip points at the Accept button, which only exists on the Missions screen: go there, then show it
+            choice(LABELS.whatAccept, 'f3', 'goto:/missions'),
             choice(LABELS.later, null, 'end'),
           ],
         }),

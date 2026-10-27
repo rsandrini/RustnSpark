@@ -146,8 +146,14 @@ export function DialogueHost() {
       void close('done').then(() => replay.mutate(sceneId));
       return;
     }
-    // goto:<path>: end the scene and take the pilot there
+    // goto:<path>: end the scene and take the pilot there, unless the choice also names the next message: then the
+    // pilot is taken there and the scene goes on (a tip that points at something on that screen)
     const path = choice.action.slice('goto:'.length);
+    if (choice.next !== null) {
+      void navigate(path);
+      goTo(choice.next);
+      return;
+    }
     void close('done').then(async () => {
       if (path !== LATEST_REPORT) return navigate(path);
       // the newest report has an id only the server knows: ask for it, and fall back to My Ship

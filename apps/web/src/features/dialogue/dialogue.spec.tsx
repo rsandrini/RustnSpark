@@ -179,6 +179,30 @@ describe('the mentor dialogue', () => {
     expect(dialogueEvents.at(-1)).toEqual({ sceneId: 'first_flight', event: 'done' });
   });
 
+  it('a goto choice that names a next message takes the pilot there and the scene goes on', async () => {
+    setDialogue({
+      scene: sceneOf('pick_mission', [
+        node('f2', {
+          choices: [
+            {
+              label: text('Which one do I accept?', 'Qual eu aceito?'),
+              next: 'f3',
+              action: 'goto:/port',
+            },
+          ],
+        }),
+        node('f3', { choices: [{ label: text('Got it', 'Entendi'), next: null, action: 'end' }] }),
+      ]),
+    });
+    const view = renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const box = await screen.findByRole('dialog', {}, SEEN);
+    fireEvent.click(within(box).getByRole('button', { name: 'Which one do I accept?' }));
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/port'));
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveTextContent('Words of f3.'));
+    // the scene is not closed: only the pilot's move was recorded
+    expect(dialogueEvents.some((event) => event.event === 'done')).toBe(false);
+  });
+
   it('skip asks first on the welcome, and goes through on yes; Escape asks too', async () => {
     setDialogue({
       scene: sceneOf('welcome', [node('w1', { blocking: true, position: 'center' })]),
