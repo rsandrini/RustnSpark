@@ -49,6 +49,8 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
   'POST /v1/locations/:id/mine':
     'service checks the caller’s ship is at the location and has no active mission',
+  'GET /v1/players/by-name/:name/profile':
+    'the public card of any pilot: the service returns only the keys marked public, never money, damage or parts',
   'POST /v1/players/me/dialogue/:sceneId':
     'the scene is looked up in the caller’s own faction mentor; progress is keyed by the caller’s playerId',
   'POST /v1/players/me/dialogue/:sceneId/replay':

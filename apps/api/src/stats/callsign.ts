@@ -30,7 +30,8 @@ const NO_FACTION_TAG = '---';
 const SEPARATOR = '-';
 const WORD_COUNT = CALLSIGN_WORDS.length;
 const MAX_WORD_LENGTH = 6;
-const MAX_OUTPUT_LENGTH = TAG_LENGTH + SEPARATOR.length + MAX_NAME_LENGTH + SEPARATOR.length + MAX_WORD_LENGTH;
+const MAX_OUTPUT_LENGTH =
+  TAG_LENGTH + SEPARATOR.length + MAX_NAME_LENGTH + SEPARATOR.length + MAX_WORD_LENGTH;
 
 /**
  * Stable, non-cryptographic hash of a string.
