@@ -22,6 +22,8 @@ import { ShipLossService } from './ship-loss.service.js';
 import { MISSION_LOG_SCHEMA_VERSION } from '../reports/events/event.types.js';
 import { parseMissionLogEvents } from '../reports/events/event.schema.js';
 import { SCRAP_MATERIAL_ID } from '../economy/scrap.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
+import { runStatsOf } from '../stats/run-stats.js';
 
 const NO_MISSION_LOG = '';
 // Hash preview length for the resolve log line — not a balance value (missions/ lint scope).
@@ -68,6 +70,7 @@ export class MissionResolveService {
     private readonly events: PlayerEventService,
     private readonly encounters: EncounterService,
     private readonly shipLoss: ShipLossService,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   async resolve(data: DispatchJobData): Promise<ResolveJobResult> {
@@ -361,6 +364,26 @@ export class MissionResolveService {
           },
           tx,
         );
+        // The pilot's numbers for this run, in the same transaction as the log (whose unique
+        // missionId is the claim that keeps a retried resolve from counting twice).
+        const run = runStatsOf({
+          type: mission.type,
+          status: outcome.status,
+          events,
+          partsBefore: snapshot.parts.map((part) => ({ id: part.id, condition: part.condition })),
+          partsAfter: outcome.parts.map((part) => ({ id: part.id, condition: part.condition })),
+          fuelBefore: snapshot.fuel,
+          fuelAfter: outcome.fuel,
+          credited,
+          shipLost: bridgeDead,
+          onFoot: snapshot.onFoot === true,
+          isDead: (condition) => isDead(Math.round(condition), rules),
+        });
+        await this.stats.add(mission.playerId!, run.delta, tx);
+        for (const record of run.records) {
+          await this.stats.best(mission.playerId!, record.key, record.value, tx, { missionId });
+        }
+        await this.stats.touch(mission.playerId!, tx, { markMission: true });
         // A destroyed bridge is a destroyed ship: everything the pilot owned goes with it and a
         // new starter pack is handed over. Money, goods, faction and history stay.
         if (bridgeDead) {

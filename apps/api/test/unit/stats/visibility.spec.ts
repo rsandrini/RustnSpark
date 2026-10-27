@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { RECORD_KEYS, STAT_KEYS } from '../../../src/stats/stat-keys.js';
-import {
-  PUBLIC_RECORD_KEYS,
-  PUBLIC_STAT_KEYS,
-  publicView,
-} from '../../../src/stats/visibility.js';
+import { PUBLIC_RECORD_KEYS, PUBLIC_STAT_KEYS, publicView } from '../../../src/stats/visibility.js';
 
 describe('stat keys', () => {
   it('has no duplicate keys', () => {

@@ -24,6 +24,7 @@ import {
 import { MissionProcessor } from '../../src/jobs/processors/mission.processor.js';
 import { MissionResolveService } from '../../src/missions/resolve.service.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import { PlayerStatsService } from '../../src/stats/player-stats.service.js';
 import { MISSION_EVENT_TYPES } from '../../src/reports/events/event.types.js';
 import { loadTemplateVariants } from '../../src/reports/templates/template.engine.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
@@ -466,6 +467,30 @@ describe('mission resolve processor (S7.3)', () => {
       where: { playerId: player.seeded.player.id, type: 'wallet.credit' },
     });
     expect(payouts).toBe(payoutsBefore + 1);
+    // the pilot's stats were written once too
+    const stats = await testApp.app.get(PlayerStatsService).read(player.seeded.player.id);
+    expect(stats.totals['missions.started']).toBe(1);
+    expect(stats.totals['missions.success']).toBe(1);
+  }, 30_000);
+
+  it('records the run in the pilot stats: flight, fuel, payout, last active', async () => {
+    const player = await authFor(testApp.app);
+    const mission = await createAcceptedMission(player, 's7.3-happy-seed', [150, 100]);
+    const job = await dispatchedJob(player, mission, 10_000);
+    await processor.process(job);
+
+    const stats = await testApp.app.get(PlayerStatsService).read(player.seeded.player.id);
+    expect(stats.totals).toMatchObject({
+      'missions.started': 1,
+      'flight.legs': 2,
+      'flight.distance': 250,
+    });
+    expect(stats.totals['fuel.burned']).toBeGreaterThan(0);
+    expect(stats.totals['money.earned_missions']).toBeGreaterThan(0);
+    expect(stats.records['best.payout']?.missionId).toBe(mission.id);
+    expect(stats.records['best.run_distance']?.value).toBe(250);
+    expect(stats.firstMissionAt).not.toBeNull();
+    expect(stats.lastActiveAt).not.toBeNull();
   }, 30_000);
 
   it('refuses a mission that is not IN_TRANSIT: claim fails, nothing is written', async () => {
