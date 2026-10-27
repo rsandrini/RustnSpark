@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { moneyKeyOf } from '../stats/money-category.js';
+import { PlayerStatsService } from '../stats/player-stats.service.js';
 import { PlayerEventService } from './player-event.service.js';
 
 export const WALLET_DEBIT_EVENT = 'wallet.debit';
@@ -67,6 +69,7 @@ export class WalletService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: PlayerEventService,
+    private readonly stats: PlayerStatsService,
   ) {}
 
   // Single conditional UPDATE (S2.5 ruling): the row lock plus the `credits >= amount` predicate
@@ -131,6 +134,7 @@ export class WalletService {
       { playerId, type: WALLET_DEBIT_EVENT, creditsDelta: -amount, payload: { reason } },
       tx,
     );
+    await this.stats.add(playerId, { [moneyKeyOf('out', reason)]: amount }, tx);
   }
 
   private async creditInTransaction(
@@ -154,6 +158,12 @@ export class WalletService {
       { playerId, type: WALLET_CREDIT_EVENT, creditsDelta: amount, payload: { reason } },
       tx,
     );
+    await this.stats.add(playerId, { [moneyKeyOf('in', reason)]: amount }, tx);
+    const { credits } = await tx.player.findUniqueOrThrow({
+      where: { id: playerId },
+      select: { credits: true },
+    });
+    await this.stats.best(playerId, 'best.wallet', credits, tx);
   }
 
   private async debitAllowingNegativeInTransaction(
@@ -173,5 +183,6 @@ export class WalletService {
       { playerId, type: WALLET_DEBIT_EVENT, creditsDelta: -amount, payload: { reason } },
       tx,
     );
+    await this.stats.add(playerId, { [moneyKeyOf('out', reason)]: amount }, tx);
   }
 }
