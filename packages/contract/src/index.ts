@@ -1699,3 +1699,54 @@ export const SupportResultSchema = z.object({
   after: z.record(z.string(), z.unknown()),
 });
 export type SupportResult = z.infer<typeof SupportResultSchema>;
+
+// ---------------------------------------------------------------------------------------------
+// Pilot stats and profiles (docs/superpowers/plans/2026-10-27-profile-stats.md)
+// ---------------------------------------------------------------------------------------------
+
+/** Totals keyed by the stat's dotted name (`flight.distance`); a key the pilot never earned is absent. */
+export const StatTotalsSchema = z.record(z.string(), z.number());
+export type StatTotals = z.infer<typeof StatTotalsSchema>;
+
+/** The best (or worst) single value ever, when it was set and the mission it came from, if any. */
+export const StatRecordSchema = z.object({
+  value: z.number(),
+  at: z.string(),
+  missionId: z.string().optional(),
+});
+export type StatRecord = z.infer<typeof StatRecordSchema>;
+
+export const StatRecordsSchema = z.record(z.string(), StatRecordSchema);
+export type StatRecords = z.infer<typeof StatRecordsSchema>;
+
+/** GET /v1/players/me/stats: everything recorded for the pilot, private numbers included. */
+export const MyStatsResponseSchema = z.object({
+  totals: StatTotalsSchema,
+  records: StatRecordsSchema,
+  firstMissionAt: z.string().nullable(),
+  lastActiveAt: z.string().nullable(),
+});
+export type MyStatsResponse = z.infer<typeof MyStatsResponseSchema>;
+
+/** The public card of a pilot: the ship's title, never its parts, layout or picture. */
+export const PublicProfileShipSchema = z.object({
+  /** Placeholder callsign (`TAG-Name-Word`) until ships have names. */
+  title: z.string(),
+  shipClass: ShipClassTypeSchema,
+  /** Rarity of the installed bridge. */
+  bridgeRarity: z.string(),
+});
+export type PublicProfileShip = z.infer<typeof PublicProfileShipSchema>;
+
+/** GET /v1/players/by-name/:name/profile: only the keys marked public. */
+export const PublicProfileResponseSchema = z.object({
+  name: z.string(),
+  factionId: z.string().nullable(),
+  joinedAt: z.string(),
+  ship: PublicProfileShipSchema.nullable(),
+  totals: StatTotalsSchema,
+  records: StatRecordsSchema,
+  /** success / (success + failed + aborted); null before the first finished mission. */
+  successRate: z.number().nullable(),
+});
+export type PublicProfileResponse = z.infer<typeof PublicProfileResponseSchema>;
