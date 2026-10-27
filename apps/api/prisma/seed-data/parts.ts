@@ -82,7 +82,8 @@ const RARITY_SUFFIX: Record<string, string> = {
  */
 // Round 5 (2026-10-22) raised them again: Epic x3 and Legendary x6 over the tables' own steps (x1.5 and x2 on top
 // of round 4's x2 and x3). Round 6 (2026-10-22) once more: Epic x1.5 and Legendary x2 on top (x4.5 and x12).
-const PRICE_BY_RARITY: Record<string, number> = { EPIC: 4.5, LEGENDARY: 12 };
+// Round 6b (2026-10-27): Legendary back down to x8 (x12 left the top tier out of reach in the sim).
+const PRICE_BY_RARITY: Record<string, number> = { EPIC: 4.5, LEGENDARY: 8 };
 
 function rowsOf(family: Family): SeedPart[] {
   return family.tiers.map(({ name, description, ...tier }) => ({

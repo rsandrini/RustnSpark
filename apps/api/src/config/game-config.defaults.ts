@@ -53,8 +53,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Balance round 2026-10-15 (sim experiments 42-47): wear per mission came down from ~60 to
     // ~20-30 points so repair stops eating the reward as the ship gets more valuable.
     // Round 6 (2026-10-22, sim r6): 30% less wear, so repair stops taking 70-77% of the income.
-    base_min: 0.7,
-    base_max: 1.2,
+    // Round 6b (2026-10-27, sim r9/r14): another ~30% (0.5 / 0.85) with the pay and price changes below.
+    base_min: 0.5,
+    base_max: 0.85,
     env_multiplier: 1,
     choke_loss_min: 3,
     choke_loss_max: 8,
@@ -82,7 +83,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     environment_damage_factor: 1,
     // Hull points a run lost become condition lost on every part, at this share (1 = a hull at
     // 80% leaves every part 20% worn).
-    hull_to_condition: 0.2,
+    hull_to_condition: 0.15,
     // Of the wear the hull's losses cause, the Hull Frame parts tank this share (the rest passes
     // through to the other parts). 0 = every part wears alike.
     hull_frame_share: 0.7,
@@ -103,7 +104,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     reward_distance_divisor: 1500,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
-    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 1.9, LEGENDARY: 2.5 },
+    // Round 6b (2026-10-27): Epic and Legendary pay ~30% more (2.5 / 3.25), so a rich ship can pay its repairs.
+    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.5, LEGENDARY: 3.25 },
     // A won fight pays nothing: pilots are not pirates (owner 2026-10-23); fights cost wear and a lost one a penalty.
     // The knobs stay for a future exception that makes a fight worth money.
     combat_win_base: 0,

@@ -241,3 +241,19 @@ requests. Run this before each release:
 | Missions never resolve | worker running? `docker compose logs worker-prod`; Redis reachable; reconcile interval |
 | A mission report looks wrong | Admin → Players → report → **Replay**: `matchesStored` false means the engine no longer reproduces the stored run |
 | Banned player still plays | at most ~5 s on other API instances (status cache); immediate on the instance that handled the ban |
+
+## 9. Keeping the CI green (standing rules)
+
+Every push to `develop` must end with the aggregate `CI` job green (quality, unit, web, integration with the coverage
+thresholds and the Prisma migration diff, compose-check, docker-lifecycle, security, oracle-fixtures-fresh).
+
+1. The **browser smoke does not gate the aggregate** (`continue-on-error`, see the comment in `.github/workflows/ci.yml`), so a
+   red smoke is a real regression that goes unnoticed (it was red for four days in October after a dialogue change): read it on
+   every run. Run it locally before pushing a UI change (recipe in the repo's e2e notes: a separate compose project on alternate
+   ports and a fresh database; the race spec needs a fresh database).
+2. Rapid pushes cancel each other (`cancel-in-progress`): confirm one full run on the head before calling anything done.
+3. A CI-only failure is reproduced with a full local `test:cov` (cross-suite state), after checking for a stray jest process; the
+   soak test prints the rejection reasons when it fails.
+4. Never edit `baselines.json` by hand (regenerate it with `tools/oracle/gen_fixtures.py`).
+5. A change to a config default breaks the literals in the e2e specs too: grep the old value in `test`, and run `test:e2e` as well.
+
