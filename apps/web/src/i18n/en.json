@@ -1622,6 +1622,7 @@
     "combatTagHint": "This run had a fight — jump straight to the round-by-round log.",
     "stats": {
       "title": "Stats",
+      "loadFailed": "Could not load this profile.",
       "noFlights": "No flights yet",
       "joinedAt": "Joined {{date}}",
       "shipTitle": "Ship",
@@ -2199,6 +2200,7 @@
     "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location.",
     "SHIP_NOT_IN_PORT": "The ship must be in port.",
     "SHIP_NOT_VIABLE": "The ship is not viable — fix the build first.",
+    "PLAYER_NOT_FOUND": "That pilot was not found.",
     "SHIP_ON_MISSION": "The ship is on a mission.",
     "SHIP_REPAIRING": "The ship is being repaired.",
     "FORMAT_CHANGE_REQUIRED": "Your bridge changed: pick a ship format in the Hangar before leaving.",

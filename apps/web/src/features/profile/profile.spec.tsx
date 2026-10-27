@@ -27,6 +27,16 @@ describe('profile (S10.9)', () => {
     server.use(onboarded());
   });
 
+  it('says so when a pilot is not found', async () => {
+    server.use(
+      http.get('/v1/players/by-name/:name/profile', () =>
+        HttpResponse.json({ statusCode: 404, error: 'PLAYER_NOT_FOUND' }, { status: 404 }),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/pilots/Nobody'] });
+    expect(await screen.findByRole('alert')).toHaveTextContent('That pilot was not found.');
+  });
+
   it('shows the wallet, faction and mission history', async () => {
     renderWithRouter(routes, { initialEntries: ['/profile'] });
 

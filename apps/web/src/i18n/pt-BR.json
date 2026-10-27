@@ -1622,6 +1622,7 @@
     "combatTagHint": "Esta missão teve uma luta — vá direto para o registro rodada a rodada.",
     "stats": {
       "title": "Estatísticas",
+      "loadFailed": "Não foi possível carregar este perfil.",
       "noFlights": "Nenhum voo ainda",
       "joinedAt": "Entrou em {{date}}",
       "shipTitle": "Nave",
@@ -2199,6 +2200,7 @@
     "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local.",
     "SHIP_NOT_IN_PORT": "A nave precisa estar no porto.",
     "SHIP_NOT_VIABLE": "A nave não é viável — corrija a montagem primeiro.",
+    "PLAYER_NOT_FOUND": "Esse piloto não foi encontrado.",
     "SHIP_ON_MISSION": "A nave está em missão.",
     "SHIP_REPAIRING": "A nave está em reparo.",
     "FORMAT_CHANGE_REQUIRED": "Sua ponte mudou: escolha um formato de nave no Hangar antes de partir.",
