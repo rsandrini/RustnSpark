@@ -75,7 +75,12 @@ test('skipping the welcome asks first, and a skipped scene does not come back on
   await page.getByRole('button', { name: 'No, go on' }).click();
   await expect(page.getByRole('dialog')).toContainText('Welcome to Hedus');
   await page.keyboard.press('Escape');
+  // the guide is switched off by a request that follows the skip's own: wait for it before reloading
+  const switchedOff = page.waitForResponse(
+    (response) => response.url().includes('/dialogue/settings') && response.ok(),
+  );
   await page.getByRole('button', { name: 'Yes, skip it' }).click();
+  await switchedOff;
   await expect(page.getByTestId('dialogue')).toHaveCount(0);
 
   // skipping the welcome turns the guide off: nothing opens now, and nothing after a reload
@@ -89,11 +94,16 @@ test('the scenes follow one another within seconds, and the fuel scene is on the
 }) => {
   await registerAndLaunch(page, 'luna', { dialogues: true }); // builds the ship with Auto layout
   await page.goto('/ship');
-  // welcome (skip asks first), then the ship scene, then the first flight: each a few seconds after the last
+  // the welcome (skipping it turns the guide off, so the pilot reads through it), then the ship scene, then the first
+  // flight: each a few seconds after the last
   const welcome = page.getByRole('dialog');
   await expect(welcome).toContainText('Welcome to Ceres', { timeout: 15_000 });
-  await welcome.getByRole('button', { name: 'Skip' }).click();
-  await page.getByRole('button', { name: 'Yes, skip it' }).click();
+  await welcome.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: /Tell me about the Authority/ }).click();
+  await page.getByRole('button', { name: 'What do I do now?' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Show me the ship' }).click();
   const ship = page.getByRole('dialog');
   await expect(ship).toContainText('This is your ship', { timeout: 8_000 });
   await ship.getByRole('button', { name: 'Skip' }).click();
