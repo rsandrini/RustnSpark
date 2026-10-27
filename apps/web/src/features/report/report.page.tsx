@@ -172,7 +172,12 @@ export function ReportPage({ guided = false }: ReportPageProps) {
           {tab === 'overview' && <ReportOverview stats={report.stats} />}
 
           {tab !== 'overview' && report.view === 'log' && (
-            <div className="log-table-wrap">
+            <div
+              className="log-table-wrap"
+              role="region"
+              aria-label={t('report.eventDetails')}
+              tabIndex={0}
+            >
               <table className="log-table" data-testid="log-table">
                 <thead>
                   <tr>
