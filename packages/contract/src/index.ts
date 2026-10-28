@@ -1750,3 +1750,46 @@ export const PublicProfileResponseSchema = z.object({
   successRate: z.number().nullable(),
 });
 export type PublicProfileResponse = z.infer<typeof PublicProfileResponseSchema>;
+
+// Rankings (docs/superpowers/specs/2026-10-28-global-ranking-design.md)
+
+export const RankingBoardSchema = z.enum(['distance', 'fights_won', 'race_wins', 'race_time']);
+export type RankingBoard = z.infer<typeof RankingBoardSchema>;
+
+export const RankingWindowSchema = z.enum(['weekly', 'lifetime']);
+export type RankingWindow = z.infer<typeof RankingWindowSchema>;
+
+export const RankingEntrySchema = z.object({
+  rank: z.number(),
+  name: z.string(),
+  factionId: z.string().nullable(),
+  value: z.number(),
+  isMe: z.boolean(),
+});
+export type RankingEntry = z.infer<typeof RankingEntrySchema>;
+
+/** GET /v1/rankings/:board: the top 50 and the asking pilot's own position, wherever they stand. */
+export const RankingResponseSchema = z.object({
+  board: RankingBoardSchema,
+  window: RankingWindowSchema,
+  /** The race route of a race-time board; null for the others. */
+  route: z.string().nullable(),
+  /** Monday 00:00 UTC of the weekly window; null for lifetime. */
+  weekStart: z.string().nullable(),
+  entries: z.array(RankingEntrySchema),
+  me: z.object({ rank: z.number(), value: z.number() }).nullable(),
+  total: z.number(),
+});
+export type RankingResponse = z.infer<typeof RankingResponseSchema>;
+
+export const RaceRouteSchema = z.object({
+  routeKey: z.string(),
+  originId: z.string(),
+  destinationId: z.string(),
+  pilots: z.number(),
+});
+export type RaceRoute = z.infer<typeof RaceRouteSchema>;
+
+/** GET /v1/rankings/race-routes: the races that have at least one result. */
+export const RaceRoutesResponseSchema = z.object({ routes: z.array(RaceRouteSchema) });
+export type RaceRoutesResponse = z.infer<typeof RaceRoutesResponseSchema>;
