@@ -154,6 +154,15 @@ describe('RACE mission resolution (pipeline)', () => {
     expect(log.outcome).toBe('success');
     expect(credits).toBeGreaterThan(before);
     expect(events.filter((event) => event.type === 'mission_payout')).toHaveLength(1);
+    // the race is filed for the per-route boards, once
+    const filed = await prisma.raceResult.findMany({ where: { missionId: setup.mission.id } });
+    expect(filed).toHaveLength(1);
+    expect(filed[0]).toMatchObject({
+      playerId: setup.playerId,
+      routeKey: `${setup.mission.originId}>${setup.mission.destinationId}`,
+      place: 1,
+    });
+    expect(filed[0]!.seconds).toBeGreaterThan(0);
     // the report renders it (a template exists for the new event type)
     const report = await request(httpServer(testApp.app))
       .get(`/v1/reports/${setup.mission.id}`)

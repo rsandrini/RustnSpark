@@ -35,6 +35,8 @@ export interface RunStatsInput {
 export interface RunStats {
   readonly delta: StatDelta;
   readonly records: readonly { readonly key: RecordKey; readonly value: number }[];
+  /** The pilot's finishing place and displayed time when the run was a race; null otherwise. */
+  readonly race: { readonly place: number; readonly seconds: number } | null;
 }
 
 /**
@@ -160,5 +162,12 @@ export function runStatsOf(input: RunStatsInput): RunStats {
   if (racePlace !== null) records.push({ key: 'best.race_place', value: racePlace });
   if (raceSeconds !== null) records.push({ key: 'best.race_seconds', value: raceSeconds });
 
-  return { delta: totals, records };
+  return {
+    delta: totals,
+    records,
+    race:
+      racePlace !== null && raceSeconds !== null
+        ? { place: racePlace, seconds: raceSeconds }
+        : null,
+  };
 }

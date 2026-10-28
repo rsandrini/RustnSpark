@@ -38,6 +38,10 @@ const leg = (index: number, distance: number) =>
   });
 
 describe('runStatsOf', () => {
+  it('has no race for a run that was not one', () => {
+    expect(runStatsOf(base({})).race).toBeNull();
+  });
+
   it('counts a clean two-leg delivery', () => {
     const { delta, records } = runStatsOf(
       base({ events: [leg(0, 30), leg(1, 12)], fuelBefore: 40, fuelAfter: 31, credited: 500 }),
@@ -173,7 +177,8 @@ describe('runStatsOf', () => {
         ],
       },
     });
-    const { delta, records } = runStatsOf(base({ type: 'RACE', events: [race] }));
+    const { delta, records, race: raced } = runStatsOf(base({ type: 'RACE', events: [race] }));
+    expect(raced).toEqual({ place: 2, seconds: 220 });
     expect(delta['races.entered']).toBe(1);
     expect(delta['races.podium']).toBe(1);
     expect(delta['races.won']).toBeUndefined();

@@ -384,6 +384,20 @@ export class MissionResolveService {
           await this.stats.best(mission.playerId!, record.key, record.value, tx, { missionId });
         }
         await this.stats.touch(mission.playerId!, tx, { markMission: true });
+        if (run.race !== null) {
+          await tx.raceResult.create({
+            data: {
+              playerId: mission.playerId!,
+              missionId,
+              routeKey: `${mission.originId}>${mission.destinationId}`,
+              originId: mission.originId,
+              destinationId: mission.destinationId,
+              seconds: run.race.seconds,
+              place: run.race.place,
+              day: this.stats.today(),
+            },
+          });
+        }
         // A destroyed bridge is a destroyed ship: everything the pilot owned goes with it and a
         // new starter pack is handed over. Money, goods, faction and history stay.
         if (bridgeDead) {

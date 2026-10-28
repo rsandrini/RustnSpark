@@ -31,6 +31,11 @@ export class PlayerStatsService {
     private readonly clock: Clock,
   ) {}
 
+  /** Today as a UTC calendar day (midnight UTC), the day the daily rows and race results are filed under. */
+  today(): Date {
+    return new Date(this.clock.now().toISOString().slice(0, DAY_LENGTH));
+  }
+
   /** Adds each non-zero value of `delta` to the lifetime totals and to today's totals. */
   async add(playerId: string, delta: StatDelta, tx: Prisma.TransactionClient): Promise<void> {
     const entries = Object.entries(delta).filter(
