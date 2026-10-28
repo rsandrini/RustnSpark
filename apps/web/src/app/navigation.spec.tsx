@@ -73,6 +73,7 @@ describe('navigation flow (S10.10)', () => {
     expect(screen.queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Account menu' }));
     expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'Rankings' })).toHaveAttribute('href', '/rankings');
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });

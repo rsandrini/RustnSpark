@@ -1369,6 +1369,7 @@
     "transit": "Trânsito",
     "port": "Porto",
     "account": "Menu da conta",
+    "rankings": "Rankings",
     "profile": "Perfil",
     "admin": "Admin",
     "logout": "Sair",
@@ -1610,6 +1611,28 @@
     "parts": "Peças",
     "sellAll": "Vender tudo",
     "condition": "Condição {{value}}%"
+  },
+  "rankings": {
+    "title": "Rankings",
+    "boards": "Rankings",
+    "period": "Período",
+    "route": "Rota da corrida",
+    "routeLabel": "{{from}} para {{to}}",
+    "noRaces": "Ninguém terminou uma corrida ainda.",
+    "empty": "Ninguém está neste ranking ainda.",
+    "noResult": "Você ainda não tem resultado neste ranking.",
+    "yourPosition": "Você é o número {{rank}} ({{value}})",
+    "loadFailed": "Não foi possível carregar o ranking.",
+    "board": {
+      "distance": "Distância",
+      "fights_won": "Lutas vencidas",
+      "race_wins": "Vitórias em corridas",
+      "race_time": "Corrida mais rápida"
+    },
+    "window": {
+      "weekly": "Esta semana",
+      "lifetime": "Sempre"
+    }
   },
   "profile": {
     "title": "Perfil",

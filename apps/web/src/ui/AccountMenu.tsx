@@ -79,6 +79,9 @@ export function AccountMenu() {
           <Link className="shell-menu-item" to="/profile" onClick={() => setOpen(false)}>
             {t('nav.profile')}
           </Link>
+          <Link className="shell-menu-item" to="/rankings" onClick={() => setOpen(false)}>
+            {t('nav.rankings')}
+          </Link>
           <Link className="shell-menu-item" to="/guide" onClick={() => setOpen(false)}>
             {t('nav.guide')}
           </Link>

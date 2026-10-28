@@ -50,11 +50,14 @@ import type {
   WorldResponse,
   MyStatsResponse,
   PublicProfileResponse,
+  RaceRoutesResponse,
+  RankingResponse,
 } from '../../api/generated';
 import {
   myStatsFixture,
   publicProfileFixture,
 } from '../../features/profile/profile-fixtures';
+import { raceRoutesFixture, rankingFixture } from '../../features/rankings/rankings-fixtures';
 
 let wallet = 4820;
 let fuelState = 25;
@@ -630,6 +633,19 @@ export const handlers = [
   http.get('/v1/players/by-name/:name/profile', () =>
     ok<PublicProfileResponse>(publicProfileFixture()),
   ),
+
+  http.get('/v1/rankings/race-routes', () => ok<RaceRoutesResponse>(raceRoutesFixture())),
+
+  http.get('/v1/rankings/:board', ({ params, request }) => {
+    const url = new URL(request.url);
+    return ok<RankingResponse>(
+      rankingFixture({
+        board: params['board'] as RankingResponse['board'],
+        window: (url.searchParams.get('window') ?? 'lifetime') as RankingResponse['window'],
+        route: url.searchParams.get('route'),
+      }),
+    );
+  }),
 
   http.post('/v1/players/me/locale', async ({ request }) => {
     const body = (await request.json()) as { locale: string };

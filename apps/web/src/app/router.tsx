@@ -12,6 +12,7 @@ import { HangarPage } from '../features/hangar/hangar.page';
 import { MapPage } from '../features/map/map.page';
 import { ReportPage } from '../features/report/report.page';
 import { ProfilePage } from '../features/profile/profile.page';
+import { RankingsPage } from '../features/rankings/rankings.page';
 import { PublicProfilePage } from '../features/profile/public-profile.page';
 import { TopBar } from '../ui/TopBar';
 import { useWalletSync } from '../features/transit/use-active-mission';
@@ -162,6 +163,16 @@ export const routes = [
           <ProtectedRoute>
             <RequireFaction>
               <ProfilePage />
+            </RequireFaction>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/rankings',
+        element: (
+          <ProtectedRoute>
+            <RequireFaction>
+              <RankingsPage />
             </RequireFaction>
           </ProtectedRoute>
         ),

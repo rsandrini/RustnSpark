@@ -1369,6 +1369,7 @@
     "transit": "Transit",
     "port": "Port",
     "account": "Account menu",
+    "rankings": "Rankings",
     "profile": "Profile",
     "admin": "Admin",
     "logout": "Sign out",
@@ -1610,6 +1611,28 @@
     "parts": "Parts",
     "sellAll": "Sell all",
     "condition": "Condition {{value}}%"
+  },
+  "rankings": {
+    "title": "Rankings",
+    "boards": "Boards",
+    "period": "Period",
+    "route": "Race route",
+    "routeLabel": "{{from}} to {{to}}",
+    "noRaces": "Nobody has finished a race yet.",
+    "empty": "Nobody is on this board yet.",
+    "noResult": "You have no result on this board yet.",
+    "yourPosition": "You are number {{rank}} ({{value}})",
+    "loadFailed": "Could not load the ranking.",
+    "board": {
+      "distance": "Distance",
+      "fights_won": "Fights won",
+      "race_wins": "Race wins",
+      "race_time": "Fastest race"
+    },
+    "window": {
+      "weekly": "This week",
+      "lifetime": "All time"
+    }
   },
   "profile": {
     "title": "Profile",
