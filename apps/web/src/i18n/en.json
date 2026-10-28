@@ -1623,11 +1623,14 @@
     "noResult": "You have no result on this board yet.",
     "yourPosition": "You are number {{rank}} ({{value}})",
     "loadFailed": "Could not load the ranking.",
+    "shipNote": "Ranks the latest rating of each pilot's ship. Ratings are refreshed periodically, not live.",
     "board": {
       "distance": "Distance",
       "fights_won": "Fights won",
       "race_wins": "Race wins",
-      "race_time": "Fastest race"
+      "race_time": "Fastest race",
+      "ship_power": "Ship power",
+      "ship_speed": "Ship speed"
     },
     "window": {
       "weekly": "This week",

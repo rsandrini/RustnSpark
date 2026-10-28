@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it } from '@jest/globals';
 import { Clock } from '../../src/common/clock/clock.js';
+import type { GameConfigService } from '../../src/config/game-config.service.js';
 import type { PrismaService } from '../../src/prisma/prisma.service.js';
 import { RankingsService } from '../../src/stats/rankings.service.js';
 import { closeTestPrismaClient, getTestPrismaClient, resetDatabase } from '../support/test-db.js';
@@ -12,7 +13,12 @@ class FixedClock extends Clock {
     return new Date('2026-10-28T12:00:00Z'); // a Wednesday: the week began 2026-10-26
   }
 }
-const rankings = new RankingsService(prisma as unknown as PrismaService, new FixedClock());
+const config = { snapshot: () => ({ rules: { ship: { stat_display_scale: 10 } } }) };
+const rankings = new RankingsService(
+  prisma as unknown as PrismaService,
+  new FixedClock(),
+  config as unknown as GameConfigService,
+);
 
 interface PilotOptions {
   name?: string;
@@ -65,6 +71,12 @@ async function race(playerId: string, seconds: number, date: string, route = 'ce
   });
 }
 
+async function rate(playerId: string, power: number, speed: number): Promise<void> {
+  await prisma.shipRating.create({
+    data: { playerId, shipId: randomUUID(), power, speed, firepower: 0, armor: 0 },
+  });
+}
+
 describe('RankingsService', () => {
   beforeEach(async () => {
     await resetDatabase(prisma);
@@ -105,7 +117,7 @@ describe('RankingsService', () => {
       ['Bob', 5],
       ['Ann', 2],
     ]);
-    expect(board.weekStart).toBe('2026-10-26T00:00:00.000Z');
+    expect(board.weekStart).toBe('2026-10-26T03:00:00.000Z');
   });
 
   it('an empty week is an empty board, not an error', async () => {
@@ -201,5 +213,40 @@ describe('RankingsService', () => {
       { routeKey: 'ceres>hedus', originId: 'ceres', destinationId: 'hedus', pilots: 2 },
       { routeKey: 'ceres>vesta', originId: 'ceres', destinationId: 'vesta', pilots: 1 },
     ]);
+  });
+
+  it('ranks ship power from the latest rating, and has no weekly window', async () => {
+    const [a, b] = [await pilot({ name: 'Ann' }), await pilot({ name: 'Bob' })];
+    await rate(a, 120, 1.5);
+    await rate(b, 300, 0.8);
+
+    const board = await rankings.board(a, 'ship_power', 'weekly');
+    expect(board.window).toBe('lifetime');
+    expect(board.weekStart).toBeNull();
+    expect(board.entries.map((entry) => [entry.name, entry.value])).toEqual([
+      ['Bob', 300],
+      ['Ann', 120],
+    ]);
+    expect(board.me).toEqual({ rank: 2, value: 120 });
+  });
+
+  it('ranks ship speed as shown in the game: mobility times the display scale', async () => {
+    const [a, b] = [await pilot({ name: 'Ann' }), await pilot({ name: 'Bob' })];
+    await rate(a, 120, 1.55);
+    await rate(b, 300, 0.8);
+
+    const board = await rankings.board(b, 'ship_speed', 'lifetime');
+    expect(board.entries.map((entry) => [entry.name, entry.value])).toEqual([
+      ['Ann', 15.5],
+      ['Bob', 8],
+    ]);
+  });
+
+  it('puts a week at 03:00 UTC on Monday (Brazil midnight)', async () => {
+    const [a] = [await pilot({ name: 'Ann' })];
+    await day(a, '2026-10-26', { 'fights.won': 2 });
+    expect((await rankings.board(a, 'fights_won', 'weekly')).weekStart).toBe(
+      '2026-10-26T03:00:00.000Z',
+    );
   });
 });

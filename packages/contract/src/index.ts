@@ -1753,7 +1753,14 @@ export type PublicProfileResponse = z.infer<typeof PublicProfileResponseSchema>;
 
 // Rankings (docs/superpowers/specs/2026-10-28-global-ranking-design.md)
 
-export const RankingBoardSchema = z.enum(['distance', 'fights_won', 'race_wins', 'race_time']);
+export const RankingBoardSchema = z.enum([
+  'distance',
+  'fights_won',
+  'race_wins',
+  'race_time',
+  'ship_power',
+  'ship_speed',
+]);
 export type RankingBoard = z.infer<typeof RankingBoardSchema>;
 
 export const RankingWindowSchema = z.enum(['weekly', 'lifetime']);
@@ -1774,7 +1781,7 @@ export const RankingResponseSchema = z.object({
   window: RankingWindowSchema,
   /** The race route of a race-time board; null for the others. */
   route: z.string().nullable(),
-  /** Monday 00:00 UTC of the weekly window; null for lifetime. */
+  /** Monday 00:00 Brazil time (UTC-3) of the weekly window; null for lifetime. */
   weekStart: z.string().nullable(),
   entries: z.array(RankingEntrySchema),
   me: z.object({ rank: z.number(), value: z.number() }).nullable(),

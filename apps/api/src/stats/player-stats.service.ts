@@ -9,6 +9,7 @@ import {
   type StatRecords,
   type StatTotals,
 } from './stat-keys.js';
+import { gameDayOf } from './week.js';
 
 const DAY_LENGTH = 'YYYY-MM-DD'.length;
 
@@ -20,7 +21,7 @@ export interface PlayerStatsRead {
 }
 
 /**
- * Per-pilot numbers, lifetime and per UTC day. Every write takes the caller's transaction and is a
+ * Per-pilot numbers, lifetime and per game day (Brazil time). Every write takes the caller's transaction and is a
  * single statement, so a failed action leaves no count behind and two actions at once cannot lose
  * one (the upsert locks the pilot's row). A read model: nothing here feeds back into resolution.
  */
@@ -31,9 +32,9 @@ export class PlayerStatsService {
     private readonly clock: Clock,
   ) {}
 
-  /** Today as a UTC calendar day (midnight UTC), the day the daily rows and race results are filed under. */
+  /** Today as a game calendar day (Brazil time, stored at midnight UTC), the day the daily rows and race results are filed under. */
   today(): Date {
-    return new Date(this.clock.now().toISOString().slice(0, DAY_LENGTH));
+    return gameDayOf(this.clock.now());
   }
 
   /** Adds each non-zero value of `delta` to the lifetime totals and to today's totals. */
@@ -43,7 +44,7 @@ export class PlayerStatsService {
     );
     if (entries.length === 0) return;
     const totals = JSON.stringify(Object.fromEntries(entries));
-    const day = this.clock.now().toISOString().slice(0, DAY_LENGTH);
+    const day = this.today().toISOString().slice(0, DAY_LENGTH);
     await tx.$executeRaw`
       INSERT INTO "PlayerStats" ("playerId", "totals", "createdAt", "updatedAt")
       VALUES (${playerId}, ${totals}::jsonb, now(), now())

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Clock } from '../common/clock/clock.js';
+import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { StatKey } from './stat-keys.js';
 import type {
@@ -10,12 +11,14 @@ import type {
   RankingResponse,
   RankingWindow,
 } from './rankings.types.js';
-import { weekStartOf } from './week.js';
+import { weekStartInstant, weekStartOf } from './week.js';
 
 const TOP_ENTRIES = 50;
 
 // The counter each counter board ranks. Race time is not a counter: it comes from RaceResult.
-const COUNTER_OF: Readonly<Record<Exclude<RankingBoard, 'race_time'>, StatKey>> = {
+const COUNTER_OF: Readonly<
+  Record<Exclude<RankingBoard, 'race_time' | 'ship_power' | 'ship_speed'>, StatKey>
+> = {
   distance: 'flight.distance',
   fights_won: 'fights.won',
   race_wins: 'races.won',
@@ -36,6 +39,7 @@ export class RankingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly config: GameConfigService,
   ) {}
 
   async board(
@@ -44,9 +48,13 @@ export class RankingsService {
     window: RankingWindow,
     route?: string,
   ): Promise<RankingResponse> {
-    const weekStart = window === 'weekly' ? weekStartOf(this.clock.now()) : null;
-    const source =
-      board === 'race_time'
+    // The ship boards rank the latest snapshot, so they have no weekly window.
+    const shipBoard = board === 'ship_power' || board === 'ship_speed';
+    const effectiveWindow: RankingWindow = shipBoard ? 'lifetime' : window;
+    const weekStart = effectiveWindow === 'weekly' ? weekStartOf(this.clock.now()) : null;
+    const source = shipBoard
+      ? this.shipSource(board)
+      : board === 'race_time'
         ? this.raceSource(route ?? '', weekStart)
         : this.counterSource(COUNTER_OF[board], weekStart);
     // A faster time ranks higher; for every counter the bigger number does.
@@ -78,9 +86,9 @@ export class RankingsService {
     const own = rows.find((row) => row.id === playerId);
     return {
       board,
-      window,
+      window: effectiveWindow,
       route: board === 'race_time' ? (route ?? null) : null,
-      weekStart: weekStart?.toISOString() ?? null,
+      weekStart: weekStart === null ? null : weekStartInstant(weekStart).toISOString(),
       entries,
       me: own === undefined ? null : { rank: Number(own.rank), value: Number(own.value) },
       total: rows[0] === undefined ? 0 : Number(rows[0].total),
@@ -117,6 +125,16 @@ export class RankingsService {
     return Prisma.sql`
       SELECT "playerId", SUM((totals ->> ${key}::text)::numeric) AS value
       FROM "PlayerStatsDaily" WHERE day >= ${weekStart}::date GROUP BY "playerId"`;
+  }
+
+  // The pilot's latest ship rating. Speed is shown as the sheet shows it: mobility times the display scale.
+  private shipSource(board: 'ship_power' | 'ship_speed'): Prisma.Sql {
+    if (board === 'ship_power') {
+      return Prisma.sql`SELECT "playerId", ROUND(power::numeric, 1) AS value FROM "ShipRating"`;
+    }
+    const scale = this.config.snapshot().rules.ship.stat_display_scale;
+    return Prisma.sql`
+      SELECT "playerId", ROUND((speed * ${scale})::numeric, 1) AS value FROM "ShipRating"`;
   }
 
   // One entry per pilot: their best (smallest) time on the route.

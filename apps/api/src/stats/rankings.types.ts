@@ -1,5 +1,15 @@
-export const RANKING_BOARDS = ['distance', 'fights_won', 'race_wins', 'race_time'] as const;
+export const RANKING_BOARDS = [
+  'distance',
+  'fights_won',
+  'race_wins',
+  'race_time',
+  'ship_power',
+  'ship_speed',
+] as const;
 export type RankingBoard = (typeof RANKING_BOARDS)[number];
+
+/** Boards read from the ship snapshot: they have no weekly window, only the latest rating. */
+export const SHIP_BOARDS: readonly RankingBoard[] = ['ship_power', 'ship_speed'];
 
 export const RANKING_WINDOWS = ['weekly', 'lifetime'] as const;
 export type RankingWindow = (typeof RANKING_WINDOWS)[number];
@@ -20,7 +30,7 @@ export interface RankingResponse {
   window: RankingWindow;
   /** The race route of a race-time board; null for the others. */
   route: string | null;
-  /** Monday 00:00 UTC of the weekly window; null for lifetime. */
+  /** Monday 00:00 Brazil time (UTC-3) of the weekly window; null for lifetime. */
   weekStart: string | null;
   entries: RankingEntry[];
   /** The pilot's own position, whether or not they are in `entries`; null with no result. */

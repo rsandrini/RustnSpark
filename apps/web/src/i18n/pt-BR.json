@@ -1623,11 +1623,14 @@
     "noResult": "Você ainda não tem resultado neste ranking.",
     "yourPosition": "Você é o número {{rank}} ({{value}})",
     "loadFailed": "Não foi possível carregar o ranking.",
+    "shipNote": "Classifica a última avaliação da nave de cada piloto. As avaliações são atualizadas periodicamente, não ao vivo.",
     "board": {
       "distance": "Distância",
       "fights_won": "Lutas vencidas",
       "race_wins": "Vitórias em corridas",
-      "race_time": "Corrida mais rápida"
+      "race_time": "Corrida mais rápida",
+      "ship_power": "Potência da nave",
+      "ship_speed": "Velocidade da nave"
     },
     "window": {
       "weekly": "Esta semana",

@@ -58,7 +58,12 @@ describe('rankings endpoints', () => {
         day: new Date('2026-10-28'),
       },
     });
+    await prisma.shipRating.create({
+      data: { playerId, shipId: randomUUID(), power: 90, speed: 1.2, firepower: 5, armor: 2 },
+    });
     for (const path of [
+      '/v1/rankings/ship_power',
+      '/v1/rankings/ship_speed?window=weekly',
       '/v1/rankings/distance',
       '/v1/rankings/fights_won?window=lifetime',
       '/v1/rankings/race_wins?window=weekly',

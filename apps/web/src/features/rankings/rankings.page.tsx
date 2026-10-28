@@ -15,7 +15,17 @@ import { FactionBadge } from '../../ui/FactionBadge';
 import { PageTitle } from '../../ui/PageTitle';
 import { useWorld } from '../ship/use-world';
 
-const BOARDS: readonly RankingBoard[] = ['distance', 'fights_won', 'race_wins', 'race_time'];
+const BOARDS: readonly RankingBoard[] = [
+  'distance',
+  'fights_won',
+  'race_wins',
+  'race_time',
+  'ship_power',
+  'ship_speed',
+];
+// The ship boards rank the latest ship rating, so they have no weekly window.
+const SHIP_BOARDS: readonly RankingBoard[] = ['ship_power', 'ship_speed'];
+const SHIP_DECIMALS = 1;
 const WINDOWS: readonly RankingWindow[] = ['weekly', 'lifetime'];
 const SECONDS_PER_MINUTE = 60;
 const SECOND_DIGITS = 2;
@@ -26,7 +36,10 @@ export function RankingsPage() {
   const [window, setWindow] = useState<RankingWindow>('weekly');
   const [chosenRoute, setChosenRoute] = useState<string | null>(null);
   const world = useWorld();
-  const numberFormat = new Intl.NumberFormat(i18n.language);
+  const numberFormat = new Intl.NumberFormat(i18n.language, {
+    maximumFractionDigits: SHIP_BOARDS.includes(board) ? SHIP_DECIMALS : 0,
+  });
+  const shipBoard = SHIP_BOARDS.includes(board);
 
   const routesQuery = useQuery({
     queryKey: ['ranking-routes'],
@@ -40,7 +53,7 @@ export function RankingsPage() {
     queryKey: ['ranking', board, window, route],
     queryFn: () =>
       client.get<RankingResponse>(
-        `/v1/rankings/${board}?window=${window}${route === null ? '' : `&route=${encodeURIComponent(route)}`}`,
+        `/v1/rankings/${board}?window=${shipBoard ? 'lifetime' : window}${route === null ? '' : `&route=${encodeURIComponent(route)}`}`,
       ),
     enabled: board !== 'race_time' || route !== null,
   });
@@ -83,23 +96,26 @@ export function RankingsPage() {
         ))}
       </div>
 
-      <div
-        className="rankings-tabs rankings-windows"
-        role="group"
-        aria-label={t('rankings.period')}
-      >
-        {WINDOWS.map((name) => (
-          <button
-            key={name}
-            type="button"
-            aria-pressed={window === name}
-            className={window === name ? 'active' : undefined}
-            onClick={() => setWindow(name)}
-          >
-            {t(`rankings.window.${name}`)}
-          </button>
-        ))}
-      </div>
+      {shipBoard && <p className="sub">{t('rankings.shipNote')}</p>}
+      {!shipBoard && (
+        <div
+          className="rankings-tabs rankings-windows"
+          role="group"
+          aria-label={t('rankings.period')}
+        >
+          {WINDOWS.map((name) => (
+            <button
+              key={name}
+              type="button"
+              aria-pressed={window === name}
+              className={window === name ? 'active' : undefined}
+              onClick={() => setWindow(name)}
+            >
+              {t(`rankings.window.${name}`)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {board === 'race_time' && routes.length > 0 && (
         <div className="rankings-route">

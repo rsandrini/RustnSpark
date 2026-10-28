@@ -113,6 +113,30 @@ describe('rankings page', () => {
     expect(await screen.findByText('3:05')).toBeInTheDocument();
   });
 
+  it('the ship boards have no period toggle and show one decimal', async () => {
+    const asked: string[] = [];
+    server.use(
+      onboarded(),
+      http.get('/v1/rankings/:board', ({ request }) => {
+        asked.push(new URL(request.url).pathname + new URL(request.url).search);
+        return HttpResponse.json(
+          rankingFixture({
+            board: 'ship_speed',
+            window: 'lifetime',
+            entries: [{ rank: 1, name: 'Mira', factionId: 'sun', value: 15.5, isMe: false }],
+            me: null,
+          }),
+        );
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/rankings'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'Ship speed' }));
+    expect(await screen.findByText('15.5')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'This week' })).not.toBeInTheDocument();
+    expect(screen.getByText(/refreshed periodically/)).toBeInTheDocument();
+    expect(asked).toContain('/v1/rankings/ship_speed?window=lifetime');
+  });
+
   it('reads in Portuguese', async () => {
     server.use(onboarded('pt-BR'));
     await i18n.changeLanguage('pt-BR');

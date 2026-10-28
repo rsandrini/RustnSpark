@@ -26,7 +26,7 @@ ranking is a read over them.
 
 ## Decisions
 
-- **Week:** Monday 00:00 UTC to the next Monday. Weekly counter boards sum the `PlayerStatsDaily` rows from that day.
+- **Week:** Monday 00:00 Brazil time (UTC-3, 03:00 UTC) to the next Monday; the day columns are game days in the same time. Weekly counter boards sum the `PlayerStatsDaily` rows from that day.
 - **Counter boards** read `PlayerStats.totals` (lifetime) or sum `PlayerStatsDaily.totals` (weekly). Pilots with a zero value
   are not listed. Banned accounts are not listed.
 - **Race times need their own rows:** a `RaceResult` row per finished race (pilot, mission, route key, seconds, place, UTC
@@ -59,3 +59,11 @@ controls at least 40 px tall.
 Unit (week start, board config), integration (each board weekly and lifetime, tie order, banned hidden, zero hidden, own
 row beyond the top 50, race route picker, validation errors, contract schema parse), web (page, empty state, own row), one
 smoke spec.
+
+## Addendum (owner, 2026-10-28): ship power and speed, Brazil-time week
+
+- Two more boards, **Ship power** (engine thrust, `sheet.pot`) and **Ship speed** (mobility, shown with the display scale).
+  They rank a `ShipRating` snapshot per pilot (also stores firepower and armor for later), lifetime only: no weekly window.
+- The snapshot is loaded by `ship-rating.cli` for now; a scheduled job replaces the manual run later. Old data is ignored.
+- The week and the daily stats follow Brazil time (UTC-3): a week starts Monday 00:00 there (03:00 UTC).
+- The pilot card does not show rankings; only the rankings page does.

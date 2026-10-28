@@ -40,8 +40,11 @@ board, missions, the worker and the web.
   counts twice; ships have no names yet, the public card shows a placeholder callsign (`TAG-Name-Word`); a hot stat that the
   ranking chooses may move out of the JSON bag into its own indexed column.
 - [ ] **Ranking follow-ups** (built 2026-10-28, `docs/superpowers/plans/2026-10-28-global-ranking.md`): no reward for the weekly
-  winners (it would need the week frozen at Monday 00:00 UTC and kept as history); boards are computed live on every request
-  (cache them for a minute if they get heavy); ties go to the earlier-joined pilot; ship power and speed are not ranked (not recorded).
+  winners (it would need the week frozen at Monday 00:00 Brazil time and kept as history); boards are computed live on every request
+  (cache them for a minute if they get heavy); ties go to the earlier-joined pilot. **Ship power and speed boards** (built
+  2026-10-28): they rank a `ShipRating` snapshot (engine thrust and mobility) loaded by hand with
+  `docker compose exec -T api node dist/admin/cli/ship-rating.cli.js`; **todo: a scheduled job** calling
+  `ShipRatingService.refreshAll()` (a BullMQ repeatable like `reconcile.scheduler.ts`), then drop the manual load.
 
 ## Planned / follow-ups (owner, 2026-10-20)
 - [ ] **Balance, round 5**: the game was too easy and money was quick to farm (owner, 2026-10-20). Sim check

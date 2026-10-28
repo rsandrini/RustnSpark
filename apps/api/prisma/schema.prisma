@@ -79,6 +79,7 @@ model Player {
   stats           PlayerStats?
   statsDaily      PlayerStatsDaily[]
   raceResults     RaceResult[]
+  shipRating      ShipRating?
 
   // S11.3: new players per analytics window.
   @@index([createdAt])
@@ -750,6 +751,23 @@ model PlayerStatsDaily {
 
   @@id([playerId, day])
   @@index([day])
+}
+
+// A snapshot of the pilot's ship for the power and speed boards: raw sheet numbers (the web
+// scales speed for display), refreshed by `ship-rating.cli` now and by a scheduled job later.
+model ShipRating {
+  playerId  String   @id @db.VarChar(36)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  shipId    String   @db.VarChar(36)
+  // Engine thrust (`sheet.pot`) and unrounded mobility (pot / mass x mob_factor).
+  power     Float
+  speed     Float
+  firepower Float
+  armor     Float
+  ratedAt   DateTime @default(now())
+
+  @@index([power])
+  @@index([speed])
 }
 
 // One row per finished race, for the per-route fastest-time boards (docs/superpowers/specs/

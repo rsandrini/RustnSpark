@@ -54,10 +54,10 @@ describe('PlayerStatsService', () => {
     expect(daily[0]!.totals).toEqual({ 'flight.distance': 42, 'fights.won': 1 });
   });
 
-  it('keeps one daily row per UTC day', async () => {
+  it('keeps one daily row per game day (Brazil time)', async () => {
     const playerId = await newPlayer();
     await prisma.$transaction((tx) => stats.add(playerId, { 'fights.won': 1 }, tx));
-    clock.set(new Date('2026-10-28T00:00:01Z'));
+    clock.set(new Date('2026-10-28T03:00:01Z'));
     await prisma.$transaction((tx) => stats.add(playerId, { 'fights.won': 1 }, tx));
     const days = await prisma.playerStatsDaily.findMany({
       where: { playerId },
