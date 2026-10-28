@@ -78,6 +78,7 @@ model Player {
   scavengeCounters ScavengeCounter[]
   stats           PlayerStats?
   statsDaily      PlayerStatsDaily[]
+  raceResults     RaceResult[]
 
   // S11.3: new players per analytics window.
   @@index([createdAt])
@@ -749,4 +750,28 @@ model PlayerStatsDaily {
 
   @@id([playerId, day])
   @@index([day])
+}
+
+// One row per finished race, for the per-route fastest-time boards (docs/superpowers/specs/
+// 2026-10-28-global-ranking-design.md). Written in the resolve transaction; the unique missionId is
+// the same claim that keeps a retried resolve from counting twice.
+model RaceResult {
+  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  playerId      String   @db.VarChar(36)
+  player        Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  missionId     String   @unique @db.VarChar(36)
+  // `<originId>><destinationId>` of the race mission.
+  routeKey      String   @db.VarChar(96)
+  originId      String   @db.VarChar(48)
+  destinationId String   @db.VarChar(48)
+  // The pilot's displayed race time in seconds.
+  seconds       Int
+  place         Int
+  // The UTC day it finished (a weekly board takes the best of the days since Monday).
+  day           DateTime @db.Date
+  createdAt     DateTime @default(now())
+
+  @@index([routeKey, seconds])
+  @@index([routeKey, day])
+  @@index([playerId])
 }
