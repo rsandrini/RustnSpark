@@ -1064,7 +1064,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 </div>
                 {showLayoutNotes && (
                   <div className="layout-notes" data-testid="layout-notes">
-                    {ship?.hold !== undefined && (
+                    {ship?.hold !== undefined && (ship.hold.over || ship.hold.partsOver) && (
                       <p
                         className={ship.hold.over ? 'warn-text' : 'sub'}
                         data-testid="hold-line"
