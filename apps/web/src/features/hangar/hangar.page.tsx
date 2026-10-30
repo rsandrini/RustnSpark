@@ -136,6 +136,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const [previewProblems, setPreviewProblems] = useState<Problem[]>([]);
   const [previewing, setPreviewing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [warningsOpen, setWarningsOpen] = useState(false);
+  const [tuningOpen, setTuningOpen] = useState(false);
   const [rotateHint, setRotateHint] = useState<string | null>(null);
   // Hovering a placed block shows its stats card (round-3 follow-up); the full popup only
   // opens from a part row's own (i) button now, never from selecting/placing a part. The tray's
@@ -565,6 +567,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   );
   const allProblems = uniqueProblems.filter((problem) => !SOFT_CODES.has(problem.code));
   const allWarnings = uniqueProblems.filter((problem) => SOFT_CODES.has(problem.code));
+
+  // The hold line, the unconnected-parts note and the port legend only matter while the layout is
+  // being changed or something is wrong; the sheet stays clean otherwise.
+  const showLayoutNotes =
+    layout !== null ||
+    allProblems.length > 0 ||
+    disconnectedPartIds.size > 0 ||
+    ship?.hold?.over === true ||
+    ship?.hold?.partsOver === true;
 
   // Cruising power's generate/consume split (owner example: "generate"/"consume", not a bare
   // signed number) needs each installed part's own catalog value — the sheet only carries the
@@ -1002,43 +1013,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   setSideTab('store');
                 }}
               />
-              {allWarnings.length > 0 && (
-                <details open className="panel collapsible" data-testid="flight-warnings">
-                  <summary>
-                    <h2>{t('hangar.warnings.title')}</h2>
-                  </summary>
-                  <p className="sub">{t('hangar.warnings.explain')}</p>
-                  <ul>
-                    {allWarnings.map((problem) => (
-                      <li
-                        key={problem.code}
-                        className={
-                          problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'
-                        }
-                      >
-                        {t(`hangar.problems.${problem.code}`, {
-                          defaultValue: t(`error.${problem.code}`, {
-                            defaultValue: problem.message,
-                          }),
-                        })}
-                        {FIX_CLASS[problem.code] !== undefined && ship.status === 'IN_PORT' && (
-                          <button
-                            type="button"
-                            className="btn"
-                            onClick={() => {
-                              setStoreClass(FIX_CLASS[problem.code] ?? null);
-                              setSideTab('store');
-                            }}
-                          >
-                            {t('hangar.fix.findInStore')}
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-
               {allProblems.length > 0 && (
                 <details open className="panel collapsible">
                   <summary>
@@ -1088,53 +1062,60 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </span>
                   )}
                 </div>
-                {ship?.hold !== undefined && (
-                  <p
-                    className={ship.hold.over ? 'warn-text' : 'sub'}
-                    data-testid="hold-line"
-                    title={t('hangar.hold.hint')}
-                  >
-                    {t('hangar.hold.line', {
-                      parts: ship.hold.parts,
-                      slots: ship.hold.slots,
-                      used: ship.hold.used,
-                      capacity: ship.hold.capacity,
-                    })}
-                    {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
-                  </p>
+                {showLayoutNotes && (
+                  <div className="layout-notes" data-testid="layout-notes">
+                    {ship?.hold !== undefined && (
+                      <p
+                        className={ship.hold.over ? 'warn-text' : 'sub'}
+                        data-testid="hold-line"
+                        title={t('hangar.hold.hint')}
+                      >
+                        {t('hangar.hold.line', {
+                          parts: ship.hold.parts,
+                          slots: ship.hold.slots,
+                          used: ship.hold.used,
+                          capacity: ship.hold.capacity,
+                        })}
+                        {ship.hold.partsOver && ` ${t('hangar.hold.partsOver')}`}
+                      </p>
+                    )}
+                    {disconnectedPartIds.size > 0 && (
+                      <p className="sub disconnected-note">
+                        {t('hangar.connectors.disconnectedCount', {
+                          count: disconnectedPartIds.size,
+                        })}
+                      </p>
+                    )}
+                    <p
+                      className="sub conn-legend"
+                      data-testid="port-legend"
+                      title={t('connectors.legend.shapes')}
+                    >
+                      <span>{t('connectors.legend.title')}</span>
+                      <span className="conn-swatch conn-connected">
+                        {t('connectors.legend.connected')}
+                      </span>
+                      <span className="conn-swatch conn-incorrect">
+                        {t('connectors.legend.incorrect')}
+                      </span>
+                      <span className="conn-swatch conn-available">
+                        {t('connectors.legend.available')}
+                      </span>
+                    </p>
+                  </div>
                 )}
-                {disconnectedPartIds.size > 0 && (
-                  <p className="sub disconnected-note">
-                    {t('hangar.connectors.disconnectedCount', { count: disconnectedPartIds.size })}
-                  </p>
-                )}
-                <p
-                  className="sub conn-legend"
-                  data-testid="port-legend"
-                  title={t('connectors.legend.shapes')}
-                >
-                  <span>{t('connectors.legend.title')}</span>
-                  <span className="conn-swatch conn-connected">
-                    {t('connectors.legend.connected')}
-                  </span>
-                  <span className="conn-swatch conn-incorrect">
-                    {t('connectors.legend.incorrect')}
-                  </span>
-                  <span className="conn-swatch conn-available">
-                    {t('connectors.legend.available')}
-                  </span>
-                </p>
                 <ShipSheetPanel
                   shipClass={shipClass}
                   sheet={sheet}
                   problemCount={allProblems.length}
                   warningCount={allWarnings.length}
+                  onShowWarnings={() => setWarningsOpen(true)}
+                  onTuneEngines={ship !== undefined ? () => setTuningOpen(true) : undefined}
                   power={preview?.power}
                   layers={preview?.layers}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
                 />
-                {ship !== undefined && <EngineTuning ship={ship} missionId={acceptedFlightId} />}
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
                 {!previewing && layout !== null && layout.length === 0 && (
                   <p className="muted">{t('hangar.state.noPreview')}</p>
@@ -1143,6 +1124,48 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </section>
           </div>
         </>
+      )}
+      <Popup
+        open={warningsOpen}
+        title={t('hangar.warnings.title')}
+        onClose={() => setWarningsOpen(false)}
+      >
+        <p className="sub">{t('hangar.warnings.explain')}</p>
+        <ul>
+          {allWarnings.map((problem) => (
+            <li
+              key={problem.code}
+              className={problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'}
+            >
+              {t(`hangar.problems.${problem.code}`, {
+                defaultValue: t(`error.${problem.code}`, {
+                  defaultValue: problem.message,
+                }),
+              })}
+              {FIX_CLASS[problem.code] !== undefined && ship?.status === 'IN_PORT' && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setStoreClass(FIX_CLASS[problem.code] ?? null);
+                    setSideTab('store');
+                  }}
+                >
+                  {t('hangar.fix.findInStore')}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Popup>
+      {ship !== undefined && (
+        <Popup
+          open={tuningOpen}
+          title={t('engineTuning.title')}
+          onClose={() => setTuningOpen(false)}
+        >
+          <EngineTuning ship={ship} missionId={acceptedFlightId} defaultOpen />
+        </Popup>
       )}
     </main>
   );

@@ -77,6 +77,7 @@ describe('TopBar', () => {
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
     const identity = screen.getByText('luna starter').closest('.ship-identity') as HTMLElement;
     expect(within(identity).queryByRole('combobox')).toBeNull();
+    await userEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByRole('group', { name: 'Engine tuning' });
     const select = within(tuning).getByRole('combobox', { name: 'Energy' });
     expect(select).toHaveValue('FULL');

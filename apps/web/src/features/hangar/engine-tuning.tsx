@@ -49,7 +49,16 @@ function cleanTone(chance: number): 'ok' | 'warn' | 'bad' {
  * and the chance the whole run goes clean — so the pilot decides if the risk is worth it. With a
  * `missionId` it also shows that trip's time and fuel.
  */
-export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionId?: string }) {
+export function EngineTuning({
+  ship,
+  missionId,
+  defaultOpen = false,
+}: {
+  ship: ShipResponse;
+  missionId?: string;
+  /** Starts expanded: for the popup, where the pilot already asked for it. */
+  defaultOpen?: boolean;
+}) {
   const { t, i18n } = useTranslation();
   const display = useDisplay();
   const queryClient = useQueryClient();
@@ -149,6 +158,7 @@ export function EngineTuning({ ship, missionId }: { ship: ShipResponse; missionI
 
   return (
     <details
+      open={defaultOpen || undefined}
       className="engine-tuning"
       data-testid="engine-tuning"
       role="group"

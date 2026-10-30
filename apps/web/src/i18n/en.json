@@ -485,7 +485,10 @@
       "condition": "Condition",
       "energy": "Energy",
       "structure": "Structure",
-      "defenseValue": "{{armor}} · {{shield}}"
+      "defenseValue": "{{armor}} · {{shield}}",
+      "shield": "Shield",
+      "armor": "Armor",
+      "tuneEngines": "Engine tuning"
     },
     "summary": {
       "ready": "Ready to fly",
@@ -634,7 +637,8 @@
     },
     "warnings": {
       "title": "Warnings",
-      "explain": "The ship can fly, but weaker — fix these to get its full performance."
+      "explain": "The ship can fly, but weaker — fix these to get its full performance.",
+      "open": "Warnings ({{count}})"
     },
     "power": {
       "title": "Power is short — they get:",

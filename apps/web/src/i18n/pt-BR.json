@@ -485,7 +485,10 @@
       "condition": "Condição",
       "energy": "Energia",
       "structure": "Estrutura",
-      "defenseValue": "{{armor}} · {{shield}}"
+      "defenseValue": "{{armor}} · {{shield}}",
+      "shield": "Escudo",
+      "armor": "Blindagem",
+      "tuneEngines": "Ajuste dos motores"
     },
     "summary": {
       "ready": "Pronta para voar",
@@ -634,7 +637,8 @@
     },
     "warnings": {
       "title": "Avisos",
-      "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total."
+      "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total.",
+      "open": "Avisos ({{count}})"
     },
     "power": {
       "title": "Falta energia — recebem:",

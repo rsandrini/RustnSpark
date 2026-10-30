@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
@@ -11,8 +12,12 @@ export interface ShipSheetPanelProps {
       its fix actions still renders separately, lower on the page — this is a pointer to it, not
       a replacement for it. */
   problemCount: number;
-  /** Warnings do not ground the ship: it flies, weaker (energy shortfalls, blocked parts). */
+  /** Warnings do not ground the ship: it flies, weaker (energy shortfalls, blocked parts). They
+      show as a small (!) beside the condition that calls `onShowWarnings`. */
   warningCount?: number;
+  onShowWarnings?: (() => void) | undefined;
+  /** Opens the engine tuning: a small icon on the mobility tile (only when given). */
+  onTuneEngines?: (() => void) | undefined;
   /** How the ship's power is shared while travelling: each kind of system's share of its need. */
   power?: { shares: Record<string, number> } | undefined;
   /** What a fight starts with at the parts' current condition (worn or unconnected parts give less). */
@@ -26,6 +31,10 @@ export interface ShipSheetPanelProps {
 }
 
 type Tone = 'ok' | 'warn' | 'bad';
+
+// The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
+const GEAR_GLYPH = '\u2699';
+const WARN_GLYPH = '!';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
 type Group = (typeof GROUP_ORDER)[number];
@@ -96,6 +105,8 @@ export function ShipSheetPanel({
   sheet,
   problemCount,
   warningCount = 0,
+  onShowWarnings,
+  onTuneEngines,
   power,
   layers,
   installedCatalogs,
@@ -103,6 +114,8 @@ export function ShipSheetPanel({
 }: ShipSheetPanelProps) {
   const { t, i18n } = useTranslation();
   const display = useDisplay();
+  // "Show all stats" replaces the headline tiles with the full list, and closing it brings them back.
+  const [showAll, setShowAll] = useState(false);
   const number = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
   // Mobility is shown on the admin's display scale (default x10), one decimal at most.
@@ -256,60 +269,85 @@ export function ShipSheetPanel({
   return (
     <>
       {classRow}
-      <div
-        className={`sheet-status ${problemCount > 0 ? 'problem' : warningCount > 0 ? 'warning' : 'ready'}`}
-      >
+      <div className={`sheet-status ${problemCount > 0 ? 'problem' : 'ready'}`}>
         {problemCount > 0
           ? t('hangar.summary.problemCount', { count: problemCount })
-          : warningCount > 0
-            ? t('hangar.summary.readyWithWarnings', { count: warningCount })
-            : t('hangar.summary.ready')}
+          : t('hangar.summary.ready')}
       </div>
-      <div className="sheet-headline" data-testid="sheet-headline">
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
-          <span>{t('hangar.headline.firepower')}</span>
-          <b>{number(sheet.pdf)}</b>
+      {!showAll && (
+        <div className="sheet-headline" data-testid="sheet-headline">
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.structure')}>
+            <span>{t('hangar.headline.structure')}</span>
+            <b className={`tone-${structureBand}`}>{structureText}</b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.pdf')}>
+            <span>{t('hangar.headline.firepower')}</span>
+            <b>{number(sheet.pdf)}</b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.esc')}>
+            <span>{t('hangar.headline.shield')}</span>
+            <b>{number(shieldPool)}</b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.bli')}>
+            <span>{t('hangar.headline.armor')}</span>
+            <b>{number(armorPool)}</b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
+            <span>{t('hangar.headline.cargo')}</span>
+            <b>{number(sheet.crg)}</b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
+            <span>{t('hangar.headline.mobility')}</span>
+            <b>
+              {mobilityNumber(sheetStat(sheet, 'mob', display))}
+              {onTuneEngines !== undefined && (
+                <button
+                  type="button"
+                  className="tile-icon"
+                  aria-label={t('hangar.headline.tuneEngines')}
+                  title={t('hangar.headline.tuneEngines')}
+                  onClick={onTuneEngines}
+                >
+                  {GEAR_GLYPH}
+                </button>
+              )}
+            </b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
+            <span>{t('hangar.headline.condition')}</span>
+            <b className={`tone-${conditionBand}`}>
+              {conditionText}
+              {warningCount > 0 && onShowWarnings !== undefined && (
+                <button
+                  type="button"
+                  className="tile-icon tile-icon-warn"
+                  aria-label={t('hangar.warnings.open', { count: warningCount })}
+                  title={t('hangar.warnings.open', { count: warningCount })}
+                  onClick={onShowWarnings}
+                >
+                  {WARN_GLYPH}
+                </button>
+              )}
+            </b>
+          </div>
+          <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
+            <span>{t('hangar.headline.energy')}</span>
+            <b className={`tone-${energyGenerate - energyConsume >= 0 ? 'ok' : 'bad'}`}>
+              {energyGenerate - energyConsume >= 0 ? '+' : ''}
+              {number(energyGenerate - energyConsume)}
+            </b>
+          </div>
         </div>
-        <div className="sheet-headline-tile" title={t('hangar.headline.defenseHelp')}>
-          <span>{t('hangar.headline.defense')}</span>
-          <b>
-            {t('hangar.headline.defenseValue', {
-              armor: number(armorPool),
-              shield: number(shieldPool),
-            })}
-          </b>
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.crg')}>
-          <span>{t('hangar.headline.cargo')}</span>
-          <b>{number(sheet.crg)}</b>
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
-          <span>{t('hangar.headline.mobility')}</span>
-          <b>{mobilityNumber(sheetStat(sheet, 'mob', display))}</b>
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.autonomy')}>
-          <span>{t('hangar.headline.autonomy')}</span>
-          <b className={`tone-${autonomyBand}`}>{autonomyText}</b>
-          {coverageText !== null && <small>{coverageText}</small>}
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.condition')}>
-          <span>{t('hangar.headline.condition')}</span>
-          <b className={`tone-${conditionBand}`}>{conditionText}</b>
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.energyCont')}>
-          <span>{t('hangar.headline.energy')}</span>
-          <b className={`tone-${energyGenerate - energyConsume >= 0 ? 'ok' : 'bad'}`}>
-            {energyGenerate - energyConsume >= 0 ? '+' : ''}
-            {number(energyGenerate - energyConsume)}
-          </b>
-        </div>
-        <div className="sheet-headline-tile" title={t('hangar.statHelp.structure')}>
-          <span>{t('hangar.headline.structure')}</span>
-          <b className={`tone-${structureBand}`}>{structureText}</b>
-        </div>
-      </div>
-      <details className="sheet-details">
-        <summary>{t('hangar.summary.showAllStats')}</summary>
+      )}
+      <details className="sheet-details" open={showAll}>
+        <summary
+          onClick={(event) => {
+            event.preventDefault();
+            setShowAll((open) => !open);
+          }}
+        >
+          {t('hangar.summary.showAllStats')}
+        </summary>
         {GROUP_ORDER.map((group) => (
           <div className="sheet-group" key={group}>
             <div className="sheet-group-title">{t(`hangar.groups.${group}`)}</div>

@@ -1,13 +1,31 @@
-import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '../../test/utils';
 import { ShipSheetPanel } from './ship-sheet-panel';
 import type { ShipSheet } from '../../api/generated';
 
 const sheet: ShipSheet = {
-  pot: 25, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 5, min: 0, hp: 40, mass: 24, energyCont: 0,
-  energyCombat: 0, batCharge: 0, batOutput: 0, batInput: 0, fuelCap: 100, fuelUse: 7,
-  structureUsed: 10, structureBudget: 40, autonomy: 1428.6, mob: 2, condition: 100,
+  pot: 25,
+  pdf: 0,
+  bli: 0,
+  esc: 0,
+  sen: 0,
+  crg: 5,
+  min: 0,
+  hp: 40,
+  mass: 24,
+  energyCont: 0,
+  energyCombat: 0,
+  batCharge: 0,
+  batOutput: 0,
+  batInput: 0,
+  fuelCap: 100,
+  fuelUse: 7,
+  structureUsed: 10,
+  structureBudget: 40,
+  autonomy: 1428.6,
+  mob: 2,
+  condition: 100,
 };
 
 function headlineTile(label: string): HTMLElement {
@@ -16,8 +34,15 @@ function headlineTile(label: string): HTMLElement {
     .closest('.sheet-headline-tile') as HTMLElement;
 }
 
+function rangeRow(): HTMLElement {
+  fireEvent.click(screen.getByText('Show all stats'));
+  return screen
+    .getByText('Range', { selector: '.statrow span' })
+    .closest('.statrow') as HTMLElement;
+}
+
 describe('ShipSheetPanel defense', () => {
-  it('shows the pools a fight would start with (worn or unconnected parts give less)', () => {
+  it('shows the shield and the armor as their own tiles, as a fight would start (worn or unconnected parts give less)', () => {
     renderWithProviders(
       <ShipSheetPanel
         shipClass="MULTIROLE"
@@ -27,16 +52,105 @@ describe('ShipSheetPanel defense', () => {
         installedCatalogs={[]}
       />,
     );
-    const tile = headlineTile('Armor · Shield');
-    expect(tile).toHaveTextContent('23');
-    expect(tile).toHaveTextContent('7');
-    expect(tile).not.toHaveTextContent('50');
-    expect(tile).not.toHaveTextContent('20');
+    const shield = headlineTile('Shield');
+    expect(shield).toHaveTextContent('7');
+    expect(shield).not.toHaveTextContent('20');
+    const armor = headlineTile('Armor');
+    expect(armor).toHaveTextContent('23');
+    expect(armor).not.toHaveTextContent('50');
+  });
+});
+
+describe('ShipSheetPanel headline', () => {
+  it('puts the structure first and keeps the range out of the headline', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={sheet}
+        problemCount={0}
+        installedCatalogs={[]}
+      />,
+    );
+    const tiles = within(screen.getByTestId('sheet-headline')).getAllByText(
+      /^(Structure|Firepower|Shield|Armor|Cargo|Mobility|Condition|Energy|Range)$/,
+    );
+    expect(tiles.map((tile) => tile.textContent)).toEqual([
+      'Structure',
+      'Firepower',
+      'Shield',
+      'Armor',
+      'Cargo',
+      'Mobility',
+      'Condition',
+      'Energy',
+    ]);
+  });
+
+  it('shows the warnings as a (!) beside the condition that opens them', () => {
+    const onShowWarnings = vi.fn();
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={sheet}
+        problemCount={0}
+        warningCount={2}
+        onShowWarnings={onShowWarnings}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.getByText('Ready to fly')).toBeInTheDocument();
+    const button = within(headlineTile('Condition')).getByRole('button', { name: 'Warnings (2)' });
+    fireEvent.click(button);
+    expect(onShowWarnings).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no (!) without warnings, and a gear on the mobility only when tuning is offered', () => {
+    const onTuneEngines = vi.fn();
+    const { unmount } = renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={sheet}
+        problemCount={0}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Warnings/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Engine tuning' })).toBeNull();
+    unmount();
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={sheet}
+        problemCount={0}
+        onTuneEngines={onTuneEngines}
+        installedCatalogs={[]}
+      />,
+    );
+    fireEvent.click(
+      within(headlineTile('Mobility')).getByRole('button', { name: 'Engine tuning' }),
+    );
+    expect(onTuneEngines).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows only the full list while "Show all stats" is open', () => {
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        sheet={sheet}
+        problemCount={0}
+        installedCatalogs={[]}
+      />,
+    );
+    expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Show all stats'));
+    expect(screen.queryByTestId('sheet-headline')).toBeNull();
+    fireEvent.click(screen.getByText('Show all stats'));
+    expect(screen.getByTestId('sheet-headline')).toBeInTheDocument();
   });
 });
 
 describe('ShipSheetPanel range', () => {
-  it('shows the range as a plain distance with how many routes it covers', () => {
+  it('shows the range in the full list as a plain distance with how many routes it covers', () => {
     renderWithProviders(
       <ShipSheetPanel
         shipClass="MULTIROLE"
@@ -46,10 +160,10 @@ describe('ShipSheetPanel range', () => {
         installedCatalogs={[]}
       />,
     );
-    const tile = headlineTile('Range');
-    expect(tile).toHaveTextContent('1,428.6');
-    expect(tile).toHaveTextContent('covers 14 of 17 routes');
-    expect(tile).not.toHaveTextContent('%');
+    const row = rangeRow();
+    expect(row).toHaveTextContent('1,428.6');
+    expect(row).toHaveTextContent('covers 14 of 17 routes');
+    expect(row).not.toHaveTextContent('%');
   });
 
   it('says unlimited for a ship that burns no fuel, with no route count', () => {
@@ -62,8 +176,8 @@ describe('ShipSheetPanel range', () => {
         installedCatalogs={[]}
       />,
     );
-    const tile = headlineTile('Range');
-    expect(tile).toHaveTextContent('unlimited');
-    expect(tile).not.toHaveTextContent('routes');
+    const row = rangeRow();
+    expect(row).toHaveTextContent('unlimited');
+    expect(row).not.toHaveTextContent('routes');
   });
 });

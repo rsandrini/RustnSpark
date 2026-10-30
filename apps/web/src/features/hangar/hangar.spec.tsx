@@ -265,28 +265,31 @@ describe('hangar (S10.4)', () => {
       '10',
     );
     for (const label of [
+      'Structure',
       'Firepower',
-      'Armor · Shield',
+      'Shield',
+      'Armor',
       'Mobility',
-      'Range',
       'Condition',
       'Energy',
-      'Structure',
     ]) {
       expect(within(headline).getByText(label)).toBeInTheDocument();
     }
-
-    // Range replaces the old "autonomy %": a plain distance plus how many routes it covers.
-    const rangeTile = within(headline).getByText('Range').closest('.sheet-headline-tile');
-    expect(rangeTile).toHaveTextContent('40');
-    expect(rangeTile).toHaveTextContent('covers 14 of 17 routes');
-    expect(rangeTile).not.toHaveTextContent('%');
+    // The range left the headline: it lives in the full list.
+    expect(within(headline).queryByText('Range')).toBeNull();
 
     // The full 20-row breakdown is behind a closed-by-default disclosure, grouped into sections.
     const details = container.querySelector('details.sheet-details');
     expect(details).not.toHaveAttribute('open');
     fireEvent.click(screen.getByText('Show all stats'));
     expect(details).toHaveAttribute('open');
+    // Range replaces the old "autonomy %": a plain distance plus how many routes it covers.
+    const rangeRow = within(details as HTMLElement)
+      .getByText('Range')
+      .closest('.statrow');
+    expect(rangeRow).toHaveTextContent('40');
+    expect(rangeRow).toHaveTextContent('covers 14 of 17 routes');
+    expect(rangeRow).not.toHaveTextContent('%');
 
     for (const group of ['Combat', 'Power', 'Propulsion & Range', 'Cargo', 'Hull']) {
       expect(within(details as HTMLElement).getByText(group)).toBeInTheDocument();

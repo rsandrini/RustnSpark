@@ -79,6 +79,7 @@ describe('transit (S10.7)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByTestId('engine-tuning');
     const slider = await within(tuning).findByRole('slider', { name: 'Ion engines' });
     fireEvent.change(slider, { target: { value: '2.5' } });
@@ -364,6 +365,7 @@ describe('transit (S10.7)', () => {
       }),
     );
     renderWithRouter(routes, { initialEntries: ['/transit'] });
+    fireEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByTestId('engine-tuning');
     expect(await within(tuning).findByTestId('engine-trip-time')).toHaveTextContent(
       'This trip takes',
