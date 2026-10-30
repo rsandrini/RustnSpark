@@ -5,6 +5,10 @@ note on where the code lives so whoever picks one up can start quickly. Delete a
 ships (the commit has the history). Raise questions before starting anything marked *needs design*.
 
 ## Next (owner playtest, 2026-10-22)
+- [ ] **Upgrade screen cleanup** (owner, 2026-10-30): remove the (i) button from the upgrade card; the hover shows only the
+  table with Stat / This part today / Upgraded (drop the separate stats block above it, no stats twice); invert the requirements
+  line so it reads price first, then what the pilot has (today it shows have vs price); remove the price from the card's top right.
+  Code: `apps/web/src/features/market` (upgrade tab).
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
 - [ ] Balance round 6b (applied 2026-10-27 in the defaults and the seed, no migration; the dev DB is reset to take it): wear 0.5/0.85 and hull_to_condition 0.15, Epic/Legendary pay x2.5/x3.25, Legendary parts x8. In the sim (r9/r14) the chem builds reach Legendary at ~150 h; Epic comes at ~70 h (target 90-130 h). Retest after the reset, then tune.
 
