@@ -34,7 +34,7 @@ type Tone = 'ok' | 'warn' | 'bad';
 
 // The icon glyphs on the headline tiles; their meaning is in the buttons' aria-labels.
 const GEAR_GLYPH = '\u2699';
-const WARN_GLYPH = '!';
+const WARN_GLYPH = '\u26A0';
 
 const GROUP_ORDER = ['combat', 'power', 'propulsion', 'cargo', 'hull'] as const;
 type Group = (typeof GROUP_ORDER)[number];
@@ -325,7 +325,7 @@ export function ShipSheetPanel({
                   title={t('hangar.warnings.open', { count: warningCount })}
                   onClick={onShowWarnings}
                 >
-                  <span className="tile-icon-dot">{WARN_GLYPH}</span>
+                  <span className="tile-icon-bare">{WARN_GLYPH}</span>
                 </button>
               )}
             </b>

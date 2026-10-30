@@ -374,7 +374,10 @@ svg .yard-ghost .ghost-label {
   color: var(--brass);
   cursor: grab;
   pointer-events: auto;
-  transition: transform 120ms ease, background-color 120ms ease, color 120ms ease;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 .yard-rotate-icon:hover {
@@ -1063,6 +1066,10 @@ details.collapsible > summary h2 {
 }
 .tile-icon-warn {
   color: var(--sun);
+}
+.tile-icon-bare {
+  font-size: var(--text-lg, 1.25rem);
+  line-height: 1;
 }
 @media (max-width: 560px) {
   .tile-icon {

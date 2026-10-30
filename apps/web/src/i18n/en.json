@@ -637,7 +637,6 @@
     },
     "warnings": {
       "title": "Warnings",
-      "explain": "The ship can fly, but weaker — fix these to get its full performance.",
       "open": "Warnings ({{count}})"
     },
     "power": {

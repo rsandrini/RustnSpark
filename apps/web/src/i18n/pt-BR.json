@@ -637,7 +637,6 @@
     },
     "warnings": {
       "title": "Avisos",
-      "explain": "A nave pode voar, mas mais fraca — corrija isto para ter o desempenho total.",
       "open": "Avisos ({{count}})"
     },
     "power": {

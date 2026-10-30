@@ -1130,7 +1130,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         title={t('hangar.warnings.title')}
         onClose={() => setWarningsOpen(false)}
       >
-        <p className="sub">{t('hangar.warnings.explain')}</p>
         <ul>
           {allWarnings.map((problem) => (
             <li
