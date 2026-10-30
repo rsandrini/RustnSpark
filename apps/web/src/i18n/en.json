@@ -1642,6 +1642,8 @@
     "wallet": "Wallet",
     "history": "Mission history",
     "noHistory": "No completed missions yet.",
+    "historyShown": "Showing the last {{shown}}",
+    "showMore": "Show more",
     "legCount": "{{count}} legs",
     "credits": "+{{amount}} ¢",
     "combatTag": "Combat",

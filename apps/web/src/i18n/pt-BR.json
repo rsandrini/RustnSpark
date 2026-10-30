@@ -1642,6 +1642,8 @@
     "wallet": "Carteira",
     "history": "Histórico de missões",
     "noHistory": "Nenhuma missão concluída ainda.",
+    "historyShown": "Mostrando as últimas {{shown}}",
+    "showMore": "Mostrar mais",
     "legCount": "{{count}} trechos",
     "credits": "+{{amount}} ¢",
     "combatTag": "Combate",

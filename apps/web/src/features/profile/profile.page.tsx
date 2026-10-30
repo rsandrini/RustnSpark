@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import type { MyStatsResponse, ReportListResponse } from '../../api/generated';
@@ -10,6 +10,8 @@ import { PageTitle } from '../../ui/PageTitle';
 import { MyStats } from './my-stats';
 
 const SEPARATOR = ' · ';
+// The history loads the newest runs first, this many at a time.
+const HISTORY_PAGE = 10;
 
 export interface ProfilePageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
@@ -29,9 +31,14 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
     return () => window.removeEventListener('focus', onFocus);
   }, [reloadProfile]);
 
-  const reportsQuery = useQuery({
-    queryKey: ['reports'],
-    queryFn: () => client.get<ReportListResponse>('/v1/reports'),
+  const reportsQuery = useInfiniteQuery({
+    queryKey: ['reports', 'history'],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      client.get<ReportListResponse>(
+        `/v1/reports?limit=${HISTORY_PAGE}${pageParam === undefined ? '' : `&cursor=${encodeURIComponent(pageParam)}`}`,
+      ),
+    getNextPageParam: (last) => last.nextCursor,
   });
 
   const statsQuery = useQuery({
@@ -39,6 +46,7 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
     queryFn: () => client.get<MyStatsResponse>('/v1/players/me/stats'),
   });
 
+  const reports = reportsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const dateFormat = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' });
 
@@ -61,11 +69,11 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
 
       <h2 className="profile-history">{t('profile.history')}</h2>
       {reportsQuery.isLoading && <p>{t('loading')}</p>}
-      {!reportsQuery.isLoading && (reportsQuery.data?.items.length ?? 0) === 0 && (
+      {!reportsQuery.isLoading && reports.length === 0 && (
         <p className="sub">{t('profile.noHistory')}</p>
       )}
       <ul className="run-list">
-        {reportsQuery.data?.items.map((item) => (
+        {reports.map((item) => (
           <li key={item.missionId} className={`run run-${item.outcome}`}>
             <span className="run-pip" aria-hidden="true" />
             <div className="run-main">
@@ -95,6 +103,19 @@ export function ProfilePage({ guided = false }: ProfilePageProps) {
           </li>
         ))}
       </ul>
+      {reportsQuery.hasNextPage && (
+        <div className="history-more">
+          <span>{t('profile.historyShown', { shown: reports.length })}</span>
+          <button
+            type="button"
+            className="btn"
+            disabled={reportsQuery.isFetchingNextPage}
+            onClick={() => void reportsQuery.fetchNextPage()}
+          >
+            {t('profile.showMore')}
+          </button>
+        </div>
+      )}
 
       <div className="profile-links">
         <Link className="btn" to="/port">

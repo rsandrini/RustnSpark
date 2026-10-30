@@ -16,21 +16,16 @@ describe('PilotCard', () => {
     expect(screen.getByText('Test Pilot')).toBeInTheDocument();
     expect(screen.getByText('LUN-TestPilot-Wren')).toBeInTheDocument();
 
-    const stat = (label: string) =>
-      within(screen.getByText(label).closest('div')!);
+    const stat = (label: string) => within(screen.getByText(label).closest('div')!);
 
     expect(stat('Missions').getByText('5')).toBeInTheDocument();
     expect(stat('Success rate').getByText('75%')).toBeInTheDocument();
     expect(stat('Distance').getByText('2,400')).toBeInTheDocument();
     expect(stat('Fights won').getByText('2')).toBeInTheDocument();
-    expect(
-      stat('Races').getByText('4 entered · 1 won · 2 podiums'),
-    ).toBeInTheDocument();
+    expect(stat('Races').getByText('4 entered · 1 won · 2 podiums')).toBeInTheDocument();
     expect(stat('Best place').getByText('2')).toBeInTheDocument();
     expect(stat('Fastest race').getByText('3:05')).toBeInTheDocument();
-    expect(
-      stat('Scavenging').getByText('6 ship · 2 on foot'),
-    ).toBeInTheDocument();
+    expect(stat('Scavenging').getByText('6 ship · 2 on foot')).toBeInTheDocument();
   });
 
   it('shows "No flights yet" for a pilot with zero missions and no NaN', () => {

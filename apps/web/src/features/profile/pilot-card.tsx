@@ -8,7 +8,10 @@ export interface PilotCardProps {
 
 const SEPARATOR = ' · ';
 
-function raceTimeText(seconds: number | null, t: (key: string, options?: Record<string, unknown>) => string): string {
+function raceTimeText(
+  seconds: number | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
     return '—';
   }
@@ -47,9 +50,7 @@ export function PilotCard({ profile }: PilotCardProps) {
       <header className="pilot-header">
         <h2 className="pilot-name">{profile.name}</h2>
         {profile.factionId !== null && <FactionBadge factionId={profile.factionId} />}
-        <p className="pilot-joined">
-          {t('profile.stats.joinedAt', { date: joinedDate })}
-        </p>
+        <p className="pilot-joined">{t('profile.stats.joinedAt', { date: joinedDate })}</p>
       </header>
 
       {profile.ship !== null && (
@@ -74,9 +75,7 @@ export function PilotCard({ profile }: PilotCardProps) {
           <div className="pilot-stat">
             <dt>{t('profile.stats.successRate')}</dt>
             <dd>
-              {profile.successRate !== null
-                ? percentFormat.format(profile.successRate)
-                : '—'}
+              {profile.successRate !== null ? percentFormat.format(profile.successRate) : '—'}
             </dd>
           </div>
           <div className="pilot-stat">

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { economyState, resetEconomyState } from '../../test/msw/handlers';
@@ -90,5 +90,38 @@ describe('profile (S10.9)', () => {
 
     expect(await screen.findByText('No completed missions yet.')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'View report' })).not.toBeInTheDocument();
+  });
+
+  it('loads the history ten at a time and fetches more on request', async () => {
+    const item = (n: number) => ({
+      missionId: `m-${n}`,
+      outcome: 'success',
+      credits: n,
+      legs: 1,
+      createdAt: new Date(2026, 9, 28, 12, 0, 60 - n).toISOString(),
+      hadCombat: false,
+    });
+    const asked: string[] = [];
+    server.use(
+      http.get('/v1/reports', ({ request }) => {
+        const url = new URL(request.url);
+        asked.push(url.search);
+        const second = url.searchParams.get('cursor') === 'next';
+        return HttpResponse.json({
+          items: second ? [item(11), item(12)] : Array.from({ length: 10 }, (_, k) => item(k + 1)),
+          ...(second ? {} : { nextCursor: 'next' }),
+        });
+      }),
+    );
+    renderWithRouter(routes, { initialEntries: ['/profile'] });
+
+    await screen.findAllByRole('link', { name: 'View report' });
+    expect(screen.getAllByRole('link', { name: 'View report' })).toHaveLength(10);
+    expect(asked[0]).toContain('limit=10');
+    fireEvent.click(screen.getByRole('button', { name: 'Show more' }));
+    await waitFor(() =>
+      expect(screen.getAllByRole('link', { name: 'View report' })).toHaveLength(12),
+    );
+    expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
   });
 });

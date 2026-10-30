@@ -137,11 +137,15 @@ export function MyStats({ stats }: MyStatsProps) {
           <dl className="my-stats-list">
             <div className="my-stat-row">
               <dt>{t('profile.stats.money.earned')}</dt>
-              <dd>{numberFormat.format(earned)} {CREDIT_SUFFIX}</dd>
+              <dd>
+                {numberFormat.format(earned)} {CREDIT_SUFFIX}
+              </dd>
             </div>
             <div className="my-stat-row">
               <dt>{t('profile.stats.money.spent')}</dt>
-              <dd>{numberFormat.format(spent)} {CREDIT_SUFFIX}</dd>
+              <dd>
+                {numberFormat.format(spent)} {CREDIT_SUFFIX}
+              </dd>
             </div>
             <div className="my-stat-row my-stat-highlight">
               <dt>{t('profile.stats.money.net')}</dt>
