@@ -1033,41 +1033,42 @@ details.collapsible > summary h2 {
 }
 
 /* Small round icons beside a headline value: warnings (!) next to the condition, the engine
-   tuning gear next to the mobility. A 24px visual in a 40px tap area on phones. */
+   tuning gear next to the mobility. The button is the tap area (40px on phones, pulled back by
+   negative margins so the tile does not grow); the dot inside is the visible 22px circle. */
 .tile-icon {
   display: inline-grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
   margin-left: 6px;
   padding: 0;
   vertical-align: middle;
   background: transparent;
-  border: 1px solid var(--rule);
-  border-radius: 50%;
+  border: 0;
   color: var(--muted);
+  cursor: pointer;
+}
+.tile-icon-dot {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 700;
   line-height: 1;
-  cursor: pointer;
 }
 .tile-icon:hover {
   color: var(--text);
-  border-color: var(--text);
 }
 .tile-icon-warn {
   color: var(--sun);
-  border-color: var(--sun);
 }
 @media (max-width: 560px) {
   .tile-icon {
-    position: relative;
-  }
-  .tile-icon::after {
-    content: '';
-    position: absolute;
-    inset: -9px;
+    min-width: 40px;
+    min-height: 40px;
+    margin: -9px -9px -9px -3px;
   }
 }
 .layout-notes {

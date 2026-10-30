@@ -308,7 +308,7 @@ export function ShipSheetPanel({
                   title={t('hangar.headline.tuneEngines')}
                   onClick={onTuneEngines}
                 >
-                  {GEAR_GLYPH}
+                  <span className="tile-icon-dot">{GEAR_GLYPH}</span>
                 </button>
               )}
             </b>
@@ -325,7 +325,7 @@ export function ShipSheetPanel({
                   title={t('hangar.warnings.open', { count: warningCount })}
                   onClick={onShowWarnings}
                 >
-                  {WARN_GLYPH}
+                  <span className="tile-icon-dot">{WARN_GLYPH}</span>
                 </button>
               )}
             </b>
