@@ -4,6 +4,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { PartThumb } from '../../ui/PartThumb';
 import {
+  PartDetail,
   PartStatsCard,
   partSummary,
   useNumberFormat,
@@ -30,9 +31,14 @@ export interface PartCardProps {
   compare?: PartCompareContext;
   /** Extra content for the card's single info popup, under the part's own details. */
   infoExtra?: ReactNode;
+  /** Hide the (i) details button (the Upgrade tab shows the diff on hover instead). */
+  hideInfo?: boolean;
   /** What the hover card shows when it is not the card's own part (the Upgrade tab hovers the
       part it WILL become). Everywhere else the hover card shows the card's part. */
   hoverPart?: PartInfoData;
+  /** When set, the hover card renders the "this part today → upgraded" table instead of the
+      usual stats card. */
+  hoverVersus?: PartInfoData;
 }
 
 // One part, one card, stacked top to bottom: name and price, what it is, how worn it is, what it
@@ -46,7 +52,9 @@ export function PartCard({
   actions,
   compare,
   infoExtra,
+  hideInfo = false,
   hoverPart,
+  hoverVersus,
 }: PartCardProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
@@ -108,7 +116,7 @@ export function PartCard({
       )}
       <div className="pcard-summary">{partSummary(part.catalog, t, format)}</div>
       <footer className="pcard-actions">
-        <PartInfoButton part={part} compare={compare} extra={infoExtra} />
+        {!hideInfo && <PartInfoButton part={part} compare={compare} extra={infoExtra} />}
         {actions}
       </footer>
       {anchor !== null && (
@@ -119,10 +127,14 @@ export function PartCard({
           data-testid="part-card-hover-card"
           style={cardStyle}
         >
-          <PartStatsCard
-            part={hoverPart ?? part}
-            compare={hoverPart === undefined ? compare : undefined}
-          />
+          {hoverVersus !== undefined ? (
+            <PartDetail part={hoverPart ?? part} versus={hoverVersus} hideMeta />
+          ) : (
+            <PartStatsCard
+              part={hoverPart ?? part}
+              compare={hoverPart === undefined ? compare : undefined}
+            />
+          )}
         </div>
       )}
     </article>

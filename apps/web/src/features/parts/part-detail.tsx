@@ -341,6 +341,9 @@ export interface PartDetailProps {
   /** An upgrade: the part as it is today. The table then sets this part's stats against `part`
       (the upgraded one), instead of asking what adding it does to the ship. */
   versus?: PartInfoData;
+  /** Render only the comparison table: no description, meta, picker or warnings. Used by the
+      Upgrade tab's hover card. */
+  hideMeta?: boolean;
 }
 
 interface VersusRow {
@@ -400,7 +403,7 @@ function versusRowsOf(
     });
 }
 
-export function PartDetail({ part, compare, versus }: PartDetailProps) {
+export function PartDetail({ part, compare, versus, hideMeta = false }: PartDetailProps) {
   const { t, i18n } = useTranslation();
   const format = useNumberFormat();
   const { catalog } = part;
@@ -450,87 +453,91 @@ export function PartDetail({ part, compare, versus }: PartDetailProps) {
 
   return (
     <div className="part-detail">
-      <p className="sub">
-        {[
-          t(`hangar.partClasses.${catalog.partClass}`),
-          t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
-          `${t('parts.size')} ${catalog.w}×${catalog.h}`,
-          part.condition !== undefined
-            ? `${t('parts.condition')} ${format(part.condition)}%`
-            : null,
-        ]
-          .filter((piece) => piece !== null)
-          .join(' · ')}
-        {infoText !== '' && (
-          <button
-            type="button"
-            className="btn info-btn part-why-tag"
-            aria-label={`${t('parts.whyTitle')}: ${name}`}
-            title={infoText}
-          >
-            {t('parts.infoGlyph')}
-          </button>
-        )}
-      </p>
-      {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
-      {part.connectors !== undefined && part.connectors.length > 0 && (
-        <div className="part-ports">
-          <ConnectorGrid w={catalog.w} h={catalog.h} connectors={part.connectors} />
-          <small>
-            <b>{t('connectors.title')}</b>
-            <br />
-            {t('connectors.fixed')}
-          </small>
-        </div>
-      )}
-      {compare !== undefined && (
+      {!hideMeta && (
         <>
-          {replaceCandidates.length > 0 && (
-            <label className="compare-scenario-picker">
-              {t('parts.compare.scenarioLabel')}
-              <select
-                value={replaceInstanceId ?? ''}
-                onChange={(event) =>
-                  setReplaceInstanceId(event.target.value === '' ? undefined : event.target.value)
-                }
+          <p className="sub">
+            {[
+              t(`hangar.partClasses.${catalog.partClass}`),
+              t(`parts.rarities.${part.rarity}`, { defaultValue: part.rarity }),
+              `${t('parts.size')} ${catalog.w}×${catalog.h}`,
+              part.condition !== undefined
+                ? `${t('parts.condition')} ${format(part.condition)}%`
+                : null,
+            ]
+              .filter((piece) => piece !== null)
+              .join(' · ')}
+            {infoText !== '' && (
+              <button
+                type="button"
+                className="btn info-btn part-why-tag"
+                aria-label={`${t('parts.whyTitle')}: ${name}`}
+                title={infoText}
               >
-                <option value="">{t('parts.compare.addOption')}</option>
-                {replaceCandidates.map((candidate) => (
-                  <option key={candidate.partInstanceId} value={candidate.partInstanceId}>
-                    {t('parts.compare.replaceOption', {
-                      name: pickLocalized(candidate.displayName, i18n.language),
-                    })}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <p className="muted part-compare-note">
-            {comparePreview.isLoading
-              ? t('parts.compare.loading')
-              : comparePreview.isError
-                ? t('parts.compare.error')
-                : selectedReplace !== undefined
-                  ? t('parts.compare.titleSwap', {
-                      name: pickLocalized(selectedReplace.displayName, i18n.language),
-                    })
-                  : t('parts.compare.title')}
+                {t('parts.infoGlyph')}
+              </button>
+            )}
           </p>
+          {part.broken === true && <p className="pcard-note">{t('parts.brokenNote')}</p>}
+          {part.connectors !== undefined && part.connectors.length > 0 && (
+            <div className="part-ports">
+              <ConnectorGrid w={catalog.w} h={catalog.h} connectors={part.connectors} />
+              <small>
+                <b>{t('connectors.title')}</b>
+                <br />
+                {t('connectors.fixed')}
+              </small>
+            </div>
+          )}
+          {compare !== undefined && (
+            <>
+              {replaceCandidates.length > 0 && (
+                <label className="compare-scenario-picker">
+                  {t('parts.compare.scenarioLabel')}
+                  <select
+                    value={replaceInstanceId ?? ''}
+                    onChange={(event) =>
+                      setReplaceInstanceId(event.target.value === '' ? undefined : event.target.value)
+                    }
+                  >
+                    <option value="">{t('parts.compare.addOption')}</option>
+                    {replaceCandidates.map((candidate) => (
+                      <option key={candidate.partInstanceId} value={candidate.partInstanceId}>
+                        {t('parts.compare.replaceOption', {
+                          name: pickLocalized(candidate.displayName, i18n.language),
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="muted part-compare-note">
+                {comparePreview.isLoading
+                  ? t('parts.compare.loading')
+                  : comparePreview.isError
+                    ? t('parts.compare.error')
+                    : selectedReplace !== undefined
+                      ? t('parts.compare.titleSwap', {
+                          name: pickLocalized(selectedReplace.displayName, i18n.language),
+                        })
+                      : t('parts.compare.title')}
+              </p>
+            </>
+          )}
+          {part.id !== undefined && comparePreview.data?.omittedPartInstanceIds.includes(part.id) === true && (
+            <p className="error-text compare-no-room">{t('parts.compare.noRoom')}</p>
+          )}
+          {viabilityProblems.length > 0 && (
+            <ul className="compare-viability-warning">
+              {viabilityProblems.map((problem) => (
+                <li key={problem.code} className="error-text">
+                  {t(`hangar.problems.${problem.code}`, {
+                    defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
+                  })}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
-      )}
-      {part.id !== undefined && comparePreview.data?.omittedPartInstanceIds.includes(part.id) === true && (
-        <p className="error-text compare-no-room">{t('parts.compare.noRoom')}</p>
-      )}
-      {viabilityProblems.length > 0 && (
-        <ul className="compare-viability-warning">
-          {viabilityProblems.map((problem) => (
-            <li key={problem.code} className="error-text">
-              {t(`hangar.problems.${problem.code}`, {
-                defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-              })}
-            </li>
-          ))}
-        </ul>
       )}
       {versusRows !== null && (
         <table className="part-stats-table" data-testid="upgrade-diff">

@@ -822,7 +822,7 @@ describe('port (S10.9)', () => {
     const needs = (await screen.findAllByTestId('upgrade-needs'))[0]!;
     expect(
       within(needs)
-        .getByText(/Credits: 1 ¢ of/)
+        .getByText(/Credits: 115 ¢ \(you have 1 ¢\)/)
         .closest('li'),
     ).toHaveClass('req-unmet');
     expect(within(needs).getByText(/missing/)).toBeInTheDocument();
@@ -834,6 +834,15 @@ describe('port (S10.9)', () => {
       await screen.findByText(/Nothing you can upgrade with your credits/),
     ).toBeInTheDocument();
     expect(screen.queryByText('Plated Hull')).not.toBeInTheDocument();
+  });
+
+  it('puts the upgrade price before what the pilot has in the requirements line', async () => {
+    await renderPort();
+    openPortTab('Upgrade');
+    expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
+    const needs = (await screen.findAllByTestId('upgrade-needs'))[0]!;
+    const li = needs.querySelector('li');
+    expect(li).toHaveTextContent(/^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/);
   });
 
   it('shows what the pilot holds and groups the cards by what is missing', async () => {
@@ -871,83 +880,34 @@ describe('port (S10.9)', () => {
     expect(screen.getByTestId('upgrade-counts')).toHaveTextContent('0 ready');
   });
 
-  it('upgrade tab shows a diff popup between the current part and the next tier', async () => {
-    server.use(
-      http.post('/v1/ships/:id/preview', async ({ request }) => {
-        const body = (await request.json()) as {
-          virtualPart?: { partType: string; condition: number };
-          replacePartInstanceId?: string;
-        };
-        // The exact wiring under test: the diff is a REPLACE of this instance with the next
-        // tier's catalog code, not a plain addition.
-        expect(body.virtualPart?.partType).toBe('hull_uncommon');
-        expect(body.replacePartInstanceId).toBe('part-hull');
-        return HttpResponse.json({
-          sheet: {
-            pot: 25,
-            pdf: 0,
-            bli: 12,
-            esc: 0,
-            sen: 2,
-            crg: 10,
-            min: 0,
-            hp: 60,
-            mass: 24,
-            energyCont: 8,
-            energyCombat: 0,
-            batCharge: 4,
-            batOutput: 10,
-            batInput: 8,
-            fuelCap: 40,
-            fuelUse: 1,
-            structureUsed: 18,
-            structureBudget: 40,
-            autonomy: 40,
-            mob: 2,
-            condition: 1,
-          },
-          shipClass: 'MULTIROLE',
-          viability: { viable: true, problems: [] },
-          layout: [],
-          omittedPartInstanceIds: [],
-        });
-      }),
-    );
+  it('hovering an upgrade card shows only the diff table between this part and the upgraded part', async () => {
     await renderPort();
     openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
 
-    const hullRow = (await screen.findByText('Plated Hull')).closest('article');
-    expect(hullRow).not.toBeNull();
-    // One info button per card: it opens the part itself AND, under it, the next tier's diff.
-    expect(within(hullRow!).getAllByRole('button', { name: /^Details:/ })).toHaveLength(1);
-    fireEvent.click(within(hullRow!).getByRole('button', { name: 'Details: Plated Hull' }));
+    const card = screen.getByText('Plated Hull').closest('article') as HTMLElement;
+    fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
+    const hover = await screen.findByTestId('part-card-hover-card');
 
-    const popup = await screen.findByRole('dialog', { name: 'Plated Hull' });
-    await within(popup).findByRole('heading', {
-      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
-    });
-    const next = within(popup).getByRole('region', {
-      name: 'Plated Hull · Common → Reinforced Hull · Uncommon',
-    });
-    // The diff sets the upgraded part against the one the pilot owns (not "add it to the ship").
-    const diff = within(next).getByTestId('upgrade-diff');
+    // The hover is the "Stat / This part today / Upgraded" table, not the usual stats card.
+    const diff = within(hover).getByTestId('upgrade-diff');
     expect(within(diff).getByText('This part today')).toBeInTheDocument();
-    // The next tier's own higher hp (40 today, 60 upgraded) shows as a positive delta.
-    const hpRow = within(diff).getByRole('row', { name: /^Hit points/ });
-    expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument();
+    expect(within(diff).getByText('Upgraded')).toBeInTheDocument();
+    const hpCell = within(diff).getByText('Hit points');
+    const hpRow = hpCell.closest('tr') as HTMLElement;
     expect(within(hpRow).getByText('40')).toBeInTheDocument();
+    expect(within(hpRow).getByText('60 (+20)')).toBeInTheDocument();
+    expect(hover.querySelector('.part-stats-card')).toBeNull();
+
+    fireEvent.pointerLeave(card);
+    await waitFor(() => expect(screen.queryByTestId('part-card-hover-card')).toBeNull());
   });
 
-  it('hovering a card in the Upgrade tab shows the part it will become, not the one it is', async () => {
+  it('upgrade cards no longer have an info (i) button', async () => {
     await renderPort();
     openPortTab('Upgrade');
     const card = (await screen.findByText('Plated Hull')).closest('article') as HTMLElement;
-    fireEvent.pointerEnter(card, { clientX: 100, clientY: 200 });
-    const hover = await screen.findByTestId('part-card-hover-card');
-    expect(hover).toHaveTextContent('Reinforced Hull');
-    expect(hover).not.toHaveTextContent('Plated Hull');
-    expect(hover).toHaveTextContent('Uncommon');
+    expect(within(card).queryByRole('button', { name: /^Details: Plated Hull/ })).toBeNull();
   });
 
   it('upgrades a part behind a confirm popup and updates the wallet', async () => {
@@ -1021,8 +981,10 @@ describe('port (S10.9)', () => {
     expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
     expect(list).toHaveTextContent('(missing 3)');
     expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
-    // credits are listed first, as a need like the others
-    expect(list.querySelector('li')).toHaveTextContent('Credits:');
+    // credits are listed first, with the price before what the pilot has
+    expect(list.querySelector('li')).toHaveTextContent(
+      /^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/,
+    );
     // and where to get it
     expect(
       screen.getAllByText(/Scrap comes from scavenging and from repairs/).length,

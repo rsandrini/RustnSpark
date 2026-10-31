@@ -1537,7 +1537,7 @@
     "scavengeFoot": "Go scavenging on foot",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
-    "upgradeNeedCredits": "Credits: {{have}} of {{needed}}",
+    "upgradeNeedCredits": "Credits: {{needed}} (you have {{have}})",
     "upgradeMissingCredits": "(missing {{amount}})",
     "upgradeMissing": "(missing {{amount}})",
     "upgradeNeedMoreCredits": "Need {{amount}} more",

@@ -1537,7 +1537,7 @@
     "scavengeFoot": "Vasculhar a pé",
     "upgradeFromTo": "{{from}} → {{to}}",
     "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
-    "upgradeNeedCredits": "Créditos: {{have}} de {{needed}}",
+    "upgradeNeedCredits": "Créditos: {{needed}} (você tem {{have}})",
     "upgradeMissingCredits": "(faltam {{amount}})",
     "upgradeMissing": "(faltam {{amount}})",
     "upgradeNeedMoreCredits": "Faltam {{amount}}",

@@ -41,7 +41,6 @@ import { ActiveShipStage } from '../ship/active-ship-stage';
 import { MarketPanel } from '../market/market-panel';
 import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
-import { PartDetail } from '../parts/part-detail';
 import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
 import { useBridgeResize } from './bridge-resize-panel';
 import type { PartInfoData } from '../parts/part-detail';
@@ -1315,17 +1314,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 <PartCard
                   key={item.id}
                   part={item}
-                  price={quote.cost}
-                  priceCaption={t('port.upgradeCost')}
+                  hideInfo
                   hoverPart={nextPartInfo}
-                  infoExtra={
-                    nextPartInfo !== undefined && (
-                      <section className="upgrade-next" aria-label={fromTo}>
-                        <h4>{fromTo}</h4>
-                        <PartDetail part={nextPartInfo} versus={item} />
-                      </section>
-                    )
-                  }
+                  hoverVersus={item}
                   actions={
                     <div className="upgrade-actions">
                       <span className="sub">{fromTo}</span>
