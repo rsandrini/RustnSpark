@@ -652,6 +652,23 @@ describe('hangar (S10.4)', () => {
     await waitFor(() => expect(screen.queryByText('15 (+5)')).not.toBeInTheDocument());
   });
 
+  it('keeps the port legend and hold notes off a saved ship, and shows them once the layout is edited', async () => {
+    server.use(onboarded());
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+
+    const cargo = await waitFor(() => {
+      const element = block(container, 'part-cargo-a');
+      expect(element).not.toBeNull();
+      return element as SVGRectElement;
+    });
+    expect(screen.queryByTestId('layout-notes')).toBeNull();
+    expect(screen.queryByTestId('port-legend')).toBeNull();
+
+    fireEvent.pointerDown(cargo);
+    fireEvent.click(screen.getByRole('button', { name: 'Rotate' }));
+    expect(await screen.findByTestId('port-legend')).toBeInTheDocument();
+  });
+
   it('rotates and removes a selected block', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });

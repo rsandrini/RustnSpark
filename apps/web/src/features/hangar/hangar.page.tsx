@@ -571,7 +571,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // The hold line, the unconnected-parts note and the port legend only matter while the layout is
   // being changed or something is wrong; the sheet stays clean otherwise.
   const showLayoutNotes =
-    layout !== null ||
+    dirty ||
+    isKit ||
     allProblems.length > 0 ||
     disconnectedPartIds.size > 0 ||
     ship?.hold?.over === true ||
