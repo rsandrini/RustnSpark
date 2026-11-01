@@ -7,6 +7,7 @@ import { useAuth, useLogout } from '../features/auth/auth.hooks';
 import { useDialogueActions, useDialogueState } from '../features/dialogue/use-dialogue';
 import { pickLocalized } from '../i18n/localized';
 import { LanguageSwitcher } from '../i18n/language-switcher';
+import { BugReportDialog } from './BugReportDialog';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
 function initialsOf(name: string | undefined): string {
@@ -37,6 +38,7 @@ export function AccountMenu() {
   const dialogueOn = dialogue.data?.enabled !== false;
   // The list is folded away until the pilot opens it: it is rarely needed.
   const [talkOpen, setTalkOpen] = useState(false);
+  const [reporting, setReporting] = useState(false);
   useEffect(() => {
     if (!open) setTalkOpen(false);
   }, [open]);
@@ -141,6 +143,16 @@ export function AccountMenu() {
               {t('nav.admin')}
             </Link>
           )}
+          <button
+            type="button"
+            className="shell-menu-item"
+            onClick={() => {
+              setOpen(false);
+              setReporting(true);
+            }}
+          >
+            {t('bugReport.menu')}
+          </button>
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>
@@ -149,6 +161,7 @@ export function AccountMenu() {
           </button>
         </div>
       )}
+      <BugReportDialog open={reporting} onClose={() => setReporting(false)} />
     </div>
   );
 }

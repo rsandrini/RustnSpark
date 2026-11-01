@@ -2461,6 +2461,18 @@
       "OVERRIDE": "Override"
     }
   },
+  "bugReport": {
+    "menu": "Relatar um problema",
+    "title": "Relatar um problema",
+    "help": "Algo quebrado, confuso ou injusto? Conte o que você estava fazendo e o que deu errado. Seu nome de piloto e a tela atual vão junto.",
+    "message": "O que aconteceu?",
+    "count": "{{n}} / {{max}} (mínimo 10)",
+    "send": "Enviar relato",
+    "sending": "Enviando…",
+    "thanks": "Obrigado! Seu relato foi enviado.",
+    "close": "Fechar",
+    "failed": "Não foi possível enviar o relato. Tente de novo em instantes."
+  },
   "duration": {
     "instant": "Instantâneo",
     "s": "{{s}}s",

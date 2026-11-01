@@ -2461,6 +2461,18 @@
       "OVERRIDE": "Override"
     }
   },
+  "bugReport": {
+    "menu": "Report a problem",
+    "title": "Report a problem",
+    "help": "Something broken, confusing or unfair? Tell us what you were doing and what went wrong. Your pilot name and the current screen are sent with it.",
+    "message": "What happened?",
+    "count": "{{n}} / {{max}} (at least 10)",
+    "send": "Send report",
+    "sending": "Sending…",
+    "thanks": "Thank you! Your report was sent.",
+    "close": "Close",
+    "failed": "Could not send the report. Try again in a moment."
+  },
   "duration": {
     "instant": "Instant",
     "s": "{{s}}s",
