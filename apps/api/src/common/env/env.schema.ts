@@ -59,7 +59,7 @@ export const envSchema = z.object({
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_FROM_NAME: z.string().optional(),
   // Where beta bug reports are emailed. Absent = the report endpoint answers 503.
-  BUG_REPORT_TO_EMAIL: z.email().optional(),
+  BUG_REPORT_TO_EMAIL: z.preprocess((v) => (v === '' ? undefined : v), z.email().optional()),
 });
 
 export type Env = z.output<typeof envSchema>;

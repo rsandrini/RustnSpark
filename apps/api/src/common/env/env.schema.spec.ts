@@ -81,6 +81,16 @@ describe('validateEnv', () => {
     expect(errorOf({ ...validSource(), WEB_URL: value }).message).toContain('WEB_URL');
   });
 
+  it('reads BUG_REPORT_TO_EMAIL as unset when empty, and rejects a bad address', () => {
+    expect(
+      validateEnv({ ...validSource(), BUG_REPORT_TO_EMAIL: '' }).BUG_REPORT_TO_EMAIL,
+    ).toBeUndefined();
+    expect(
+      validateEnv({ ...validSource(), BUG_REPORT_TO_EMAIL: 'a@b.co' }).BUG_REPORT_TO_EMAIL,
+    ).toBe('a@b.co');
+    expect(() => validateEnv({ ...validSource(), BUG_REPORT_TO_EMAIL: 'nope' })).toThrow();
+  });
+
   it('treats Resend email variables as optional', () => {
     expect(validateEnv(validSource()).RESEND_API_KEY).toBeUndefined();
     expect(validateEnv(validSource()).RESEND_FROM_EMAIL).toBeUndefined();
