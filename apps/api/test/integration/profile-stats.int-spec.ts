@@ -131,6 +131,24 @@ describe('pilot profile endpoints', () => {
     expect(mine.body).toMatchObject({ totals: {}, records: {}, lastActiveAt: null });
   });
 
+  it('serves no account data on the card, and 404 once the account is banned', async () => {
+    const alice = await pilot('Alice');
+    const bob = await pilot('Bob');
+    const card = await get('/v1/players/by-name/Bob/profile', alice.token);
+    expect(card.status).toBe(200);
+    expect(Object.keys(card.body as object).sort()).toEqual(
+      ['factionId', 'joinedAt', 'name', 'records', 'ship', 'successRate', 'totals'].sort(),
+    );
+    expect(JSON.stringify(card.body)).not.toContain(bob.seeded.account.email);
+
+    await prisma.account.update({
+      where: { id: bob.seeded.account.id },
+      data: { status: 'BANNED' },
+    });
+    const hidden = await get('/v1/players/by-name/Bob/profile', alice.token);
+    expect(hidden.status).toBe(404);
+  });
+
   it('answers 404 for an unknown or odd name, and 401 without a token', async () => {
     const alice = await pilot('Alice');
     for (const name of ['Nobody', 'a%20b', '%25', '%E2%9C%93', 'x'.repeat(300)]) {
