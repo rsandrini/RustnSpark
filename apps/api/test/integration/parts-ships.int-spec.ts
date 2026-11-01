@@ -148,7 +148,7 @@ describe('parts and ships API (S4.3)', () => {
         // weapon so a new pilot can win an early fight (2026-10-15 simulation review).
         expect(parts.length).toBe(7);
         for (const part of parts) {
-          expect(part.condition).toBe(85);
+          expect(part.condition).toBe(100);
           expect(part.location).toBe('INVENTORY');
           expect(part.shipId).toBeNull();
         }
@@ -476,7 +476,7 @@ describe('parts and ships API (S4.3)', () => {
         ].sort(),
       );
       for (const item of items) {
-        expect(item.condition).toBe(85);
+        expect(item.condition).toBe(100);
         expect(item.catalog).toBeDefined();
         // Owned parts carry a real name in both locales (the UI used to fall back to the raw
         // part code because the inventory response had no name at all).

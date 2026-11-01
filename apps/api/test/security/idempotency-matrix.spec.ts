@@ -19,6 +19,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'single-use token: a repeat is rejected, never a second password change',
   'POST /v1/players/me/locale': 'sets a value: repeating is the same state',
   'POST /v1/players/me/tutorial': 'sets a value: repeating is the same state',
+  'POST /v1/feedback/bug':
+    'an email, not game state: a repeat is only a duplicate message, and the per-account and daily caps bound it',
   'POST /v1/players/me/onboarding':
     'single-shot per player, guarded by a row lock: repeat returns the ship',
   'POST /v1/ships/:id/assemble': 'sets the layout to a value: repeating is the same state',
