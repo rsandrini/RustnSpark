@@ -27,6 +27,7 @@ function makeEnv(overrides: Partial<Env> = {}): EnvService {
     ARGON2_TIME_COST: 1,
     ARGON2_PARALLELISM: 1,
     RECONCILE_INTERVAL_MS: 30000,
+    SHIP_RATING_INTERVAL_MS: 600000,
     WEB_URL: 'http://localhost:3000',
     ...overrides,
   };

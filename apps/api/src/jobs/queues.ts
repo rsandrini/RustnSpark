@@ -24,6 +24,13 @@ export const RECONCILE_QUEUE_NAME = 'reconcile';
 export const RECONCILE_SCHEDULER_ID = 'reconcile';
 export const RECONCILE_TICK_JOB_NAME = 'tick';
 
+// The ship power and speed boards rank a ShipRating snapshot; one repeatable job refreshes every pilot's
+// rating every SHIP_RATING_INTERVAL_MS (default 10 min). It runs on its own queue so a slow refresh never
+// delays a mission resolve.
+export const SHIP_RATING_QUEUE_NAME = 'ship-rating';
+export const SHIP_RATING_SCHEDULER_ID = 'ship-rating';
+export const SHIP_RATING_JOB_NAME = 'refresh';
+
 // S8.4: repair is a delayed job (duration = points × hub/outpost k). jobId = RepairJob.id
 // so a duplicate enqueue is a no-op; the processor applies condition only on first complete.
 export const REPAIR_QUEUE_NAME = 'repair';

@@ -8,6 +8,8 @@ const DEFAULT_ARGON2_TIME_COST = 2;
 const DEFAULT_ARGON2_PARALLELISM = 1;
 // D4: reconciliation tick granularity — infrastructure timing, not a balance knob.
 const DEFAULT_RECONCILE_INTERVAL_MS = 30_000;
+// How often every pilot's ship rating (the power and speed boards) is refreshed: ten minutes.
+const DEFAULT_SHIP_RATING_INTERVAL_MS = 600_000;
 
 const secret = z
   .string()
@@ -44,6 +46,8 @@ export const envSchema = z.object({
   ARGON2_PARALLELISM: positiveInt(DEFAULT_ARGON2_PARALLELISM),
   // Reconcile tick granularity (D4): infrastructure, not balance — default 30 s.
   RECONCILE_INTERVAL_MS: positiveInt(DEFAULT_RECONCILE_INTERVAL_MS),
+  // Ship rating refresh for the power and speed boards: infrastructure timing, default 10 min.
+  SHIP_RATING_INTERVAL_MS: positiveInt(DEFAULT_SHIP_RATING_INTERVAL_MS),
   // Browser-facing origin for links the API generates in emails (password reset).
   // Default matches the AuthService fallback used when compose/vite never set it.
   WEB_URL: z.url().default('http://localhost:3000'),

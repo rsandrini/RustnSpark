@@ -22,6 +22,7 @@ import {
   RECONCILE_QUEUE_NAME,
   REPAIR_QUEUE_NAME,
   RESOLVE_JOB_NAME,
+  SHIP_RATING_QUEUE_NAME,
   bullConnectionOptions,
 } from '../../src/jobs/queues.js';
 import { PartsService } from '../../src/parts/parts.service.js';
@@ -354,6 +355,27 @@ describe('reconciliation tick (S7.4)', () => {
         delete process.env['RECONCILE_INTERVAL_MS'];
       } else {
         process.env['RECONCILE_INTERVAL_MS'] = previous;
+      }
+    }
+  }, 30_000);
+
+  it('upserts a repeatable ship rating job every SHIP_RATING_INTERVAL_MS on worker boot', async () => {
+    const previous = process.env['SHIP_RATING_INTERVAL_MS'];
+    process.env['SHIP_RATING_INTERVAL_MS'] = '54321';
+    let workerContext: INestApplicationContext | undefined;
+    try {
+      workerContext = await NestFactory.createApplicationContext(JobsModule, { logger: false });
+      const queue = workerContext.get<Queue>(getQueueToken(SHIP_RATING_QUEUE_NAME));
+      const schedulers = await queue.getJobSchedulers();
+      const scheduler = schedulers.find((entry) => entry.every === 54321);
+      expect(scheduler).toBeTruthy();
+      expect(scheduler?.name).toBe('refresh');
+    } finally {
+      await workerContext?.close();
+      if (previous === undefined) {
+        delete process.env['SHIP_RATING_INTERVAL_MS'];
+      } else {
+        process.env['SHIP_RATING_INTERVAL_MS'] = previous;
       }
     }
   }, 30_000);

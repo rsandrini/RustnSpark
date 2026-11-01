@@ -29,6 +29,7 @@ export function testEnv(overrides: Record<string, string> = {}): Record<string, 
     // reconcile ticks (default 30 s) against the shared test Redis mid-suite. Specs that
     // assert the scheduler pass their own override (e.g. RECONCILE_INTERVAL_MS=12345).
     RECONCILE_INTERVAL_MS: '3600000',
+    SHIP_RATING_INTERVAL_MS: '3600000',
     ...overrides,
   };
 }

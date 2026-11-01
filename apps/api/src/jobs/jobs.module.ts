@@ -18,7 +18,9 @@ import { MissionProcessor } from './processors/mission.processor.js';
 import { PingProcessor } from './processors/ping.processor.js';
 import { ReconcileProcessor } from './processors/reconcile.processor.js';
 import { RepairProcessor } from './processors/repair.processor.js';
+import { ShipRatingProcessor } from './processors/ship-rating.processor.js';
 import { ReconcileScheduler } from './reconcile.scheduler.js';
+import { ShipRatingScheduler } from './ship-rating.scheduler.js';
 import {
   MISSION_QUEUE_NAME,
   PING_QUEUE_NAME,
@@ -26,9 +28,13 @@ import {
   REPAIR_QUEUE_NAME,
   RESOLVE_BACKOFF_BASE_MS,
   RESOLVE_JOB_ATTEMPTS,
+  SHIP_RATING_QUEUE_NAME,
   bullConnectionOptions,
 } from './queues.js';
 import { StatsModule } from '../stats/stats.module.js';
+import { ShipRatingService } from '../stats/ship-rating.service.js';
+import { ShipsService } from '../ships/ships.service.js';
+import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.registry.js';
 
 // Imported directly by worker.ts to build the worker application context (no HTTP server).
 // EnvModule is imported here (not just relied on as @Global from elsewhere) because this module
@@ -66,13 +72,16 @@ import { StatsModule } from '../stats/stats.module.js';
     }),
     BullModule.registerQueue({ name: RECONCILE_QUEUE_NAME }),
     BullModule.registerQueue({ name: REPAIR_QUEUE_NAME }),
+    BullModule.registerQueue({ name: SHIP_RATING_QUEUE_NAME }),
   ],
   providers: [
     PingProcessor,
     MissionProcessor,
     ReconcileProcessor,
     RepairProcessor,
+    ShipRatingProcessor,
     ReconcileScheduler,
+    ShipRatingScheduler,
     MissionResolveService,
     ShipLossService,
     EncounterService,
@@ -82,6 +91,11 @@ import { StatsModule } from '../stats/stats.module.js';
     WalletService,
     PlayerEventService,
     RepairService,
+    // The ship rating needs the ships' own sheet; provided directly (the worker never imports ShipsModule, whose
+    // controllers and ownership registry belong to the API process).
+    OwnershipResolverRegistry,
+    ShipsService,
+    ShipRatingService,
   ],
 })
 export class JobsModule {}

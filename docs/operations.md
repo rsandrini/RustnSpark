@@ -33,6 +33,7 @@ The API refuses to boot when a required variable is missing or invalid (zod sche
 | `COOKIE_SECRET` | yes | – | ≥ 32 chars |
 | `ARGON2_MEMORY_KIB` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | no | 19456 / 2 / 1 | password hashing cost (OWASP floor) |
 | `RECONCILE_INTERVAL_MS` | no | 30000 | how often the worker sweeps for stuck missions |
+| `SHIP_RATING_INTERVAL_MS` | no | 600000 | how often the worker refreshes every pilot's ship rating (the ship power and speed boards) |
 | `API_PORT` / `WEB_PORT` | no | 3000 / 8080 | host ports published on 127.0.0.1 |
 
 Rotating `JWT_ACCESS_SECRET` signs everyone out (access tokens are short-lived; refresh
