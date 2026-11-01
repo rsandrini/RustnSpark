@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Milliseconds per character: quick enough not to make anyone wait, slow enough to read as speech. */
-const MS_PER_CHAR = 22;
+const MS_PER_CHAR = 12;
 
 /** True when the pilot asked the system for less motion; false where `matchMedia` does not exist (tests). */
 export function prefersReducedMotion(): boolean {

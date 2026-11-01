@@ -2033,7 +2033,7 @@
         "tank": "Tank too small"
       }
     },
-    "fuelUses": "uses {{needed}}",
+    "fuelUses": "uses {{needed}} fuel",
     "lowFuel": "Your ship does not carry enough fuel for this trip: <refuel>refuel first</refuel>.",
     "needsTitle": "You need:",
     "needs": {
@@ -2218,6 +2218,8 @@
     "PART_NOT_INSTALLED": "That part is not installed.",
     "PRESSURIZED_LIFE_SUPPORT": "Ship lacks pressurized life support.",
     "PRICE_CHANGED": "The price changed to {{price}} ¢.",
+    "BUG_REPORT_LIMIT": "You have sent enough reports for today. Thank you! Try again tomorrow.",
+    "BUG_REPORT_UNAVAILABLE": "Bug reports are not available right now.",
     "RATE_LIMITED": "Too many requests — slow down for a moment.",
     "REGISTRATION_CLOSED": "Registration is closed right now.",
     "REPORT_NOT_FOUND": "Report not found.",
@@ -2460,6 +2462,7 @@
     }
   },
   "duration": {
+    "instant": "Instant",
     "s": "{{s}}s",
     "ms": "{{m}}m {{s}}s",
     "hm": "{{h}}h {{m}}m"

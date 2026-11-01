@@ -34,6 +34,7 @@ The API refuses to boot when a required variable is missing or invalid (zod sche
 | `ARGON2_MEMORY_KIB` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | no | 19456 / 2 / 1 | password hashing cost (OWASP floor) |
 | `RECONCILE_INTERVAL_MS` | no | 30000 | how often the worker sweeps for stuck missions |
 | `SHIP_RATING_INTERVAL_MS` | no | 600000 | how often the worker refreshes every pilot's ship rating (the ship power and speed boards) |
+| `BUG_REPORT_TO_EMAIL` | no | — | inbox that receives beta bug reports (`POST /v1/feedback/bug`); sent through Resend (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`). Empty = the endpoint answers 503. Limits: 3 per 10 min and 5 per day per account, 100 per day overall |
 | `API_PORT` / `WEB_PORT` | no | 3000 / 8080 | host ports published on 127.0.0.1 |
 
 Rotating `JWT_ACCESS_SECRET` signs everyone out (access tokens are short-lived; refresh

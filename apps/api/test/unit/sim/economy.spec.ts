@@ -640,7 +640,7 @@ describe('upgrade', () => {
     const state = starterPlayer(snapshot, 'luna');
     const hullId = hullIdOf(snapshot);
     const hullPart = state.ship.parts.find((part) => part.id === hullId);
-    expect(hullPart?.condition).toBeLessThan(100); // starter parts fly used, never pristine
+    if (hullPart !== undefined) hullPart.condition = 85; // a worn part cannot be upgraded
 
     const damaged = upgrade(state, snapshot, ctx.rules, ctx.catalogByType, hullId);
     expect(damaged).toEqual({ ok: false, reason: 'NOT_FULL_CONDITION' });

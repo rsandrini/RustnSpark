@@ -2033,7 +2033,7 @@
         "tank": "Tanque pequeno"
       }
     },
-    "fuelUses": "consome {{needed}}",
+    "fuelUses": "consome {{needed}} de combustível",
     "lowFuel": "Sua nave não tem combustível suficiente para esta viagem: <refuel>reabasteça primeiro</refuel>.",
     "needsTitle": "Você precisa de:",
     "needs": {
@@ -2218,6 +2218,8 @@
     "PART_NOT_INSTALLED": "Essa peça não está instalada.",
     "PRESSURIZED_LIFE_SUPPORT": "A nave não tem suporte de vida pressurizado.",
     "PRICE_CHANGED": "O preço mudou para {{price}} ¢.",
+    "BUG_REPORT_LIMIT": "Você já enviou relatórios suficientes por hoje. Obrigado! Tente de novo amanhã.",
+    "BUG_REPORT_UNAVAILABLE": "O envio de relatos de problema não está disponível agora.",
     "RATE_LIMITED": "Requisições demais — aguarde um instante.",
     "REGISTRATION_CLOSED": "O registro está fechado no momento.",
     "REPORT_NOT_FOUND": "Relatório não encontrado.",
@@ -2460,6 +2462,7 @@
     }
   },
   "duration": {
+    "instant": "Instantâneo",
     "s": "{{s}}s",
     "ms": "{{m}}min {{s}}s",
     "hm": "{{h}}h {{m}}min"

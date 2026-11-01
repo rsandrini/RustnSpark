@@ -35,8 +35,7 @@ interface Voice {
     readonly l1: Pair;
     readonly x1: Pair;
     readonly x2: Pair;
-    // the checklist: what Getting started is, dispatching, finishing it
-    readonly wList: Pair;
+    // the checklist: dispatching, finishing it
     readonly d1: Pair;
     readonly d2: Pair;
     readonly e1: Pair;
@@ -116,8 +115,7 @@ function scenes(voice: Voice): SceneData[] {
           blocking: true,
           choices: [choice(LABELS.whatNow, 'w3')],
         }),
-        node('w3', t.w3, 'center', { blocking: true, next: 'w_list' }),
-        node('w_list', t.wList, 'center', { blocking: true, next: 'w4' }),
+        node('w3', t.w3, 'center', { blocking: true, next: 'w4' }),
         node('w4', t.w4, 'center', {
           blocking: true,
           choices: [choice(LABELS.showShip, null, 'end')],
@@ -378,10 +376,6 @@ const LUNA: Voice = {
       'Repair the ship, refuel, and take something shorter and safer. Learn what went wrong from the report, then go again.',
       'Conserte a nave, reabasteça e pegue algo mais curto e seguro. Aprenda com o relatório o que deu errado e vá de novo.',
     ],
-    wList: [
-      'You will see a Getting started list on your screen. It is a checklist to help you through the first steps. Tick them off in any order; I will speak up when the next one is due.',
-      'Você verá uma lista Primeiros passos na tela. É um roteiro para ajudar nos primeiros passos. Marque em qualquer ordem; eu falo quando for a hora do próximo.',
-    ],
     d1: [
       'The contract is accepted. Now press Dispatch and she leaves the dock. Until you do, nothing happens.',
       'O contrato foi aceito. Agora aperte Partir e ela deixa o cais. Até você apertar, nada acontece.',
@@ -493,10 +487,6 @@ const SUN: Voice = {
       'Patch her up, top the tank, take something short and safe. The report shows what went wrong. Then back at it!',
       'Remende, encha o tanque, pegue algo curto e seguro. O relatório mostra o que deu errado. Depois, de volta ao trabalho!',
     ],
-    wList: [
-      'See that Getting started list on your screen? A checklist to help you through the first steps. Tick them off at your own pace, friend, and I will chime in at the right moments.',
-      'Está vendo a lista Primeiros passos na tela? É um roteiro para ajudar nos primeiros passos. Marque no seu ritmo, amigo, e eu apareço nos momentos certos.',
-    ],
     d1: [
       'Job accepted! Now press Dispatch and she is off. Until then she just sits at the dock, earning nothing.',
       'Serviço aceito! Agora aperte Partir e ela vai. Até lá ela fica no cais, sem render nada.',
@@ -604,10 +594,6 @@ const EXPLORERS: Voice = {
     x2: [
       'Mend the ship. Fill the tank. Take something short. Read the report to see where it went wrong. Then go again.',
       'Conserte a nave. Encha o tanque. Pegue algo curto. Leia o relatório para ver onde deu errado. Depois vá de novo.',
-    ],
-    wList: [
-      'There is a Getting started list on your screen. A checklist, to help the first steps. Tick it off. I will speak when the next one comes.',
-      'Há uma lista Primeiros passos na tela. Um roteiro, para ajudar nos primeiros passos. Marque. Falo quando vier o próximo.',
     ],
     d1: [
       'Accepted. Now Dispatch. She waits until you do.',

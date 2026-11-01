@@ -152,7 +152,7 @@ describe('repair', () => {
 
   it('does nothing (and charges nothing) on a healthy ship', () => {
     const state = starterPlayer(snapshot, 'luna');
-    // The starter kit ships at starter_condition (85), so "healthy" for a no-op repair means 100.
+    // The starter kit ships at starter_condition (100).
     for (const part of state.ship.parts) part.condition = 100;
     const walletBefore = state.wallet;
     const clockBefore = state.clock.now();

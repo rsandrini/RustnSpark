@@ -95,6 +95,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       RESEND_FROM_NAME: ${RESEND_FROM_NAME:-}
+      BUG_REPORT_TO_EMAIL: ${BUG_REPORT_TO_EMAIL:-}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
       # Admin-uploaded images (faction banners/logos/backgrounds) live on a named volume.
       ART_DIR: /data/art

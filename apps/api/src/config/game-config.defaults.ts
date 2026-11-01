@@ -386,7 +386,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     find_price_cap: { 0: 6000, 1: 12000, 2: 25000, 3: 0 },
   },
   parts: {
-    starter_condition: 85,
+    starter_condition: 100,
     // A rescue hands over loose common parts for whatever is missing or dead, at this condition
     // (never installed: the pilot swaps them in). One type per essential role:
     // the bridge, an engine, a tank (only when the ship burns fuel), life support (only with a cabin).

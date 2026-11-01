@@ -4,6 +4,7 @@ export function formatDuration(
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
   const total = Math.max(0, Math.round(seconds));
+  if (total === 0) return t('duration.instant');
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const secs = total % 60;

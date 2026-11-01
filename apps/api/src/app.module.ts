@@ -29,6 +29,7 @@ import { WorldModule } from './world/world.module.js';
 import { EconomyModule } from './economy/economy.module.js';
 import { DialogueModule } from './dialogue/dialogue.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { FeedbackModule } from './feedback/feedback.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { TokenService } from './auth/token.service.js';
 
@@ -53,6 +54,7 @@ import { TokenService } from './auth/token.service.js';
     EconomyModule,
     ReportsModule,
     DialogueModule,
+    FeedbackModule,
     AdminModule,
   ],
   providers: [

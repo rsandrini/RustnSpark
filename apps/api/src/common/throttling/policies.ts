@@ -55,6 +55,14 @@ export function defaultPolicyFor(method: string | undefined): ThrottleRoutePolic
 /** Interim per-IP default of D42, kept as the read class limit. */
 export const THROTTLE_LIMIT = READ_POLICY.limit;
 
+// Beta bug report: an email per call, so only a few every ten minutes per account (the service adds
+// daily caps on top).
+export const BUG_REPORT_POLICY: ThrottleRoutePolicy = {
+  limit: 3,
+  ttlMs: 600_000,
+  key: 'account',
+};
+
 export const FORGOT_PASSWORD_POLICY: ThrottleRoutePolicy = {
   limit: 3,
   ttlMs: THROTTLE_TTL_MS,
