@@ -30,7 +30,9 @@ describe('TopBar', () => {
     expect(identity).not.toBeNull();
     expect(within(identity).getByText('Luna Authority')).toBeInTheDocument();
     expect(within(identity).getByText('luna starter')).toBeInTheDocument();
-    expect(within(identity).getByText('Docked at Porto Ceres')).toBeInTheDocument();
+    expect(
+      within(identity).getByText('Docked at Porto Ceres · 3 pilots docked'),
+    ).toBeInTheDocument();
   });
 
   it('shows the last mission link in the status strip when no mission is active', async () => {

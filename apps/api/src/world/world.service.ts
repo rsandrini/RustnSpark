@@ -30,6 +30,8 @@ export interface WorldLocation {
   readonly services: Record<string, unknown>;
   readonly risk: RiskBand;
   readonly missionCount: number;
+  /** Pilots with a ship docked here right now (online or not); only the number is public. */
+  readonly pilotCount: number;
 }
 
 export interface WorldRoute {
@@ -77,6 +79,7 @@ export class WorldService {
       this.prisma.route.findMany({ orderBy: { id: 'asc' } }),
     ]);
     const counts = await this.board.countOffers(locations.map((location) => location.id));
+    const pilots = await this.pilotsDocked();
 
     return {
       locations: locations.map((location) => ({
@@ -93,6 +96,7 @@ export class WorldService {
         services: location.services as Record<string, unknown>,
         risk: riskOfZone(location.zone),
         missionCount: counts.get(location.id) ?? 0,
+        pilotCount: pilots.get(location.id) ?? 0,
       })),
       routes: routes.map((route) => ({
         id: route.id,
@@ -103,5 +107,18 @@ export class WorldService {
         hot: route.danger >= HOT_ROUTE_DANGER,
       })),
     };
+  }
+
+  /** Distinct pilots with a docked ship, per place. Suspended accounts do not count. */
+  private async pilotsDocked(): Promise<Map<string, number>> {
+    const rows = await this.prisma.$queryRaw<{ locationId: string; pilots: bigint }[]>`
+      SELECT s."currentLocationId" AS "locationId", COUNT(DISTINCT s."ownerPlayerId") AS pilots
+      FROM "Ship" s
+      JOIN "Player" p ON p.id = s."ownerPlayerId"
+      JOIN "Account" a ON a.id = p."accountId"
+      WHERE s.status = 'IN_PORT' AND a.status = 'ACTIVE'
+      GROUP BY s."currentLocationId"
+    `;
+    return new Map(rows.map((row) => [row.locationId, Number(row.pilots)]));
   }
 }

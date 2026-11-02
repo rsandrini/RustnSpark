@@ -54,11 +54,13 @@ export function StatusStrip() {
         ? ship.currentLocationId
         : pickLocalized(place.displayName, i18n.language);
     const { kind } = ship.activity;
+    // Only the number of pilots docked here is shown (never who), and only while this ship is docked too.
+    const pilots = place?.pilotCount ?? 0;
     statusText =
       ship.status === 'ADRIFT'
         ? t('stage.floating')
         : kind === 'idle'
-          ? t('stage.docked', { place: placeName })
+          ? `${t('stage.docked', { place: placeName })}${pilots > 0 ? `${STATUS_SEPARATOR}${t('stage.pilotsDocked', { count: pilots })}` : ''}`
           : kind === 'repairing'
             ? t('stage.repairingAt', { place: placeName })
             : t(`stage.mode.${kind}`);

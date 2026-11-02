@@ -694,6 +694,8 @@ export const WorldLocationSchema = z.object({
   services: z.record(z.string(), z.unknown()),
   risk: RiskBandSchema,
   missionCount: z.number(),
+  /** Pilots with a ship docked here (online or not). */
+  pilotCount: z.number().optional(),
 });
 export type WorldLocation = z.infer<typeof WorldLocationSchema>;
 

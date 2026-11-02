@@ -2087,6 +2087,7 @@
     "title": "Mapa do setor",
     "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",
+    "pilotsDocked": "Pilotos atracados aqui: {{count}}",
     "quest": {
       "flag": "Viagem planejada: {{title}}",
       "card": "Detalhes da missão",
@@ -2489,6 +2490,7 @@
       "repairing": "Reparos em andamento"
     },
     "docked": "Atracada em {{place}}",
+    "pilotsDocked": "{{count}} pilotos atracados",
     "repairingAt": "na oficina de {{place}}",
     "floating": "Flutuando no espaço"
   },

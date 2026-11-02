@@ -686,6 +686,11 @@ function PlaceDetails({
           <span className="you-badge">{t('map.youAreHere')}</span>
         </p>
       )}
+      {(place.pilotCount ?? 0) > 0 && (
+        <p className="sub" data-testid="place-pilots">
+          {t('map.pilotsDocked', { count: place.pilotCount })}
+        </p>
+      )}
 
       {!isHere && canTravel && <TravelSection place={place} byId={byId} />}
 

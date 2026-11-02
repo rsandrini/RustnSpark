@@ -234,6 +234,8 @@ describe('map (S10.5)', () => {
   it('offers a trip to another place: route, time, fuel, and a button that starts it', async () => {
     const { svg } = await renderMap();
     fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    // Only how many pilots are docked at the place (never who).
+    expect(await screen.findByTestId('place-pilots')).toHaveTextContent('Pilots docked here: 3');
     const box = await screen.findByTestId('travel');
     expect(within(box).getByText('Fly there without a mission')).toBeInTheDocument();
     expect(await within(box).findByText('2m 30s')).toBeInTheDocument();

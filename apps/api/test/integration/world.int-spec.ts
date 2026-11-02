@@ -27,6 +27,7 @@ interface WorldLocationBody {
   services: Record<string, unknown>;
   risk: 'lo' | 'md' | 'hi';
   missionCount: number;
+  pilotCount: number;
 }
 
 interface WorldRouteBody {
@@ -85,6 +86,41 @@ describe('world map API (S10.5)', () => {
     if (zone === 2) return 'md';
     return 'hi';
   }
+
+  it('counts the pilots docked at each place, only docked ones of active accounts, and only as a number', async () => {
+    const passwords = testApp.app.get(PasswordService);
+    const dock = async (
+      status: 'IN_PORT' | 'ON_MISSION',
+      locationId: string,
+      account: 'ACTIVE' | 'BANNED' = 'ACTIVE',
+    ) => {
+      const pilot = await seedAccountWithPlayer(prisma, passwords, { status: account });
+      await prisma.ship.create({
+        data: {
+          ownerPlayerId: pilot.player.id,
+          name: 'x',
+          layout: [],
+          status,
+          currentLocationId: locationId,
+        },
+      });
+    };
+    await dock('IN_PORT', 'ceres');
+    await dock('IN_PORT', 'ceres');
+    await dock('ON_MISSION', 'ceres');
+    await dock('IN_PORT', 'ceres', 'BANNED');
+    await dock('IN_PORT', 'hedus');
+
+    const response = await request(httpServer(testApp.app)).get('/v1/locations').set(auth(token));
+    const byId = new Map(
+      (response.body as WorldResponseBody).locations.map((location) => [location.id, location]),
+    );
+    expect(byId.get('ceres')?.pilotCount).toBe(2);
+    expect(byId.get('hedus')?.pilotCount).toBe(1);
+    expect(byId.get('cair')?.pilotCount).toBe(0);
+    // never who: the payload carries no pilot names
+    expect(JSON.stringify(response.body)).not.toMatch(/ownerPlayerId|"name":"p-/);
+  });
 
   it('requires an access token', async () => {
     const response = await request(httpServer(testApp.app)).get('/v1/locations');

@@ -1891,6 +1891,7 @@ export const world = (): WorldResponse => ({
         : { buy: true, sell: true, repair: true, missions: true },
     risk: risk as WorldResponse['locations'][number]['risk'],
     missionCount: missionCount as number,
+    pilotCount: 3,
   })),
   routes: [
     ['tycho-ceres', 'tycho', 'ceres', 420, 2],

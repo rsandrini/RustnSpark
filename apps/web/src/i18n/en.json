@@ -2087,6 +2087,7 @@
     "title": "Sector map",
     "hint": "Select a place to see its missions.",
     "youAreHere": "You are here",
+    "pilotsDocked": "Pilots docked here: {{count}}",
     "quest": {
       "flag": "Planned trip: {{title}}",
       "card": "Quest details",
@@ -2489,6 +2490,7 @@
       "repairing": "Repairs under way"
     },
     "docked": "Docked at {{place}}",
+    "pilotsDocked": "{{count}} pilots docked",
     "repairingAt": "in the workshop at {{place}}",
     "floating": "Floating in space"
   },
