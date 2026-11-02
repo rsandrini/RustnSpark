@@ -738,6 +738,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.first_repair_fee_share',
+    group: 'economy',
+    type: 'number',
+    min: 0,
+    max: 1,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.first_repair_fee_share),
+    description: {
+      en: "Share of the workshop fee charged on a pilot's very first repair (0 = free, 1 = full fee). Teaches the repair step without the fee putting a newcomer off.",
+      'pt-BR':
+        'Parte da taxa da oficina cobrada no primeiro reparo do piloto (0 = grátis, 1 = taxa cheia). Ensina o reparo sem a taxa afastar quem está começando.',
+    },
+  },
+  {
     key: 'economy.maintenance_per_tier',
     group: 'economy',
     type: 'integer',

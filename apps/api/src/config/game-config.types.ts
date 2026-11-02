@@ -59,6 +59,7 @@ export type ConfigKey =
   | 'economy.fuel_price'
   | 'economy.isolation_mult'
   | 'economy.maintenance_per_tier'
+  | 'economy.first_repair_fee_share'
   | 'economy.payout_floor_integrity'
   | 'economy.market_rarity_chance'
   | 'economy.market_rarity_by_bridge'
@@ -348,6 +349,8 @@ export type GameRules = Readonly<{
     repair_price_ref: number;
     repair_factor: number;
     maintenance_per_tier: number;
+    /** Share of the workshop fee charged on a pilot's very first repair (0 = free). */
+    first_repair_fee_share: number;
     reward_base: number;
     reward_per_tier: number;
     reward_danger_divisor: number;

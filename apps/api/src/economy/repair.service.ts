@@ -85,8 +85,12 @@ export class RepairService {
    * between the two calls, which start() re-derives and charges at the new value).
    */
   async quote(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
-    const { cost, durationSeconds, items, fee } = await this.plan(shipId, playerId, targets);
-    return { shipId, cost, durationSeconds, items, fee };
+    const { cost, durationSeconds, items, fee, firstRepair } = await this.plan(
+      shipId,
+      playerId,
+      targets,
+    );
+    return { shipId, cost, durationSeconds, items, fee, firstRepair };
   }
 
   private async plan(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {
@@ -112,7 +116,20 @@ export class RepairService {
       where: { id: playerId },
       select: { factionId: true },
     });
-    const rules = this.config.snapshot().rules;
+    const liveRules = this.config.snapshot().rules;
+    // A pilot's very first repair pays only a share of the workshop fee (economy.first_repair_fee_share).
+    const firstRepair = (await this.prisma.repairJob.count({ where: { playerId } })) === 0;
+    const rules: typeof liveRules = firstRepair
+      ? {
+          ...liveRules,
+          economy: {
+            ...liveRules.economy,
+            maintenance_per_tier: Math.round(
+              liveRules.economy.maintenance_per_tier * liveRules.economy.first_repair_fee_share,
+            ),
+          },
+        }
+      : liveRules;
     const rows = await this.parts.findPlayerParts(playerId);
     const installed = rows.filter(
       (part) => part.location === 'INSTALLED' && part.shipId === shipId,
@@ -196,7 +213,7 @@ export class RepairService {
       };
     });
     const fee = cost - items.reduce((sum, item) => sum + item.cost, 0);
-    return { stored, cost, durationSeconds, items, fee };
+    return { stored, cost, durationSeconds, items, fee, firstRepair };
   }
 
   async start(shipId: string, playerId: string, targets: readonly RepairTargetInput[]) {

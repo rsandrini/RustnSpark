@@ -442,6 +442,29 @@ describe('repair job API (S8.4)', () => {
     expect(invalid.status).toBe(409);
   });
 
+  it('the first repair of a pilot waives the workshop fee; every later one pays it', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const part = await damagedInstalledPart(player, 50);
+    const targets = [{ partInstanceId: part.id, toCondition: 100 }];
+    const quoteNow = async () =>
+      (
+        await request(httpServer(testApp.app))
+          .post(`/v1/ships/${player.shipId}/repair/quote`)
+          .set(auth(player.token))
+          .send({ targets })
+      ).body as { fee: number; firstRepair?: boolean };
+
+    const first = await quoteNow();
+    expect(first).toMatchObject({ fee: 0, firstRepair: true });
+    const started = await startRepair(player.token, player.shipId, randomUUID(), targets);
+    expect(started.status).toBe(200);
+
+    const later = await quoteNow();
+    expect(later.firstRepair).toBe(false);
+    expect(later.fee).toBeGreaterThan(0);
+  });
+
   it('start refuses with 409 INSUFFICIENT_FUNDS (never 500) and charges nothing', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

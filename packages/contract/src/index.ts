@@ -1239,6 +1239,8 @@ export const RepairQuoteResponseSchema = z.object({
     z.object({ partInstanceId: z.string(), cost: z.number(), durationSeconds: z.number() }),
   ),
   fee: z.number(),
+  /** True while this would be the pilot's first repair (the workshop fee is waived or cut). */
+  firstRepair: z.boolean().optional(),
 });
 export type RepairQuoteResponse = z.infer<typeof RepairQuoteResponseSchema>;
 

@@ -1506,6 +1506,7 @@
     "repairNothingSelected": "Nada selecionado ainda: mova um controle ou ponha tudo em 100%.",
     "repairWallet": "Saldo atual",
     "repairFee": "Taxa da oficina",
+    "repairFirstFree": "· seu primeiro reparo, por conta da casa",
     "repairTotal": "Total",
     "repairAllTo100": "Tudo em 100%",
     "repairReset": "Voltar ao atual",

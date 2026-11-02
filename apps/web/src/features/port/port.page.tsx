@@ -970,7 +970,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                     <b>{money(wallet)}</b>
                   </div>
                   <div className="statrow">
-                    <span>{t('port.repairFee')}</span>
+                    <span>
+                      {t('port.repairFee')}
+                      {repairQuoteQuery.data?.firstRepair === true && (
+                        <small> {t('port.repairFirstFree')}</small>
+                      )}
+                    </span>
                     <b>
                       {money(changedTargets.length === 0 ? 0 : (repairQuoteQuery.data?.fee ?? 0))}
                     </b>
