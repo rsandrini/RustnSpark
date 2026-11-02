@@ -783,9 +783,11 @@ function TravelSection({ place, byId }: TravelSectionProps) {
             <span>{t('map.travel.distance')}</span>
             <b>{quote.totalDistance}</b>
           </div>
+          {/* What is aboard, against the whole tank; the trip's share is carved out of it. */}
           <Gauge
-            value={Math.min(quote.fuelNeeded, quote.fuelHave)}
-            max={Math.max(quote.fuelHave, quote.fuelNeeded, 1)}
+            value={quote.fuelHave}
+            remainingAfter={quote.fuelHave - quote.fuelNeeded}
+            max={Math.max(quote.fuelCap ?? 0, quote.fuelHave, quote.fuelNeeded, 1)}
             tone={quote.fuelNeeded > quote.fuelHave ? 'bad' : 'fuel'}
             ariaLabel={t('map.travel.fuel')}
             label={t('map.travel.fuelNeeded', {

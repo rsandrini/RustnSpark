@@ -69,6 +69,8 @@ export interface TravelQuote {
   /** Fuel units the trip burns (never credits: fuel is bought at the pump). */
   readonly fuelNeeded: number;
   readonly fuelHave: number;
+  /** What the tank holds, so the screen can draw what is aboard against the whole tank. */
+  readonly fuelCap: number;
   readonly peakDanger: number;
   readonly blockers: readonly TravelBlocker[];
   readonly canDepart: boolean;
@@ -166,6 +168,7 @@ export class TravelService {
       durationSeconds: 0,
       fuelNeeded: 0,
       fuelHave: ship?.fuel ?? 0,
+      fuelCap: 0,
       peakDanger: 0,
       blockers: extra,
       canDepart: false,
@@ -306,6 +309,7 @@ export class TravelService {
       durationSeconds,
       fuelNeeded,
       fuelHave: ship.fuel,
+      fuelCap: flightSheet.fuelCap,
       peakDanger: legs.reduce((peak, leg) => Math.max(peak, leg.danger), 0),
       blockers,
       canDepart: blockers.length === 0,

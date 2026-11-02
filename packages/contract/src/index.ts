@@ -1398,6 +1398,8 @@ export const TravelQuoteSchema = z.object({
   durationSeconds: z.number(),
   fuelNeeded: z.number(),
   fuelHave: z.number(),
+  /** What the tank holds (0 when no trip could be priced). */
+  fuelCap: z.number().optional(),
   peakDanger: z.number(),
   blockers: z.array(TravelBlockerSchema),
   canDepart: z.boolean(),

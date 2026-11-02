@@ -98,6 +98,7 @@ describe('travel without a quest', () => {
     durationSeconds: number;
     fuelNeeded: number;
     fuelHave: number;
+    fuelCap: number;
     blockers: string[];
     canDepart: boolean;
   }
@@ -119,6 +120,8 @@ describe('travel without a quest', () => {
     expect(body.durationSeconds).toBeGreaterThan(0);
     expect(body.fuelNeeded).toBeGreaterThan(0);
     expect(body.fuelNeeded).toBeLessThanOrEqual(body.fuelHave);
+    // The tank size comes with the quote, so the screen can draw what is aboard against the whole tank.
+    expect(body.fuelCap).toBeGreaterThan(0);
     expect(await prisma.missionInstance.count({ where: { type: 'TRAVEL' } })).toBe(0);
 
     const flown = await go(player.token, 'hedus');
