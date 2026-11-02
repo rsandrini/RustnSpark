@@ -751,6 +751,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.first_repair_min_seconds',
+    group: 'economy',
+    type: 'integer',
+    min: 0,
+    max: 3600,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.first_repair_min_seconds),
+    description: {
+      en: "Least time, in seconds, a pilot's very first repair takes, so the newcomer can work on foot (scavenge) while the ship is in the yard.",
+      'pt-BR':
+        'Tempo mínimo, em segundos, do primeiro reparo do piloto, para o iniciante poder trabalhar a pé (saque) enquanto a nave está no estaleiro.',
+    },
+  },
+  {
     key: 'economy.maintenance_per_tier',
     group: 'economy',
     type: 'integer',

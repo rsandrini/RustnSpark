@@ -190,7 +190,11 @@ export class RepairService {
       0,
     );
     const secondsPerPoint = repairSecondsPerPoint(rules, ship.location.zone);
-    const durationSeconds = points * secondsPerPoint;
+    // A pilot's first repair takes at least economy.first_repair_min_seconds (the guide then sends them scavenging).
+    const durationSeconds = Math.max(
+      points * secondsPerPoint,
+      firstRepair ? rules.economy.first_repair_min_seconds : 0,
+    );
 
     // Per-part breakdown for the repair screen: each part's own share of the price and time, and
     // the workshop fee (the per-action maintenance charge) as whatever is left, so the lines

@@ -100,6 +100,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // A pilot's very first repair (the guide's) waives the workshop fee: the fee dwarfs a small repair and a
     // newcomer would skip the step. 0 = free, 1 = full fee.
     first_repair_fee_share: 0,
+    // ...and takes at least 5 minutes, long enough for the guide's scavenging step to be done while the ship is in the yard.
+    first_repair_min_seconds: 300,
     reward_base: 4500,
     reward_per_tier: 700,
     // Owner request (round 3, 2026-09-29): reward already scaled with danger/distance (D13) but

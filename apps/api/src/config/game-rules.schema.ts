@@ -86,6 +86,7 @@ const economySchema = z.object({
   repair_factor: z.number().min(0.1).max(2.0),
   maintenance_per_tier: z.number().int().min(0).max(10000),
   first_repair_fee_share: z.number().min(0).max(1),
+  first_repair_min_seconds: z.number().int().min(0).max(3600),
   reward_base: z.number().int().min(0).max(100000),
   reward_per_tier: z.number().int().min(0).max(20000),
   reward_danger_divisor: z.number().int().min(1).max(100),

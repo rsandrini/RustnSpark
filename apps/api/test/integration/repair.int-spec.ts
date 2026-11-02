@@ -34,6 +34,8 @@ interface AuthPair {
 // hub/outpost k (zone ≤ 1 → the hub k, 2 s/point by default); parts change condition only on completion; ship
 // cannot dispatch while repairing; job idempotent; sold-during-repair cannot wedge complete().
 const HUB_K = GAME_CONFIG_DEFAULTS.economy.repair_seconds_per_point['hub'] ?? 3;
+// A pilot's first repair takes at least this long (economy.first_repair_min_seconds).
+const FIRST_REPAIR_SECONDS = GAME_CONFIG_DEFAULTS.economy.first_repair_min_seconds;
 
 describe('repair job API (S8.4)', () => {
   let testApp: TestApp;
@@ -197,7 +199,7 @@ describe('repair job API (S8.4)', () => {
     };
     expect(body.cost).toBeGreaterThanOrEqual(1);
     // ceres is zone ≤ 1 → hub k s/point; 50 points repaired.
-    expect(body.durationSeconds).toBe(50 * HUB_K);
+    expect(body.durationSeconds).toBe(Math.max(50 * HUB_K, FIRST_REPAIR_SECONDS));
     expect(body.targets).toEqual([
       { partInstanceId: part.id, fromCondition: 50, toCondition: 100 },
     ]);
@@ -415,7 +417,7 @@ describe('repair job API (S8.4)', () => {
       fee: number;
       items: Array<{ partInstanceId: string; cost: number; durationSeconds: number }>;
     };
-    expect(quote.durationSeconds).toBe(50 * HUB_K);
+    expect(quote.durationSeconds).toBe(Math.max(50 * HUB_K, FIRST_REPAIR_SECONDS));
     // The per-part lines plus the workshop fee are exactly the total that start() charges.
     expect(quote.items).toHaveLength(1);
     expect(quote.items[0]).toMatchObject({ partInstanceId: part.id, durationSeconds: 50 * HUB_K });
@@ -453,10 +455,14 @@ describe('repair job API (S8.4)', () => {
           .post(`/v1/ships/${player.shipId}/repair/quote`)
           .set(auth(player.token))
           .send({ targets })
-      ).body as { fee: number; firstRepair?: boolean };
+      ).body as { fee: number; firstRepair?: boolean; durationSeconds: number };
 
     const first = await quoteNow();
-    expect(first).toMatchObject({ fee: 0, firstRepair: true });
+    expect(first).toMatchObject({
+      fee: 0,
+      firstRepair: true,
+      durationSeconds: FIRST_REPAIR_SECONDS,
+    });
     const started = await startRepair(player.token, player.shipId, randomUUID(), targets);
     expect(started.status).toBe(200);
 

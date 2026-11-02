@@ -43,6 +43,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.discard_scrap_per_part',
   'economy.faction_mult',
   'economy.first_repair_fee_share',
+  'economy.first_repair_min_seconds',
   'economy.fuel_price',
   'economy.isolation_mult',
   'economy.maintenance_per_tier',

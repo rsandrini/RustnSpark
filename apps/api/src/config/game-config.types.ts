@@ -60,6 +60,7 @@ export type ConfigKey =
   | 'economy.isolation_mult'
   | 'economy.maintenance_per_tier'
   | 'economy.first_repair_fee_share'
+  | 'economy.first_repair_min_seconds'
   | 'economy.payout_floor_integrity'
   | 'economy.market_rarity_chance'
   | 'economy.market_rarity_by_bridge'
@@ -351,6 +352,8 @@ export type GameRules = Readonly<{
     maintenance_per_tier: number;
     /** Share of the workshop fee charged on a pilot's very first repair (0 = free). */
     first_repair_fee_share: number;
+    /** A pilot's very first repair takes at least this long, so the newcomer has time for another job meanwhile. */
+    first_repair_min_seconds: number;
     reward_base: number;
     reward_per_tier: number;
     reward_danger_divisor: number;
