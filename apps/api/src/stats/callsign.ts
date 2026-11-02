@@ -25,8 +25,9 @@ const CALLSIGN_WORDS = [
 ] as const;
 
 const MAX_NAME_LENGTH = 10;
-const TAG_LENGTH = 3;
-const NO_FACTION_TAG = '---';
+export const CALLSIGN_TAG_LENGTH = 3;
+export const NO_FACTION_TAG = '---';
+const TAG_LENGTH = CALLSIGN_TAG_LENGTH;
 const SEPARATOR = '-';
 const WORD_COUNT = CALLSIGN_WORDS.length;
 const MAX_WORD_LENGTH = 6;

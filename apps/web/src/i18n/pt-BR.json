@@ -412,6 +412,16 @@
       "mob": "MOB",
       "rng": "ALC"
     },
+    "rename": {
+      "button": "Renomear",
+      "title": "Renomear a nave",
+      "help": "O prefixo da facção é fixo. O resto do nome é seu: de 3 a 20 letras, números, espaços, hífens ou sublinhados. Nomes ofensivos são recusados e podem ser denunciados.",
+      "label": "Nome da nave",
+      "price": "Renomear custa {{price}}.",
+      "save": "Renomear",
+      "saving": "Renomeando…",
+      "failed": "Não foi possível renomear a nave."
+    },
     "line": "Nave · {{name}} · {{count}} instaladas",
     "title": "Minha Nave",
     "tray": "Peças",
@@ -2169,6 +2179,9 @@
   "loading": "Carregando...",
   "error": {
     "ACCOUNT_BANNED": "Esta conta foi suspensa.",
+    "SHIP_NAME_INVALID": "Use de 3 a 20 letras, números, espaços, hífens ou sublinhados, começando e terminando com letra ou número.",
+    "SHIP_NAME_BLOCKED": "Esse nome não é permitido.",
+    "SHIP_NAME_UNCHANGED": "Esse já é o nome da nave.",
     "ACTIVE_MISSION_EXISTS": "Já há uma missão em andamento.",
     "ALREADY_REPAIRING": "Esta nave já está em reparo.",
     "SCENE_NOT_SEEN": "Você ainda não passou por essa cena.",

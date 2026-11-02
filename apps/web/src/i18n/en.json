@@ -412,6 +412,16 @@
       "mob": "MOB",
       "rng": "RNG"
     },
+    "rename": {
+      "button": "Rename",
+      "title": "Rename the ship",
+      "help": "The faction prefix is fixed. The rest of the name is yours: 3 to 20 letters, digits, spaces, hyphens or underscores. Offensive names are refused and can be reported.",
+      "label": "Ship name",
+      "price": "Renaming costs {{price}}.",
+      "save": "Rename",
+      "saving": "Renaming…",
+      "failed": "Could not rename the ship."
+    },
     "line": "Ship · {{name}} · {{count}} installed",
     "title": "My Ship",
     "tray": "Parts",
@@ -2169,6 +2179,9 @@
   "loading": "Loading...",
   "error": {
     "ACCOUNT_BANNED": "This account has been suspended.",
+    "SHIP_NAME_INVALID": "Use 3 to 20 letters, digits, spaces, hyphens or underscores, starting and ending with a letter or digit.",
+    "SHIP_NAME_BLOCKED": "That name is not allowed.",
+    "SHIP_NAME_UNCHANGED": "That is already the ship's name.",
     "ACTIVE_MISSION_EXISTS": "A mission is already under way.",
     "ALREADY_REPAIRING": "This ship is already being repaired.",
     "SCENE_NOT_SEEN": "You have not been through that scene yet.",

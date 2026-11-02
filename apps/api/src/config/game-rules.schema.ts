@@ -5,6 +5,7 @@ import { getRegistryEntry } from './config-registry.js';
 
 const adminSchema = z.object({
   debug_fast_ops_seconds: z.number().int().min(1).max(300),
+  name_blocklist: z.array(z.string().min(2).max(40)).max(500),
 });
 
 const combatSchema = z.object({
@@ -87,6 +88,7 @@ const economySchema = z.object({
   maintenance_per_tier: z.number().int().min(0).max(10000),
   first_repair_fee_share: z.number().min(0).max(1),
   first_repair_min_seconds: z.number().int().min(0).max(3600),
+  ship_rename_price: z.number().int().min(0).max(1000000),
   reward_base: z.number().int().min(0).max(100000),
   reward_per_tier: z.number().int().min(0).max(20000),
   reward_danger_divisor: z.number().int().min(1).max(100),

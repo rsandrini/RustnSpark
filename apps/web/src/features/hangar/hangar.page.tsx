@@ -23,6 +23,7 @@ import {
   type Rot,
 } from './hangar.geometry';
 import { Popup } from '../../ui/Popup';
+import { RenameShipDialog } from './rename-ship-dialog';
 import { useAuthContext } from '../auth/auth.context';
 import { tablistKeys } from '../../ui/tablist';
 import { useTutorialVisit } from '../tutorial/tutorial-store';
@@ -101,6 +102,7 @@ export interface HangarPageProps {
 export function HangarPage({ guided = false }: HangarPageProps) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const [renaming, setRenaming] = useState(false);
 
   const shipsQuery = useQuery({
     queryKey: ['ships'],
@@ -627,12 +629,22 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         </button>
       </div>
 
+      <RenameShipDialog shipId={ship.id} open={renaming} onClose={() => setRenaming(false)} />
+
       {pageTab === 'ship' && (
         <p className="page-line ship-line" data-testid="ship-line">
           {t('hangar.line', {
             name: ship.name.trim() !== '' ? ship.name : hexPlaceholder(ship.id),
             count: parts.filter((part) => part.location === 'INSTALLED').length,
-          })}
+          })}{' '}
+          <button
+            type="button"
+            className="btn tiny"
+            data-testid="rename-ship"
+            onClick={() => setRenaming(true)}
+          >
+            {t('hangar.rename.button')}
+          </button>
         </p>
       )}
 

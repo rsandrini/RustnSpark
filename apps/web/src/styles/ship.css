@@ -1081,3 +1081,14 @@ details.collapsible > summary h2 {
 .layout-notes {
   margin-bottom: 8px;
 }
+
+/* the rename dialog: the fixed faction prefix beside the pilot's own part */
+.rename-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rename-prefix {
+  color: var(--brass);
+  white-space: nowrap;
+}

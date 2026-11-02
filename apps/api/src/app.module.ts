@@ -22,6 +22,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { PlayersModule } from './players/players.module.js';
 import { PartsModule } from './parts/parts.module.js';
 import { ShipsModule } from './ships/ships.module.js';
+import { ShipRenameModule } from './ships/ship-rename.module.js';
 import { ShipRatingModule } from './stats/ship-rating.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { MissionsModule } from './missions/missions.module.js';
@@ -47,6 +48,7 @@ import { TokenService } from './auth/token.service.js';
     PlayersModule,
     PartsModule,
     ShipsModule,
+    ShipRenameModule,
     ShipRatingModule,
     ConfigModule,
     MissionsModule,

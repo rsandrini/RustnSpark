@@ -3,6 +3,33 @@ import { GAME_CONFIG_DEFAULTS } from './game-config.defaults.js';
 
 export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
   {
+    key: 'admin.name_blocklist',
+    group: 'admin',
+    type: 'json',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.name_blocklist),
+    description: {
+      en: 'Words no ship name may contain (a list of strings). Matching ignores case, spaces, accents and digits used for letters (4 for a, 3 for e, 0 for o, 1 for i, 5 for s).',
+      'pt-BR':
+        'Palavras que nenhum nome de nave pode conter (uma lista de textos). A comparação ignora maiúsculas, espaços, acentos e números no lugar de letras (4 por a, 3 por e, 0 por o, 1 por i, 5 por s).',
+    },
+  },
+  {
+    key: 'economy.ship_rename_price',
+    group: 'economy',
+    type: 'integer',
+    min: 0,
+    max: 1000000,
+    unit: '¢',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.ship_rename_price),
+    description: {
+      en: "What renaming the ship costs. The faction prefix of the name is fixed; the rest is the pilot's choice.",
+      'pt-BR':
+        'Quanto custa renomear a nave. O prefixo da facção no nome é fixo; o resto é escolha do piloto.',
+    },
+  },
+  {
     key: 'admin.debug_fast_ops_seconds',
     group: 'admin',
     type: 'integer',

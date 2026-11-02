@@ -11,6 +11,7 @@ import { validateGameRules } from '../../../src/config/game-rules.schema.js';
 
 const EXPECTED_KEYS: readonly string[] = [
   'admin.debug_fast_ops_seconds',
+  'admin.name_blocklist',
   'combat.armor_cap',
   'combat.armor_pool_factor',
   'combat.armor_reduction',
@@ -72,6 +73,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.reward_type_bonus',
   'economy.sell_min_condition',
   'economy.sell_ratio',
+  'economy.ship_rename_price',
   'economy.ship_tier_thresholds',
   'economy.start_credits',
   'economy.upgrade_materials',

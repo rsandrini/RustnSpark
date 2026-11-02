@@ -27,6 +27,8 @@ export type ConfigGroup =
 
 export type ConfigKey =
   | 'admin.debug_fast_ops_seconds'
+  | 'admin.name_blocklist'
+  | 'economy.ship_rename_price'
   | 'combat.armor_cap'
   | 'combat.attack_die'
   | 'combat.damage_die'
@@ -247,6 +249,8 @@ export type GameRulesAdmin = Readonly<{
    * itself is per-account, not global — see the Player model, not this config).
    */
   debug_fast_ops_seconds: number;
+  /** Words a ship name may not contain (case, spacing, digits-for-letters and accents are ignored). */
+  name_blocklist: readonly string[];
 }>;
 
 export interface ConfigRegistryEntry {
@@ -354,6 +358,8 @@ export type GameRules = Readonly<{
     first_repair_fee_share: number;
     /** A pilot's very first repair takes at least this long, so the newcomer has time for another job meanwhile. */
     first_repair_min_seconds: number;
+    /** What renaming the ship costs (the faction prefix stays fixed; the rest is the pilot's). */
+    ship_rename_price: number;
     reward_base: number;
     reward_per_tier: number;
     reward_danger_divisor: number;
