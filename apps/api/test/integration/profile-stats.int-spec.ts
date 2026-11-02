@@ -101,6 +101,9 @@ describe('pilot profile endpoints', () => {
     expect(Object.keys(body.records)).toEqual(['best.race_place']);
     expect(body.successRate).toBe(0.75);
     expect(body.ship.title).toMatch(/^LUN-Alice-[A-Za-z]+$/);
+    // The card shows the ship's own name, the same callsign the pilot sees on their ship.
+    const own = await get('/v1/ships', alice.token);
+    expect((own.body as { name: string }[])[0]?.name).toBe(body.ship.title);
     expect(body.ship.shipClass).toBeTruthy();
     expect(body.ship.bridgeRarity).toBeTruthy();
     // nothing private, nothing about the ship's parts

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { callsignOf } from '../src/stats/callsign.js';
 import { seedDropTables } from './seed-data/drop-tables.js';
 import { seedEnvironments } from './seed-data/environments.js';
 import { seedFactions } from './seed-data/factions.js';
@@ -37,10 +38,35 @@ export async function seed(prisma?: PrismaClient): Promise<void> {
     await seedReportTemplates(client);
     await seedDropTables(client);
     await seedGameConfig(client);
+    await renameGenericStarterShips(client);
   } finally {
     if (ownsClient) {
       await client.$disconnect();
     }
+  }
+}
+
+/**
+ * Ships made before they got a callsign are called "<faction> starter" (the same for everyone): give them the
+ * callsign their pilot's public card shows. Only those exact generic names are touched, so it is safe on every run.
+ */
+async function renameGenericStarterShips(client: PrismaClient): Promise<void> {
+  const ships = await client.ship.findMany({
+    where: { name: { endsWith: ' starter' } },
+    select: { id: true, name: true, owner: { select: { id: true, name: true, factionId: true } } },
+  });
+  for (const ship of ships) {
+    if (ship.owner.factionId === null || ship.name !== `${ship.owner.factionId} starter`) continue;
+    await client.ship.update({
+      where: { id: ship.id },
+      data: {
+        name: callsignOf({
+          factionId: ship.owner.factionId,
+          playerName: ship.owner.name,
+          playerId: ship.owner.id,
+        }),
+      },
+    });
   }
 }
 

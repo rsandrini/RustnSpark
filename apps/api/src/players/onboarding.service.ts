@@ -1,3 +1,4 @@
+import { callsignOf } from '../stats/callsign.js';
 import {
   BadRequestException,
   ConflictException,
@@ -72,10 +73,15 @@ export class OnboardingService {
         return { shipId: already.id };
       }
 
+      // The ship is named with the pilot's callsign (faction tag, pilot name, a word), the same one the public card shows.
+      const pilot = await tx.player.findUniqueOrThrow({
+        where: { id: playerId },
+        select: { name: true },
+      });
       const created = await tx.ship.create({
         data: {
           ownerPlayerId: playerId,
-          name: `${faction} starter`,
+          name: callsignOf({ factionId: faction, playerName: pilot.name, playerId }),
           layout: [],
           fuel: 0,
           status: 'IN_PORT',

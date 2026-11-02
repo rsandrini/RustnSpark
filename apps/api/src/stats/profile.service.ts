@@ -79,11 +79,15 @@ export class ProfileService {
     const bridge = installed.find((part) => part.catalog.partClass === 'BRIDGE');
     if (bridge === undefined) return null;
     return {
-      title: callsignOf({
-        factionId: player.factionId,
-        playerName: player.name,
-        playerId: player.id,
-      }),
+      // The ship's own name (its callsign since onboarding); the generated one only if it is somehow blank.
+      title:
+        ship.name.trim() !== ''
+          ? ship.name
+          : callsignOf({
+              factionId: player.factionId,
+              playerName: player.name,
+              playerId: player.id,
+            }),
       shipClass: deriveShipClass(installed, this.config.snapshot().rules),
       bridgeRarity: bridge.instance.partCatalog.rarity,
     };
