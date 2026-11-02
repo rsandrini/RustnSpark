@@ -18,6 +18,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
 import { formatDuration } from '../../ui/duration';
 import { Gauge } from '../../ui/Gauge';
+import { FuelBlock } from '../board/fuel-block';
 import { errorText } from '../../api/errors';
 import { PlaceArt } from '../../ui/PlaceArt';
 import { pathOfLegs } from '../../ui/RouteMap';
@@ -783,18 +784,22 @@ function TravelSection({ place, byId }: TravelSectionProps) {
             <span>{t('map.travel.distance')}</span>
             <b>{quote.totalDistance}</b>
           </div>
-          {/* What is aboard, against the whole tank; the trip's share is carved out of it. */}
-          <Gauge
-            value={quote.fuelHave}
-            remainingAfter={quote.fuelHave - quote.fuelNeeded}
-            max={Math.max(quote.fuelCap ?? 0, quote.fuelHave, quote.fuelNeeded, 1)}
-            tone={quote.fuelNeeded > quote.fuelHave ? 'bad' : 'fuel'}
-            ariaLabel={t('map.travel.fuel')}
-            label={t('map.travel.fuelNeeded', {
-              needed: Math.round(quote.fuelNeeded),
-              have: Math.round(quote.fuelHave),
-            })}
-          />
+          {/* The same fuel block as a mission card: what is aboard, what the trip burns, the verdict and the bar. */}
+          {(quote.fuelCap ?? 0) > 0 ? (
+            <FuelBlock have={quote.fuelHave} needed={quote.fuelNeeded} cap={quote.fuelCap ?? 0} />
+          ) : (
+            <Gauge
+              value={quote.fuelHave}
+              remainingAfter={quote.fuelHave - quote.fuelNeeded}
+              max={Math.max(quote.fuelHave, quote.fuelNeeded, 1)}
+              tone={quote.fuelNeeded > quote.fuelHave ? 'bad' : 'fuel'}
+              ariaLabel={t('map.travel.fuel')}
+              label={t('map.travel.fuelNeeded', {
+                needed: Math.round(quote.fuelNeeded),
+                have: Math.round(quote.fuelHave),
+              })}
+            />
+          )}
           <p className="sub">{t('map.travel.noPay')}</p>
         </>
       )}

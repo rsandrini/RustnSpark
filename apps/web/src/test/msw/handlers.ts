@@ -1410,6 +1410,7 @@ export const handlers = [
       durationSeconds: 150,
       fuelNeeded: 12,
       fuelHave: 25,
+      fuelCap: 60,
       peakDanger: 5,
       blockers: [],
       canDepart: true,
