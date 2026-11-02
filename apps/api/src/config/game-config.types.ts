@@ -208,6 +208,7 @@ export type ConfigKey =
   | 'wear.defeat_loss_min'
   | 'wear.defense_wear_bonus'
   | 'wear.env_multiplier'
+  | 'wear.first_run_multiplier'
   | 'wear.other_exposed_wear_factor'
   | 'wear.mining_wear_factor'
   | 'wear.environment_damage_factor'
@@ -309,6 +310,8 @@ export type GameRules = Readonly<{
     base_min: number;
     base_max: number;
     env_multiplier: number;
+    /** Multiplier on a part's base wear for a pilot's very first mission, so the first repair is real. */
+    first_run_multiplier: number;
     choke_loss_min: number;
     choke_loss_max: number;
     defeat_loss_min: number;

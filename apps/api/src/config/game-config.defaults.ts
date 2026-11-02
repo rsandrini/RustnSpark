@@ -57,6 +57,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     base_min: 0.5,
     base_max: 0.85,
     env_multiplier: 1,
+    // The first mission is worn harder (about 6-10 points on the exposed parts) so the guide's repair step has
+    // something to repair; every later mission wears at the normal rate.
+    first_run_multiplier: 12,
     choke_loss_min: 3,
     choke_loss_max: 8,
     defeat_loss_min: 8,

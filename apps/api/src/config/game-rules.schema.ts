@@ -52,6 +52,7 @@ const wearSchema = z.object({
   base_min: z.number().min(0).max(20),
   base_max: z.number().min(0).max(20),
   env_multiplier: z.number().min(0).max(5),
+  first_run_multiplier: z.number().min(1).max(30),
   choke_loss_min: z.number().int().min(0).max(20),
   choke_loss_max: z.number().int().min(0).max(50),
   defeat_loss_min: z.number().int().min(0).max(50),

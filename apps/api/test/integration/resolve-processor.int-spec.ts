@@ -279,6 +279,24 @@ describe('mission resolve processor (S7.3)', () => {
     );
   }, 30_000);
 
+  it('wears the ship harder on the very first mission, so the guide has a repair to teach (a scuff, not a wreck)', async () => {
+    const player = await authFor(testApp.app);
+    const installed = () =>
+      prisma.partInstance.findMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        select: { condition: true },
+      });
+    expect((await installed()).every((part) => part.condition === 100)).toBe(true);
+
+    const first = await createAcceptedMission(player, 'first-run-seed-1', [150, 100]);
+    await processor.process(await dispatchedJob(player, first, 10_000));
+    const afterFirst = (await installed()).map((part) => part.condition);
+    expect(Math.min(...afterFirst)).toBeLessThanOrEqual(96);
+
+    // A real scuff the pilot can repair, never a wreck.
+    expect(Math.min(...afterFirst)).toBeGreaterThanOrEqual(80);
+  }, 60_000);
+
   it('a destroyed bridge destroys the ship: every part is lost, a new starter pack arrives, money and goods stay', async () => {
     const player = await authFor(testApp.app);
     const playerId = player.seeded.player.id;

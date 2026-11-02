@@ -436,6 +436,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'wear.first_run_multiplier',
+    group: 'wear',
+    type: 'number',
+    min: 1,
+    max: 30,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.wear.first_run_multiplier),
+    description: {
+      en: "Multiplier on a part's base wear for a pilot's very first mission, so the guide's repair step has something to repair (1 = no extra).",
+      'pt-BR':
+        'Multiplicador do desgaste base de cada peça na primeira missão do piloto, para o passo de reparo do guia ter o que reparar (1 = sem extra).',
+    },
+  },
+  {
     key: 'wear.choke_loss_min',
     group: 'wear',
     type: 'integer',

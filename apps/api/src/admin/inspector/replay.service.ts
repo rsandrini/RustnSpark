@@ -77,6 +77,7 @@ export class ReplayService {
         snapshot,
         context,
         rules,
+        firstRun: (log.legs as { firstRun?: unknown } | null)?.firstRun === true,
       }),
     );
   }

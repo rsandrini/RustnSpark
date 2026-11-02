@@ -152,6 +152,11 @@ export class MissionResolveService {
             }
           : null,
     });
+    // A pilot's very first mission wears the ship harder (wear.first_run_multiplier), so the guide's repair step
+    // has something to repair. The flag is stored in the log, so a replay applies the same rules. Later missions use the rules as they are.
+    const firstRun =
+      mission.playerId !== null &&
+      (await this.prisma.missionLog.count({ where: { playerId: mission.playerId } })) === 0;
     const outcome = resolveMission(
       buildResolveInput({
         missionId: mission.id,
@@ -160,6 +165,7 @@ export class MissionResolveService {
         snapshot,
         context,
         rules,
+        firstRun,
       }),
     );
     const finalStatus: 'DONE' | 'FAILED' =
@@ -190,7 +196,7 @@ export class MissionResolveService {
             schemaVersion: MISSION_LOG_SCHEMA_VERSION,
             shipSnapshot: toJsonInput(snapshot),
             // `events` above is the zod-validated stream; legs are the resolver's own output.
-            legs: toJsonInput({ legs: outcome.legs, events, context }),
+            legs: toJsonInput({ legs: outcome.legs, events, context, firstRun }),
           },
         });
         // What the pirates took from storage (chosen by the seeded engine and frozen in the log):

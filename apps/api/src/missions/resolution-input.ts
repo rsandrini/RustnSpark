@@ -214,6 +214,25 @@ export function startingPools(
   };
 }
 
+/**
+ * The rules a pilot's very first mission is resolved with: base wear scaled by `wear.first_run_multiplier`, and a
+ * safe route no longer scales it down, so the guide's repair step has something real to repair. Live resolution and
+ * the admin replay both go through here, so a replay of that first run stays exact.
+ */
+export function firstRunRules(rules: GameRules): GameRules {
+  const factor = rules.wear.first_run_multiplier;
+  if (factor <= 1) return rules;
+  return {
+    ...rules,
+    wear: {
+      ...rules.wear,
+      base_min: rules.wear.base_min * factor,
+      base_max: rules.wear.base_max * factor,
+      danger_floor: Math.max(rules.wear.danger_floor, 1),
+    },
+  };
+}
+
 export function buildResolveInput(args: {
   readonly missionId: string;
   readonly missionType: string;
@@ -221,8 +240,11 @@ export function buildResolveInput(args: {
   readonly snapshot: DispatchSnapshot;
   readonly context: ResolutionContext;
   readonly rules: GameRules;
+  /** The pilot's very first mission: it wears the ship harder (see `firstRunRules`). */
+  readonly firstRun?: boolean;
 }): Parameters<typeof resolveMission>[0] {
-  const { snapshot, context, rules } = args;
+  const { snapshot, context } = args;
+  const rules = args.firstRun === true ? firstRunRules(args.rules) : args.rules;
   const installed: InstalledPart[] = snapshot.parts.map((part) => ({
     instance: { id: part.id, partType: part.partType, condition: part.condition },
     catalog: part.catalog,
