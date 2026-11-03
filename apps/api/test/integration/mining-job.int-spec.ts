@@ -209,7 +209,11 @@ describe('independent mining job (round 10)', () => {
     const player = await onboardPlayer();
     await installMiningRig(player.token, player.seeded.player.id, player.shipId);
     const { rules } = configService.snapshot();
-    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 1000 } });
+    // overdriven engines must not shorten a dig: the ship does not fly
+    await prisma.ship.update({
+      where: { id: player.shipId },
+      data: { fuel: 1000, chemLevel: 1.4 },
+    });
 
     for (const ticks of [0, 5, 1.5]) {
       const bad = await start(player.token, 'ceres').send({ ticks });
@@ -230,7 +234,9 @@ describe('independent mining job (round 10)', () => {
     expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(
       3 * rules.mining.job_duration_seconds + 5,
     );
-    expect(body.durationSeconds ?? 0).toBeGreaterThanOrEqual(rules.mining.job_duration_seconds - 5);
+    // whole ticks of the configured length, whatever the engines or the ship's speed
+    expect((body.durationSeconds ?? 0) % rules.mining.job_duration_seconds).toBe(0);
+    expect(body.durationSeconds ?? 0).toBeGreaterThanOrEqual(rules.mining.job_duration_seconds);
     const job = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
     expect((job.legs as Array<{ miningTicks?: number }>)[0]?.miningTicks).toBe(3);
   });

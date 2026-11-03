@@ -900,6 +900,15 @@ details.collapsible > summary h2 {
 .ship-line b.ship-line-bad {
   color: var(--coral);
 }
+.ship-name-row {
+  align-items: center;
+  gap: 8px;
+}
+.ship-name-row b {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .hangar-layout {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) 300px;

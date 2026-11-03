@@ -32,6 +32,7 @@ import { RescueBanner } from '../rescue/rescue-banner';
 import { Popup } from '../../ui/Popup';
 import { Countdown } from '../../ui/Countdown';
 import { formatDuration } from '../../ui/duration';
+import { FuelBlock } from '../board/fuel-block';
 import { Gauge, conditionTone } from '../../ui/Gauge';
 import { ActionArt } from '../../ui/ActionArt';
 import { PartThumb } from '../../ui/PartThumb';
@@ -1663,42 +1664,64 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <p className="sub">{t('port.mine.what')}</p>
             </div>
           </header>
+          <ul className="action-tiles" data-testid="mine-tiles">
+            <li>
+              <small>{t('port.mine.tile.time')}</small>
+              <b>{formatDuration(mineTicks * mineTickSeconds, t)}</b>
+            </li>
+            <li>
+              <small>{t('port.mine.tile.hold')}</small>
+              <b>{t('port.mine.tile.holdValue', { units: ship.sheet.crg })}</b>
+            </li>
+            <li>
+              <small>{t('port.mine.tile.fuel')}</small>
+              <b>{t('port.mine.tile.fuelValue', { units: mineTicks * mineFuelPerTick })}</b>
+            </li>
+          </ul>
+          {mineTickSeconds > 0 && (
+            <fieldset className="mine-lengths" data-testid="mine-lengths">
+              <legend>{t('port.mine.length')}</legend>
+              {Array.from({ length: mineMaxTicks }, (_, index) => index + 1).map((ticks) => (
+                <label
+                  key={ticks}
+                  className={`action-card mine-length${ticks === mineTicks ? ' on' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="mine-length"
+                    checked={ticks === mineTicks}
+                    onChange={() => setMineTicks(ticks)}
+                    aria-label={formatDuration(ticks * mineTickSeconds, t)}
+                  />
+                  <b className="mine-length-time">{formatDuration(ticks * mineTickSeconds, t)}</b>
+                  <span className="sub">
+                    {t('port.mine.option', { fuel: ticks * mineFuelPerTick })}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+          <p className="sub" data-testid="mine-fuel">
+            {t('port.mine.fuel', { perTick: mineFuelPerTick, total: mineTicks * mineFuelPerTick })}
+          </p>
+          {ship.sheet.fuelCap > 0 && (
+            <FuelBlock
+              have={ship.fuel}
+              needed={mineTicks * mineFuelPerTick}
+              cap={ship.sheet.fuelCap}
+            />
+          )}
           <div className="action-cta">
             {/* What is dug is kept in the cargo hold: with none, the run would come back empty. */}
-            {ship !== undefined && ship.sheet.crg < 1 && (
+            {ship.sheet.crg < 1 && (
               <p className="warn-text" role="status" data-testid="mine-no-hold">
                 {t('hangar.problems.NO_CARGO_HOLD')}
               </p>
             )}
-            {mineTickSeconds > 0 && (
-              <div className="stack" role="radiogroup" aria-label={t('port.mine.length')}>
-                <span className="sub">{t('port.mine.length')}</span>
-                <div className="actions">
-                  {Array.from({ length: mineMaxTicks }, (_, index) => index + 1).map((ticks) => (
-                    <button
-                      key={ticks}
-                      type="button"
-                      role="radio"
-                      aria-checked={ticks === mineTicks}
-                      className={ticks === mineTicks ? 'btn primary' : 'btn'}
-                      onClick={() => setMineTicks(ticks)}
-                    >
-                      {t('port.mine.option', { time: formatDuration(ticks * mineTickSeconds, t) })}
-                    </button>
-                  ))}
-                </div>
-                <p className="sub" data-testid="mine-fuel">
-                  {t('port.mine.fuel', {
-                    perTick: mineFuelPerTick,
-                    total: mineTicks * mineFuelPerTick,
-                  })}
-                </p>
-              </div>
-            )}
             <button
               type="button"
               className="btn primary"
-              disabled={mine.isPending || (ship !== undefined && ship.sheet.crg < 1)}
+              disabled={mine.isPending || ship.sheet.crg < 1}
               onClick={() => mine.mutate()}
             >
               {t('port.mine.action')}

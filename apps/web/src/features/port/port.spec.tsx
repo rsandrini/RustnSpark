@@ -513,7 +513,7 @@ describe('port (S10.9)', () => {
     openPortTab('Mining');
 
     const mining = await screen.findByTestId('mining-job');
-    expect(within(mining).getByText(/minable/)).toBeInTheDocument();
+    expect(within(mining).getByText(/dig where it sits/)).toBeInTheDocument();
 
     fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
     await waitFor(() =>

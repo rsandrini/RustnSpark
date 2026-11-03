@@ -181,3 +181,23 @@ describe('ShipSheetPanel range', () => {
     expect(row).not.toHaveTextContent('routes');
   });
 });
+
+describe('ShipSheetPanel name', () => {
+  it('shows the ship name at the top of the sheet with a Rename button', () => {
+    const onRename = vi.fn();
+    renderWithProviders(
+      <ShipSheetPanel
+        shipClass="MULTIROLE"
+        shipName="LUN-NOVA"
+        onRename={onRename}
+        sheet={sheet}
+        problemCount={0}
+        installedCatalogs={[]}
+      />,
+    );
+    const row = screen.getByTestId('ship-name-row');
+    expect(row).toHaveTextContent('LUN-NOVA');
+    fireEvent.click(within(row).getByRole('button', { name: 'Rename' }));
+    expect(onRename).toHaveBeenCalledTimes(1);
+  });
+});

@@ -198,6 +198,13 @@ function loadedCargoOf(mission: MissionInstance): DispatchSnapshot['cargo'] | un
 
 const MS_PER_SECOND = 1000;
 
+/** The ticks an independent mining job was set up for (undefined for every other mission). */
+function legs0Ticks(legs: unknown): number | undefined {
+  return Array.isArray(legs) && typeof legs[0]?.miningTicks === 'number'
+    ? legs[0].miningTicks
+    : undefined;
+}
+
 function arrivalOf(mission: MissionInstance): Date {
   if (!mission.arrivalAt) {
     throw new Error(`mission ${mission.id} is ${mission.status} without arrivalAt`);
@@ -398,8 +405,9 @@ export class DispatchService {
             );
       // Engine tuning (set on the bridge): the chemical and ion engines run at their chosen levels,
       // so thrust, fuel burn and power already reflect them for time, fuel and the whole flight.
+      // (a mining job digs where it sits: it never flies, so the engines are not run)
       const engineLevels =
-        mission.type === 'SCAVENGE'
+        mission.type === 'SCAVENGE' || legs0Ticks(mission.legs) !== undefined
           ? undefined
           : clampLevels({ chem: ship.chemLevel, ion: ship.ionLevel }, rules);
       if (engineLevels !== undefined) {
@@ -494,9 +502,11 @@ export class DispatchService {
             have: Math.floor(ship.fuel),
           });
         }
-        if (ran > 0) {
-          durationSeconds = Math.max(1, Math.round((durationSeconds * ran) / miningTicks));
-        }
+        // The dig takes the ticks it runs, whatever the ship's speed: the ship does not fly.
+        durationSeconds = Math.max(
+          1,
+          (ran > 0 ? ran : miningTicks) * rules.mining.job_duration_seconds,
+        );
       }
       const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);
 

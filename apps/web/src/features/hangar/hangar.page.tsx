@@ -638,23 +638,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
       <RenameShipDialog shipId={ship.id} open={renaming} onClose={() => setRenaming(false)} />
 
-      {pageTab === 'ship' && (
-        <p className="page-line ship-line" data-testid="ship-line">
-          {t('hangar.line', {
-            name: ship.name.trim() !== '' ? ship.name : hexPlaceholder(ship.id),
-            count: parts.filter((part) => part.location === 'INSTALLED').length,
-          })}{' '}
-          <button
-            type="button"
-            className="btn tiny"
-            data-testid="rename-ship"
-            onClick={() => setRenaming(true)}
-          >
-            {t('hangar.rename.button')}
-          </button>
-        </p>
-      )}
-
       {/* Owner request: the Ship/Port/Board switcher duplicated the top nav (which reaches the
           same three places now) and read as confusing, two menus doing the same job. Removed —
           Port's and Board's own content below still render from the same URL-derived `pageTab`,
@@ -1126,6 +1109,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 )}
                 <ShipSheetPanel
                   shipClass={shipClass}
+                  shipName={
+                    ship === undefined
+                      ? undefined
+                      : ship.name.trim() !== ''
+                        ? ship.name
+                        : hexPlaceholder(ship.id)
+                  }
+                  onRename={ship === undefined ? undefined : () => setRenaming(true)}
                   sheet={sheet}
                   problemCount={allProblems.length}
                   warningCount={allWarnings.length}

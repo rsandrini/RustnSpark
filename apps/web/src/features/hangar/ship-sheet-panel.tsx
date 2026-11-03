@@ -6,6 +6,9 @@ import { conditionTone } from '../../ui/Gauge';
 
 export interface ShipSheetPanelProps {
   shipClass: string | undefined;
+  /** The ship's own name, shown at the top of the sheet with a Rename button (when `onRename` is given). */
+  shipName?: string | undefined;
+  onRename?: (() => void) | undefined;
   sheet: ShipSheet | undefined;
   /** How many of the ship's own blocking/validation problems are active right now (owner
       request: a short status above the detail, not buried after 20 rows). The full list with
@@ -102,6 +105,8 @@ export function defensePools(
 
 export function ShipSheetPanel({
   shipClass,
+  shipName,
+  onRename,
   sheet,
   problemCount,
   warningCount = 0,
@@ -123,10 +128,23 @@ export function ShipSheetPanel({
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
 
   const classRow = (
-    <div className="statrow" title={t('hangar.statHelp.class')}>
-      <span>{t('hangar.class')}</span>
-      <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
-    </div>
+    <>
+      {shipName !== undefined && (
+        <div className="statrow ship-name-row" data-testid="ship-name-row">
+          <span>{t('hangar.shipName')}</span>
+          <b>{shipName}</b>
+          {onRename !== undefined && (
+            <button type="button" className="btn" data-testid="rename-ship" onClick={onRename}>
+              {t('hangar.rename.button')}
+            </button>
+          )}
+        </div>
+      )}
+      <div className="statrow" title={t('hangar.statHelp.class')}>
+        <span>{t('hangar.class')}</span>
+        <b>{shipClass !== undefined ? t(`hangar.classes.${shipClass}`) : '—'}</b>
+      </div>
+    </>
   );
 
   if (sheet === undefined) return classRow;

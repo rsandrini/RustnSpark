@@ -684,7 +684,8 @@
       "WEAPON_BALLISTIC": "Balística",
       "WEAPON_LASER": "Laser",
       "WEAPON_MISSILE": "Míssil"
-    }
+    },
+    "shipName": "Nome da nave"
   },
   "home": {
     "play": "Jogar",
@@ -1540,11 +1541,18 @@
     },
     "mine": {
       "title": "Minerar o campo",
-      "what": "Se este lugar puder ser minerado e sua nave tiver uma broca de mineração, mande-a cavar. Escolha por quanto tempo: ela cava em ticks de 5 minutos e volta quando o tempo acaba ou o porão enche. Sem pagamento adiantado e sem relatório do que achou até o trabalho terminar.",
+      "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos e volta quando o tempo acaba ou o porão enche. Sem pagamento adiantado: você vê o que ela achou quando o trabalho termina.",
       "action": "Enviar a nave para minerar",
       "length": "Por quanto tempo cavar",
-      "option": "{{time}}",
-      "fuel": "Queima {{perTick}} de combustível a cada tick cavado: até {{total}} nesta duração, menos se o porão encher antes."
+      "option": "até {{fuel}} de combustível",
+      "fuel": "Cada tick cavado queima {{perTick}} de combustível: até {{total}} nesta duração, menos se o porão encher antes.",
+      "tile": {
+        "time": "Tempo",
+        "hold": "Porão de carga",
+        "holdValue": "{{units}} unid.",
+        "fuel": "Combustível",
+        "fuelValue": "até {{units}}"
+      }
     },
     "repairHelp": "Mova um controle para escolher até onde consertar cada peça. Nada é consertado até você mexer.",
     "repairNoChange": "Sem mudança",

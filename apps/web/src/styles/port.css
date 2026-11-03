@@ -315,7 +315,10 @@
 }
 .repair-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.1fr) minmax(150px, 2fr) minmax(110px, 1fr) minmax(130px, 0.9fr);
+  grid-template-columns: minmax(140px, 1.1fr) minmax(150px, 2fr) minmax(110px, 1fr) minmax(
+      130px,
+      0.9fr
+    );
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -607,6 +610,33 @@
 .action-cta {
   display: flex;
   justify-content: center;
+}
+/* mining: how long to dig, one card per length */
+.mine-lengths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  border: 0;
+  padding: 0;
+}
+.mine-lengths legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mine-length {
+  justify-items: start;
+  padding: 14px;
+}
+.mine-length-time {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
 }
 @media (max-width: 700px) {
   .action-hero,

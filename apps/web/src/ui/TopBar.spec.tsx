@@ -26,7 +26,9 @@ describe('TopBar', () => {
     server.use(me());
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
-    const identity = screen.getByText('luna starter').closest('.ship-identity') as HTMLElement;
+    const identity = screen
+      .getAllByText('luna starter')[0]!
+      .closest('.ship-identity') as HTMLElement;
     expect(identity).not.toBeNull();
     expect(within(identity).getByText('Luna Authority')).toBeInTheDocument();
     expect(within(identity).getByText('luna starter')).toBeInTheDocument();
@@ -77,7 +79,9 @@ describe('TopBar', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/hangar'] });
     expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
-    const identity = screen.getByText('luna starter').closest('.ship-identity') as HTMLElement;
+    const identity = screen
+      .getAllByText('luna starter')[0]!
+      .closest('.ship-identity') as HTMLElement;
     expect(within(identity).queryByRole('combobox')).toBeNull();
     await userEvent.click(await screen.findByRole('button', { name: 'Engine tuning' }));
     const tuning = await screen.findByRole('group', { name: 'Engine tuning' });

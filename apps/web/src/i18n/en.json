@@ -684,7 +684,8 @@
       "WEAPON_BALLISTIC": "Ballistic",
       "WEAPON_LASER": "Laser",
       "WEAPON_MISSILE": "Missile"
-    }
+    },
+    "shipName": "Ship name"
   },
   "home": {
     "play": "Play",
@@ -1540,11 +1541,18 @@
     },
     "mine": {
       "title": "Mine the field",
-      "what": "If this place is minable and your ship carries a mining rig, send it out to dig. Pick how long: it digs in 5-minute ticks and heads back when the time is up or the hold is full. No pay up front, no report of what it turns up until the job ends.",
+      "what": "Send the ship to dig where it sits. It digs in 5-minute ticks and heads back when the time is up or the hold is full. No pay up front: you see what it turned up when the job ends.",
       "action": "Send the ship mining",
       "length": "How long to dig",
-      "option": "{{time}}",
-      "fuel": "Burns {{perTick}} fuel for each tick it digs: up to {{total}} for this length, less if the hold fills first."
+      "option": "up to {{fuel}} fuel",
+      "fuel": "Each tick it digs burns {{perTick}} fuel: up to {{total}} for this length, less if the hold fills first.",
+      "tile": {
+        "time": "Time",
+        "hold": "Cargo hold",
+        "holdValue": "{{units}} units",
+        "fuel": "Fuel",
+        "fuelValue": "up to {{units}}"
+      }
     },
     "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
     "repairNoChange": "No change",
