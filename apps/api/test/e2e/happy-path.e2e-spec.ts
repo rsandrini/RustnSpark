@@ -366,6 +366,8 @@ describe('happy path over the API (S9.4)', () => {
     ).filter((part) => part.location === 'INSTALLED' && part.condition < 100);
     expect(worn.length).toBeGreaterThanOrEqual(1); // starter kit ships at condition 80
     const targets = worn.map((part) => ({ partInstanceId: part.id, toCondition: 100 }));
+    // (a first repair takes at least five minutes; the pilot's debug flag makes the job finish in seconds)
+    await prisma.player.update({ where: { id: playerId }, data: { debugFastOps: true } });
     const repairStarted = await request(server)
       .post(`/v1/ships/${shipId}/repair`)
       .set(auth(token))

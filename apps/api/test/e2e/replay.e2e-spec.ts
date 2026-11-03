@@ -290,9 +290,7 @@ describe('MissionLog replay determinism (S7.6)', () => {
 
     expect(configService.snapshot().hash).not.toBe(log.rulesHash);
     const frozenRules = await configService.byHash(log.rulesHash);
-    expect(frozenRules.economy.reward_per_tier).toBe(
-      GAME_CONFIG_DEFAULTS.economy.reward_per_tier,
-    );
+    expect(frozenRules.economy.reward_per_tier).toBe(GAME_CONFIG_DEFAULTS.economy.reward_per_tier);
     expect(configService.snapshot().rules.economy.reward_per_tier).toBe(500);
 
     const afterEdits = await replayService.replay(log);
@@ -394,7 +392,12 @@ describe('MissionLog replay determinism (S7.6)', () => {
       where: { missionId: source!.missionId },
       data: {
         schemaVersion: 1,
-        legs: { legs: v2.legs, events: v2.events.map(asV1) } as unknown as Prisma.InputJsonValue,
+        // (a pilot's first run is flagged in the log: it wears harder, and a replay must know)
+        legs: {
+          legs: v2.legs,
+          events: v2.events.map(asV1),
+          firstRun: (source!.legs as { firstRun?: boolean } | null)?.firstRun,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
     const v1Log = await prisma.missionLog.findUniqueOrThrow({

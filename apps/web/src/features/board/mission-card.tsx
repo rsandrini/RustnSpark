@@ -176,7 +176,7 @@ export function MissionCard({
         <dl className="mcard-facts">
           <div>
             <dt>{t('board.facts.distance')}</dt>
-            <dd>{info.totalDistance}</dd>
+            <dd>{t('distanceValue', { n: info.totalDistance })}</dd>
           </div>
           <div>
             <dt>{t('board.facts.legs')}</dt>

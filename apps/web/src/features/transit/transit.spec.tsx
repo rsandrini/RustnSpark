@@ -158,7 +158,7 @@ describe('transit (S10.7)', () => {
     expect(within(card).getByText('Delivery')).toBeInTheDocument();
     expect(within(card).getByText('Deliver cargo from Ceres to Hedus.')).toBeInTheDocument();
     expect(within(card).getByText('2m 30s')).toBeInTheDocument();
-    expect(within(card).getByText('700')).toBeInTheDocument();
+    expect(within(card).getByText('700 units')).toBeInTheDocument();
     // what it demands, with what is met and what is not
     expect(within(card).getByText(/Cargo capacity for this load/)).toBeInTheDocument();
     expect(within(card).getByText(/At least one installed weapon/)).toBeInTheDocument();

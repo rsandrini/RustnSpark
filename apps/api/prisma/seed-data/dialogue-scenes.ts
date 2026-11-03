@@ -20,7 +20,6 @@ interface Voice {
     readonly w4: Pair;
     // first ship
     readonly s1: Pair;
-    readonly s2: Pair;
     readonly s3: Pair;
     readonly sConn: Pair;
     // first flight
@@ -129,8 +128,7 @@ function scenes(voice: Voice): SceneData[] {
       order: 2,
       start: 's1',
       nodes: [
-        node('s1', t.s1, 'left', { anchor: 'ship_grid', next: 's2' }),
-        node('s2', t.s2, 'left', { anchor: 'ship_grid', next: 's3' }),
+        node('s1', t.s1, 'left', { anchor: 'ship_grid', next: 's3' }),
         node('s3', t.s3, 'bottom', {
           anchor: 'auto_layout',
           choices: [choice(LABELS.connections, 's_conn'), choice(LABELS.gotIt, null, 'end')],
@@ -328,10 +326,6 @@ const LUNA: Voice = {
       'This is your ship, laid out on the grid. The Bridge in the middle is the heart: lose it and the ship is lost.',
       'Esta é sua nave, desenhada na grade. A Ponte no meio é o coração: perca-a e a nave está perdida.',
     ],
-    s2: [
-      'Engine to move, tank for fuel, cargo hold for freight, panel and battery for power. Each part does its one job.',
-      'Motor para mover, tanque para combustível, porão para carga, painel e bateria para energia. Cada peça faz o seu trabalho.',
-    ],
     s3: [
       'Press Auto layout and the yard places everything sensibly. You can rearrange it later, once you know why.',
       'Aperte Layout automático e o estaleiro posiciona tudo com bom senso. Você rearranja depois, quando souber o porquê.',
@@ -439,10 +433,6 @@ const SUN: Voice = {
       'There she is on the grid. The Bridge in the middle runs everything. Lose it and, well, bad day.',
       'Aí está ela na grade. A Ponte no meio comanda tudo. Perca-a e, bom, dia ruim.',
     ],
-    s2: [
-      'Engine moves her, the tank feeds her, the hold carries the goods, the panel and battery keep the lights on.',
-      'O motor move, o tanque alimenta, o porão leva as mercadorias, o painel e a bateria mantêm as luzes acesas.',
-    ],
     s3: [
       'Hit Auto layout and the yard does the arranging for you. Tinker later, once you know what you want.',
       'Aperte Layout automático e o estaleiro arruma para você. Mexa depois, quando souber o que quer.',
@@ -549,10 +539,6 @@ const EXPLORERS: Voice = {
     s1: [
       'There. The Bridge in the middle. Lose it and you lose everything. Guard it.',
       'Aí. A Ponte no meio. Perca-a e perde tudo. Proteja-a.',
-    ],
-    s2: [
-      'Engine, tank, hold, panel, battery. Each does one thing. Together they get you home. Or not.',
-      'Motor, tanque, porão, painel, bateria. Cada um faz uma coisa. Juntos levam você para casa. Ou não.',
     ],
     s3: [
       'Auto layout. Press it. The yard will place them. Rough, but it will fly.',

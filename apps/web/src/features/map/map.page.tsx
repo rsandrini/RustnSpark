@@ -787,7 +787,7 @@ function TravelSection({ place, byId }: TravelSectionProps) {
           </div>
           <div className="statrow">
             <span>{t('map.travel.distance')}</span>
-            <b>{quote.totalDistance}</b>
+            <b>{t('distanceValue', { n: quote.totalDistance })}</b>
           </div>
           {/* The same fuel block as a mission card: what is aboard, what the trip burns, the verdict and the bar. */}
           {(quote.fuelCap ?? 0) > 0 ? (

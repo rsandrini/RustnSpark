@@ -2677,5 +2677,6 @@
       "IMPERSONATION": "Fingindo ser outra pessoa",
       "OTHER": "Outro motivo"
     }
-  }
+  },
+  "distanceValue": "{{n}} unid."
 }

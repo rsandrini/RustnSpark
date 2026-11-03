@@ -382,7 +382,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
                   <>
                     <div className="fact">
                       <div className="k">{t('transit.facts.distance')}</div>
-                      <div className="v">{summary.totalDistance}</div>
+                      <div className="v">{t('distanceValue', { n: summary.totalDistance })}</div>
                     </div>
                     <div className="fact">
                       <div className="k">{t('transit.facts.legs')}</div>

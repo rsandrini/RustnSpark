@@ -81,7 +81,7 @@ export function MissionRow({
             {place(destination, offer.destinationId)}
             <span className="mrow-dist">
               {DOT}
-              {info.totalDistance}
+              {t('distanceValue', { n: info.totalDistance })}
             </span>
           </p>
           <p className="mrow-badges">
