@@ -10,11 +10,9 @@ export const PUBLIC_STAT_KEYS: readonly StatKey[] = [
   'races.entered',
   'races.won',
   'races.podium',
-  'scavenge.ship_runs',
-  'scavenge.foot_runs',
 ];
 
-export const PUBLIC_RECORD_KEYS: readonly RecordKey[] = ['best.race_place', 'best.race_seconds'];
+export const PUBLIC_RECORD_KEYS: readonly RecordKey[] = ['best.race_place'];
 
 /** The totals and records another pilot is allowed to see. */
 export function publicView(

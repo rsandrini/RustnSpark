@@ -630,7 +630,7 @@ export const handlers = [
 
   http.get('/v1/players/me/stats', () => ok<MyStatsResponse>(myStatsFixture())),
 
-  http.get('/v1/players/by-name/:name/profile', () =>
+  http.get('/v1/players/profile/:publicId', () =>
     ok<PublicProfileResponse>(publicProfileFixture()),
   ),
 

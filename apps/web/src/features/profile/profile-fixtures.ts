@@ -3,7 +3,7 @@ import type { MyStatsResponse, PublicProfileResponse } from '../../api/generated
 export const publicProfileFixture = (): PublicProfileResponse => ({
   name: 'Test Pilot',
   factionId: 'luna',
-  joinedAt: '2026-01-15T00:00:00.000Z',
+  publicId: 'a1b2c3d4e5f6',
   ship: {
     title: 'LUN-TestPilot-Wren',
     shipClass: 'MULTIROLE',
@@ -34,7 +34,7 @@ export const publicProfileFixture = (): PublicProfileResponse => ({
 export const emptyPublicProfileFixture = (): PublicProfileResponse => ({
   name: 'New Pilot',
   factionId: null,
-  joinedAt: '2026-10-27T00:00:00.000Z',
+  publicId: 'f6e5d4c3b2a1',
   ship: null,
   totals: {},
   records: {},

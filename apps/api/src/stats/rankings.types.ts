@@ -19,6 +19,8 @@ export type RankingWindow = (typeof RANKING_WINDOWS)[number];
 
 export interface RankingEntry {
   rank: number;
+  /** The pilot's random public address, for the link to their card. */
+  publicId: string;
   name: string;
   factionId: string | null;
   value: number;

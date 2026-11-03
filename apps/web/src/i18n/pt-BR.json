@@ -1697,7 +1697,6 @@
       "title": "Estatísticas",
       "loadFailed": "Não foi possível carregar este perfil.",
       "noFlights": "Nenhum voo ainda",
-      "joinedAt": "Entrou em {{date}}",
       "shipTitle": "Nave",
       "bridge": "ponte",
       "missions": "Missões",
@@ -1707,10 +1706,6 @@
       "races": "Corridas",
       "racesValue": "{{entered}} entradas · {{won}} vitórias · {{podium}} pódios",
       "bestRacePlace": "Melhor posição",
-      "fastestRace": "Corrida mais rápida",
-      "raceTimeValue": "{{m}}:{{s}}",
-      "scavengeRuns": "Saque",
-      "scavengeRunsValue": "{{ship}} nave · {{foot}} a pé",
       "tabs": {
         "flying": "Voo",
         "combat": "Combate",
@@ -1774,7 +1769,8 @@
         "worst": {
           "runDamage": "Pior dano"
         }
-      }
+      },
+      "raceTimeValue": "{{m}}:{{s}}"
     }
   },
   "report": {

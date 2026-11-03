@@ -1746,9 +1746,10 @@ export type PublicProfileShip = z.infer<typeof PublicProfileShipSchema>;
 
 /** GET /v1/players/by-name/:name/profile: only the keys marked public. */
 export const PublicProfileResponseSchema = z.object({
+  /** The pilot's random public address (the profile URL). */
+  publicId: z.string(),
   name: z.string(),
   factionId: z.string().nullable(),
-  joinedAt: z.string(),
   ship: PublicProfileShipSchema.nullable(),
   totals: StatTotalsSchema,
   records: StatRecordsSchema,
@@ -1774,6 +1775,8 @@ export type RankingWindow = z.infer<typeof RankingWindowSchema>;
 
 export const RankingEntrySchema = z.object({
   rank: z.number(),
+  /** The pilot's random public address, for the link to their card. */
+  publicId: z.string(),
   name: z.string(),
   factionId: z.string().nullable(),
   value: z.number(),

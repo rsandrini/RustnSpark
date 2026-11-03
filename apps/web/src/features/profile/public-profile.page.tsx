@@ -12,17 +12,17 @@ import { PageTitle } from '../../ui/PageTitle';
 
 export function PublicProfilePage() {
   const { t } = useTranslation();
-  const { name } = useParams<{ name: string }>();
+  const { publicId } = useParams<{ publicId: string }>();
   const { user } = useAuth();
   const [reporting, setReporting] = useState(false);
 
   const profileQuery = useQuery({
-    queryKey: ['public-profile', name],
+    queryKey: ['public-profile', publicId],
     queryFn: () =>
       client.get<PublicProfileResponse>(
-        `/v1/players/by-name/${encodeURIComponent(name ?? '')}/profile`,
+        `/v1/players/profile/${encodeURIComponent(publicId ?? '')}`,
       ),
-    enabled: name !== undefined,
+    enabled: publicId !== undefined,
   });
 
   return (

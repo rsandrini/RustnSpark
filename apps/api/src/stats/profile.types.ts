@@ -21,9 +21,10 @@ export interface PublicProfileShip {
 }
 
 export interface PublicProfileResponse {
+  /** The pilot's random public address (the profile URL). */
+  publicId: string;
   name: string;
   factionId: string | null;
-  joinedAt: string;
   ship: PublicProfileShip | null;
   totals: StatTotals;
   records: StatRecords;

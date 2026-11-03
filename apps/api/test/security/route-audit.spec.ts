@@ -51,7 +51,7 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
     'service checks the caller’s ship is at the location and has no active mission',
   'GET /v1/rankings/:board':
     'the same public boards for every signed-in pilot; only the pinned own row uses the caller id from the token',
-  'GET /v1/players/by-name/:name/profile':
+  'GET /v1/players/profile/:publicId':
     'the public card of any pilot: the service returns only the keys marked public, never money, damage or parts',
   'POST /v1/players/me/dialogue/:sceneId':
     'the scene is looked up in the caller’s own faction mentor; progress is keyed by the caller’s playerId',

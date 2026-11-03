@@ -156,7 +156,7 @@ export function RankingsPage() {
               {ranking.entries.map((entry) => (
                 <li key={entry.rank} className={entry.isMe ? 'rankings-row me' : 'rankings-row'}>
                   <span className="rankings-rank">{entry.rank}</span>
-                  <Link className="rankings-name" to={`/pilots/${encodeURIComponent(entry.name)}`}>
+                  <Link className="rankings-name" to={`/pilots/${encodeURIComponent(entry.publicId)}`}>
                     {entry.name}
                   </Link>
                   {entry.factionId !== null && <FactionBadge factionId={entry.factionId} />}

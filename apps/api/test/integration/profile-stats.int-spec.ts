@@ -53,6 +53,12 @@ describe('pilot profile endpoints', () => {
     return { seeded, token };
   }
 
+  // The card is addressed by the pilot's random public id, never by name.
+  const cardOf = async (pilotName: string, token: string) => {
+    const row = await prisma.player.findUniqueOrThrow({ where: { name: pilotName } });
+    return get(`/v1/players/profile/${row.publicId}`, token);
+  };
+
   const get = (path: string, token: string) =>
     request(httpServer(testApp.app)).get(path).set('Authorization', `Bearer ${token}`);
 
@@ -79,7 +85,7 @@ describe('pilot profile endpoints', () => {
     const [alice, bob] = [await pilot('Alice'), await pilot('Bob')];
     await record(alice.seeded.player.id);
 
-    const response = await get('/v1/players/by-name/Alice/profile', bob.token);
+    const response = await cardOf('Alice', bob.token);
     expect(response.status).toBe(200);
     PublicProfileResponseSchema.parse(response.body);
     const body = response.body as {
@@ -127,7 +133,7 @@ describe('pilot profile endpoints', () => {
   it('reads zeros for a pilot who has not flown, and a null success rate', async () => {
     const alice = await pilot('Alice');
     const bob = await pilot('Bob');
-    const response = await get('/v1/players/by-name/Bob/profile', alice.token);
+    const response = await cardOf('Bob', alice.token);
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({ totals: {}, records: {}, successRate: null });
     const mine = await get('/v1/players/me/stats', bob.token);
@@ -137,10 +143,10 @@ describe('pilot profile endpoints', () => {
   it('serves no account data on the card, and 404 once the account is banned', async () => {
     const alice = await pilot('Alice');
     const bob = await pilot('Bob');
-    const card = await get('/v1/players/by-name/Bob/profile', alice.token);
+    const card = await cardOf('Bob', alice.token);
     expect(card.status).toBe(200);
     expect(Object.keys(card.body as object).sort()).toEqual(
-      ['factionId', 'joinedAt', 'name', 'records', 'ship', 'successRate', 'totals'].sort(),
+      ['factionId', 'name', 'publicId', 'records', 'ship', 'successRate', 'totals'].sort(),
     );
     expect(JSON.stringify(card.body)).not.toContain(bob.seeded.account.email);
 
@@ -148,31 +154,43 @@ describe('pilot profile endpoints', () => {
       where: { id: bob.seeded.account.id },
       data: { status: 'BANNED' },
     });
-    const hidden = await get('/v1/players/by-name/Bob/profile', alice.token);
+    const hidden = await cardOf('Bob', alice.token);
     expect(hidden.status).toBe(404);
   });
 
-  it('answers 404 for an unknown or odd name, and 401 without a token', async () => {
+  it('answers 404 for an unknown or odd id, 401 without a token, and no longer serves a card by name', async () => {
     const alice = await pilot('Alice');
-    for (const name of ['Nobody', 'a%20b', '%25', '%E2%9C%93', 'x'.repeat(300)]) {
-      const response = await get(`/v1/players/by-name/${name}/profile`, alice.token);
+    for (const id of ['nobody000000', 'a%20b', '%25', '%E2%9C%93', 'x'.repeat(300)]) {
+      const response = await get(`/v1/players/profile/${id}`, alice.token);
       expect(response.status).toBe(404);
     }
+    // the pilot's name is not an address
+    expect((await get('/v1/players/profile/Alice', alice.token)).status).toBe(404);
+    expect((await get('/v1/players/by-name/Alice/profile', alice.token)).status).toBe(404);
+    const row = await prisma.player.findUniqueOrThrow({ where: { name: 'Alice' } });
     const anonymous = await request(httpServer(testApp.app)).get(
-      '/v1/players/by-name/Alice/profile',
+      `/v1/players/profile/${row.publicId}`,
     );
     expect(anonymous.status).toBe(401);
     const anonymousMe = await request(httpServer(testApp.app)).get('/v1/players/me/stats');
     expect(anonymousMe.status).toBe(401);
   });
 
+  it('gives each pilot a random public id that does not spell the name or the player id', async () => {
+    await pilot('Alice');
+    await pilot('Bob');
+    const rows = await prisma.player.findMany();
+    expect(new Set(rows.map((row) => row.publicId)).size).toBe(rows.length);
+    for (const row of rows) {
+      expect(row.publicId).toMatch(/^[0-9a-f]{12}$/);
+      expect(row.publicId).not.toBe(row.id.slice(0, 12));
+    }
+  });
+
   it('finds a pilot whose name has a space or non-ASCII characters', async () => {
     const alice = await pilot('Alice');
     await pilot('Zoë Ünal');
-    const response = await get(
-      `/v1/players/by-name/${encodeURIComponent('Zoë Ünal')}/profile`,
-      alice.token,
-    );
+    const response = await cardOf('Zoë Ünal', alice.token);
     expect(response.status).toBe(200);
     expect((response.body as { name: string }).name).toBe('Zoë Ünal');
   });

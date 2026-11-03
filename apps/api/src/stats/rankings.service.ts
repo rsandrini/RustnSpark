@@ -26,6 +26,7 @@ const COUNTER_OF: Readonly<
 
 interface RankedRow {
   id: string;
+  publicId: string;
   name: string;
   factionId: string | null;
   value: Prisma.Decimal | number;
@@ -63,7 +64,7 @@ export class RankingsService {
     const rows = await this.prisma.$queryRaw<RankedRow[]>`
       WITH source AS (${source}),
       ranked AS (
-        SELECT p.id, p.name, p."factionId", source.value,
+        SELECT p.id, p."publicId", p.name, p."factionId", source.value,
           ROW_NUMBER() OVER (ORDER BY source.value ${order}, p."createdAt" ASC, p.name ASC) AS rank,
           COUNT(*) OVER () AS total
         FROM source
@@ -78,6 +79,7 @@ export class RankingsService {
       .filter((row) => Number(row.rank) <= TOP_ENTRIES)
       .map((row) => ({
         rank: Number(row.rank),
+        publicId: row.publicId,
         name: row.name,
         factionId: row.factionId,
         value: Number(row.value),

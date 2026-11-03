@@ -78,6 +78,7 @@ describe('rankings endpoints', () => {
       me: { rank: number };
     };
     expect(distance.entries).toMatchObject([{ name: 'Ann', isMe: true }]);
+    expect((distance.entries as { publicId?: string }[])[0]?.publicId).toMatch(/^[0-9a-f]{12}$/);
     expect(distance.me.rank).toBe(1);
   });
 

@@ -178,7 +178,7 @@ export const routes = [
         ),
       },
       {
-        path: '/pilots/:name',
+        path: '/pilots/:publicId',
         element: (
           <ProtectedRoute>
             <RequireFaction>

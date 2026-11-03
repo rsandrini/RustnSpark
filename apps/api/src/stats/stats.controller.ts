@@ -18,8 +18,9 @@ export class StatsController {
     return this.profiles.mine(user.playerId);
   }
 
-  @Get('by-name/:name/profile')
-  card(@Param('name') name: string): Promise<PublicProfileResponse> {
-    return this.profiles.publicCard(name);
+  // By the pilot's random public id (from the rankings), never by name: the address does not spell the pilot.
+  @Get('profile/:publicId')
+  card(@Param('publicId') publicId: string): Promise<PublicProfileResponse> {
+    return this.profiles.publicCard(publicId);
   }
 }

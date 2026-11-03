@@ -36,9 +36,9 @@ export class ProfileService {
   }
 
   /** The public card: only the keys marked public, and the ship's title but never its parts. */
-  async publicCard(name: string): Promise<PublicProfileResponse> {
+  async publicCard(publicId: string): Promise<PublicProfileResponse> {
     const player = await this.prisma.player.findUnique({
-      where: { name },
+      where: { publicId },
       include: { account: { select: { status: true } } },
     });
     // A banned account is off the rankings, so its card is not served either.
@@ -48,9 +48,9 @@ export class ProfileService {
     const read = await this.stats.read(player.id);
     const view = publicView(read.totals, read.records);
     return {
+      publicId: player.publicId,
       name: player.name,
       factionId: player.factionId,
-      joinedAt: player.createdAt.toISOString(),
       ship: await this.shipCard(player),
       totals: view.totals,
       records: view.records,

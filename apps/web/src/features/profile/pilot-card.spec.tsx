@@ -24,8 +24,10 @@ describe('PilotCard', () => {
     expect(stat('Fights won').getByText('2')).toBeInTheDocument();
     expect(stat('Races').getByText('4 entered · 1 won · 2 podiums')).toBeInTheDocument();
     expect(stat('Best place').getByText('2')).toBeInTheDocument();
-    expect(stat('Fastest race').getByText('3:05')).toBeInTheDocument();
-    expect(stat('Scavenging').getByText('6 ship · 2 on foot')).toBeInTheDocument();
+    // no scavenging, fastest-race or joined-date lines on the card
+    expect(screen.queryByText('Fastest race')).toBeNull();
+    expect(screen.queryByText('Scavenging')).toBeNull();
+    expect(screen.queryByText(/Joined/)).toBeNull();
   });
 
   it('shows "No flights yet" for a pilot with zero missions and no NaN', () => {

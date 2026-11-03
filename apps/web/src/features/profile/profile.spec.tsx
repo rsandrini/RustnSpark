@@ -29,11 +29,11 @@ describe('profile (S10.9)', () => {
 
   it('says so when a pilot is not found', async () => {
     server.use(
-      http.get('/v1/players/by-name/:name/profile', () =>
+      http.get('/v1/players/profile/:publicId', () =>
         HttpResponse.json({ statusCode: 404, error: 'PLAYER_NOT_FOUND' }, { status: 404 }),
       ),
     );
-    renderWithRouter(routes, { initialEntries: ['/pilots/Nobody'] });
+    renderWithRouter(routes, { initialEntries: ['/pilots/nobody000000'] });
     expect(await screen.findByRole('alert')).toHaveTextContent('That pilot was not found.');
   });
 

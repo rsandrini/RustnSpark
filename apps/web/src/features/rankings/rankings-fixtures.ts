@@ -1,9 +1,23 @@
 import type { RaceRoutesResponse, RankingResponse } from '../../api/generated';
 
 const entries = [
-  { rank: 1, name: 'Mira', factionId: 'sun', value: 9800, isMe: false },
-  { rank: 2, name: 'Test Pilot', factionId: 'luna', value: 4200, isMe: true },
-  { rank: 3, name: 'Oro', factionId: 'explorers', value: 1500, isMe: false },
+  { rank: 1, publicId: 'mira0000pub1', name: 'Mira', factionId: 'sun', value: 9800, isMe: false },
+  {
+    rank: 2,
+    publicId: 'test0000pub2',
+    name: 'Test Pilot',
+    factionId: 'luna',
+    value: 4200,
+    isMe: true,
+  },
+  {
+    rank: 3,
+    publicId: 'oro00000pub3',
+    name: 'Oro',
+    factionId: 'explorers',
+    value: 1500,
+    isMe: false,
+  },
 ];
 
 export function rankingFixture(overrides: Partial<RankingResponse> = {}): RankingResponse {

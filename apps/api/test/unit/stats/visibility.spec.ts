@@ -22,11 +22,9 @@ describe('visibility', () => {
         'races.entered',
         'races.won',
         'races.podium',
-        'scavenge.ship_runs',
-        'scavenge.foot_runs',
       ].sort(),
     );
-    expect([...PUBLIC_RECORD_KEYS].sort()).toEqual(['best.race_place', 'best.race_seconds']);
+    expect([...PUBLIC_RECORD_KEYS].sort()).toEqual(['best.race_place']);
   });
 
   it('every public key is a known key', () => {

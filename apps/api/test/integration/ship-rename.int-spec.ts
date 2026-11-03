@@ -90,7 +90,9 @@ describe('ship rename', () => {
     expect(ship.name).toBe('LUN-Star Wind');
     // the public card follows the ship's name
     const me = await request(httpServer(testApp.app))
-      .get(`/v1/players/by-name/${p.seeded.player.name}/profile`)
+      .get(
+        `/v1/players/profile/${(await prisma.player.findUniqueOrThrow({ where: { id: p.seeded.player.id } })).publicId}`,
+      )
       .set('Authorization', `Bearer ${p.token}`);
     expect((me.body as { ship?: { title: string } }).ship?.title).toBe('LUN-Star Wind');
   });

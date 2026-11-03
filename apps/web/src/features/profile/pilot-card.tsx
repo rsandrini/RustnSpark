@@ -8,20 +8,6 @@ export interface PilotCardProps {
 
 const SEPARATOR = ' · ';
 
-function raceTimeText(
-  seconds: number | null,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): string {
-  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) {
-    return '—';
-  }
-  const minutes = Math.floor(seconds / 60);
-  const remainder = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, '0');
-  return t('profile.stats.raceTimeValue', { m: minutes, s: remainder });
-}
-
 export function PilotCard({ profile }: PilotCardProps) {
   const { t, i18n } = useTranslation();
   const numberFormat = new Intl.NumberFormat(i18n.language);
@@ -41,16 +27,11 @@ export function PilotCard({ profile }: PilotCardProps) {
     defaultValue: profile.ship?.bridgeRarity ?? '',
   });
 
-  const joinedDate = new Date(profile.joinedAt).toLocaleDateString(i18n.language, {
-    dateStyle: 'medium',
-  });
-
   return (
     <article className="pilot-card">
       <header className="pilot-header">
         <h2 className="pilot-name">{profile.name}</h2>
         {profile.factionId !== null && <FactionBadge factionId={profile.factionId} />}
-        <p className="pilot-joined">{t('profile.stats.joinedAt', { date: joinedDate })}</p>
       </header>
 
       {profile.ship !== null && (
@@ -102,19 +83,6 @@ export function PilotCard({ profile }: PilotCardProps) {
               {profile.records['best.race_place'] !== undefined
                 ? numberFormat.format(profile.records['best.race_place'].value)
                 : '—'}
-            </dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.fastestRace')}</dt>
-            <dd>{raceTimeText(profile.records['best.race_seconds']?.value ?? null, t)}</dd>
-          </div>
-          <div className="pilot-stat">
-            <dt>{t('profile.stats.scavengeRuns')}</dt>
-            <dd>
-              {t('profile.stats.scavengeRunsValue', {
-                ship: totals['scavenge.ship_runs'] ?? 0,
-                foot: totals['scavenge.foot_runs'] ?? 0,
-              })}
             </dd>
           </div>
         </dl>

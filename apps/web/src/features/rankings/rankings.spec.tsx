@@ -37,7 +37,7 @@ describe('rankings page', () => {
     expect(within(rows[0]!).getByText('1')).toBeInTheDocument();
     expect(within(rows[0]!).getByRole('link', { name: 'Mira' })).toHaveAttribute(
       'href',
-      '/pilots/Mira',
+      '/pilots/mira0000pub1',
     );
     expect(within(rows[0]!).getByText('9,800')).toBeInTheDocument();
     expect(rows[1]).toHaveClass('me');
@@ -100,7 +100,16 @@ describe('rankings page', () => {
           rankingFixture({
             board: 'race_time',
             route: new URL(request.url).searchParams.get('route'),
-            entries: [{ rank: 1, name: 'Mira', factionId: 'sun', value: 185, isMe: false }],
+            entries: [
+              {
+                rank: 1,
+                publicId: 'mira0000pub1',
+                name: 'Mira',
+                factionId: 'sun',
+                value: 185,
+                isMe: false,
+              },
+            ],
             me: null,
           }),
         ),
@@ -123,7 +132,16 @@ describe('rankings page', () => {
           rankingFixture({
             board: 'ship_speed',
             window: 'lifetime',
-            entries: [{ rank: 1, name: 'Mira', factionId: 'sun', value: 15.5, isMe: false }],
+            entries: [
+              {
+                rank: 1,
+                publicId: 'mira0000pub1',
+                name: 'Mira',
+                factionId: 'sun',
+                value: 15.5,
+                isMe: false,
+              },
+            ],
             me: null,
           }),
         );

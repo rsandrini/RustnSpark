@@ -1697,7 +1697,6 @@
       "title": "Stats",
       "loadFailed": "Could not load this profile.",
       "noFlights": "No flights yet",
-      "joinedAt": "Joined {{date}}",
       "shipTitle": "Ship",
       "bridge": "bridge",
       "missions": "Missions",
@@ -1707,10 +1706,6 @@
       "races": "Races",
       "racesValue": "{{entered}} entered · {{won}} won · {{podium}} podiums",
       "bestRacePlace": "Best place",
-      "fastestRace": "Fastest race",
-      "raceTimeValue": "{{m}}:{{s}}",
-      "scavengeRuns": "Scavenging",
-      "scavengeRunsValue": "{{ship}} ship · {{foot}} on foot",
       "tabs": {
         "flying": "Flying",
         "combat": "Combat",
@@ -1774,7 +1769,8 @@
         "worst": {
           "runDamage": "Worst damage"
         }
-      }
+      },
+      "raceTimeValue": "{{m}}:{{s}}"
     }
   },
   "report": {
