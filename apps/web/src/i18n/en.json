@@ -685,7 +685,13 @@
       "WEAPON_LASER": "Laser",
       "WEAPON_MISSILE": "Missile"
     },
-    "shipName": "Ship name"
+    "shipName": "Ship name",
+    "overBudget": {
+      "title": "Over the structure budget",
+      "body": "This layout uses more structure than the ship allows. You can save it, but the ship will not be able to take any mission until you remove or swap parts to fit the budget.",
+      "cancel": "Keep editing",
+      "confirm": "Save anyway"
+    }
   },
   "home": {
     "play": "Play",

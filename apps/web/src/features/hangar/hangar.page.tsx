@@ -295,6 +295,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   // Empty the ship: every installed part goes back to the inventory (after a confirmation).
   const [clearOpen, setClearOpen] = useState(false);
+  // Saving a layout over the structure budget is allowed, but the ship cannot fly until it is fixed: ask first.
+  const [overBudgetOpen, setOverBudgetOpen] = useState(false);
   const clearShip = useMutation({
     mutationFn: () =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/assemble`, { layout: [] }),
@@ -819,6 +821,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   onClick={() => {
                     setSaved(false);
                     setSaveError(null);
+                    if (
+                      viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED')
+                    ) {
+                      setOverBudgetOpen(true);
+                      return;
+                    }
                     save.mutate();
                   }}
                 >
@@ -884,6 +892,31 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               )}
               {saved && <p className="muted">{t('hangar.state.saved')}</p>}
 
+              <Popup
+                open={overBudgetOpen}
+                title={t('hangar.overBudget.title')}
+                onClose={() => setOverBudgetOpen(false)}
+                actions={
+                  <>
+                    <button type="button" className="btn" onClick={() => setOverBudgetOpen(false)}>
+                      {t('hangar.overBudget.cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      disabled={save.isPending}
+                      onClick={() => {
+                        setOverBudgetOpen(false);
+                        save.mutate();
+                      }}
+                    >
+                      {t('hangar.overBudget.confirm')}
+                    </button>
+                  </>
+                }
+              >
+                <p>{t('hangar.overBudget.body')}</p>
+              </Popup>
               <Popup
                 open={clearOpen}
                 title={t('hangar.clear.title')}

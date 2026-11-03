@@ -685,7 +685,13 @@
       "WEAPON_LASER": "Laser",
       "WEAPON_MISSILE": "Míssil"
     },
-    "shipName": "Nome da nave"
+    "shipName": "Nome da nave",
+    "overBudget": {
+      "title": "Acima do orçamento de estrutura",
+      "body": "Este layout usa mais estrutura do que a nave permite. Você pode salvá-lo, mas a nave não poderá aceitar nenhuma missão até você remover ou trocar peças para caber no orçamento.",
+      "cancel": "Continuar editando",
+      "confirm": "Salvar assim mesmo"
+    }
   },
   "home": {
     "play": "Jogar",

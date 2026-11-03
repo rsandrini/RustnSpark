@@ -574,6 +574,54 @@ describe('hangar (S10.4)', () => {
     expect(screen.getByText('Mobility is below 1.')).toBeInTheDocument();
   });
 
+  it('asks before saving a layout that is over the structure budget, and saves it when the pilot insists', async () => {
+    let assembled = 0;
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        const body = (await request.json()) as { layout: Placement[] };
+        return HttpResponse.json({
+          sheet: testSheet,
+          shipClass: 'MULTIROLE',
+          viability: {
+            viable: false,
+            problems: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded.' }],
+          },
+          layout: body.layout,
+          omittedPartInstanceIds: [],
+        });
+      }),
+      http.post('/v1/ships/:id/assemble', () => {
+        assembled += 1;
+        return HttpResponse.json({ layout: [] });
+      }),
+    );
+
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByText('Ready to fly');
+    fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
+    fireEvent.click(cell(container, 4, 0));
+    await screen.findByText('1 problem(s)');
+
+    const save = screen.getByRole('button', { name: 'Save layout' });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+    const dialog = await screen.findByRole('dialog', { name: 'Over the structure budget' });
+    expect(assembled).toBe(0);
+    // backing out keeps editing, nothing is saved
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+    expect(assembled).toBe(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save layout' }));
+    fireEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Over the structure budget' })).getByRole(
+        'button',
+        { name: 'Save anyway' },
+      ),
+    );
+    await waitFor(() => expect(assembled).toBe(1));
+  });
+
   it('Store compare uses the saved ship sheet, not an unsaved layout-edit preview (review finding)', async () => {
     server.use(onboarded());
     server.use(
