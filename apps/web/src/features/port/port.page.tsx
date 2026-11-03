@@ -1468,7 +1468,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                       className="upgrade-group"
                       data-testid={`upgrade-group-${group}`}
                     >
-                      <h3>{t(`port.upgradeGroup.${group}`)}</h3>
+                      <h2>{t(`port.upgradeGroup.${group}`)}</h2>
                       <div className="pcard-grid">{groups[group].map(renderCard)}</div>
                     </section>
                   ),

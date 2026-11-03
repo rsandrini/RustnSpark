@@ -16,6 +16,8 @@ export interface PlayerProfile {
   factionId: string | null;
   /** The newcomer tutorial was skipped or finished (reopening it sets this back to false). */
   tutorialDone: boolean;
+  /** The random address of the pilot's public card. */
+  publicId: string;
 }
 
 export function toPlayerProfile(player: Player, role: string): PlayerProfile {
@@ -27,6 +29,7 @@ export function toPlayerProfile(player: Player, role: string): PlayerProfile {
     role,
     factionId: player.factionId,
     tutorialDone: player.tutorialDone,
+    publicId: player.publicId,
   };
 }
 

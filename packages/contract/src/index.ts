@@ -51,6 +51,8 @@ export const PlayerProfileResponseSchema = z.object({
   factionId: z.string().nullable(),
   /** The newcomer tutorial was skipped or finished; false again when it is reopened. */
   tutorialDone: z.boolean(),
+  /** The random address of the pilot's public card (/pilots/:publicId). */
+  publicId: z.string().optional(),
 });
 export type PlayerProfileResponse = z.infer<typeof PlayerProfileResponseSchema>;
 

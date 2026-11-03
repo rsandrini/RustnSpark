@@ -697,7 +697,7 @@
   display: grid;
   gap: 10px;
 }
-.upgrade-group h3 {
+.upgrade-group h2 {
   margin: 8px 0 0;
   font-size: var(--text-md);
 }
@@ -770,4 +770,14 @@
   font-family: var(--font-mono);
   color: var(--brass);
   font-size: 1.4em;
+}
+
+/* a link-styled button inside a sentence is still a tap target on a phone */
+@media (max-width: 700px) {
+  .upgrade-where button.link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding-block: 10px;
+  }
 }

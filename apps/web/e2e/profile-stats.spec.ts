@@ -5,14 +5,16 @@ import { assertClean, flyOneMission, registerAndLaunch } from './support';
 // public card (missions, distance) without any of the private numbers.
 test.use({ reducedMotion: 'reduce' });
 
-async function ownName(page: import('@playwright/test').Page): Promise<string> {
+async function ownProfile(
+  page: import('@playwright/test').Page,
+): Promise<{ name: string; publicId: string }> {
   return page.evaluate(async () => {
     const refreshed = await fetch('/v1/auth/refresh', { method: 'POST', credentials: 'include' });
     const { accessToken } = (await refreshed.json()) as { accessToken: string };
     const me = await fetch('/v1/players/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    return ((await me.json()) as { name: string }).name;
+    return (await me.json()) as { name: string; publicId: string };
   });
 }
 
@@ -20,16 +22,16 @@ test('a flight shows in the public pilot card and in the own stats, the card sho
   page,
 }) => {
   await registerAndLaunch(page, 'luna');
-  const name = await ownName(page);
+  const { name, publicId } = await ownProfile(page);
 
   // before any flight: an empty card
-  await page.goto(`/pilots/${encodeURIComponent(name)}`);
+  await page.goto(`/pilots/${publicId}`);
   await expect(page.getByText('No flights yet')).toBeVisible();
   await assertClean(page, 'pilot card (empty)');
 
   await flyOneMission(page);
 
-  await page.goto(`/pilots/${encodeURIComponent(name)}`);
+  await page.goto(`/pilots/${publicId}`);
   const card = page.locator('main');
   await expect(card).toContainText(name);
   await expect(card).not.toContainText('No flights yet');

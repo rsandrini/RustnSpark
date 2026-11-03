@@ -895,8 +895,10 @@ main:has(.transit-aside) .ship-stage-overlay-host {
     flex-basis: auto;
   }
   .mrow-trip {
-    grid-auto-flow: column;
-    gap: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 12px;
   }
   .mrow-pay {
     grid-column: 1 / -1;
@@ -1040,12 +1042,27 @@ main:has(.transit-aside) .ship-stage-overlay-host {
   animation: dig-throw ease-out infinite;
 }
 @keyframes dig-throw {
-  0% { opacity: 0; transform: translate(var(--x), 0) rotate(0deg); }
-  10% { opacity: 1; }
-  50% { opacity: 1; transform: translate(calc(var(--x) + var(--dx) / 2), calc(var(--rise) * -1)) rotate(180deg); }
-  100% { opacity: 0; transform: translate(calc(var(--x) + var(--dx)), 0) rotate(360deg); }
+  0% {
+    opacity: 0;
+    transform: translate(var(--x), 0) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+    transform: translate(calc(var(--x) + var(--dx) / 2), calc(var(--rise) * -1)) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) + var(--dx)), 0) rotate(360deg);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dig-scrap { animation: none; }
-  .dig-scrap { opacity: 0.8; }
+  .dig-scrap {
+    animation: none;
+  }
+  .dig-scrap {
+    opacity: 0.8;
+  }
 }
