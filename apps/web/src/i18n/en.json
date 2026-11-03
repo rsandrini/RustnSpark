@@ -1002,6 +1002,37 @@
         "lines": "Their voice",
         "places": "Where they work"
       }
+    },
+    "nameReports": {
+      "title": "Name reports",
+      "help": "Ship names and pilot names that pilots reported. Read, then dismiss, reset the name, or ban the account. Every decision is logged.",
+      "filter": "Show",
+      "status": {
+        "OPEN": "Open",
+        "DISMISSED": "Dismissed",
+        "ACTIONED": "Actioned",
+        "ALL": "All"
+      },
+      "empty": "No reports here.",
+      "reported": "Reported",
+      "nowNamed": "now: {{name}}",
+      "by": "reported by {{reporter}}",
+      "banned": "banned",
+      "againstTarget": "{{count}} report(s) against this pilot",
+      "reviewNote": "Note (optional)",
+      "action": {
+        "DISMISS": "Dismiss",
+        "RESET_SHIP_NAME": "Reset ship name",
+        "RESET_PILOT_NAME": "Reset pilot name",
+        "BAN": "Ban account"
+      },
+      "outcome": {
+        "DISMISS": "Dismissed",
+        "RESET_SHIP_NAME": "Ship name reset",
+        "RESET_PILOT_NAME": "Pilot name reset",
+        "BAN": "Account banned"
+      },
+      "failed": "Could not save the decision."
     }
   },
   "tuning": {
@@ -2264,7 +2295,12 @@
     "VALIDATION_ERROR": "Some fields are invalid.",
     "WEAPONS": "No weapons installed.",
     "unexpected": "Something went wrong",
-    "SERVICE_UNAVAILABLE": "This place does not offer that service."
+    "SERVICE_UNAVAILABLE": "This place does not offer that service.",
+    "CANNOT_REPORT_SELF": "You cannot report yourself.",
+    "NO_SHIP_TO_REPORT": "That pilot has no ship to report.",
+    "ALREADY_REPORTED": "You already reported this and it is waiting for review.",
+    "REPORT_LIMIT": "You have sent enough reports for today. Thank you.",
+    "REPORT_ALREADY_REVIEWED": "This report was already reviewed."
   },
   "language": {
     "label": "Language",
@@ -2615,5 +2651,29 @@
     "turnOff": "Turn dialogues off",
     "turnOn": "Turn dialogues on",
     "replayLabel": "Hear it again: {{title}}"
+  },
+  "moderation": {
+    "report": {
+      "button": "Report this pilot",
+      "title": "Report {{name}}",
+      "help": "Is this pilot's ship name or pilot name offensive or misleading? Tell us which one and why. A person on the team reads every report.",
+      "subject": "What are you reporting?",
+      "reason": "Why?",
+      "note": "Anything we should know? (optional)",
+      "send": "Send report",
+      "sending": "Sending…",
+      "thanks": "Thank you. Your report was sent and will be reviewed.",
+      "close": "Close",
+      "failed": "Could not send the report."
+    },
+    "subject": {
+      "SHIP_NAME": "Ship name",
+      "PILOT_NAME": "Pilot name"
+    },
+    "reason": {
+      "OFFENSIVE": "Offensive or abusive",
+      "IMPERSONATION": "Pretending to be someone else",
+      "OTHER": "Something else"
+    }
   }
 }

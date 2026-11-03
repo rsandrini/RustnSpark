@@ -80,6 +80,8 @@ model Player {
   statsDaily      PlayerStatsDaily[]
   raceResults     RaceResult[]
   shipRating      ShipRating?
+  reportsMade     NameReport[]      @relation("NameReportReporter")
+  reportsAgainst  NameReport[]      @relation("NameReportTarget")
 
   // S11.3: new players per analytics window.
   @@index([createdAt])
@@ -792,4 +794,32 @@ model RaceResult {
   @@index([routeKey, seconds])
   @@index([routeKey, day])
   @@index([playerId])
+}
+
+// A pilot reporting another pilot's ship name or pilot name as unacceptable; an admin reviews it. The text
+// reported is copied here, so the review sees what the reporter saw even if the name changes meanwhile. At most one
+// OPEN report per (reporter, target, subject): a partial unique index in the migration, not expressible here.
+model NameReport {
+  id           String    @id @default(dbgenerated("gen_random_uuid()"))
+  reporterId   String    @db.VarChar(36)
+  targetId     String    @db.VarChar(36)
+  // SHIP_NAME | PILOT_NAME
+  subject      String    @db.VarChar(16)
+  // OFFENSIVE | IMPERSONATION | OTHER
+  reason       String    @db.VarChar(16)
+  note         String?   @db.VarChar(300)
+  reportedText String    @db.VarChar(80)
+  // OPEN | DISMISSED | ACTIONED
+  status       String    @default("OPEN") @db.VarChar(12)
+  createdAt    DateTime  @default(now())
+  // The admin account that reviewed it, when, what was done (DISMISS | RESET_SHIP_NAME | RESET_PILOT_NAME | BAN) and why.
+  reviewedBy   String?   @db.VarChar(36)
+  reviewedAt   DateTime?
+  outcome      String?   @db.VarChar(24)
+  reviewNote   String?   @db.VarChar(300)
+  reporter     Player    @relation("NameReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  target       Player    @relation("NameReportTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([targetId])
 }

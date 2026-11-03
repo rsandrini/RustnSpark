@@ -113,6 +113,7 @@ export function AdminShell() {
   ];
   const editableItems: AdminNavItem[] = [
     { to: '/admin/players', label: t('admin.players') },
+    { to: '/admin/reports', label: t('admin.nameReports.title') },
     { to: '/admin/system', label: t('admin.system') },
     { to: '/admin/tuning/config', label: t('tuning.configTitle') },
     ...TUNABLE_ENTITIES.map((entity) => ({

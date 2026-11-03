@@ -6,6 +6,7 @@ import { DashboardScreen } from './analytics/DashboardScreen';
 import { EconomyScreen } from './analytics/EconomyScreen';
 import { WorldScreen } from './analytics/WorldScreen';
 import { InspectorDetailScreen, InspectorListScreen } from './inspector/InspectorScreen';
+import { ReportsScreen } from './moderation/ReportsScreen';
 import { SystemScreen } from './system/SystemScreen';
 import { ConfigScreen } from './tuning/ConfigScreen';
 import { EntityFormScreen } from './tuning/EntityFormScreen';
@@ -27,12 +28,16 @@ export default function AdminRoutes() {
           <Route path="analytics/world" element={<WorldScreen />} />
           <Route path="players" element={<InspectorListScreen />} />
           <Route path="players/:playerId" element={<InspectorDetailScreen />} />
+          <Route path="reports" element={<ReportsScreen />} />
           <Route path="system" element={<SystemScreen />} />
           <Route path="tuning/config" element={<ConfigScreen />} />
           <Route path="tuning/entities/:entity" element={<EntityScreen />} />
           <Route path="tuning/entities/:entity/new" element={<EntityFormScreen mode="new" />} />
           <Route path="tuning/entities/:entity/:id" element={<EntityFormScreen mode="edit" />} />
-          <Route path="tuning/entities/:entity/:id/clone" element={<EntityFormScreen mode="clone" />} />
+          <Route
+            path="tuning/entities/:entity/:id/clone"
+            element={<EntityFormScreen mode="clone" />}
+          />
           <Route path="tuning/revisions" element={<RevisionHistory />} />
         </Route>
       </Routes>

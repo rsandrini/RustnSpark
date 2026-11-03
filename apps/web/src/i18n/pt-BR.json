@@ -1002,6 +1002,37 @@
         "lines": "A voz deles",
         "places": "Onde trabalham"
       }
+    },
+    "nameReports": {
+      "title": "Denúncias de nomes",
+      "help": "Nomes de naves e de pilotos denunciados por pilotos. Leia, depois dispense, restaure o nome ou bana a conta. Toda decisão fica registrada.",
+      "filter": "Mostrar",
+      "status": {
+        "OPEN": "Abertas",
+        "DISMISSED": "Dispensadas",
+        "ACTIONED": "Resolvidas",
+        "ALL": "Todas"
+      },
+      "empty": "Nenhuma denúncia aqui.",
+      "reported": "Denunciado",
+      "nowNamed": "agora: {{name}}",
+      "by": "denunciado por {{reporter}}",
+      "banned": "banido",
+      "againstTarget": "{{count}} denúncia(s) contra este piloto",
+      "reviewNote": "Observação (opcional)",
+      "action": {
+        "DISMISS": "Dispensar",
+        "RESET_SHIP_NAME": "Restaurar nome da nave",
+        "RESET_PILOT_NAME": "Restaurar nome do piloto",
+        "BAN": "Banir conta"
+      },
+      "outcome": {
+        "DISMISS": "Dispensada",
+        "RESET_SHIP_NAME": "Nome da nave restaurado",
+        "RESET_PILOT_NAME": "Nome do piloto restaurado",
+        "BAN": "Conta banida"
+      },
+      "failed": "Não foi possível salvar a decisão."
     }
   },
   "tuning": {
@@ -2264,7 +2295,12 @@
     "VALIDATION_ERROR": "Alguns campos são inválidos.",
     "WEAPONS": "Nenhuma arma instalada.",
     "unexpected": "Algo deu errado",
-    "SERVICE_UNAVAILABLE": "Este lugar não oferece esse serviço."
+    "SERVICE_UNAVAILABLE": "Este lugar não oferece esse serviço.",
+    "CANNOT_REPORT_SELF": "Você não pode denunciar a si mesmo.",
+    "NO_SHIP_TO_REPORT": "Esse piloto não tem nave para denunciar.",
+    "ALREADY_REPORTED": "Você já denunciou isso e está aguardando análise.",
+    "REPORT_LIMIT": "Você já enviou denúncias suficientes por hoje. Obrigado.",
+    "REPORT_ALREADY_REVIEWED": "Esta denúncia já foi analisada."
   },
   "language": {
     "label": "Idioma",
@@ -2615,5 +2651,29 @@
     "turnOff": "Desligar os diálogos",
     "turnOn": "Ligar os diálogos",
     "replayLabel": "Ouvir de novo: {{title}}"
+  },
+  "moderation": {
+    "report": {
+      "button": "Denunciar este piloto",
+      "title": "Denunciar {{name}}",
+      "help": "O nome da nave ou o nome do piloto é ofensivo ou enganoso? Diga qual e por quê. Uma pessoa da equipe lê cada denúncia.",
+      "subject": "O que você está denunciando?",
+      "reason": "Por quê?",
+      "note": "Algo que devamos saber? (opcional)",
+      "send": "Enviar denúncia",
+      "sending": "Enviando…",
+      "thanks": "Obrigado. Sua denúncia foi enviada e será analisada.",
+      "close": "Fechar",
+      "failed": "Não foi possível enviar a denúncia."
+    },
+    "subject": {
+      "SHIP_NAME": "Nome da nave",
+      "PILOT_NAME": "Nome do piloto"
+    },
+    "reason": {
+      "OFFENSIVE": "Ofensivo ou abusivo",
+      "IMPERSONATION": "Fingindo ser outra pessoa",
+      "OTHER": "Outro motivo"
+    }
   }
 }

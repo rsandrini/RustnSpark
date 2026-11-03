@@ -19,6 +19,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'single-use token: a repeat is rejected, never a second password change',
   'POST /v1/players/me/locale': 'sets a value: repeating is the same state',
   'POST /v1/players/me/tutorial': 'sets a value: repeating is the same state',
+  'POST /v1/moderation/reports':
+    'a repeat while the report is still open is refused (partial unique index), and the daily cap bounds the rest',
   'POST /v1/feedback/bug':
     'an email, not game state: a repeat is only a duplicate message, and the per-account and daily caps bound it',
   'POST /v1/players/me/onboarding':

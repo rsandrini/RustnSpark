@@ -14,6 +14,8 @@ import { AnalyticsController } from './analytics/analytics.controller.js';
 import { DashboardService } from './analytics/dashboard.service.js';
 import { EconomyService } from './analytics/economy.service.js';
 import { WorldService } from './analytics/world.service.js';
+import { ModerationAdminController } from './moderation/moderation-admin.controller.js';
+import { ModerationAdminService } from './moderation/moderation-admin.service.js';
 import { InspectorController } from './inspector/inspector.controller.js';
 import { InspectorService } from './inspector/inspector.service.js';
 import { ReplayService } from './inspector/replay.service.js';
@@ -44,6 +46,7 @@ import { RevisionService } from './tuning/revision.service.js';
     SystemPublicController,
     AnalyticsController,
     InspectorController,
+    ModerationAdminController,
   ],
   providers: [
     AdminGuard,
@@ -61,6 +64,7 @@ import { RevisionService } from './tuning/revision.service.js';
     WorldService,
     ReplayService,
     SupportService,
+    ModerationAdminService,
     InspectorService,
     AccountStatusCache,
     // A second instance of a stateless service (own only dep is the @Global EnvService):

@@ -63,6 +63,13 @@ export const BUG_REPORT_POLICY: ThrottleRoutePolicy = {
   key: 'account',
 };
 
+// Reporting a pilot's name: a few per ten minutes per account (the service adds a daily cap).
+export const NAME_REPORT_POLICY: ThrottleRoutePolicy = {
+  limit: 5,
+  ttlMs: 600_000,
+  key: 'account',
+};
+
 export const FORGOT_PASSWORD_POLICY: ThrottleRoutePolicy = {
   limit: 3,
   ttlMs: THROTTLE_TTL_MS,
