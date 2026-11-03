@@ -1,11 +1,10 @@
 import type { Locale } from '../common/locale/locale.js';
-import type { MissionCombatRound, MissionDamageCascade } from '../resolution/events/mission-event.js';
+import type {
+  MissionCombatRound,
+  MissionDamageCascade,
+} from '../resolution/events/mission-event.js';
 import type { EntityNames, ReportLine } from './templates/template.engine.js';
-import {
-  renderEventLine,
-  renderPhaseLine,
-  substituteTokens,
-} from './templates/template.engine.js';
+import { renderEventLine, renderPhaseLine, substituteTokens } from './templates/template.engine.js';
 import { endPhaseOf } from './report.phases.js';
 import { type ReportLog, viewChrome } from './report.types.js';
 
@@ -27,6 +26,18 @@ export interface NarrativeChapter {
   readonly header: ReportLine;
   readonly lines: readonly NarrativeLine[];
 }
+
+/** The filler lines that say "all quiet": they read as a lie in a leg where something went wrong. */
+const CALM_TYPES = new Set(['leg_travel', 'mission_wear']);
+
+const hadTrouble = (log: ReportLog, leg: number): boolean =>
+  log.events.some(
+    (event) =>
+      event.leg === leg &&
+      (event.category === 'failure' ||
+        event.type === 'fuel_exhausted' ||
+        (event.type === 'engine_tuning' && event.tuning?.outcome === 'failed')),
+  );
 
 /**
  * Narrative view (S9.3): chapters per leg, events in stored order (the seed
@@ -53,11 +64,14 @@ export function renderNarrative(
       status: status !== undefined ? (chrome.legStatuses[status] ?? status) : '',
     });
     const lines: NarrativeLine[] = [];
+    const troubled = hadTrouble(log, leg);
     if (position === 0 && departure !== null) {
       lines.push({ ...departure, category: 'transit', type: 'phase_departure' });
     }
     log.events.forEach((event, storedIndex) => {
       if (event.leg !== leg) return;
+      // The problem is the story of a troubled leg; the log tab still lists distance and wear.
+      if (troubled && CALM_TYPES.has(event.type)) return;
       const line = renderEventLine(event, storedIndex, log.seed, locale, names);
       const tagged = { ...line, category: event.category, type: event.type };
       lines.push(

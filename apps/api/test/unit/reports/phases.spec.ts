@@ -67,4 +67,30 @@ describe('the phases of a mission in the story and the log', () => {
     const b = renderNarrative(log('success', ['completed']), 'en', NAMES);
     expect(a).toEqual(b);
   });
+
+  it('tells the problem of a leg and drops the all-quiet lines after it', () => {
+    const event = (type: string, category: string, extra: Record<string, unknown> = {}) => ({
+      leg: 0,
+      category,
+      type,
+      actors: ACTORS,
+      effects: { hp: 0, condByPart: {}, credits: 0, loot: [] },
+      magnitude: 6,
+      ...extra,
+    });
+    const troubled: ReportLog = {
+      ...log('adrift', ['completed']),
+      events: parseMissionLogEvents(2, [
+        event('engine_tuning', 'transit', {
+          tuning: { group: 'chem', levelPct: 150, chancePct: 37, outcome: 'failed' },
+        }),
+        event('leg_travel', 'transit'),
+        event('mission_wear', 'environment', { cascade: { hp: 3, armor: 0, shield: 0 } }),
+      ]),
+    };
+    const types = renderNarrative(troubled, 'en', NAMES)[0]!.lines.map((line) => line.type);
+    expect(types).toContain('engine_tuning');
+    expect(types).not.toContain('leg_travel');
+    expect(types).not.toContain('mission_wear');
+  });
 });

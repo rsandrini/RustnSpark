@@ -226,7 +226,7 @@ describe('S9.3 — narrative view', () => {
       'Leg 3 — completed',
     ]);
     expect(chapters[0]!.lines.map((line) => line.text)).toEqual([desc(0), desc(1)]);
-    expect(chapters[1]!.lines.map((line) => line.text)).toEqual([desc(2), desc(3), desc(4)]);
+    expect(chapters[1]!.lines.map((line) => line.text)).toEqual([desc(2), desc(3)]); // the troubled leg drops its "wear" filler
     expect(chapters[2]!.lines.map((line) => line.text)).toEqual([desc(5)]);
     for (const chapter of chapters) expectD39(chapter.lines);
   });
