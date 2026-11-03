@@ -568,7 +568,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     (problem, index) => everyProblem.findIndex((other) => other.code === problem.code) === index,
   );
   const allProblems = uniqueProblems.filter((problem) => !SOFT_CODES.has(problem.code));
-  const allWarnings = uniqueProblems.filter((problem) => SOFT_CODES.has(problem.code));
+  const softWarnings = uniqueProblems.filter((problem) => SOFT_CODES.has(problem.code));
+  // Engines saved above their listed power (the push in the engine tuning) are a standing risk on every mission
+  // except scavenging, so the sheet keeps a warning up for as long as the push is on.
+  const savedLevels = (ship as Partial<ShipResponse> | undefined)?.engineLevels;
+  const enginesPushed = savedLevels !== undefined && (savedLevels.chem > 1 || savedLevels.ion > 1);
+  const allWarnings = enginesPushed
+    ? [...softWarnings, { code: 'ENGINES_PUSHED', message: '' }]
+    : softWarnings;
 
   // The hold line, the unconnected-parts note and the port legend only matter while the layout is
   // being changed or something is wrong; the sheet stays clean otherwise.

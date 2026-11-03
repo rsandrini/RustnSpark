@@ -272,7 +272,9 @@ export function EngineTuning({
               </li>
             )}
             <li className={`clean ${cleanTone(data.cleanChance)}`} data-testid="engine-clean">
-              {t('engineTuning.clean', { percent: Math.round(data.cleanChance * PERCENT) })}
+              {t(data.trip === undefined ? 'engineTuning.cleanLeg' : 'engineTuning.clean', {
+                percent: Math.round(data.cleanChance * PERCENT),
+              })}
             </li>
             {data.trip !== undefined && (
               <>

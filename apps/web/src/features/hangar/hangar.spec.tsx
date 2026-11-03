@@ -1051,6 +1051,29 @@ describe('hangar (S10.4)', () => {
     expect(sentIds).toHaveLength(6);
   });
 
+  it('keeps a warning on the ship sheet while the engines are pushed above their listed power', async () => {
+    server.use(onboarded());
+    const shipNow = (await (await fetch('/v1/ships')).json()) as Array<Record<string, unknown>>;
+    const withLevels = (levels: { chem: number; ion: number }) =>
+      http.get('/v1/ships', () =>
+        HttpResponse.json(shipNow.map((entry) => ({ ...entry, engineLevels: levels }))),
+      );
+
+    server.use(withLevels({ chem: 1, ion: 1 }));
+    const first = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByText('Ready to fly');
+    expect(screen.queryByRole('button', { name: /^Warnings/ })).toBeNull();
+    first.unmount();
+
+    server.use(withLevels({ chem: 1.45, ion: 1 }));
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    const warn = await screen.findByRole('button', { name: 'Warnings (1)' });
+    fireEvent.click(warn);
+    expect(
+      await screen.findByText(/Engines are pushed above their listed power/),
+    ).toBeInTheDocument();
+  });
+
   it('Auto layout takes the new bridge along when the ship has none aboard (a just-expanded bridge is loose)', async () => {
     server.use(onboarded());
     const base = (await (await fetch('/v1/inventory')).json()) as Array<{ id: string }>;

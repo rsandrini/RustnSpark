@@ -573,7 +573,8 @@
       "NO_CARGO_HOLD": "A mineração guarda o que escava no porão de carga: esta nave não tem um. Instale um porão de carga antes.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
       "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout.",
-      "PORT_INCORRECT": "Alguns conectores encostam em uma peça com a qual não encaixam (as portas vermelhas): mova ou gire essas peças. Você ainda pode salvar o layout."
+      "PORT_INCORRECT": "Alguns conectores encostam em uma peça com a qual não encaixam (as portas vermelhas): mova ou gire essas peças. Você ainda pode salvar o layout.",
+      "ENGINES_PUSHED": "Os motores estão acima da potência indicada: mais rápidos, mas gastam mais combustível, se desgastam e podem falhar em cada trecho de uma missão (menos no saque). Volte ao normal na regulagem dos motores."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -2575,7 +2576,8 @@
     "battery": {
       "label": "Gerenciamento de bateria",
       "hint": "De onde vem a energia de combate: só as baterias, tudo que a nave produz, ou um override que força mais os sistemas."
-    }
+    },
+    "cleanLeg": "{{percent}}% de chance de nenhum motor falhar em um trecho de viagem (cada trecho a mais reduz)."
   },
   "landing": {
     "kicker": "Um jogo de estratégia espacial de logística e montagem de naves",

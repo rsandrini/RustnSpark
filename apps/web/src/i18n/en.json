@@ -573,7 +573,8 @@
       "NO_CARGO_HOLD": "Mining keeps what it digs in the cargo hold: this ship has none. Fit a cargo hold first.",
       "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
       "PART_DISCONNECTED": "A part is not connected to the bridge: fix its connectors or remove it. You can still save the layout.",
-      "PORT_INCORRECT": "Some connectors press against a part they do not fit (the red ports): move or rotate those parts. You can still save the layout."
+      "PORT_INCORRECT": "Some connectors press against a part they do not fit (the red ports): move or rotate those parts. You can still save the layout.",
+      "ENGINES_PUSHED": "Engines are pushed above their listed power: faster, but they burn more fuel, wear and can fail on every leg of a mission (not scavenging). Set them back in the engine tuning."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -2575,7 +2576,8 @@
     "battery": {
       "label": "Battery management",
       "hint": "Where the combat energy comes from: the batteries only, everything the ship makes, or an override that drives the systems harder."
-    }
+    },
+    "cleanLeg": "{{percent}}% chance no engine fails on one leg of a trip (every extra leg lowers it)."
   },
   "landing": {
     "kicker": "A space logistics and ship-building strategy game",
