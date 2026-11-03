@@ -30,14 +30,14 @@ ships (the commit has the history). Raise questions before starting anything mar
 The game has no player-to-player layer yet. Raise questions before starting any of these; they touch the
 board, missions, the worker and the web.
 
-- [ ] **Presence at the port:** show how many pilots are in a port right now (and perhaps who, with a privacy switch).
+- [ ] **Presence, next phase:** the port shows a count of docked pilots (built 2026-11-02, online or not). Names come with the friends list; "online now" would need a last-seen signal.
 - [ ] **Scheduled player races:** a race that starts at a fixed time; pilots apply and wait, then compete against each
   other (today a race is against generated rivals, `resolution/race`). Needs an apply window, a start job and a result.
 - [ ] **Missions together:** invite other pilots to a convoy, a defense or a transport done together (shared reward,
   roles, what happens if one leaves or is lost).
 - [ ] **Profile stats follow-ups** (built 2026-10-27, `docs/superpowers/plans/2026-10-27-profile-stats.md`): `flight.seconds` is
   never recorded (no accurate dispatch time is stored); `rescue.called` counts every call, so a pilot who presses "wait" twice
-  counts twice; ships have no names yet, the public card shows a placeholder callsign (`TAG-Name-Word`); a hot stat that the
+  counts twice; a hot stat that the
   ranking chooses may move out of the JSON bag into its own indexed column.
 - [ ] **Ranking follow-ups** (built 2026-10-28, `docs/superpowers/plans/2026-10-28-global-ranking.md`): no reward for the weekly
   winners (it would need the week frozen at Monday 00:00 Brazil time and kept as history); boards are computed live on every request
@@ -45,6 +45,20 @@ board, missions, the worker and the web.
   2026-10-28): they rank a `ShipRating` snapshot (engine thrust and mobility) that the worker refreshes every
   `SHIP_RATING_INTERVAL_MS` (default 10 min, `jobs/ship-rating.scheduler.ts`); the manual load
   `docker compose exec -T api node dist/admin/cli/ship-rating.cli.js` still works.
+
+## Beta close-out and v0.2 (owner, 2026-11-02)
+- [ ] **Production setup check** (parked until deployment): bring the `prod` compose profile up on a clean machine and check
+  secrets, TLS, backups, the first admin, and that `admin.debug_fast_ops` is off. Set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
+  `RESEND_FROM_NAME` and `BUG_REPORT_TO_EMAIL` so tester bug reports (`POST /v1/feedback/bug`) reach the inbox.
+- [ ] **CI and push:** nothing is pushed since `7955229`; run the browser smoke on an isolated stack, push, check every CI job.
+- [ ] **Blocklist:** review and extend `admin.name_blocklist` (ship names) before the beta; review the `economy.ship_rename_price`.
+- [ ] **Friends list**, then names in the port and in presence; the report flow (`/admin/reports`) is built.
+- [ ] **Weekly ranking rewards** (see the ranking follow-ups above); an optional pilot list in the port (ship names only).
+- [ ] **Scheduled player races** and **missions together** (above): v0.2.
+- [ ] **Plasma** (branch `v0.2-plasma`): plasma engines as the end-game target, run by 2x2-4x4 plasma reactors with slow fuel,
+  sold only in far, hard places; map expansion to go with it.
+- [ ] Mission card: the distance has no unit; the guide's first-ship tour is still three steps (shorten if testers say so).
+- [ ] Ranking: the "Fastest race" board per route stays (the pilot card lost its fastest-race line).
 
 ## Planned / follow-ups (owner, 2026-10-20)
 - [ ] **Balance, round 5**: the game was too easy and money was quick to farm (owner, 2026-10-20). Sim check
