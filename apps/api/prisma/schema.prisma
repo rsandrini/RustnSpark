@@ -52,7 +52,7 @@ model Player {
   account         Account           @relation(fields: [accountId], references: [id])
   name            String            @unique
   // The pilot's address on the public card and the rankings: random, so the URL never carries the name or the id.
-  publicId        String            @unique @default(dbgenerated("substr(md5(random()::text || clock_timestamp()::text), 1, 12)"))
+  publicId        String            @unique @default(dbgenerated("substr(md5(((random())::text || (clock_timestamp())::text)), 1, 12)"))
   credits         Int               @default(0)
   // Plain string, not an enum: `pt-BR` is not a valid enum member; DTO validation enforces values.
   locale          String            @default("en")
