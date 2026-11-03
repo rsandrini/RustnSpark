@@ -2127,7 +2127,9 @@
     "cargo": {
       "fixed": "Carga fixa: {{need}} unidades, ocupando esse tanto do seu espaço de carga.",
       "open": "Carga aberta: no mínimo {{need}} unidades, e você leva todo o espaço de carga que tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
-    }
+    },
+    "shipFaults": "Sua nave não pode aceitar missões agora. Corrija isto primeiro e as ofertas voltam a abrir:",
+    "fixShip": "Corrigir na tela da Nave"
   },
   "map": {
     "places": "Lugares",

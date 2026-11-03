@@ -60,7 +60,8 @@ describe('board (S10.6)', () => {
     // not the old failure-only sentence; MOB_TOO_LOW is a general viability reason and still
     // uses the old reasons list.
     expect(screen.getAllByText('A mining rig installed').length).toBeGreaterThan(0);
-    expect(screen.getByText('Mobility too low')).toBeInTheDocument();
+    // (said once above the list, and again in the card)
+    expect(screen.getAllByText('Mobility too low').length).toBeGreaterThan(0);
     expect(screen.getAllByText('On hold').length).toBeGreaterThan(0);
     expect(screen.getAllByText('1,200 ¢').length).toBeGreaterThan(0);
 
@@ -89,7 +90,9 @@ describe('board (S10.6)', () => {
 
     // MOB_TOO_LOW is a general viability reason (not a mission requirement), unique to the
     // mining card's fixture — use it to find the card itself.
-    const miningCard = (await screen.findByText('Mobility too low')).closest('article');
+    const miningCard = (await screen.findAllByText('Mobility too low'))
+      .map((node) => node.closest('article'))
+      .find((article) => article !== null);
     expect(miningCard).not.toBeNull();
     const card = within(miningCard!);
 
@@ -426,6 +429,61 @@ describe('board (S10.6)', () => {
     // 25 aboard, 8 needed, tank 40
     expect(chips[0]).toHaveAttribute('data-state', 'ok');
     expect(chips[0]).toHaveTextContent('Fuel OK');
+  });
+
+  it('says once, above the list, what is wrong with the ship when that blocks every offer', async () => {
+    server.use(
+      http.get('/v1/locations/:id/missions', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 'b-bad',
+              templateId: 'tpl-b-bad',
+              type: 'DELIVERY',
+              factionId: 'luna',
+              originId: 'ceres',
+              destinationId: 'gate',
+              legs: [],
+              cargo: {},
+              reward: 900,
+              expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              status: 'AVAILABLE',
+              playerId: null,
+              privatePlayerId: null,
+              shipId: null,
+              acceptedAt: null,
+              arrivalAt: null,
+              deadlineAt: null,
+              seed: 'seed-bad',
+              version: 1,
+              rewardEstimate: 900,
+              eligibility: {
+                eligible: false,
+                reasons: [{ code: 'STRUCTURE_EXCEEDED', message: 'Structure budget exceeded' }],
+              },
+              info: {
+                title: { en: 'Blocked Run', 'pt-BR': 'Corrida Bloqueada' },
+                description: { en: 'A run.', 'pt-BR': '' },
+                legCount: 1,
+                totalDistance: 300,
+                peakDanger: 2,
+                peakZone: 0,
+                estimate: { durationSeconds: 100, fuelNeeded: 8 },
+                material: null,
+                requirements: [],
+                race: null,
+              },
+            },
+          ],
+          { status: 200 },
+        ),
+      ),
+    );
+    await renderBoard();
+    const faults = await screen.findByTestId('ship-faults');
+    expect(faults).toHaveTextContent('Your ship cannot take missions right now');
+    expect(faults).toHaveTextContent('Structure budget exceeded');
+    expect(within(faults).getByRole('button', { name: /Fix it on the Ship screen/ })).toBeVisible();
   });
 
   it('keeps the fuel block out of the cramped facts grid, and hides a redundant equal estimate', async () => {

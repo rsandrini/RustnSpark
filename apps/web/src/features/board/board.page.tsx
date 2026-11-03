@@ -164,6 +164,16 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     .sort((a, b) => compareOffers(sortKey, a, b));
   const hiddenCount = ofType.length - offers.length;
   const takeableCount = ofType.filter((offer) => offer.eligibility.eligible).length;
+  // What is wrong with the SHIP itself (structure over budget, no engine, an unpowered system...):
+  // it blocks every offer at once, so it is said once, above the list, not only inside each card.
+  const shipFaults = [
+    ...new Map(
+      (boardQuery.data ?? [])
+        .flatMap((offer) => offer.eligibility.reasons)
+        .filter((reason) => i18n.exists(`hangar.problems.${reason.code}`))
+        .map((reason) => [reason.code, reason] as const),
+    ).values(),
+  ];
 
   const body = (
     <>
@@ -186,6 +196,31 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         </p>
       )}
       <EmptyShipNotice />
+
+      {shipFaults.length > 0 && (
+        <div className="notice warn" role="alert" data-testid="ship-faults">
+          <b>{t('board.shipFaults')}</b>
+          <ul>
+            {shipFaults.map((fault) => (
+              <li key={fault.code}>
+                {t(`board.reasons.${fault.code}`, {
+                  defaultValue: t(`hangar.problems.${fault.code}`),
+                })}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              if (embedded && onGoToShip !== undefined) onGoToShip();
+              else void navigate('/ship');
+            }}
+          >
+            {t('board.fixShip')}
+          </button>
+        </div>
+      )}
 
       <RescueBanner />
 
