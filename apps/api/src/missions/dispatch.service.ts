@@ -200,9 +200,9 @@ const MS_PER_SECOND = 1000;
 
 /** The ticks an independent mining job was set up for (undefined for every other mission). */
 function legs0Ticks(legs: unknown): number | undefined {
-  return Array.isArray(legs) && typeof legs[0]?.miningTicks === 'number'
-    ? legs[0].miningTicks
-    : undefined;
+  const first: unknown = Array.isArray(legs) ? (legs as unknown[])[0] : undefined;
+  const ticks = (first as { miningTicks?: unknown } | undefined)?.miningTicks;
+  return typeof ticks === 'number' ? ticks : undefined;
 }
 
 function arrivalOf(mission: MissionInstance): Date {

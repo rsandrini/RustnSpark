@@ -63,6 +63,7 @@ describe('players/me endpoints (S2.3)', () => {
       role: seeded.account.role,
       factionId: null,
       tutorialDone: false,
+      publicId: seeded.player.publicId,
     });
   });
 
@@ -146,12 +147,20 @@ describe('players/me endpoints (S2.3)', () => {
     await prisma.playerEvent.create({
       data: { playerId: seeded.player.id, type: 'refuel', creditsDelta: -5 },
     });
-    expect((await progress()).body).toMatchObject({ refuelled: true, repaired: false, worked: false });
+    expect((await progress()).body).toMatchObject({
+      refuelled: true,
+      repaired: false,
+      worked: false,
+    });
 
     await prisma.playerEvent.create({
       data: { playerId: seeded.player.id, type: 'repair.started', creditsDelta: -20 },
     });
-    expect((await progress()).body).toMatchObject({ refuelled: true, repaired: true, worked: false });
+    expect((await progress()).body).toMatchObject({
+      refuelled: true,
+      repaired: true,
+      worked: false,
+    });
 
     const unauthenticated = await request(server).get('/v1/players/me/tutorial-progress');
     expect(unauthenticated.status).toBe(401);
