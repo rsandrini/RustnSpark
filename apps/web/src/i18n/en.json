@@ -420,7 +420,11 @@
       "price": "Renaming costs {{price}}.",
       "save": "Rename",
       "saving": "Renaming…",
-      "failed": "Could not rename the ship."
+      "failed": "Could not rename the ship.",
+      "confirmTitle": "Confirm the rename",
+      "confirmBody": "Rename the ship to “{{name}}” for {{price}}? This takes the money right away and cannot be undone.",
+      "confirmBack": "Go back",
+      "confirmYes": "Yes, rename"
     },
     "line": "Ship · {{name}} · {{count}} installed",
     "title": "My Ship",

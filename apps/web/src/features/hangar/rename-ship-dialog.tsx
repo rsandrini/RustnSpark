@@ -34,6 +34,7 @@ export function RenameShipDialog({
   });
   const quote = quoteQuery.data;
   const [draft, setDraft] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   // Starts from the pilot's current part of the name.
   const current = quote === undefined ? '' : quote.name.slice(quote.prefix.length);
   const value = draft ?? current;
@@ -59,50 +60,83 @@ export function RenameShipDialog({
 
   const close = () => {
     setDraft(null);
+    setConfirming(false);
     save.reset();
     onClose();
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!save.isPending && value.trim() !== '') save.mutate();
+    if (!save.isPending && value.trim() !== '') setConfirming(true);
   };
 
   return (
-    <Popup open={open} title={t('hangar.rename.title')} onClose={close}>
-      <form onSubmit={submit}>
-        <p className="sub">{t('hangar.rename.help')}</p>
-        <label className="field">
-          <span className="label">{t('hangar.rename.label')}</span>
-          <span className="rename-row">
-            <b className="rename-prefix" data-testid="rename-prefix">
-              {quote?.prefix ?? ''}
-            </b>
-            <input
-              value={value}
-              maxLength={MAX_LENGTH}
-              autoComplete="off"
-              onChange={(event) => setDraft(event.target.value)}
-            />
-          </span>
-        </label>
-        {quote !== undefined && (
-          <p className="sub" data-testid="rename-price">
-            {t('hangar.rename.price', { price: money(quote.price) })}
-          </p>
-        )}
-        {save.isError && (
-          <p role="alert" className="error">
-            {describeError(t, save.error, t('hangar.rename.failed'))}
-          </p>
-        )}
-        <button
-          type="submit"
-          className="btn primary"
-          disabled={quote === undefined || value.trim() === '' || save.isPending}
-        >
-          {save.isPending ? t('hangar.rename.saving') : t('hangar.rename.save')}
-        </button>
-      </form>
-    </Popup>
+    <>
+      <Popup open={open} title={t('hangar.rename.title')} onClose={close}>
+        <form onSubmit={submit}>
+          <p className="sub">{t('hangar.rename.help')}</p>
+          <label className="field">
+            <span className="label">{t('hangar.rename.label')}</span>
+            <span className="rename-row">
+              <b className="rename-prefix" data-testid="rename-prefix">
+                {quote?.prefix ?? ''}
+              </b>
+              <input
+                value={value}
+                maxLength={MAX_LENGTH}
+                autoComplete="off"
+                onChange={(event) => setDraft(event.target.value)}
+              />
+            </span>
+          </label>
+          {quote !== undefined && (
+            <p className="sub" data-testid="rename-price">
+              {t('hangar.rename.price', { price: money(quote.price) })}
+            </p>
+          )}
+          {save.isError && (
+            <p role="alert" className="error">
+              {describeError(t, save.error, t('hangar.rename.failed'))}
+            </p>
+          )}
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={quote === undefined || value.trim() === '' || save.isPending}
+          >
+            {save.isPending ? t('hangar.rename.saving') : t('hangar.rename.save')}
+          </button>
+        </form>
+      </Popup>
+      <Popup
+        open={confirming && quote !== undefined}
+        title={t('hangar.rename.confirmTitle')}
+        onClose={() => setConfirming(false)}
+        actions={
+          <>
+            <button type="button" className="btn" onClick={() => setConfirming(false)}>
+              {t('hangar.rename.confirmBack')}
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={save.isPending}
+              onClick={() => {
+                setConfirming(false);
+                save.mutate();
+              }}
+            >
+              {t('hangar.rename.confirmYes')}
+            </button>
+          </>
+        }
+      >
+        <p data-testid="rename-confirm">
+          {t('hangar.rename.confirmBody', {
+            name: `${quote?.prefix ?? ''}${value.trim()}`,
+            price: money(quote?.price ?? 0),
+          })}
+        </p>
+      </Popup>
+    </>
   );
 }

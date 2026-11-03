@@ -323,8 +323,6 @@
 /* report (S10.8) --------------------------------------------------------- */
 .btn.tiny {
   min-width: 0;
-  padding: 0 7px;
-  border-radius: 50%;
   font-size: 11px;
   font-weight: 800;
   vertical-align: middle;

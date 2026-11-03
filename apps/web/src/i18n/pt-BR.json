@@ -420,7 +420,11 @@
       "price": "Renomear custa {{price}}.",
       "save": "Renomear",
       "saving": "Renomeando…",
-      "failed": "Não foi possível renomear a nave."
+      "failed": "Não foi possível renomear a nave.",
+      "confirmTitle": "Confirmar a troca de nome",
+      "confirmBody": "Trocar o nome da nave para “{{name}}” por {{price}}? O valor é cobrado na hora e não dá para desfazer.",
+      "confirmBack": "Voltar",
+      "confirmYes": "Sim, trocar"
     },
     "line": "Nave · {{name}} · {{count}} instaladas",
     "title": "Minha Nave",

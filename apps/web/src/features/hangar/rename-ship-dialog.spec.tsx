@@ -35,6 +35,8 @@ describe('RenameShipDialog', () => {
     await userEvent.clear(input);
     await userEvent.type(input, 'Star');
     await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    expect(await screen.findByTestId('rename-confirm')).toHaveTextContent('1,000 ¢');
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, rename' }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(post).toHaveBeenCalledWith(
@@ -42,6 +44,19 @@ describe('RenameShipDialog', () => {
       { name: 'Star' },
       expect.objectContaining({ idempotencyKey: expect.any(String) as string }),
     );
+  });
+
+  it('asks to confirm with the price and posts nothing on Go back', async () => {
+    vi.spyOn(client, 'get').mockResolvedValue(quote);
+    const post = vi.spyOn(client, 'post').mockResolvedValue(quote);
+    renderDialog();
+    const input = await screen.findByRole('textbox');
+    await waitFor(() => expect(input).toHaveValue('Tern'));
+    await userEvent.type(input, 'x');
+    await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    expect(await screen.findByTestId('rename-confirm')).toHaveTextContent('LUN-Ternx');
+    await userEvent.click(screen.getByRole('button', { name: 'Go back' }));
+    expect(post).not.toHaveBeenCalled();
   });
 
   it('says why a refused name was refused and keeps the dialog open', async () => {
@@ -54,6 +69,8 @@ describe('RenameShipDialog', () => {
     await waitFor(() => expect(input).toHaveValue('Tern'));
     await userEvent.type(input, 'x');
     await userEvent.click(screen.getByRole('button', { name: 'Rename' }));
+    expect(await screen.findByTestId('rename-confirm')).toHaveTextContent('1,000 ¢');
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, rename' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('That name is not allowed.');
     expect(onClose).not.toHaveBeenCalled();
   });
