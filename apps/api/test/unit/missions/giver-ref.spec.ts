@@ -21,6 +21,10 @@ const row = {
 
 describe('quest giver references', () => {
   it('maps the report outcome to success, partial or failure', () => {
+    // the values MissionLog.outcome really holds
+    expect(outcomeClass('success')).toBe('success');
+    expect(outcomeClass('partial_failure')).toBe('partial');
+    expect(outcomeClass('failed')).toBe('failure');
     expect(outcomeClass('completed')).toBe('success');
     expect(outcomeClass('adrift')).toBe('failure');
     expect(outcomeClass('defeat_failed')).toBe('failure');
@@ -47,6 +51,8 @@ describe('quest giver references', () => {
       en: 'Well flown.',
       'pt-BR': 'Bem voado.',
     });
+    expect(closingLineOf(row, 'success', 's')?.en).toBe('Well flown.');
+    expect(closingLineOf(row, 'failed', 's')?.en).toBe('Next time.');
     expect(closingLineOf(row, 'adrift', 's')?.en).toBe('Next time.');
     expect(closingLineOf(row, 'partial_loss', 's')).toBeNull();
   });

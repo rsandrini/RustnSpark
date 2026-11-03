@@ -4,9 +4,12 @@ import { parsePools, voiced } from './voice.js';
 
 export type ReportOutcome = 'success' | 'partial' | 'failure';
 
-/** The report's outcome word as one of the three a giver has closing lines for. */
+/**
+ * The mission's outcome as one of the three a giver has closing lines for. The log stores `success`,
+ * `partial_failure`, `failed` or `adrift` (`completed` is the old leg status word, kept for stored reports).
+ */
 export function outcomeClass(outcome: string): ReportOutcome {
-  if (outcome === 'completed') return 'success';
+  if (outcome === 'success' || outcome === 'completed') return 'success';
   return outcome.includes('partial') ? 'partial' : 'failure';
 }
 
