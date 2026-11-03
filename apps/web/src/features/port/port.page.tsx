@@ -109,6 +109,14 @@ export interface PortPageProps {
   onGoToShip?: () => void;
 }
 
+/** What the mine endpoint says about a place: whether it can be mined, and the job's limits. */
+interface MiningInfo {
+  minable: boolean;
+  tickSeconds?: number;
+  maxTicks?: number;
+  fuelPerTick?: number;
+}
+
 export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
@@ -181,9 +189,14 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const minableQuery = useQuery({
     queryKey: ['mineInfo', locationId],
     enabled: locationId !== undefined,
-    queryFn: () => client.get<{ minable: boolean }>(`/v1/locations/${locationId ?? ''}/mine/info`),
+    queryFn: () => client.get<MiningInfo>(`/v1/locations/${locationId ?? ''}/mine/info`),
   });
   const minable = minableQuery.data?.minable === true;
+  // How many 5-minute ticks the next dig may run (the server states the limits and the fuel).
+  const [mineTicks, setMineTicks] = useState(1);
+  const mineMaxTicks = minableQuery.data?.maxTicks ?? 1;
+  const mineTickSeconds = minableQuery.data?.tickSeconds ?? 0;
+  const mineFuelPerTick = minableQuery.data?.fuelPerTick ?? 0;
   useEffect(() => {
     if (tab === 'mining' && minableQuery.data?.minable === false) setTab('market');
   }, [tab, minableQuery.data]);
@@ -545,7 +558,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   // only authority on whether this location is minable and the ship carries a mining rig;
   // NOT_MINABLE/NO_MINING_RIG surface through the same error text as any other action here.
   const mine = useMutation({
-    mutationFn: () => client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`),
+    mutationFn: () =>
+      client.post<DispatchResponse>(`/v1/locations/${locationId ?? ''}/mine`, {
+        ticks: Math.min(mineTicks, mineMaxTicks),
+      }),
     onSuccess: () => {
       setActionError(null);
       tutorialTick('worked');
@@ -1653,6 +1669,31 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <p className="warn-text" role="status" data-testid="mine-no-hold">
                 {t('hangar.problems.NO_CARGO_HOLD')}
               </p>
+            )}
+            {mineTickSeconds > 0 && (
+              <div className="stack" role="radiogroup" aria-label={t('port.mine.length')}>
+                <span className="sub">{t('port.mine.length')}</span>
+                <div className="actions">
+                  {Array.from({ length: mineMaxTicks }, (_, index) => index + 1).map((ticks) => (
+                    <button
+                      key={ticks}
+                      type="button"
+                      role="radio"
+                      aria-checked={ticks === mineTicks}
+                      className={ticks === mineTicks ? 'btn primary' : 'btn'}
+                      onClick={() => setMineTicks(ticks)}
+                    >
+                      {t('port.mine.option', { time: formatDuration(ticks * mineTickSeconds, t) })}
+                    </button>
+                  ))}
+                </div>
+                <p className="sub" data-testid="mine-fuel">
+                  {t('port.mine.fuel', {
+                    perTick: mineFuelPerTick,
+                    total: mineTicks * mineFuelPerTick,
+                  })}
+                </p>
+              </div>
             )}
             <button
               type="button"

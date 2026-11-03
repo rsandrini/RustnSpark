@@ -1540,8 +1540,11 @@
     },
     "mine": {
       "title": "Mine the field",
-      "what": "If this place is minable and your ship carries a mining rig, send it out to dig: a timed job like scavenging, no pay up front, no report of what it turns up until the job ends.",
-      "action": "Send the ship mining"
+      "what": "If this place is minable and your ship carries a mining rig, send it out to dig. Pick how long: it digs in 5-minute ticks and heads back when the time is up or the hold is full. No pay up front, no report of what it turns up until the job ends.",
+      "action": "Send the ship mining",
+      "length": "How long to dig",
+      "option": "{{time}}",
+      "fuel": "Burns {{perTick}} fuel for each tick it digs: up to {{total}} for this length, less if the hold fills first."
     },
     "repairHelp": "Move a slider to choose how far to repair each part. Nothing is repaired until you do.",
     "repairNoChange": "No change",
@@ -2297,7 +2300,8 @@
     "NO_SHIP_TO_REPORT": "That pilot has no ship to report.",
     "ALREADY_REPORTED": "You already reported this and it is waiting for review.",
     "REPORT_LIMIT": "You have sent enough reports for today. Thank you.",
-    "REPORT_ALREADY_REVIEWED": "This report was already reviewed."
+    "REPORT_ALREADY_REVIEWED": "This report was already reviewed.",
+    "MINING_TICKS_INVALID": "That mining length is not allowed."
   },
   "language": {
     "label": "Language",

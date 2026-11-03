@@ -33,9 +33,18 @@ import {
 import { ACTIVE_STATUSES } from './missions.service.js';
 import { shipFormatChangePending } from '../ships/bridge-format.js';
 
+export interface MiningJobInfo {
+  readonly minable: boolean;
+  /** Mission-time length of one tick, the most ticks a job can ask for, and the fuel each tick burns. */
+  readonly tickSeconds: number;
+  readonly maxTicks: number;
+  readonly fuelPerTick: number;
+}
+
 export const MINING_JOB_TEMPLATE_ID = 'mining_job_generic';
 const MS_PER_HOUR = 3_600_000;
-// A dig around the ship's own location burns no fuel: it never leaves.
+// A dig around the ship's own location burns no route fuel (it never leaves): the ticks it runs
+// burn their own (mining.job_fuel_per_tick), charged by the resolver.
 const MINING_FUEL_MULT = 0;
 
 /**
@@ -59,7 +68,7 @@ export class MiningJobService {
 
   /** Whether this location can be mined at all (a template that fits it exists): the port screen
       only offers the Mining tab where the answer is yes. */
-  async info(locationId: string): Promise<{ minable: boolean }> {
+  async info(locationId: string): Promise<MiningJobInfo> {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) throw new NotFoundException('location not found');
     const templates = await this.prisma.missionTemplate.findMany({
@@ -75,13 +84,22 @@ export class MiningJobService {
       },
       templates,
     );
-    return { minable };
+    const { mining } = this.config.snapshot().rules;
+    return {
+      minable,
+      tickSeconds: mining.job_duration_seconds,
+      maxTicks: mining.job_max_ticks,
+      fuelPerTick: mining.job_fuel_per_tick,
+    };
   }
 
-  async start(playerId: string, locationId: string): Promise<DispatchResponse> {
+  async start(playerId: string, locationId: string, ticks = 1): Promise<DispatchResponse> {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) throw new NotFoundException('location not found');
     const { rules } = this.config.snapshot();
+    if (!Number.isInteger(ticks) || ticks < 1 || ticks > rules.mining.job_max_ticks) {
+      throw new BadRequestException({ error: 'MINING_TICKS_INVALID' });
+    }
 
     const templates = await this.prisma.missionTemplate.findMany({
       where: { type: 'MINING', active: true },
@@ -198,12 +216,13 @@ export class MiningJobService {
     };
     const base = legForRoute(route, new Map(locations.map((entry) => [entry.id, entry])), world);
     const danger = routes.reduce((peak, entry) => Math.max(peak, entry.danger), 0);
-    // A distance that makes the dig last job_duration_seconds for THIS ship (mission time) —
-    // same trick ScavengeJobService uses for its own fixed duration.
+    // A distance that makes the dig last `ticks` × job_duration_seconds for THIS ship (mission time)
+    // — same trick ScavengeJobService uses for its own fixed duration. The dispatch trims it when
+    // the hold fills before the time is up.
     const distance = Math.max(
       1,
       Math.round(
-        (rules.mining.job_duration_seconds /
+        ((ticks * rules.mining.job_duration_seconds) /
           (rules.missions.duration_k * rules.missions.time_scale)) *
           sheet.mob,
       ),
@@ -214,6 +233,7 @@ export class MiningJobService {
       danger,
       zone: location.zone,
       env: { ...base.env, fuelMult: MINING_FUEL_MULT },
+      miningTicks: ticks,
     };
 
     const seed = `mining|${playerId}|${locationId}|${now.getTime()}`;

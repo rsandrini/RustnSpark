@@ -1651,9 +1651,35 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 86400,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.job_duration_seconds),
     description: {
-      en: 'How long an independent mining job takes, in mission time (scaled by missions.time_scale).',
+      en: 'How long one tick of an independent mining job takes, in mission time (scaled by missions.time_scale).',
       'pt-BR':
-        'Quanto dura um trabalho de mineração independente, em tempo de missão (escalado por missions.time_scale).',
+        'Quanto dura cada tick de um trabalho de mineração independente, em tempo de missão (escalado por missions.time_scale).',
+    },
+  },
+  {
+    key: 'mining.job_fuel_per_tick',
+    group: 'mining',
+    type: 'number',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.job_fuel_per_tick),
+    description: {
+      en: 'Fuel burned by each tick an independent mining job runs (a hold that fills early stops the burn).',
+      'pt-BR':
+        'Combustível queimado por cada tick que um trabalho de mineração independente executa (um porão que enche antes interrompe o consumo).',
+    },
+  },
+  {
+    key: 'mining.job_max_ticks',
+    group: 'mining',
+    type: 'integer',
+    min: 1,
+    max: 24,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.job_max_ticks),
+    description: {
+      en: 'The most ticks a pilot can choose for an independent mining job (the least is one).',
+      'pt-BR':
+        'O máximo de ticks que o piloto pode escolher num trabalho de mineração independente (o mínimo é um).',
     },
   },
   {

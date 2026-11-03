@@ -125,6 +125,8 @@ export type ConfigKey =
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
   | 'mining.job_duration_seconds'
+  | 'mining.job_fuel_per_tick'
+  | 'mining.job_max_ticks'
   | 'mining.rarity'
   | 'mining.richness'
   | 'missions.board_max_same_type'
@@ -475,9 +477,14 @@ export type GameRules = Readonly<{
     richness: Readonly<Record<string, number>>;
     rarity: Readonly<Record<string, number>>;
     attempts_per_stop: number;
-    /** An independent mining job at a minable location (round 10): like a scavenging job,
-        fixed duration scaled by `missions.time_scale`, same place in and out. */
+    /** An independent mining job at a minable location: it runs in ticks of this length (mission
+        time, scaled by `missions.time_scale`), same place in and out. Each tick digs
+        `attempts_per_stop` times. */
     job_duration_seconds: number;
+    /** The most ticks a pilot can ask for (the least is one). */
+    job_max_ticks: number;
+    /** Fuel burned by each tick the job actually runs (a hold that fills early stops the burn). */
+    job_fuel_per_tick: number;
   }>;
   /** Power sharing: who gets electricity when there is not enough, and what that does. */
   power: Readonly<{

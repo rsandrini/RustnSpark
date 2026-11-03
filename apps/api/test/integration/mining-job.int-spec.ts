@@ -132,13 +132,18 @@ describe('independent mining job (round 10)', () => {
       .get('/v1/locations/ceres/mine/info')
       .set(auth(player.token));
     expect(yes.status).toBe(200);
-    expect(yes.body).toEqual({ minable: true });
+    expect(yes.body).toMatchObject({
+      minable: true,
+      maxTicks: 4,
+      fuelPerTick: 50,
+      tickSeconds: 300,
+    });
 
     await prisma.missionTemplate.updateMany({ where: { type: 'MINING' }, data: { active: false } });
     const no = await request(httpServer(testApp.app))
       .get('/v1/locations/ceres/mine/info')
       .set(auth(player.token));
-    expect(no.body).toEqual({ minable: false });
+    expect(no.body).toMatchObject({ minable: false });
   });
 
   it('refuses without a mining rig installed (NO_MINING_RIG)', async () => {
@@ -199,6 +204,78 @@ describe('independent mining job (round 10)', () => {
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });
 
+  it('digs for the ticks asked: the time grows with them, the fuel is burned per tick, bad lengths are refused', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    const { rules } = configService.snapshot();
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 1000 } });
+
+    for (const ticks of [0, 5, 1.5]) {
+      const bad = await start(player.token, 'ceres').send({ ticks });
+      expect(bad.status).toBe(400);
+    }
+    const tooMany = await start(player.token, 'ceres').send({
+      ticks: rules.mining.job_max_ticks + 1,
+    });
+    expect(tooMany.status).toBe(400);
+    expect((tooMany.body as { message?: { error?: string } }).message?.error).toBe(
+      'MINING_TICKS_INVALID',
+    );
+
+    const response = await start(player.token, 'ceres').send({ ticks: 3 });
+    expect(response.status).toBe(200);
+    const body = response.body as { missionId: string; durationSeconds?: number };
+    // up to three ticks (the hold may fill first); never longer than asked
+    expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(
+      3 * rules.mining.job_duration_seconds + 5,
+    );
+    expect(body.durationSeconds ?? 0).toBeGreaterThanOrEqual(rules.mining.job_duration_seconds - 5);
+    const job = await prisma.missionInstance.findUniqueOrThrow({ where: { id: body.missionId } });
+    expect((job.legs as Array<{ miningTicks?: number }>)[0]?.miningTicks).toBe(3);
+  });
+
+  it('a hold that fills early ends the dig early and burns only the ticks it ran', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 1000 } });
+    // A field so rich that the first tick already fills any hold.
+    await prisma.gameConfig.update({
+      where: { key: 'mining.attempts_per_stop' },
+      data: { value: 100 },
+    });
+    await prisma.gameConfig.update({
+      where: { key: 'mining.richness' },
+      data: { value: { open: 1, radiation: 1, gravitational: 1, debris: 1 } },
+    });
+    await prisma.gameConfig.update({
+      where: { key: 'mining.rarity' },
+      data: { value: { common: 0, uncommon: 0, rare: 0 } },
+    });
+    await configService.refresh();
+    const { rules } = configService.snapshot();
+
+    const response = await start(player.token, 'ceres').send({ ticks: 4 });
+    expect(response.status).toBe(200);
+    const body = response.body as { durationSeconds?: number };
+    // one tick of four
+    expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(rules.mining.job_duration_seconds + 5);
+  });
+
+  it('refuses a dig the tank cannot pay for (FUEL_INSUFFICIENT)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 10 } });
+
+    const response = await start(player.token, 'ceres').send({ ticks: 1 });
+    expect(response.status).toBe(409);
+    expect((response.body as { message?: { error?: string } }).message?.error).toBe(
+      'FUEL_INSUFFICIENT',
+    );
+  });
+
   it('refuses a dig with no cargo hold: it would only come back empty (NO_CARGO_HOLD)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
@@ -237,7 +314,7 @@ describe('independent mining job (round 10)', () => {
     const info = await request(httpServer(testApp.app))
       .get('/v1/locations/halcyon/mine/info')
       .set(auth(player.token));
-    expect(info.body).toEqual({ minable: true });
+    expect(info.body).toMatchObject({ minable: true });
 
     const response = await start(player.token, 'halcyon');
     expect(response.status).toBe(200);

@@ -8,7 +8,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import type { MissionInstance } from '@prisma/client';
+import type { MissionInstance, Prisma } from '@prisma/client';
+import { resolveMission } from '../resolution/mission/mission.resolver.js';
+import { buildResolveInput, contextFromLive } from './resolution-input.js';
 import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
@@ -39,6 +41,8 @@ export interface DispatchLeg {
   readonly danger: number;
   readonly zone: number;
   readonly env: { readonly id: string; readonly level: number; readonly fuelMult: number };
+  /** An independent mining job: the most ticks it digs; it ends sooner when the hold fills. */
+  readonly miningTicks?: number;
 }
 
 // D19: the snapshot frozen at dispatch time is what resolution (S7.3) and replay (S7.6)
@@ -120,6 +124,7 @@ export function parseDispatchLegs(legs: unknown): DispatchLeg[] {
       danger: candidate.danger ?? 0,
       zone: candidate.zone ?? 0,
       env: candidate.env ?? { id: 'none', level: 1, fuelMult: 1 },
+      ...(typeof candidate.miningTicks === 'number' ? { miningTicks: candidate.miningTicks } : {}),
     };
   });
 }
@@ -428,7 +433,7 @@ export class DispatchService {
         });
       }
       const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
-      const { durationSeconds, durationClass } = missionDuration({
+      const planned = missionDuration({
         totalDistance,
         mobility: flight.sheet.mob,
         durationK: rules.missions.duration_k,
@@ -438,7 +443,8 @@ export class DispatchService {
         timeScale: rules.missions.time_scale,
         classCutoffs: rules.missions.duration_class_cutoffs,
       });
-      const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);
+      let { durationSeconds } = planned;
+      const { durationClass } = planned;
 
       const snapshot: DispatchSnapshot = {
         shipId: ship.id,
@@ -473,6 +479,26 @@ export class DispatchService {
           : {}),
         layered: true,
       };
+
+      // An independent mining job ends when its time is up or its hold is full, whichever comes
+      // first. The seeded resolver is deterministic, so a dry run of the very same dig tells now how
+      // many ticks it will run: that sets when the ship is back and what fuel it must carry.
+      const miningTicks = legs[0]?.miningTicks;
+      if (mission.type === 'MINING' && miningTicks !== undefined) {
+        const ran = await this.miningTicksRun(tx, mission, snapshot, rules);
+        const fuelForRun = ran * rules.mining.job_fuel_per_tick;
+        if (fuelForRun > ship.fuel) {
+          throw new ConflictException({
+            error: 'FUEL_INSUFFICIENT',
+            needed: Math.ceil(fuelForRun),
+            have: Math.floor(ship.fuel),
+          });
+        }
+        if (ran > 0) {
+          durationSeconds = Math.max(1, Math.round((durationSeconds * ran) / miningTicks));
+        }
+      }
+      const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);
 
       const missionUpdate = await tx.missionInstance.updateMany({
         where: { id: mission.id, status: 'ACCEPTED', playerId, shipId },
@@ -564,6 +590,64 @@ export class DispatchService {
       durationSeconds: outcome.durationSeconds,
       durationClass: outcome.durationClass,
     };
+  }
+
+  // Runs the dig of an independent mining job once, on the frozen dispatch snapshot and with the
+  // context the resolver will read, and reports how many ticks it ran.
+  private async miningTicksRun(
+    tx: Prisma.TransactionClient,
+    mission: MissionInstance,
+    snapshot: DispatchSnapshot,
+    rules: GameRules,
+  ): Promise<number> {
+    const cargo = (mission.cargo ?? {}) as Record<string, unknown>;
+    const [player, destination, template, faction, material, finished] = await Promise.all([
+      tx.player.findUniqueOrThrow({
+        where: { id: mission.playerId! },
+        select: { factionId: true },
+      }),
+      tx.location.findUniqueOrThrow({
+        where: { id: mission.destinationId },
+        select: { isolation: true },
+      }),
+      tx.missionTemplate.findUniqueOrThrow({
+        where: { id: mission.templateId },
+        select: { encounterPolicy: true },
+      }),
+      tx.faction.findUniqueOrThrow({
+        where: { id: mission.factionId },
+        select: { relations: true },
+      }),
+      typeof cargo['materialId'] === 'string'
+        ? tx.material.findUnique({
+            where: { id: cargo['materialId'] },
+            select: { rarity: true },
+          })
+        : null,
+      tx.missionLog.count({ where: { playerId: mission.playerId! } }),
+    ]);
+    const outcome = resolveMission(
+      buildResolveInput({
+        missionId: mission.id,
+        missionType: mission.type,
+        seed: mission.seed,
+        snapshot,
+        context: contextFromLive({
+          type: mission.type,
+          cargo: mission.cargo,
+          encounterPolicy: template.encounterPolicy,
+          employerRelations: faction.relations,
+          playerFactionId: player.factionId,
+          destinationIsolation: destination.isolation,
+          materialRarity: material?.rarity.toLowerCase(),
+          reward: mission.reward,
+        }),
+        rules,
+        firstRun: finished === 0,
+      }),
+    );
+    // (a run that ended early on a failure never reached the dig: it burns no mining fuel)
+    return outcome.legs.reduce((sum, leg) => sum + (leg.miningTicksRun ?? 0), 0);
   }
 
   // Releases an expired mission back to the board's expiry state. Only reachable for rows the

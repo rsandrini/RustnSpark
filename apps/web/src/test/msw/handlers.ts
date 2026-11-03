@@ -53,10 +53,7 @@ import type {
   RaceRoutesResponse,
   RankingResponse,
 } from '../../api/generated';
-import {
-  myStatsFixture,
-  publicProfileFixture,
-} from '../../features/profile/profile-fixtures';
+import { myStatsFixture, publicProfileFixture } from '../../features/profile/profile-fixtures';
 import { raceRoutesFixture, rankingFixture } from '../../features/rankings/rankings-fixtures';
 
 let wallet = 4820;
@@ -1423,7 +1420,9 @@ export const handlers = [
       serverTime: new Date().toISOString(),
     }),
   ),
-  http.get('/v1/locations/:id/mine/info', () => HttpResponse.json({ minable: true })),
+  http.get('/v1/locations/:id/mine/info', () =>
+    HttpResponse.json({ minable: true, tickSeconds: 300, maxTicks: 4, fuelPerTick: 50 }),
+  ),
   http.get('/v1/locations/:id/scavenge', ({ params }) => {
     const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
     return ok<ScavengeInfo>({

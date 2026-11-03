@@ -189,6 +189,8 @@ const miningSchema = z.object({
   rarity: z.record(z.string(), z.number().min(0).max(1)),
   attempts_per_stop: z.number().int().min(1).max(100),
   job_duration_seconds: z.number().int().min(1).max(86400),
+  job_max_ticks: z.number().int().min(1).max(24),
+  job_fuel_per_tick: z.number().min(0).max(100000),
 });
 
 const engineSchema = z.object({

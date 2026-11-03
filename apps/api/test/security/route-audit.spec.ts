@@ -78,7 +78,6 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
 const BODYLESS_MUTATIONS = new Set([
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',
-  'POST /v1/locations/:id/mine',
   'POST /v1/parts/:id/upgrade',
   'POST /v1/parts/:id/upgrade/quote',
   'POST /v1/parts/:id/expand',

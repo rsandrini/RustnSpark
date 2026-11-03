@@ -752,6 +752,67 @@ describe("the pilot's own free mining job", () => {
   });
 });
 
+describe("the pilot's mining job digs in ticks", () => {
+  // Every attempt finds ore: each tick yields attempts_per_stop (10) units, the hold takes 20.
+  const richRules: GameRules = {
+    ...rules,
+    mining: {
+      ...rules.mining,
+      richness: { open: 1 },
+      rarity: { common: 0 },
+      job_fuel_per_tick: 50,
+    },
+  };
+  const dig = (miningTicks: number | undefined, crg = 20) => {
+    const job = mission({
+      type: 'MINING',
+      unpaid: true,
+      legs: [
+        {
+          distance: 100,
+          danger: 0,
+          zone: 1,
+          env: { id: 'open', level: 1, fuelMult: 0 },
+          ...(miningTicks === undefined ? {} : { miningTicks }),
+        },
+      ],
+      mining: {
+        stop: { env: 'open', materialId: 'iron', materialRarity: 'common' },
+        miner: { min: 5, condition: 100 },
+      },
+    });
+    const snap = snapshot({ sheet: { ...snapshot().sheet, crg } });
+    return resolveMission({ seed: 'dig', snapshot: snap, mission: job, rules: richRules });
+  };
+  const oreOf = (out: ReturnType<typeof dig>) =>
+    out.loot.reduce((sum, entry) => sum + entry.quantity, 0);
+
+  it('runs every tick the time allows when the hold has room, and burns fuel for each', () => {
+    const out = dig(2, 100);
+    expect(out.legs[0]?.miningTicksRun).toBe(2);
+    expect(oreOf(out)).toBe(20);
+    expect(out.fuel).toBe(1000 - 2 * 50);
+  });
+
+  it('stops when the hold is full and burns only the ticks it ran', () => {
+    const out = dig(4);
+    expect(out.legs[0]?.miningTicksRun).toBe(2);
+    expect(oreOf(out)).toBe(20);
+    expect(out.fuel).toBe(1000 - 2 * 50);
+  });
+
+  it('a board mining mission (no ticks) digs its one stop and burns no mining fuel', () => {
+    const out = dig(undefined);
+    expect(out.legs[0]?.miningTicksRun).toBeUndefined();
+    expect(oreOf(out)).toBe(10);
+    expect(out.fuel).toBe(1000);
+  });
+
+  it('is deterministic: the dry run at dispatch and the real run agree', () => {
+    expect(dig(4)).toEqual(dig(4));
+  });
+});
+
 describe('P0 review — a lost fight wears the bridge', () => {
   const withBridge = (): MissionSnapshot =>
     snapshot({

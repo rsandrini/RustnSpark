@@ -521,6 +521,32 @@ describe('port (S10.9)', () => {
     );
   });
 
+  it('lets the pilot pick how long to dig, shows the fuel for it, and sends the ticks', async () => {
+    let sent: unknown = null;
+    server.use(
+      http.post('/v1/locations/:id/mine', async ({ request }) => {
+        sent = await request.json();
+        return HttpResponse.json({
+          missionId: 'mining-job-1',
+          arrivalAt: new Date(Date.now() + 1_200_000).toISOString(),
+          serverTime: new Date().toISOString(),
+          durationSeconds: 1200,
+        });
+      }),
+    );
+    await renderPort();
+    openPortTab('Mining');
+    const mining = await screen.findByTestId('mining-job');
+
+    // one tick by default; the fuel line follows the choice (50 per tick)
+    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('up to 50');
+    fireEvent.click(within(mining).getByRole('radio', { name: /^20m/ }));
+    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('up to 200');
+
+    fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
+    await waitFor(() => expect(sent).toEqual({ ticks: 4 }));
+  });
+
   it('upgrade tab says why nothing is listed: parts below 100% need a repair first', async () => {
     server.use(
       http.post('/v1/parts/:id/upgrade/quote', ({ params }) =>
@@ -982,9 +1008,7 @@ describe('port (S10.9)', () => {
     expect(list).toHaveTextContent('(missing 3)');
     expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
     // credits are listed first, with the price before what the pilot has
-    expect(list.querySelector('li')).toHaveTextContent(
-      /^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/,
-    );
+    expect(list.querySelector('li')).toHaveTextContent(/^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/);
     // and where to get it
     expect(
       screen.getAllByText(/Scrap comes from scavenging and from repairs/).length,

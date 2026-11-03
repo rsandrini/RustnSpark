@@ -286,6 +286,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     rarity: { common: 0.3, uncommon: 0.6, rare: 0.85 },
     attempts_per_stop: 20,
     job_duration_seconds: 300,
+    job_max_ticks: 4,
+    job_fuel_per_tick: 50,
   },
   power: {
     success_curve: [

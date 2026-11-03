@@ -80,6 +80,8 @@ export interface LegRoute {
     readonly level: number;
     readonly fuelMult: number;
   };
+  /** An independent mining job: the most ticks it digs (it ends sooner when the hold fills). */
+  readonly miningTicks?: number;
 }
 
 export interface EscortClient {
@@ -176,6 +178,8 @@ export interface LegOutcome {
   readonly encounter: EncounterOutcome | null;
   readonly combatResult: 'win' | 'loss' | 'escape' | 'ignore' | null;
   readonly combatCredits: number;
+  /** An independent mining job: the ticks it really dug before the time ran out or the hold filled. */
+  readonly miningTicksRun?: number;
 }
 
 const NO_FLAGS: LegChokeFlags = {
@@ -977,25 +981,40 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   }
 
   // 5. Mining (purpose stream) — free or contracted stops.
+  let miningTicksRun = 0;
   if (input.context.mining !== null) {
     // A rig that gets only part of its power digs less (or nothing).
     const rigPower = cruisePower === null ? 1 : successChance(cruisePower.byKind.rig, rules);
-    const yields = resolveMining(
-      input.context.mining.stop,
-      { ...input.context.mining.miner, min: input.context.mining.miner.min * rigPower },
-      rules,
-      miningRng,
-    );
+    const miner = { ...input.context.mining.miner, min: input.context.mining.miner.min * rigPower };
+    // An independent job digs tick by tick (each tick is one stop's worth of attempts) until the
+    // time is up or the hold is full; any other mission digs its single stop.
+    const maxTicks = Math.max(1, input.route.miningTicks ?? 1);
     // The ore rides in the cargo space until the next port: past it, the rest stays behind. (Once
     // delivered it joins the pilot's goods, which take no space.)
     let room = Math.max(0, ship.sheet.crg);
     let left = 0;
     const kept: MiningYield[] = [];
-    for (const entry of yields) {
-      const take = Math.min(entry.quantity, room);
-      room -= take;
-      left += entry.quantity - take;
-      if (take > 0) kept.push({ ...entry, quantity: take });
+    for (let tick = 0; tick < maxTicks; tick += 1) {
+      miningTicksRun += 1;
+      for (const entry of resolveMining(input.context.mining.stop, miner, rules, miningRng)) {
+        const take = Math.min(entry.quantity, room);
+        room -= take;
+        left += entry.quantity - take;
+        const same = kept.find((found) => found.materialId === entry.materialId);
+        if (take > 0 && same !== undefined) {
+          kept[kept.indexOf(same)] = { ...same, quantity: same.quantity + take };
+        } else if (take > 0) {
+          kept.push({ ...entry, quantity: take });
+        }
+      }
+      if (room <= 0) break;
+    }
+    if (input.route.miningTicks !== undefined) {
+      // The job burns fuel for the ticks it really ran, not for the ones it was allowed.
+      ship = {
+        ...ship,
+        fuel: Math.max(0, ship.fuel - miningTicksRun * rules.mining.job_fuel_per_tick),
+      };
     }
     loot = [...loot, ...kept.flatMap((entry: MiningYield) => [{ ...entry }])];
     for (const lootEvent of toMiningLootEvents(kept)) {
@@ -1035,6 +1054,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     encounter,
     combatResult,
     combatCredits,
+    ...(input.route.miningTicks !== undefined ? { miningTicksRun } : {}),
   };
 }
 
