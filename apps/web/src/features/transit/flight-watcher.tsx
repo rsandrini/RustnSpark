@@ -7,6 +7,8 @@ import { transitPollInterval } from './poll';
 
 /** Flights the pilot dispatched in this tab that may be over before the active list ever showed them. */
 const dispatched = new Set<string>();
+/** How often a finished-but-not-yet-reported flight asks for its report. */
+const REPORT_RECHECK_MS = 2000;
 export function watchFlight(missionId: string): void {
   dispatched.add(missionId);
 }
@@ -52,6 +54,19 @@ export function FlightWatcher() {
     queryFn: () => client.get<ReportListResponse>('/v1/reports?limit=1'),
   });
   const newest = latestReportQuery.data?.items[0]?.missionId;
+
+  // A flight can end before the first look at the active list (a short hop, a fast server): the list
+  // was empty before and still is, so nothing flips and the latest-report query keeps what it had.
+  // While a dispatched/watched flight has not reached its report, ask again every couple of seconds.
+  const refetchLatest = useRef(latestReportQuery.refetch);
+  refetchLatest.current = latestReportQuery.refetch;
+  useEffect(() => {
+    if (!activeIsEmpty) return undefined;
+    const timer = window.setInterval(() => {
+      if (dispatched.size > 0 || watched.current !== null) void refetchLatest.current();
+    }, REPORT_RECHECK_MS);
+    return () => window.clearInterval(timer);
+  }, [activeIsEmpty]);
 
   useEffect(() => {
     if (!activeIsEmpty || latestReportQuery.isFetching || newest === undefined) return;
