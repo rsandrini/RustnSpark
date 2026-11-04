@@ -60,10 +60,41 @@ docker compose --env-file .env.prod --profile prod up -d --build
 Migrations run by themselves before the API and worker start. Watch with
 `docker compose --env-file .env.prod --profile prod logs -f api-prod worker-prod`.
 
-## Carrying your tuning over
+## Loading the game data (balance, names, images) into production
 
-Prefer a fresh database on the server and bring only the Admin-tuned values: export on the dev machine and
-import on the server with the snapshot CLI (`docs/operations.md` section 5.1).
+What "the game as it is today" is made of, and where each part goes:
+
+| Part | Where it lives | What to do on the server |
+|---|---|---|
+| Balance (config), parts, routes, locations, factions, missions, report texts, mentors' dialogue | The database | The first start's seed fills it from the repo. Rehearsed: a fresh install matches the dev tuning exactly (see below). |
+| Names (part and place names, faction names, ship-name blocklist) | The database (same as above) | Same. |
+| Place and faction images, icons | In the repo (`apps/web/public`), built into the web image | Nothing: they arrive with the code. |
+| Images uploaded in Admin | The `art-data` volume | None exist in dev today. Anything uploaded later stays in the server's `art-data`; back it up. |
+
+**Rehearsed on a scratch database (2026-11-04):** a brand-new database migrated and seeded from the repo, then the
+dev snapshot imported in dry-run mode, showed config 0 changed and every entity unchanged (225 parts, 29 locations, 35
+routes, 50 mission templates, ...). The only difference was the mentors' dialogue scenes: the dev database still holds
+an older first-ship tour (a "parts" step the seed no longer has), so importing the dev snapshot would bring that old tour
+back. So with today's tuning you do **not** need to import anything; the seed is the source.
+
+If you tune more in dev before launch, carry it over like this:
+
+```bash
+# on the dev machine: export the Admin-tuned values
+docker compose exec -T api node dist/admin/cli/tuning-snapshot.cli.js --export /tmp/tuning.json
+docker compose cp api:/tmp/tuning.json ./backups/tuning-snapshot-$(date +%F).json
+scp backups/tuning-snapshot-<date>.json you@server:RustnSpark/backups/
+
+# on the server, after the first start (the stack must be up):
+docker compose --env-file .env.prod --profile prod cp backups/tuning-snapshot-<date>.json api-prod:/tmp/tuning.json
+docker compose --env-file .env.prod --profile prod exec -T api-prod \
+  node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json           # dry run: lists create/update/unchanged
+docker compose --env-file .env.prod --profile prod exec -T api-prod \
+  node dist/admin/cli/tuning-snapshot.cli.js --import /tmp/tuning.json --apply   # applies (exits 1 if a row failed)
+```
+
+Read the dry run first: every row under `update` will be overwritten by the dev value. Every applied row writes an
+audited tuning revision, so Admin > Tuning shows what changed and can revert it.
 
 ## Notes
 
