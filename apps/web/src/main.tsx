@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './app/app';
+import { CrashScreen } from './app/crash-screen';
+import { Sentry, initObservability } from './observability';
 import './i18n';
 import '@fontsource/geist/latin-400.css';
 import '@fontsource/geist/latin-500.css';
@@ -28,6 +30,8 @@ import './styles/guide.css';
 import './styles/giver.css';
 import './styles/dialogue.css';
 
+initObservability();
+
 const container = document.getElementById('root');
 if (!container) {
   throw new Error('Root element not found');
@@ -48,8 +52,10 @@ const queryClient = new QueryClient({
 
 createRoot(container).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <Sentry.ErrorBoundary fallback={<CrashScreen />}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </Sentry.ErrorBoundary>
   </StrictMode>,
 );

@@ -13,6 +13,9 @@ RUN pnpm install --frozen-lockfile --filter web...
 
 COPY packages/contract ./packages/contract
 COPY apps/web ./apps/web
+# Public by design (it ships in the bundle); blank = no browser error tracking.
+ARG VITE_SENTRY_DSN=
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 RUN pnpm --filter web build
 
 FROM nginx:1.27-alpine AS runtime

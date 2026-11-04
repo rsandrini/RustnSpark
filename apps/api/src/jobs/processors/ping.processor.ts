@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { captureJobFailure } from '../../common/observability/sentry.js';
 import type { Job } from 'bullmq';
 import { PING_QUEUE_NAME } from '../queues.js';
 
@@ -23,6 +24,11 @@ function sleep(ms: number): Promise<void> {
 @Injectable()
 @Processor(PING_QUEUE_NAME)
 export class PingProcessor extends WorkerHost {
+  @OnWorkerEvent('failed')
+  onFailed(job: { id?: string | undefined } | undefined, error: Error): void {
+    captureJobFailure(PING_QUEUE_NAME, job?.id, error);
+  }
+
   private readonly logger = new Logger(PingProcessor.name);
 
   async process(job: Job<PingJobData>): Promise<PingJobResult> {

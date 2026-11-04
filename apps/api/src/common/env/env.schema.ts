@@ -53,6 +53,9 @@ export const envSchema = z.object({
   WEB_URL: z.url().default('http://localhost:3000'),
   // Where admin-uploaded images (faction banners/logos/backgrounds) are stored: a mounted volume.
   ART_DIR: z.string().min(1).optional(),
+  // Sentry error tracking (API and worker). Optional: blank or absent = nothing is sent. Read straight from
+  // the environment at process start (common/observability/sentry.ts); listed here so it is documented.
+  SENTRY_DSN: z.string().optional(),
   // Resend email (password reset). Optional by design: EmailService boots with a
   // null client when RESEND_API_KEY is absent (CI, tests, local shells).
   RESEND_API_KEY: z.string().optional(),

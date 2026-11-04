@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { Logger } from '@nestjs/common';
 import type { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { initSentry } from './common/observability/sentry.js';
 import { JobsModule } from './jobs/jobs.module.js';
 
 const logger = new Logger('Worker');
@@ -12,6 +13,7 @@ const logger = new Logger('Worker');
 // server here, so no `configureApp`-style hardening is needed — createApplicationContext skips
 // the platform adapter entirely.
 export async function bootstrap(): Promise<INestApplicationContext> {
+  initSentry('worker');
   // Unlike main.ts, nothing here ever calls app.useLogger() to attach a custom logger, so
   // bufferLogs would hold every log line forever instead of flushing it; leave it at its
   // default (false) so the built-in console logger prints immediately.

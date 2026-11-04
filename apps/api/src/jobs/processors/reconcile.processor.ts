@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { captureJobFailure } from '../../common/observability/sentry.js';
 import type { MissionInstance } from '@prisma/client';
 import type { Job, Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -47,6 +48,11 @@ export interface ReconcileTickResult {
 @Processor(RECONCILE_QUEUE_NAME)
 @Injectable()
 export class ReconcileProcessor extends WorkerHost {
+  @OnWorkerEvent('failed')
+  onFailed(job: { id?: string | undefined } | undefined, error: Error): void {
+    captureJobFailure(RECONCILE_QUEUE_NAME, job?.id, error);
+  }
+
   private readonly logger = new Logger(ReconcileProcessor.name);
 
   constructor(
@@ -195,7 +201,9 @@ export class ReconcileProcessor extends WorkerHost {
 
   private async reconcileMission(mission: MissionInstance): Promise<unknown> {
     const job = await this.missions.getJob(mission.id);
-    const data = job?.data ?? (await rebuildDispatchData(this.prisma, this.parts, mission, this.config.snapshot().rules));
+    const data =
+      job?.data ??
+      (await rebuildDispatchData(this.prisma, this.parts, mission, this.config.snapshot().rules));
     await job?.remove().catch(() => undefined);
     return this.resolveService.resolve(data);
   }

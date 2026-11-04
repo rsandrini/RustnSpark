@@ -154,6 +154,18 @@ docker compose --env-file .env.prod --profile prod exec -T api-prod \
 Read the dry run first: every row under `update` will be overwritten by the dev value. Every applied row writes an
 audited tuning revision, so Admin > Tuning shows what changed and can revert it.
 
+## Error tracking (Sentry) and logs
+
+- Create two projects in Sentry (free plan is enough for the beta): **Node** for the API and worker, **React** for the
+  browser. Put their DSNs in `.env.prod` as `SENTRY_DSN` and `SENTRY_WEB_DSN`, then
+  `docker compose --env-file .env.prod --profile prod up -d --build`. Blank = off.
+- Reported: server faults (HTTP 5xx) and failed background jobs (flight resolution, repairs, the reconciler), tagged with
+  the request id or queue and job id, and crashes of the browser screen. Not reported: wrong passwords, validation
+  errors and the like (those are 4xx). No request bodies, cookies or auth headers are sent, and no session replay.
+- The web DSN is public by design (it is in the page). The browser reaches Sentry through the content security policy
+  entry `connect-src https://*.sentry.io` in `docker/nginx.conf`; if you pick a self-hosted Sentry, change it there.
+- Logs: `docker compose --env-file .env.prod --profile prod logs -f api-prod worker-prod` (JSON, one line per request).
+
 ## Notes
 
 - Cookies are `Secure`, so the game must be opened over the https hostname (Cloudflare provides it).

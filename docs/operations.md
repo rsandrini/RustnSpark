@@ -35,6 +35,7 @@ The API refuses to boot when a required variable is missing or invalid (zod sche
 | `RECONCILE_INTERVAL_MS` | no | 30000 | how often the worker sweeps for stuck missions |
 | `SHIP_RATING_INTERVAL_MS` | no | 600000 | how often the worker refreshes every pilot's ship rating (the ship power and speed boards) |
 | `BUG_REPORT_TO_EMAIL` | no | — | inbox that receives beta bug reports (`POST /v1/feedback/bug`); sent through Resend (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`). Empty = the endpoint answers 503. Limits: 3 per 10 min and 5 per day per account, 100 per day overall |
+| `SENTRY_DSN` | no | — | Sentry DSN for the API and worker: 5xx responses and failed jobs are reported (no bodies, cookies or auth headers). Empty = off. The browser's DSN is a build argument (`SENTRY_WEB_DSN` in compose). |
 | `API_PORT` / `WEB_PORT` | no | 3000 / 8080 | host ports published on 127.0.0.1 |
 
 Rotating `JWT_ACCESS_SECRET` signs everyone out (access tokens are short-lived; refresh

@@ -7,6 +7,10 @@ import {
   type ExceptionFilter,
 } from '@nestjs/common';
 import type { HttpAdapterHost } from '@nestjs/core';
+import { captureServerError } from '../observability/sentry.js';
+
+/** From this status up the fault is ours (and is reported); below it the caller got something wrong. */
+const SERVER_ERROR_FROM = 500;
 
 type ErrorMessage = string | string[] | Record<string, unknown>;
 
@@ -33,6 +37,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const body: ErrorResponseBody = { statusCode, message, requestId: request.id };
 
     this.logger.error({ err: exception, requestId: request.id }, 'Unhandled exception');
+    if (statusCode >= SERVER_ERROR_FROM) captureServerError(exception, request.id);
     httpAdapter.reply(response, body, statusCode);
   }
 }

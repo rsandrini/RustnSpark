@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { captureJobFailure } from '../../common/observability/sentry.js';
 import type { Job } from 'bullmq';
 // Constructor-injected services must be value imports: emitDecoratorMetadata cannot
 // reference `import type` bindings, so the worker's DI graph would see `Object`/`?`
@@ -17,6 +18,11 @@ export interface RepairJobData {
 @Processor(REPAIR_QUEUE_NAME)
 @Injectable()
 export class RepairProcessor extends WorkerHost {
+  @OnWorkerEvent('failed')
+  onFailed(job: { id?: string | undefined } | undefined, error: Error): void {
+    captureJobFailure(REPAIR_QUEUE_NAME, job?.id, error);
+  }
+
   constructor(private readonly repairService: RepairService) {
     super();
   }

@@ -2707,5 +2707,10 @@
       "OTHER": "Something else"
     }
   },
-  "distanceValue": "{{n}} units"
+  "distanceValue": "{{n}} units",
+  "crash": {
+    "title": "Something went wrong",
+    "body": "The screen stopped working. The problem was reported. Reload to continue; your progress is saved.",
+    "reload": "Reload"
+  }
 }

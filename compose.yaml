@@ -96,6 +96,7 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       RESEND_FROM_NAME: ${RESEND_FROM_NAME:-}
       BUG_REPORT_TO_EMAIL: ${BUG_REPORT_TO_EMAIL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
       # Admin-uploaded images (faction banners/logos/backgrounds) live on a named volume.
       ART_DIR: /data/art
@@ -123,6 +124,7 @@ services:
       NODE_ENV: development
       PORT: '3000'
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -196,6 +198,7 @@ services:
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       RESEND_FROM_NAME: ${RESEND_FROM_NAME:-}
       BUG_REPORT_TO_EMAIL: ${BUG_REPORT_TO_EMAIL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
       WEB_URL: ${WEB_URL:-http://localhost:8080}
       ART_DIR: /data/art
     volumes:
@@ -222,6 +225,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       migrate-prod:
         condition: service_completed_successfully
@@ -231,6 +235,8 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${SENTRY_WEB_DSN:-}
     image: rustandspark-web:dev
     environment:
       API_UPSTREAM: api:3000
@@ -248,6 +254,8 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${SENTRY_WEB_DSN:-}
     image: rustandspark-web:prod
     restart: unless-stopped
     environment:

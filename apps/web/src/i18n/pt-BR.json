@@ -2707,5 +2707,10 @@
       "OTHER": "Outro motivo"
     }
   },
-  "distanceValue": "{{n}} unid."
+  "distanceValue": "{{n}} unid.",
+  "crash": {
+    "title": "Algo deu errado",
+    "body": "A tela parou de funcionar. O problema foi reportado. Recarregue para continuar; seu progresso está salvo.",
+    "reload": "Recarregar"
+  }
 }

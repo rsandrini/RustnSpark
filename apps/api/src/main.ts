@@ -12,6 +12,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { EnvService } from './common/env/env.module.js';
 import { PinoLoggerService } from './common/logging/pino-logger.service.js';
 import { createPinoHttpOptions } from './common/logging/pino.config.js';
+import { initSentry } from './common/observability/sentry.js';
 import { validationPipeOptions } from './common/pipes/validation.config.js';
 
 const GLOBAL_PREFIX = 'v1';
@@ -64,6 +65,7 @@ export function configureApp(app: INestApplication, env: EnvService): void {
 }
 
 async function bootstrap(): Promise<void> {
+  initSentry('api');
   const app = await NestFactory.create(AppModule, { bufferLogs: true, bodyParser: false });
   const env = app.get(EnvService);
   configureApp(app, env);

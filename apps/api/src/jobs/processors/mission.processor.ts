@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { captureJobFailure } from '../../common/observability/sentry.js';
 import type { Job } from 'bullmq';
 import type { DispatchJobData } from '../../missions/dispatch.service.js';
 // Constructor-injected services must be value imports: emitDecoratorMetadata cannot
@@ -16,6 +17,11 @@ import { MISSION_QUEUE_NAME } from '../queues.js';
 @Processor(MISSION_QUEUE_NAME)
 @Injectable()
 export class MissionProcessor extends WorkerHost {
+  @OnWorkerEvent('failed')
+  onFailed(job: { id?: string | undefined } | undefined, error: Error): void {
+    captureJobFailure(MISSION_QUEUE_NAME, job?.id, error);
+  }
+
   constructor(private readonly resolveService: MissionResolveService) {
     super();
   }
