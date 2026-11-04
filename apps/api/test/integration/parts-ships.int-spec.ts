@@ -670,6 +670,15 @@ describe('parts and ships API (S4.3)', () => {
         .send({ layout });
       expect(saved.status).toBe(200);
       expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(0);
+      // ...but the fuel is not lost: it goes with the tank, and comes back when the tank does
+      expect((await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel).toBe(25);
+      const back = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: ship.layout });
+      expect(back.status).toBe(200);
+      expect((await prisma.ship.findUniqueOrThrow({ where: { id: shipId } })).fuel).toBe(25);
+      expect((await prisma.partInstance.findUniqueOrThrow({ where: { id: tank.id } })).storedFuel).toBe(0);
     });
 
     it('POST /v1/ships/:id/assemble with a valid layout updates the ship and parts', async () => {

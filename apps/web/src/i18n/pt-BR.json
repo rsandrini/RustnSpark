@@ -702,7 +702,8 @@
     "outside": {
       "tag": "Fora da nave",
       "note": "{{count}} peça(s) fora da nave: não fazem nada até voltarem para dentro do casco"
-    }
+    },
+    "storedFuel": "Guarda {{value}} de combustível: volta para a nave quando instalado"
   },
   "home": {
     "play": "Jogar",

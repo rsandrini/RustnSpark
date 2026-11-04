@@ -156,6 +156,8 @@ export const InventoryItemSchema = z.object({
   shipId: z.string().nullable(),
   catalog: PartCatalogStatsSchema,
   connectors: z.array(ConnectorCellSchema),
+  /** Fuel the tank carries while it is off the ship; it goes back aboard when installed again. */
+  storedFuel: z.number().optional(),
 });
 export type InventoryItem = z.infer<typeof InventoryItemSchema>;
 

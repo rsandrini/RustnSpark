@@ -721,26 +721,61 @@ export class ShipsService implements OnModuleInit {
     );
     const recordBaseline = shipFormatBridgeType === null;
 
+    // The fuel aboard can never exceed what the tanks that stay on the ship can hold. What no longer
+    // fits goes WITH the tanks that were taken off (up to what each holds), and comes back aboard
+    // when a tank with fuel in it is installed (as far as there is room).
+    const capacity = this.fuelCapOf(layout, playerParts, rules);
+    let fuelAboard = Math.min(currentFuel, capacity);
+    let surplus = currentFuel - fuelAboard;
+    const stored = new Map<string, number>();
+    for (const tank of toInventory) {
+      if (surplus <= 0) break;
+      const room = Math.max(0, (tank.partCatalog.fuelCap ?? 0) - tank.storedFuel);
+      const give = Math.min(surplus, room);
+      if (give > 0) {
+        stored.set(tank.id, tank.storedFuel + give);
+        surplus -= give;
+      }
+    }
+    let room = capacity - fuelAboard;
+    for (const part of playerParts) {
+      if (room <= 0) break;
+      const comingIn = layoutIds.has(part.id) && !(part.location === 'INSTALLED' && part.shipId === shipId);
+      if (!comingIn || part.storedFuel <= 0) continue;
+      const take = Math.min(part.storedFuel, room);
+      stored.set(part.id, part.storedFuel - take);
+      fuelAboard += take;
+      room -= take;
+    }
+
     await this.prisma.$transaction(async (tx) => {
       for (const part of toInventory) {
         await tx.partInstance.update({
           where: { id: part.id },
-          data: { location: 'INVENTORY', shipId: null },
+          data: {
+            location: 'INVENTORY',
+            shipId: null,
+            ...(stored.has(part.id) ? { storedFuel: stored.get(part.id) } : {}),
+          },
         });
       }
       for (const placement of layout) {
         await tx.partInstance.update({
           where: { id: placement.partInstanceId },
-          data: { location: 'INSTALLED', shipId },
+          data: {
+            location: 'INSTALLED',
+            shipId,
+            ...(stored.has(placement.partInstanceId)
+              ? { storedFuel: stored.get(placement.partInstanceId) }
+              : {}),
+          },
         });
       }
       await tx.ship.update({
         where: { id: shipId },
-        // The fuel aboard can never exceed what the tanks that stay on the ship can hold: take
-        // the tank off and its fuel goes with it (no tank left = an empty ship).
         data: {
           layout: toJsonInput(layout),
-          fuel: Math.min(currentFuel, this.fuelCapOf(layout, playerParts, rules)),
+          fuel: fuelAboard,
           // The first bridge a ship gets is its baseline: nothing to re-pick yet.
           ...(recordBaseline && bridgeAfter !== undefined
             ? { formatBridgeType: bridgeAfter.partType }

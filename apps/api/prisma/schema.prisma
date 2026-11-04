@@ -643,6 +643,8 @@ model PartInstance {
   shipId        String?
   propRoll      Json?
   connectors    Json?
+  // Fuel carried by a tank that is off the ship; it goes back aboard when the tank is installed.
+  storedFuel    Float        @default(0)
   partCatalog   PartCatalog  @relation(fields: [partType], references: [partType])
   owner         Player       @relation(fields: [ownerPlayerId], references: [id])
   ship          Ship?        @relation(fields: [shipId], references: [id])

@@ -44,6 +44,8 @@ export interface InventoryItem {
   shipId: string | null;
   catalog: PartCatalog;
   connectors: ConnectorCell[];
+  /** Fuel a tank carries while it is off the ship; it goes back aboard when installed again. */
+  storedFuel: number;
 }
 
 export function bilingual(value: unknown): { en: string; 'pt-BR': string } {
@@ -189,6 +191,7 @@ export class PartsService {
       shipId: row.shipId,
       catalog: pickCatalogStats(row.partCatalog),
       connectors: (row.connectors as { cells: ConnectorCell[] } | null)?.cells ?? [],
+      storedFuel: row.storedFuel,
     }));
   }
 

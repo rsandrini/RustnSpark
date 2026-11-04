@@ -162,20 +162,56 @@ svg .block.broken {
   }
 }
 
-/* A part parked beside the hull: dim and dashed, it does nothing until it is moved back in. */
+/* A part parked beside the hull: neon, dashed, impossible to miss. It does nothing until it is
+   moved back in. */
 svg .block.outside {
-  fill-opacity: 0.4;
-  stroke: var(--bad);
+  fill-opacity: 0.75;
+  stroke: #ff2bd6;
+  stroke-width: 0.12;
+  stroke-dasharray: 0.22 0.12;
+}
+
+/* The glow: a wider, see-through line under the crisp one (no filters, so it scales with the zoom). */
+svg .outside-halo {
+  fill: none;
+  stroke: #ff2bd6;
+  stroke-width: 0.3;
+  stroke-opacity: 0.35;
+  rx: 0.1;
+}
+
+svg .outside-tag {
+  fill: #ff2bd6;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  paint-order: stroke;
+  stroke: #05060a;
+  stroke-width: 0.06;
+}
+
+/* The ship's limit: one glowing line around the format. */
+svg .yard-outline {
+  fill: none;
+  stroke: #28e1ff;
   stroke-width: 0.09;
-  stroke-dasharray: 0.2 0.12;
+  stroke-linecap: round;
+}
+
+svg .yard-outline-glow {
+  fill: none;
+  stroke: #28e1ff;
+  stroke-width: 0.34;
+  stroke-opacity: 0.28;
+  stroke-linecap: round;
 }
 
 .yard-outside-note {
   margin: 0 0 6px;
   padding: 6px 10px;
-  border: 1px solid var(--bad);
+  border: 1px solid #ff2bd6;
   border-radius: var(--radius-sm);
-  color: var(--bad);
+  color: #ff2bd6;
   font-size: var(--text-xs);
 }
 

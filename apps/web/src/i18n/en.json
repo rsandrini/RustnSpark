@@ -702,7 +702,8 @@
     "outside": {
       "tag": "Outside the ship",
       "note": "{{count}} part(s) outside the ship: they do nothing until they are back inside the hull"
-    }
+    },
+    "storedFuel": "Holds {{value}} fuel: it goes back aboard when installed"
   },
   "home": {
     "play": "Play",

@@ -52,6 +52,11 @@ export function TrayPartRow({ part, name, disabled, selected, onSelect, compare 
           )}
         </span>
         <span className="meta">{partSummary(part.catalog, t, format)}</span>
+        {(part.storedFuel ?? 0) > 0 && (
+          <span className="meta" data-testid="stored-fuel">
+            {t('hangar.storedFuel', { value: format(Math.round(part.storedFuel ?? 0)) })}
+          </span>
+        )}
         {part.connectors.length > 0 && (
           <ConnectorGrid
             w={part.catalog.w}

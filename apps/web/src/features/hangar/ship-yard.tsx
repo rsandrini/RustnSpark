@@ -465,6 +465,27 @@ export function ShipYard({
     [layout, catalogById, cellSet],
   );
 
+  // The ship's limit drawn as one glowing line around the format, so what is outside it is obvious.
+  const outlinePath = useMemo(() => {
+    const edges: string[] = [];
+    for (const [x, y] of cells) {
+      if (!cellSet.has(`${x},${y - 1}`)) edges.push(`M${x} ${y}h1`);
+      if (!cellSet.has(`${x},${y + 1}`)) edges.push(`M${x} ${y + 1}h1`);
+      if (!cellSet.has(`${x - 1},${y}`)) edges.push(`M${x} ${y}v1`);
+      if (!cellSet.has(`${x + 1},${y}`)) edges.push(`M${x + 1} ${y}v1`);
+    }
+    return edges.join('');
+  }, [cells, cellSet]);
+
+  // When a part lands outside the hull (auto layout parks one there, or it was dragged out), bring
+  // the whole ship into view so it can be seen instead of sitting off-screen.
+  const lastOutsideCount = useRef(0);
+  useEffect(() => {
+    if (outsideIds.size > lastOutsideCount.current) setView(fitView());
+    lastOutsideCount.current = outsideIds.size;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outsideIds.size]);
+
   /** A client position in yard cells (the same mapping the wheel-zoom anchor uses). */
   const pointerToCells = (clientX: number, clientY: number): { x: number; y: number } => {
     const svg = svgRef.current;
@@ -806,6 +827,16 @@ export function ShipYard({
           const { gx, gy } = placement;
           return (
             <g key={placement.partInstanceId} className="yard-block">
+              {outsideIds.has(placement.partInstanceId) && !isGhosting && (
+                <rect
+                  className="outside-halo"
+                  x={gx - 0.1}
+                  y={gy - 0.1}
+                  width={width + 0.2}
+                  height={height + 0.2}
+                  style={{ pointerEvents: 'none' }}
+                />
+              )}
               {selectedId === placement.partInstanceId && !isGhosting && (
                 <rect
                   className="block-halo"
@@ -938,6 +969,21 @@ export function ShipYard({
             </g>
           );
         })}
+        <path className="yard-outline-glow" d={outlinePath} style={{ pointerEvents: 'none' }} />
+        <path className="yard-outline" d={outlinePath} style={{ pointerEvents: 'none' }} />
+        {layout
+          .filter((placement) => outsideIds.has(placement.partInstanceId))
+          .map((placement) => (
+            <text
+              key={`out-${placement.partInstanceId}`}
+              className="outside-tag"
+              x={placement.gx}
+              y={placement.gy - 0.15}
+              style={{ pointerEvents: 'none', fontSize: `${labelFont * 1.5}px` }}
+            >
+              {t('hangar.outside.tag')}
+            </text>
+          ))}
         {/* The dragged part as a free-floating ghost, rendered last so it rides above every block.
             It carries the part's own content (name + ports) so you drag what you see, and reads
             green when the nearest cell would accept it, red when releasing would revert it. */}

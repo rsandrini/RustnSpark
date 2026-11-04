@@ -11,6 +11,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'shipId',
     'propRoll',
     'connectors',
+    'storedFuel',
   ],
   Ship: [
     'id',

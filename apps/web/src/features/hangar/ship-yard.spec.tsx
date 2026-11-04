@@ -160,6 +160,9 @@ describe('ShipYard parts outside the hull', () => {
     const outside = container.querySelectorAll('.block.outside');
     expect(outside).toHaveLength(1);
     expect(outside[0]?.getAttribute('data-part-id')).toBe('out');
+    // the ship's limit is drawn around the format
+    expect(container.querySelector('.yard-outline')?.getAttribute('d')).toContain('M0 0h1');
+    expect(container.querySelectorAll('.outside-tag')).toHaveLength(1);
     expect(getByTestId('yard-outside-note')).toHaveTextContent('1 part(s) outside the ship');
   });
 });
