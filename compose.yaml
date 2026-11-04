@@ -20,6 +20,14 @@ x-dev-urls: &dev-urls
 # GET /v1/health (S1.5): only exits 0 on HTTP 200, i.e. the app is up AND its db/redis
 # dependencies answer, not merely that the port accepts a TCP connection. Node's built-in
 # http client is used instead of curl so the slim runtime image needs no extra package.
+# Docker's default log driver never rotates: a busy game would slowly fill the server's disk.
+# Keep 5 files of 10 MB per container (the prod services use this).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
 x-api-healthcheck: &api-healthcheck
   test:
     - CMD
@@ -184,6 +192,7 @@ services:
     build: *api-build
     image: rustandspark-api:prod
     restart: unless-stopped
+    logging: *default-logging
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
@@ -215,6 +224,7 @@ services:
     build: *api-build
     image: rustandspark-api:prod
     restart: unless-stopped
+    logging: *default-logging
     extra_hosts:
       - host.docker.internal:host-gateway
     command: [node, dist/worker.js]
@@ -258,6 +268,7 @@ services:
         VITE_SENTRY_DSN: ${SENTRY_WEB_DSN:-}
     image: rustandspark-web:prod
     restart: unless-stopped
+    logging: *default-logging
     environment:
       API_UPSTREAM: api-prod:3000
     ports:
@@ -276,6 +287,7 @@ services:
     profiles: [prod]
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
+    logging: *default-logging
     command: [tunnel, --no-autoupdate, run]
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}

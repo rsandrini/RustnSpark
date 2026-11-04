@@ -164,7 +164,8 @@ audited tuning revision, so Admin > Tuning shows what changed and can revert it.
   errors and the like (those are 4xx). No request bodies, cookies or auth headers are sent, and no session replay.
 - The web DSN is public by design (it is in the page). The browser reaches Sentry through the content security policy
   entry `connect-src https://*.sentry.io` in `docker/nginx.conf`; if you pick a self-hosted Sentry, change it there.
-- Logs: `docker compose --env-file .env.prod --profile prod logs -f api-prod worker-prod` (JSON, one line per request).
+- Logs: `docker compose --env-file .env.prod --profile prod logs -f api-prod worker-prod` (JSON, one line per request). Docker keeps
+  5 files of 10 MB per container and rotates them, so logs cannot fill the disk.
 
 ## Notes
 
