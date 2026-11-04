@@ -98,4 +98,16 @@ describe('TopBar', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Account menu' }));
     expect(await screen.findByTestId('app-version')).toHaveTextContent('v0.1');
   });
+
+  it('opens the report-a-problem dialog on the page body, not inside the top bar', async () => {
+    server.use(me());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    await userEvent.click(await screen.findByRole('button', { name: /report a problem/i }));
+    const dialog = await screen.findByRole('dialog');
+    // inside the top bar's blur layer a fixed popup is anchored to the bar and half off the screen
+    expect(dialog.closest('.shell-top')).toBeNull();
+    expect(dialog.closest('.modal-backdrop')?.parentElement).toBe(document.body);
+  });
 });

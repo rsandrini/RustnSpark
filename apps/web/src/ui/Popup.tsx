@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 export interface PopupProps {
@@ -68,7 +69,10 @@ export function Popup({ open, title, onClose, children, actions, titleBadge, cla
 
   if (!open) return null;
 
-  return (
+  // Rendered on the page body, not where the caller sits: a popup opened from the top bar (account
+  // menu) would otherwise be positioned inside the bar's blur layer, which makes `position: fixed`
+  // relative to the bar and pushes the dialog half off the top of the screen.
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
         ref={dialogRef}
@@ -91,6 +95,7 @@ export function Popup({ open, title, onClose, children, actions, titleBadge, cla
         {children}
         {actions !== undefined && <div className="actions">{actions}</div>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

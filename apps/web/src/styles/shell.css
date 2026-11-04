@@ -146,10 +146,10 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-pop);
 }
-.shell-menu-version {
+.shell-menu .shell-menu-version {
   padding: 6px 12px 2px;
   text-align: center;
-  opacity: 0.6;
+  color: var(--ink-2);
 }
 
 .shell-menu-name {
