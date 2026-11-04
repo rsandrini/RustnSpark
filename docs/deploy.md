@@ -27,6 +27,59 @@ and, when `pg_dump` is installed on the host, also dumps the database into `./ba
   `host.docker.internal` as the host name (the compose file maps it) and make sure they listen on an address the
   Docker network can reach, not only on `127.0.0.1`.
 
+## Preparing your Postgres and Redis
+
+**Postgres** (as the `postgres` superuser, e.g. `sudo -u postgres psql`). Use a hex password
+(`openssl rand -hex 24`) so it needs no URL-encoding:
+
+```sql
+CREATE ROLE rustnspark LOGIN PASSWORD '<hex password>';
+CREATE DATABASE rustnspark OWNER rustnspark ENCODING 'UTF8';
+\c rustnspark
+ALTER SCHEMA public OWNER TO rustnspark;          -- Postgres 15+ no longer lets other roles create in public
+CREATE EXTENSION IF NOT EXISTS btree_gist;        -- the schema needs it (one migration); see the check below
+```
+
+- Special needs: only the `btree_gist` extension (it ships with Postgres 16's standard packages). Check with
+  `SELECT name FROM pg_available_extensions WHERE name = 'btree_gist';`. Creating it as the superuser (above) avoids any
+  permission question; the app's own user does not need to be a superuser.
+- Let the containers in: add `172.16.0.0/12` and `192.168.0.0/16` (Docker's networks) to `listen_addresses`' reach, e.g.
+  `listen_addresses = 'localhost,172.17.0.1'`, and a `pg_hba.conf` line
+  `host  rustnspark  rustnspark  172.16.0.0/12  scram-sha-256` (plus `192.168.0.0/16` if your compose network uses it),
+  then `SELECT pg_reload_conf();` and restart for `listen_addresses`. Keep the firewall closed to the internet.
+
+**Redis** (7 recommended), `redis.conf`:
+
+```
+maxmemory-policy noeviction      # the job queue must never lose a key
+appendonly yes                   # keep queued flights across a restart
+bind 127.0.0.1 172.17.0.1        # reachable from the Docker bridge, not from the internet
+```
+
+Then a password. Simplest, when this Redis is for the game only: `requirepass <hex password>` in `redis.conf`, and
+`REDIS_URL=redis://:<hex password>@host.docker.internal:6379`. If the Redis is shared, make a user for the game
+(the app uses queues, plain keys and a few Lua scripts, so give it everything except admin and flush commands):
+
+```
+redis-cli ACL SETUSER rustnspark on '>YOURPASSWORD' '~*' '&*' +@all -@admin -flushall -flushdb
+redis-cli ACL SAVE        # or put the same line in your aclfile
+```
+
+with `REDIS_URL=redis://rustnspark:<password>@host.docker.internal:6379`. If a Redis warning about the eviction policy
+shows up in the worker log with this restricted user, it is only the queue library unable to read the setting; set
+`noeviction` in `redis.conf` as above.
+
+**Test both from a container before starting the game** (same route the app uses):
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway postgres:16 \
+  psql 'postgresql://rustnspark:<password>@host.docker.internal:5432/rustnspark' -c 'select 1'
+docker run --rm --add-host host.docker.internal:host-gateway redis:7 \
+  redis-cli -u 'redis://:<password>@host.docker.internal:6379' ping
+```
+
+`1` and `PONG` mean the URLs in `.env.prod` will work.
+
 ## One-time setup
 
 1. Install Docker (with the compose plugin) and clone the repo: `git clone <repo> && cd RustnSpark`.
