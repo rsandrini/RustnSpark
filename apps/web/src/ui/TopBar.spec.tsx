@@ -90,4 +90,12 @@ describe('TopBar', () => {
     await userEvent.selectOptions(select, 'BATTERY');
     await waitFor(() => expect(postedMode).toBe('BATTERY'));
   });
+
+  it('shows the release version at the bottom of the account menu', async () => {
+    server.use(me());
+    renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    expect(await screen.findByRole('heading', { name: 'My Ship' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Account menu' }));
+    expect(await screen.findByTestId('app-version')).toHaveTextContent('v0.1');
+  });
 });

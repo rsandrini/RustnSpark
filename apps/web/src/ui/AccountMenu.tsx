@@ -7,6 +7,7 @@ import { useAuth, useLogout } from '../features/auth/auth.hooks';
 import { useDialogueActions, useDialogueState } from '../features/dialogue/use-dialogue';
 import { pickLocalized } from '../i18n/localized';
 import { LanguageSwitcher } from '../i18n/language-switcher';
+import { APP_VERSION } from '../version';
 import { BugReportDialog } from './BugReportDialog';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
@@ -159,6 +160,9 @@ export function AccountMenu() {
           <button type="button" className="shell-menu-item" onClick={() => logout.mutate()}>
             {t('nav.logout')}
           </button>
+          <div className="label shell-menu-version" data-testid="app-version">
+            {APP_VERSION}
+          </div>
         </div>
       )}
       <BugReportDialog open={reporting} onClose={() => setReporting(false)} />

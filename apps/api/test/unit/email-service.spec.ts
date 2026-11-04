@@ -13,7 +13,7 @@ const build = (result: { data: unknown; error: unknown }) => {
       })[key],
   };
   const service = new EmailService(config as never);
-  const send = jest.fn((_message: unknown) => Promise.resolve(result));
+  const send = jest.fn<(message: unknown) => Promise<typeof result>>(() => Promise.resolve(result));
   (service as unknown as { resend: unknown }).resend = { emails: { send } };
   return { service, send };
 };
