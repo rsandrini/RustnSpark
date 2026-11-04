@@ -246,7 +246,11 @@ describe('independent mining job (round 10)', () => {
     const player = await onboardPlayer();
     await installMiningRig(player.token, player.seeded.player.id, player.shipId);
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 1000 } });
-    // A field so rich that the first tick already fills any hold.
+    // A field so rich that the first tick already fills any hold. Each attempt is a roll at the rig's
+    // chance, which depends on its rolled condition: make every attempt certain (rig `min` far above 1 is
+    // clamped to a chance of 1) so a tick always yields exactly `attempts_per_stop` units, never a lucky or
+    // unlucky draw.
+    await prisma.partCatalog.update({ where: { partType: 'mining_rig' }, data: { min: 100 } });
     await prisma.gameConfig.update({
       where: { key: 'mining.attempts_per_stop' },
       data: { value: 100 },
