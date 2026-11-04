@@ -71,11 +71,16 @@ What "the game as it is today" is made of, and where each part goes:
 | Place and faction images, icons | In the repo (`apps/web/public`), built into the web image | Nothing: they arrive with the code. |
 | Images uploaded in Admin | The `art-data` volume | None exist in dev today. Anything uploaded later stays in the server's `art-data`; back it up. |
 
-**Rehearsed on a scratch database (2026-11-04):** a brand-new database migrated and seeded from the repo, then the
-dev snapshot imported in dry-run mode, showed config 0 changed and every entity unchanged (225 parts, 29 locations, 35
-routes, 50 mission templates, ...). The only difference was the mentors' dialogue scenes: the dev database still holds
-an older first-ship tour (a "parts" step the seed no longer has), so importing the dev snapshot would bring that old tour
-back. So with today's tuning you do **not** need to import anything; the seed is the source.
+**A brand-new install already equals the dev tuning.** The seed in the repo carries today's balance, names and
+texts, so a fresh database starts as the game is in dev: no import needed. Check it any time with:
+
+```bash
+bash scripts/seed-drift.sh     # builds a scratch DB from the repo, compares it with the dev stack; "seed == dev" when equal
+```
+
+(2026-11-04: the only difference was the mentors' dialogue scenes, which were updated in dev, and it now prints
+`seed == dev`.) If it lists differences after you tune in Admin, either carry them over with the snapshot below, or
+bring them into the seed files (`apps/api/prisma/seed-data`) so a new install has them too.
 
 If you tune more in dev before launch, carry it over like this:
 
