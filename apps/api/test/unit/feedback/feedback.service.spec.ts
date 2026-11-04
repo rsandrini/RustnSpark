@@ -48,6 +48,16 @@ describe('FeedbackService', () => {
     expect(html).not.toContain('<b>port</b>');
   });
 
+  it('answers 503 (not "sent") when the email provider refuses the send', async () => {
+    const { service, email } = build();
+    email.sendTemplate.mockRejectedValueOnce(
+      new Error('Email was not sent: validation_error: domain'),
+    );
+    await expect(service.sendBugReport('acc', 'pl', dto)).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+  });
+
   it('answers 503 when no recipient is configured, without counting or sending', async () => {
     const { service, email, redis } = build({ to: undefined });
     await expect(service.sendBugReport('acc', 'pl', dto)).rejects.toBeInstanceOf(

@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma, type Account, type Player } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
 import { toPlayerProfile, type PlayerProfile } from '../players/players.service.js';
@@ -44,6 +50,8 @@ export interface AuthSession {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
@@ -196,7 +204,13 @@ export class AuthService {
 
     const webUrl = this.configService.get<string>('WEB_URL') ?? 'http://localhost:3000';
     const resetUrl = `${webUrl}/reset-password?token=${rawToken}`;
-    await this.emailService.sendPasswordReset(account.email, resetUrl);
+    try {
+      await this.emailService.sendPasswordReset(account.email, resetUrl);
+    } catch (error) {
+      // The answer is the same whether or not the account exists (no enumeration): a failed send is
+      // logged for the operator, never shown to the caller.
+      this.logger.error(`password reset email failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {

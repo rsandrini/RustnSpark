@@ -3,6 +3,7 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -38,6 +39,8 @@ function oneLine(text: string, max: number): string {
 
 @Injectable()
 export class FeedbackService {
+  private readonly logger = new Logger(FeedbackService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly email: EmailService,
@@ -65,7 +68,15 @@ export class FeedbackService {
       <hr />
       <pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(dto.message)}</pre>
     `;
-    await this.email.sendTemplate(to, `[RustnSpark bug] ${name}`, html);
+    try {
+      await this.email.sendTemplate(to, `[RustnSpark bug] ${name}`, html);
+    } catch (error) {
+      // The pilot must not be told "sent" when it was not; the reason goes to the log (no secrets in it).
+      this.logger.error(
+        `bug report email failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new ServiceUnavailableException({ error: 'BUG_REPORT_UNAVAILABLE' });
+    }
   }
 
   // Counts this report against the account's and the global daily budget before anything is sent.

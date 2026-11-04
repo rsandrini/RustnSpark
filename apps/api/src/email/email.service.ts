@@ -21,12 +21,16 @@ export class EmailService {
     const fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL');
     const from = fromName && fromEmail ? `${fromName} <${fromEmail}>` : 'noreply@example.com';
 
-    await this.resend.emails.send({
+    // The SDK does not throw on a refused send (unverified domain, bad key, ...): it returns `error`.
+    const { error } = await this.resend.emails.send({
       from,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
     });
+    if (error) {
+      throw new Error(`Email was not sent: ${error.name}: ${error.message}`);
+    }
   }
 
   async sendPasswordReset(email: string, resetUrl: string): Promise<void> {
