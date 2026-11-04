@@ -38,9 +38,7 @@ export function autoLayout(
   return best;
 }
 
-function connectorMap(
-  parts: readonly InstalledPart[],
-): Map<string, ConnectorLayout | null> {
+function connectorMap(parts: readonly InstalledPart[]): Map<string, ConnectorLayout | null> {
   return new Map(
     parts
       .filter((part) => part.instance.connectors !== undefined)
@@ -62,6 +60,57 @@ function* orderings(parts: readonly InstalledPart[]): Generator<InstalledPart[]>
     const pivot = rest[index]!;
     yield [...bridges, ...rest.filter((_, i) => i !== index), pivot];
   }
+  // Last resorts for a tight yard, so they never change a layout the passes above can complete:
+  // the biggest parts first (they are the ones that need an intact corner), the longest side first.
+  const area = (part: InstalledPart): number => part.catalog.w * part.catalog.h;
+  const longSide = (part: InstalledPart): number => Math.max(part.catalog.w, part.catalog.h);
+  yield [...bridges, ...[...rest].sort((a, b) => area(b) - area(a) || longSide(b) - longSide(a))];
+  yield [...bridges, ...[...rest].sort((a, b) => longSide(b) - longSide(a) || area(b) - area(a))];
+  yield [...bridges, ...[...rest].sort((a, b) => area(a) - area(b))];
+}
+
+/** The narrowest a row of parked parts is, and the gap between the yard and the first row. */
+const MIN_PARK_ROW_WIDTH = 6;
+const PARK_GAP_BELOW_YARD = 2;
+
+/**
+ * Where the parts that did not fit go: in rows just below the yard, one cell apart, each in the
+ * order it came. They are flagged as outside on save, so the pilot sees them next to the hull and
+ * can move, turn or remove them without the layout throwing them away.
+ */
+export function parkOutside(
+  leftovers: readonly InstalledPart[],
+  formatCells: ReadonlySet<string>,
+): Placement[] {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const cell of formatCells) {
+    const comma = cell.indexOf(',');
+    const x = Number(cell.slice(0, comma));
+    const y = Number(cell.slice(comma + 1));
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  if (!Number.isFinite(minX)) return [];
+  const rowWidth = Math.max(maxX - minX + 1, MIN_PARK_ROW_WIDTH);
+  const placements: Placement[] = [];
+  let x = minX;
+  let y = maxY + PARK_GAP_BELOW_YARD;
+  let rowHeight = 0;
+  for (const part of leftovers) {
+    const { w, h } = part.catalog;
+    if (x > minX && x + w > minX + rowWidth) {
+      x = minX;
+      y += rowHeight + 1;
+      rowHeight = 0;
+    }
+    placements.push({ partInstanceId: part.instance.id, gx: x, gy: y, rot: 0 });
+    x += w + 1;
+    rowHeight = Math.max(rowHeight, h);
+  }
+  return placements;
 }
 
 /**

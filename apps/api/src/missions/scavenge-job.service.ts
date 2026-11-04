@@ -16,7 +16,7 @@ import {
   conductiveCatalog,
   withConnectionProblem,
 } from '../ships/connectivity.js';
-import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
+import { connectedPartIds, incorrectPortPartIds, outsidePartIds } from '../ships/geometry.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { DispatchService, type DispatchResponse } from './dispatch.service.js';
@@ -116,6 +116,7 @@ export class ScavengeJobService {
           catalogForConnectivity,
           connectorsByInstance,
         ),
+        outsidePartIds((ship.layout as unknown as Placement[]) ?? []),
       );
       if (!viability.viable) {
         throw new BadRequestException({ error: 'SHIP_NOT_VIABLE', problems: viability.problems });

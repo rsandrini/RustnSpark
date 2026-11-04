@@ -17,7 +17,7 @@ import {
   withConnectionProblem,
 } from '../ships/connectivity.js';
 import { withDirectionProblems } from '../ships/direction.js';
-import { connectedPartIds, incorrectPortPartIds } from '../ships/geometry.js';
+import { connectedPartIds, incorrectPortPartIds, outsidePartIds } from '../ships/geometry.js';
 import { loadHold, withHoldProblem } from '../ships/hold.js';
 import { checkViability } from '../ships/viability.js';
 import { flightShip } from '../ships/penalties.js';
@@ -244,6 +244,7 @@ export class TravelService {
             catalogForConnectivity,
             connectorsByInstance,
           ),
+          outsidePartIds((ship.layout as unknown as Placement[]) ?? []),
         ),
         (ship.layout as unknown as Placement[]) ?? [],
         catalogForConnectivity,

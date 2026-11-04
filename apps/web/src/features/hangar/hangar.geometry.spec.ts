@@ -5,6 +5,7 @@ import {
   directionViolations,
   facingOf,
   footprint,
+  isOutsideYard,
   nextRot,
   placementIssue,
   type Rot,
@@ -21,17 +22,19 @@ function catalog(w: number, h: number): PartCatalogStats {
 }
 
 describe('canPlace — format cell set', () => {
-  it('rejects a cell outside the format even when it would fit inside the old square bound', () => {
+  it('lets a part sit beside the hull (it is just outside), but never the bridge', () => {
     const cells = new Set(['0,0']); // a 1-cell format
-    const catalogById = new Map([['p1', catalog(1, 1)]]);
-    expect(canPlace([], catalogById, 'p1', 1, 0, 0, cells)).toBe(false);
-    expect(canPlace([], catalogById, 'p1', 0, 0, 0, cells)).toBe(true);
+    const catalogById = new Map([['p1', catalog(1, 1)], ['b', { ...catalog(1, 1), partClass: 'BRIDGE' as const }]]);
+    expect(canPlace([], catalogById, 'p1', 1, 0, 0, cells)).toBe(true);
+    expect(isOutsideYard(catalog(1, 1), 1, 0, 0, cells)).toBe(true);
+    expect(isOutsideYard(catalog(1, 1), 0, 0, 0, cells)).toBe(false);
+    expect(canPlace([], catalogById, 'b', 1, 0, 0, cells)).toBe(false);
+    expect(canPlace([], catalogById, 'b', 0, 0, 0, cells)).toBe(true);
   });
 
-  it('rejects a multi-cell part that only partially fits the format', () => {
+  it('counts a multi-cell part that only partially fits the format as outside', () => {
     const cells = new Set(['0,0']); // too small for a 2x1 part
-    const catalogById = new Map([['p1', catalog(2, 1)]]);
-    expect(canPlace([], catalogById, 'p1', 0, 0, 0, cells)).toBe(false);
+    expect(isOutsideYard(catalog(2, 1), 0, 0, 0, cells)).toBe(true);
   });
 });
 
@@ -79,13 +82,14 @@ describe('rotation and placementIssue', () => {
     expect([0, 90, 180, 270].map((r) => nextRot(r as Rot))).toEqual([90, 180, 270, 0]);
   });
 
-  it('refuses only bounds and overlap; direction problems never block a placement', () => {
+  it('refuses only overlap (and the bridge leaving the format); direction problems never block a placement', () => {
     const engine = partOf({ class: 'ENGINE', w: 1, h: 1 });
     const plain = partOf({ class: 'UTILITY', w: 1, h: 1 });
     const byId = new Map([['e', engine], ['p', plain]]);
     const cells = new Set(['0,0', '1,0', '2,0']);
     const withEngine: Placement[] = [{ partInstanceId: 'e', gx: 1, gy: 0, rot: 0 }];
-    expect(placementIssue(withEngine, byId, 'p', 5, 5, 0, cells)).toBe('bounds');
+    // off the format is not a refusal either: the part is parked beside the hull
+    expect(placementIssue(withEngine, byId, 'p', 5, 5, 0, cells)).toBeNull();
     expect(placementIssue(withEngine, byId, 'p', 1, 0, 0, cells)).toBe('overlap');
     // west of an engine facing W is a direction PROBLEM, but the drop is allowed...
     expect(placementIssue(withEngine, byId, 'p', 0, 0, 0, cells)).toBeNull();

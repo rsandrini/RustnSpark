@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -27,6 +28,11 @@ export class PlacementDto {
 
   @IsIn([...ROTATIONS])
   rot!: number;
+
+  // Echoed back by the client from a saved layout; the server recomputes it on every save.
+  @IsOptional()
+  @IsBoolean()
+  outside?: boolean;
 }
 
 export class AssembleDto {

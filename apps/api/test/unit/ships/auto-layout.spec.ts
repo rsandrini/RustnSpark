@@ -1,8 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
-import { autoLayout } from '../../../src/ships/auto-layout.js';
+import { autoLayout, parkOutside } from '../../../src/ships/auto-layout.js';
 import { defaultConnectorRules, generateConnectors } from '../../../src/parts/connector-rules.js';
 import { KIT_KINDS, type ConnectorLayout } from '../../../src/parts/connectors.js';
-import { connectedPartIds, incorrectPortPartIds, validateLayout } from '../../../src/ships/geometry.js';
+import {
+  connectedPartIds,
+  incorrectPortPartIds,
+  validateLayout,
+} from '../../../src/ships/geometry.js';
 import { buildInstalled, catalogByInstanceId, CATALOG_BY_TYPE } from './fixtures/catalog.js';
 
 describe('autoLayout', () => {
@@ -27,6 +31,26 @@ describe('autoLayout', () => {
     new Map<string, ConnectorLayout | null>(
       parts.map((p) => [p.instance.id, p.instance.connectors as ConnectorLayout | null]),
     );
+
+  it('parks the parts that did not fit in rows below the yard, one cell apart, without overlaps', () => {
+    const parts = buildInstalled(['hull', 'hull', 'hull']);
+    const yard = new Set(['0,0', '1,0', '0,1', '1,1']);
+    const parked = parkOutside(parts, yard);
+    expect(parked).toHaveLength(3);
+    for (const p of parked) expect(p.gy).toBeGreaterThanOrEqual(3);
+    const cells = new Set<string>();
+    for (const p of parked) {
+      const w = CATALOG_BY_TYPE.get('hull')!.w;
+      const h = CATALOG_BY_TYPE.get('hull')!.h;
+      for (let dx = 0; dx < w; dx += 1)
+        for (let dy = 0; dy < h; dy += 1) {
+          const key = `${p.gx + dx},${p.gy + dy}`;
+          expect(cells.has(key)).toBe(false);
+          cells.add(key);
+        }
+    }
+    expect(parkOutside(parts, yard)).toEqual(parked);
+  });
 
   it('places a single part at the origin', () => {
     const parts = buildInstalled(['bridge']);

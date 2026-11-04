@@ -26,7 +26,9 @@ export function footprint(
 }
 
 /** Why a placement is refused. Only the hard geometry rules refuse: direction rules (engine
-    exhaust / weapon firing line) are reported as problems instead, so parts can go anywhere. */
+    exhaust / weapon firing line) are reported as problems instead, so parts can go anywhere.
+    Leaving the format is not a refusal either (a part may be parked beside the hull, flagged and
+    grounding the ship) — except for the bridge, which always stays inside. */
 export type PlacementIssue = 'bounds' | 'overlap';
 
 const FACING_VECTOR: Record<Side, { x: number; y: number }> = {
@@ -124,11 +126,7 @@ export function placementIssue(
   const catalog = catalogById.get(partInstanceId);
   if (catalog === undefined) return 'bounds';
   const { width, height } = footprint(catalog, rot);
-  for (let dx = 0; dx < width; dx += 1) {
-    for (let dy = 0; dy < height; dy += 1) {
-      if (!cells.has(`${gx + dx},${gy + dy}`)) return 'bounds';
-    }
-  }
+  if (catalog.partClass === 'BRIDGE' && isOutsideYard(catalog, gx, gy, rot, cells)) return 'bounds';
   for (const placement of layout) {
     if (placement.partInstanceId === partInstanceId) continue;
     const other = catalogById.get(placement.partInstanceId);
@@ -142,6 +140,23 @@ export function placementIssue(
     if (overlaps) return 'overlap';
   }
   return null;
+}
+
+/** True when some cell of the part at (gx, gy, rot) is not part of the ship's format. */
+export function isOutsideYard(
+  catalog: PartCatalogStats,
+  gx: number,
+  gy: number,
+  rot: Rot,
+  cells: ReadonlySet<string>,
+): boolean {
+  const { width, height } = footprint(catalog, rot);
+  for (let dx = 0; dx < width; dx += 1) {
+    for (let dy = 0; dy < height; dy += 1) {
+      if (!cells.has(`${gx + dx},${gy + dy}`)) return true;
+    }
+  }
+  return false;
 }
 
 export function canPlace(

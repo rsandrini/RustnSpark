@@ -23,6 +23,9 @@ export type ViabilityProblemCode =
   // A connector pressed against a neighbour that does not fit it (the red ports in the ship yard):
   // part of the puzzle of making the ship viable. Saving the layout is never blocked by it.
   | 'PORT_INCORRECT'
+  // A part parked beside the hull (some cell outside the ship's format): saving is allowed, but the
+  // ship stays in port until the part is moved inside or removed.
+  | 'PART_OUTSIDE'
   // The loose parts and the ore the ship carries do not fit its free slots plus its cargo space.
   | 'HOLD_OVER_CAPACITY'
   | 'NO_CARGO_HOLD'
@@ -94,7 +97,7 @@ const BATTERY_CHARGE_INSUFFICIENT: ViabilityProblem = {
 const SHIELD_ENERGY_LOW: ViabilityProblem = {
   code: 'SHIELD_ENERGY_LOW',
   message:
-    'If the shield is in use it may run short of energy once the battery and the ship\'s spare power are spent.',
+    "If the shield is in use it may run short of energy once the battery and the ship's spare power are spent.",
 };
 const NO_LIFE_SUPPORT: ViabilityProblem = {
   code: 'NO_LIFE_SUPPORT',
@@ -160,10 +163,7 @@ export function checkViability(
     problems.push(BATTERY_CHARGE_INSUFFICIENT);
   }
 
-  if (
-    weaponShortfall <= sheet.batOutput &&
-    Math.max(0, totalDraw - surplus) > sheet.batOutput
-  ) {
+  if (weaponShortfall <= sheet.batOutput && Math.max(0, totalDraw - surplus) > sheet.batOutput) {
     problems.push(SHIELD_ENERGY_LOW);
   }
 

@@ -25,12 +25,18 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { InstalledPart, PartCatalog, Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { autoLayout, extendLayout } from './auto-layout.js';
+import { autoLayout, extendLayout, parkOutside } from './auto-layout.js';
 import { computeHold, type HoldState } from './hold.js';
 import { applyConnectivity, conductiveCatalog, withConnectionProblem } from './connectivity.js';
 import { withDirectionProblems } from './direction.js';
 import { routeCoverage, type RouteCoverage } from './route-coverage.js';
-import { connectedPartIds, incorrectPortPartIds, validateLayout } from './geometry.js';
+import {
+  connectedPartIds,
+  incorrectPortPartIds,
+  markOutside,
+  outsidePartIds,
+  validateLayout,
+} from './geometry.js';
 import { deriveShipClass, type ShipClassType } from './ship-class.js';
 import { deriveSheet } from './sheet.deriver.js';
 import type { ShipSheet } from './sheet.types.js';
@@ -193,10 +199,30 @@ export class ShipsService implements OnModuleInit {
     // it actually matters: dispatch (missions/dispatch.service.ts), travel eligibility
     // (missions/travel.service.ts) and scavenge start (missions/scavenge-job.service.ts).
 
-    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules, ship.formatBridgeType);
+    await this.persistLayout(
+      shipId,
+      this.stampOutside(layout, playerParts, ship),
+      playerParts,
+      ship.fuel,
+      rules,
+      ship.formatBridgeType,
+    );
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
+  }
+
+  /** Flags the parts that stick out of the ship's format (see Placement.outside). */
+  private stampOutside(
+    layout: Placement[],
+    playerParts: PartInstanceWithCatalog[],
+    ship: ShipWithFormat,
+  ): Placement[] {
+    return markOutside(
+      layout,
+      buildCatalogMapFromPrisma(playerParts),
+      formatCellsFromJson(ship.format.cells),
+    );
   }
 
   async autoAssemble(shipId: string, partInstanceIds?: string[]): Promise<ShipResponse> {
@@ -206,19 +232,23 @@ export class ShipsService implements OnModuleInit {
     const playerParts = await this.partsService.findPlayerParts(ship.ownerPlayerId);
     const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
     const formatCells = formatCellsFromJson(ship.format.cells);
-    const { layout, omitted } = arrange(candidateParts.map(toInstalledPart), formatCells);
-    if (omitted.length > 0) {
-      throw new BadRequestException({
-        error: 'AUTO_LAYOUT_OMITTED_PARTS',
-        omittedPartInstanceIds: omitted.map((part) => part.instance.id),
-      });
-    }
+    const arranged = arrange(candidateParts.map(toInstalledPart), formatCells);
+    // What does not fit is not thrown away or refused: it is parked beside the hull, flagged, so
+    // the pilot can move, turn or remove it (and the ship stays grounded until then).
+    const layout = [...arranged.layout, ...parkOutside(arranged.omitted, formatCells)];
 
     this.assertBridgeFitsFormat(layout, playerParts, ship);
     this.assertLayoutValid(layout, playerParts, ship);
     // Same as assemble() above: saving never requires flight-viability.
 
-    await this.persistLayout(shipId, layout, playerParts, ship.fuel, rules, ship.formatBridgeType);
+    await this.persistLayout(
+      shipId,
+      this.stampOutside(layout, playerParts, ship),
+      playerParts,
+      ship.fuel,
+      rules,
+      ship.formatBridgeType,
+    );
 
     const updated = await this.loadShip(shipId);
     return this.toResponse(updated, rules);
@@ -251,7 +281,7 @@ export class ShipsService implements OnModuleInit {
     const formatCells = formatCellsFromJson(ship.format.cells);
     if (layout !== undefined && layout.length > 0) {
       this.assertLayoutValid(layout, playerParts, ship);
-      effectiveLayout = layout;
+      effectiveLayout = this.stampOutside(layout, playerParts, ship);
       installed = this.buildInstalledParts(layout, playerParts);
     } else {
       const candidateParts = this.filterCandidateParts(playerParts, partInstanceIds);
@@ -296,6 +326,7 @@ export class ShipsService implements OnModuleInit {
         installed,
         connectedIds,
         incorrectPortPartIds(effectiveLayout, catalogForConnectivity, connectorsByInstance),
+        outsidePartIds(effectiveLayout),
       ),
       effectiveLayout,
       catalogForConnectivity,
@@ -334,7 +365,10 @@ export class ShipsService implements OnModuleInit {
       omittedPartInstanceIds,
       routeCoverage: await this.routeCoverageFor(sheet),
       disconnectedPartIds: installed
-        .filter((p) => !connectedIds.has(p.instance.id))
+        .filter(
+          (p) =>
+            !connectedIds.has(p.instance.id) && !outsidePartIds(effectiveLayout).has(p.instance.id),
+        )
         .map((p) => p.instance.id),
     };
   }
@@ -631,6 +665,8 @@ export class ShipsService implements OnModuleInit {
       catalogMap,
       formatCellsFromJson(ship.format.cells),
       connectorsByInstance,
+      // Saving lets parts sit beside the hull (flagged; the ship stays grounded); the bridge may not.
+      { allowOutside: true },
     );
     if (geometryErrors.length > 0) {
       throw new BadRequestException({
@@ -833,7 +869,7 @@ export class ShipsService implements OnModuleInit {
       sheet,
       shipClass: deriveShipClass(installedConnected, rules),
       disconnectedPartIds: installedRows
-        .filter((row) => !connectedIds.has(row.id))
+        .filter((row) => !connectedIds.has(row.id) && !outsidePartIds(shipLayout).has(row.id))
         .map((row) => row.id),
       yard: { cells: ship.format.cells as [number, number][] },
       activity,
@@ -885,7 +921,8 @@ export class ShipsService implements OnModuleInit {
       const cargo = mission.cargo as { contracted?: unknown } | null;
       const freeMining = (mission.type as string) === 'MINING' && cargo?.contracted === false;
       return {
-        kind: (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
+        kind:
+          (mission.type as string) === 'SCAVENGE' ? 'scavenging' : freeMining ? 'mining' : 'flying',
         until: mission.arrivalAt?.toISOString() ?? null,
         missionId: mission.id,
         repairUntil: repair?.completesAt.toISOString() ?? null,

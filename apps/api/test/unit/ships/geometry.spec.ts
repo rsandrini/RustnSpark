@@ -3,6 +3,8 @@ import {
   cellKey,
   connectedPartIds,
   incorrectPortPartIds,
+  markOutside,
+  outsidePartIds,
   validateLayout,
 } from '../../../src/ships/geometry.js';
 import { directionErrors } from '../../../src/ships/direction.js';
@@ -121,6 +123,40 @@ describe('validateLayout', () => {
     ];
     const errors = validateLayout(placements, catalog, cells, noConnectors);
     expect(errors.map((e) => e.code)).toContain('OUT_OF_BOUNDS');
+  });
+
+  it('lets a part sit beside the hull when saving (flagged), but never the bridge', () => {
+    const beside: Placement[] = [
+      { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'hull', gx: 16, gy: 0, rot: 0 },
+    ];
+    expect(validateLayout(beside, catalog, cells, noConnectors, { allowOutside: true })).toEqual(
+      [],
+    );
+    const bridgeOut: Placement[] = [{ partInstanceId: 'bridge', gx: 15, gy: 0, rot: 0 }];
+    expect(
+      validateLayout(bridgeOut, catalog, cells, noConnectors, { allowOutside: true }).map(
+        (e) => e.code,
+      ),
+    ).toEqual(['OUT_OF_BOUNDS']);
+  });
+
+  it('flags the parts with any cell outside the format, and clears a stale flag', () => {
+    const placements: Placement[] = [
+      { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0, outside: true },
+      { partInstanceId: 'hull', gx: 14, gy: 0, rot: 0 },
+    ];
+    const marked = markOutside(placements, catalog, cells);
+    expect(marked.map((p) => p.outside)).toEqual([undefined, true]);
+    expect([...outsidePartIds(marked)]).toEqual(['hull']);
+  });
+
+  it('keeps a parked part out of the connection and port checks', () => {
+    const placements: Placement[] = [
+      { partInstanceId: 'bridge', gx: 0, gy: 0, rot: 0 },
+      { partInstanceId: 'hull', gx: 1, gy: 0, rot: 0, outside: true },
+    ];
+    expect([...connectedPartIds(placements, catalog, noConnectors)]).toEqual(['bridge']);
   });
 
   it('supports 90-degree rotation swapping dimensions', () => {

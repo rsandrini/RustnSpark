@@ -9,7 +9,14 @@ import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/gener
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks } from './connectors';
-import { directionViolations, facingOf, footprint, placementIssue, type Rot } from './hangar.geometry';
+import {
+  directionViolations,
+  facingOf,
+  footprint,
+  isOutsideYard,
+  placementIssue,
+  type Rot,
+} from './hangar.geometry';
 
 const MIN_SPAN = 4;
 const FIT_MARGIN = 2;
@@ -22,6 +29,8 @@ const PAN_THRESHOLD = 5;
 // Zoom-out overshoot: the yard can shrink to 80% of the window so there is always empty
 // slack around it to pan into (owner: movement was locked the moment the view was fully fit).
 const VIEW_OVERSHOOT = 1.25;
+// Cells of free ground the view can pan to beyond the yard on every side: parts may be parked there.
+const PARK_MARGIN = 8;
 
 interface View {
   cx: number;
@@ -270,8 +279,8 @@ export function ShipYard({
       // always slide around, including fully fitted or zoomed-out overshoot views.
       const rangeFor = (yard: number) =>
         Math.max(yard / 2 - span / 2, Math.min(span / 2, yard / 4));
-      const rangeX = rangeFor(bounds.maxX - bounds.minX);
-      const rangeY = rangeFor(bounds.maxY - bounds.minY);
+      const rangeX = rangeFor(bounds.maxX - bounds.minX + PARK_MARGIN * 2);
+      const rangeY = rangeFor(bounds.maxY - bounds.minY + PARK_MARGIN * 2);
       return {
         span,
         cx: Math.min(centerX + rangeX, Math.max(centerX - rangeX, view.cx)),
@@ -439,6 +448,22 @@ export function ShipYard({
   });
 
   const cellSet = useMemo(() => new Set(cells.map(([x, y]) => `${x},${y}`)), [cells]);
+  // Parts with a cell off the format: drawn dashed and tagged, they do nothing until moved in.
+  const outsideIds = useMemo(
+    () =>
+      new Set(
+        layout
+          .filter((placement) => {
+            const catalog = catalogById.get(placement.partInstanceId);
+            return (
+              catalog !== undefined &&
+              isOutsideYard(catalog, placement.gx, placement.gy, placement.rot, cellSet)
+            );
+          })
+          .map((placement) => placement.partInstanceId),
+      ),
+    [layout, catalogById, cellSet],
+  );
 
   /** A client position in yard cells (the same mapping the wheel-zoom anchor uses). */
   const pointerToCells = (clientX: number, clientY: number): { x: number; y: number } => {
@@ -687,6 +712,11 @@ export function ShipYard({
   return (
     <div className="stage hangar-scene" ref={sceneRef} data-tour="ship_grid">
       {callouts}
+      {outsideIds.size > 0 && (
+        <p className="yard-outside-note" role="status" data-testid="yard-outside-note">
+          {t('hangar.outside.note', { count: outsideIds.size })}
+        </p>
+      )}
       <div className="yard-tools" role="group" aria-label={t('hangar.zoom.label')}>
         <button
           type="button"
@@ -794,6 +824,7 @@ export function ShipYard({
                   'block',
                   look?.broken === true ? 'broken' : '',
                   disconnectedPartIds?.has(placement.partInstanceId) === true ? 'disconnected' : '',
+                  outsideIds.has(placement.partInstanceId) ? 'outside' : '',
                   directionBlocked.has(placement.partInstanceId) ? 'dir-blocked' : '',
                   look === undefined
                     ? ''
@@ -829,6 +860,7 @@ export function ShipYard({
                   directionBlocked.has(placement.partInstanceId)
                     ? t(`hangar.placement.${directionBlocked.get(placement.partInstanceId)}`)
                     : '',
+                  outsideIds.has(placement.partInstanceId) ? t('hangar.outside.tag') : '',
                 ]
                   .filter(Boolean)
                   .join('\n')}

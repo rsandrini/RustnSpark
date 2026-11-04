@@ -162,6 +162,23 @@ svg .block.broken {
   }
 }
 
+/* A part parked beside the hull: dim and dashed, it does nothing until it is moved back in. */
+svg .block.outside {
+  fill-opacity: 0.4;
+  stroke: var(--bad);
+  stroke-width: 0.09;
+  stroke-dasharray: 0.2 0.12;
+}
+
+.yard-outside-note {
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--bad);
+  border-radius: var(--radius-sm);
+  color: var(--bad);
+  font-size: var(--text-xs);
+}
+
 svg .block.dir-blocked {
   stroke: var(--bad);
   stroke-width: 0.07;

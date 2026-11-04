@@ -76,8 +76,13 @@ export function withConnectionProblem(
   installed: readonly InstalledPart[],
   connectedIds: ReadonlySet<string>,
   incorrectIds: ReadonlySet<string> = new Set(),
+  outsideIds: ReadonlySet<string> = new Set(),
 ): ViabilityReport {
-  const loose = installed.filter((part) => !connectedIds.has(part.instance.id)).length;
+  // A parked part is reported as such, not also as "not connected".
+  const loose = installed.filter(
+    (part) => !connectedIds.has(part.instance.id) && !outsideIds.has(part.instance.id),
+  ).length;
+  const parked = installed.filter((part) => outsideIds.has(part.instance.id)).length;
   const wrong = installed.filter((part) => incorrectIds.has(part.instance.id)).length;
   const problems = [...report.problems];
   const has = (code: string): boolean => problems.some((problem) => problem.code === code);
@@ -85,6 +90,12 @@ export function withConnectionProblem(
     problems.push({
       code: 'PART_DISCONNECTED',
       message: `${loose} installed part(s) are not connected to the bridge: fix their connectors or remove them.`,
+    });
+  }
+  if (parked > 0 && !has('PART_OUTSIDE')) {
+    problems.push({
+      code: 'PART_OUTSIDE',
+      message: `${parked} part(s) are outside the ship: move them inside or remove them.`,
     });
   }
   if (wrong > 0 && !has('PORT_INCORRECT')) {

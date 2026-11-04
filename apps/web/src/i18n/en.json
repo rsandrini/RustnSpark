@@ -578,7 +578,8 @@
       "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
       "PART_DISCONNECTED": "A part is not connected to the bridge: fix its connectors or remove it. You can still save the layout.",
       "PORT_INCORRECT": "Some connectors press against a part they do not fit (the red ports): move or rotate those parts. You can still save the layout.",
-      "ENGINES_PUSHED": "Engines are pushed above their listed power: faster, but they burn more fuel, wear and can fail on every leg of a mission (not scavenging). Set them back in the engine tuning."
+      "ENGINES_PUSHED": "Engines are pushed above their listed power: faster, but they burn more fuel, wear and can fail on every leg of a mission (not scavenging). Set them back in the engine tuning.",
+      "PART_OUTSIDE": "A part is outside the ship: move it back inside the hull or remove it. You can still save the layout, but the ship cannot fly until then."
     },
     "errors": {
       "SHIP_ON_MISSION": "The ship is on a mission.",
@@ -694,7 +695,13 @@
       "title": "Over the structure budget",
       "body": "This layout uses more structure than the ship allows. You can save it, but the ship will not be able to take any mission until you remove or swap parts to fit the budget.",
       "cancel": "Keep editing",
-      "confirm": "Save anyway"
+      "confirm": "Save anyway",
+      "outsideBody": "Some parts are outside the hull. You can save the layout, but the ship will not be able to take any mission until they are moved inside or removed.",
+      "outsideTitle": "Parts outside the ship"
+    },
+    "outside": {
+      "tag": "Outside the ship",
+      "note": "{{count}} part(s) outside the ship: they do nothing until they are back inside the hull"
     }
   },
   "home": {
@@ -2056,7 +2063,8 @@
       "NO_CARGO_HOLD": "Mining keeps what it digs in the cargo hold: this ship has none. Fit a cargo hold first.",
       "HOLD_PARTS_OVER": "Too many spare parts: the bridge carries only so many.",
       "PART_DISCONNECTED": "Part not connected",
-      "PORT_INCORRECT": "Incorrect connection"
+      "PORT_INCORRECT": "Incorrect connection",
+      "PART_OUTSIDE": "Part outside the ship"
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",

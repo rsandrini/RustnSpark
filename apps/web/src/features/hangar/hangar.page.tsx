@@ -19,6 +19,7 @@ import {
   directionViolations,
   footprint,
   nextRot,
+  isOutsideYard,
   placementIssue,
   type Rot,
 } from './hangar.geometry';
@@ -414,6 +415,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   });
 
   const modifyBlocked = ship?.status === 'ON_MISSION';
+  // Parts with a cell off the ship's format: parked beside the hull, doing nothing, grounding the ship.
+  const outsideCount = effectiveLayout.filter((placement) => {
+    const catalog = catalogById.get(placement.partInstanceId);
+    return (
+      catalog !== undefined &&
+      isOutsideYard(catalog, placement.gx, placement.gy, placement.rot, yardCellSet)
+    );
+  }).length;
 
   const placePart = (partInstanceId: string, gx: number, gy: number) => {
     if (modifyBlocked) return;
@@ -822,7 +831,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     setSaved(false);
                     setSaveError(null);
                     if (
-                      viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED')
+                      viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED') ||
+                      outsideCount > 0
                     ) {
                       setOverBudgetOpen(true);
                       return;
@@ -894,7 +904,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
               <Popup
                 open={overBudgetOpen}
-                title={t('hangar.overBudget.title')}
+                title={t(
+                  viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED')
+                    ? 'hangar.overBudget.title'
+                    : 'hangar.overBudget.outsideTitle',
+                )}
                 onClose={() => setOverBudgetOpen(false)}
                 actions={
                   <>
@@ -915,7 +929,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   </>
                 }
               >
-                <p>{t('hangar.overBudget.body')}</p>
+                <p>
+                  {t(
+                    viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED')
+                      ? 'hangar.overBudget.body'
+                      : 'hangar.overBudget.outsideBody',
+                  )}
+                </p>
               </Popup>
               <Popup
                 open={clearOpen}

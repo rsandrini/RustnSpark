@@ -130,3 +130,36 @@ describe('ShipYard facing arrow', () => {
     expect(arrows[0]?.getAttribute('data-facing')).toBe('E'); // W rotated 180
   });
 });
+
+describe('ShipYard parts outside the hull', () => {
+  const unit: PartCatalogStats = {
+    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 1, structureCost: 1, partHp: 1,
+    basePrice: 0, pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0,
+    energyCombat: 0, fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0,
+    pressurized: false, lifeSupport: false,
+  };
+
+  it('outlines a part beside the hull, says how many are out, and leaves the ones inside alone', () => {
+    const { container, getByTestId } = renderWithProviders(
+      <ShipYard
+        cells={[[0, 0], [1, 0]]}
+        catalogById={new Map([['in', unit], ['out', unit]])}
+        nameById={new Map([['in', 'In'], ['out', 'Out']])}
+        selectedId={null}
+        draggingId={null}
+        onSelect={() => undefined}
+        onCellClick={() => undefined}
+        onDragStart={() => undefined}
+        onDragEnd={() => undefined}
+        layout={[
+          { partInstanceId: 'in', gx: 0, gy: 0, rot: 0 },
+          { partInstanceId: 'out', gx: 5, gy: 4, rot: 0 },
+        ]}
+      />,
+    );
+    const outside = container.querySelectorAll('.block.outside');
+    expect(outside).toHaveLength(1);
+    expect(outside[0]?.getAttribute('data-part-id')).toBe('out');
+    expect(getByTestId('yard-outside-note')).toHaveTextContent('1 part(s) outside the ship');
+  });
+});

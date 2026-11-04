@@ -603,6 +603,52 @@ describe('parts and ships API (S4.3)', () => {
       expect(codes).not.toContain('EXHAUST_BLOCKED');
     });
 
+    it('saves a part parked beside the hull (flagged, grounding the ship) but never a bridge outside it', async () => {
+      await freshSeededApp();
+      const { token, seeded } = await seedAndToken();
+      const onboarded = await onboard(token, 'luna');
+      const shipId = asShip(onboarded).id;
+      await prisma.partInstance.updateMany({
+        where: { ownerPlayerId: seeded.player.id },
+        data: { location: 'INVENTORY', shipId: null },
+      });
+      await prisma.ship.update({ where: { id: shipId }, data: { layout: [] } });
+      const parts = await prisma.partInstance.findMany({
+        where: { ownerPlayerId: seeded.player.id },
+      });
+      const idOf = (partType: string): string => parts.find((p) => p.partType === partType)!.id;
+      const bridge = idOf('bridge');
+      const cargo = idOf('cargo');
+
+      const bridgeOut = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout: [{ partInstanceId: bridge, gx: 40, gy: 0, rot: 0 }] });
+      expect(bridgeOut.status).toBe(400);
+
+      const layout = [
+        { partInstanceId: bridge, gx: 0, gy: 0, rot: 0 },
+        { partInstanceId: cargo, gx: 40, gy: 0, rot: 0 },
+      ];
+      const saved = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/assemble`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      expect(saved.status).toBe(200);
+      expect(asShip(saved).layout).toEqual([layout[0], { ...layout[1], outside: true }]);
+      expect(asShip(saved).disconnectedPartIds).not.toContain(cargo);
+
+      const preview = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${shipId}/preview`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ layout });
+      const codes = (preview.body as { viability: { problems: { code: string }[] } }).viability.problems.map(
+        (p) => p.code,
+      );
+      expect(codes).toContain('PART_OUTSIDE');
+      expect(codes).not.toContain('PART_DISCONNECTED');
+    });
+
     it('taking the tank off the ship empties it: the fuel never exceeds what the tanks can hold', async () => {
       await freshSeededApp();
       const { token, seeded } = await seedAndToken();
@@ -944,7 +990,7 @@ describe('parts and ships API (S4.3)', () => {
       return { token, shipId, oversizedId: oversized.id };
     }
 
-    it('rejects auto-assemble when a part cannot be placed instead of saving a different ship', async () => {
+    it('parks a part that cannot be placed beside the hull instead of refusing the layout', async () => {
       const { token, shipId, oversizedId } = await withOversizedPart();
 
       const response = await request(httpServer(testApp.app))
@@ -952,11 +998,11 @@ describe('parts and ships API (S4.3)', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({});
 
-      expect(response.status).toBe(400);
-      expect(JSON.stringify(response.body)).toContain('AUTO_LAYOUT_OMITTED_PARTS');
-      expect(JSON.stringify(response.body)).toContain(oversizedId);
+      expect(response.status).toBe(200);
       const saved = await prisma.ship.findUniqueOrThrow({ where: { id: shipId } });
-      expect(saved.layout).toEqual([]);
+      expect(saved.layout).toContainEqual(
+        expect.objectContaining({ partInstanceId: oversizedId, outside: true }),
+      );
     });
 
     it('reports omitted parts in preview and derives the sheet from placed parts only', async () => {

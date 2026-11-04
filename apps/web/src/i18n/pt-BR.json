@@ -578,7 +578,8 @@
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
       "PART_DISCONNECTED": "Uma peça não está conectada à ponte: ajuste os conectores ou remova-a. Você ainda pode salvar o layout.",
       "PORT_INCORRECT": "Alguns conectores encostam em uma peça com a qual não encaixam (as portas vermelhas): mova ou gire essas peças. Você ainda pode salvar o layout.",
-      "ENGINES_PUSHED": "Os motores estão acima da potência indicada: mais rápidos, mas gastam mais combustível, se desgastam e podem falhar em cada trecho de uma missão (menos no saque). Volte ao normal na regulagem dos motores."
+      "ENGINES_PUSHED": "Os motores estão acima da potência indicada: mais rápidos, mas gastam mais combustível, se desgastam e podem falhar em cada trecho de uma missão (menos no saque). Volte ao normal na regulagem dos motores.",
+      "PART_OUTSIDE": "Uma peça está fora da nave: leve-a de volta para dentro do casco ou remova-a. Você pode salvar o layout, mas a nave não voa até lá."
     },
     "errors": {
       "SHIP_ON_MISSION": "A nave está em uma missão.",
@@ -694,7 +695,13 @@
       "title": "Acima do orçamento de estrutura",
       "body": "Este layout usa mais estrutura do que a nave permite. Você pode salvá-lo, mas a nave não poderá aceitar nenhuma missão até você remover ou trocar peças para caber no orçamento.",
       "cancel": "Continuar editando",
-      "confirm": "Salvar assim mesmo"
+      "confirm": "Salvar assim mesmo",
+      "outsideBody": "Algumas peças estão fora do casco. Você pode salvar o layout, mas a nave não poderá fazer nenhuma missão até que elas sejam movidas para dentro ou removidas.",
+      "outsideTitle": "Peças fora da nave"
+    },
+    "outside": {
+      "tag": "Fora da nave",
+      "note": "{{count}} peça(s) fora da nave: não fazem nada até voltarem para dentro do casco"
     }
   },
   "home": {
@@ -2056,7 +2063,8 @@
       "NO_CARGO_HOLD": "A mineração guarda o que escava no porão de carga: esta nave não tem um. Instale um porão de carga antes.",
       "HOLD_PARTS_OVER": "Peças sobressalentes demais: a ponte leva só um tanto.",
       "PART_DISCONNECTED": "Peça desconectada",
-      "PORT_INCORRECT": "Conexão incorreta"
+      "PORT_INCORRECT": "Conexão incorreta",
+      "PART_OUTSIDE": "Peça fora da nave"
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",

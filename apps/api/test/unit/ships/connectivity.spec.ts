@@ -124,6 +124,13 @@ describe('withConnectionProblem: a disconnected part keeps the ship on the groun
     expect(withConnectionProblem(ok, parts, new Set(['a', 'b']))).toBe(ok);
   });
 
+  it('reports a parked part as outside, not as disconnected', () => {
+    const parts = [part('a'), part('b')];
+    const report = withConnectionProblem(ok, parts, new Set(['a']), new Set(), new Set(['b']));
+    expect(report.viable).toBe(false);
+    expect(report.problems.map((p) => p.code)).toEqual(['PART_OUTSIDE']);
+  });
+
   it('adds one blocking problem when any part is not connected, naming how many', () => {
     const parts = [part('a'), part('b'), part('c')];
     const report = withConnectionProblem(ok, parts, new Set(['a']));

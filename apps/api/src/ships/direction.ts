@@ -28,7 +28,10 @@ export function facingSide(rot: number): ConnectorSide {
   return rotateSide(BASE_FACING, rot);
 }
 
-function worldCells(placement: Placement, part: PartCatalog): Array<{ x: number; y: number; dx: number; dy: number }> {
+function worldCells(
+  placement: Placement,
+  part: PartCatalog,
+): Array<{ x: number; y: number; dx: number; dy: number }> {
   const swapped = placement.rot % HALF_TURN !== 0;
   const width = swapped ? part.h : part.w;
   const height = swapped ? part.w : part.h;
@@ -50,7 +53,9 @@ export function directionErrors(
   connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
 ): LayoutError[] {
   const errors: LayoutError[] = [];
-  for (const placement of placements) {
+  // A parked part is not on the ship: it blocks no exhaust and has no facing to check.
+  const onShip = placements.filter((placement) => placement.outside !== true);
+  for (const placement of onShip) {
     const part = catalog.get(placement.partInstanceId);
     if (part === undefined || !isDirectional(part.partClass)) continue;
     const facing = facingSide(placement.rot);
@@ -66,7 +71,7 @@ export function directionErrors(
         .map((cell) => `${cell.x},${cell.y}`),
     );
 
-    const blocked = placements.some((other) => {
+    const blocked = onShip.some((other) => {
       if (other.partInstanceId === placement.partInstanceId) return false;
       const otherPart = catalog.get(other.partInstanceId);
       return (
@@ -88,12 +93,17 @@ export function directionErrors(
     const layout = connectorsByInstance.get(placement.partInstanceId);
     if (layout !== null && layout !== undefined && layout.cells.length > 0) {
       const authoredFacing = authoredSideAt(facing, placement.rot);
-      const edge = own.filter((cell) => !own.some((o) => o.x === cell.x + f.x && o.y === cell.y + f.y));
+      const edge = own.filter(
+        (cell) => !own.some((o) => o.x === cell.x + f.x && o.y === cell.y + f.y),
+      );
       const hasConnector = edge.some((cell) => {
         const authored = worldToAuthoredCell(cell.dx, cell.dy, part.w, part.h, placement.rot);
         return layout.cells.some(
           (c) =>
-            c.dx === authored.dx && c.dy === authored.dy && c.side === authoredFacing && c.kind !== 'none',
+            c.dx === authored.dx &&
+            c.dy === authored.dy &&
+            c.side === authoredFacing &&
+            c.kind !== 'none',
         );
       });
       if (hasConnector) {
@@ -126,10 +136,16 @@ export function withDirectionProblems(
   );
   if (extra.length === 0) return viability;
   // one entry per code (several engines blocked is still one problem for the pilot to read)
-  const seen = new Set([...viability.problems, ...viability.warnings].map((problem) => problem.code));
+  const seen = new Set(
+    [...viability.problems, ...viability.warnings].map((problem) => problem.code),
+  );
   const unique = extra.filter((problem) => !seen.has(problem.code) && seen.add(problem.code));
   if (options.strict === true) {
-    return { viable: false, problems: [...viability.problems, ...unique], warnings: viability.warnings };
+    return {
+      viable: false,
+      problems: [...viability.problems, ...unique],
+      warnings: viability.warnings,
+    };
   }
   return { ...viability, warnings: [...viability.warnings, ...unique] };
 }

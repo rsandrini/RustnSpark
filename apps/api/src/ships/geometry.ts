@@ -76,12 +76,47 @@ function footprintCells(
   return cells;
 }
 
+/** True when some cell of the part lies outside the ship's format. */
+function isOutsideFormat(
+  placement: Placement,
+  part: PartCatalog,
+  formatCells: ReadonlySet<string>,
+): boolean {
+  return footprintCells(placement, part).some(({ x, y }) => !formatCells.has(cellKey(x, y)));
+}
+
+/** Stamps `outside` on every placement that is not fully inside the format (and clears it on the
+    rest), so the flight checks can tell parked parts apart without knowing the format. */
+export function markOutside(
+  placements: readonly Placement[],
+  catalog: ReadonlyMap<string, PartCatalog>,
+  formatCells: ReadonlySet<string>,
+): Placement[] {
+  return placements.map((placement) => {
+    const { outside: _stale, ...rest } = placement;
+    const part = catalog.get(placement.partInstanceId);
+    return part !== undefined && isOutsideFormat(placement, part, formatCells)
+      ? { ...rest, outside: true }
+      : rest;
+  });
+}
+
+/** The parked parts of a stored layout. */
+export function outsidePartIds(placements: readonly Placement[]): Set<string> {
+  return new Set(
+    placements.filter((placement) => placement.outside === true).map((p) => p.partInstanceId),
+  );
+}
+
 export function validateLayout(
   placements: Placement[],
   catalog: ReadonlyMap<string, PartCatalog>,
   formatCells: ReadonlySet<string> = CLASSIC_SQUARE_CELLS,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _connectorsByInstance: ReadonlyMap<string, ConnectorLayout | null> = new Map(),
+  // Saving lets a part sit beside the hull (it is flagged, and keeps the ship grounded); only
+  // the bridge must stay inside. Auto-layout still wants every candidate spot inside.
+  options: { allowOutside?: boolean } = {},
 ): LayoutError[] {
   const errors: LayoutError[] = [];
   const occupied = new Map<string, OccupiedCell>();
@@ -96,7 +131,7 @@ export function validateLayout(
 
     for (const { x, y, dx, dy } of footprintCells(placement, part)) {
       const key = cellKey(x, y);
-      if (!formatCells.has(key)) {
+      if (!formatCells.has(key) && (options.allowOutside !== true || part.partClass === 'BRIDGE')) {
         if (!hasError(errors, 'OUT_OF_BOUNDS')) {
           errors.push({
             code: 'OUT_OF_BOUNDS',
@@ -152,7 +187,8 @@ export function connectedPartIds(
   const rotByInstance = new Map<string, number>();
   for (const placement of placements) {
     const part = catalog.get(placement.partInstanceId);
-    if (part === undefined) continue;
+    // A part parked beside the hull touches nothing: it neither connects nor presses a port.
+    if (part === undefined || placement.outside === true) continue;
     rotByInstance.set(placement.partInstanceId, placement.rot);
     for (const { x, y, dx, dy } of footprintCells(placement, part)) {
       occupied.set(cellKey(x, y), { partInstanceId: placement.partInstanceId, dx, dy });
@@ -238,7 +274,8 @@ export function incorrectPortPartIds(
   const rotByInstance = new Map<string, number>();
   for (const placement of placements) {
     const part = catalog.get(placement.partInstanceId);
-    if (part === undefined) continue;
+    // A part parked beside the hull touches nothing: it neither connects nor presses a port.
+    if (part === undefined || placement.outside === true) continue;
     rotByInstance.set(placement.partInstanceId, placement.rot);
     for (const { x, y, dx, dy } of footprintCells(placement, part)) {
       occupied.set(cellKey(x, y), { partInstanceId: placement.partInstanceId, dx, dy });

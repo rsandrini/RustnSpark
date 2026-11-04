@@ -166,6 +166,9 @@ export const PlacementSchema = z.object({
   gx: z.number(),
   gy: z.number(),
   rot: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
+  /** Set by the server on save: some cell lies outside the ship's format (a part parked beside
+      the hull). The ship stays in port until the part is moved inside or removed. */
+  outside: z.boolean().optional(),
 });
 export type Placement = z.infer<typeof PlacementSchema>;
 

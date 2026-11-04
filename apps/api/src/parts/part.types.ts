@@ -53,6 +53,10 @@ export interface Placement {
   gx: number;
   gy: number;
   rot: number;
+  /** Set by the server on save: some cell of the part lies outside the ship's format. Such a part
+      is parked beside the hull — it connects to nothing, does nothing, and keeps the ship on the
+      ground until it is moved in or removed. */
+  outside?: boolean;
 }
 
 export type LayoutErrorCode =
