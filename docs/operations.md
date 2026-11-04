@@ -10,12 +10,12 @@ Everything an operator needs to run Rust and Spark. Commands assume the reposito
 | `api` / `api-prod` | NestJS HTTP API | stateless; run several behind the proxy |
 | `worker` / `worker-prod` | BullMQ mission-resolution + reconcile worker | same image, `node dist/worker.js`; no HTTP port |
 | `web` / `web-prod` | nginx serving the SPA and proxying `/v1` to the API | sets `X-Forwarded-For` (the API trusts it from private addresses only) |
-| PostgreSQL 16 | system of record | `postgres-prod` container on a named volume (or external via `PROD_DATABASE_URL`) |
-| Redis 7 | BullMQ queues, config cache, rate-limit counters | `redis-prod` container (or external via `PROD_REDIS_URL`) |
+| PostgreSQL 16 | system of record | your own instance (`DATABASE_URL`) |
+| Redis 7 | BullMQ queues, config cache, rate-limit counters | your own instance (`REDIS_URL`, `maxmemory-policy noeviction`) |
 | `migrate` / `migrate-prod` | one-shot: `prisma migrate deploy` + insert-only seed | api and worker wait for it |
 
 Profiles: `dev` (everything local), `test` (tmpfs Postgres/Redis on 5433/6380), `prod` (one server:
-app, Postgres, Redis and the Cloudflare tunnel; see `docs/deploy.md`).
+app, worker, web and the Cloudflare tunnel against your own Postgres/Redis; see `docs/deploy.md`).
 
 ## 2. Environment reference
 
