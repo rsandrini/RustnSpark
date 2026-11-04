@@ -1,5 +1,8 @@
 node_modules
 .env
+.env.*
+!.env.example
+!.env.prod.example
 dist
 coverage
 apps/web/src/**/*.js

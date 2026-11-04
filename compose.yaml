@@ -162,7 +162,38 @@ services:
       timeout: 3s
       retries: 15
 
-  # prod: no postgres/redis here; DATABASE_URL and REDIS_URL must point at external instances.
+  # prod: one server. Postgres and Redis run here too, on named volumes (nothing is published to the
+  # network); the only way in is the Cloudflare tunnel -> web-prod. See docs/deploy.md.
+  postgres-prod:
+    profiles: [prod]
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rustandspark
+      # No default on purpose: Postgres refuses to initialise without a password.
+      POSTGRES_PASSWORD: ${PROD_POSTGRES_PASSWORD:-}
+      POSTGRES_DB: rustandspark
+    volumes:
+      - postgres-prod-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U rustandspark -d rustandspark]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis-prod:
+    profiles: [prod]
+    image: redis:7
+    restart: unless-stopped
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - redis-prod-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   migrate-prod:
     profiles: [prod]
     build:
@@ -171,7 +202,10 @@ services:
     image: rustandspark-migrate:prod
     restart: 'no'
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${PROD_DATABASE_URL:-postgresql://rustandspark:${PROD_POSTGRES_PASSWORD:-}@postgres-prod:5432/rustandspark}
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
 
   api-prod:
     profiles: [prod]
@@ -182,9 +216,15 @@ services:
       <<: *api-secrets
       NODE_ENV: production
       PORT: '3000'
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${PROD_DATABASE_URL:-postgresql://rustandspark:${PROD_POSTGRES_PASSWORD:-}@postgres-prod:5432/rustandspark}
+      REDIS_URL: ${PROD_REDIS_URL:-redis://redis-prod:6379}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      # Password-reset and bug-report email (Resend) and the public origin used in the reset link.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      RESEND_FROM_NAME: ${RESEND_FROM_NAME:-}
+      BUG_REPORT_TO_EMAIL: ${BUG_REPORT_TO_EMAIL:-}
+      WEB_URL: ${WEB_URL:-http://localhost:8080}
       ART_DIR: /data/art
     volumes:
       - art-data:/data/art
@@ -193,6 +233,8 @@ services:
     depends_on:
       migrate-prod:
         condition: service_completed_successfully
+      redis-prod:
+        condition: service_healthy
     healthcheck: *api-healthcheck
 
   worker-prod:
@@ -205,12 +247,14 @@ services:
       <<: *api-secrets
       NODE_ENV: production
       PORT: '3000'
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+      DATABASE_URL: ${PROD_DATABASE_URL:-postgresql://rustandspark:${PROD_POSTGRES_PASSWORD:-}@postgres-prod:5432/rustandspark}
+      REDIS_URL: ${PROD_REDIS_URL:-redis://redis-prod:6379}
       CORS_ORIGINS: ${CORS_ORIGINS}
     depends_on:
       migrate-prod:
         condition: service_completed_successfully
+      redis-prod:
+        condition: service_healthy
 
   web:
     profiles: [dev]
@@ -247,7 +291,22 @@ services:
       api-prod:
         condition: service_healthy
 
+  # The tunnel to Cloudflare: outbound only, so the server opens no inbound port. The public hostname
+  # is set in the Cloudflare dashboard (Zero Trust > Networks > Tunnels) with the service
+  # http://web-prod:80. The token comes from .env (CLOUDFLARE_TUNNEL_TOKEN); never commit it.
+  cloudflared:
+    profiles: [prod]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: [tunnel, --no-autoupdate, run]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - web-prod
+
 volumes:
   postgres-data:
   redis-data:
   art-data:
+  postgres-prod-data:
+  redis-prod-data:
