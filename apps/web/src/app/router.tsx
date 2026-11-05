@@ -1,8 +1,9 @@
 import { createBrowserRouter, Navigate, Outlet, useLocation, useParams } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../i18n/language-switcher';
+import { useIsPhone } from '../ui/use-phone';
 import { AuthProvider, useAuthContext } from '../features/auth/auth.context';
 import { LoginPage } from '../features/auth/login.page';
 import { ProtectedRoute, RequireFaction } from '../features/auth/protected-route';
@@ -49,8 +50,18 @@ function RedirectFromHangarTab() {
   return <RedirectTo to={to} />;
 }
 
+/** On a phone every screen opens at its top (the map first, the list first), not where the last one was scrolled. */
+function useScrollToTopOnPhone() {
+  const { pathname } = useLocation();
+  const phone = useIsPhone();
+  useEffect(() => {
+    if (phone) window.scrollTo?.(0, 0);
+  }, [pathname, phone]);
+}
+
 function InGameChrome() {
   useWalletSync();
+  useScrollToTopOnPhone();
   return (
     <>
       <TopBar />

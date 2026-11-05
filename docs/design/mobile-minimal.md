@@ -28,8 +28,10 @@ The website on a desktop stays as it is. On a phone (`max-width: 700px`, see `PH
 | Ship, in flight | One card: title, reward, route, risk, distance/legs/time, fuel, Details, route map, countdown. No yard, no animation strip |
 | Missions | Rows: title, route, time, fuel/risk, reward, Accept/Hold; Details holds the sender, the story and the checklist; blocked and unmet requirements stay in red |
 | Port | Part cards are two lines (name and price, then type and buttons); stats in the (i) popup; filter chips slide sideways; no help text |
-| Work (scavenging, mining) | The numbers and the button; no picture or story |
-| Map | The map first, no legend; the list of places below |
+| Refuel | The fuel gauge, one slider, the price line and three buttons (Fill, Max, Buy) |
+| Repair | One block: each part is name + price, bar, slider; then the total and one big Start repair button |
+| Work (scavenging, mining) | The numbers in a tight grid and the button; no picture or story |
+| Map | One screen: the map and a Places button. The list of places and a place's card come up as sheets over the map, so the page never scrolls away from it. Every screen opens at its top on a phone |
 | Report | The verdict, the pay and the numbers; no badge art or sender |
 | Popups | Bottom sheets |
 

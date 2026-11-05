@@ -74,10 +74,10 @@
   }
 
   /* Parts and Store: a sheet that rises from the bottom, opened from "Parts". */
-  .hangar-side.phone-sheet {
+  .phone-sheet {
     display: none;
   }
-  .hangar-side.phone-sheet.open {
+  .phone-sheet.open {
     display: block;
     position: fixed;
     left: 0;
@@ -356,5 +356,122 @@
     top: calc(64px + env(safe-area-inset-top, 0px));
     z-index: 25;
     box-shadow: var(--shadow-pop);
+  }
+}
+
+@media (max-width: 700px) {
+  /* the map: only the map and a "Places" button; the list and a place's card come up as sheets */
+  .map-phone-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .map-phone-bar .btn {
+    min-height: 44px;
+  }
+
+  /* refuel: the gauge on top says it all; one slider, one price line, the buttons */
+  .refuel-panel .lbl,
+  .refuel-summary {
+    display: none;
+  }
+  .refuel-panel .row-between {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .refuel-panel .row-between .btn {
+    flex: 1 1 40%;
+    min-height: 44px;
+  }
+  .refuel-panel .row-between .btn.primary {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  /* repair: each part is a name, its bar, a slider and the price; the summary is the total and one big button */
+  .repair-summary .statrow:not(.total) {
+    display: none;
+  }
+  .repair-summary .row-between {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .repair-summary .row-between > .btn.primary {
+    min-height: 48px;
+  }
+  .repair-summary .stack-h {
+    display: flex;
+    gap: 8px;
+  }
+  .repair-summary .stack-h .btn {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  /* scavenging and mining: the numbers in a tight grid, the ways to do it as small choices */
+  .action-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .action-tiles li {
+    padding: 6px 8px;
+    min-width: 0;
+  }
+  .action-tiles li small {
+    font-size: 10px;
+  }
+  .action-tiles li b {
+    font-size: 14px;
+  }
+  .mine-lengths {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .mine-length {
+    padding: 8px 4px;
+    text-align: center;
+  }
+  .mine-length-time {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* a place's card: name, kind and zone, risk, where you stand and what is on offer - no picture, no story */
+  .place-details .place-art {
+    display: none;
+  }
+
+  /* repair: one block - each part on three short lines (name and price, bar, slider), the total under it
+     without a second frame */
+  .repair-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name cost'
+      'gauge gauge'
+      'slider slider';
+    gap: 6px 10px;
+    padding: 10px 12px;
+  }
+  .repair-row .rname {
+    grid-area: name;
+  }
+  .repair-row .rcost {
+    grid-area: cost;
+    text-align: right;
+  }
+  .repair-row > :nth-child(2) {
+    grid-area: gauge;
+  }
+  .repair-row > input[type='range'] {
+    grid-area: slider;
+  }
+  .repair-summary {
+    border: 0;
+    background: none;
+    padding: 8px 0 0;
   }
 }

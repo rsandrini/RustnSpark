@@ -3,6 +3,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useIsPhone } from '../../ui/use-phone';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
 import { client, serverNow } from '../../api/client';
 import type {
@@ -76,6 +77,9 @@ export function MapPage({ guided = false }: MapPageProps) {
       { replace: true },
     );
   const panelRef = useRef<HTMLElement>(null);
+  // Phones: the places list and a place's card are sheets over the map, so the map never scrolls away.
+  const phone = useIsPhone();
+  const [placesOpen, setPlacesOpen] = useState(false);
   const factions = useFactions().byId;
 
   const worldQuery = useQuery({
@@ -245,15 +249,21 @@ export function MapPage({ guided = false }: MapPageProps) {
     return { x: from.x + (to.x - from.x) * progress, y: from.y + (to.y - from.y) * progress };
   })();
 
+  // The map is always the first thing on this screen.
+  useEffect(() => {
+    if (phone) window.scrollTo?.(0, 0);
+  }, [phone]);
+
   useEffect(() => {
     if (
+      !phone &&
       selectedId !== null &&
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(max-width: 960px)').matches
     ) {
       panelRef.current?.scrollIntoView?.({ block: 'start' });
     }
-  }, [selectedId]);
+  }, [selectedId, phone]);
 
   if (worldQuery.isLoading || shipsQuery.isLoading) {
     return <main className="app">{t('loading')}</main>;
@@ -579,7 +589,34 @@ export function MapPage({ guided = false }: MapPageProps) {
           )}
         </div>
 
-        <aside className="map-panel" ref={panelRef}>
+        {phone && (
+          <div className="map-phone-bar">
+            <button type="button" className="btn" onClick={() => setPlacesOpen(true)}>
+              {t('map.places')}
+            </button>
+          </div>
+        )}
+        {phone && (selected !== undefined || placesOpen) && (
+          <div
+            className="phone-sheet-backdrop"
+            role="presentation"
+            onClick={() => {
+              setPlacesOpen(false);
+              setSelectedId(null);
+            }}
+          />
+        )}
+        <aside
+          className={`map-panel${phone ? ' phone-sheet' : ''}${phone && (selected !== undefined || placesOpen) ? ' open' : ''}`}
+          ref={panelRef}
+        >
+          {phone && selected === undefined && (
+            <div className="phone-sheet-head">
+              <button type="button" className="btn" onClick={() => setPlacesOpen(false)}>
+                {t('ui.close')}
+              </button>
+            </div>
+          )}
           {selected === undefined ? (
             <section className="map-places" aria-label={t('map.places')}>
               <h2 className="map-panel-title">{t('map.places')}</h2>
@@ -676,7 +713,7 @@ function PlaceDetails({
           t('map.zone', { zone: place.zone }),
         ].join(' · ')}
       </p>
-      <p>{description}</p>
+      <p className="help-text">{description}</p>
       <div className="row-between">
         <FactionBadge factionId={place.factionId} />
         <RiskBadge band={place.risk} />
