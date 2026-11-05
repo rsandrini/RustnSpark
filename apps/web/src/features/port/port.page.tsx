@@ -660,7 +660,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const repairOver = repairTotalCost > wallet;
   // Parts under the threshold are refused at every port; they can be repaired or discarded.
   const sellMin = marketQuery.data?.sellMinCondition ?? 1;
-  const damagedCount = partsOnSale.filter((item) => item.condition < sellMin).length;
+  const damagedCount = partsOnSale.filter(
+    (item) => item.condition < sellMin && item.inRepair !== true,
+  ).length;
   const refuelCost = costOf(wantedUnits);
   const repairBadge = damaged.length > 0 ? damaged.length : undefined;
 
@@ -782,13 +784,17 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             {partsOnSale.map((item) => {
               const offer = sellOfferOf(item.id);
               const tooDamaged = item.condition < sellMin;
+              // Paid for and still in the workshop: it can be fitted again, not sold.
+              const inRepair = item.inRepair === true;
               return (
                 <PartCard
                   key={item.id}
                   part={item}
                   price={offer ?? undefined}
                   priceCaption={t('port.portPays')}
-                  note={tooDamaged ? t('port.tooDamaged') : undefined}
+                  note={
+                    inRepair ? t('port.inRepair') : tooDamaged ? t('port.tooDamaged') : undefined
+                  }
                   actions={
                     <>
                       {embedded && onGoToShip !== undefined ? (
@@ -803,7 +809,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                       <button
                         type="button"
                         className="btn primary"
-                        disabled={offer === null}
+                        disabled={offer === null || inRepair}
                         onClick={() => {
                           setNotice(null);
                           setConfirm({

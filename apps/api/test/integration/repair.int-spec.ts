@@ -260,7 +260,7 @@ describe('repair job API (S8.4)', () => {
     });
   });
 
-  it('complete applies conditions once; second complete no-ops; sold part cannot wedge it', async () => {
+  it('complete applies conditions once; second complete no-ops; a vanished part cannot wedge it', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     const [part, other] = await damagedInstalledParts(player, [40, 60]);
@@ -273,7 +273,7 @@ describe('repair job API (S8.4)', () => {
     expect(started.status).toBe(200);
     const repairJobId = (started.body as { repairJobId: string }).repairJobId;
 
-    // Simulate sell-during-repair: one target row disappears before the worker runs.
+    // A target row that vanishes before the worker runs (however it went) must not wedge the job.
     await prisma.partInstance.delete({ where: { id: other.id } });
 
     const applied = await repairService.complete(repairJobId);
@@ -297,6 +297,60 @@ describe('repair job API (S8.4)', () => {
     expect(await prisma.partInstance.findUnique({ where: { id: part.id } })).toMatchObject({
       condition: 100,
     });
+  });
+
+  it('a part the workshop is still repairing cannot be sold or discarded, but can be taken off the ship; once the work is done it is free to sell', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const [part, wreck] = await damagedInstalledParts(player, [60, 10]);
+    if (!part || !wreck) throw new Error('expected two distinct installed parts');
+    const started = await startRepair(player.token, player.shipId, randomUUID(), [
+      { partInstanceId: part.id, toCondition: 100 },
+      { partInstanceId: wreck.id, toCondition: 100 },
+    ]);
+    expect(started.status).toBe(200);
+    const repairJobId = (started.body as { repairJobId: string }).repairJobId;
+
+    // working on the ship while it repairs stays possible: both parts come off the ship...
+    await prisma.partInstance.updateMany({
+      where: { id: { in: [part.id, wreck.id] } },
+      data: { location: 'INVENTORY', shipId: null },
+    });
+    // ...but neither can be sold,
+    for (const id of [part.id, wreck.id]) {
+      const refused = await request(httpServer(testApp.app))
+        .post('/v1/market/sell')
+        .set(auth(player.token))
+        .set('Idempotency-Key', randomUUID())
+        .send({ partInstanceId: id, expectedPrice: 1 });
+      expect(refused.status).toBe(409);
+      expect(refused.body).toMatchObject({ message: { error: 'PART_IN_REPAIR' } });
+    }
+    // the inventory says so,
+    const inventory = await request(httpServer(testApp.app))
+      .get('/v1/inventory')
+      .set(auth(player.token));
+    const flagged = (inventory.body as Array<{ id: string; inRepair: boolean }>)
+      .filter((item) => item.inRepair)
+      .map((item) => item.id)
+      .sort();
+    expect(flagged).toEqual([part.id, wreck.id].sort());
+    // and the clean-up of damaged parts leaves the one being repaired alone.
+    await request(httpServer(testApp.app))
+      .post('/v1/inventory/discard')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ sellScrap: false });
+    expect(await prisma.partInstance.findUnique({ where: { id: wreck.id } })).not.toBeNull();
+
+    // When the work is done the block is gone (a stale price now answers PRICE_CHANGED, not PART_IN_REPAIR).
+    await repairService.complete(repairJobId);
+    const free = await request(httpServer(testApp.app))
+      .post('/v1/market/sell')
+      .set(auth(player.token))
+      .set('Idempotency-Key', randomUUID())
+      .send({ partInstanceId: part.id, expectedPrice: 1 });
+    expect(free.body).not.toMatchObject({ message: { error: 'PART_IN_REPAIR' } });
   });
 
   it('repair start rejects invalid targets without charging', async () => {

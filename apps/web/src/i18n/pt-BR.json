@@ -1661,7 +1661,8 @@
         "RARITY_TOO_LOW": "Evolua esta ponte primeiro: não existe ponte 2×2 abaixo da raridade dela.",
         "NO_TARGET": "Ainda não existe ponte do tamanho de destino para esta raridade.",
         "TOO_DAMAGED_TO_SELL": "Danificada demais para vender: repare primeiro.",
-        "FORMAT_REQUIRES_BRIDGE": "O formato da sua nave exige uma ponte grande: troque para um formato menor primeiro."
+        "FORMAT_REQUIRES_BRIDGE": "O formato da sua nave exige uma ponte grande: troque para um formato menor primeiro.",
+        "PART_IN_REPAIR": "Essa peça ainda está em reparo: espere a oficina terminar."
       },
       "expandRow": "Vira {{target}} · custa {{cost}}",
       "shrinkRow": "Vira {{target}} · você recebe {{credit}}, a nova ponte custa {{cost}}",
@@ -1673,7 +1674,8 @@
     "sellAmount": "Quantidade",
     "sellAmountFor": "Quantas unidades de {{name}} vender",
     "sellSome": "Vender {{count}}",
-    "needMore": "Faltam {{amount}}"
+    "needMore": "Faltam {{amount}}",
+    "inRepair": "Em reparo: pode ser instalada, mas não vendida, até a oficina terminar."
   },
   "inventory": {
     "title": "Inventário",
@@ -2330,7 +2332,8 @@
     "ALREADY_REPORTED": "Você já denunciou isso e está aguardando análise.",
     "REPORT_LIMIT": "Você já enviou denúncias suficientes por hoje. Obrigado.",
     "REPORT_ALREADY_REVIEWED": "Esta denúncia já foi analisada.",
-    "MINING_TICKS_INVALID": "Essa duração de mineração não é permitida."
+    "MINING_TICKS_INVALID": "Essa duração de mineração não é permitida.",
+    "PART_IN_REPAIR": "Essa peça ainda está em reparo: espere a oficina terminar."
   },
   "language": {
     "label": "Idioma",

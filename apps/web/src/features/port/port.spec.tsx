@@ -11,6 +11,7 @@ import {
   setWallet,
   resetEconomyState,
   setShipActivity,
+  repairShop,
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
@@ -742,6 +743,24 @@ describe('port (S10.9)', () => {
     // No PRICE_CHANGED round trip: the sale goes through.
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/^Sold /));
     expect(queryByRoleSafe('alert')).toBeNull();
+  });
+
+  it('a part the workshop is still repairing cannot be sold: the button is off and the card says why', async () => {
+    repairShop.holdsEverything = true;
+    await renderPort();
+    await screen.findByText('Plated Hull');
+    fireEvent.click(rowButton('Plated Hull'));
+    const popup = await screen.findByRole('dialog');
+    fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
+    await screen.findByRole('status');
+
+    openPortTab('Your goods');
+    const sell = await screen.findAllByRole('button', { name: 'Sell' });
+    expect(sell[0]).toBeDisabled();
+    expect(
+      screen.getAllByText('In repair: it can be fitted, not sold, until the workshop is done.')
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('refreshes the wallet from the profile, never by rotating the session', async () => {

@@ -1,3 +1,4 @@
+import { parseTargets, type StoredTarget } from '../parts/under-repair.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -27,33 +28,7 @@ export interface RepairTargetInput {
   readonly toCondition: number;
 }
 
-export interface StoredTarget {
-  readonly partInstanceId: string;
-  readonly fromCondition: number;
-  readonly toCondition: number;
-}
-
-function parseTargets(raw: unknown): StoredTarget[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((entry) => {
-    if (typeof entry !== 'object' || entry === null) return [];
-    const candidate = entry as Record<string, unknown>;
-    if (
-      typeof candidate['partInstanceId'] !== 'string' ||
-      typeof candidate['fromCondition'] !== 'number' ||
-      typeof candidate['toCondition'] !== 'number'
-    ) {
-      return [];
-    }
-    return [
-      {
-        partInstanceId: candidate['partInstanceId'],
-        fromCondition: candidate['fromCondition'],
-        toCondition: candidate['toCondition'],
-      },
-    ];
-  });
-}
+export type { StoredTarget };
 
 export function repairSecondsPerPoint(rules: GameRules, zone: number): number {
   const table = rules.economy.repair_seconds_per_point;
