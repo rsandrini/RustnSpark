@@ -46,6 +46,7 @@ import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
+import { useIsPhone } from '../../ui/use-phone';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -182,6 +183,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       return next;
     });
   };
+  // Phones: Parts and Store are a sheet opened from the action bar, not a list under the yard.
+  const phone = useIsPhone();
+  const [partsOpen, setPartsOpen] = useState(false);
   const [sideTab, setSideTab] = useState<'parts' | 'store'>('parts');
   const [storeClass, setStoreClass] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<{ code?: string; problems: Problem[] } | null>(null);
@@ -632,6 +636,31 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           currentSheet: sheet,
         };
 
+  // Clear and Format: next to the main buttons on a desktop, behind "More" on a phone.
+  const secondaryActions = (
+    <>
+      <button
+        type="button"
+        className="btn"
+        disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
+        onClick={() => setClearOpen(true)}
+      >
+        {t('hangar.actions.clear')}
+      </button>
+      <span className="hangar-actions-sep" aria-hidden="true" />
+      <button
+        type="button"
+        className="btn"
+        onClick={() => {
+          void queryClient.invalidateQueries({ queryKey: ['shipFormats'] });
+          setFormatPickerOpen(true);
+        }}
+      >
+        {t('hangar.format.button')}
+      </button>
+    </>
+  );
+
   return (
     <main className="app wide" data-guided={guided ? '' : undefined}>
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
@@ -690,7 +719,9 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
       {pageTab === 'ship' && (
         <>
-          {modifyBlocked && <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>}
+          {modifyBlocked && !phone && (
+            <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>
+          )}
           {pendingPartId !== null && (
             <p className="sub" aria-live="polite">
               {t('hangar.state.selected', {
@@ -699,8 +730,26 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </p>
           )}
 
-          <div className="hangar-layout">
-            <section aria-label={t('hangar.tray')} className="hangar-side">
+          {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
+          <div className="hangar-layout" hidden={phone && modifyBlocked}>
+            {phone && partsOpen && (
+              <div
+                className="phone-sheet-backdrop"
+                role="presentation"
+                onClick={() => setPartsOpen(false)}
+              />
+            )}
+            <section
+              aria-label={t('hangar.tray')}
+              className={`hangar-side${phone ? ' phone-sheet' : ''}${phone && partsOpen ? ' open' : ''}`}
+            >
+              {phone && (
+                <div className="phone-sheet-head">
+                  <button type="button" className="btn" onClick={() => setPartsOpen(false)}>
+                    {t('hangar.mobile.close')}
+                  </button>
+                </div>
+              )}
               {/* A nested sub-menu (Parts/Store) inside the Ship tab: a different accent colour
                   and a bit of breathing room from the Ship/Board/Port tabs above it, so it
                   reads as a level down rather than a continuation of the same tab strip. */}
@@ -739,6 +788,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       onSelect={() => {
                         setPendingPartId(part.id);
                         setSelectedId(null);
+                        // on a phone the sheet gets out of the way so the pilot can tap a cell of the yard
+                        setPartsOpen(false);
                       }}
                       compare={trayCompareContext()}
                     />
@@ -806,22 +857,32 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 </div>
               )}
               <div className="hangar-actions">
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={selectedId === null || modifyBlocked}
-                  onClick={rotateSelected}
-                >
-                  {t('hangar.actions.rotate')}
-                </button>
-                <button
-                  type="button"
-                  className="btn danger"
-                  disabled={selectedId === null || modifyBlocked}
-                  onClick={removeSelected}
-                >
-                  {t('hangar.actions.remove')}
-                </button>
+                {phone && (
+                  <button type="button" className="btn" onClick={() => setPartsOpen(true)}>
+                    {t('hangar.mobile.parts', { count: trayParts.length })}
+                  </button>
+                )}
+                {/* on a phone Rotate and Remove only show while a part is selected */}
+                {(!phone || selectedId !== null) && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={selectedId === null || modifyBlocked}
+                      onClick={rotateSelected}
+                    >
+                      {t('hangar.actions.rotate')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn danger"
+                      disabled={selectedId === null || modifyBlocked}
+                      onClick={removeSelected}
+                    >
+                      {t('hangar.actions.remove')}
+                    </button>
+                  </>
+                )}
                 <span className="hangar-actions-sep" aria-hidden="true" />
                 <button
                   type="button"
@@ -856,25 +917,14 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 >
                   {auto.isPending ? t('hangar.state.arranging') : t('hangar.actions.auto')}
                 </button>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={clearShip.isPending || modifyBlocked || effectiveLayout.length === 0}
-                  onClick={() => setClearOpen(true)}
-                >
-                  {t('hangar.actions.clear')}
-                </button>
-                <span className="hangar-actions-sep" aria-hidden="true" />
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    void queryClient.invalidateQueries({ queryKey: ['shipFormats'] });
-                    setFormatPickerOpen(true);
-                  }}
-                >
-                  {t('hangar.format.button')}
-                </button>
+                {phone ? (
+                  <details className="hangar-more">
+                    <summary className="btn">{t('hangar.mobile.more')}</summary>
+                    <div className="hangar-more-body">{secondaryActions}</div>
+                  </details>
+                ) : (
+                  secondaryActions
+                )}
               </div>
               {rotateHint !== null && (
                 <p className="sub" role="status" data-testid="rotate-hint">

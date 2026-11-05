@@ -703,7 +703,12 @@
       "tag": "Outside the ship",
       "note": "{{count}} part(s) outside the ship: they do nothing until they are back inside the hull"
     },
-    "storedFuel": "Holds {{value}} fuel: it goes back aboard when installed"
+    "storedFuel": "Holds {{value}} fuel: it goes back aboard when installed",
+    "mobile": {
+      "parts": "Parts ({{count}})",
+      "more": "More",
+      "close": "Close"
+    }
   },
   "home": {
     "play": "Play",
@@ -2148,7 +2153,11 @@
       "open": "Open load: at least {{need}} units, and you take all the cargo space you have. Every unit beyond {{need}} pays {{pay}} ¢."
     },
     "shipFaults": "Your ship cannot take missions right now. Fix this first, then every offer opens again:",
-    "fixShip": "Fix it on the Ship screen"
+    "fixShip": "Fix it on the Ship screen",
+    "mobile": {
+      "details": "Details",
+      "unmet": "{{count}} requirement(s) not met"
+    }
   },
   "map": {
     "places": "Places",

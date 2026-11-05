@@ -703,7 +703,12 @@
       "tag": "Fora da nave",
       "note": "{{count}} peça(s) fora da nave: não fazem nada até voltarem para dentro do casco"
     },
-    "storedFuel": "Guarda {{value}} de combustível: volta para a nave quando instalado"
+    "storedFuel": "Guarda {{value}} de combustível: volta para a nave quando instalado",
+    "mobile": {
+      "parts": "Peças ({{count}})",
+      "more": "Mais",
+      "close": "Fechar"
+    }
   },
   "home": {
     "play": "Jogar",
@@ -2148,7 +2153,11 @@
       "open": "Carga aberta: no mínimo {{need}} unidades, e você leva todo o espaço de carga que tiver. Cada unidade além de {{need}} paga {{pay}} ¢."
     },
     "shipFaults": "Sua nave não pode aceitar missões agora. Corrija isto primeiro e as ofertas voltam a abrir:",
-    "fixShip": "Corrigir na tela da Nave"
+    "fixShip": "Corrigir na tela da Nave",
+    "mobile": {
+      "details": "Detalhes",
+      "unmet": "{{count}} requisito(s) não atendido(s)"
+    }
   },
   "map": {
     "places": "Lugares",

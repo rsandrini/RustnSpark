@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
@@ -743,6 +743,41 @@ describe('hangar (S10.4)', () => {
     expect(block(container, 'part-cargo-a')).toBeNull();
     // Both cargo units are loose now.
     expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(2);
+  });
+
+  describe('on a phone', () => {
+    beforeEach(() => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('max-width'),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('keeps Parts and Store in a sheet opened from the action bar, and shows Rotate/Remove only for a selected part', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const parts = await screen.findByRole('button', { name: /^Parts \(\d+\)$/ });
+      // nothing selected: no Rotate / Remove, and the tray sheet is closed
+      expect(screen.queryByRole('button', { name: 'Rotate' })).toBeNull();
+      expect(container.querySelector('.hangar-side.phone-sheet.open')).toBeNull();
+
+      fireEvent.click(parts);
+      expect(container.querySelector('.hangar-side.phone-sheet.open')).not.toBeNull();
+      // picking a part closes the sheet so a cell of the yard can be tapped
+      fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
+      expect(container.querySelector('.hangar-side.phone-sheet.open')).toBeNull();
+
+      // Clear and Format sit behind "More"
+      expect(screen.getByText('More')).toBeInTheDocument();
+
+      // a selected part brings Rotate and Remove
+      const cargo = block(container, 'part-cargo-a');
+      fireEvent.pointerDown(cargo as SVGRectElement);
+      expect(await screen.findByRole('button', { name: 'Rotate' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
+    });
   });
 
   it('lets a part go anywhere, even behind the engine, and outlines the engine as a problem', async () => {

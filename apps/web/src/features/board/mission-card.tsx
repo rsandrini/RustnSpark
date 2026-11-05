@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useIsPhone } from '../../ui/use-phone';
 import { useTranslation } from 'react-i18next';
 import type {
   DisplayResponse,
@@ -108,6 +109,120 @@ export function MissionCard({
   // "not enough" note would all say nothing. Unknown sheet (fuelUse not passed) keeps the row.
   const burnsFuel = fuelUse === undefined || fuelUse > 0;
 
+  // Phones: the card keeps what decides or monitors a mission (title, reward, route, risk, time, fuel, what is
+  // not met) and folds the rest (who sent it, the story, the checklist, the small print) behind "Details".
+  const phone = useIsPhone();
+  const unmet = offer.info.requirements.filter((req) => !req.met);
+
+  const intro = (
+    <>
+      {/* Who is sending the pilot (plan §1): the face on the card; offers made before givers
+      existed simply show none. */}
+      {info.giver != null && (
+        <div
+          className="mcard-giver"
+          data-testid="mcard-giver"
+          aria-label={t('givers.offeredBy', { name: info.giver.name })}
+        >
+          <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} size="card" />
+        </div>
+      )}
+
+      {/* The giver's brief in their own voice when they have one, else the template text —
+      the server substitutes before the web ever sees it. */}
+      <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
+    </>
+  );
+
+  const rest = (
+    <>
+      <div className="mcard-needs">
+        <b>{t('board.needsTitle')}</b>
+        {offer.info.requirements.length === 0 ? (
+          <span> {t(`board.needs.${offer.type}`)}</span>
+        ) : (
+          <ul className="mcard-requirements">
+            {offer.info.requirements.map((req) => (
+              <li key={req.code} className={req.met ? 'req-met' : 'req-unmet'}>
+                <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
+                  {req.met ? '✓' : '✗'}
+                </span>
+                {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
+                {req.needed !== undefined && req.actual !== undefined && (
+                  <span className="req-numbers" data-testid={`req-${req.code}`}>
+                    {t('board.requirementNumbers', {
+                      actual: requirementNumber(req.actual, req.unit, display),
+                      needed: requirementNumber(req.needed, req.unit, display),
+                    })}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {offer.info.cargo != null && offer.info.cargo.mode !== 'min' && (
+        <p className="mcard-cargo sub" data-testid="mcard-cargo">
+          {offer.info.cargo.mode === 'fixed'
+            ? t('board.cargo.fixed', { need: offer.info.cargo.need })
+            : t('board.cargo.open', {
+                need: offer.info.cargo.need,
+                pay: offer.info.cargo.unitPay,
+              })}
+        </p>
+      )}
+
+      <div className="mcard-meta">
+        {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
+        {/* A mission under way no longer has a start deadline. */}
+        {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <span className="sub">
+            {expired ? (
+              t('board.expiredLabel')
+            ) : (
+              <>
+                {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
+                <Countdown until={offer.expiresAt} />
+              </>
+            )}
+          </span>
+        )}
+        {!taken && (
+          <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+            {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+          </span>
+        )}
+        {offer.privatePlayerId !== null && (
+          <span className="badge ok" data-testid="starter-badge">
+            {t('board.starterBadge')}
+          </span>
+        )}
+        {offer.status !== 'AVAILABLE' && (
+          <span className="badge">
+            {t(`board.status.${offer.status}`)}
+            {mine && offer.status === 'HELD' ? '' : ''}
+          </span>
+        )}
+      </div>
+
+      {taken &&
+        engineLevels !== undefined &&
+        (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+          <p className="sub" data-testid="mcard-engines">
+            {t('board.engineLevels', {
+              chem: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.chem,
+              ),
+              ion: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
+                engineLevels.ion,
+              ),
+            })}
+          </p>
+        )}
+    </>
+  );
+
   return (
     <article
       className={`mcard type-${offer.type.toLowerCase()}${side !== undefined ? ' mcard-with-side' : ''}`}
@@ -138,21 +253,7 @@ export function MissionCard({
           {destination !== undefined && <RiskBadge band={destination.risk} />}
         </div>
 
-        {/* Who is sending the pilot (plan §1): the face on the card; offers made before givers
-          existed simply show none. */}
-        {info.giver != null && (
-          <div
-            className="mcard-giver"
-            data-testid="mcard-giver"
-            aria-label={t('givers.offeredBy', { name: info.giver.name })}
-          >
-            <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} size="card" />
-          </div>
-        )}
-
-        {/* The giver's brief in their own voice when they have one, else the template text —
-          the server substitutes before the web ever sees it. */}
-        <p className="mcard-desc">{pickLocalized(info.description, i18n.language)}</p>
+        {!phone && intro}
 
         {!hideMap && (
           <RouteMap path={pathOfLegs(offer.legs, world, offer.originId)} world={world} compact />
@@ -208,90 +309,22 @@ export function MissionCard({
             </div>
           )}
 
-        <div className="mcard-needs">
-          <b>{t('board.needsTitle')}</b>
-          {offer.info.requirements.length === 0 ? (
-            <span> {t(`board.needs.${offer.type}`)}</span>
-          ) : (
-            <ul className="mcard-requirements">
-              {offer.info.requirements.map((req) => (
-                <li key={req.code} className={req.met ? 'req-met' : 'req-unmet'}>
-                  <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
-                    {req.met ? '✓' : '✗'}
-                  </span>
-                  {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
-                  {req.needed !== undefined && req.actual !== undefined && (
-                    <span className="req-numbers" data-testid={`req-${req.code}`}>
-                      {t('board.requirementNumbers', {
-                        actual: requirementNumber(req.actual, req.unit, display),
-                        needed: requirementNumber(req.needed, req.unit, display),
-                      })}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {offer.info.cargo != null && offer.info.cargo.mode !== 'min' && (
-          <p className="mcard-cargo sub" data-testid="mcard-cargo">
-            {offer.info.cargo.mode === 'fixed'
-              ? t('board.cargo.fixed', { need: offer.info.cargo.need })
-              : t('board.cargo.open', {
-                  need: offer.info.cargo.need,
-                  pay: offer.info.cargo.unitPay,
-                })}
-          </p>
+        {phone ? (
+          <>
+            {unmet.length > 0 && (
+              <p className="mcard-unmet" data-testid="mcard-unmet">
+                {t('board.mobile.unmet', { count: unmet.length })}
+              </p>
+            )}
+            <details className="mcard-more">
+              <summary className="btn">{t('board.mobile.details')}</summary>
+              {intro}
+              {rest}
+            </details>
+          </>
+        ) : (
+          rest
         )}
-
-        <div className="mcard-meta">
-          {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
-          {/* A mission under way no longer has a start deadline. */}
-          {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
-            <span className="sub">
-              {expired ? (
-                t('board.expiredLabel')
-              ) : (
-                <>
-                  {t(taken ? 'board.startBefore' : 'board.expires')}{' '}
-                  <Countdown until={offer.expiresAt} />
-                </>
-              )}
-            </span>
-          )}
-          {!taken && (
-            <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-              {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-            </span>
-          )}
-          {offer.privatePlayerId !== null && (
-            <span className="badge ok" data-testid="starter-badge">
-              {t('board.starterBadge')}
-            </span>
-          )}
-          {offer.status !== 'AVAILABLE' && (
-            <span className="badge">
-              {t(`board.status.${offer.status}`)}
-              {mine && offer.status === 'HELD' ? '' : ''}
-            </span>
-          )}
-        </div>
-
-        {taken &&
-          engineLevels !== undefined &&
-          (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
-            <p className="sub" data-testid="mcard-engines">
-              {t('board.engineLevels', {
-                chem: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
-                  engineLevels.chem,
-                ),
-                ion: new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(
-                  engineLevels.ion,
-                ),
-              })}
-            </p>
-          )}
 
         {!taken && otherReasons.length > 0 && (
           <ul className="reasons">
