@@ -84,6 +84,28 @@ pnpm --filter api admin:create --email you@example.com --name Captain --password
 Log in on the web app; the Admin area appears for `ADMIN` accounts. Password, e-mail and name
 follow the same rules as registration (password 10–128 chars, name 3–24). Admin accounts cannot be banned through support actions.
 
+### 4.1 Emergency account tool (server shell)
+
+For when the web UI is not an option: someone is locked out, an account registered before you had an admin, a ban
+needs lifting. It runs **only on the server** (no web endpoint, no extra password: whoever can run Docker there already
+holds the database), and every change is written to the admin audit log with the actor `cli`.
+
+```bash
+bash scripts/account.sh                      # the full list of commands
+bash scripts/account.sh show --email you@example.com
+bash scripts/account.sh promote --email you@example.com      # an account that already exists becomes an admin
+bash scripts/account.sh demote --email you@example.com       # refuses the last admin without --force
+bash scripts/account.sh ban --email someone@example.com      # blocks and signs out everywhere (not for admins)
+bash scripts/account.sh unban --email someone@example.com
+bash scripts/account.sh set-password --email you@example.com --password '<10–128 chars>'   # also signs out everywhere
+bash scripts/account.sh list-admins
+```
+
+The script runs `node dist/admin/cli/account.cli.js` in the `api-prod` image (`docker compose --env-file .env.prod
+--profile prod run --rm api-prod ...`). Emails are matched without regard to letter case. Typing a password in the
+command leaves it in the shell history: start the line with a space (when `HISTCONTROL=ignorespace`) or change the
+password again from the game afterwards.
+
 ## 5. Backup and restore
 
 What matters, in order:

@@ -95,7 +95,8 @@ docker compose --env-file .env.prod --profile prod config --quiet     # validate
 docker compose --env-file .env.prod --profile prod up -d --build
 ```
 
-5. Create the first admin (there is no public path to one):
+5. Create the first admin (there is no public path to one). If you already registered the account, use
+   `bash scripts/account.sh promote --email you@example.com` instead (see `docs/operations.md` 4.1):
 
 ```bash
 docker compose --env-file .env.prod --profile prod run --rm api-prod \
