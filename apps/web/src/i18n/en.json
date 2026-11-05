@@ -2721,5 +2721,20 @@
     "title": "Something went wrong",
     "body": "The screen stopped working. The problem was reported. Reload to continue; your progress is saved.",
     "reload": "Reload"
+  },
+  "feedback": {
+    "accepted": "Mission accepted. Ready for departure.",
+    "held": "Mission held for you.",
+    "dispatched": "Ship dispatched.",
+    "dispatchedIn": "Ship dispatched. Arrives in {{time}}.",
+    "cancelled": "Mission cancelled.",
+    "scavenging": "Scavenging started.",
+    "mining": "Digging started.",
+    "saved": "Layout saved.",
+    "renamed": "Ship renamed.",
+    "nextMissions": "Missions",
+    "nextShip": "Ship",
+    "doneRefuel": "Filled",
+    "doneSave": "Saved"
   }
 }

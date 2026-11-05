@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useFeedback } from '../../ui/feedback';
 import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
 import { MissionRow } from './mission-row';
@@ -108,11 +109,13 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     setActionError(errorText(t, error, t('board.failed')));
   };
 
+  const feedback = useFeedback();
   const accept = useMutation({
     mutationFn: (offer: MissionOffer) =>
       client.post(`/v1/missions/${offer.id}/accept`, { shipId: ship?.id ?? '' }),
     onSuccess: () => {
       setActionError(null);
+      feedback.notify(t('feedback.accepted'));
       invalidateBoard();
       // Loop step S10.10: accepted → the travel summary, where dispatch happens.
       if (embedded && onGoToShip !== undefined) {
@@ -127,6 +130,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
     mutationFn: (offer: MissionOffer) => client.post(`/v1/missions/${offer.id}/hold`),
     onSuccess: () => {
       setActionError(null);
+      feedback.notify(t('feedback.held'));
       invalidateBoard();
     },
     onError,

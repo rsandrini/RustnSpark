@@ -5,6 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { client, serverNow } from '../../api/client';
 import { errorText, priceChangedActualOf } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
+import { useAnswer, useFeedback, useNotice } from '../../ui/feedback';
 import type {
   InventoryItem,
   LocalizedText,
@@ -152,7 +153,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
     void queryClient.invalidateQueries({ queryKey: ['tutorial-progress'] });
   };
   const [confirm, setConfirm] = useState<ConfirmTrade | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { notice, setNotice } = useNotice();
+  const feedback = useFeedback();
   const [actionError, setActionError] = useState<string | null>(null);
   const [repairTargets, setRepairTargets] = useState<Record<string, number>>({});
   const [repairPlan, setRepairPlan] = useState<RepairPlan | null>(null);
@@ -422,12 +424,16 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       refuelKey.clear();
       setRefuelUnits(null);
       setActionError(null);
-      setNotice(t('port.refueled', { units: response.units, cost: response.cost }));
+      setNotice(t('port.refueled', { units: response.units, cost: response.cost }), {
+        next: { label: t('feedback.nextMissions'), to: '/missions' },
+      });
       tutorialTick('refuelled');
       afterTrade();
     },
     onError: (error) => setActionError(errorText(t, error, t('port.failed'))),
   });
+
+  const refuelAnswer = useAnswer(refuel.isPending, refuel.isSuccess);
 
   // Repair is priced by the server before it is charged. The quote is asked for every time the
   // plan changes (per-part price and time plus the workshop fee), so the screen always shows
@@ -536,6 +542,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }),
     onSuccess: () => {
       setActionError(null);
+      feedback.notify(t('feedback.scavenging'), { takeoff: true });
       tutorialTick('worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
@@ -565,6 +572,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       }),
     onSuccess: () => {
       setActionError(null);
+      feedback.notify(t('feedback.mining'), { takeoff: true });
       tutorialTick('worked');
       void queryClient.invalidateQueries({ queryKey: ['active'] });
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
@@ -1153,11 +1161,13 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 </button>
                 <button
                   type="button"
-                  className="btn primary"
+                  className={`btn primary${refuelAnswer === 'busy' ? ' answer-busy' : refuelAnswer === 'done' ? ' answer-done' : ''}`}
                   disabled={wantedUnits <= 0 || refuel.isPending || broke || refuelCost > wallet}
                   onClick={() => refuel.mutate(wantedUnits)}
                 >
-                  {t('port.refuelBuy', { units: wantedUnits })}
+                  {refuelAnswer === 'done'
+                    ? t('feedback.doneRefuel')
+                    : t('port.refuelBuy', { units: wantedUnits })}
                 </button>
               </div>
             </div>

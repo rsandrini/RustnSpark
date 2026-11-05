@@ -30,3 +30,6 @@ beforeAll(async () => {
 });
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+
+// jsdom does not scroll; the phone layout scrolls to the top on a new screen.
+window.scrollTo = () => undefined;

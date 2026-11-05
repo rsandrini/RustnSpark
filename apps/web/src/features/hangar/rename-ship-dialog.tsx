@@ -6,6 +6,7 @@ import { client } from '../../api/client';
 import { describeError } from '../../api/errors';
 import { useIntentKey } from '../../api/intent-key';
 import { Popup } from '../../ui/Popup';
+import { useFeedback } from '../../ui/feedback';
 
 const MAX_LENGTH = 20;
 
@@ -42,6 +43,7 @@ export function RenameShipDialog({
 
   // One key per intent: a retry of the same name reuses it, so a lost response can never charge twice.
   const intent = useIntentKey();
+  const feedback = useFeedback();
   const save = useMutation({
     mutationFn: () =>
       client.post<RenameQuote>(
@@ -51,6 +53,7 @@ export function RenameShipDialog({
       ),
     onSuccess: () => {
       intent.clear();
+      feedback.notify(t('feedback.renamed'));
       void queryClient.invalidateQueries({ queryKey: ['ships'] });
       void queryClient.invalidateQueries({ queryKey: ['renameQuote', shipId] });
       void queryClient.invalidateQueries({ queryKey: ['me'] });

@@ -1,0 +1,217 @@
+/* What a pilot sees after an action: the message under the top bar, the ship on the line, the busy and done
+   look of a button, the wallet answering. Desktop and phone. Motion is only for people who have not asked for
+   less of it. */
+
+.feedback-strip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(env(safe-area-inset-top, 0px) + 56px);
+  height: 3px;
+  z-index: 45;
+  pointer-events: none;
+}
+.feedback-ship {
+  position: absolute;
+  top: -9px;
+  left: -30px;
+  width: 28px;
+  height: 20px;
+  fill: var(--orange, #ff8a3d);
+  opacity: 0;
+}
+
+.feedback-toast {
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  z-index: 46;
+  width: min(460px, calc(100vw - 20px));
+  transform: translate(-50%, -140%);
+  opacity: 0;
+  pointer-events: none;
+}
+.feedback-toast.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.feedback-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--ok, #4cc38a);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--ok, #4cc38a) 14%, var(--paper-2, #0e1322));
+  color: var(--ink, #eef0f6);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+.feedback-tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ok, #4cc38a);
+  color: #05160d;
+  font-weight: 900;
+}
+.feedback-msg {
+  flex: 1;
+  font-size: var(--text-sm, 14px);
+  line-height: 1.25;
+}
+.feedback-next,
+.feedback-close {
+  flex: none;
+  min-height: 40px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.feedback-next {
+  color: var(--ok, #4cc38a);
+  font-weight: 700;
+}
+.feedback-close {
+  color: var(--muted, #8a92a8);
+  font-size: 20px;
+}
+
+/* a button at work and just after */
+.btn[aria-busy='true'],
+.btn.answer-busy {
+  position: relative;
+  pointer-events: none;
+}
+.btn[aria-busy='true']::before,
+.btn.answer-busy::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+.btn.answer-done,
+.btn.primary.answer-done,
+.btn.answer-done:disabled {
+  /* the hover, focus and disabled looks of a primary button must not wash the answer out */
+  background: var(--ok, #4cc38a) !important;
+  border-color: var(--ok, #4cc38a) !important;
+  color: #05160d !important;
+  opacity: 1 !important;
+}
+
+/* the wallet answers a purchase, a repair or a reward: a pulse and the amount floating up */
+.wallet-chip {
+  position: relative;
+}
+.wallet-delta {
+  position: absolute;
+  right: 60px;
+  top: 50px;
+  z-index: 47;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+}
+.wallet-delta.gain {
+  color: var(--ok, #4cc38a);
+}
+.wallet-delta.loss {
+  color: var(--bad, #ef5b5b);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .feedback-toast {
+    transition:
+      transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2),
+      opacity 0.25s;
+  }
+  .feedback-ship {
+    animation: feedback-fly 1s ease-in forwards;
+  }
+  .btn[aria-busy='true']::before,
+  .btn.answer-busy::before {
+    animation: feedback-spin 0.6s linear infinite;
+  }
+  .btn.answer-done {
+    animation: feedback-pop 0.35s ease-out;
+  }
+  .wallet-chip.pulse {
+    animation: feedback-pulse 0.9s ease-out;
+  }
+  .wallet-delta.go {
+    animation: feedback-float 1.3s ease-out forwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* nothing moves; the message, the colour and the numbers still change */
+  .wallet-delta.go {
+    opacity: 1;
+  }
+  .feedback-ship {
+    display: none;
+  }
+}
+@keyframes feedback-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes feedback-pop {
+  0% {
+    transform: scale(0.94);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes feedback-fly {
+  0% {
+    left: -30px;
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 1;
+  }
+}
+@keyframes feedback-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(255 138 61 / 0.7);
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(255 138 61 / 0);
+    transform: scale(1);
+  }
+}
+@keyframes feedback-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}

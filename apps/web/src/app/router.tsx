@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 import { useIsPhone } from '../ui/use-phone';
+import { FeedbackProvider } from '../ui/feedback';
 import { AuthProvider, useAuthContext } from '../features/auth/auth.context';
 import { LoginPage } from '../features/auth/login.page';
 import { ProtectedRoute, RequireFaction } from '../features/auth/protected-route';
@@ -77,10 +78,10 @@ function AppChrome() {
   const { user } = useAuthContext();
   const inGame = user?.factionId != null;
   return (
-    <>
+    <FeedbackProvider>
       {inGame ? <InGameChrome /> : <LanguageSwitcher />}
       <Outlet />
-    </>
+    </FeedbackProvider>
   );
 }
 

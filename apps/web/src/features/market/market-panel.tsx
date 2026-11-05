@@ -10,6 +10,7 @@ import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
+import { useNotice, type FeedbackOptions } from '../../ui/feedback';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
 import type { PartCompareContext } from '../parts/part-detail';
 import { classOfGroup, matchesPartGroup, partGroupOf } from '../parts/part-group';
@@ -29,7 +30,7 @@ export interface MarketPanelProps {
   /** Pre-selects a part-class chip (e.g. from a viability hint); `null` shows everything. */
   presetClass?: string | null;
   /** When the host page shows notices itself (the Port does), purchases report here instead. */
-  onNotice?: (message: string | null) => void;
+  onNotice?: (message: string | null, options?: FeedbackOptions) => void;
   /** Show the pilot's credits above the offers (the Hangar has no wallet header of its own). */
   showBalance?: boolean;
   /** Compare column (round-2 plan §5b item 4): the ship to compare against, its currently
@@ -60,9 +61,9 @@ export function MarketPanel({
   const queryClient = useQueryClient();
   const buyKey = useIntentKey();
   const [confirm, setConfirm] = useState<ConfirmBuy | null>(null);
-  const [ownNotice, setOwnNotice] = useState<string | null>(null);
-  const notice = onNotice === undefined ? ownNotice : null;
-  const setNotice = onNotice ?? setOwnNotice;
+  const own = useNotice();
+  const notice = onNotice === undefined ? own.notice : null;
+  const setNotice = onNotice ?? own.setNotice;
   const [actionError, setActionError] = useState<string | null>(null);
   const [partClass, setPartClass] = useState<string | null>(presetClass);
   const [search, setSearch] = useState('');
@@ -96,7 +97,9 @@ export function MarketPanel({
       const boughtName = confirm?.name ?? '';
       setConfirm(null);
       setActionError(null);
-      setNotice(t('port.bought', { name: boughtName, price: response.price }));
+      setNotice(t('port.bought', { name: boughtName, price: response.price }), {
+        next: { label: t('feedback.nextShip'), to: '/ship' },
+      });
       // Profile only (wallet): a session refresh per trade would rotate the refresh token.
       void reloadProfile();
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });

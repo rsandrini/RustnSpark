@@ -8,6 +8,7 @@ import { useDialogueActions, useDialogueState } from '../features/dialogue/use-d
 import { pickLocalized } from '../i18n/localized';
 import { LanguageSwitcher } from '../i18n/language-switcher';
 import { APP_VERSION } from '../version';
+import { useWalletAnswer } from './use-wallet-answer';
 import { BugReportDialog } from './BugReportDialog';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
@@ -44,6 +45,11 @@ export function AccountMenu() {
     if (!open) setTalkOpen(false);
   }, [open]);
   const credits = `${new Intl.NumberFormat(i18n.language).format(user?.credits ?? 0)} ¢`;
+  const walletAnswer = useWalletAnswer(
+    user?.credits,
+    (amount) =>
+      `${amount > 0 ? '+' : '\u2212'}${new Intl.NumberFormat(i18n.language).format(Math.abs(amount))} ¢`,
+  );
 
   useEffect(() => {
     if (!open) return undefined;
@@ -63,9 +69,23 @@ export function AccountMenu() {
 
   return (
     <div className="shell-account" ref={root}>
-      <span className="wallet-chip" data-testid="topbar-wallet" aria-label={t('port.wallet')}>
+      <span
+        className={`wallet-chip${walletAnswer.pulse ? ' pulse' : ''}`}
+        data-testid="topbar-wallet"
+        aria-label={t('port.wallet')}
+      >
         {credits}
       </span>
+      {walletAnswer.delta !== null && (
+        <span
+          key={walletAnswer.key}
+          className={`wallet-delta go ${walletAnswer.delta.startsWith('+') ? 'gain' : 'loss'}`}
+          aria-hidden="true"
+          data-testid="wallet-delta"
+        >
+          {walletAnswer.delta}
+        </span>
+      )}
       <button
         type="button"
         className="avatar"

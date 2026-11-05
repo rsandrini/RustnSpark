@@ -2721,5 +2721,20 @@
     "title": "Algo deu errado",
     "body": "A tela parou de funcionar. O problema foi reportado. Recarregue para continuar; seu progresso está salvo.",
     "reload": "Recarregar"
+  },
+  "feedback": {
+    "accepted": "Missão aceita. Pronta para partir.",
+    "held": "Missão reservada para você.",
+    "dispatched": "Nave despachada.",
+    "dispatchedIn": "Nave despachada. Chega em {{time}}.",
+    "cancelled": "Missão cancelada.",
+    "scavenging": "Busca de sucata iniciada.",
+    "mining": "Mineração iniciada.",
+    "saved": "Layout salvo.",
+    "renamed": "Nome da nave alterado.",
+    "nextMissions": "Missões",
+    "nextShip": "Nave",
+    "doneRefuel": "Abastecido",
+    "doneSave": "Salvo"
   }
 }

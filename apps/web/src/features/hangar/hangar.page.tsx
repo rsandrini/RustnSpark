@@ -47,6 +47,7 @@ import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
 import { useIsPhone } from '../../ui/use-phone';
+import { useAnswer, useFeedback } from '../../ui/feedback';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -281,6 +282,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, ship]);
 
+  const feedback = useFeedback();
   const save = useMutation({
     mutationFn: () =>
       client.post<ShipResponse>(`/v1/ships/${ship?.id ?? ''}/assemble`, {
@@ -289,6 +291,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     onSuccess: (updated) => {
       setLayout(updated.layout);
       setSaved(true);
+      feedback.notify(t('feedback.saved'));
       setSaveError(null);
       setSelectedId(null);
       setPendingPartId(null);
@@ -297,6 +300,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     },
     onError: (error) => setSaveError({ code: errorCodeOf(error), problems: problemsOf(error) }),
   });
+
+  const saveAnswer = useAnswer(save.isPending, save.isSuccess);
 
   // Empty the ship: every installed part goes back to the inventory (after a confirmation).
   const [clearOpen, setClearOpen] = useState(false);
@@ -886,7 +891,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 <span className="hangar-actions-sep" aria-hidden="true" />
                 <button
                   type="button"
-                  className="btn primary"
+                  className={`btn primary${saveAnswer === 'busy' ? ' answer-busy' : saveAnswer === 'done' ? ' answer-done' : ''}`}
                   disabled={!dirty || save.isPending || modifyBlocked}
                   onClick={() => {
                     setSaved(false);
@@ -901,7 +906,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     save.mutate();
                   }}
                 >
-                  {save.isPending ? t('hangar.state.saving') : t('hangar.actions.save')}
+                  {save.isPending
+                    ? t('hangar.state.saving')
+                    : saveAnswer === 'done'
+                      ? t('feedback.doneSave')
+                      : t('hangar.actions.save')}
                 </button>
                 <button
                   type="button"
@@ -950,7 +959,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       })}
                 </p>
               )}
-              {saved && <p className="muted">{t('hangar.state.saved')}</p>}
+              {saved && !feedback.available && <p className="muted">{t('hangar.state.saved')}</p>}
 
               <Popup
                 open={overBudgetOpen}

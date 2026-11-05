@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useFeedback } from '../../ui/feedback';
+import { formatDuration } from '../../ui/duration';
 import { client, serverNow } from '../../api/client';
 import { errorText } from '../../api/errors';
 import type {
@@ -97,6 +99,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     void queryClient.invalidateQueries({ queryKey: ['active'] });
     void queryClient.invalidateQueries({ queryKey: ['ships'] });
   };
+  const feedback = useFeedback();
   const dispatch = useMutation({
     mutationFn: async () => {
       // A slider moved a moment ago may not be saved yet: the trip flies with the levels shown.
@@ -108,6 +111,12 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
     onSuccess: (response) => {
       setDispatchServerTime(response.serverTime);
       setActionError(null);
+      feedback.notify(
+        response.durationSeconds !== undefined
+          ? t('feedback.dispatchedIn', { time: formatDuration(response.durationSeconds, t) })
+          : t('feedback.dispatched'),
+        { takeoff: true },
+      );
       // Watch this flight from the moment it leaves: a flight of a few seconds (the first one to the test
       // pad) can be over before the page ever sees it in the active list, and the pilot must still be
       // taken to its report.
@@ -128,6 +137,7 @@ export function TransitPage({ guided = false, embedded = false, onGoToBoard }: T
         : client.post(`/v1/missions/${mission?.id ?? ''}/abandon`),
     onSuccess: () => {
       setActionError(null);
+      feedback.notify(t('feedback.cancelled'));
       invalidateActive();
       void queryClient.invalidateQueries({ queryKey: ['board'] });
     },

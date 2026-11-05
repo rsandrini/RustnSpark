@@ -30,6 +30,7 @@ import './styles/tutorial.css';
 import './styles/guide.css';
 import './styles/giver.css';
 import './styles/dialogue.css';
+import './styles/feedback.css';
 import './styles/mobile.css';
 
 initObservability();
