@@ -40,6 +40,8 @@ export interface MissionCardProps {
       the "can you take it" verdict. `hideMap` leaves out the drawing when the host shows one. */
   taken?: boolean;
   hideMap?: boolean;
+  /** Phones: fold the story and checklist behind "Details" (default). A host that already folds the card (the board row) turns it off. */
+  foldDetails?: boolean;
   /** Something drawn inside the card beside the details (about half of it), e.g. the trip map. */
   side?: ReactNode;
   /** A taken mission that has not left yet: the levels the engines will run at (engine tuning). */
@@ -71,6 +73,7 @@ export function MissionCard({
   world,
   taken = false,
   hideMap = false,
+  foldDetails = true,
   side,
   engineLevels,
 }: MissionCardProps) {
@@ -111,7 +114,7 @@ export function MissionCard({
 
   // Phones: the card keeps what decides or monitors a mission (title, reward, route, risk, time, fuel, what is
   // not met) and folds the rest (who sent it, the story, the checklist, the small print) behind "Details".
-  const phone = useIsPhone();
+  const phone = useIsPhone() && foldDetails;
   const unmet = offer.info.requirements.filter((req) => !req.met);
 
   const intro = (

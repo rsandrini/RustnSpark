@@ -583,7 +583,7 @@ export function MapPage({ guided = false }: MapPageProps) {
           {selected === undefined ? (
             <section className="map-places" aria-label={t('map.places')}>
               <h2 className="map-panel-title">{t('map.places')}</h2>
-              <p className="sub">{t('map.hint')}</p>
+              <p className="sub help-text">{t('map.hint')}</p>
               <ul className="map-places-list">
                 {nearest.map((place) => (
                   <li key={place.id}>

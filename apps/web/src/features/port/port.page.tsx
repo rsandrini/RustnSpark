@@ -911,7 +911,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               {...(repairing ? ({ inert: '' } as object) : {})}
             >
               {damaged.length === 0 && <p className="sub">{t('port.repairNoDamage')}</p>}
-              {damaged.length > 0 && <p className="sub">{t('port.repairHelp')}</p>}
+              {damaged.length > 0 && <p className="sub help-text">{t('port.repairHelp')}</p>}
               <div className="repair-list">
                 {damaged.map((item) => {
                   const condition = Math.round(item.condition);
@@ -1083,7 +1083,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                 : t('port.refuelGauge', { fuel: Math.round(fuel), cap: Math.round(fuelCap) })
             }
           />
-          <p className="sub">{t('port.refuelHint')}</p>
+          <p className="sub help-text">{t('port.refuelHint')}</p>
           {noTank ? (
             <p className="sub">{t('port.refuelNoTank')}</p>
           ) : tankFull ? (
@@ -1167,7 +1167,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
 
       {tab === 'upgrade' && (
         <section className="stack" data-testid="upgrade">
-          <p className="sub">{t('port.upgradeHelp')}</p>
+          <p className="sub help-text">{t('port.upgradeHelp')}</p>
           <div className="upgrade-rules" data-testid="upgrade-rules">
             <b>{t('port.upgradeRulesTitle')}</b>
             <ol>
@@ -1661,7 +1661,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             <ActionArt kind="mining" />
             <div>
               <h2>{t('port.mine.title')}</h2>
-              <p className="sub">{t('port.mine.what')}</p>
+              <p className="sub help-text">{t('port.mine.what')}</p>
             </div>
           </header>
           <ul className="action-tiles" data-testid="mine-tiles">

@@ -206,3 +206,155 @@
     width: 100%;
   }
 }
+
+/* ---- the other screens on a phone: the essentials, the rest one tap away ---------------------------------- */
+@media (max-width: 700px) {
+  /* less air at the top, smaller page titles, no help paragraphs (the guide and the details have them) */
+  .app {
+    padding-top: 8px;
+  }
+  .app h1.display,
+  .topbar h1 {
+    font-size: 30px;
+    line-height: 1.1;
+  }
+  .help-text,
+  .upgrade-rules {
+    display: none;
+  }
+
+  /* filter chips: one row you slide sideways, not five rows of wrapped pills */
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+  .chips > * {
+    flex: 0 0 auto;
+  }
+
+  /* the missions board: title, route, time, risk, reward and the two buttons. The sender, the faction, the
+     countdown and the "eligible" pills are inside Details; what blocks you stays in red. */
+  .mrow-badges > :not(.badge.warn) {
+    display: none;
+  }
+  .mrow-needs li.met {
+    display: none;
+  }
+  .fuel-chip.fuel-ok {
+    display: none;
+  }
+  .mrow-actions .btn {
+    min-height: 44px;
+  }
+
+  /* part cards (market, your goods, upgrades): a name, the price and the button; stats are in the (i) popup */
+  .pcard-summary,
+  .pcard:not(.broken) .pcard-note {
+    display: none;
+  }
+  .pcard {
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .pcard-actions .btn {
+    min-height: 44px;
+  }
+
+  /* work tabs (scavenging, mining): no picture and no story, the numbers and the button */
+  .action-art,
+  .action-hero .sub {
+    display: none;
+  }
+
+  /* the sector map: a smaller header, no legend */
+  .map-stage {
+    height: min(52vh, 420px);
+  }
+  .legend {
+    display: none;
+  }
+  .map-panel-title {
+    font-size: 24px;
+  }
+
+  /* the mission report: the verdict, the pay and the numbers - not the badge art or the sender */
+  .debrief-art,
+  .debrief-glyph,
+  .debrief-giver {
+    display: none;
+  }
+  .debrief-outcome {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* a part card is two lines: the name and the price, then what it is and the buttons */
+  .market-panel .pcard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'title price'
+      'meta actions';
+    align-items: center;
+    column-gap: 10px;
+  }
+  .market-panel .pcard-head {
+    display: contents;
+  }
+  .market-panel .pcard-title-row {
+    grid-area: title;
+    min-width: 0;
+  }
+  .market-panel .pcard-price {
+    grid-area: price;
+    text-align: right;
+  }
+  .market-panel .pcard-price small {
+    display: none;
+  }
+  .market-panel .pcard-meta {
+    grid-area: meta;
+    min-width: 0;
+    font-size: var(--text-xs);
+  }
+  .market-panel .pcard-actions {
+    grid-area: actions;
+    display: flex;
+    gap: 6px;
+    margin: 0;
+  }
+  .market-panel .pcard > :not(.pcard-head):not(.pcard-meta):not(.pcard-actions):not(.compare-hover-card) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  /* scavenging: the two ways to search are a choice, not a lesson */
+  .scav-modes .sub,
+  .pcard-meta .connector-grid {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  /* upgrades: the card says what is missing; the "where does scrap come from" sentence is in the guide */
+  .upgrade-where {
+    display: none;
+  }
+
+  /* The confirmation after an action (accepted, bought, filled the tank...) stays on screen under the top bar
+     while the list it belongs to is in view, instead of sitting off-screen where the button was tapped. */
+  .notice[role='status'] {
+    position: sticky;
+    top: calc(64px + env(safe-area-inset-top, 0px));
+    z-index: 25;
+    box-shadow: var(--shadow-pop);
+  }
+}

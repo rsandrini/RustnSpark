@@ -173,6 +173,7 @@ export function MissionRow({
           destination={destination}
           mine={mine}
           actions={null}
+          foldDetails={false}
           taken={taken}
           {...(fuelHave !== undefined ? { fuelHave } : {})}
           {...(fuelCap !== undefined ? { fuelCap } : {})}
