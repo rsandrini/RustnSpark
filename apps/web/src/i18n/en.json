@@ -1666,7 +1666,8 @@
         "RARITY_TOO_LOW": "Upgrade this bridge first: there is no 2×2 bridge below its rarity.",
         "NO_TARGET": "No bridge of the target size exists for this rarity yet.",
         "TOO_DAMAGED_TO_SELL": "Too damaged to sell: repair it first.",
-        "FORMAT_REQUIRES_BRIDGE": "Your ship format needs a big bridge: switch to a smaller format first."
+        "FORMAT_REQUIRES_BRIDGE": "Your ship format needs a big bridge: switch to a smaller format first.",
+        "PART_IN_REPAIR": "That part is still being repaired: wait for the workshop to finish."
       },
       "expandRow": "Becomes {{target}} · costs {{cost}}",
       "shrinkRow": "Becomes {{target}} · you get {{credit}}, the new bridge costs {{cost}}",
@@ -1678,7 +1679,8 @@
     "sellAmount": "Amount",
     "sellAmountFor": "How many {{name}} to sell",
     "sellSome": "Sell {{count}}",
-    "needMore": "Need {{amount}} more"
+    "needMore": "Need {{amount}} more",
+    "inRepair": "In repair: it can be fitted, not sold, until the workshop is done."
   },
   "inventory": {
     "title": "Inventory",
@@ -2339,7 +2341,8 @@
     "ALREADY_REPORTED": "You already reported this and it is waiting for review.",
     "REPORT_LIMIT": "You have sent enough reports for today. Thank you.",
     "REPORT_ALREADY_REVIEWED": "This report was already reviewed.",
-    "MINING_TICKS_INVALID": "That mining length is not allowed."
+    "MINING_TICKS_INVALID": "That mining length is not allowed.",
+    "PART_IN_REPAIR": "That part is still being repaired: wait for the workshop to finish."
   },
   "language": {
     "label": "Language",

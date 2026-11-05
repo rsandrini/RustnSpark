@@ -1,3 +1,4 @@
+import { partsUnderRepair } from '../parts/under-repair.js';
 import type { Prisma } from '@prisma/client';
 import { toJsonInput } from '../common/prisma-json.js';
 import {
@@ -394,6 +395,10 @@ export class MarketService {
     if (!part || part.ownerPlayerId !== playerId) {
       throw new NotFoundException('part not found');
     }
+    // A part the workshop is still repairing (paid for) cannot be sold: its price would climb with the work.
+    if ((await partsUnderRepair(this.prisma, playerId)).has(part.id)) {
+      throw new ConflictException({ error: 'PART_IN_REPAIR' });
+    }
     if (part.condition < this.config.snapshot().rules.economy.sell_min_condition) {
       throw new ConflictException({ error: 'TOO_DAMAGED_TO_SELL' });
     }
@@ -454,6 +459,10 @@ export class MarketService {
       });
       if (!fresh || fresh.ownerPlayerId !== playerId) {
         throw new NotFoundException('part not found');
+      }
+      // Re-checked under the part's lock: a repair started since the first look still blocks the sale.
+      if ((await partsUnderRepair(tx, playerId)).has(fresh.id)) {
+        throw new ConflictException({ error: 'PART_IN_REPAIR' });
       }
       if (fresh.location === 'INSTALLED' && fresh.shipId && fresh.shipId !== part.shipId) {
         // Fitted between the pre-read and the lock — the one path that moves an

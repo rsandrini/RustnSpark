@@ -1,3 +1,4 @@
+import { partsUnderRepair } from './under-repair.js';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type PartCatalog as PartCatalogRow } from '@prisma/client';
 import type { Locale } from '../common/locale/locale.js';
@@ -46,6 +47,8 @@ export interface InventoryItem {
   connectors: ConnectorCell[];
   /** Fuel a tank carries while it is off the ship; it goes back aboard when installed again. */
   storedFuel: number;
+  /** The workshop is still repairing it: it cannot be sold or discarded until the work is done. */
+  inRepair: boolean;
 }
 
 export function bilingual(value: unknown): { en: string; 'pt-BR': string } {
@@ -173,6 +176,7 @@ export class PartsService {
   async inventory(playerId: string): Promise<InventoryItem[]> {
     // Through findPlayerParts so a repair in progress shows its gradual condition here too.
     const rows = await this.findPlayerParts(playerId);
+    const underRepair = await partsUnderRepair(this.prisma, playerId);
     return rows.map((row) => ({
       id: row.id,
       partType: row.partType,
@@ -192,6 +196,7 @@ export class PartsService {
       catalog: pickCatalogStats(row.partCatalog),
       connectors: (row.connectors as { cells: ConnectorCell[] } | null)?.cells ?? [],
       storedFuel: row.storedFuel,
+      inRepair: underRepair.has(row.id),
     }));
   }
 
@@ -226,10 +231,13 @@ export class PartsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const rows = await tx.partInstance.findMany({
-        where: { ownerPlayerId: playerId, location: 'INVENTORY', condition: { lt: threshold } },
-        select: { id: true, partType: true },
-      });
+      const underRepair = await partsUnderRepair(tx, playerId);
+      const rows = (
+        await tx.partInstance.findMany({
+          where: { ownerPlayerId: playerId, location: 'INVENTORY', condition: { lt: threshold } },
+          select: { id: true, partType: true },
+        })
+      ).filter((row) => !underRepair.has(row.id));
       if (rows.length === 0) return { discarded: 0, scrapSold: 0, credits: 0 };
       await tx.partInstance.deleteMany({ where: { id: { in: rows.map((row) => row.id) } } });
 

@@ -324,6 +324,8 @@ export const ship = (): ShipResponse => ({
 });
 
 let inventoryState: InventoryItem[] = starterInventory();
+/** A test switch: every loose part reads as still being repaired by the workshop. */
+export const repairShop = { holdsEverything: false };
 
 // A generated 1x1 layout as the API would list it: central on all four sides.
 const centralPorts = (): MarketListing['connectors'] =>
@@ -483,6 +485,7 @@ export function resetEconomyState(): void {
   rescueDueAt = null;
   rescueWaitMs = 600_000;
   inventoryState = starterInventory();
+  repairShop.holdsEverything = false;
   tutorialProgressState = {
     refuelled: false,
     repaired: false,
@@ -703,7 +706,13 @@ export const handlers = [
 
   http.get('/v1/ships/:id', () => ok<ShipResponse>(ship())),
 
-  http.get('/v1/inventory', () => ok<InventoryItem[]>(inventoryState)),
+  http.get('/v1/inventory', () =>
+    ok<InventoryItem[]>(
+      repairShop.holdsEverything
+        ? inventoryState.map((entry) => ({ ...entry, inRepair: true }))
+        : inventoryState,
+    ),
+  ),
 
   // The sign-in page's public data.
   http.get('/v1/public/landing', () =>
