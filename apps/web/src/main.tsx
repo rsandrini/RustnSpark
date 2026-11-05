@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App } from './app/app';
 import { CrashScreen } from './app/crash-screen';
 import { Sentry, initObservability } from './observability';
+import { installTouchGuards } from './ui/touch-guards';
 import './i18n';
 import '@fontsource/geist/latin-400.css';
 import '@fontsource/geist/latin-500.css';
@@ -29,8 +30,10 @@ import './styles/tutorial.css';
 import './styles/guide.css';
 import './styles/giver.css';
 import './styles/dialogue.css';
+import './styles/mobile.css';
 
 initObservability();
+installTouchGuards();
 
 const container = document.getElementById('root');
 if (!container) {

@@ -1,0 +1,36 @@
+/* Phones. Everything here only applies on a touch device or a narrow screen; desktop is untouched.
+   Loaded last on purpose, so it wins over the screen styles it adjusts. */
+
+/* iOS: a long press on a card or button opens the system menu (copy / look up / share) or starts a text
+   selection. The game has nothing to select on a touch screen except the form fields. The CSS below stops the
+   menu in most cases; src/ui/touch-guards.ts is the fallback for iOS versions where it does not. */
+@media (pointer: coarse) {
+  body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input,
+  textarea,
+  [contenteditable='true'],
+  .selectable {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+@media (max-width: 700px) {
+  /* The ship animation banner (and its "Hide animation" button, which sat on top of the ship and the menus)
+     is out on phones: it spends a third of the first screen and says nothing the status line does not. */
+  .ship-stage-overlay-host {
+    display: none;
+  }
+
+  /* The yard's toolbar: zoom is a pinch on the yard, and the colour mode is a desktop detail. Fit stays. */
+  .yard-zoom,
+  .yard-color-toggle {
+    display: none;
+  }
+}
