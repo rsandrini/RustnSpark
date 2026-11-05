@@ -371,9 +371,17 @@
   }
 
   /* refuel: the gauge on top says it all; one slider, one price line, the buttons */
-  .refuel-panel .lbl,
   .refuel-summary {
     display: none;
+  }
+  /* the slider's label stays for screen readers, out of sight */
+  .refuel-panel .lbl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
   .refuel-panel .row-between {
     flex-wrap: wrap;
@@ -473,5 +481,19 @@
     border: 0;
     background: none;
     padding: 8px 0 0;
+  }
+}
+
+@media (max-width: 700px) {
+  /* The row on a phone shows only the essentials, so the open card tells who sent it, from which faction and until
+     when (on a desktop the row above already says it and the card leaves it out). */
+  .mrow-details .mcard-giver {
+    display: block;
+  }
+  .mrow-details .mcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
 }

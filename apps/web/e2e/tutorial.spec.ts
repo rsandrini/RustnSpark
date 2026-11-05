@@ -32,7 +32,10 @@ test('the checklist ticks "Fill the tank" after a real refuel', async ({ page })
   await expect(step).toHaveClass(/done/);
 });
 
-test('a new pilot sees the recommended shield and battery on the Ship screen', async ({ page }) => {
+test('a new pilot sees the recommended shield and battery on the Ship screen', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name === 'phone', 'the newcomer hints are out on a phone (minimal layout)');
   await registerAndLaunch(page, 'sun');
   await page.goto('/ship');
   const needs = page.getByTestId('ship-needs');

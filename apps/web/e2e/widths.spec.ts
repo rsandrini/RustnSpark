@@ -18,7 +18,15 @@ async function measure(page: Page, label: string, width: number): Promise<void> 
       .filter((el) => {
         const box = el.getBoundingClientRect();
         // a map or yard svg scrolls or zooms inside its own box: only elements that stick out of the page count
-        return box.width > 0 && box.right > screenWidth + 1 && !el.closest('svg');
+        if (box.width === 0 || box.right <= screenWidth + 1 || el.closest('svg')) return false;
+        // a row of chips that slides sideways inside its own box (phones) is not the page overflowing
+        for (let up = el.parentElement; up !== null; up = up.parentElement) {
+          const overflow = getComputedStyle(up).overflowX;
+          if ((overflow === 'auto' || overflow === 'scroll') && up.scrollWidth > up.clientWidth) {
+            return false;
+          }
+        }
+        return true;
       })
       .slice(0, 3)
       .map((el) => `${el.tagName.toLowerCase()}.${String(el.getAttribute('class'))}`);

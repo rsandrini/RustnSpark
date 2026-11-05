@@ -38,10 +38,18 @@ test('the Getting started card is a plain checklist (the mentor speaks in dialog
   await expect(page.getByTestId('tutorial-mentor')).toHaveCount(0);
 });
 
-test('the board names the giver who offered a mission', async ({ page }) => {
+test('the board names the giver who offered a mission', async ({ page }, info) => {
   await registerAndLaunch(page, 'luna');
   await page.goto('/missions');
-  // The row's badge line carries the face of whichever seeded luna giver offered the job.
+  // The row's badge line carries the face of whichever seeded luna giver offered the job; on a phone the sender
+  // is inside the row's Details.
+  if (info.project.name === 'phone') {
+    await page.locator('.mrow-details > summary').first().click();
+    const sender = page.locator('.mrow-details[open] .mcard-giver').first();
+    await expect(sender).toBeVisible({ timeout: 15_000 });
+    await expect(sender).toContainText(/Ines Moura|Anselm Rao|Ottilie Brandt/);
+    return;
+  }
   const giver = page.locator('.mrow-badges .giver-badge').first();
   await expect(giver).toBeVisible({ timeout: 15_000 });
   await expect(giver).toContainText(/Ines Moura|Anselm Rao|Ottilie Brandt/);

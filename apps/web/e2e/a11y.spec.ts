@@ -54,8 +54,14 @@ test('the game screens and their states', async ({ page }, info) => {
   await page.goto('/ship');
   await expect(page.getByRole('heading', { name: 'My Ship' })).toBeVisible();
   await audit(page, `${width} /ship`);
+  // on a phone Parts and Store are a sheet that opens from the action bar
+  const partsButton = page.getByRole('button', { name: /^Parts \(\d+\)$/ });
+  if ((await partsButton.count()) > 0) await partsButton.click();
   await page.getByRole('tab', { name: 'Store' }).click();
   await audit(page, `${width} /ship store`);
+  if ((await partsButton.count()) > 0) {
+    await page.getByRole('button', { name: 'Close', exact: true }).first().click();
+  }
 
   await page.getByRole('button', { name: 'Account menu' }).click();
   await audit(page, `${width} account menu open`);
