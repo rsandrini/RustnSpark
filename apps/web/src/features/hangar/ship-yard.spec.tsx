@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { ConnectorCell, PartCatalogStats } from '../../api/generated';
 import { renderWithProviders } from '../../test/utils';
-import { ShipYard, labelAreaFactor, labelLines } from './ship-yard';
+import { ShipYard, labelAreaFactor, labelLines, showsHoverCard } from './ship-yard';
 
 describe('labelAreaFactor', () => {
   it('is 1 at and below the classic_square baseline (20×20 = 400 cells) — never scales up', () => {
@@ -16,6 +16,14 @@ describe('labelAreaFactor', () => {
 
   it('clamps extreme formats', () => {
     expect(labelAreaFactor(100000)).toBe(0.5); // min shrink
+  });
+});
+
+describe('showsHoverCard', () => {
+  it('follows a mouse or a pen, never a finger (a touch has no hover to end, the card would stay on the assembly)', () => {
+    expect(showsHoverCard('mouse')).toBe(true);
+    expect(showsHoverCard('pen')).toBe(true);
+    expect(showsHoverCard('touch')).toBe(false);
   });
 });
 

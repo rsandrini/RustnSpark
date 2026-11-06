@@ -59,6 +59,11 @@ const LABEL_AREA_FACTOR_MIN = 0.5;
 
 /** Label size factor for a yard of the given total cell count (1 = classic_square baseline;
     always ≤ 1 — the label only shrinks as the yard grows). */
+/** A hover card follows a mouse or a pen; a touch has no hover to end. */
+export function showsHoverCard(pointerType: string): boolean {
+  return pointerType !== 'touch';
+}
+
 export function labelAreaFactor(yardArea: number): number {
   const factor = Math.sqrt(LABEL_BASELINE_AREA / Math.max(1, yardArea));
   return Math.min(1, Math.max(LABEL_AREA_FACTOR_MIN, factor));
@@ -858,9 +863,11 @@ export function ShipYard({
                 height={height - 0.08}
                 style={isGhosting ? { pointerEvents: 'none' } : undefined}
                 onPointerDown={(event) => handleBlockDown(event, placement)}
-                onPointerEnter={() => {
+                onPointerEnter={(event) => {
                   setHoveredPartId(placement.partInstanceId);
-                  onHoverPart?.(placement.partInstanceId);
+                  // A finger never leaves a block the way a mouse does, so the stats card it would
+                  // open would stay in front of the assembly: touch gets no hover card.
+                  if (showsHoverCard(event.pointerType)) onHoverPart?.(placement.partInstanceId);
                 }}
                 onPointerLeave={() => onHoverPart?.(null)}
               />

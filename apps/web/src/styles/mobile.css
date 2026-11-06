@@ -497,3 +497,11 @@
     gap: 8px;
   }
 }
+
+/* A touch has no hover: the stats card of a placed part never sits over the assembly. */
+@media (hover: none) {
+  .part-hover-card,
+  .compare-hover-card {
+    display: none;
+  }
+}
