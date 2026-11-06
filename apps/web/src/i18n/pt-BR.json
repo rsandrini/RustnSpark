@@ -2371,6 +2371,7 @@
     "PLAYER_NOT_FOUND": "Esse piloto não foi encontrado.",
     "SHIP_ON_MISSION": "A nave está em missão.",
     "SHIP_REPAIRING": "A nave está em reparo.",
+    "ESCORT_NOT_AVAILABLE": "A escolta não pode ser chamada agora.",
     "FORMAT_CHANGE_REQUIRED": "Sua ponte mudou: escolha um formato de nave no Hangar antes de partir.",
     "SPEED": "Lento demais para este contrato.",
     "TOO_DAMAGED_TO_SELL": "Essa peça está danificada demais para vender: conserte ou descarte.",

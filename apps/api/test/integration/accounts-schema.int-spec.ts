@@ -4,7 +4,17 @@ import { closeTestPrismaClient, getTestPrismaClient } from '../support/test-db.j
 // Exact column sets from the plan's S2.1 field lists. Account's set IS the "PII limited to
 // email" acceptance: any extra column (or missing one) fails this test mechanically.
 const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
-  Account: ['id', 'email', 'passwordHash', 'role', 'status', 'createdAt'],
+  Account: [
+    'id',
+    'email',
+    'passwordHash',
+    'role',
+    'status',
+    'createdAt',
+    'isGuest',
+    'guestKeyHash',
+    'guestSince',
+  ],
   Player: [
     'id',
     'accountId',

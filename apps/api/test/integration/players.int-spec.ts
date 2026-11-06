@@ -62,6 +62,7 @@ describe('players/me endpoints (S2.3)', () => {
       locale: 'pt-BR',
       role: seeded.account.role,
       factionId: null,
+      isGuest: false,
       tutorialDone: false,
       publicId: seeded.player.publicId,
     });

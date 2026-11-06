@@ -44,6 +44,8 @@ const EXPECTED_KEYS: readonly string[] = [
   'economy.combat_win_per_tier',
   'economy.core_drops',
   'economy.discard_scrap_per_part',
+  'economy.escort_cooldown_days',
+  'economy.escort_seconds_per_distance',
   'economy.faction_mult',
   'economy.first_repair_fee_share',
   'economy.first_repair_min_seconds',

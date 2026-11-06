@@ -2371,6 +2371,7 @@
     "PLAYER_NOT_FOUND": "That pilot was not found.",
     "SHIP_ON_MISSION": "The ship is on a mission.",
     "SHIP_REPAIRING": "The ship is being repaired.",
+    "ESCORT_NOT_AVAILABLE": "The escort cannot be called right now.",
     "FORMAT_CHANGE_REQUIRED": "Your bridge changed: pick a ship format in the Hangar before leaving.",
     "SPEED": "Too slow for this contract.",
     "TOO_DAMAGED_TO_SELL": "That part is too damaged to sell: repair it or discard it.",

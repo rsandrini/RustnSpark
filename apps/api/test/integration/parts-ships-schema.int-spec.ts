@@ -31,6 +31,8 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'rescueAt',
     'formatId',
     'formatBridgeType',
+    'escortToId',
+    'escortArrivesAt',
   ],
   PlayerMaterial: ['playerId', 'materialId', 'quantity'],
 };
