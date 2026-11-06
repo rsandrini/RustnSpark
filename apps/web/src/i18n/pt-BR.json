@@ -645,6 +645,7 @@
       "condition": "Condição"
     },
     "rotate": {
+      "hint": "Aperte <k>R</k> para girar a peça",
       "blocked": "Não há espaço para girar esta peça aqui: afaste uma vizinha primeiro.",
       "twice": "Não há espaço para virá-la de lado aqui, então ela foi girada duas vezes."
     },

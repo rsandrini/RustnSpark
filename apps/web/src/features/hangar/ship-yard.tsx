@@ -2,7 +2,7 @@ import { clientToCells, type YardView } from './drag-geometry';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
@@ -150,24 +150,6 @@ function FacingArrow({
   );
 }
 
-/** The little "turn" glyph drawn inside the top-right rotate button: an arrow pointing left→right
- *  (the direction the part turns when clicked). */
-function RotateIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M4 12h15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path
-        d="M13 6l6 6-6 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export interface PartLook {
   readonly rarity: string;
   /** Condition in percent (0..100). */
@@ -200,10 +182,6 @@ export interface ShipYardProps {
   onDropPart?: (partInstanceId: string, gx: number, gy: number) => void;
   /** Hovering a placed block (owner request): a small stats-only card, not the full popup. */
   onHoverPart?: (partInstanceId: string | null) => void;
-  /** Hovering a block's border reveals a small rotate badge; clicking it turns the part in place. */
-  onRotate?: (partInstanceId: string) => void;
-  /** Press-and-drag on the rotate badge spins the part live to the given orientation (0/90/180/270). */
-  onRotateLive?: (partInstanceId: string, rot: Rot) => void;
   /** When false the ship is out on a mission: no rotate button, no drag, no rotation. */
   editable?: boolean;
   /** Read-only figures pinned on the yard's bottom edge (the sheet's key numbers). */
@@ -230,8 +208,6 @@ export function ShipYard({
   onDragEnd,
   onDropPart,
   onHoverPart,
-  onRotate,
-  onRotateLive,
   editable = true,
   callouts,
 }: ShipYardProps) {
@@ -316,24 +292,10 @@ export function ShipYard({
   }, [layout, catalogById, cellCount, clampView, centerX, centerY]);
 
   const [colorBy, setColorBy] = useState<'rarity' | 'condition'>('rarity');
-  // The part whose four rotate buttons are currently shown (hovered, or the selection).
-  const [hoveredPartId, setHoveredPartId] = useState<string | null>(null);
-  // The part currently mid-spin (drag on a rotate button): it gets a bright, animated clue.
+  // Hovering a block only tells the page which part the pointer is over (the stats card, the R key).
+  const [, setHoveredPartId] = useState<string | null>(null);
+  // The part that just turned: it gets a bright, animated clue for a moment.
   const [rotatingId, setRotatingId] = useState<string | null>(null);
-  // An active press-and-drag on a rotate button. The pivot is the part's centre and rotation
-  // is angle-tracking: release snaps to the nearest 90°; a click without movement is one turn.
-  type RotateDrag = {
-    partInstanceId: string;
-    pivotX: number;
-    pivotY: number;
-    startAngle: number;
-    startRot: Rot;
-    moved: boolean;
-  };
-  const rotateDrag = useRef<RotateDrag | null>(null);
-  // Set when a press is finalised on pointer-up so the trailing click (same gesture) is eaten
-  // instead of rotating twice.
-  const suppressRotateClick = useRef<string | null>(null);
   // Pulsing a part right after it turns (owner: "a feedback that was rotated"), then auto-clears.
   const flashTimer = useRef<number | null>(null);
   const flashRotate = useCallback((partInstanceId: string) => {
@@ -363,30 +325,21 @@ export function ShipYard({
     valid: boolean;
   };
   const [ghost, setGhost] = useState<Ghost | null>(null);
+  // A part that just turned (R, the toolbar button) pulses for a moment, so the pilot sees which one.
+  const lastRots = useRef<Map<string, Rot>>(new Map());
+  useEffect(() => {
+    const previous = lastRots.current;
+    for (const placement of layout) {
+      const was = previous.get(placement.partInstanceId);
+      if (was !== undefined && was !== placement.rot) flashRotate(placement.partInstanceId);
+    }
+    lastRots.current = new Map(
+      layout.map((placement) => [placement.partInstanceId, placement.rot]),
+    );
+  }, [layout, flashRotate]);
   const [view, setView] = useState<View>(() => clampView({ cx: centerX, cy: centerY, span: 20 }));
   const viewRef = useRef(view);
   viewRef.current = view;
-
-  // Where the yard svg sits inside the scene, so the HTML rotate buttons (positioned in screen
-  // pixels) can line up with a part's borders. Measured from the live layout, redrawn on resize
-  // and on every zoom.
-  const [box, setBox] = useState({ left: 0, top: 0, width: 0, height: 0 });
-  useEffect(() => {
-    const svg = svgRef.current;
-    const scene = sceneRef.current;
-    if (svg === null || scene === null) return undefined;
-    const measure = () => {
-      const s = svg.getBoundingClientRect();
-      const c = scene.getBoundingClientRect();
-      setBox({ left: s.left - c.left, top: s.top - c.top, width: s.width, height: s.height });
-    };
-    measure();
-    if (typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(measure);
-    observer.observe(svg);
-    observer.observe(scene);
-    return () => observer.disconnect();
-  }, [view.span]);
 
   // Frame the ship the first time it has parts (the page seeds the layout after loading).
   const fitted = useRef(false);
@@ -493,8 +446,6 @@ export function ShipYard({
 
   const handleBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     setHoveredPartId(null);
-    rotateDrag.current = null;
-    suppressRotateClick.current = null;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.current.size === 1) gesture.current.moved = false;
   };
@@ -586,8 +537,6 @@ export function ShipYard({
       event.stopPropagation();
       return;
     }
-    if (rotateDrag.current !== null) return;
-    suppressRotateClick.current = null;
     setHoveredPartId(placement.partInstanceId);
     const catalog = catalogById.get(placement.partInstanceId);
     const svg = svgRef.current;
@@ -620,94 +569,12 @@ export function ShipYard({
     event.stopPropagation();
   };
 
-  // Press-and-drag a border rotate button: anchor the pointer's angle around the part's centre
-  // (the pivot uses the footprint at press time, so a 2×1→1×2 swing stays centered on the same
-  // spot). A press without movement is a single quarter turn.
-  const handleRotateDown = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
-    if (!editable) return;
-    const catalog = catalogById.get(placement.partInstanceId);
-    const svg = svgRef.current;
-    if (catalog === undefined || svg === null) return;
-    event.stopPropagation();
-    const { width, height } = footprint(catalog, placement.rot);
-    const point = pointerToCells(event.clientX, event.clientY);
-    const pivotX = placement.gx + width / 2;
-    const pivotY = placement.gy + height / 2;
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Pointer already released — nothing to capture.
-    }
-    rotateDrag.current = {
-      partInstanceId: placement.partInstanceId,
-      pivotX,
-      pivotY,
-      startAngle: Math.atan2(point.y - pivotY, point.x - pivotX),
-      startRot: placement.rot,
-      moved: false,
-    };
-    setRotatingId(placement.partInstanceId);
-    setHoveredPartId(placement.partInstanceId);
-    onSelect(placement.partInstanceId);
-  };
-
-  // Live spin: as the pointer orbits the part's centre, snap the rotation to the nearest 90°.
-  const handleRotateMove = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
-    const rotate = rotateDrag.current;
-    if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
-    const point = pointerToCells(event.clientX, event.clientY);
-    const angle = Math.atan2(point.y - rotate.pivotY, point.x - rotate.pivotX);
-    const delta = Math.atan2(
-      Math.sin(angle - rotate.startAngle),
-      Math.cos(angle - rotate.startAngle),
-    );
-    const turns = Math.round((delta * 180) / Math.PI / 90);
-    if (turns !== 0) rotate.moved = true;
-    const target = ((((rotate.startRot + turns * 90) % 360) + 360) % 360) as Rot;
-    const current = layout.find((p) => p.partInstanceId === rotate.partInstanceId);
-    if (current !== undefined && current.rot !== target) {
-      onRotateLive?.(rotate.partInstanceId, target);
-    }
-  };
-
-  const handleRotateEnd = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
-    const rotate = rotateDrag.current;
-    if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
-    if (!rotate.moved) onRotate?.(placement.partInstanceId);
-    suppressRotateClick.current = placement.partInstanceId;
-    rotateDrag.current = null;
-    flashRotate(placement.partInstanceId);
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // Pointer already released — nothing to release.
-    }
-  };
-
-  // A click that was not a spin (a press-without-move is finalised in handleRotateEnd, which
-  // hands the single turn off to onRotate): eat the trailing click so it cannot rotate twice.
-  const handleRotateClick = (event: ReactMouseEvent<HTMLButtonElement>, placement: Placement) => {
-    event.stopPropagation();
-    if (suppressRotateClick.current === placement.partInstanceId) {
-      suppressRotateClick.current = null;
-      return;
-    }
-    onRotate?.(placement.partInstanceId);
-    flashRotate(placement.partInstanceId);
-  };
-
   const zoom = cellCount / view.span;
   const labelBoost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP);
   // Total format area (the cells prop), not the placed-parts span — labels scale with the
   // yard the player is building on, whatever is installed right now.
   const areaFactor = labelAreaFactor(cells.length);
   const labelFont = (LABEL_FONT * areaFactor) / labelBoost;
-  // Which part shows its four border rotate buttons: the hovered one (or the selection / a part
-  // mid-spin), never while a drag ghost is in flight. Buttons are hidden outside this.
-  const iconSourceId = ghost !== null ? null : (rotatingId ?? hoveredPartId ?? selectedId);
-  const iconPlacement =
-    iconSourceId === null ? null : (layout.find((p) => p.partInstanceId === iconSourceId) ?? null);
-
   return (
     <div className="stage hangar-scene" ref={sceneRef} data-tour="ship_grid">
       {callouts}
@@ -1025,46 +892,6 @@ export function ShipYard({
             );
           })()}
       </svg>
-      {/* A single small rotate button pinned to the part's top-right corner, drawn as real HTML
-          so it keeps a fixed on-screen size at any zoom (owner: one little arrow icon, not a big
-          circle). Click it for one left→right quarter turn; press and drag to spin freely. */}
-      {editable &&
-        iconPlacement !== null &&
-        (() => {
-          const iconCatalog = catalogById.get(iconPlacement.partInstanceId);
-          if (iconCatalog === undefined) return null;
-          const { width } = footprint(iconCatalog, iconPlacement.rot);
-          const scale =
-            box.width > 0 && box.height > 0 ? Math.min(box.width, box.height) / view.span : 0;
-          const offX = (box.width - view.span * scale) / 2;
-          const offY = (box.height - view.span * scale) / 2;
-          const left0 = view.cx - view.span / 2;
-          const top0 = view.cy - view.span / 2;
-          const sx = (x: number) => box.left + offX + (x - left0) * scale;
-          const sy = (y: number) => box.top + offY + (y - top0) * scale;
-          const spinning = rotatingId === iconPlacement.partInstanceId;
-          return (
-            <div className="yard-rotate-icons">
-              <button
-                type="button"
-                className={`yard-rotate-icon${spinning ? ' rotating' : ''}`}
-                data-part-id={iconPlacement.partInstanceId}
-                aria-label={t('hangar.actions.rotate')}
-                title={t('hangar.actions.rotate')}
-                style={{
-                  left: `${sx(iconPlacement.gx + width)}px`,
-                  top: `${sy(iconPlacement.gy)}px`,
-                }}
-                onPointerDown={(event) => handleRotateDown(event, iconPlacement)}
-                onPointerMove={(event) => handleRotateMove(event, iconPlacement)}
-                onPointerUp={(event) => handleRotateEnd(event, iconPlacement)}
-                onClick={(event) => handleRotateClick(event, iconPlacement)}
-              >
-                <RotateIcon />
-              </button>
-            </div>
-          );
-        })()}
     </div>
   );
 }

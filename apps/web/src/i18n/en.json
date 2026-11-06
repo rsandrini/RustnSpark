@@ -645,6 +645,7 @@
       "condition": "Condition"
     },
     "rotate": {
+      "hint": "Press <k>R</k> to rotate the part",
       "blocked": "There is no room to rotate this part here: move a neighbour away first.",
       "twice": "No room to turn it sideways here, so it was turned twice instead."
     },

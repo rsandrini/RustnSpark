@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
 import { errorCodeOf, problemsOf } from '../../api/errors';
 import type {
@@ -49,6 +49,7 @@ import { TransitPage } from '../transit/transit.page';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
+import { useRotateKey } from './use-rotate-key';
 import { setUnsavedLayout } from './unsaved-layout';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
@@ -545,46 +546,20 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     rotatePart(selectedId);
   };
 
-  // Live spin from the yard's rotate badge: the part keeps its anchor cell and only turns (to an
-  // orientation that still fits) while the pointer drags around it. onRotate/onRotateLive share
-  // the same in-place behaviour — the badge's click-without-drag path hands off to rotatePart.
-  const rotatePartLive = (partInstanceId: string, rot: Rot) => {
-    if (modifyBlocked) return;
-    const existing = effectiveLayout.find(
-      (placement) => placement.partInstanceId === partInstanceId,
-    );
-    if (existing === undefined) return;
-    const target = (((rot % 360) + 360) % 360) as Rot;
-    if (target === existing.rot) return;
-    if (
-      placementIssue(
-        effectiveLayout,
-        catalogById,
-        partInstanceId,
-        existing.gx,
-        existing.gy,
-        target,
-        yardCellSet,
-      ) !== null
-    ) {
-      return;
-    }
-    setRotateHint(null);
-    setSelectedId(partInstanceId);
-    setLayout(
-      effectiveLayout.map((placement) =>
-        placement.partInstanceId === partInstanceId ? { ...placement, rot: target } : placement,
-      ),
-    );
-    setSaved(false);
-  };
-
   const removeSelected = () => {
     if (selectedId === null || modifyBlocked) return;
     setLayout(effectiveLayout.filter((placement) => placement.partInstanceId !== selectedId));
     setSelectedId(null);
     setSaved(false);
   };
+
+  // R turns the part being dragged, else the one under the pointer, else the selected one.
+  const rotateTarget = draggingId ?? hoveredId ?? selectedId;
+  useRotateKey({
+    enabled: pageTab === 'ship' && !modifyBlocked,
+    target: () => rotateTarget,
+    onRotate: rotatePart,
+  });
 
   const sheet = preview?.sheet ?? ship?.sheet;
   const shipClass = preview?.shipClass ?? ship?.shipClass;
@@ -860,8 +835,6 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 onDragStart={setDraggingId}
                 onDragEnd={() => setDraggingId(null)}
                 onHoverPart={setHoveredId}
-                onRotate={rotatePart}
-                onRotateLive={rotatePartLive}
                 editable={!modifyBlocked}
                 callouts={<YardCallouts sheet={sheet} layers={preview?.layers} />}
               />
@@ -885,6 +858,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       type="button"
                       className="btn"
                       disabled={selectedId === null || modifyBlocked}
+                      aria-keyshortcuts="R"
                       onClick={rotateSelected}
                     >
                       {t('hangar.actions.rotate')}
@@ -946,6 +920,11 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   secondaryActions
                 )}
               </div>
+              {rotateTarget !== null && !modifyBlocked && (
+                <p className="sub rotate-key-hint" data-testid="rotate-key-hint">
+                  <Trans i18nKey="hangar.rotate.hint" components={{ k: <kbd /> }} />
+                </p>
+              )}
               {rotateHint !== null && (
                 <p className="sub" role="status" data-testid="rotate-hint">
                   {rotateHint}

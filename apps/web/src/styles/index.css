@@ -165,15 +165,6 @@ a {
   gap: 6px;
 }
 
-@keyframes rotate-icon-spin {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(90deg);
-  }
-}
-
 .fix-hint .btn {
   margin-left: 8px;
   padding: 2px 8px;

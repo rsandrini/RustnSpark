@@ -403,59 +403,6 @@ svg .yard-ghost .ghost-label {
   background: var(--rule-2);
 }
 
-/* A single small rotate button overlaid on the yard, pinned to the hovered part's top-right
-   corner. It is a real HTML element (not SVG) so it keeps a fixed on-screen size at any zoom. */
-.yard-rotate-icons {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-}
-
-.yard-rotate-icon {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--brass);
-  background: var(--paper);
-  color: var(--brass);
-  cursor: grab;
-  pointer-events: auto;
-  transition:
-    transform 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease;
-}
-
-.yard-rotate-icon:hover {
-  background: var(--brass);
-  color: var(--paper);
-  transform: translate(-50%, -50%) scale(1.15);
-}
-
-.yard-rotate-icon:active {
-  cursor: grabbing;
-}
-
-.yard-rotate-icon svg {
-  width: 7px;
-  height: 7px;
-  display: block;
-}
-
-/* A quick clockwise flourish when the part turns, so the rotation is visibly acknowledged. */
-.yard-rotate-icon.rotating {
-  color: var(--white);
-  border-color: var(--white);
-  animation: rotate-icon-spin 320ms ease;
-}
-
 .yard-zoom {
   min-width: 44px;
   text-align: center;
@@ -1153,4 +1100,19 @@ details.collapsible > summary h2 {
 .rename-prefix {
   color: var(--brass);
   white-space: nowrap;
+}
+
+/* The "press R" line: a mouse and keyboard thing, so a touch screen does not show it. */
+.rotate-key-hint kbd {
+  padding: 0 5px;
+  border: 1px solid var(--rule-3);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: inherit;
+  color: var(--ink);
+}
+@media (hover: none) {
+  .rotate-key-hint {
+    display: none;
+  }
 }
