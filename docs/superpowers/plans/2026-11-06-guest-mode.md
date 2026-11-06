@@ -34,7 +34,7 @@
 
 - `apps/api/prisma/schema.prisma` + new migration: `Account.isGuest Boolean @default(false)`, `Account.guestKeyHash String? @unique`, `AccountStatus` gains `FROZEN`. No `lastSeenAt` (use the player stats `lastActive` that already exists).
 - `apps/api/src/auth/guest.service.ts` (new): `createGuest(locale)`, `resume(guestKey)`, `claim(accountId, input)`, `freezeIdle(now)`.
-- `apps/api/src/auth/auth.controller.ts`: routes `POST /v1/auth/guest`, `POST /v1/auth/guest/resume`, `POST /v1/auth/claim`.
+- `apps/api/src/auth/auth.controller.ts`: routes `POST /v1/auth/guest`, `POST /v1/auth/guest/resume`, `POST /v1/players/me/claim`.
 - `apps/api/src/jobs/` : repeatable `guest-freeze` job and processor (follow the pattern of the existing processors, with the Sentry failure hook).
 - `apps/api/src/config/*`: `auth.guest_enabled`, `auth.guest_daily_cap`, `auth.guest_freeze_days`.
 - `apps/web/src/features/auth/`: `guest-button.tsx`, `claim-popup.tsx`, `auth.api.ts`, `auth.context.tsx`, `landing.tsx`, `ui/AccountMenu.tsx`.
@@ -72,7 +72,7 @@
 - [ ] **Step 4: Run int + security specs, and `scripts/seed-drift.sh`.** Expected: PASS, no drift.
 - [ ] **Step 5: Commit** `feat(auth): POST /auth/guest, throttled and capped`.
 
-### Task 3: Claim a guest pilot (`POST /v1/auth/claim`)
+### Task 3: Claim a guest pilot (`POST /v1/players/me/claim`)
 
 **Files:**
 - Modify: `apps/api/src/auth/guest.service.ts`, `auth.controller.ts`, `apps/api/src/auth/dto/` (new `ClaimDto`: `email`, `password` with the same validation as register, optional `name` with the register name rule)

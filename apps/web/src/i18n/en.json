@@ -3,6 +3,7 @@
     "label": "Guest pilot",
     "play": "Play as guest",
     "playHint": "No email or password. This browser keeps your pilot; you can save it with an email later.",
+    "reminder": "Your pilot is only kept by this browser. Save it with an email and password to keep it for good.",
     "saveMenu": "Save your pilot",
     "error": {
       "generic": "Could not start a guest pilot. Try again."
@@ -2338,6 +2339,7 @@
     "GUEST_DISABLED": "Playing as a guest is closed right now.",
     "GUEST_CAP_REACHED": "Too many new guests today. Try again tomorrow or register.",
     "GUEST_FROZEN": "This guest pilot was frozen after a long time away. Ask the admin, or start a new one.",
+    "NOT_A_GUEST": "This pilot was already saved with an email.",
     "REPORT_NOT_FOUND": "Report not found.",
     "REPORT_SCHEMA_UNSUPPORTED": "This report cannot be read.",
     "RESCUE_NOT_DUE": "The rescue has not arrived yet.",

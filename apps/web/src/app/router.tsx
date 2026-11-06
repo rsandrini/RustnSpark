@@ -25,6 +25,7 @@ import { ResetPasswordPage } from '../features/auth/reset-password.page';
 import { GuidePage } from '../features/guide/guide.page';
 import { DialogueHost } from '../features/dialogue/dialogue-host';
 import { FlightWatcher } from '../features/transit/flight-watcher';
+import { GuestReminder } from '../features/auth/guest-reminder';
 import { TutorialCard } from '../features/tutorial/tutorial-card';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
@@ -70,6 +71,7 @@ function InGameChrome() {
       <TutorialCard />
       <DialogueHost />
       <FlightWatcher />
+      <GuestReminder />
     </>
   );
 }

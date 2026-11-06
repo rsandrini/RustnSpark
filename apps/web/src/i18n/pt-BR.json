@@ -3,6 +3,7 @@
     "label": "Piloto convidado",
     "play": "Jogar como convidado",
     "playHint": "Sem e-mail e sem senha. Este navegador guarda seu piloto; depois você pode salvá-lo com um e-mail.",
+    "reminder": "Seu piloto só fica guardado neste navegador. Salve com e-mail e senha para mantê-lo de vez.",
     "saveMenu": "Salvar seu piloto",
     "error": {
       "generic": "Não foi possível começar um piloto convidado. Tente de novo."
@@ -2338,6 +2339,7 @@
     "GUEST_DISABLED": "Jogar como convidado está fechado no momento.",
     "GUEST_CAP_REACHED": "Convidados demais hoje. Tente amanhã ou crie uma conta.",
     "GUEST_FROZEN": "Este piloto convidado foi congelado depois de muito tempo parado. Fale com o admin ou comece outro.",
+    "NOT_A_GUEST": "Este piloto já foi salvo com um e-mail.",
     "REPORT_NOT_FOUND": "Relatório não encontrado.",
     "REPORT_SCHEMA_UNSUPPORTED": "Este relatório não pode ser lido.",
     "RESCUE_NOT_DUE": "O resgate ainda não chegou.",

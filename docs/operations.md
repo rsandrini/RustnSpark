@@ -97,6 +97,7 @@ bash scripts/account.sh promote --email you@example.com      # an account that a
 bash scripts/account.sh demote --email you@example.com       # refuses the last admin without --force
 bash scripts/account.sh ban --email someone@example.com      # blocks and signs out everywhere (not for admins)
 bash scripts/account.sh unban --email someone@example.com
+bash scripts/account.sh unfreeze --player guest-a1b2c3      # a frozen guest pilot (see 6.1) comes back; --email also works
 bash scripts/account.sh set-password --email you@example.com --password '<10–128 chars>'   # also signs out everywhere
 bash scripts/account.sh list-admins
 ```
@@ -237,7 +238,25 @@ ship: they weaken it (see the Ship sheet warnings). Only a ship that cannot move
 
 Rate limits (per account when authenticated, otherwise per IP; counters in Redis so they hold
 across instances): reads 300/min, intents 120/min, previews 240/min, login 5/min per IP+e-mail,
-register 10/min per IP. A `429` carries `Retry-After`. If Redis is down the limiter fails open.
+register 10/min per IP, new guest 10/min per IP, guest sign-back-in 30/min per IP. A `429` carries `Retry-After`. If Redis is down the limiter fails open.
+
+### 6.1 Guest pilots
+
+"Play as guest" starts a pilot with no email and no password. The browser keeps a random key in its localStorage
+(`rs.guestKey`); the server stores only its hash, and the key signs the guest back in (`POST /v1/auth/guest/resume`).
+Clearing the browser's data or changing device loses the pilot unless it was saved: the account menu offers
+"Save your pilot" (an email, a password and an optional pilot name), which turns the guest into a normal account in place.
+
+| Setting (Admin → Tuning → admin) | Default | What it does |
+|---|---|---|
+| `admin.guest_daily_cap` | 300 | New guests per day (UTC). `0` turns "play as guest" off. The per-IP limit (10/min) always applies |
+| `admin.guest_freeze_days` | 30 | A guest nobody saved, idle this many days, is frozen by a worker sweep (every 6 h) |
+
+- A closed registration (`register.open` off) closes guest play too.
+- Guests are named `guest-` plus 6 letters or digits, are not on the rankings and have no public card until saved.
+- A frozen guest keeps all its data but cannot sign in (`GUEST_FROZEN`). Bring one back with
+  `bash scripts/account.sh unfreeze --player guest-xxxxxx`: it counts as active again, so the next sweep leaves it alone.
+- Nothing is ever deleted by this feature.
 
 ## 7. Graceful shutdown drill (manual)
 

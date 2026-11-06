@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { authApi } from '../features/auth/auth.api';
 import { useAuthContext } from '../features/auth/auth.context';
 import { useAuth, useLogout } from '../features/auth/auth.hooks';
@@ -11,6 +11,7 @@ import { APP_VERSION } from '../version';
 import { useWalletAnswer } from './use-wallet-answer';
 import { BugReportDialog } from './BugReportDialog';
 import { ClaimPopup } from '../features/auth/claim-popup';
+import { SAVE_PILOT_PARAM } from '../features/auth/guest-reminder';
 import { Popup } from './Popup';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
@@ -46,6 +47,15 @@ export function AccountMenu() {
   const [saving, setSaving] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const isGuest = user?.isGuest === true;
+  // The reminder's button lands here with ?save=1: open the save popup and tidy the address.
+  const [search, setSearch] = useSearchParams();
+  useEffect(() => {
+    if (!search.has(SAVE_PILOT_PARAM)) return;
+    if (isGuest) setSaving(true);
+    const next = new URLSearchParams(search);
+    next.delete(SAVE_PILOT_PARAM);
+    setSearch(next, { replace: true });
+  }, [search, setSearch, isGuest]);
   useEffect(() => {
     if (!open) setTalkOpen(false);
   }, [open]);
