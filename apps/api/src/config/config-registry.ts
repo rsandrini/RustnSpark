@@ -1006,6 +1006,33 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'economy.escort_seconds_per_distance',
+    group: 'economy',
+    type: 'number',
+    min: 0.01,
+    max: 600,
+    unit: 's',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.escort_seconds_per_distance),
+    description: {
+      en: 'The escort to a safe port flies at a fixed slow pace: seconds of mission time per unit of route distance (scaled by missions.time_scale).',
+      'pt-BR':
+        'A escolta até um porto seguro voa num ritmo lento e fixo: segundos de tempo de missão por unidade de distância (escalado por missions.time_scale).',
+    },
+  },
+  {
+    key: 'economy.escort_cooldown_days',
+    group: 'economy',
+    type: 'integer',
+    min: 0,
+    max: 365,
+    unit: 'd',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.economy.escort_cooldown_days),
+    description: {
+      en: 'Days a pilot must wait before calling the escort again. 0 = no limit.',
+      'pt-BR': 'Dias que o piloto espera para chamar a escolta de novo. 0 = sem limite.',
+    },
+  },
+  {
     key: 'economy.rescue_wait_seconds',
     group: 'economy',
     type: 'integer',

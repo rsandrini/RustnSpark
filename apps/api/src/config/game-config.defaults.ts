@@ -206,6 +206,9 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // Emergency ration: a rescue leaves at least this share of the tank so a broke player
     // can still fly one short job (refuel is blocked on a negative balance). 0 = none.
     rescue_fuel_fraction: 0.25,
+    // The escort a stuck pilot can call (docked, in debt or unable to fly): free, no fights, a slow fixed speed, once per cooldown.
+    escort_seconds_per_distance: 0.6,
+    escort_cooldown_days: 7,
     repair_min_base_price: 500,
     // Parts below this condition (%) are refused at every port AND are what "discard"
     // destroys (they cannot be sold, only scrapped). 1 = only a dead (0%) part qualifies; the game runs on 15.

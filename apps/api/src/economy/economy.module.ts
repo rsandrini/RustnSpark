@@ -22,6 +22,8 @@ import { RepairController } from './repair.controller.js';
 import { RepairService } from './repair.service.js';
 import { RefuelController } from './refuel.controller.js';
 import { RefuelService } from './refuel.service.js';
+import { EscortController } from './escort.controller.js';
+import { EscortService } from './escort.service.js';
 import { RescueController } from './rescue.controller.js';
 import { RescueService } from './rescue.service.js';
 import { ScavengingController } from './scavenging.controller.js';
@@ -54,6 +56,7 @@ import { StatsModule } from '../stats/stats.module.js';
     RepairController,
     RefuelController,
     RescueController,
+    EscortController,
     ScavengingController,
     PartUpgradeController,
     BridgeResizeController,
@@ -65,6 +68,7 @@ import { StatsModule } from '../stats/stats.module.js';
     RepairService,
     RefuelService,
     RescueService,
+    EscortService,
     InventoryService,
     ScavengingService,
     PartUpgradeService,

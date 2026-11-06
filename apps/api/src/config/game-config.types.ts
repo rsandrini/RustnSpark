@@ -78,6 +78,8 @@ export type ConfigKey =
   | 'economy.rescue_wait_fraction'
   | 'economy.rescue_wait_seconds'
   | 'economy.rescue_fuel_fraction'
+  | 'economy.escort_seconds_per_distance'
+  | 'economy.escort_cooldown_days'
   | 'economy.reward_base'
   | 'economy.reward_danger_divisor'
   | 'economy.reward_distance_divisor'
@@ -398,6 +400,10 @@ export type GameRules = Readonly<{
     /** How long a waiting rescue takes to arrive (mission time). */
     rescue_wait_seconds: number;
     rescue_fuel_fraction: number;
+    /** The escort's slow fixed pace: seconds of mission time per unit of route distance. */
+    escort_seconds_per_distance: number;
+    /** Days a pilot waits before calling the escort again. */
+    escort_cooldown_days: number;
     /** Cheap parts (the bridge) are repaired as if they cost at least this much. */
     repair_min_base_price: number;
     /** Parts below this condition (%) cannot be sold: no port takes them, even for nothing. */

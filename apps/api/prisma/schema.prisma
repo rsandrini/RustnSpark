@@ -692,6 +692,9 @@ model Ship {
   floatProgress     Float?
   // When a waiting rescue arrives (null = nobody called yet).
   rescueAt          DateTime?
+  // An escort to a safe port (economy.escort_*): where it takes the ship and when it gets there. The ship is ON_MISSION meanwhile.
+  escortToId        String?
+  escortArrivesAt   DateTime?
   formatId          String            @default("classic_square")
   // The bridge type the format was last picked for (null = not recorded yet). A different
   // installed bridge means the pilot must pick a format again before the ship can leave port.

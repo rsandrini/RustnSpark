@@ -133,6 +133,8 @@ const economySchema = z.object({
   rescue_wait_fraction: z.number().min(0).max(1),
   rescue_wait_seconds: z.number().int().min(1).max(86400),
   rescue_fuel_fraction: z.number().min(0).max(1),
+  escort_seconds_per_distance: z.number().min(0.01).max(600),
+  escort_cooldown_days: z.number().int().min(0).max(365),
   repair_min_base_price: z.number().min(0).max(10000),
   sell_min_condition: z.number().min(0).max(100),
   discard_scrap_per_part: z.number().int().min(0).max(10).default(0),
