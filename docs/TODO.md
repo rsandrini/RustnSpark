@@ -34,6 +34,17 @@ Still open:
   The owner's expectation: a trip should only stop when the ship is broken (adrift, dead bridge), not after a victory.
   Look at the leg/travel resolver and what a combat victory does to the remaining legs of a TRAVEL.
 
+- [ ] **The transit screen disagrees with itself after a refresh** (owner, 2026-11-06). The UI showed the ship at one point of
+  the trip with its timer. After a refresh the ship was much further back than where it had been shown, and the timer was
+  longer than before. The small map then draws the ship in the wrong place, while the big map draws it right but its text is
+  wrong: it says the ship is at the start point, not "travelling from X to Y". Check:
+  - how the position and the remaining time are worked out on the client (server time offset, `serverNow()`, the leg and
+    arrival times) and why a reload gives a different answer than the live view;
+  - whether the live view was ahead of the server (a countdown running on the browser's clock, or the poll not keeping up)
+    or the refreshed view is behind (position taken from the leg start instead of the elapsed time);
+  - the small map (route map in the mission card and the transit page) against the big map, and the text of the big map's
+    "where is my ship" line while the ship is in flight.
+
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
 - [ ] Balance round 6b (applied 2026-10-27 in the defaults and the seed, no migration; the dev DB is reset to take it): wear 0.5/0.85 and hull_to_condition 0.15, Epic/Legendary pay x2.5/x3.25, Legendary parts x8. In the sim (r9/r14) the chem builds reach Legendary at ~150 h; Epic comes at ~70 h (target 90-130 h). Retest after the reset, then tune.
