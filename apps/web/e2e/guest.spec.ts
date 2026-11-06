@@ -19,7 +19,7 @@ test('a guest plays, comes back with only the key, saves the pilot and signs in 
 
   await page.getByRole('button', { name: 'Account menu' }).click();
   await expect(page.getByText('Guest pilot')).toBeVisible();
-  const name = (await page.locator('.shell-menu-name').innerText()).trim();
+  const name = ((await page.locator('.shell-menu-name').textContent()) ?? '').trim();
   expect(name).toMatch(/^guest-[a-z0-9]{6}$/);
   await page.keyboard.press('Escape');
 

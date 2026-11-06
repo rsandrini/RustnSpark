@@ -179,3 +179,12 @@
 .tutorial-detail {
   color: var(--ink-2);
 }
+
+/* On a desktop the account menu (in the top bar, layer 20) drops over the corner where this card sits:
+   the card steps under it, so "Sign out" is never covered. On a phone the card must stay above the tab bar. */
+@media (min-width: 701px) {
+  .tutorial-card,
+  .tutorial-pill {
+    z-index: 19;
+  }
+}
