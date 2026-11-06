@@ -34,6 +34,8 @@ model Account {
   isGuest       Boolean        @default(false)
   // SHA-256 of the random key the guest's browser keeps; the key itself is never stored.
   guestKeyHash  String?        @unique
+  // When the account began as a guest; kept after a claim, so the daily count of new guests stays true.
+  guestSince    DateTime?
   createdAt     DateTime       @default(now())
   player        Player?
   refreshTokens RefreshToken[]

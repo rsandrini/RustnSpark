@@ -20,6 +20,8 @@ const key = (route: RouteInfo): string => `${route.method} ${route.path}`;
 /** Routes reachable without a token. Anything else being @Public() is a leak. */
 const PUBLIC_ROUTES = new Set([
   'POST /v1/auth/forgot-password',
+  'POST /v1/auth/guest',
+  'POST /v1/auth/guest/resume',
   'POST /v1/auth/login',
   'POST /v1/auth/logout',
   'POST /v1/auth/refresh',

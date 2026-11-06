@@ -3,6 +3,8 @@ import type { GameRules } from './game-config.types.js';
 export const GAME_CONFIG_DEFAULTS: GameRules = {
   admin: {
     debug_fast_ops_seconds: 5,
+    guest_daily_cap: 300,
+    guest_freeze_days: 30,
     // Starter list of words no ship name may contain (English and Portuguese). Admin edits it; matching ignores
     // case, spaces, accents and digits used for letters.
     name_blocklist: [

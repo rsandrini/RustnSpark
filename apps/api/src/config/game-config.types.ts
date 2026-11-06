@@ -27,6 +27,8 @@ export type ConfigGroup =
 
 export type ConfigKey =
   | 'admin.debug_fast_ops_seconds'
+  | 'admin.guest_daily_cap'
+  | 'admin.guest_freeze_days'
   | 'admin.name_blocklist'
   | 'economy.ship_rename_price'
   | 'combat.armor_cap'
@@ -251,6 +253,10 @@ export type GameRulesAdmin = Readonly<{
    * itself is per-account, not global — see the Player model, not this config).
    */
   debug_fast_ops_seconds: number;
+  /** How many new guest pilots can start per day (UTC); 0 turns "play as guest" off. */
+  guest_daily_cap: number;
+  /** An unclaimed guest idle this many days is frozen (kept, but cannot sign in until an admin unfreezes it). */
+  guest_freeze_days: number;
   /** Words a ship name may not contain (case, spacing, digits-for-letters and accents are ignored). */
   name_blocklist: readonly string[];
 }>;

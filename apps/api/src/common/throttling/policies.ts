@@ -36,6 +36,18 @@ export const REGISTER_POLICY: ThrottleRoutePolicy = {
   ttlMs: THROTTLE_TTL_MS,
   key: 'ip',
 };
+// A guest costs an account, so it is limited like a registration; coming back with the key is a
+// plain lookup, so it can be a little more generous (a shared address, a few tabs).
+export const GUEST_POLICY: ThrottleRoutePolicy = {
+  limit: 10,
+  ttlMs: THROTTLE_TTL_MS,
+  key: 'ip',
+};
+export const GUEST_RESUME_POLICY: ThrottleRoutePolicy = {
+  limit: 30,
+  ttlMs: THROTTLE_TTL_MS,
+  key: 'ip',
+};
 export const LOGIN_POLICY: ThrottleRoutePolicy = {
   limit: 5,
   ttlMs: THROTTLE_TTL_MS,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ConfigModule as GameConfigModule } from '../config/config.module.js';
 import { AdminModule } from '../admin/admin.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -16,7 +17,7 @@ import { StatsModule } from '../stats/stats.module.js';
 // AdminModule is imported for SystemFlagService only: register gates on the `register.open`
 // feature flag (S11.2). It exports services, not auth dependencies, so no cycle forms.
 @Module({
-  imports: [StatsModule, AdminModule, EmailModule, ConfigModule],
+  imports: [StatsModule, AdminModule, EmailModule, ConfigModule, GameConfigModule],
   controllers: [AuthController],
   providers: [AuthService, GuestService, PasswordService, RefreshTokenService, TokenService],
   exports: [AuthService, GuestService],

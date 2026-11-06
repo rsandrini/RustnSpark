@@ -1,4 +1,9 @@
-import { LOGIN_POLICY, REGISTER_POLICY } from '../common/throttling/policies.js';
+import {
+  GUEST_POLICY,
+  GUEST_RESUME_POLICY,
+  LOGIN_POLICY,
+  REGISTER_POLICY,
+} from '../common/throttling/policies.js';
 import { Body, Controller, ForbiddenException, HttpCode, Post, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { parse as parseCookie, serialize as serializeCookie } from 'cookie';
@@ -8,6 +13,8 @@ import { ThrottleRoute } from '../common/decorators/throttle-route.decorator.js'
 import { resolveLocaleFromHeader } from '../common/locale/locale.js';
 import type { PlayerProfile } from '../players/players.service.js';
 import { AuthService, type AuthSession } from './auth.service.js';
+import { ResumeGuestDto, StartGuestDto } from './dto/guest.dto.js';
+import { GuestService } from './guest.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { REFRESH_TOKEN_TTL_MS } from './refresh-token.service.js';
@@ -34,6 +41,7 @@ const COOKIE_BASE = {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly guests: GuestService,
     private readonly systemFlags: SystemFlagService,
   ) {}
 
@@ -57,6 +65,36 @@ export class AuthController {
       name: dto.name,
       locale,
     });
+    setRefreshCookie(response, session);
+    return { accessToken: session.accessToken, player: session.player };
+  }
+
+  // Play as a guest: a pilot with no email and no password. The browser keeps the returned
+  // guestKey and signs back in with it (POST guest/resume). Closed registration closes this too.
+  @Post('guest')
+  @ThrottleRoute(GUEST_POLICY)
+  async startGuest(
+    @Body() dto: StartGuestDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ accessToken: string; player: PlayerProfile; guestKey: string }> {
+    if (!(await this.systemFlags.isEnabled(REGISTER_OPEN_FLAG_KEY, true))) {
+      throw new ForbiddenException({ error: 'REGISTRATION_CLOSED' });
+    }
+    const locale = dto.locale ?? resolveLocaleFromHeader(request.headers['accept-language']);
+    const session = await this.guests.startGuest(locale);
+    setRefreshCookie(response, session);
+    return { accessToken: session.accessToken, player: session.player, guestKey: session.guestKey };
+  }
+
+  @Post('guest/resume')
+  @HttpCode(200)
+  @ThrottleRoute(GUEST_RESUME_POLICY)
+  async resumeGuest(
+    @Body() dto: ResumeGuestDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ accessToken: string; player: PlayerProfile }> {
+    const session = await this.guests.resume(dto.guestKey);
     setRefreshCookie(response, session);
     return { accessToken: session.accessToken, player: session.player };
   }

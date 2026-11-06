@@ -11,6 +11,8 @@ import { validateGameRules } from '../../../src/config/game-rules.schema.js';
 
 const EXPECTED_KEYS: readonly string[] = [
   'admin.debug_fast_ops_seconds',
+  'admin.guest_daily_cap',
+  'admin.guest_freeze_days',
   'admin.name_blocklist',
   'combat.armor_cap',
   'combat.armor_pool_factor',

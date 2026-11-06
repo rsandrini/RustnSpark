@@ -44,6 +44,34 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'admin.guest_daily_cap',
+    group: 'admin',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    unit: '/day',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.guest_daily_cap),
+    description: {
+      en: 'How many new guest pilots ("play as guest") can start per day, counted from 00:00 UTC. 0 turns guest play off. The per-IP limit stays on either way.',
+      'pt-BR':
+        'Quantos novos pilotos convidados ("jogar como convidado") podem começar por dia, contando a partir de 00:00 UTC. 0 desliga o modo convidado. O limite por IP continua ligado de qualquer forma.',
+    },
+  },
+  {
+    key: 'admin.guest_freeze_days',
+    group: 'admin',
+    type: 'integer',
+    min: 1,
+    max: 3650,
+    unit: 'd',
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.admin.guest_freeze_days),
+    description: {
+      en: 'A guest pilot nobody has claimed with an email and password, idle this many days, is frozen: kept as it is, but it cannot sign in until an admin unfreezes it.',
+      'pt-BR':
+        'Um piloto convidado que ninguém reivindicou com e-mail e senha, parado por esta quantidade de dias, é congelado: fica como está, mas não entra até um admin descongelar.',
+    },
+  },
+  {
     key: 'combat.dodge_factor',
     group: 'combat',
     type: 'number',
