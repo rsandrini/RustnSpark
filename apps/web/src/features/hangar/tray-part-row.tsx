@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { InventoryItem } from '../../api/generated';
 import { Gauge, conditionTone } from '../../ui/Gauge';
@@ -24,6 +25,8 @@ export interface TrayPartRowProps {
   disabled: boolean;
   selected: boolean;
   onSelect: () => void;
+  /** Pointer down on the row: the page starts a drag out of the list once the pointer has moved far enough. */
+  onPointerDragStart?: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   compare: PartCompareContext | undefined;
 }
 
@@ -35,6 +38,7 @@ export function TrayPartRow({
   disabled,
   selected,
   onSelect,
+  onPointerDragStart,
   compare,
 }: TrayPartRowProps) {
   const { t } = useTranslation();
@@ -49,6 +53,9 @@ export function TrayPartRow({
         className={`part-btn rarity-${part.rarity.toLowerCase()}${part.broken ? ' broken' : ''}${selected ? ' on' : ''}`}
         disabled={disabled}
         onClick={onSelect}
+        onPointerDown={(event) => {
+          if (!disabled) onPointerDragStart?.(event);
+        }}
         onPointerEnter={(event) => setAnchor(hoverAnchor(event, event.currentTarget))}
         onPointerLeave={() => setAnchor(null)}
       >

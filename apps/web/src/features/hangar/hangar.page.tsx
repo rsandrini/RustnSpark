@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Trans, useTranslation } from 'react-i18next';
 import { client } from '../../api/client';
@@ -14,7 +14,7 @@ import type {
 } from '../../api/generated';
 import { useLocation, useNavigate } from 'react-router';
 import { pickLocalized } from '../../i18n/localized';
-import { ShipYard, type PartLook } from './ship-yard';
+import { ShipYard, type PartLook, type ShipYardHandle } from './ship-yard';
 import {
   directionViolations,
   footprint,
@@ -49,7 +49,9 @@ import { TransitPage } from '../transit/transit.page';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
+import { TrayDragChip } from './tray-drag-chip';
 import { useRotateKey } from './use-rotate-key';
+import { useTrayDrag } from './use-tray-drag';
 import { setUnsavedLayout } from './unsaved-layout';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
@@ -445,12 +447,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     );
   }).length;
 
-  const placePart = (partInstanceId: string, gx: number, gy: number) => {
+  // `chosenRot` is the orientation the pilot picked while carrying the part (R); without it a part keeps its own.
+  const placePart = (partInstanceId: string, gx: number, gy: number, chosenRot?: Rot) => {
     if (modifyBlocked) return;
     const existing = effectiveLayout.find(
       (placement) => placement.partInstanceId === partInstanceId,
     );
-    const rot: Rot = existing?.rot ?? 0;
+    const rot: Rot = chosenRot ?? existing?.rot ?? 0;
     if (
       placementIssue(effectiveLayout, catalogById, partInstanceId, gx, gy, rot, yardCellSet) !==
       null
@@ -460,7 +463,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     // A NEW engine/weapon is dropped facing a way that has nothing behind it when one exists;
     // moving or placing anywhere is never refused for direction (that is a problem, not a block).
     let startRot: Rot = rot;
-    if (existing === undefined) {
+    if (existing === undefined && chosenRot === undefined) {
       const clean = ([0, 90, 180, 270] as const).find((candidate) => {
         if (
           placementIssue(
@@ -482,7 +485,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     }
     const next = existing
       ? effectiveLayout.map((placement) =>
-          placement.partInstanceId === partInstanceId ? { ...placement, gx, gy } : placement,
+          placement.partInstanceId === partInstanceId ? { ...placement, gx, gy, rot } : placement,
         )
       : [...effectiveLayout, { partInstanceId, gx, gy, rot: startRot }];
     setRotateHint(null);
@@ -562,12 +565,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   // The parts list is where a part dragged off the ship is dropped to take it off (not on the Store tab).
   const removeZoneOn = sideTab === 'parts' && !modifyBlocked;
 
-  // R turns the part being dragged, else the one under the pointer, else the selected one.
-  const rotateTarget = draggingId ?? hoveredId ?? selectedId;
+  // Pulling a loose part out of the parts list onto the ship (mouse and pen; a finger keeps tap-then-tap).
+  const yardRef = useRef<ShipYardHandle>(null);
+  const trayDrag = useTrayDrag({
+    yard: yardRef,
+    enabled: !modifyBlocked && !phone,
+    onDrop: placePart,
+  });
+
+  // R turns the part being carried (out of the list, or across the ship), else the one under the pointer,
+  // else the selected one.
+  const rotateTarget = trayDrag.dragging?.partInstanceId ?? draggingId ?? hoveredId ?? selectedId;
   useRotateKey({
     enabled: pageTab === 'ship' && !modifyBlocked,
     target: () => rotateTarget,
-    onRotate: rotatePart,
+    onRotate: (id) => {
+      if (trayDrag.dragging !== null) trayDrag.rotate();
+      else if (draggingId !== null) yardRef.current?.rotateGhost();
+      else rotatePart(id);
+    },
   });
 
   const sheet = preview?.sheet ?? ship?.sheet;
@@ -745,6 +761,13 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               // A part dragged out of the ship and released over this list leaves the ship (Parts tab only).
               data-drop-zone={removeZoneOn ? 'parts' : undefined}
             >
+              {trayDrag.dragging !== null && (
+                <TrayDragChip
+                  name={nameById.get(trayDrag.dragging.partInstanceId) ?? ''}
+                  x={trayDrag.dragging.x}
+                  y={trayDrag.dragging.y}
+                />
+              )}
               {removeZoneOn && draggingId !== null && (
                 <p className="drop-hint" aria-hidden="true">
                   {t('hangar.drag.removeHint')}
@@ -792,7 +815,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       name={nameById.get(part.id) ?? part.partType}
                       disabled={modifyBlocked}
                       selected={pendingPartId === part.id}
+                      onPointerDragStart={(event) => trayDrag.begin(part.id, event)}
                       onSelect={() => {
+                        // the click that ends a drag is not a selection
+                        if (trayDrag.consumeClick()) return;
                         setPendingPartId(part.id);
                         setSelectedId(null);
                         // on a phone the sheet gets out of the way so the pilot can tap a cell of the yard
@@ -833,6 +859,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 </div>
               )}
               <ShipYard
+                ref={yardRef}
+                dropPreview={trayDrag.dropPreview}
                 lookById={lookById}
                 cells={ship.yard.cells}
                 disconnectedPartIds={disconnectedPartIds}
@@ -847,7 +875,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   setPendingPartId(null);
                 }}
                 onCellClick={handleCellClick}
-                onDropPart={(id, gx, gy) => placePart(id, gx, gy)}
+                onDropPart={(id, gx, gy, rot) => placePart(id, gx, gy, rot)}
                 onRemovePart={removePart}
                 onDragStart={setDraggingId}
                 onDragEnd={() => setDraggingId(null)}

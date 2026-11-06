@@ -1072,6 +1072,147 @@ describe('hangar (S10.4)', () => {
     });
   });
 
+  describe('pulling a loose part from the list onto the ship', () => {
+    const SIZE = 400;
+    /** jsdom has no layout: give the yard a 400 px square and map cells to screen points like the real one. */
+    function yardPoints(container: HTMLElement) {
+      const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+      vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, SIZE, SIZE));
+      return {
+        svg,
+        at: (cx: number, cy: number) => {
+          const [vx = 0, vy = 0, span = 20] = (svg.getAttribute('viewBox') ?? '0 0 20 20')
+            .split(' ')
+            .map(Number);
+          return { clientX: ((cx - vx) * SIZE) / span, clientY: ((cy - vy) * SIZE) / span };
+        },
+      };
+    }
+    async function ready(container: HTMLElement) {
+      const row = await screen.findByRole('button', { name: /^cargo/i });
+      const { svg, at } = yardPoints(container);
+      await stableView(svg);
+      return { row, at };
+    }
+
+    it('dragging a row onto a free cell places the part there and shows the landing cell on the way', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row, at } = await ready(container);
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      // a 2x1 part with its middle on (5, 0.5) lands with its corner on cell (4, 0)
+      fireEvent.pointerMove(window, at(5, 0.5));
+      const outline = await screen.findByTestId('drop-preview');
+      expect(outline).toHaveClass('ok');
+      expect(outline.getAttribute('x')).toBe('4');
+      expect(outline.getAttribute('y')).toBe('0');
+
+      fireEvent.pointerUp(window, at(5, 0.5));
+      const placed = block(container, 'part-cargo-b');
+      expect(placed?.getAttribute('data-gx')).toBe('4');
+      expect(placed?.getAttribute('data-gy')).toBe('0');
+      expect(screen.queryByTestId('drop-preview')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Save layout' })).toBeEnabled();
+    });
+
+    it('a taken spot shows a red outline and the release leaves the part in the list', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row, at } = await ready(container);
+      const bridge = block(container, 'part-bridge') as SVGRectElement;
+      const bx = Number(bridge.getAttribute('data-gx'));
+      const by = Number(bridge.getAttribute('data-gy'));
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      fireEvent.pointerMove(window, at(bx + 1, by + 0.5));
+      expect(await screen.findByTestId('drop-preview')).toHaveClass('bad');
+      fireEvent.pointerUp(window, at(bx + 1, by + 0.5));
+
+      expect(block(container, 'part-cargo-b')).toBeNull();
+      expect(screen.getByRole('button', { name: /^cargo/i })).toBeInTheDocument();
+    });
+
+    it('releasing off the yard, or pressing Escape, places nothing', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row, at } = await ready(container);
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 900, clientY: 300 }); // beside the yard
+      expect(screen.queryByTestId('drop-preview')).toBeNull();
+      fireEvent.pointerUp(window, { clientX: 900, clientY: 300 });
+      expect(block(container, 'part-cargo-b')).toBeNull();
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      fireEvent.pointerMove(window, at(5, 0.5));
+      expect(await screen.findByTestId('drop-preview')).toBeInTheDocument();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByTestId('drop-preview')).toBeNull();
+      fireEvent.pointerUp(window, at(5, 0.5));
+      expect(block(container, 'part-cargo-b')).toBeNull();
+    });
+
+    it('a press that barely moves is still a click: the row is selected and nothing is dragged', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row } = await ready(container);
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 703, clientY: 302 });
+      fireEvent.pointerUp(window, { clientX: 703, clientY: 302 });
+      fireEvent.click(row);
+
+      expect(screen.queryByTestId('drop-preview')).toBeNull();
+      expect(screen.getByText(/^Selected: /)).toBeInTheDocument();
+    });
+
+    it('R while carrying the part turns it: the landing cell becomes 1x2 and the part lands turned', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row, at } = await ready(container);
+
+      fireEvent.pointerDown(row, { clientX: 700, clientY: 300, button: 0 });
+      fireEvent.pointerMove(window, at(5, 0.5));
+      expect((await screen.findByTestId('drop-preview')).getAttribute('width')).toBe('2');
+      fireEvent.keyDown(window, { key: 'r' });
+      await waitFor(() =>
+        expect(screen.getByTestId('drop-preview').getAttribute('height')).toBe('2'),
+      );
+      fireEvent.pointerUp(window, at(5, 1.5));
+
+      const placed = block(container, 'part-cargo-b');
+      // a block is drawn a hair inside its cells: 1 wide and 2 tall means 0.92 by 1.92
+      expect(Number(placed?.getAttribute('width'))).toBeCloseTo(0.92, 1);
+      expect(Number(placed?.getAttribute('height'))).toBeCloseTo(1.92, 1);
+    });
+
+    it('R while carrying a placed part turns the ghost, and the part lands turned', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const cargo = await waitFor(() => {
+        const element = block(container, 'part-cargo-a');
+        expect(element).not.toBeNull();
+        return element as SVGRectElement;
+      });
+      const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+      const toClient = viewPoint(svg);
+      await stableView(svg);
+
+      fireEvent.pointerDown(cargo, toClient(3, 2.5));
+      fireEvent.pointerMove(svg, toClient(8, 4.5));
+      const ghostBody = () => container.querySelector('g.yard-ghost .ghost-body') as Element;
+      expect(Number(ghostBody().getAttribute('width'))).toBeGreaterThan(1.5);
+      fireEvent.keyDown(window, { key: 'r' });
+      await waitFor(() => expect(Number(ghostBody().getAttribute('width'))).toBeLessThan(1.5));
+      fireEvent.pointerUp(svg, toClient(8, 4.5));
+
+      const landed = block(container, 'part-cargo-a');
+      expect(Number(landed?.getAttribute('width'))).toBeCloseTo(0.92, 1);
+      expect(Number(landed?.getAttribute('height'))).toBeCloseTo(1.92, 1);
+    });
+  });
+
   it('an invalid ghost drop reverts the part to where it started', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });

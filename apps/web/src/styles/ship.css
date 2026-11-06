@@ -1138,3 +1138,26 @@ details.collapsible > summary h2 {
   border-radius: var(--radius);
   z-index: 1;
 }
+
+/* A part pulled out of the parts list: its name follows the pointer, and the page stops selecting text. */
+.tray-drag-chip {
+  position: fixed;
+  z-index: 60;
+  transform: translate(12px, 12px);
+  padding: 4px 10px;
+  border: 1px solid var(--brass);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 4px 14px color-mix(in oklab, var(--black) 50%, transparent);
+  pointer-events: none;
+  white-space: nowrap;
+}
+body.dragging-part {
+  cursor: grabbing;
+  user-select: none;
+}
+body.dragging-part .compare-hover-card,
+body.dragging-part .part-hover-card {
+  display: none;
+}

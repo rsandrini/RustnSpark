@@ -1,5 +1,13 @@
-import { clientToCells, type YardView } from './drag-geometry';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { clientToCells, insideBox, type YardView } from './drag-geometry';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
@@ -12,6 +20,7 @@ import {
   facingOf,
   footprint,
   isOutsideYard,
+  nextRot,
   placementIssue,
   type Rot,
 } from './hangar.geometry';
@@ -158,6 +167,28 @@ export interface PartLook {
   readonly broken: boolean;
 }
 
+/** Where a part would land if it were dropped now, and whether that spot works (a green or a red outline). */
+export interface DropPreview {
+  gx: number;
+  gy: number;
+  width: number;
+  height: number;
+  valid: boolean;
+}
+
+/** What the page can ask of the yard while it runs a drag of its own (a part pulled from the parts list). */
+export interface ShipYardHandle {
+  /** The cell a part would land on with its centre under the pointer; null when the pointer is off the yard. */
+  cellFor: (
+    partInstanceId: string,
+    clientX: number,
+    clientY: number,
+    rot: Rot,
+  ) => DropPreview | null;
+  /** Turns the part the pilot is carrying across the yard (a placed part's ghost) a quarter turn. */
+  rotateGhost: () => void;
+}
+
 export interface ShipYardProps {
   layout: readonly Placement[];
   /** Rarity and condition by instance id: blocks are coloured by one of them. */
@@ -179,9 +210,11 @@ export interface ShipYardProps {
   onDragEnd: () => void;
   /** Release of a ghost-dragged block: commit it at (gx, gy); an invalid drop is ignored by the
       owner, which leaves the part where the drag started. */
-  onDropPart?: (partInstanceId: string, gx: number, gy: number) => void;
+  onDropPart?: (partInstanceId: string, gx: number, gy: number, rot: Rot) => void;
   /** A placed part released over the parts list (an element marked `data-drop-zone="parts"`): take it off the ship. */
   onRemovePart?: (partInstanceId: string) => void;
+  /** Where a part pulled from the parts list would land: outlined on the yard (green fits, red does not). */
+  dropPreview?: DropPreview | null;
   /** Hovering a placed block (owner request): a small stats-only card, not the full popup. */
   onHoverPart?: (partInstanceId: string | null) => void;
   /** When false the ship is out on a mission: no rotate button, no drag, no rotation. */
@@ -194,26 +227,30 @@ export interface ShipYardProps {
 // come from real geometry: while a block is dragged it stops capturing pointer events and the
 // cell underneath reports where it would snap. The view (zoom + pan) is a viewBox window onto
 // the fixed grid, so the geometry the server validates never changes.
-export function ShipYard({
-  layout,
-  lookById,
-  cells,
-  disconnectedPartIds,
-  catalogById,
-  connectorsById,
-  nameById,
-  selectedId,
-  draggingId,
-  onSelect,
-  onCellClick,
-  onDragStart,
-  onDragEnd,
-  onDropPart,
-  onRemovePart,
-  onHoverPart,
-  editable = true,
-  callouts,
-}: ShipYardProps) {
+export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipYard(
+  {
+    layout,
+    lookById,
+    cells,
+    disconnectedPartIds,
+    catalogById,
+    connectorsById,
+    nameById,
+    selectedId,
+    draggingId,
+    onSelect,
+    onCellClick,
+    onDragStart,
+    onDragEnd,
+    onDropPart,
+    onRemovePart,
+    onHoverPart,
+    editable = true,
+    callouts,
+    dropPreview = null,
+  },
+  ref,
+) {
   const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -319,6 +356,7 @@ export function ShipYard({
     height: number;
     originX: number;
     originY: number;
+    originRot: Rot;
     grabX: number;
     grabY: number;
     x: number;
@@ -534,8 +572,12 @@ export function ShipYard({
       }
       // Drop where it fits, and only if it actually moved; a drop on the origin (or an invalid
       // cell) just leaves the part exactly where it started.
-      if (ghost.valid && (ghost.targetGx !== ghost.originX || ghost.targetGy !== ghost.originY)) {
-        onDropPart?.(ghost.partInstanceId, ghost.targetGx, ghost.targetGy);
+      const moved =
+        ghost.targetGx !== ghost.originX ||
+        ghost.targetGy !== ghost.originY ||
+        ghost.rot !== ghost.originRot;
+      if (ghost.valid && moved) {
+        onDropPart?.(ghost.partInstanceId, ghost.targetGx, ghost.targetGy, ghost.rot);
       }
       setGhost(null);
     }
@@ -543,6 +585,70 @@ export function ShipYard({
     if (pointers.current.size < 2) gesture.current.pinchDistance = null;
     onDragEnd();
   };
+
+  // The page asks the yard where a part pulled from the list would land, and turns a carried part.
+  useImperativeHandle(
+    ref,
+    () => ({
+      cellFor: (partInstanceId, clientX, clientY, rot) => {
+        const svg = svgRef.current;
+        const catalog = catalogById.get(partInstanceId);
+        if (svg === null || catalog === undefined) return null;
+        if (!insideBox(svg.getBoundingClientRect(), clientX, clientY)) return null;
+        const { width, height } = footprint(catalog, rot);
+        const point = pointerToCells(clientX, clientY);
+        const gx = Math.round(point.x - width / 2);
+        const gy = Math.round(point.y - height / 2);
+        return {
+          gx,
+          gy,
+          width,
+          height,
+          valid: placementIssue(layout, catalogById, partInstanceId, gx, gy, rot, cellSet) === null,
+        };
+      },
+      rotateGhost: () => {
+        setGhost((current) => {
+          if (current === null) return current;
+          const catalog = catalogById.get(current.partInstanceId);
+          if (catalog === undefined) return current;
+          const rot = nextRot(current.rot);
+          const { width, height } = footprint(catalog, rot);
+          // The part keeps its middle under the pointer while it turns.
+          const middleX = current.x + current.width / 2;
+          const middleY = current.y + current.height / 2;
+          const x = middleX - width / 2;
+          const y = middleY - height / 2;
+          const targetGx = Math.round(x);
+          const targetGy = Math.round(y);
+          return {
+            ...current,
+            rot,
+            width,
+            height,
+            grabX: width / 2,
+            grabY: height / 2,
+            x,
+            y,
+            targetGx,
+            targetGy,
+            valid:
+              placementIssue(
+                layout,
+                catalogById,
+                current.partInstanceId,
+                targetGx,
+                targetGy,
+                rot,
+                cellSet,
+              ) === null,
+          };
+        });
+      },
+    }),
+    // pointerToCells reads the live refs; the layout and the catalogue are what the answers depend on
+    [layout, catalogById, cellSet],
+  );
 
   const cellList = cells.map(([gx, gy]) => ({ gx, gy }));
 
@@ -571,6 +677,7 @@ export function ShipYard({
         height,
         originX: placement.gx,
         originY: placement.gy,
+        originRot: placement.rot,
         grabX: point.x - placement.gx,
         grabY: point.y - placement.gy,
         x: placement.gx,
@@ -847,6 +954,18 @@ export function ShipYard({
               {t('hangar.outside.tag')}
             </text>
           ))}
+        {/* Where a part pulled from the parts list would land (green fits, red does not). */}
+        {dropPreview !== null && (
+          <rect
+            className={`ghost-cell ${dropPreview.valid ? 'ok' : 'bad'}`}
+            data-testid="drop-preview"
+            x={dropPreview.gx}
+            y={dropPreview.gy}
+            width={dropPreview.width}
+            height={dropPreview.height}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
         {/* The dragged part as a free-floating ghost, rendered last so it rides above every block.
             It carries the part's own content (name + ports) so you drag what you see, and reads
             green when the nearest cell would accept it, red when releasing would revert it. */}
@@ -910,4 +1029,4 @@ export function ShipYard({
       </svg>
     </div>
   );
-}
+});
