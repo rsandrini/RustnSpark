@@ -1,10 +1,10 @@
-# Drag and Drop for Ship Parts Implementation Plan
+# Drag and Drop and Rotate-with-R for Ship Parts Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** On the web (mouse and pen) a pilot can drag a loose part from the parts list onto the ship to place it, and drag a placed part out of the ship onto the parts list to remove it, while click-then-click keeps working exactly as today.
+**Goal:** On the web (mouse and pen) a pilot can drag a loose part from the parts list onto the ship to place it, drag a placed part out onto the parts list to remove it, and turn a part with the **R key** (the little corner rotate icon goes away), while click-then-click keeps working exactly as today.
 
-**Architecture:** The yard already drags placed parts as a ghost and commits through `placePart`. This adds (1) a pure geometry module shared by the yard and the new drag, (2) a "drop on the parts list = remove" end for the existing ghost, and (3) a page-level tray drag (a floating chip, a drop outline in the yard, one `placePart` call on release). Touch stays on click-click: the phone's parts list is a scrolling bottom sheet and a drag there fights the scroll.
+**Architecture:** The yard already drags placed parts as a ghost and commits through `placePart`. This adds (1) a pure geometry module shared by the yard and the new drag, (2) a "drop on the parts list = remove" end for the existing ghost, and (3) a page-level tray drag (a floating chip, a drop outline in the yard, one `placePart` call on release). The rotate badge on each part (a corner icon with a press-and-drag live spin) is removed; **R** turns the part being dragged, else the part under the pointer, else the selected one, and the toolbar's Rotate button stays (it is the only way on a phone, which has no R). Touch stays on click-click: the phone's parts list is a scrolling bottom sheet and a drag there fights the scroll.
 
 **Tech Stack:** React, TypeScript, Vitest + Testing Library (jsdom), Playwright smoke.
 
@@ -14,6 +14,7 @@
 
 - Web only for this plan; no phone/touch drag (`pointerType === 'touch'` never starts a drag).
 - Player-facing text bilingual (en + pt-BR), no hard-coded strings.
+- Rotation is the R key (any layout: `event.key` r or `event.code` KeyR); never with Ctrl/Meta/Alt (Ctrl+R reloads the page), never while typing in a field or while a popup is open, one turn per press (`event.repeat` is ignored). The toolbar Rotate button keeps its accessible name "Rotate".
 - Click-then-click must keep working unchanged (a press that moves less than 6 px is still a click).
 - A drag never validates on its own: placement goes through the existing `placePart` (which uses `placementIssue`), removal through the existing remove path; the server still validates on save.
 - `modifyBlocked` / `editable === false` (ship out on a mission): no drag starts.
@@ -25,15 +26,18 @@
 - Dropping on an invalid cell, outside the yard, or releasing after Escape / pointer cancel changes nothing and the part stays in the list.
 - A placed part dropped anywhere except the parts list returns to where it started (never removed by accident); with the Store tab open there is no drop zone, so it also returns.
 - The pointer is released outside the browser window or the page scrolls mid-drag: the chip and the highlights clear, no stuck "dragging" state.
-- Ship on a mission: pressing and moving on rows or blocks does nothing.
+- Ship on a mission: pressing and moving on rows or blocks does nothing, and R does nothing.
+- R pressed while typing in a field, with Ctrl/Cmd held (page reload), held down (key repeat), with a popup open, or with nothing to turn: no rotation, no error, no stuck hint.
+- R with no room to turn: the existing "no room to rotate" hint shows and nothing moves.
 
 ## File structure
 
 - Create `apps/web/src/features/hangar/drag-geometry.ts`: pure helpers (screen point to cell, drag threshold, drop-zone test).
 - Create `apps/web/src/features/hangar/use-tray-drag.ts`: the page-level hook for the list-to-yard drag.
 - Create `apps/web/src/features/hangar/tray-drag-chip.tsx`: the floating chip that follows the pointer.
-- Modify `ship-yard.tsx` (shared geometry, `onRemovePart`, `cellFor` handle, `dropPreview` outline), `tray-part-row.tsx` (drag start), `hangar.page.tsx` (`removePart`, drop zone, wiring), `i18n/en.json`, `i18n/pt-BR.json`, `styles/ship.css`.
-- Tests: `drag-geometry.spec.ts`, `ship-yard.spec.tsx`, `hangar.spec.tsx`, `apps/web/e2e/drag-parts.spec.ts`.
+- Create `apps/web/src/features/hangar/use-rotate-key.ts`: the R key hook.
+- Modify `ship-yard.tsx` (shared geometry; remove the rotate badge and its live-spin code; `onRemovePart`; `cellFor` handle; `dropPreview` outline; rotate the drag ghost), `tray-part-row.tsx` (drag start), `hangar.page.tsx` (`removePart`, drop zone, R key wiring, hint), `i18n/en.json`, `i18n/pt-BR.json`, `styles/ship.css` (drop the `.yard-rotate-icon*` rules).
+- Tests: `drag-geometry.spec.ts`, `use-rotate-key.spec.tsx`, `ship-yard.spec.tsx`, `hangar.spec.tsx`, `apps/web/e2e/drag-parts.spec.ts`.
 
 ### Task 1: Shared drag geometry
 
@@ -57,7 +61,28 @@
 - [ ] **Step 4: Run** the new spec and `src/features/hangar`. Expected: PASS, existing yard tests unchanged.
 - [ ] **Step 5: Commit** `refactor(hangar): drag geometry in one place`.
 
-### Task 2: Drag a placed part out to the parts list to remove it
+### Task 2: Rotate with the R key, and remove the corner rotate icon
+
+**Files:**
+- Create: `use-rotate-key.ts`
+- Modify: `ship-yard.tsx` (delete the badge), `hangar.page.tsx`, `styles/ship.css`, `i18n/en.json`, `i18n/pt-BR.json`
+- Test: `use-rotate-key.spec.tsx`, `hangar.spec.tsx`
+
+**Interfaces:**
+- Consumes: `rotatePart(partInstanceId)` already in the page (in place, clockwise quarter turn, falls back to a half turn, says when there is no room).
+- Produces:
+  - `useRotateKey(options: { enabled: boolean; target: () => string | null; onRotate: (partInstanceId: string) => void }): void`, a `keydown` listener on `window` that, for a plain `r` (no Ctrl/Meta/Alt, not `event.repeat`, not inside `input`, `textarea`, `select` or `[contenteditable]`, no `.modal-backdrop` in the document), calls `onRotate(target())` when `target()` is not null and calls `event.preventDefault()` only then.
+  - In the page the target is: the part being dragged (Task 3/4), else the hovered placed part (`hoveredId`), else `selectedId`.
+  - Removed: the `button.yard-rotate-icon` block, `handleRotateDown/Move/End/Click`, `rotateDrag`, `suppressRotateClick`, `rotatingId` and its flash timer, `RotateIcon` (if nothing else uses it), the props `onRotate` and `onRotateLive` of `ShipYard`, and `rotatePartLive` in the page.
+  - New text key `hangar.rotate.hint` ("Press R to rotate the part" / "Aperte R para girar a peça") shown as one small line (class `rotate-hint-key`, with a `<kbd>R</kbd>`) under the yard while a part is selected, hovered or dragged; hidden under `@media (hover: none)` because a phone has no keyboard. The toolbar button keeps `aria-keyshortcuts="R"` and its name "Rotate".
+
+- [ ] **Step 1: Write the failing tests.** `use-rotate-key.spec.tsx`: `calls onRotate with the target on a plain r and on R`, `ignores Ctrl+R, Meta+R and Alt+R`, `ignores a held key (repeat)`, `ignores r typed in an input, a textarea and a select`, `ignores r while a popup is open`, `does nothing and does not prevent the default when there is no target`, `does nothing when disabled`. `hangar.spec.tsx`: replace the two badge tests (`hovering a block shows one corner rotate button...` and the live-spin test) with `no rotate icon appears on a hovered or selected block`, `R turns the selected part in place: the footprint swaps and the layout is unsaved`, `R turns the hovered part even when another is selected`, `R with no room shows the no-room hint and changes nothing`, and `the R hint shows while a part is selected and not otherwise`. Keep the toolbar `Rotate` button tests.
+- [ ] **Step 2: Run them.** Expected: FAIL.
+- [ ] **Step 3: Implement** the hook and the page wiring, delete the badge code listed above, delete the `.yard-rotate-icon*` CSS, add the hint line and `aria-keyshortcuts`.
+- [ ] **Step 4: Run** `pnpm --filter web exec vitest run src/features/hangar` plus `tsc` and `eslint`. Expected: PASS; no leftover references (`grep -rn "yard-rotate-icon\|onRotateLive\|rotatePartLive" apps/web/src` is empty).
+- [ ] **Step 5: Commit** `feat(hangar): rotate with the R key; the corner rotate icon is gone`.
+
+### Task 3: Drag a placed part out to the parts list to remove it
 
 **Files:**
 - Modify: `ship-yard.tsx`, `hangar.page.tsx`, `styles/ship.css`, `i18n/en.json`, `i18n/pt-BR.json`
@@ -66,6 +91,7 @@
 **Interfaces:**
 - Consumes: `startsDrag`, `insideBox` from Task 1.
 - Produces:
+  - `ShipYardProps.onDropPart` becomes `(partInstanceId: string, gx: number, gy: number, rot: Rot) => void`: the ghost already carries its rotation, and the page's `placePart(id, gx, gy, rot?)` uses it (a new part with no `rot` keeps today's clean-facing choice).
   - `ShipYardProps.onRemovePart?: (partInstanceId: string) => void` called when a ghost is released over an element with `data-drop-zone="parts"`.
   - In `hangar.page.tsx`: `removePart(partInstanceId: string): void` (the body of today's `removeSelected`, which now calls `removePart(selectedId)`), and the parts panel carries `data-drop-zone="parts"` only while the Parts tab shows and the ship is editable.
 
@@ -75,7 +101,7 @@
 - [ ] **Step 4: Run** the new tests and `src/features/hangar`. Expected: PASS.
 - [ ] **Step 5: Commit** `feat(hangar): drag a part out of the ship onto the parts list to remove it`.
 
-### Task 3: Drag a loose part from the parts list onto the ship
+### Task 4: Drag a loose part from the parts list onto the ship
 
 **Files:**
 - Create: `use-tray-drag.ts`, `tray-drag-chip.tsx`
@@ -85,19 +111,19 @@
 **Interfaces:**
 - Consumes: `clientToCells`, `insideBox`, `movedPastThreshold`, `startsDrag` (Task 1); `placePart(id, gx, gy)` and `placementIssue` already in the page.
 - Produces:
-  - `ShipYardHandle = { cellFor(partInstanceId: string, clientX: number, clientY: number): { gx: number; gy: number; width: number; height: number; valid: boolean } | null }` exposed by `forwardRef`/`useImperativeHandle` on `ShipYard`; `null` when the point is outside the svg. The cell is the part's centre under the pointer, rounded like the ghost (`Math.round(x - width / 2)`), rot 0, validity from `placementIssue(layout, catalogById, id, gx, gy, 0, cellSet) === null`.
+  - `ShipYardHandle = { cellFor(partInstanceId: string, clientX: number, clientY: number, rot: Rot): { gx: number; gy: number; width: number; height: number; valid: boolean } | null }` exposed by `forwardRef`/`useImperativeHandle` on `ShipYard`; `null` when the point is outside the svg. The cell is the part's centre under the pointer, rounded like the ghost (`Math.round(x - width / 2)`, with the footprint of `rot`), validity from `placementIssue(layout, catalogById, id, gx, gy, rot, cellSet) === null`.
   - `ShipYardProps.dropPreview?: { gx: number; gy: number; width: number; height: number; valid: boolean } | null`, drawn with the ghost's `ghost-cell ok|bad` classes.
-  - `useTrayDrag(options: { yard: RefObject<ShipYardHandle>; enabled: boolean; onDrop: (partInstanceId: string, gx: number, gy: number) => void }): { dragging: { partInstanceId: string; x: number; y: number } | null; dropPreview: DropPreview | null; begin(partInstanceId: string, event: ReactPointerEvent): void; consumeClick(): boolean }`. `begin` records the press; once `movedPastThreshold` it starts the drag (window `pointermove` / `pointerup` / `pointercancel` / `keydown` Escape listeners, removed on end), sets `dropPreview` from `yard.cellFor`, and on release calls `onDrop` only when the preview is valid. `consumeClick()` returns true once after a real drag so the click that follows is ignored.
+  - `useTrayDrag(options: { yard: RefObject<ShipYardHandle>; enabled: boolean; onDrop: (partInstanceId: string, gx: number, gy: number, rot: Rot) => void }): { dragging: { partInstanceId: string; x: number; y: number; rot: Rot } | null; rotate(): void; dropPreview: DropPreview | null; begin(partInstanceId: string, event: ReactPointerEvent): void; consumeClick(): boolean }`. `begin` records the press; once `movedPastThreshold` it starts the drag (window `pointermove` / `pointerup` / `pointercancel` / `keydown` Escape listeners, removed on end), sets `dropPreview` from `yard.cellFor`, and on release calls `onDrop` only when the preview is valid. `rotate()` turns the dragged part a quarter and refreshes the preview (the R key calls it while a tray drag is live; for a part dragged from the ship the ghost's own `rot` turns instead). `consumeClick()` returns true once after a real drag so the click that follows is ignored.
   - `<TrayDragChip name x y />` (position fixed, `pointer-events: none`, `aria-hidden`).
   - `TrayPartRowProps.onPointerDragStart?: (event: ReactPointerEvent<HTMLButtonElement>) => void`.
 
-- [ ] **Step 1: Write the failing tests:** in `ship-yard.spec.tsx`, `cellFor returns the cell under the pointer with its validity, and null outside the yard` (mock the svg's `getBoundingClientRect`; one free cell gives `valid: true`, a cell on the bridge gives `valid: false`); in `hangar.spec.tsx`, `dragging a loose part onto a free cell places it and the click that follows is ignored`, `a press that moves less than 6 px is still a click that selects the part`, `releasing over an invalid cell or outside the yard leaves the part in the list`, `Escape during the drag cancels it`, and `no drag starts while the ship is on a mission`.
+- [ ] **Step 1: Write the failing tests:** `R while dragging a loose part turns the drop preview and the part lands turned`, `R while dragging a placed part turns the ghost and the part lands turned (or stays put when the turned spot is invalid)`; in `ship-yard.spec.tsx`, `cellFor returns the cell under the pointer with its validity, and null outside the yard` (mock the svg's `getBoundingClientRect`; one free cell gives `valid: true`, a cell on the bridge gives `valid: false`); in `hangar.spec.tsx`, `dragging a loose part onto a free cell places it and the click that follows is ignored`, `a press that moves less than 6 px is still a click that selects the part`, `releasing over an invalid cell or outside the yard leaves the part in the list`, `Escape during the drag cancels it`, and `no drag starts while the ship is on a mission`.
 - [ ] **Step 2: Run them.** Expected: FAIL.
 - [ ] **Step 3: Implement** the handle and `dropPreview` in the yard, the hook and the chip, the row's `onPointerDown` (calls `onPointerDragStart` only when `startsDrag(event.pointerType, !disabled)`), and the page wiring: `onDrop={placePart}`, `consumeClick()` checked at the top of the row's `onSelect` so a drag never also selects. The chip shows the part's localized name. A drag also sets `body.dragging-part` (cursor `grabbing`) and removes it on end.
 - [ ] **Step 4: Run** the new tests and `src/features/hangar`. Expected: PASS.
 - [ ] **Step 5: Commit** `feat(hangar): drag a loose part from the list onto the ship`.
 
-### Task 4: Real-browser check and notes
+### Task 5: Real-browser check and notes
 
 **Files:**
 - Create: `apps/web/e2e/drag-parts.spec.ts`
@@ -112,7 +138,8 @@
 ## Decisions (defaults assumed above; say if you want any changed)
 
 1. Removal happens only when the part is released over the parts list, never by dropping it "anywhere outside the yard" (safer: a slip does not remove a part).
-2. A tray drag always starts the part at rotation 0; `placePart` already picks a clean facing for engines and weapons, and the pilot can rotate after.
+2. A tray drag starts the part at rotation 0 (`placePart` still picks a clean facing for engines and weapons when no rotation was chosen); R while dragging turns it before it lands, and R afterwards turns it in place.
+6. The corner rotate icon and its press-and-drag live spin are removed. The toolbar Rotate button stays, because a phone has no R key. R acts on the dragged part, else the part under the pointer, else the selected one.
 3. Dragging is pointer-only (no keyboard drag); click-then-click remains the keyboard path.
 4. The drag threshold is 6 px; hover cards stay as they are.
 5. Phone/touch: untouched in this plan (a long-press drag is a separate, later piece of work).
