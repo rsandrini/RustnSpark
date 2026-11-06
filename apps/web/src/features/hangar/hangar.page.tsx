@@ -281,6 +281,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
         onError: (error) => {
           const problems = problemsOf(error);
           if (problems.length > 0) setPreviewProblems(problems);
+          // The server refused this layout: the numbers of an earlier one must not stay on the sheet.
+          setPreview(null);
           setPreviewing(false);
         },
       });

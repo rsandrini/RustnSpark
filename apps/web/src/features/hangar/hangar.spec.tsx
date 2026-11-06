@@ -1085,6 +1085,52 @@ describe('hangar (S10.4)', () => {
     expect(assembled[0]?.layout).toEqual([]);
   });
 
+  it('a preview the server refuses does not leave the numbers of an earlier layout on the sheet', async () => {
+    let previews = 0;
+    server.use(
+      onboarded(),
+      http.post('/v1/ships/:id/preview', async ({ request }) => {
+        previews += 1;
+        if (previews > 1) {
+          return HttpResponse.json(
+            {
+              statusCode: 400,
+              message: {
+                error: 'SHIP_NOT_VIABLE',
+                problems: [{ code: 'OVERLAP', message: 'Parts overlap.' }],
+              },
+            },
+            { status: 400 },
+          );
+        }
+        const body = (await request.json()) as { layout: Placement[] };
+        return HttpResponse.json({
+          sheet: { ...testSheet, pot: 12 },
+          shipClass: 'MULTIROLE',
+          viability: { viable: true, problems: [] },
+          layout: body.layout,
+          omittedPartInstanceIds: [],
+        });
+      }),
+    );
+    const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+    await screen.findByText('Ready to fly');
+    fireEvent.click(await screen.findByRole('button', { name: /^cargo/i }));
+    fireEvent.click(cell(container, 4, 0));
+    const headline = await screen.findByTestId('sheet-headline');
+    const mobility = () =>
+      within(headline).getByText('Mobility').closest('.sheet-headline-tile') as HTMLElement;
+    // the first preview (pot 12 / mass 24 x 1.6 x 10) is on the sheet
+    await waitFor(() => expect(mobility()).toHaveTextContent('8'), { timeout: 3000 });
+
+    // a second edit asks again and the server refuses: the 8 belongs to the old layout
+    fireEvent.pointerDown(block(container, 'part-bridge')!);
+    fireEvent.click(await screen.findByRole('button', { name: 'Rotate' }));
+    await waitFor(() => expect(previews).toBeGreaterThan(1), { timeout: 3000 });
+    // back to the saved ship's own figure (25 / 24 x 1.6 x 10 = 16.7)
+    await waitFor(() => expect(mobility()).toHaveTextContent('16.7'), { timeout: 3000 });
+  });
+
   it('shows translated problems when the server rejects the layout', async () => {
     server.use(onboarded());
     server.use(
