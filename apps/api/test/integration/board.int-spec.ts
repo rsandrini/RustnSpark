@@ -96,6 +96,38 @@ describe('mission board (S6.2)', () => {
     expect(counts.get('cair_pad')).toBe(1);
   });
 
+  it('counting offers never waits on a board that is being topped up: it answers from what is there', async () => {
+    // another request holds the board lock for hedus (a slow top-up in flight)
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked: () => void = () => undefined;
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const holder = prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(6200::int4, hashtext('hedus'::text))::text`;
+        locked();
+        await held;
+      },
+      { timeout: 30000 },
+    );
+    await lockTaken;
+    try {
+      const started = Date.now();
+      const counts = await board!.countOffers(['hedus', 'tycho_slip']);
+      expect(Date.now() - started).toBeLessThan(2000);
+      // the busy board is counted as it stands (empty), the free one is topped up as usual
+      expect(counts.get('hedus')).toBe(0);
+      expect(counts.get('tycho_slip')).toBe(4);
+    } finally {
+      release();
+      await holder;
+    }
+  }, 15000);
+
   it('a big board shows every type its place can post before any type repeats', async () => {
     const eligible = new Set<string>();
     const templates = await prisma.missionTemplate.findMany({ where: { active: true } });

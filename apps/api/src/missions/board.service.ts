@@ -28,6 +28,9 @@ import {
 const BOARD_LOCK_CLASS = 6200;
 // Advisory-lock class for creating a player's private starter offer (D43), keyed per (player, location).
 const STARTER_LOCK_CLASS = 6201;
+// A slow database must not turn a page load into an error: wait longer than Prisma's 5 s default.
+const TOP_UP_MAX_WAIT_MS = 10_000;
+const TOP_UP_TIMEOUT_MS = 20_000;
 // Seeds tried before giving up on finding a mission this player's ship can take.
 const STARTER_ATTEMPTS = 12;
 // Reseeds tried to make a new board offer differ from the live ones: the first half under both
@@ -160,16 +163,22 @@ export class BoardService {
     if (needsTopUp.length === 0) return counts;
     const sorted = needsTopUp.sort();
 
-    return this.prisma.$transaction(async (tx) => {
-      for (const locationId of sorted) {
-        await this.lock(tx, locationId);
-      }
-      const world = lazyWorld(tx);
-      for (const locationId of sorted) {
-        counts.set(locationId, await this.topUp(tx, locationId, now, rules, version, world));
-      }
-      return counts;
-    });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const world = lazyWorld(tx);
+        for (const locationId of sorted) {
+          // A busy board is already being topped up by another request: count it as it
+          // stands instead of queueing behind it (this read runs on every page load).
+          if (!(await this.tryLock(tx, locationId))) {
+            counts.set(locationId, liveByLocation.get(locationId) ?? 0);
+            continue;
+          }
+          counts.set(locationId, await this.topUp(tx, locationId, now, rules, version, world));
+        }
+        return counts;
+      },
+      { maxWait: TOP_UP_MAX_WAIT_MS, timeout: TOP_UP_TIMEOUT_MS },
+    );
   }
 
   /**
@@ -257,6 +266,14 @@ export class BoardService {
       }
       return false;
     });
+  }
+
+  /** Takes the board lock if nobody holds it; false when another request does. */
+  private async tryLock(tx: Prisma.TransactionClient, locationId: string): Promise<boolean> {
+    const rows = await tx.$queryRaw<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_xact_lock(${BOARD_LOCK_CLASS}::int4, hashtext(${locationId}::text)) AS locked
+    `;
+    return rows[0]?.locked === true;
   }
 
   private async lock(tx: Prisma.TransactionClient, locationId: string): Promise<void> {
