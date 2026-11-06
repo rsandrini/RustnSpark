@@ -6,18 +6,26 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## Bugs to investigate (owner reports, 2026-11-05)
 
-Raised from play and from the in-game bug report. Not looked at yet: reproduce first, then fix.
+Fixed on `fix/sentry-and-owner-bugs` (2026-11-05), waiting for the owner to confirm on the live server:
 
-- [ ] **The phone gets very hot while the game is open** (bug report from the pilot's phone, page `/ship`, pt-BR). Measure what the
-  game costs on a phone (CPU, battery, memory) and find the cause: the ship yard svg and its animations, polling (`/missions/active`,
-  tutorial progress, dialogue, ship preview), the take-off and wallet animations, re-renders. Compare with the tab in the background.
-- [ ] **Mobility reads below 1 but the ship sheet does not update** after swapping or removing parts, even after saving the layout.
-  Check that the sheet is refetched and re-derived after `assemble`, and what the preview shows against the saved ship.
-- [ ] **A mission that ends while the ship is being assembled redirects the pilot to the report and the unsaved layout changes are
-  lost.** The flight watcher (`features/transit/flight-watcher.tsx`) navigates to `/report/:id` from any screen. Do not throw
-  away an unsaved edit (ask first, or keep the draft and offer the report as a link).
-- [ ] **The part popup on the ship stays fixed in front of the assembly** (maybe already fixed by moving every popup to the page
-  body, and the pilot saw a cached build). Verify on a phone after a hard reload.
+- [x] **Mobility reads below 1 but the sheet does not update.** The sheet shows mobility on the display scale (x10), the message
+  still said "below 1": the two disagreed. The message now says "below 10" (the limit on the sheet's own scale).
+- [x] **A mission that ends while the ship is being assembled threw the unsaved layout away.** The flight watcher now stays put
+  while the hangar has unsaved edits and shows "Your flight is over. Save your layout, then read the report." with a Report button.
+- [x] **The part card stuck in front of the assembly.** A finger never "leaves" a block, so the hover card stayed. Touch no longer
+  opens it, and hover cards are hidden on touch devices.
+- [x] **Sentry REACT-3 / REACT-4** (`GET /v1/locations` transaction timeouts): counting offers no longer queues behind a board that
+  another request is topping up (it counts what is there), and the top-up transaction has a longer timeout.
+- [x] **Sentry REACT-2** (mission resolved twice, unique key on `MissionLog.missionId`): the second worker now skips instead of failing.
+- [x] **Sentry REACT-1** (`/v1/health` 503): the failing dependency is now in the log and on the Sentry event. Probably the same slow
+  database as REACT-3/4: check the Postgres latency on the server.
+
+Still open:
+
+- [ ] **The phone gets very hot while the game is open** (bug report from the pilot's phone, page `/ship`, pt-BR). The endless
+  route/pulse animations are off on phones now; nothing is measured on a device yet. See `docs/design/mobile-performance.md` for the
+  inventory and how to measure.
+- [ ] The DSNs in the server's `.env.prod` are swapped (`SENTRY_DSN` must be the Node project, `SENTRY_WEB_DSN` the React project).
 
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
