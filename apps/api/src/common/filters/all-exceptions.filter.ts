@@ -36,8 +36,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const { statusCode, message } = classify(exception);
     const body: ErrorResponseBody = { statusCode, message, requestId: request.id };
 
-    this.logger.error({ err: exception, requestId: request.id }, 'Unhandled exception');
-    if (statusCode >= SERVER_ERROR_FROM) captureServerError(exception, request.id);
+    this.logger.error(
+      {
+        err: exception,
+        requestId: request.id,
+        ...(typeof message === 'object' && !Array.isArray(message) ? { detail: message } : {}),
+      },
+      'Unhandled exception',
+    );
+    if (statusCode >= SERVER_ERROR_FROM) captureServerError(exception, request.id, message);
     httpAdapter.reply(response, body, statusCode);
   }
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
-import { captureJobFailure, captureServerError, initSentry } from './sentry.js';
+import { captureJobFailure, captureServerError, initSentry, serverErrorContext } from './sentry.js';
 
 describe('error tracking', () => {
   const original = process.env['SENTRY_DSN'];
@@ -19,5 +19,14 @@ describe('error tracking', () => {
     delete process.env['SENTRY_DSN'];
     expect(() => captureServerError(new Error('x'), 'req-1')).not.toThrow();
     expect(() => captureJobFailure('mission', undefined, new Error('x'))).not.toThrow();
+  });
+
+  it('a failed health check reports which dependency was down', () => {
+    const detail = { status: 'error', error: { database: { status: 'down' } } };
+    expect(serverErrorContext('req-9', detail)).toEqual({
+      tags: { requestId: 'req-9' },
+      extra: { detail },
+    });
+    expect(serverErrorContext(undefined, 'a plain message')).toEqual({ tags: {}, extra: {} });
   });
 });

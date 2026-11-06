@@ -32,9 +32,21 @@ export function initSentry(processName: 'api' | 'worker'): boolean {
   return true;
 }
 
+/** What a 5xx report carries besides the error: the request id, and any structured detail the error held. */
+export function serverErrorContext(
+  requestId: string | undefined,
+  detail?: unknown,
+): { tags: Record<string, string>; extra: Record<string, unknown> } {
+  return {
+    tags: requestId === undefined ? {} : { requestId },
+    // e.g. a failed health check names which dependency (database, redis) was down
+    extra: typeof detail === 'object' && detail !== null ? { detail } : {},
+  };
+}
+
 /** A 5xx the API answered, with the request id that is also in the log line and the response body. */
-export function captureServerError(error: unknown, requestId?: string): void {
-  Sentry.captureException(error, { tags: requestId === undefined ? {} : { requestId } });
+export function captureServerError(error: unknown, requestId?: string, detail?: unknown): void {
+  Sentry.captureException(error, serverErrorContext(requestId, detail));
 }
 
 /** A BullMQ job that failed (after its retries, if any): which queue and which job. */
