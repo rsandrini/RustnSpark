@@ -4,7 +4,14 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useTrayDrag } from './use-tray-drag';
 import type { DropPreview, ShipYardHandle } from './ship-yard';
 
-const fits: DropPreview = { gx: 4, gy: 2, width: 1, height: 1, valid: true };
+const fits: DropPreview = {
+  partInstanceId: 'part-a',
+  gx: 4,
+  gy: 2,
+  width: 1,
+  height: 1,
+  valid: true,
+};
 const press = (pointerType = 'mouse', button = 0) =>
   ({ clientX: 100, clientY: 100, pointerType, button }) as unknown as ReactPointerEvent;
 

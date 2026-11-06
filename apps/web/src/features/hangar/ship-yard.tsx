@@ -169,6 +169,8 @@ export interface PartLook {
 
 /** Where a part would land if it were dropped now, and whether that spot works (a green or a red outline). */
 export interface DropPreview {
+  /** The part that would land here (the yard draws it like the ghost of a part it carries). */
+  partInstanceId: string;
   gx: number;
   gy: number;
   width: number;
@@ -600,6 +602,7 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
         const gx = Math.round(point.x - width / 2);
         const gy = Math.round(point.y - height / 2);
         return {
+          partInstanceId,
           gx,
           gy,
           width,
@@ -954,18 +957,54 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
               {t('hangar.outside.tag')}
             </text>
           ))}
-        {/* Where a part pulled from the parts list would land (green fits, red does not). */}
-        {dropPreview !== null && (
-          <rect
-            className={`ghost-cell ${dropPreview.valid ? 'ok' : 'bad'}`}
-            data-testid="drop-preview"
-            x={dropPreview.gx}
-            y={dropPreview.gy}
-            width={dropPreview.width}
-            height={dropPreview.height}
-            style={{ pointerEvents: 'none' }}
-          />
-        )}
+        {/* Where a part pulled from the parts list would land: drawn like the ghost of a part carried across the
+            yard (an outline on the cell, the part's body and its name), green when it fits and red when not. */}
+        {dropPreview !== null &&
+          (() => {
+            const name = nameById.get(dropPreview.partInstanceId) ?? '';
+            const lines = labelLines(name, dropPreview.width, dropPreview.height, zoom, areaFactor);
+            const lineHeight = labelFont * 1.15;
+            const ok = dropPreview.valid ? 'ok' : 'bad';
+            const middleX = dropPreview.gx + dropPreview.width / 2;
+            const firstY =
+              dropPreview.gy + dropPreview.height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
+            return (
+              <g className="yard-ghost" style={{ pointerEvents: 'none' }}>
+                <rect
+                  className={`ghost-cell ${ok}`}
+                  data-testid="drop-preview"
+                  x={dropPreview.gx}
+                  y={dropPreview.gy}
+                  width={dropPreview.width}
+                  height={dropPreview.height}
+                  rx={0.08}
+                />
+                <rect
+                  className={`ghost-body ${ok}`}
+                  x={dropPreview.gx + 0.04}
+                  y={dropPreview.gy + 0.04}
+                  width={dropPreview.width - 0.08}
+                  height={dropPreview.height - 0.08}
+                  rx={0.06}
+                />
+                <text
+                  className="block-label ghost-label"
+                  x={middleX}
+                  style={{ fontSize: `${labelFont}px` }}
+                >
+                  {lines.map((line, index) => (
+                    <tspan
+                      key={line + String(index)}
+                      x={middleX}
+                      y={firstY + index * lineHeight + labelFont * 0.35}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            );
+          })()}
         {/* The dragged part as a free-floating ghost, rendered last so it rides above every block.
             It carries the part's own content (name + ports) so you drag what you see, and reads
             green when the nearest cell would accept it, red when releasing would revert it. */}

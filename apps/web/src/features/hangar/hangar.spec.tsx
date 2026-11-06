@@ -1066,7 +1066,7 @@ describe('hangar (S10.4)', () => {
       // out over the parts list (to the right of the yard): the chip carries the part's name
       fireEvent.pointerMove(window, { clientX: 700, clientY: 200 });
       const chip = await waitFor(() => {
-        const found = container.ownerDocument.querySelector('.tray-drag-chip');
+        const found = document.querySelector('.tray-drag-chip');
         expect(found).not.toBeNull();
         return found as Element;
       });
@@ -1136,9 +1136,17 @@ describe('hangar (S10.4)', () => {
       expect(outline).toHaveClass('ok');
       expect(outline.getAttribute('x')).toBe('4');
       expect(outline.getAttribute('y')).toBe('0');
+      // the landing cell is drawn like a ghost part (a tinted body with its name), never a bare filled box
+      expect(outline.closest('g.yard-ghost')).not.toBeNull();
+      expect(container.querySelector('g.yard-ghost .ghost-body')).not.toBeNull();
+      expect(container.querySelector('g.yard-ghost .ghost-label')?.textContent ?? '').toMatch(
+        /cargo/i,
+      );
       // what follows the pointer looks like a part of the list (rarity colour, tile, name), not a plain box
       const chip = document.querySelector('.tray-drag-chip') as HTMLElement;
       expect(chip).toHaveClass('part-btn', 'rarity-common');
+      // on the page body, so no panel can clip it or cover it
+      expect(chip.parentElement).toBe(document.body);
       expect(chip.querySelector('.part-thumb')).not.toBeNull();
       expect(chip.textContent ?? '').toMatch(/cargo/i);
 

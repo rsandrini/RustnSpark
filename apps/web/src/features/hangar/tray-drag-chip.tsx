@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { PartThumb } from '../../ui/PartThumb';
 
 /**
@@ -15,7 +16,9 @@ export function TrayDragChip({
   x: number;
   y: number;
 }) {
-  return (
+  // On the page body, not where the caller sits: inside the scrolling parts list a fixed chip can be clipped or
+  // end up under a neighbour's layer, and it must stay above everything.
+  return createPortal(
     <div
       className={`tray-drag-chip part-btn rarity-${rarity.toLowerCase()}`}
       aria-hidden="true"
@@ -25,6 +28,7 @@ export function TrayDragChip({
         <PartThumb name={name} rarity={rarity} />
         {name}
       </span>
-    </div>
+    </div>,
+    document.body,
   );
 }
