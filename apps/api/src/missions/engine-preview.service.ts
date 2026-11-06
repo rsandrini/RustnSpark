@@ -57,7 +57,9 @@ export interface EnginePreview {
   /** The same figures at level 1, to show what the tuning changes. */
   readonly baseline: { readonly mobility: number; readonly fuelUse: number };
   /** For a given mission: the trip at these levels (and at level 1). */
-  readonly trip?: EngineTrip & { readonly baseline: { durationSeconds: number; fuelNeeded: number } };
+  readonly trip?: EngineTrip & {
+    readonly baseline: { durationSeconds: number; fuelNeeded: number };
+  };
 }
 
 /**
@@ -78,7 +80,9 @@ export class EnginePreviewService {
     request: { chem?: number; ion?: number; missionId?: string },
   ): Promise<EnginePreview> {
     const { rules } = this.config.snapshot();
-    const ship = await this.prisma.ship.findFirst({ where: { id: shipId, ownerPlayerId: playerId } });
+    const ship = await this.prisma.ship.findFirst({
+      where: { id: shipId, ownerPlayerId: playerId },
+    });
     if (!ship) throw new NotFoundException('ship not found');
 
     const rows = await this.parts.findPlayerParts(playerId);
@@ -94,9 +98,19 @@ export class EnginePreviewService {
       installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
     );
     const placements = (ship.layout as unknown as Placement[]) ?? [];
-    const connectedIds = connectedPartIds(placements, conductiveCatalog(catalogForConnectivity, installed, rules), connectorsByInstance);
+    const connectedIds = connectedPartIds(
+      placements,
+      conductiveCatalog(catalogForConnectivity, installed, rules),
+      connectorsByInstance,
+    );
     const connected = applyConnectivity(installed, connectedIds);
-    const flight = flightShip(connected, placements, catalogForConnectivity, connectorsByInstance, rules);
+    const flight = flightShip(
+      connected,
+      placements,
+      catalogForConnectivity,
+      connectorsByInstance,
+      rules,
+    );
 
     const levels = clampLevels(
       { chem: request.chem ?? ship.chemLevel, ion: request.ion ?? ship.ionLevel },
@@ -107,7 +121,9 @@ export class EnginePreviewService {
     const baseSheet = flight.sheet;
 
     const powerState = allocatePower(
-      tunedParts.map((part) => powerPartOf(part.instance.id, part.catalog, rules.power.idle_demand)),
+      tunedParts.map((part) =>
+        powerPartOf(part.instance.id, part.catalog, rules.power.idle_demand),
+      ),
       'cruise',
       rules,
     );

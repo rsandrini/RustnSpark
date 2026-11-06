@@ -48,7 +48,10 @@ export function configureApp(app: INestApplication, env: EnvService): void {
   // every other content type keeps going through the JSON parser below.
   app.use(
     ['/v1/admin/tuning/factions', '/v1/admin/tuning/locations', '/v1/admin/tuning/quest-givers'],
-    raw({ type: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], limit: ART_UPLOAD_LIMIT }),
+    raw({
+      type: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
+      limit: ART_UPLOAD_LIMIT,
+    }),
   );
   app.use(json({ limit: BODY_SIZE_LIMIT }));
   app.use(urlencoded({ extended: true, limit: BODY_SIZE_LIMIT }));

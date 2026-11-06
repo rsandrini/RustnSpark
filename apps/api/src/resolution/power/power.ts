@@ -6,7 +6,8 @@ import type { GameRules } from '../../config/game-config.types.js';
 // primary ones, in the configured order), and last everything else. A system that gets only part
 // of what it needs works only part of the time (see `successChance`).
 
-export type PowerKind = 'bridge' | 'life' | 'pump' | 'sensor' | 'weapon' | 'shield' | 'rig' | 'other';
+export type PowerKind =
+  'bridge' | 'life' | 'pump' | 'sensor' | 'weapon' | 'shield' | 'rig' | 'other';
 
 /** What a part contributes to or takes from the ship's power (frozen into the run, D19). */
 export interface PowerPart {
@@ -33,7 +34,16 @@ export interface PowerState {
   readonly byKind: Readonly<Record<PowerKind, number>>;
 }
 
-const KINDS: readonly PowerKind[] = ['bridge', 'life', 'pump', 'sensor', 'weapon', 'shield', 'rig', 'other'];
+const KINDS: readonly PowerKind[] = [
+  'bridge',
+  'life',
+  'pump',
+  'sensor',
+  'weapon',
+  'shield',
+  'rig',
+  'other',
+];
 /** The kinds that only draw their full power when the situation uses them. */
 const CONTEXT_KINDS: ReadonlySet<PowerKind> = new Set<PowerKind>(['weapon', 'shield', 'rig']);
 
@@ -66,7 +76,11 @@ export function allocatePower(
   const demand = consumers.reduce((sum, part) => sum + demandOf(part, situation, rules), 0);
 
   const primary = rules.power.tiers[situation] ?? [];
-  const steps: PowerKind[][] = [['bridge'], ['life'], ...primary.map((kind) => [kind as PowerKind])];
+  const steps: PowerKind[][] = [
+    ['bridge'],
+    ['life'],
+    ...primary.map((kind) => [kind as PowerKind]),
+  ];
   const named = new Set(steps.flat());
   // everything not named above is secondary and shares what is left equally
   steps.push(KINDS.filter((kind) => !named.has(kind)));
@@ -85,7 +99,8 @@ export function allocatePower(
   const byKind = Object.fromEntries(
     KINDS.map((kind) => {
       const group = consumers.filter((part) => part.kind === kind);
-      const least = group.length === 0 ? 1 : Math.min(...group.map((part) => shares.get(part.id) ?? 1));
+      const least =
+        group.length === 0 ? 1 : Math.min(...group.map((part) => shares.get(part.id) ?? 1));
       return [kind, least];
     }),
   ) as Record<PowerKind, number>;
@@ -142,7 +157,8 @@ export function powerPartOf(
     id,
     kind,
     demand,
-    idle: catalog.idlePower !== undefined && catalog.idlePower > 0 ? catalog.idlePower : idleDefault,
+    idle:
+      catalog.idlePower !== undefined && catalog.idlePower > 0 ? catalog.idlePower : idleDefault,
     supply,
     ...(catalog.partClass === 'ENGINE' ? { engine: true } : {}),
   };

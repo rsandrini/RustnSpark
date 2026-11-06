@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
@@ -239,6 +240,72 @@ describe('guest accounts', () => {
       });
       expect(response.status).toBe(409);
       expect(response.body).toMatchObject({ message: { error: 'NOT_A_GUEST' } });
+    });
+  });
+
+  describe('off the public surfaces', () => {
+    const server = () => testApp.app.getHttpServer() as Server;
+    async function guest() {
+      const response = await request(server()).post('/v1/auth/guest').send({ locale: 'en' });
+      return response.body as {
+        accessToken: string;
+        guestKey: string;
+        player: { id: string; publicId: string };
+      };
+    }
+    const asGuest = (token: string, path: string) =>
+      request(server()).get(path).set('Authorization', `Bearer ${token}`);
+    const claim = (token: string) =>
+      request(server())
+        .post('/v1/players/me/claim')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ email: 'now.real@example.com', password: 'secret1' });
+
+    it('a guest is not on any ranking and has no public card, until the pilot is claimed', async () => {
+      const g = await guest();
+      await prisma.playerStats.create({
+        data: { playerId: g.player.id, totals: { 'flight.distance': 500 } },
+      });
+      await prisma.raceResult.create({
+        data: {
+          playerId: g.player.id,
+          missionId: randomUUID(),
+          routeKey: 'ceres>hedus',
+          originId: 'ceres',
+          destinationId: 'hedus',
+          seconds: 80,
+          place: 1,
+          day: new Date('2026-10-28'),
+        },
+      });
+
+      const before = await asGuest(g.accessToken, '/v1/rankings/distance');
+      expect(before.status).toBe(200);
+      expect(before.body).toMatchObject({ entries: [], me: null });
+      const routes = await asGuest(g.accessToken, '/v1/rankings/race-routes');
+      expect(routes.body).toEqual({ routes: [] });
+      const card = await asGuest(g.accessToken, `/v1/players/profile/${g.player.publicId}`);
+      expect(card.status).toBe(404);
+
+      expect((await claim(g.accessToken)).status).toBe(200);
+
+      const after = await asGuest(g.accessToken, '/v1/rankings/distance');
+      expect(after.body).toMatchObject({ entries: [{ isMe: true }], me: { rank: 1 } });
+      expect(
+        (await asGuest(g.accessToken, `/v1/players/profile/${g.player.publicId}`)).status,
+      ).toBe(200);
+    });
+
+    it('asking for a password reset for a guest address sends nothing and gives the uniform answer', async () => {
+      const g = await guest();
+      const account = await prisma.account.findFirstOrThrow({
+        where: { player: { id: g.player.id } },
+      });
+      const response = await request(server())
+        .post('/v1/auth/forgot-password')
+        .send({ email: account.email });
+      expect(response.status).toBeLessThan(300);
+      expect(await prisma.passwordResetToken.count({ where: { accountId: account.id } })).toBe(0);
     });
   });
 });

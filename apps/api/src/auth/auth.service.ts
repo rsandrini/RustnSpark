@@ -176,10 +176,11 @@ export class AuthService {
     const email = rawEmail.toLowerCase().trim();
     const account = await this.prisma.account.findUnique({
       where: { email },
-      select: { id: true, email: true },
+      select: { id: true, email: true, isGuest: true },
     });
 
-    if (!account) return;
+    // A guest has no real address: nothing is sent, and the answer stays the same.
+    if (!account || account.isGuest) return;
 
     const recent = await this.prisma.passwordResetToken.findFirst({
       where: {

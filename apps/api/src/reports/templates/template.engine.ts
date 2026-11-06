@@ -260,7 +260,10 @@ function tuningLine(event: ParsedMissionEvent, locale: Locale): string {
         ? `${group} foram reduzidos a x${level}: mais devagar, mas gastando menos combustível.`
         : `${group} foram reduzidos a x${level}: menos empuxo, mas consumindo menos energia.`;
     }
-    const worn = tuning.wear === undefined || tuning.wear <= 0 ? '' : ` Forçar desgastou cada motor em ${formatNumber(tuning.wear, locale)}${tuning.batteries === true ? ' e as baterias também' : ''}.`;
+    const worn =
+      tuning.wear === undefined || tuning.wear <= 0
+        ? ''
+        : ` Forçar desgastou cada motor em ${formatNumber(tuning.wear, locale)}${tuning.batteries === true ? ' e as baterias também' : ''}.`;
     return tuning.outcome === 'failed'
       ? `${group} foram forçados a x${level} (${chance}% de risco de falha neste trecho) — e um deles superaqueceu.${worn}`
       : `${group} foram forçados a x${level} (${chance}% de risco de falha neste trecho) — e aguentaram.${worn}`;
@@ -270,7 +273,10 @@ function tuningLine(event: ParsedMissionEvent, locale: Locale): string {
       ? `${group} were throttled down to x${level}: slower, but burning less fuel.`
       : `${group} were throttled down to x${level}: less thrust, but drawing less power.`;
   }
-  const worn = tuning.wear === undefined || tuning.wear <= 0 ? '' : ` The push wore each engine by ${formatNumber(tuning.wear, locale)}${tuning.batteries === true ? ' and the batteries too' : ''}.`;
+  const worn =
+    tuning.wear === undefined || tuning.wear <= 0
+      ? ''
+      : ` The push wore each engine by ${formatNumber(tuning.wear, locale)}${tuning.batteries === true ? ' and the batteries too' : ''}.`;
   return tuning.outcome === 'failed'
     ? `${group} were pushed to x${level} (a ${chance}% risk of failing this leg) — and one overheated.${worn}`
     : `${group} were pushed to x${level} (a ${chance}% risk of failing this leg) — and held.${worn}`;

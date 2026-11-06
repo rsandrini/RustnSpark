@@ -29,10 +29,7 @@ import {
 } from '../../common/decorators/current-user.decorator.js';
 import { GameConfigValidationError } from '../../config/game-config.types.js';
 import { randomUUID } from 'node:crypto';
-import {
-  previewConnectorRules,
-  type ConnectorRulesPreview,
-} from '../../parts/connector-rules.js';
+import { previewConnectorRules, type ConnectorRulesPreview } from '../../parts/connector-rules.js';
 
 function serializeRevision(revision: TuningRevision): Record<string, unknown> {
   return {
@@ -57,7 +54,14 @@ export class EntityTuningController {
   @Post('connector-rules/preview')
   @HttpCode(200)
   previewConnectorRules(@Body() dto: PreviewConnectorRulesDto): ConnectorRulesPreview {
-    return previewConnectorRules(dto.rules, dto.w, dto.h, dto.partClass, dto.samples ?? 6, randomUUID());
+    return previewConnectorRules(
+      dto.rules,
+      dto.w,
+      dto.h,
+      dto.partClass,
+      dto.samples ?? 6,
+      randomUUID(),
+    );
   }
 
   @Get(':entity')

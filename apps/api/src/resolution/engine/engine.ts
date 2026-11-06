@@ -147,7 +147,11 @@ export function cleanRunChance(
  * engine of a pushed group loses (more push, more wear, none at level 1 or below) and, for the ion
  * engines, each battery (a share of that, `push_battery_share`).
  */
-export function pushWear(group: EngineGroup, level: number, rules: GameRules): { engine: number; battery: number } {
+export function pushWear(
+  group: EngineGroup,
+  level: number,
+  rules: GameRules,
+): { engine: number; battery: number } {
   const { engine } = rules;
   const max = group === 'chem' ? engine.chem_level_max : engine.ion_level_max;
   const push = level <= 1 || max <= 1 ? 0 : Math.min(1, (level - 1) / (max - 1));

@@ -9,7 +9,10 @@ import { GameConfigValidationError } from '../../config/game-config.types.js';
 import { parseConnectorRules, validateConnectorRules } from '../../parts/connector-rules.js';
 import { sceneProblems } from '../../dialogue/scenes.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { TEMPLATE_PLACEHOLDERS, templateProblems } from '../../reports/templates/template.placeholders.js';
+import {
+  TEMPLATE_PLACEHOLDERS,
+  templateProblems,
+} from '../../reports/templates/template.placeholders.js';
 import { invalidateReportTemplates } from '../../reports/templates/template.store.js';
 import { buildEntityValidator, getEntitySchema, type EntitySchema } from './entity-schemas.js';
 

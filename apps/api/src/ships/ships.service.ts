@@ -740,7 +740,8 @@ export class ShipsService implements OnModuleInit {
     let room = capacity - fuelAboard;
     for (const part of playerParts) {
       if (room <= 0) break;
-      const comingIn = layoutIds.has(part.id) && !(part.location === 'INSTALLED' && part.shipId === shipId);
+      const comingIn =
+        layoutIds.has(part.id) && !(part.location === 'INSTALLED' && part.shipId === shipId);
       if (!comingIn || part.storedFuel <= 0) continue;
       const take = Math.min(part.storedFuel, room);
       stored.set(part.id, part.storedFuel - take);

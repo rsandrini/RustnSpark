@@ -51,13 +51,21 @@ const urlOf = (file: string | undefined): string | null =>
 function looksLike(mime: string, bytes: Buffer): boolean {
   switch (mime) {
     case 'image/png':
-      return bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      return bytes
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
     case 'image/jpeg':
       return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
     case 'image/webp':
-      return bytes.subarray(0, 4).toString('latin1') === 'RIFF' && bytes.subarray(8, 12).toString('latin1') === 'WEBP';
+      return (
+        bytes.subarray(0, 4).toString('latin1') === 'RIFF' &&
+        bytes.subarray(8, 12).toString('latin1') === 'WEBP'
+      );
     case 'image/svg+xml': {
-      const text = bytes.toString('utf8').replace(/^\uFEFF/, '').trimStart();
+      const text = bytes
+        .toString('utf8')
+        .replace(/^\uFEFF/, '')
+        .trimStart();
       return /^(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(text);
     }
     default:
@@ -158,7 +166,10 @@ export class ArtService {
     if (!FILE_PATTERN.test(file)) throw new NotFoundException();
     const extension = file.slice(file.lastIndexOf('.') + 1);
     try {
-      return { bytes: await readFile(join(this.dir(), file)), mime: MIME_OF[extension] ?? 'application/octet-stream' };
+      return {
+        bytes: await readFile(join(this.dir(), file)),
+        mime: MIME_OF[extension] ?? 'application/octet-stream',
+      };
     } catch {
       throw new NotFoundException();
     }

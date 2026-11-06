@@ -183,8 +183,7 @@ export class DialogueService {
       dispatched: steps.dispatched,
       repaired: steps.repaired,
       worked: steps.worked,
-      inTutorial:
-        !player.tutorialDone && !(completed >= 1 && steps.repaired && steps.worked),
+      inTutorial: !player.tutorialDone && !(completed >= 1 && steps.repaired && steps.worked),
       metPirates: pirates[0]?.found === true,
       foundScrap: scrap > 0,
     };

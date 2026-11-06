@@ -123,7 +123,11 @@ export class RescueService {
   }
 
   /** The delay before a waiting rescue arrives (a debug account gets the short one). */
-  private async waitMs(tx: Prisma.TransactionClient, playerId: string, rules: GameRules): Promise<number> {
+  private async waitMs(
+    tx: Prisma.TransactionClient,
+    playerId: string,
+    rules: GameRules,
+  ): Promise<number> {
     const player = await tx.player.findUnique({
       where: { id: playerId },
       select: { debugFastOps: true },

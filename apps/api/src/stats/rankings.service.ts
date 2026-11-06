@@ -70,7 +70,7 @@ export class RankingsService {
         FROM source
         JOIN "Player" p ON p.id = source."playerId"
         JOIN "Account" a ON a.id = p."accountId"
-        WHERE a.status = 'ACTIVE' AND source.value > 0
+        WHERE a.status = 'ACTIVE' AND NOT a."isGuest" AND source.value > 0
       )
       SELECT * FROM ranked WHERE rank <= ${TOP_ENTRIES} OR id = ${playerId} ORDER BY rank
     `;
@@ -104,7 +104,10 @@ export class RankingsService {
     >`
       SELECT "routeKey", MIN("originId") AS "originId", MIN("destinationId") AS "destinationId",
         COUNT(DISTINCT "playerId") AS pilots
-      FROM "RaceResult"
+      FROM "RaceResult" r
+      JOIN "Player" p ON p.id = r."playerId"
+      JOIN "Account" a ON a.id = p."accountId"
+      WHERE NOT a."isGuest"
       GROUP BY "routeKey"
       ORDER BY pilots DESC, "routeKey" ASC
     `;

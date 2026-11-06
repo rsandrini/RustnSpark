@@ -40,7 +40,9 @@ export function applyPenalties(
     }
   }
   for (const code of ['EXHAUST_BLOCKED', 'FACING_BLOCKED', 'FACING_CONNECTOR'] as const) {
-    const ids = directionProblems.flatMap((p) => (p.code === code && p.partInstanceId !== undefined ? [p.partInstanceId] : []));
+    const ids = directionProblems.flatMap((p) =>
+      p.code === code && p.partInstanceId !== undefined ? [p.partInstanceId] : [],
+    );
     if (ids.length > 0) penalties.push({ code, partInstanceIds: ids, kept: 0 });
   }
 

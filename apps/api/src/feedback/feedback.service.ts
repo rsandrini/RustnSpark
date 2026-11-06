@@ -55,14 +55,17 @@ export class FeedbackService {
     await this.takeSlot(accountId);
 
     const [account, player] = await Promise.all([
-      this.prisma.account.findUnique({ where: { id: accountId }, select: { email: true } }),
+      this.prisma.account.findUnique({
+        where: { id: accountId },
+        select: { email: true, isGuest: true },
+      }),
       this.prisma.player.findUnique({ where: { id: playerId }, select: { name: true } }),
     ]);
 
     const name = oneLine(player?.name ?? 'unknown', 40);
     const html = `
       <p><b>Player:</b> ${escapeHtml(name)} (${escapeHtml(playerId)})</p>
-      <p><b>Account:</b> ${escapeHtml(account?.email ?? 'unknown')}</p>
+      <p><b>Account:</b> ${escapeHtml(account?.isGuest === true ? 'guest (no email)' : (account?.email ?? 'unknown'))}</p>
       <p><b>Page:</b> ${escapeHtml(oneLine(dto.page ?? '-', 200))}</p>
       <p><b>Language:</b> ${escapeHtml(oneLine(dto.locale ?? '-', 16))}</p>
       <hr />

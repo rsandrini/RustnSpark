@@ -84,7 +84,12 @@ export interface TuningImportReport {
   config: { changed: string[]; unknownKeys: string[] };
   entities: Record<
     string,
-    { create: string[]; update: string[]; unchanged: number; failed: { id: string; error: string }[] }
+    {
+      create: string[];
+      update: string[];
+      unchanged: number;
+      failed: { id: string; error: string }[];
+    }
   >;
   skippedFields: { entity: string; field: string }[];
   unknownEntities: string[];

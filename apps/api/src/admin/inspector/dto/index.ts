@@ -1,4 +1,13 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export const REASON_MAX_LENGTH = 500;
 // Far above any legitimate grant, far below Int4 overflow of the wallet column.

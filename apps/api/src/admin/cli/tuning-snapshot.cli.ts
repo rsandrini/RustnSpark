@@ -7,11 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { AppModule } from '../../app.module.js';
 import { BundleService } from '../tuning/bundle.service.js';
 import { CONFIG_REGISTRY } from '../../config/config-registry.js';
-import {
-  buildEntityValidator,
-  getEntityNames,
-  getEntitySchema,
-} from '../tuning/entity-schemas.js';
+import { buildEntityValidator, getEntityNames, getEntitySchema } from '../tuning/entity-schemas.js';
 import { EntityTuningService, getIdField } from '../tuning/entity-tuning.service.js';
 import {
   buildTuningSnapshot,
@@ -55,7 +51,9 @@ async function main(): Promise<void> {
         kind === 'factions'
           ? await prisma.faction.findMany({ select: { id: true, art: true } })
           : await prisma.location.findMany({ select: { id: true, art: true } });
-      return Object.fromEntries(rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]));
+      return Object.fromEntries(
+        rows.filter((row) => row.art !== null).map((row) => [row.id, row.art]),
+      );
     };
     if (values.import) {
       const snapshot = JSON.parse(await readFile(values.import, 'utf8')) as TuningSnapshot;

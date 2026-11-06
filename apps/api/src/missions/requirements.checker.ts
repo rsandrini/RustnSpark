@@ -174,16 +174,23 @@ export function missionRequirementChecklist(
       // Nothing to check: any ship that can fly can make a trip (viability is checked separately).
       return [];
     case 'RACE':
-      return [numeric(
+      return [
+        numeric(
           RACE_SPEED,
           'mobility',
           unroundedThreshold(hints.minMobility ?? rules.race.min_mobility),
           mobility,
-        )];
+        ),
+      ];
     case 'RESCUE':
       return [
         numeric(CARGO_TYPE, 'cargo', cargoNeeded, sheet.crg, sheet.crg >= cargoNeeded || hasCabin),
-        numeric(SPEED, 'mobility', unroundedThreshold(hints.speed ?? rules.rescue.reference_mob), mobility),
+        numeric(
+          SPEED,
+          'mobility',
+          unroundedThreshold(hints.speed ?? rules.rescue.reference_mob),
+          mobility,
+        ),
       ];
   }
 }

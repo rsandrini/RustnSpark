@@ -39,10 +39,11 @@ export class ProfileService {
   async publicCard(publicId: string): Promise<PublicProfileResponse> {
     const player = await this.prisma.player.findUnique({
       where: { publicId },
-      include: { account: { select: { status: true } } },
+      include: { account: { select: { status: true, isGuest: true } } },
     });
-    // A banned account is off the rankings, so its card is not served either.
-    if (player === null || player.account.status !== 'ACTIVE') {
+    // A banned account is off the rankings, so its card is not served either; a guest has no
+    // public card until the pilot is claimed.
+    if (player === null || player.account.status !== 'ACTIVE' || player.account.isGuest) {
       throw new NotFoundException({ error: 'PLAYER_NOT_FOUND' });
     }
     const read = await this.stats.read(player.id);

@@ -165,7 +165,8 @@ export function generateConnectors(
   // A restriction that leaves nothing to roll falls back to the rules as authored.
   let restricted = allowedKinds === undefined ? [] : enumerateCombos(rules, allowedKinds);
   if (fullPorts && restricted.length > 0) {
-    const ports = (combo: SideCombo): number => SIDES.filter((side) => combo[side] !== 'none').length;
+    const ports = (combo: SideCombo): number =>
+      SIDES.filter((side) => combo[side] !== 'none').length;
     const most = Math.max(...restricted.map((entry) => ports(entry.combo)));
     restricted = restricted.filter((entry) => ports(entry.combo) === most);
   }
