@@ -4,6 +4,7 @@ import { ConfigModule as GameConfigModule } from '../config/config.module.js';
 import { AdminModule } from '../admin/admin.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { ClaimController } from './claim.controller.js';
 import { GuestService } from './guest.service.js';
 import { PasswordService } from './password.service.js';
 import { RefreshTokenService } from './refresh-token.service.js';
@@ -18,7 +19,7 @@ import { StatsModule } from '../stats/stats.module.js';
 // feature flag (S11.2). It exports services, not auth dependencies, so no cycle forms.
 @Module({
   imports: [StatsModule, AdminModule, EmailModule, ConfigModule, GameConfigModule],
-  controllers: [AuthController],
+  controllers: [AuthController, ClaimController],
   providers: [AuthService, GuestService, PasswordService, RefreshTokenService, TokenService],
   exports: [AuthService, GuestService],
 })

@@ -131,4 +131,114 @@ describe('guest accounts', () => {
       expect(frozen.body).toMatchObject({ message: { error: 'GUEST_FROZEN' } });
     });
   });
+
+  describe('claiming the pilot', () => {
+    const server = () => testApp.app.getHttpServer() as Server;
+    async function guest() {
+      const response = await request(server()).post('/v1/auth/guest').send({ locale: 'en' });
+      return response.body as { accessToken: string; guestKey: string; player: { id: string } };
+    }
+    const claim = (token: string, body: Record<string, unknown>) =>
+      request(server())
+        .post('/v1/players/me/claim')
+        .set('Authorization', `Bearer ${token}`)
+        .send(body);
+
+    it('keeps the same pilot and everything it owns, lets the new email and password sign in, and retires the key', async () => {
+      const g = await guest();
+      await prisma.player.update({ where: { id: g.player.id }, data: { credits: 777 } });
+
+      const response = await claim(g.accessToken, {
+        email: 'Saved.Pilot@Example.com',
+        password: 'short1',
+      });
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        accessToken: expect.any(String),
+        player: { id: g.player.id, isGuest: false, credits: 777 },
+      });
+      expect(String(response.headers['set-cookie'])).toContain('rid=');
+
+      const account = await prisma.account.findFirstOrThrow({
+        where: { player: { id: g.player.id } },
+      });
+      expect(account.isGuest).toBe(false);
+      expect(account.email).toBe('saved.pilot@example.com');
+      expect(account.guestKeyHash).toBeNull();
+      expect(account.guestSince).not.toBeNull();
+
+      const login = await request(server())
+        .post('/v1/auth/login')
+        .send({ email: 'saved.pilot@example.com', password: 'short1' });
+      expect(login.status).toBe(200);
+      expect(login.body).toMatchObject({ player: { id: g.player.id } });
+
+      const old = await request(server())
+        .post('/v1/auth/guest/resume')
+        .send({ guestKey: g.guestKey });
+      expect(old.status).toBe(401);
+    });
+
+    it('a pilot name can be chosen on the way; a taken one is refused and the guest stays a guest', async () => {
+      await auth.register({
+        email: 'taken@example.com',
+        password: 'taken-password-1',
+        name: 'taken_name',
+        locale: 'en',
+      });
+      const g = await guest();
+
+      const refused = await claim(g.accessToken, {
+        email: 'new@example.com',
+        password: 'secret1',
+        name: 'taken_name',
+      });
+      expect(refused.status).toBe(409);
+      expect(
+        (await prisma.account.findFirstOrThrow({ where: { player: { id: g.player.id } } })).isGuest,
+      ).toBe(true);
+
+      const ok = await claim(g.accessToken, {
+        email: 'new@example.com',
+        password: 'secret1',
+        name: 'my_pilot',
+      });
+      expect(ok.status).toBe(200);
+      expect(ok.body).toMatchObject({ player: { name: 'my_pilot' } });
+    });
+
+    it('a taken email is the register conflict, and the guest keeps playing', async () => {
+      await auth.register({
+        email: 'used@example.com',
+        password: 'used-password-1',
+        name: 'used_name',
+        locale: 'en',
+      });
+      const g = await guest();
+      const response = await claim(g.accessToken, {
+        email: 'used@example.com',
+        password: 'secret1',
+      });
+      expect(response.status).toBe(409);
+      const still = await request(server())
+        .get('/v1/players/me')
+        .set('Authorization', `Bearer ${g.accessToken}`);
+      expect(still.body).toMatchObject({ isGuest: true });
+    });
+
+    it('a pilot who is not a guest cannot claim (NOT_A_GUEST)', async () => {
+      const session = await auth.register({
+        email: 'plain@example.com',
+        password: 'plain-password-1',
+        name: 'plain_pilot',
+        locale: 'en',
+      });
+      const response = await claim(session.accessToken, {
+        email: 'other@example.com',
+        password: 'secret1',
+      });
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({ message: { error: 'NOT_A_GUEST' } });
+    });
+  });
 });

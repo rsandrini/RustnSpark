@@ -147,7 +147,7 @@ export class AuthController {
   }
 }
 
-function setRefreshCookie(response: Response, session: AuthSession): void {
+export function setRefreshCookie(response: Response, session: AuthSession): void {
   response.setHeader(
     'Set-Cookie',
     serializeCookie(REFRESH_COOKIE_NAME, session.refresh.token, {

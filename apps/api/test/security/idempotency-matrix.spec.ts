@@ -13,6 +13,8 @@ const NATURALLY_IDEMPOTENT: Record<string, string> = {
     'always 204: a repeat only (re)issues a reset token — no game state, no enumeration',
   'POST /v1/auth/guest':
     'starts a new guest pilot each time, bounded by the per-IP throttle and the daily cap; the web disables the button while one starts',
+  'POST /v1/players/me/claim':
+    'only a guest can claim, and only once: a repeat is a 409 NOT_A_GUEST',
   'POST /v1/auth/guest/resume': 'issues a new session each time; no game state changes',
   'POST /v1/auth/login': 'issues a new session each time; no game state changes',
   'POST /v1/auth/logout': 'revoking an already revoked token is a no-op',

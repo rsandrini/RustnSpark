@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   ServiceUnavailableException,
@@ -10,7 +11,12 @@ import type { Locale } from '../common/locale/locale.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PlayerStatsService } from '../stats/player-stats.service.js';
-import { AuthService, LOGIN_FAILURE_MESSAGE, type AuthSession } from './auth.service.js';
+import {
+  AuthService,
+  LOGIN_FAILURE_MESSAGE,
+  REGISTER_CONFLICT_MESSAGE,
+  type AuthSession,
+} from './auth.service.js';
 import { PasswordService } from './password.service.js';
 import { RefreshTokenService } from './refresh-token.service.js';
 
@@ -115,5 +121,45 @@ export class GuestService {
       }
     }
     throw new Error('could not find a free guest name');
+  }
+
+  /**
+   * Turns a guest into a registered pilot in place: the account and the player keep their ids, so
+   * nothing the pilot owns moves. The guest key stops working. Only one claim can win.
+   */
+  async claim(
+    accountId: string,
+    input: { email: string; password: string; name?: string | undefined },
+  ): Promise<AuthSession> {
+    const email = input.email.toLowerCase();
+    const passwordHash = await this.passwords.hash(input.password);
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const claimed = await tx.account.updateMany({
+          where: { id: accountId, isGuest: true, status: 'ACTIVE' },
+          data: { email, passwordHash, isGuest: false, guestKeyHash: null },
+        });
+        if (claimed.count === 0) throw new ConflictException({ error: 'NOT_A_GUEST' });
+        if (input.name !== undefined) {
+          await tx.player.update({ where: { accountId }, data: { name: input.name } });
+        }
+      });
+    } catch (error) {
+      // The email or the chosen name is taken: the same non-revealing answer as registering.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(REGISTER_CONFLICT_MESSAGE);
+      }
+      throw error;
+    }
+    const account = await this.prisma.account.findUniqueOrThrow({
+      where: { id: accountId },
+      include: { player: true },
+    });
+    if (account.player === null) throw new UnauthorizedException(LOGIN_FAILURE_MESSAGE);
+    return this.auth.buildSession(
+      account,
+      account.player,
+      await this.refreshTokens.issue(accountId),
+    );
   }
 }
