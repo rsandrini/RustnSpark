@@ -80,13 +80,11 @@ export function OnboardingPage() {
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
         <legend className="sr-only">{t('onboarding.title')}</legend>
         {playable.map((faction) => {
-          // The leader's welcome (plan §9) replaces the flat description while their card is
-          // selected; no mentor (or no welcome line) keeps today's blurb.
+          // Every card shows its leader and their welcome (plan §9) all the time: picking a card only
+          // highlights it, so nothing on the screen is added or removed (and the cards never change height).
           const mentor = byId[faction]?.mentor ?? null;
           const welcome =
-            selected === faction && mentor?.welcome != null
-              ? pickLocalized(mentor.welcome, i18n.language)
-              : null;
+            mentor?.welcome != null ? pickLocalized(mentor.welcome, i18n.language) : null;
           return (
             <label
               key={faction}
@@ -104,7 +102,7 @@ export function OnboardingPage() {
                 {factionName(byId[faction], i18n.language) ??
                   t(`onboarding.factions.${faction}.name`, { defaultValue: faction })}
               </span>
-              {welcome !== null && mentor !== null && (
+              {mentor !== null && (
                 <GiverBadge
                   name={mentor.name}
                   title={pickLocalized(mentor.title, i18n.language)}
@@ -112,9 +110,9 @@ export function OnboardingPage() {
                   factionId={faction}
                 />
               )}
+              {welcome !== null && <span className="desc welcome">{welcome}</span>}
               <span className="desc">
-                {welcome ??
-                  factionBlurb(byId[faction], i18n.language) ??
+                {factionBlurb(byId[faction], i18n.language) ??
                   t(`onboarding.factions.${faction}.blurb`, { defaultValue: '' })}
               </span>
             </label>

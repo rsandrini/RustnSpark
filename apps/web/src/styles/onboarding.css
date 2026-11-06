@@ -1,5 +1,7 @@
 .faction-backdrop {
-  background-position: center;
+  /* The cards now carry a leader and a welcome each and the page is taller: the picture sits a little
+     above the middle so the part worth seeing stays in view next to them. */
+  background-position: center 35%;
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -73,4 +75,9 @@
   font-size: var(--text-sm);
   color: var(--ink-2);
   text-shadow: 0 1px 3px color-mix(in oklab, var(--black) 70%, transparent);
+}
+
+.faction-card .desc.welcome {
+  font-style: italic;
+  color: var(--ink);
 }

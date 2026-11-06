@@ -35,7 +35,7 @@ describe('onboarding (S10.2)', () => {
     expect(screen.getByRole('button', { name: /launch/i })).toBeDisabled();
   });
 
-  it('the picker is the admin\'s data: which factions are playable, their names and pitch, from the database', async () => {
+  it("the picker is the admin's data: which factions are playable, their names and pitch, from the database", async () => {
     server.use(
       http.get('/v1/factions', () =>
         HttpResponse.json({
@@ -67,6 +67,21 @@ describe('onboarding (S10.2)', () => {
     // a faction the admin marked not playable is not offered, and the old name is gone
     expect(screen.queryByLabelText(/sun traders/i)).toBeNull();
     expect(screen.queryByLabelText(/luna authority/i)).toBeNull();
+  });
+
+  it('every card keeps its leader and welcome line whether or not it is picked, so clicking never adds or removes anything', async () => {
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+    await screen.findByRole('heading', { name: /choose your faction/i });
+
+    const welcome = /luna keeps the lanes honest/i;
+    expect(await screen.findByText('Rhea Solano')).toBeInTheDocument();
+    expect(screen.getByText(welcome)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText(/sun traders/i));
+    expect(screen.getByText('Rhea Solano')).toBeInTheDocument();
+    expect(screen.getByText(welcome)).toBeInTheDocument();
+    // the plain description of the faction is still there too
+    expect(screen.getByText(/port clerks, steady freight/i)).toBeInTheDocument();
   });
 
   it('posts the chosen faction, reloads the profile and leaves the screen', async () => {
