@@ -1139,19 +1139,18 @@ details.collapsible > summary h2 {
   z-index: 1;
 }
 
-/* A part pulled out of the parts list: its name follows the pointer, and the page stops selecting text. */
-.tray-drag-chip {
+/* A part being carried: it looks like a row of the parts list and follows the pointer above everything. */
+.tray-drag-chip.part-btn {
   position: fixed;
   z-index: 60;
+  width: auto;
+  margin: 0;
   transform: translate(12px, 12px);
-  padding: 4px 10px;
-  border: 1px solid var(--brass);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--black) 50%, transparent);
+  background: var(--paper-3);
+  box-shadow: 0 6px 18px color-mix(in oklab, var(--black) 55%, transparent);
   pointer-events: none;
   white-space: nowrap;
+  cursor: grabbing;
 }
 body.dragging-part {
   cursor: grabbing;

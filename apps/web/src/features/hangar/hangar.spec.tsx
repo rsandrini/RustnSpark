@@ -1051,6 +1051,35 @@ describe('hangar (S10.4)', () => {
       expect(back?.getAttribute('data-gy')).toBe('2');
     });
 
+    it('a carried part stays visible above the list: a chip follows the pointer once it leaves the yard', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      await screen.findByRole('button', { name: /^cargo/i });
+      const { svg, toClient } = await dragCargo(container, () => null);
+      vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 400));
+      // over the yard the ghost in the yard is enough
+      fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
+      await waitFor(() =>
+        expect(container.ownerDocument.querySelector('.tray-drag-chip')).toBeNull(),
+      );
+
+      // out over the parts list (to the right of the yard): the chip carries the part's name
+      fireEvent.pointerMove(window, { clientX: 700, clientY: 200 });
+      const chip = await waitFor(() => {
+        const found = container.ownerDocument.querySelector('.tray-drag-chip');
+        expect(found).not.toBeNull();
+        return found as Element;
+      });
+      expect(chip.textContent ?? '').toMatch(/cargo/i);
+
+      // back over the yard: the ghost in the yard is enough, the chip goes away
+      fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
+      await waitFor(() =>
+        expect(container.ownerDocument.querySelector('.tray-drag-chip')).toBeNull(),
+      );
+      fireEvent.pointerUp(svg, toClient(2.5, 2.5));
+    });
+
     it('the list shows a drop hint while a part is dragged, and not otherwise', async () => {
       server.use(onboarded());
       const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
@@ -1107,6 +1136,11 @@ describe('hangar (S10.4)', () => {
       expect(outline).toHaveClass('ok');
       expect(outline.getAttribute('x')).toBe('4');
       expect(outline.getAttribute('y')).toBe('0');
+      // what follows the pointer looks like a part of the list (rarity colour, tile, name), not a plain box
+      const chip = document.querySelector('.tray-drag-chip') as HTMLElement;
+      expect(chip).toHaveClass('part-btn', 'rarity-common');
+      expect(chip.querySelector('.part-thumb')).not.toBeNull();
+      expect(chip.textContent ?? '').toMatch(/cargo/i);
 
       fireEvent.pointerUp(window, at(5, 0.5));
       const placed = block(container, 'part-cargo-b');
