@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { client, serverNow } from '../../api/client';
 import type { ActiveMission, ReportListResponse } from '../../api/generated';
+import { useFeedback } from '../../ui/feedback';
+import { hasUnsavedLayout } from '../hangar/unsaved-layout';
 import { transitPollInterval } from './poll';
 
 /** Flights the pilot dispatched in this tab that may be over before the active list ever showed them. */
@@ -20,6 +23,8 @@ export function watchFlight(missionId: string): void {
  */
 export function FlightWatcher() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const feedback = useFeedback();
   const { pathname } = useLocation();
   const watched = useRef<{ id: string; inPlace: boolean } | null>(null);
 
@@ -79,8 +84,16 @@ export function FlightWatcher() {
     }
     dispatched.delete(newest);
     watched.current = null;
+    // The pilot is assembling the ship: leaving the screen would throw the edits away. Say the
+    // report is ready and let them go when they choose.
+    if (feedback.available && hasUnsavedLayout()) {
+      feedback.notify(t('feedback.flightEndedUnsaved'), {
+        next: { label: t('feedback.nextReport'), to: `/report/${newest}` },
+      });
+      return;
+    }
     void navigate(`/report/${newest}`);
-  }, [activeIsEmpty, latestReportQuery.isFetching, newest, navigate, pathname]);
+  }, [activeIsEmpty, latestReportQuery.isFetching, newest, navigate, pathname, feedback, t]);
 
   return null;
 }

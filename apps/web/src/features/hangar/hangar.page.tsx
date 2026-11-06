@@ -48,6 +48,7 @@ import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
+import { setUnsavedLayout } from './unsaved-layout';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -248,6 +249,12 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const hoveredPart = parts.find((part) => part.id === hoveredId) ?? null;
   const dirty =
     ship !== undefined && layout !== null && JSON.stringify(layout) !== JSON.stringify(ship.layout);
+
+  // The flight watcher must not pull the pilot off this screen while edits are unsaved.
+  useEffect(() => {
+    setUnsavedLayout(dirty);
+    return () => setUnsavedLayout(false);
+  }, [dirty]);
 
   // Debounced server preview (D20): stats and viability are never derived client-side.
   const previewMutation = useMutation({

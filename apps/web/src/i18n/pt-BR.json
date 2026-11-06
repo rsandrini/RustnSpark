@@ -2733,6 +2733,8 @@
     "cancelled": "Missão cancelada.",
     "scavenging": "Busca de sucata iniciada.",
     "mining": "Mineração iniciada.",
+    "flightEndedUnsaved": "Seu voo terminou. Salve o layout e depois leia o relatório.",
+    "nextReport": "Relatório",
     "saved": "Layout salvo.",
     "renamed": "Nome da nave alterado.",
     "nextMissions": "Missões",
