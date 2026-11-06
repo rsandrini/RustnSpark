@@ -1,3 +1,4 @@
+import { clientToCells, type YardView } from './drag-geometry';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,12 +30,7 @@ const VIEW_OVERSHOOT = 1.25;
 // Cells of free ground the view can pan to beyond the yard on every side: parts may be parked there.
 const PARK_MARGIN = 8;
 
-interface View {
-  cx: number;
-  cy: number;
-  /** Visible width in cells (the yard is square). */
-  span: number;
-}
+type View = YardView;
 
 // Text is in yard units, so it grows with the zoom. To make names readable the label font
 // shrinks (in units) as the player zooms in, which lets more characters and lines fit a block;
@@ -491,14 +487,8 @@ export function ShipYard({
   /** A client position in yard cells (the same mapping the wheel-zoom anchor uses). */
   const pointerToCells = (clientX: number, clientY: number): { x: number; y: number } => {
     const svg = svgRef.current;
-    const current = viewRef.current;
     if (svg === null) return { x: 0, y: 0 };
-    const rect = svg.getBoundingClientRect();
-    const unit = current.span / Math.max(rect.width, 1);
-    return {
-      x: current.cx - current.span / 2 + (clientX - rect.left) * unit,
-      y: current.cy - current.span / 2 + (clientY - rect.top) * unit,
-    };
+    return clientToCells(svg.getBoundingClientRect(), viewRef.current, clientX, clientY);
   };
 
   const handleBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
