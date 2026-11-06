@@ -194,15 +194,15 @@ svg .outside-tag {
 svg .yard-outline {
   fill: none;
   stroke: #28e1ff;
-  stroke-width: 0.09;
+  stroke-width: 0.05;
   stroke-linecap: round;
 }
 
 svg .yard-outline-glow {
   fill: none;
   stroke: #28e1ff;
-  stroke-width: 0.34;
-  stroke-opacity: 0.28;
+  stroke-width: 0.22;
+  stroke-opacity: 0.14;
   stroke-linecap: round;
 }
 
