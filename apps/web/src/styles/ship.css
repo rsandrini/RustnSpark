@@ -1116,3 +1116,25 @@ details.collapsible > summary h2 {
     display: none;
   }
 }
+
+/* Dragging a placed part off the ship: the parts list says where to drop it, and lights up under the pointer. */
+.hangar-side.drop-ready {
+  outline: 2px dashed var(--brass);
+  outline-offset: -2px;
+  background: color-mix(in oklab, var(--brass) 8%, transparent);
+}
+.hangar-side.drop-ready:hover {
+  outline-style: solid;
+  background: color-mix(in oklab, var(--brass) 18%, transparent);
+}
+.hangar-side .drop-hint {
+  position: sticky;
+  top: 0;
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  text-align: center;
+  color: var(--brass);
+  background: var(--paper);
+  border-radius: var(--radius);
+  z-index: 1;
+}

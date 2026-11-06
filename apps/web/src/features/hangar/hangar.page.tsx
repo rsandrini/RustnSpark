@@ -546,12 +546,21 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     rotatePart(selectedId);
   };
 
-  const removeSelected = () => {
-    if (selectedId === null || modifyBlocked) return;
-    setLayout(effectiveLayout.filter((placement) => placement.partInstanceId !== selectedId));
-    setSelectedId(null);
+  // Takes one part off the ship (it goes back to the list). Used by the Remove button and by dragging a
+  // placed part out onto the parts list.
+  const removePart = (partInstanceId: string) => {
+    if (modifyBlocked) return;
+    setLayout(effectiveLayout.filter((placement) => placement.partInstanceId !== partInstanceId));
+    setSelectedId((current) => (current === partInstanceId ? null : current));
     setSaved(false);
   };
+
+  const removeSelected = () => {
+    if (selectedId !== null) removePart(selectedId);
+  };
+
+  // The parts list is where a part dragged off the ship is dropped to take it off (not on the Store tab).
+  const removeZoneOn = sideTab === 'parts' && !modifyBlocked;
 
   // R turns the part being dragged, else the one under the pointer, else the selected one.
   const rotateTarget = draggingId ?? hoveredId ?? selectedId;
@@ -732,8 +741,15 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             )}
             <section
               aria-label={t('hangar.tray')}
-              className={`hangar-side${phone ? ' phone-sheet' : ''}${phone && partsOpen ? ' open' : ''}`}
+              className={`hangar-side${phone ? ' phone-sheet' : ''}${phone && partsOpen ? ' open' : ''}${removeZoneOn && draggingId !== null ? ' drop-ready' : ''}`}
+              // A part dragged out of the ship and released over this list leaves the ship (Parts tab only).
+              data-drop-zone={removeZoneOn ? 'parts' : undefined}
             >
+              {removeZoneOn && draggingId !== null && (
+                <p className="drop-hint" aria-hidden="true">
+                  {t('hangar.drag.removeHint')}
+                </p>
+              )}
               {phone && (
                 <div className="phone-sheet-head">
                   <button type="button" className="btn" onClick={() => setPartsOpen(false)}>
@@ -832,6 +848,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                 }}
                 onCellClick={handleCellClick}
                 onDropPart={(id, gx, gy) => placePart(id, gx, gy)}
+                onRemovePart={removePart}
                 onDragStart={setDraggingId}
                 onDragEnd={() => setDraggingId(null)}
                 onHoverPart={setHoveredId}

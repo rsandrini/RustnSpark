@@ -180,6 +180,8 @@ export interface ShipYardProps {
   /** Release of a ghost-dragged block: commit it at (gx, gy); an invalid drop is ignored by the
       owner, which leaves the part where the drag started. */
   onDropPart?: (partInstanceId: string, gx: number, gy: number) => void;
+  /** A placed part released over the parts list (an element marked `data-drop-zone="parts"`): take it off the ship. */
+  onRemovePart?: (partInstanceId: string) => void;
   /** Hovering a placed block (owner request): a small stats-only card, not the full popup. */
   onHoverPart?: (partInstanceId: string | null) => void;
   /** When false the ship is out on a mission: no rotate button, no drag, no rotation. */
@@ -207,6 +209,7 @@ export function ShipYard({
   onDragStart,
   onDragEnd,
   onDropPart,
+  onRemovePart,
   onHoverPart,
   editable = true,
   callouts,
@@ -516,6 +519,19 @@ export function ShipYard({
 
   const handlePointerEnd = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (ghost !== null) {
+      // Released over the parts list: the part leaves the ship (anywhere else it just lands or goes back).
+      const overList =
+        typeof document.elementFromPoint === 'function' &&
+        document
+          .elementFromPoint(event.clientX, event.clientY)
+          ?.closest('[data-drop-zone="parts"]') != null;
+      if (overList) {
+        onRemovePart?.(ghost.partInstanceId);
+        setGhost(null);
+        pointers.current.delete(event.pointerId);
+        onDragEnd();
+        return;
+      }
       // Drop where it fits, and only if it actually moved; a drop on the origin (or an invalid
       // cell) just leaves the part exactly where it started.
       if (ghost.valid && (ghost.targetGx !== ghost.originX || ghost.targetGy !== ghost.originY)) {

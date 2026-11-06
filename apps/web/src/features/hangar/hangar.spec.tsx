@@ -995,6 +995,83 @@ describe('hangar (S10.4)', () => {
     expect(container.querySelector('g.yard-ghost')).toBeNull();
   });
 
+  describe('dragging a placed part out onto the parts list', () => {
+    // jsdom has no elementFromPoint: each test installs its own, and removes it afterwards
+    afterEach(() => {
+      Reflect.deleteProperty(document, 'elementFromPoint');
+    });
+
+    async function dragCargo(
+      container: HTMLElement,
+      releaseOn: (zone: Element | null) => Element | null,
+    ) {
+      const cargo = await waitFor(() => {
+        const element = block(container, 'part-cargo-a');
+        expect(element).not.toBeNull();
+        return element as SVGRectElement;
+      });
+      const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+      const toClient = viewPoint(svg);
+      await stableView(svg);
+      const zone = container.querySelector('[data-drop-zone="parts"]');
+      document.elementFromPoint = () => releaseOn(zone);
+      fireEvent.pointerDown(cargo, toClient(3, 2.5));
+      fireEvent.pointerMove(svg, toClient(6, 4.5));
+      return { svg, toClient, zone };
+    }
+
+    it('releasing it over the parts list takes it off the ship and back into the list', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      await screen.findByRole('button', { name: /^cargo/i });
+      const rowsBefore = screen.getAllByRole('button', { name: /^cargo/i }).length;
+
+      const { svg, toClient, zone } = await dragCargo(container, (found) => found);
+      expect(zone).not.toBeNull();
+      fireEvent.pointerUp(svg, toClient(6, 4.5));
+
+      expect(block(container, 'part-cargo-a')).toBeNull();
+      expect(screen.getAllByRole('button', { name: /^cargo/i })).toHaveLength(rowsBefore + 1);
+      expect(screen.getByRole('button', { name: 'Save layout' })).toBeEnabled();
+    });
+
+    it('releasing it anywhere else leaves it where it started', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      await screen.findByRole('button', { name: /^cargo/i });
+      const { svg, toClient } = await dragCargo(container, () => document.body);
+      // carried onto the bridge's own cell and released there: that is taken, so it goes back
+      const bridge = block(container, 'part-bridge') as SVGRectElement;
+      const bx = Number(bridge.getAttribute('data-gx'));
+      const by = Number(bridge.getAttribute('data-gy'));
+      fireEvent.pointerMove(svg, toClient(bx + 1, by + 0.5));
+      fireEvent.pointerUp(svg, toClient(bx + 1, by + 0.5));
+      const back = block(container, 'part-cargo-a');
+      expect(back?.getAttribute('data-gx')).toBe('2');
+      expect(back?.getAttribute('data-gy')).toBe('2');
+    });
+
+    it('the list shows a drop hint while a part is dragged, and not otherwise', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      await screen.findByRole('button', { name: /^cargo/i });
+      expect(screen.queryByText('Drop here to take it off the ship')).toBeNull();
+      const { svg, toClient } = await dragCargo(container, () => null);
+      expect(screen.getByText('Drop here to take it off the ship')).toBeInTheDocument();
+      expect(container.querySelector('[data-drop-zone="parts"]')).toHaveClass('drop-ready');
+      fireEvent.pointerUp(svg, toClient(2.5, 2.5));
+      expect(screen.queryByText('Drop here to take it off the ship')).toBeNull();
+    });
+
+    it('with the Store tab open there is no drop zone, so nothing is removed', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      await screen.findByRole('button', { name: /^cargo/i });
+      fireEvent.click(screen.getByRole('tab', { name: /^Store/ }));
+      expect(container.querySelector('[data-drop-zone="parts"]')).toBeNull();
+    });
+  });
+
   it('an invalid ghost drop reverts the part to where it started', async () => {
     server.use(onboarded());
     const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });

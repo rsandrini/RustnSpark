@@ -433,6 +433,9 @@
     "guide": "Read the Guide"
   },
   "hangar": {
+    "drag": {
+      "removeHint": "Drop here to take it off the ship"
+    },
     "callouts": {
       "fp": "FP",
       "def": "DEF",

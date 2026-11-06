@@ -433,6 +433,9 @@
     "guide": "Ler o Guia"
   },
   "hangar": {
+    "drag": {
+      "removeHint": "Solte aqui para tirar da nave"
+    },
     "callouts": {
       "fp": "PD",
       "def": "DEF",
