@@ -6,30 +6,26 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## Bugs to investigate (owner reports, 2026-11-05)
 
-Fixed on `fix/sentry-and-owner-bugs` (2026-11-05), waiting for the owner to confirm on the live server:
+Reopened (owner, 2026-11-06): the fix of `1569c6f` did not hold in the owner's test.
 
-- [x] **Mobility reads below 1 but the sheet does not update.** The sheet shows mobility on the display scale (x10), the message
-  still said "below 1": the two disagreed. The message now says "below 10" (the limit on the sheet's own scale).
-- [x] **A mission that ends while the ship is being assembled threw the unsaved layout away.** The flight watcher now stays put
-  while the hangar has unsaved edits and shows "Your flight is over. Save your layout, then read the report." with a Report button.
-- [x] **The part card stuck in front of the assembly.** A finger never "leaves" a block, so the hover card stayed. Touch no longer
-  opens it, and hover cards are hidden on touch devices.
-- [x] **Sentry REACT-3 / REACT-4** (`GET /v1/locations` transaction timeouts): counting offers no longer queues behind a board that
-  another request is topping up (it counts what is there), and the top-up transaction has a longer timeout.
-- [x] **Sentry REACT-2** (mission resolved twice, unique key on `MissionLog.missionId`): the second worker now skips instead of failing.
-- [x] **Sentry REACT-1** (`/v1/health` 503): the failing dependency is now in the log and on the Sentry event. Probably the same slow
-  database as REACT-3/4: check the Postgres latency on the server.
+- [ ] **A mission that ends while the ship is being assembled still redirects and loses the unsaved layout.** The flight watcher
+  (`features/transit/flight-watcher.tsx`) is meant to stay put while `hasUnsavedLayout()` is true (set from `hangar.page.tsx`
+  `dirty`) and show "Your flight is over. Save your layout, then read the report." Reproduce, find the path that still leaves.
+
+- [ ] **A repair seems to be cancelled when a scavenge finishes** (owner, 2026-11-06, still being confirmed). With a repair running,
+  the pilot starts a scavenge; when the scavenge ends the repair is gone and has to be paid again. Check the scavenge resolver
+  and `RepairJob` (does the end of a job clear or refund-less cancel the ship's repair jobs?). Also confirm the redirect above
+  happens on a scavenge that ends while the pilot edits the layout (the owner can only edit while repair + scavenge run solo).
 
 Still open:
 
 - [ ] **The phone gets very hot while the game is open** (bug report from the pilot's phone, page `/ship`, pt-BR). The endless
   route/pulse animations are off on phones now; nothing is measured on a device yet. See `docs/design/mobile-performance.md` for the
   inventory and how to measure.
-- [ ] The DSNs in the server's `.env.prod` are swapped (`SENTRY_DSN` must be the Node project, `SENTRY_WEB_DSN` the React project).
 
 ## To investigate (owner, 2026-11-06)
 
-- [ ] **A long trip with no mission stops after a fight won?** The owner saw a ship sent on a long trip (a travel, not a mission)
+- [ ] **A long trip with no mission stops after a fight won, or after any fight?** The owner saw a ship sent on a long trip (a travel, not a mission)
   stop when it fought and won. Check if that is true, and where the ship ends up if it does (the stop place must be right).
   The owner's expectation: a trip should only stop when the ship is broken (adrift, dead bridge), not after a victory.
   Look at the leg/travel resolver and what a combat victory does to the remaining legs of a TRAVEL.
@@ -47,7 +43,6 @@ Still open:
 
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
-- [ ] Balance round 6b (applied 2026-10-27 in the defaults and the seed, no migration; the dev DB is reset to take it): wear 0.5/0.85 and hull_to_condition 0.15, Epic/Legendary pay x2.5/x3.25, Legendary parts x8. In the sim (r9/r14) the chem builds reach Legendary at ~150 h; Epic comes at ~70 h (target 90-130 h). Retest after the reset, then tune.
 
 ## Open
 
@@ -88,9 +83,6 @@ board, missions, the worker and the web.
   `docker compose exec -T api node dist/admin/cli/ship-rating.cli.js` still works.
 
 ## Beta close-out and v0.2 (owner, 2026-11-02)
-- [ ] **Production setup check** (parked until deployment): bring the `prod` compose profile up on a clean machine and check
-  secrets, TLS, backups, the first admin, and that `admin.debug_fast_ops` is off. Set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`,
-  `RESEND_FROM_NAME` and `BUG_REPORT_TO_EMAIL` so tester bug reports (`POST /v1/feedback/bug`) reach the inbox.
 - [ ] **CI and push:** nothing is pushed since `7955229`; run the browser smoke on an isolated stack, push, check every CI job.
 - [ ] **Blocklist:** review and extend `admin.name_blocklist` (ship names) before the beta; review the `economy.ship_rename_price`.
 - [ ] **Friends list**, then names in the port and in presence; the report flow (`/admin/reports`) is built.
