@@ -1,6 +1,6 @@
 {
   "name": "@rustandspark/contract",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "The HTTP contract between the API and the web client: zod schemas (single source) and the types derived from them.",
   "type": "module",
