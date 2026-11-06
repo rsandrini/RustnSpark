@@ -27,6 +27,13 @@ Still open:
   inventory and how to measure.
 - [ ] The DSNs in the server's `.env.prod` are swapped (`SENTRY_DSN` must be the Node project, `SENTRY_WEB_DSN` the React project).
 
+## To investigate (owner, 2026-11-06)
+
+- [ ] **A long trip with no mission stops after a fight won?** The owner saw a ship sent on a long trip (a travel, not a mission)
+  stop when it fought and won. Check if that is true, and where the ship ends up if it does (the stop place must be right).
+  The owner's expectation: a trip should only stop when the ship is broken (adrift, dead bridge), not after a victory.
+  Look at the leg/travel resolver and what a combat victory does to the remaining legs of a TRAVEL.
+
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
 - [ ] Balance round 6b (applied 2026-10-27 in the defaults and the seed, no migration; the dev DB is reset to take it): wear 0.5/0.85 and hull_to_condition 0.15, Epic/Legendary pay x2.5/x3.25, Legendary parts x8. In the sim (r9/r14) the chem builds reach Legendary at ~150 h; Epic comes at ~70 h (target 90-130 h). Retest after the reset, then tune.
