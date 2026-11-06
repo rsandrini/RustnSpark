@@ -290,6 +290,57 @@ describe('scavenging job (W8)', () => {
     }
   });
 
+  it('a repair that finishes while an on-foot search runs is not undone when the search ends', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const owner = { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED' as const };
+    await prisma.partInstance.updateMany({ where: owner, data: { condition: 60 } });
+    const started = await start(player.token, 'ceres').send({ mode: 'foot' });
+    expect(started.status).toBe(200);
+    const missionId = (started.body as { missionId: string }).missionId;
+
+    // the repair lands while the pilot is out searching
+    await prisma.partInstance.updateMany({ where: owner, data: { condition: 100 } });
+
+    const job = (await queue.getJob(missionId)) as Job<DispatchJobData>;
+    await processor.process(job);
+
+    const worn = await prisma.partInstance.count({ where: { ...owner, condition: { lt: 100 } } });
+    expect(worn).toBe(0);
+  });
+
+  it('a repair still running when an on-foot search ends is not lost: it completes afterwards', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const owner = { ownerPlayerId: player.seeded.player.id, location: 'INSTALLED' as const };
+    await prisma.partInstance.updateMany({ where: owner, data: { condition: 60 } });
+    const parts = await prisma.partInstance.findMany({ where: owner, select: { id: true } });
+    const repair = await prisma.repairJob.create({
+      data: {
+        shipId: player.shipId,
+        playerId: player.seeded.player.id,
+        targets: parts.map((part) => ({
+          partInstanceId: part.id,
+          fromCondition: 60,
+          toCondition: 100,
+        })),
+        cost: 1,
+        durationSeconds: 600,
+        status: 'PENDING',
+        completesAt: new Date(Date.now() + 600_000),
+      },
+    });
+    const started = await start(player.token, 'ceres').send({ mode: 'foot' });
+    const missionId = (started.body as { missionId: string }).missionId;
+    await processor.process((await queue.getJob(missionId)) as Job<DispatchJobData>);
+
+    expect((await prisma.repairJob.findUniqueOrThrow({ where: { id: repair.id } })).status).toBe(
+      'PENDING',
+    );
+    const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+    expect(ship.status).toBe('IN_PORT');
+  });
+
   it('tells the pilot the place: odds, zone, time, scrap and the wait', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();

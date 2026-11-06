@@ -1,5 +1,5 @@
 import { fuelUnits } from '../economy/fuel-cost.calculator.js';
-import { floatSpotOf, type FloatSpot } from '../ships/floating.js';
+import { floatSpotOf, pathNodes, type FloatSpot } from '../ships/floating.js';
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { DispatchJobData } from './dispatch.service.js';
@@ -278,7 +278,14 @@ export class MissionResolveService {
               (part) => !isDead(Math.round(finalCondition.get(part.id) ?? part.condition), rules),
             )
             .reduce((sum, part) => sum + part.catalog.fuelCap, 0);
+          // Only parts the mission changed are written back. The rest keep what the database holds
+          // now: a repair that finished while an on-foot scavenge was running must not be undone by
+          // the pre-repair condition the dispatch snapshot carries.
+          const before = new Map(
+            snapshot.parts.map((part) => [part.id, Math.round(part.condition)]),
+          );
           for (const part of outcome.parts) {
+            if (before.get(part.id) === Math.round(part.condition)) continue;
             await tx.partInstance.updateMany({
               where: { id: part.id },
               // Whole numbers only: the screen shows whole percent, and a stored 79.6 shown as 80 made
@@ -315,6 +322,26 @@ export class MissionResolveService {
                     });
             }
           }
+          // A trip that stopped on the way (engine dead, bridge lost to a fight...) leaves the ship where
+          // the journey had reached, not back at the start: the node the stopping leg set out from.
+          let stoppedAt: string | null = null;
+          if (
+            mission.type === 'TRAVEL' &&
+            finalStatus === 'FAILED' &&
+            outcome.shipStatus !== 'ADRIFT' &&
+            outcome.legs.length > 1
+          ) {
+            const routeIds = snapshot.legs.map((leg) => leg.routeId ?? '');
+            if (routeIds.every((id) => id !== '')) {
+              const routes = await tx.route.findMany({ where: { id: { in: routeIds } } });
+              const nodes = pathNodes(
+                mission.originId,
+                routeIds,
+                new Map(routes.map((route) => [route.id, route])),
+              );
+              stoppedAt = nodes?.[outcome.legs.length - 1] ?? null;
+            }
+          }
           await tx.ship.update({
             where: { id: snapshot.shipId },
             data: {
@@ -322,6 +349,7 @@ export class MissionResolveService {
               fuel: Math.min(Math.max(0, outcome.fuel), fuelCapAfter),
               status: outcome.shipStatus === 'ADRIFT' ? 'ADRIFT' : 'IN_PORT',
               ...(finalStatus === 'DONE' ? { currentLocationId: mission.destinationId } : {}),
+              ...(stoppedAt !== null ? { currentLocationId: stoppedAt } : {}),
               floatRouteId: floatSpot?.routeId ?? null,
               floatFromId: floatSpot?.fromId ?? null,
               floatProgress: floatSpot?.progress ?? null,

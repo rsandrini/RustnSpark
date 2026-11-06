@@ -903,7 +903,11 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       );
       ship = { ...ship, parts, hp, esc };
       // Cargo taken, or driven off their territory: the mission is over.
-      if (input.context.objectCarried || demand.motive === 'territory') {
+      // A plain trip carries nothing and has no contract, so being driven off does not end it.
+      if (
+        input.context.objectCarried ||
+        (demand.motive === 'territory' && input.context.type !== 'TRAVEL')
+      ) {
         return {
           index: input.index,
           status: 'defeat_failed',
