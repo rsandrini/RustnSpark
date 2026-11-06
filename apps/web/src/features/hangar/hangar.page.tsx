@@ -56,6 +56,7 @@ import { useCarriedPointer } from './use-carried-pointer';
 import { useRotateKey } from './use-rotate-key';
 import { useTrayDrag } from './use-tray-drag';
 import { setUnsavedLayout } from './unsaved-layout';
+import { EscortNotice } from '../ship/escort-notice';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
 // currently is, Port because every one of its tabs (market/repair/refuel/scavenging) is a
@@ -740,6 +741,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       {/* Owner request: no "My Ship" line above the animation — the title stays for the
           heading-based ready signal every screen uses, just not shown on screen. */}
       <h1 className="sr-only">{t('hangar.title')}</h1>
+      <EscortNotice />
       {/* Owner request, round 10 follow-up: ON the animation box itself (an overlay, top-right
           corner), not in its own row before or after it — neither spends vertical space the
           scene (or, collapsed, the placeholder bar) isn't already using. */}

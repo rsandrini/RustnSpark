@@ -7,6 +7,7 @@ import { PlaceBanner } from '../../ui/PlaceArt';
 import { activeAsOffer } from './active-offer';
 import { MissionRow } from './mission-row';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
+import { EscortNotice } from '../ship/escort-notice';
 import { client } from '../../api/client';
 import { errorText } from '../../api/errors';
 import type {
@@ -200,6 +201,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
         </p>
       )}
       <EmptyShipNotice />
+      <EscortNotice />
 
       {shipFaults.length > 0 && (
         <div className="notice warn" role="alert" data-testid="ship-faults">

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useIsPhone } from '../../ui/use-phone';
 import { EmptyShipNotice } from '../ship/empty-ship-notice';
+import { EscortNotice } from '../ship/escort-notice';
 import { client, serverNow } from '../../api/client';
 import type {
   ActiveMission,
@@ -331,6 +332,7 @@ export function MapPage({ guided = false }: MapPageProps) {
         }
       />
       <EmptyShipNotice />
+      <EscortNotice />
 
       <div className="legend">
         <span>

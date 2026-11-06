@@ -2193,6 +2193,15 @@
       "unmet": "{{count}} requirement(s) not met"
     }
   },
+  "escort": {
+    "title": "Stuck? An escort can take you home",
+    "body": "An escort will carry your ship to {{place}}, the nearest port of your faction. It is free and there are no fights, but it is slow: about {{time}}. You can call it once a week.",
+    "accept": "Accept the escort",
+    "failed": "The escort could not leave. Reload and try again.",
+    "underwayTitle": "The escort is taking your ship to {{place}}",
+    "underwayBody": "Arrives in",
+    "cooldown": "The escort can be called again on {{date}}."
+  },
   "map": {
     "places": "Places",
     "line": "Sector map · {{count}} places",

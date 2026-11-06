@@ -2193,6 +2193,15 @@
       "unmet": "{{count}} requisito(s) não atendido(s)"
     }
   },
+  "escort": {
+    "title": "Preso? Uma escolta pode levar você para casa",
+    "body": "Uma escolta vai levar sua nave até {{place}}, o porto mais próximo da sua facção. É de graça e sem combates, mas é lento: cerca de {{time}}. Dá para chamar uma vez por semana.",
+    "accept": "Aceitar a escolta",
+    "failed": "A escolta não pôde partir. Recarregue e tente de novo.",
+    "underwayTitle": "A escolta está levando sua nave para {{place}}",
+    "underwayBody": "Chega em",
+    "cooldown": "A escolta pode ser chamada de novo em {{date}}."
+  },
   "map": {
     "places": "Lugares",
     "line": "Mapa do setor · {{count}} lugares",

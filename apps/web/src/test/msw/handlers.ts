@@ -707,6 +707,17 @@ export const handlers = [
   ),
 
   http.get('/v1/ships', () => ok<ShipResponse[]>([ship()])),
+  // The escort to a safe port: nothing on offer unless a spec says otherwise.
+  http.get('/v1/ships/:id/escort', () =>
+    ok({
+      state: 'unavailable',
+      reasons: ['NOT_STUCK'],
+      destinationId: null,
+      durationSeconds: null,
+      arrivesAt: null,
+      nextAvailableAt: null,
+    }),
+  ),
 
   http.get('/v1/ships/:id', () => ok<ShipResponse>(ship())),
 
