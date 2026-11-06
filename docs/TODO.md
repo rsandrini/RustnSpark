@@ -6,22 +6,26 @@ ships (the commit has the history). Raise questions before starting anything mar
 
 ## Bugs to investigate (owner reports, 2026-11-05)
 
-Reopened (owner, 2026-11-06): the fix of `1569c6f` did not hold in the owner's test.
-
-- [ ] **A mission that ends while the ship is being assembled still redirects and loses the unsaved layout.** The flight watcher
-  (`features/transit/flight-watcher.tsx`) is meant to stay put while `hasUnsavedLayout()` is true (set from `hangar.page.tsx`
-  `dirty`) and show "Your flight is over. Save your layout, then read the report." Reproduce, find the path that still leaves.
-
 - [ ] **A repair seems to be cancelled when a scavenge finishes** (owner, 2026-11-06, still being confirmed). With a repair running,
   the pilot starts a scavenge; when the scavenge ends the repair is gone and has to be paid again. Check the scavenge resolver
-  and `RepairJob` (does the end of a job clear or refund-less cancel the ship's repair jobs?). Also confirm the redirect above
-  happens on a scavenge that ends while the pilot edits the layout (the owner can only edit while repair + scavenge run solo).
+  and `RepairJob` (does the end of a job clear or refund-less cancel the ship's repair jobs?). Live check 2026-11-06: a long repair
+  (ends after the scavenge) completed and kept its targets; the case "repair ends first" was the real bug (fixed, tested).
 
 Still open:
 
 - [ ] **The phone gets very hot while the game is open** (bug report from the pilot's phone, page `/ship`, pt-BR). The endless
   route/pulse animations are off on phones now; nothing is measured on a device yet. See `docs/design/mobile-performance.md` for the
   inventory and how to measure.
+
+## Built, waiting for the owner's test (2026-11-06)
+
+- [ ] **Escort to a safe port for a stuck pilot** (`economy/escort.service.ts`, `features/ship/escort-notice.tsx`). Docked away from the
+  faction's ports, and either in debt or with a ship that cannot fly (no bridge, no thrust, mobility under the minimum, no fuel):
+  the pilot may accept an escort to the nearest port of the faction (any base if none is in reach). Free, no fights, a slow fixed
+  pace (`economy.escort_seconds_per_distance`), once per `economy.escort_cooldown_days` (7), refused while a mission runs or the
+  ship is adrift (the rescue covers that). The ship is ON_MISSION while it flies; on arrival it gets the rescue restart kit and
+  fuel ration. The card shows on My Ship, the board and the map. Open: the card is not on the Port tab; arrival is settled when the
+  card's query runs (the page open), not by a worker; whether it should add to the debt.
 
 ## To investigate (owner, 2026-11-06)
 
