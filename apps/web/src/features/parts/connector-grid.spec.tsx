@@ -32,16 +32,36 @@ const part = (connectors: PartInfoData['connectors']): PartInfoData => ({
   description: { en: 'd', 'pt-BR': 'd' },
   rarity: 'COMMON',
   catalog: {
-    partType: 'cargo', partClass: 'CARGO', w: 2, h: 1, mass: 1, structureCost: 1, partHp: 1,
-    basePrice: 1, pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 1, min: 0, energyCont: 0,
-    energyCombat: 0, fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0,
-    pressurized: false, lifeSupport: false,
+    partType: 'cargo',
+    partClass: 'CARGO',
+    w: 2,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 1,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 1,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   },
   connectors,
 });
 
 describe('PartCard before-buy ports', () => {
-  it('shows the listing\'s generated ports on the card face', () => {
+  it("shows the listing's generated ports on the card face", () => {
     renderWithProviders(<PartCard part={part([...cells])} price={10} />);
     expect(screen.getByTestId('connector-grid')).toBeInTheDocument();
   });

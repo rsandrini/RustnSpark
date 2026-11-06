@@ -557,7 +557,7 @@
     "problems": {
       "NO_BRIDGE": "No bridge installed.",
       "NO_ENGINE": "No engine installed.",
-      "MOB_TOO_LOW": "Mobility is below 1.",
+      "MOB_TOO_LOW": "Mobility is below {{min}}.",
       "NO_FUEL_CAPACITY": "Chemical engine needs a fuel tank.",
       "NO_LIFE_SUPPORT": "Pressurized modules but no life support installed.",
       "STRUCTURE_EXCEEDED": "Structure budget exceeded.",

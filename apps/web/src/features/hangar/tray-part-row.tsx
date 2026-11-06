@@ -12,7 +12,11 @@ import {
 } from '../parts/part-detail';
 import { ConnectorGrid } from '../parts/connector-grid';
 import { PartInfoButton } from '../parts/part-info-button';
-import { hoverAnchor, useClampedPosition, type HoverAnchor } from '../parts/use-hover-card-position';
+import {
+  hoverAnchor,
+  useClampedPosition,
+  type HoverAnchor,
+} from '../parts/use-hover-card-position';
 
 export interface TrayPartRowProps {
   part: InventoryItem;
@@ -25,7 +29,14 @@ export interface TrayPartRowProps {
 
 // One tray row: its own button, the (i) popup, and (owner request, round 5/6) a hover card
 // showing the same comparison, positioned beside the cursor and clamped to stay fully visible.
-export function TrayPartRow({ part, name, disabled, selected, onSelect, compare }: TrayPartRowProps) {
+export function TrayPartRow({
+  part,
+  name,
+  disabled,
+  selected,
+  onSelect,
+  compare,
+}: TrayPartRowProps) {
   const { t } = useTranslation();
   const format = useNumberFormat();
   const [anchor, setAnchor] = useState<HoverAnchor | null>(null);
@@ -47,9 +58,10 @@ export function TrayPartRow({ part, name, disabled, selected, onSelect, compare 
           <RarityBadge rarity={part.rarity} />
         </span>
         <span className="meta">
-          {[t(`hangar.partClasses.${part.catalog.partClass}`), `${part.catalog.w}×${part.catalog.h}`].join(
-            ' · ',
-          )}
+          {[
+            t(`hangar.partClasses.${part.catalog.partClass}`),
+            `${part.catalog.w}×${part.catalog.h}`,
+          ].join(' · ')}
         </span>
         <span className="meta">{partSummary(part.catalog, t, format)}</span>
         {(part.storedFuel ?? 0) > 0 && (

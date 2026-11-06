@@ -157,7 +157,9 @@ describe('PartInfoButton: market (not-owned-yet) comparison', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Details/i }));
     const dialog = await screen.findByRole('dialog');
-    const conditionRow = await waitFor(() => within(dialog).getByRole('row', { name: /^Condition/ }));
+    const conditionRow = await waitFor(() =>
+      within(dialog).getByRole('row', { name: /^Condition/ }),
+    );
     await waitFor(() => expect(within(conditionRow).getByText('90 (-10)')).toBeInTheDocument());
     expect(within(conditionRow).getByText('90 (-10)')).toHaveClass('delta-bad');
   });

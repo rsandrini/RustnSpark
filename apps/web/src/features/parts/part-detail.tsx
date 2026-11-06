@@ -1,3 +1,4 @@
+import { useProblemText } from '../hangar/problem-text';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -405,6 +406,7 @@ function versusRowsOf(
 
 export function PartDetail({ part, compare, versus, hideMeta = false }: PartDetailProps) {
   const { t, i18n } = useTranslation();
+  const problemText = useProblemText();
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
@@ -496,7 +498,9 @@ export function PartDetail({ part, compare, versus, hideMeta = false }: PartDeta
                   <select
                     value={replaceInstanceId ?? ''}
                     onChange={(event) =>
-                      setReplaceInstanceId(event.target.value === '' ? undefined : event.target.value)
+                      setReplaceInstanceId(
+                        event.target.value === '' ? undefined : event.target.value,
+                      )
                     }
                   >
                     <option value="">{t('parts.compare.addOption')}</option>
@@ -523,16 +527,15 @@ export function PartDetail({ part, compare, versus, hideMeta = false }: PartDeta
               </p>
             </>
           )}
-          {part.id !== undefined && comparePreview.data?.omittedPartInstanceIds.includes(part.id) === true && (
-            <p className="error-text compare-no-room">{t('parts.compare.noRoom')}</p>
-          )}
+          {part.id !== undefined &&
+            comparePreview.data?.omittedPartInstanceIds.includes(part.id) === true && (
+              <p className="error-text compare-no-room">{t('parts.compare.noRoom')}</p>
+            )}
           {viabilityProblems.length > 0 && (
             <ul className="compare-viability-warning">
               {viabilityProblems.map((problem) => (
                 <li key={problem.code} className="error-text">
-                  {t(`hangar.problems.${problem.code}`, {
-                    defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-                  })}
+                  {problemText(problem)}
                 </li>
               ))}
             </ul>
@@ -646,6 +649,7 @@ export function PartStatsCard({
   compare?: PartCompareContext;
 }) {
   const { t, i18n } = useTranslation();
+  const problemText = useProblemText();
   const format = useNumberFormat();
   const { catalog } = part;
   const name = pickLocalized(part.displayName, i18n.language);
@@ -692,9 +696,7 @@ export function PartStatsCard({
         <ul className="compare-viability-warning">
           {viabilityProblems.map((problem) => (
             <li key={problem.code} className="error-text">
-              {t(`hangar.problems.${problem.code}`, {
-                defaultValue: t(`error.${problem.code}`, { defaultValue: problem.message }),
-              })}
+              {problemText(problem)}
             </li>
           ))}
         </ul>

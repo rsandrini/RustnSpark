@@ -14,14 +14,39 @@ import {
 
 function catalog(w: number, h: number): PartCatalogStats {
   return {
-    partType: 'x', partClass: 'UTILITY', w, h, mass: 1, structureCost: 1, partHp: 1, basePrice: 0,
-    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
-    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false,
+    partType: 'x',
+    partClass: 'UTILITY',
+    w,
+    h,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
     lifeSupport: false,
   };
 }
 
-const cell = (dx: number, dy: number, side: Side, kind: Kind): ConnectorCell => ({ dx, dy, side, kind });
+const cell = (dx: number, dy: number, side: Side, kind: Kind): ConnectorCell => ({
+  dx,
+  dy,
+  side,
+  kind,
+});
 
 describe('shared connector vectors (parity with the API)', () => {
   it('kindCompatible matches every pair', () => {
@@ -39,7 +64,11 @@ describe('shared connector vectors (parity with the API)', () => {
 
   it('authoredToWorld matches the cell vectors for every footprint and angle', () => {
     for (const v of vectors.cells as {
-      w: number; h: number; rot: Rot; authored: [number, number]; world: [number, number];
+      w: number;
+      h: number;
+      rot: Rot;
+      authored: [number, number];
+      world: [number, number];
     }[]) {
       expect(authoredToWorld(v.authored[0], v.authored[1], v.w, v.h, v.rot)).toEqual({
         x: v.world[0],
@@ -65,7 +94,10 @@ describe('computePortMarks', () => {
       new Map([['a', central(['N', 'E', 'S', 'W'])]]),
     );
     expect(marks.map((m) => `${m.side}:${m.state}`).sort()).toEqual([
-      'E:available', 'N:available', 'S:available', 'W:available',
+      'E:available',
+      'N:available',
+      'S:available',
+      'W:available',
     ]);
   });
 
@@ -74,22 +106,34 @@ describe('computePortMarks', () => {
       { partInstanceId: 'a', gx: 0, gy: 0, rot: 0 },
       { partInstanceId: 'b', gx: 1, gy: 0, rot: 0 },
     ];
-    const ok = computePortMarks(layout, catalogs, new Map([
-      ['a', [cell(0, 0, 'E', 'central')]],
-      ['b', [cell(0, 0, 'W', 'central')]],
-    ]));
+    const ok = computePortMarks(
+      layout,
+      catalogs,
+      new Map([
+        ['a', [cell(0, 0, 'E', 'central')]],
+        ['b', [cell(0, 0, 'W', 'central')]],
+      ]),
+    );
     expect(ok.map((m) => m.state)).toEqual(['connected', 'connected']);
 
-    const mismatch = computePortMarks(layout, catalogs, new Map([
-      ['a', [cell(0, 0, 'E', 'central')]],
-      ['b', [cell(0, 0, 'W', 'split')]],
-    ]));
+    const mismatch = computePortMarks(
+      layout,
+      catalogs,
+      new Map([
+        ['a', [cell(0, 0, 'E', 'central')]],
+        ['b', [cell(0, 0, 'W', 'split')]],
+      ]),
+    );
     expect(mismatch.map((m) => m.state)).toEqual(['incorrect', 'incorrect']);
 
-    const against = computePortMarks(layout, catalogs, new Map([
-      ['a', [cell(0, 0, 'E', 'central')]],
-      ['b', [cell(0, 0, 'E', 'central')]], // b has nothing on W: that side is none
-    ]));
+    const against = computePortMarks(
+      layout,
+      catalogs,
+      new Map([
+        ['a', [cell(0, 0, 'E', 'central')]],
+        ['b', [cell(0, 0, 'E', 'central')]], // b has nothing on W: that side is none
+      ]),
+    );
     expect(against.find((m) => m.partInstanceId === 'a')?.state).toBe('incorrect');
   });
 
@@ -108,11 +152,15 @@ describe('computePortMarks', () => {
 
   it('draws nothing for legacy parts with empty connectors', () => {
     expect(
-      computePortMarks([{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 }], catalogs, new Map([['a', []]])),
+      computePortMarks(
+        [{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 }],
+        catalogs,
+        new Map([['a', []]]),
+      ),
     ).toEqual([]);
   });
 
-  it('skips none sides and edges between a part\'s own cells', () => {
+  it("skips none sides and edges between a part's own cells", () => {
     const marks = computePortMarks(
       [{ partInstanceId: 'wide', gx: 0, gy: 0, rot: 0 }],
       catalogs,

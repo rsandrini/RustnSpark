@@ -103,7 +103,10 @@ export function computePortMarks(
     for (const cell of cells) {
       const at = authoredToWorld(cell.dx, cell.dy, catalog.w, catalog.h, placement.rot);
       const key = `${placement.gx + at.x},${placement.gy + at.y}`;
-      const entry = world.get(key) ?? { partInstanceId: placement.partInstanceId, kinds: new Map() };
+      const entry = world.get(key) ?? {
+        partInstanceId: placement.partInstanceId,
+        kinds: new Map(),
+      };
       entry.kinds.set(rotateSide(cell.side, placement.rot), cell.kind);
       world.set(key, entry);
     }

@@ -571,7 +571,8 @@ describe('hangar (S10.4)', () => {
     expect(await screen.findByText('1 problem(s)')).toBeInTheDocument();
     // The full, actionable detail (with its "find in store" fix) still renders separately,
     // below the sheet — the strip is a short pointer to it, not a replacement for it.
-    expect(screen.getByText('Mobility is below 1.')).toBeInTheDocument();
+    // the tile reads mobility x10 (display scale), so the limit is spoken in the same scale
+    expect(screen.getByText('Mobility is below 10.')).toBeInTheDocument();
   });
 
   it('asks before saving a layout that is over the structure budget, and saves it when the pilot insists', async () => {

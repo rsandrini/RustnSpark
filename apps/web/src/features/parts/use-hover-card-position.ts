@@ -39,9 +39,10 @@ export function hoverAnchor(
   return { x: event.clientX, y: event.clientY, avoid: { left: rect.left, right: rect.right } };
 }
 
-export function useClampedPosition(
-  anchor: HoverAnchor | null,
-): { ref: React.RefObject<HTMLDivElement>; style: CSSProperties } {
+export function useClampedPosition(anchor: HoverAnchor | null): {
+  ref: React.RefObject<HTMLDivElement>;
+  style: CSSProperties;
+} {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 

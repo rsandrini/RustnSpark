@@ -7,12 +7,11 @@ import {
 
 const name = (en: string): InstalledPartForCompare['displayName'] => ({ en, 'pt-BR': en });
 
-const part = (
-  id: string,
-  partClass: string,
-  w: number,
-  h: number,
-): InstalledPartForCompare => ({ id, displayName: name(id), catalog: { partClass, w, h } });
+const part = (id: string, partClass: string, w: number, h: number): InstalledPartForCompare => ({
+  id,
+  displayName: name(id),
+  catalog: { partClass, w, h },
+});
 
 describe('findReplaceCandidate', () => {
   it('returns undefined when nothing of the class is installed', () => {

@@ -48,6 +48,7 @@ import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
+import { useProblemText } from './problem-text';
 import { setUnsavedLayout } from './unsaved-layout';
 
 // Board/Port only make sense docked; Board because a new offer's origin is wherever the ship
@@ -105,6 +106,7 @@ export interface HangarPageProps {
 
 export function HangarPage({ guided = false }: HangarPageProps) {
   const { t, i18n } = useTranslation();
+  const problemText = useProblemText();
   const queryClient = useQueryClient();
   const [renaming, setRenaming] = useState(false);
 
@@ -950,15 +952,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               {saveError !== null && (
                 <p className="error-text">
                   {saveError.problems.length > 0
-                    ? saveError.problems
-                        .map((problem) =>
-                          t(`hangar.problems.${problem.code}`, {
-                            defaultValue: t(`error.${problem.code}`, {
-                              defaultValue: problem.message,
-                            }),
-                          }),
-                        )
-                        .join(' · ')
+                    ? saveError.problems.map((problem) => problemText(problem)).join(' · ')
                     : t(`hangar.errors.${saveError.code ?? 'generic'}`, {
                         defaultValue: t(`error.${saveError.code ?? 'unexpected'}`, {
                           defaultValue: t('hangar.errors.generic'),
@@ -1145,11 +1139,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                       const fixClass = FIX_CLASS[problem.code];
                       return (
                         <li key={problem.code} className="error-text">
-                          {t(`hangar.problems.${problem.code}`, {
-                            defaultValue: t(`error.${problem.code}`, {
-                              defaultValue: problem.message,
-                            }),
-                          })}
+                          {problemText(problem)}
                           {fixClass !== undefined && (
                             <span className="fix-hint">
                               {t('hangar.fix.needs', {
@@ -1266,11 +1256,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               key={problem.code}
               className={problem.code === 'SHIELD_ENERGY_LOW' ? 'sub low-note' : 'warn-text'}
             >
-              {t(`hangar.problems.${problem.code}`, {
-                defaultValue: t(`error.${problem.code}`, {
-                  defaultValue: problem.message,
-                }),
-              })}
+              {problemText(problem)}
               {FIX_CLASS[problem.code] !== undefined && ship?.status === 'IN_PORT' && (
                 <button
                   type="button"

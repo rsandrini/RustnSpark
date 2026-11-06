@@ -14,9 +14,29 @@ import type { PartCatalogStats, Placement } from '../../api/generated';
 
 function catalog(w: number, h: number): PartCatalogStats {
   return {
-    partType: 'x', partClass: 'UTILITY', w, h, mass: 1, structureCost: 1, partHp: 1, basePrice: 0,
-    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
-    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false,
+    partType: 'x',
+    partClass: 'UTILITY',
+    w,
+    h,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
     lifeSupport: false,
   };
 }
@@ -24,7 +44,10 @@ function catalog(w: number, h: number): PartCatalogStats {
 describe('canPlace — format cell set', () => {
   it('lets a part sit beside the hull (it is just outside), but never the bridge', () => {
     const cells = new Set(['0,0']); // a 1-cell format
-    const catalogById = new Map([['p1', catalog(1, 1)], ['b', { ...catalog(1, 1), partClass: 'BRIDGE' as const }]]);
+    const catalogById = new Map([
+      ['p1', catalog(1, 1)],
+      ['b', { ...catalog(1, 1), partClass: 'BRIDGE' as const }],
+    ]);
     expect(canPlace([], catalogById, 'p1', 1, 0, 0, cells)).toBe(true);
     expect(isOutsideYard(catalog(1, 1), 1, 0, 0, cells)).toBe(true);
     expect(isOutsideYard(catalog(1, 1), 0, 0, 0, cells)).toBe(false);
@@ -48,15 +71,18 @@ describe('direction vectors (parity with apps/api/src/ships/direction.ts)', () =
   for (const scenario of directionVectors.scenarios) {
     it(scenario.name, () => {
       const byId = new Map(
-        Object.entries(scenario.parts as unknown as Record<string, { class: string; w: number; h: number }>).map(
-          ([id, spec]) => [id, partOf(spec)],
-        ),
+        Object.entries(
+          scenario.parts as unknown as Record<string, { class: string; w: number; h: number }>,
+        ).map(([id, spec]) => [id, partOf(spec)]),
       );
       const layout = (scenario.layout as { id: string; gx: number; gy: number; rot: Rot }[]).map(
         (p): Placement => ({ partInstanceId: p.id, gx: p.gx, gy: p.gy, rot: p.rot }),
       );
       const found = directionViolations(layout, byId)
-        .map((v) => ({ id: v.partInstanceId, code: v.kind === 'exhaust' ? 'EXHAUST_BLOCKED' : 'FACING_BLOCKED' }))
+        .map((v) => ({
+          id: v.partInstanceId,
+          code: v.kind === 'exhaust' ? 'EXHAUST_BLOCKED' : 'FACING_BLOCKED',
+        }))
         .sort((a, b) => a.id.localeCompare(b.id) || a.code.localeCompare(b.code));
       expect(found).toEqual(scenario.expected);
     });
@@ -85,7 +111,10 @@ describe('rotation and placementIssue', () => {
   it('refuses only overlap (and the bridge leaving the format); direction problems never block a placement', () => {
     const engine = partOf({ class: 'ENGINE', w: 1, h: 1 });
     const plain = partOf({ class: 'UTILITY', w: 1, h: 1 });
-    const byId = new Map([['e', engine], ['p', plain]]);
+    const byId = new Map([
+      ['e', engine],
+      ['p', plain],
+    ]);
     const cells = new Set(['0,0', '1,0', '2,0']);
     const withEngine: Placement[] = [{ partInstanceId: 'e', gx: 1, gy: 0, rot: 0 }];
     // off the format is not a refusal either: the part is parked beside the hull

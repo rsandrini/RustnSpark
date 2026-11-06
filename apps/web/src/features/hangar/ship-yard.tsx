@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type {
-  MouseEvent as ReactMouseEvent,
-  PointerEvent as ReactPointerEvent,
-} from 'react';
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
@@ -84,11 +81,11 @@ export function labelLines(
   const boost = Math.min(Math.max(zoom, 1), LABEL_ZOOM_CAP) / Math.max(areaFactor, 0.01);
   const maxChars = Math.max(
     2,
-    Math.floor((width - 0.15) * (LABEL_REF_CHARS * LABEL_REF_FONT) / LABEL_FONT * boost),
+    Math.floor((((width - 0.15) * (LABEL_REF_CHARS * LABEL_REF_FONT)) / LABEL_FONT) * boost),
   );
   const maxLines = Math.max(
     1,
-    Math.floor((height - 0.1) * (LABEL_REF_LINES * LABEL_REF_FONT) / LABEL_FONT * boost),
+    Math.floor((((height - 0.1) * (LABEL_REF_LINES * LABEL_REF_FONT)) / LABEL_FONT) * boost),
   );
   const lines: string[] = [];
   let current = '';
@@ -575,10 +572,7 @@ export function ShipYard({
     if (ghost !== null) {
       // Drop where it fits, and only if it actually moved; a drop on the origin (or an invalid
       // cell) just leaves the part exactly where it started.
-      if (
-        ghost.valid &&
-        (ghost.targetGx !== ghost.originX || ghost.targetGy !== ghost.originY)
-      ) {
+      if (ghost.valid && (ghost.targetGx !== ghost.originX || ghost.targetGy !== ghost.originY)) {
         onDropPart?.(ghost.partInstanceId, ghost.targetGx, ghost.targetGy);
       }
       setGhost(null);
@@ -634,10 +628,7 @@ export function ShipYard({
   // Press-and-drag a border rotate button: anchor the pointer's angle around the part's centre
   // (the pivot uses the footprint at press time, so a 2×1→1×2 swing stays centered on the same
   // spot). A press without movement is a single quarter turn.
-  const handleRotateDown = (
-    event: ReactPointerEvent<HTMLButtonElement>,
-    placement: Placement,
-  ) => {
+  const handleRotateDown = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
     if (!editable) return;
     const catalog = catalogById.get(placement.partInstanceId);
     const svg = svgRef.current;
@@ -666,10 +657,7 @@ export function ShipYard({
   };
 
   // Live spin: as the pointer orbits the part's centre, snap the rotation to the nearest 90°.
-  const handleRotateMove = (
-    event: ReactPointerEvent<HTMLButtonElement>,
-    placement: Placement,
-  ) => {
+  const handleRotateMove = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
     const rotate = rotateDrag.current;
     if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
     const point = pointerToCells(event.clientX, event.clientY);
@@ -678,7 +666,7 @@ export function ShipYard({
       Math.sin(angle - rotate.startAngle),
       Math.cos(angle - rotate.startAngle),
     );
-    const turns = Math.round(((delta * 180) / Math.PI) / 90);
+    const turns = Math.round((delta * 180) / Math.PI / 90);
     if (turns !== 0) rotate.moved = true;
     const target = ((((rotate.startRot + turns * 90) % 360) + 360) % 360) as Rot;
     const current = layout.find((p) => p.partInstanceId === rotate.partInstanceId);
@@ -687,10 +675,7 @@ export function ShipYard({
     }
   };
 
-  const handleRotateEnd = (
-    event: ReactPointerEvent<HTMLButtonElement>,
-    placement: Placement,
-  ) => {
+  const handleRotateEnd = (event: ReactPointerEvent<HTMLButtonElement>, placement: Placement) => {
     const rotate = rotateDrag.current;
     if (rotate === null || rotate.partInstanceId !== placement.partInstanceId) return;
     if (!rotate.moved) onRotate?.(placement.partInstanceId);
@@ -724,11 +709,9 @@ export function ShipYard({
   const labelFont = (LABEL_FONT * areaFactor) / labelBoost;
   // Which part shows its four border rotate buttons: the hovered one (or the selection / a part
   // mid-spin), never while a drag ghost is in flight. Buttons are hidden outside this.
-  const iconSourceId = ghost !== null ? null : rotatingId ?? hoveredPartId ?? selectedId;
+  const iconSourceId = ghost !== null ? null : (rotatingId ?? hoveredPartId ?? selectedId);
   const iconPlacement =
-    iconSourceId === null
-      ? null
-      : layout.find((p) => p.partInstanceId === iconSourceId) ?? null;
+    iconSourceId === null ? null : (layout.find((p) => p.partInstanceId === iconSourceId) ?? null);
 
   return (
     <div className="stage hangar-scene" ref={sceneRef} data-tour="ship_grid">
@@ -873,9 +856,7 @@ export function ShipYard({
                 y={placement.gy + 0.04}
                 width={width - 0.08}
                 height={height - 0.08}
-                style={
-                  isGhosting ? { pointerEvents: 'none' } : undefined
-                }
+                style={isGhosting ? { pointerEvents: 'none' } : undefined}
                 onPointerDown={(event) => handleBlockDown(event, placement)}
                 onPointerEnter={() => {
                   setHoveredPartId(placement.partInstanceId);
@@ -932,7 +913,9 @@ export function ShipYard({
                   height={height}
                   facing={facingOf(placement.rot)}
                   label={t(
-                    catalog.partClass === 'ENGINE' ? 'hangar.facing.exhaust' : 'hangar.facing.weapon',
+                    catalog.partClass === 'ENGINE'
+                      ? 'hangar.facing.exhaust'
+                      : 'hangar.facing.weapon',
                   )}
                 />
               )}
@@ -995,8 +978,7 @@ export function ShipYard({
             const ghostName = nameById.get(ghost.partInstanceId) ?? '';
             const lines = labelLines(ghostName, ghost.width, ghost.height, zoom, areaFactor);
             const lineHeight = labelFont * 1.15;
-            const firstY =
-              ghost.y + ghost.height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
+            const firstY = ghost.y + ghost.height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
             return (
               <g className="yard-ghost" style={{ pointerEvents: 'none' }}>
                 <rect

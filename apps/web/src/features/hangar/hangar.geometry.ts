@@ -16,10 +16,7 @@ export function nextRot(rot: Rot): Rot {
   return ((rot + QUARTER) % FULL_TURN) as Rot;
 }
 
-export function footprint(
-  catalog: PartCatalogStats,
-  rot: Rot,
-): { width: number; height: number } {
+export function footprint(catalog: PartCatalogStats, rot: Rot): { width: number; height: number } {
   return rot % HALF !== 0
     ? { width: catalog.h, height: catalog.w }
     : { width: catalog.w, height: catalog.h };
@@ -43,10 +40,7 @@ export function facingOf(rot: Rot): Side {
   return rotateSide('W', rot);
 }
 
-function cellsOf(
-  placement: Placement,
-  catalog: PartCatalogStats,
-): Array<{ x: number; y: number }> {
+function cellsOf(placement: Placement, catalog: PartCatalogStats): Array<{ x: number; y: number }> {
   const { width, height } = footprint(catalog, placement.rot);
   const out: Array<{ x: number; y: number }> = [];
   for (let dx = 0; dx < width; dx += 1) {

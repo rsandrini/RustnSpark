@@ -47,15 +47,45 @@ describe('labelLines', () => {
 
 describe('ShipYard port marks', () => {
   const one: PartCatalogStats = {
-    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 1, structureCost: 1, partHp: 1,
-    basePrice: 0, pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0,
-    energyCombat: 0, fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0,
-    pressurized: false, lifeSupport: false,
+    partType: 'x',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   };
   const baseProps = {
-    cells: [[0, 0], [1, 0], [2, 0]] as [number, number][],
-    catalogById: new Map([['a', one], ['b', one]]),
-    nameById: new Map([['a', 'A'], ['b', 'B']]),
+    cells: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ] as [number, number][],
+    catalogById: new Map([
+      ['a', one],
+      ['b', one],
+    ]),
+    nameById: new Map([
+      ['a', 'A'],
+      ['b', 'B'],
+    ]),
     selectedId: null,
     draggingId: null,
     onSelect: () => undefined,
@@ -74,7 +104,13 @@ describe('ShipYard port marks', () => {
         ]}
         connectorsById={
           new Map<string, ConnectorCell[]>([
-            ['a', [{ dx: 0, dy: 0, side: 'E', kind: 'central' }, { dx: 0, dy: 0, side: 'N', kind: 'central' }]],
+            [
+              'a',
+              [
+                { dx: 0, dy: 0, side: 'E', kind: 'central' },
+                { dx: 0, dy: 0, side: 'N', kind: 'central' },
+              ],
+            ],
             ['b', [{ dx: 0, dy: 0, side: 'W', kind: 'split' }]],
           ])
         }
@@ -99,13 +135,40 @@ describe('ShipYard port marks', () => {
 
 describe('ShipYard facing arrow', () => {
   const part = (partClass: PartCatalogStats['partClass']): PartCatalogStats => ({
-    partType: 'x', partClass, w: 1, h: 1, mass: 1, structureCost: 1, partHp: 1, basePrice: 0,
-    pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0, energyCombat: 0,
-    fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0, pressurized: false, lifeSupport: false,
+    partType: 'x',
+    partClass,
+    w: 1,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   });
   const props = {
-    cells: [[0, 0], [1, 0]] as [number, number][],
-    nameById: new Map([['e', 'E'], ['u', 'U']]),
+    cells: [
+      [0, 0],
+      [1, 0],
+    ] as [number, number][],
+    nameById: new Map([
+      ['e', 'E'],
+      ['u', 'U'],
+    ]),
     selectedId: null,
     draggingId: null,
     onSelect: () => undefined,
@@ -114,11 +177,16 @@ describe('ShipYard facing arrow', () => {
     onDragEnd: () => undefined,
   };
 
-  it('marks an engine\'s facing edge, turning with its rotation; other parts get none', () => {
+  it("marks an engine's facing edge, turning with its rotation; other parts get none", () => {
     const { container } = renderWithProviders(
       <ShipYard
         {...props}
-        catalogById={new Map([['e', part('ENGINE')], ['u', part('UTILITY')]])}
+        catalogById={
+          new Map([
+            ['e', part('ENGINE')],
+            ['u', part('UTILITY')],
+          ])
+        }
         layout={[
           { partInstanceId: 'e', gx: 0, gy: 0, rot: 180 },
           { partInstanceId: 'u', gx: 1, gy: 0, rot: 0 },
@@ -133,18 +201,51 @@ describe('ShipYard facing arrow', () => {
 
 describe('ShipYard parts outside the hull', () => {
   const unit: PartCatalogStats = {
-    partType: 'x', partClass: 'UTILITY', w: 1, h: 1, mass: 1, structureCost: 1, partHp: 1,
-    basePrice: 0, pot: 0, pdf: 0, bli: 0, esc: 0, sen: 0, crg: 0, min: 0, energyCont: 0,
-    energyCombat: 0, fuelCap: 0, fuelUse: 0, batCharge: 0, batOutput: 0, batInput: 0,
-    pressurized: false, lifeSupport: false,
+    partType: 'x',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
   };
 
   it('outlines a part beside the hull, says how many are out, and leaves the ones inside alone', () => {
     const { container, getByTestId } = renderWithProviders(
       <ShipYard
-        cells={[[0, 0], [1, 0]]}
-        catalogById={new Map([['in', unit], ['out', unit]])}
-        nameById={new Map([['in', 'In'], ['out', 'Out']])}
+        cells={[
+          [0, 0],
+          [1, 0],
+        ]}
+        catalogById={
+          new Map([
+            ['in', unit],
+            ['out', unit],
+          ])
+        }
+        nameById={
+          new Map([
+            ['in', 'In'],
+            ['out', 'Out'],
+          ])
+        }
         selectedId={null}
         draggingId={null}
         onSelect={() => undefined}

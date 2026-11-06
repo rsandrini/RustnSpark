@@ -557,7 +557,7 @@
     "problems": {
       "NO_BRIDGE": "Nenhuma ponte instalada.",
       "NO_ENGINE": "Nenhum motor instalado.",
-      "MOB_TOO_LOW": "Mobilidade abaixo de 1.",
+      "MOB_TOO_LOW": "Mobilidade abaixo de {{min}}.",
       "NO_FUEL_CAPACITY": "Motor químico precisa de tanque.",
       "NO_LIFE_SUPPORT": "Há módulos pressurizados, mas nenhum suporte de vida instalado.",
       "STRUCTURE_EXCEEDED": "Orçamento de estrutura excedido.",
