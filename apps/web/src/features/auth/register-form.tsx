@@ -76,7 +76,7 @@ export function RegisterForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={10}
+          minLength={6}
           maxLength={128}
           autoComplete="new-password"
           aria-describedby="password-hint"

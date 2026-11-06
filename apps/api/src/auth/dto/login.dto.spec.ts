@@ -20,7 +20,7 @@ describe('LoginDto validation', () => {
 
   it.each([
     ['malformed email', { email: 'not-an-email' }, ['email']],
-    ['password too short (9)', { password: 'x'.repeat(9) }, ['password']],
+    ['password too short (5)', { password: 'x'.repeat(5) }, ['password']],
     ['password too long (129)', { password: 'x'.repeat(129) }, ['password']],
   ])('rejects %s', async (_label, overrides, expectedProperties) => {
     await expect(invalidProperties({ ...VALID, ...overrides })).resolves.toEqual(

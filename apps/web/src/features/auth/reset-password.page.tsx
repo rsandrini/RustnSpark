@@ -21,7 +21,7 @@ export function ResetPasswordPage() {
       setError(t('resetPassword.error.mismatch'));
       return;
     }
-    if (password.length < 10 || password.length > 128) {
+    if (password.length < 6 || password.length > 128) {
       setError(t('resetPassword.error.invalidPassword'));
       return;
     }

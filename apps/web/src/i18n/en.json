@@ -12,7 +12,7 @@
   },
   "register": {
     "nameHint": "3–24 characters: letters, digits, _ or -",
-    "passwordHint": "At least 10 characters",
+    "passwordHint": "At least 6 characters",
     "title": "Create account",
     "nameLabel": "Name",
     "emailLabel": "Email",
@@ -21,7 +21,7 @@
     "loginLink": "Already have an account? Sign in",
     "error": {
       "conflict": "That email or player name is already taken",
-      "invalid": "Check the fields: name 3–24 characters (letters, digits, _ or -), password at least 10 characters",
+      "invalid": "Check the fields: name 3–24 characters (letters, digits, _ or -), password at least 6 characters",
       "generic": "Could not create account"
     }
   },
@@ -44,7 +44,7 @@
     "backToLogin": "Back to sign in",
     "error": {
       "mismatch": "Passwords do not match",
-      "invalidPassword": "Password must be 8-64 characters",
+      "invalidPassword": "Password must be 6-128 characters",
       "invalidToken": "Invalid or expired reset link"
     }
   },
