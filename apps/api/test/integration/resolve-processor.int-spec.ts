@@ -491,6 +491,25 @@ describe('mission resolve processor (S7.3)', () => {
     expect(stats.totals['missions.success']).toBe(1);
   }, 30_000);
 
+  it('two workers resolving the same mission at once: one effect, nobody errors (a stalled job picked up twice)', async () => {
+    const player = await authFor(testApp.app);
+    const mission = await createAcceptedMission(player, 's7.3-parallel-seed', [150, 100]);
+    const job = await dispatchedJob(player, mission, 10_000);
+    const payoutsBefore = await prisma.playerEvent.count({
+      where: { playerId: player.seeded.player.id, type: 'wallet.credit' },
+    });
+
+    const results = await Promise.all([processor.process(job), processor.process(job)]);
+
+    expect(results.filter((result) => !result.skipped)).toHaveLength(1);
+    expect(await prisma.missionLog.count({ where: { missionId: mission.id } })).toBe(1);
+    expect(
+      await prisma.playerEvent.count({
+        where: { playerId: player.seeded.player.id, type: 'wallet.credit' },
+      }),
+    ).toBe(payoutsBefore + 1);
+  }, 30_000);
+
   it('records the run in the pilot stats: flight, fuel, payout, last active', async () => {
     const player = await authFor(testApp.app);
     const mission = await createAcceptedMission(player, 's7.3-happy-seed', [150, 100]);
