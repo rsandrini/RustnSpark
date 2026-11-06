@@ -14,6 +14,9 @@ import { RepairService } from '../economy/repair.service.js';
 // here like the other PartsService deps so this standalone worker graph resolves without
 // importing EconomyModule.
 import { PricingService } from '../economy/pricing.service.js';
+import { GuestFreezeService } from '../auth/guest-freeze.service.js';
+import { GuestFreezeProcessor } from './processors/guest-freeze.processor.js';
+import { GuestFreezeScheduler } from './guest-freeze.scheduler.js';
 import { MissionProcessor } from './processors/mission.processor.js';
 import { PingProcessor } from './processors/ping.processor.js';
 import { ReconcileProcessor } from './processors/reconcile.processor.js';
@@ -22,6 +25,7 @@ import { ShipRatingProcessor } from './processors/ship-rating.processor.js';
 import { ReconcileScheduler } from './reconcile.scheduler.js';
 import { ShipRatingScheduler } from './ship-rating.scheduler.js';
 import {
+  GUEST_FREEZE_QUEUE_NAME,
   MISSION_QUEUE_NAME,
   PING_QUEUE_NAME,
   RECONCILE_QUEUE_NAME,
@@ -73,6 +77,7 @@ import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.r
     BullModule.registerQueue({ name: RECONCILE_QUEUE_NAME }),
     BullModule.registerQueue({ name: REPAIR_QUEUE_NAME }),
     BullModule.registerQueue({ name: SHIP_RATING_QUEUE_NAME }),
+    BullModule.registerQueue({ name: GUEST_FREEZE_QUEUE_NAME }),
   ],
   providers: [
     PingProcessor,
@@ -80,6 +85,9 @@ import { OwnershipResolverRegistry } from '../common/guards/ownership-resolver.r
     ReconcileProcessor,
     RepairProcessor,
     ShipRatingProcessor,
+    GuestFreezeProcessor,
+    GuestFreezeService,
+    GuestFreezeScheduler,
     ReconcileScheduler,
     ShipRatingScheduler,
     MissionResolveService,

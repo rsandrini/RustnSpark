@@ -8,12 +8,15 @@ export const ACCOUNT_COMMANDS = [
   'demote',
   'ban',
   'unban',
+  'unfreeze',
   'set-password',
 ] as const;
 export type AccountCommand = (typeof ACCOUNT_COMMANDS)[number];
 
 export interface AccountCommandArgs {
   email?: string | undefined;
+  /** A pilot's name, instead of the email (a guest has no email anyone knows). */
+  player?: string | undefined;
   password?: string | undefined;
   force?: boolean | undefined;
 }
@@ -23,7 +26,10 @@ export const PASSWORD_MAX_LENGTH = 128;
 /** Who the audit log names as the actor when a change is made from the server shell. */
 export const CLI_ACTOR = 'cli';
 
-type Db = Pick<PrismaClient, 'account' | 'refreshToken' | 'adminAuditLog' | '$transaction'>;
+type Db = Pick<
+  PrismaClient,
+  'account' | 'player' | 'playerStats' | 'refreshToken' | 'adminAuditLog' | '$transaction'
+>;
 
 export async function runAccountCommand(
   prisma: Db,
@@ -40,8 +46,17 @@ export async function runAccountCommand(
     return { admins };
   }
 
-  if (!args.email) throw new Error('--email is required');
-  const email = args.email.toLowerCase().trim();
+  let rawEmail = args.email;
+  if (!rawEmail && args.player) {
+    const found = await prisma.player.findUnique({
+      where: { name: args.player },
+      select: { account: { select: { email: true } } },
+    });
+    if (!found) throw new Error(`no pilot named ${args.player}`);
+    rawEmail = found.account.email;
+  }
+  if (!rawEmail) throw new Error('--email or --player is required');
+  const email = rawEmail.toLowerCase().trim();
   const account = await prisma.account.findUnique({
     where: { email },
     select: {
@@ -111,6 +126,26 @@ export async function runAccountCommand(
     if (account.status === 'ACTIVE')
       return { accountId: account.id, email, status: 'ACTIVE', changed: false };
     await prisma.account.update({ where: { id: account.id }, data: { status: 'ACTIVE' } });
+    await audit({ role: account.role, status: 'ACTIVE' });
+    return { accountId: account.id, email, status: 'ACTIVE', changed: true };
+  }
+
+  if (command === 'unfreeze') {
+    if (account.status !== 'FROZEN')
+      return { accountId: account.id, email, status: account.status, changed: false };
+    await prisma.account.update({ where: { id: account.id }, data: { status: 'ACTIVE' } });
+    // counted as active again, or the next sweep would freeze it straight back
+    const player = await prisma.player.findFirst({
+      where: { accountId: account.id },
+      select: { id: true },
+    });
+    if (player) {
+      await prisma.playerStats.upsert({
+        where: { playerId: player.id },
+        create: { playerId: player.id, lastActiveAt: new Date() },
+        update: { lastActiveAt: new Date() },
+      });
+    }
     await audit({ role: account.role, status: 'ACTIVE' });
     return { accountId: account.id, email, status: 'ACTIVE', changed: true };
   }

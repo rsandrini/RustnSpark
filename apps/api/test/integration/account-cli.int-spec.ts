@@ -124,6 +124,6 @@ describe('account CLI', () => {
     await expect(run('show', { email: 'nobody@x.test' })).rejects.toThrow(
       'no account for nobody@x.test',
     );
-    await expect(run('promote')).rejects.toThrow('--email is required');
+    await expect(run('promote')).rejects.toThrow('--email or --player is required');
   });
 });

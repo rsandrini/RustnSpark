@@ -31,6 +31,13 @@ export const SHIP_RATING_QUEUE_NAME = 'ship-rating';
 export const SHIP_RATING_SCHEDULER_ID = 'ship-rating';
 export const SHIP_RATING_JOB_NAME = 'refresh';
 
+// Idle guests are frozen by one repeatable job (a sweep every few hours; the idle time itself is the admin's
+// `admin.guest_freeze_days`). It has its own queue so it never delays a mission resolve.
+export const GUEST_FREEZE_QUEUE_NAME = 'guest-freeze';
+export const GUEST_FREEZE_SCHEDULER_ID = 'guest-freeze';
+export const GUEST_FREEZE_JOB_NAME = 'sweep';
+export const GUEST_FREEZE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
 // S8.4: repair is a delayed job (duration = points × hub/outpost k). jobId = RepairJob.id
 // so a duplicate enqueue is a no-op; the processor applies condition only on first complete.
 export const REPAIR_QUEUE_NAME = 'repair';

@@ -14,7 +14,7 @@ import { ACCOUNT_COMMANDS, runAccountCommand, type AccountCommand } from './acco
 })
 class AccountCliModule {}
 
-const USAGE = `usage: account <command> [--email <email>] [--password <password>] [--force]
+const USAGE = `usage: account <command> [--email <email> | --player <name>] [--password <password>] [--force]
 
 commands:
   show --email E          role, status and pilot name of an account
@@ -23,6 +23,7 @@ commands:
   demote --email E        make an admin a normal player (refuses the last admin without --force)
   ban --email E           block an account and sign it out everywhere (not for admins)
   unban --email E         let a banned account back in
+  unfreeze --player NAME  let a frozen guest pilot back in (--email works too); counts as active again
   set-password --email E --password P   reset a password (10-128 characters) and sign out everywhere
 
 Emergency tool for the server shell: every change is written to the admin audit log (actor "cli").`;
@@ -31,6 +32,7 @@ async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
     options: {
       email: { type: 'string' },
+      player: { type: 'string' },
       password: { type: 'string' },
       force: { type: 'boolean' },
     },
@@ -52,7 +54,12 @@ async function main(): Promise<void> {
       app.get(PrismaService),
       (plain) => passwords.hash(plain),
       command,
-      { email: values.email, password: values.password, force: values.force },
+      {
+        email: values.email,
+        player: values.player,
+        password: values.password,
+        force: values.force,
+      },
     );
     console.log(JSON.stringify(result));
   } finally {
