@@ -1,11 +1,20 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { setAccessToken, setOnUnauthorized } from '../../api/client';
+import { ApiError, setAccessToken, setOnUnauthorized } from '../../api/client';
 import { authApi } from './auth.api';
-import type { LoginCredentials, RegisterData, UserProfile } from './auth.types';
+import { clearGuestKey, readGuestKey, writeGuestKey } from './guest-key';
+import type { ClaimData, LoginCredentials, RegisterData, UserProfile } from './auth.types';
 
 interface AuthState {
   user: UserProfile | null;
@@ -13,7 +22,16 @@ interface AuthState {
   isLoading: boolean;
 }
 
+/** Why a stored guest key no longer works: the pilot was frozen after a long time away, or cannot be found. */
+export type GuestLost = 'frozen' | 'gone';
+
 interface AuthContextValue extends AuthState {
+  /** Set when the browser's guest key was refused; the sign-in page explains it. */
+  guestLost: GuestLost | null;
+  /** Starts a guest pilot (no email, no password) and goes to the faction choice. */
+  playAsGuest: () => Promise<void>;
+  /** Saves the guest pilot with an email and password; nothing the pilot owns moves. */
+  claimPilot: (data: ClaimData) => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -56,6 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   });
 
+  const [guestLost, setGuestLost] = useState<GuestLost | null>(null);
+  const resuming = useRef(false);
+
   // Another pilot's ship, parts and scenes must never survive a sign-in or sign-out: a cached inventory from the
   // previous account made auto layout send parts the new pilot does not own (403).
   const queryClient = useQueryClient();
@@ -67,12 +88,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: null, accessToken: null, isLoading: false });
   }, [queryClient]);
 
-  // A session that died mid-use (an API call answered 401 and the silent refresh failed):
-  // clear it and send the player to sign in.
+  const applyProfile = useCallback(
+    async (profile: UserProfile, token: string) => {
+      rememberSignedOut(false);
+      setState({ user: profile, accessToken: token, isLoading: false });
+      if (profile.locale && i18n.language !== profile.locale) {
+        await i18n.changeLanguage(profile.locale);
+      }
+    },
+    [i18n],
+  );
+
+  // A guest signs back in with the key its browser kept. A key the server refuses (frozen, unknown) is
+  // forgotten and remembered as lost, so the sign-in page can say why. A network failure keeps the key.
+  const resumeWithKey = useCallback(
+    async (key: string): Promise<boolean> => {
+      try {
+        const { accessToken } = await authApi.resumeGuest(key);
+        setAccessToken(accessToken);
+        const profile = await authApi.me();
+        await applyProfile(profile, accessToken);
+        setGuestLost(null);
+        return true;
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          clearGuestKey();
+          setGuestLost(error.code === 'GUEST_FROZEN' ? 'frozen' : 'gone');
+        }
+        return false;
+      }
+    },
+    [applyProfile],
+  );
+
+  // A session that died mid-use (an API call answered 401 and the silent refresh failed): a guest
+  // signs straight back in with its key; anyone else is cleared and sent to sign in.
   const handleUnauthorized = useCallback(() => {
+    const key = readGuestKey();
+    if (key !== null && !resuming.current) {
+      resuming.current = true;
+      void resumeWithKey(key).then((resumed) => {
+        resuming.current = false;
+        if (!resumed) {
+          clearSession();
+          void navigate('/login');
+        }
+      });
+      return;
+    }
     clearSession();
     void navigate('/login');
-  }, [clearSession, navigate]);
+  }, [clearSession, navigate, resumeWithKey]);
 
   useEffect(() => {
     setOnUnauthorized(handleUnauthorized);
@@ -82,18 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (token: string): Promise<UserProfile | null> => {
       try {
         const profile = await authApi.me();
-        rememberSignedOut(false);
-        setState({ user: profile, accessToken: token, isLoading: false });
-        if (profile.locale && i18n.language !== profile.locale) {
-          await i18n.changeLanguage(profile.locale);
-        }
+        await applyProfile(profile, token);
         return profile;
       } catch {
         handleUnauthorized();
         return null;
       }
     },
-    [handleUnauthorized, i18n],
+    [applyProfile, handleUnauthorized],
   );
 
   const refreshSession = useCallback(async () => {
@@ -111,17 +173,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // routes send signed-out players to /login themselves (ProtectedRoute).
   useEffect(() => {
     void (async () => {
-      if (knownSignedOut()) {
+      const key = readGuestKey();
+      if (knownSignedOut() && key === null) {
         clearSession();
         return;
       }
-      try {
-        const { accessToken } = await authApi.refresh();
-        setAccessToken(accessToken);
-        await loadProfile(accessToken);
-      } catch {
-        clearSession();
+      if (!knownSignedOut()) {
+        try {
+          const { accessToken } = await authApi.refresh();
+          setAccessToken(accessToken);
+          await loadProfile(accessToken);
+          return;
+        } catch {
+          // no live session: a guest's key may still sign it in
+        }
       }
+      if (key !== null && (await resumeWithKey(key))) return;
+      clearSession();
     })();
     // Runs once on mount; the callbacks are stable for the provider's lifetime.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -166,12 +234,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [loadProfile, navigate, queryClient],
   );
 
+  const playAsGuest = useCallback(async () => {
+    const started = await authApi.startGuest(i18n.language.startsWith('pt') ? 'pt-BR' : 'en');
+    queryClient.clear();
+    writeGuestKey(started.guestKey);
+    setGuestLost(null);
+    setAccessToken(started.accessToken);
+    const profile = await loadProfile(started.accessToken);
+    if (profile === null) return;
+    void navigate('/onboarding');
+  }, [i18n.language, loadProfile, navigate, queryClient]);
+
+  const claimPilot = useCallback(
+    async (data: ClaimData) => {
+      const saved = await authApi.claim(data);
+      // The same pilot, now with an email: the key is retired and nothing else changes.
+      clearGuestKey();
+      setAccessToken(saved.accessToken);
+      await applyProfile(saved.player, saved.accessToken);
+    },
+    [applyProfile],
+  );
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
     } catch {
       // Ignore logout failures; the session cookie will expire anyway.
     }
+    // Signing out on purpose forgets the guest key too (the caller asked the guest first).
+    clearGuestKey();
     queryClient.clear();
     setAccessToken(null);
     setState({ user: null, accessToken: null, isLoading: false });
@@ -179,8 +271,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [navigate, queryClient]);
 
   const value = useMemo(
-    () => ({ ...state, login, register, logout, refresh: refreshSession, reloadProfile }),
-    [state, login, register, logout, refreshSession, reloadProfile],
+    () => ({
+      ...state,
+      guestLost,
+      playAsGuest,
+      claimPilot,
+      login,
+      register,
+      logout,
+      refresh: refreshSession,
+      reloadProfile,
+    }),
+    [
+      state,
+      guestLost,
+      playAsGuest,
+      claimPilot,
+      login,
+      register,
+      logout,
+      refreshSession,
+      reloadProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

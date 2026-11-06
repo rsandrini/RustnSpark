@@ -298,3 +298,7 @@
   color: var(--brass);
   font-weight: 600;
 }
+
+.shell-menu-guest {
+  color: var(--brass);
+}

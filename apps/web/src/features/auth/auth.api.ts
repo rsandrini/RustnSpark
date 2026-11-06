@@ -1,6 +1,12 @@
 import { client, refresh as refreshAccessToken } from '../../api/client';
 import type * as dto from '../../api/generated';
-import type { LoginCredentials, RegisterData } from './auth.types';
+import type {
+  ClaimData,
+  GuestStartResponse,
+  LoginCredentials,
+  RegisterData,
+  UserProfile,
+} from './auth.types';
 
 export const authApi = {
   async login(body: LoginCredentials): Promise<dto.LoginResponse> {
@@ -9,6 +15,20 @@ export const authApi = {
 
   async register(body: RegisterData): Promise<dto.RegisterResponse> {
     return client.post<dto.RegisterResponse>('/v1/auth/register', body);
+  },
+
+  async startGuest(locale: 'en' | 'pt-BR'): Promise<GuestStartResponse> {
+    return client.post<GuestStartResponse>('/v1/auth/guest', { locale });
+  },
+
+  async resumeGuest(guestKey: string): Promise<dto.LoginResponse & { player: UserProfile }> {
+    return client.post<dto.LoginResponse & { player: UserProfile }>('/v1/auth/guest/resume', {
+      guestKey,
+    });
+  },
+
+  async claim(body: ClaimData): Promise<{ accessToken: string; player: UserProfile }> {
+    return client.post<{ accessToken: string; player: UserProfile }>('/v1/players/me/claim', body);
   },
 
   async refresh(): Promise<dto.RefreshResponse> {

@@ -1,4 +1,31 @@
 {
+  "guest": {
+    "label": "Guest pilot",
+    "play": "Play as guest",
+    "playHint": "No email or password. This browser keeps your pilot; you can save it with an email later.",
+    "saveMenu": "Save your pilot",
+    "error": {
+      "generic": "Could not start a guest pilot. Try again."
+    },
+    "lost": {
+      "frozen": "Your guest pilot was frozen after a long time away. Ask the admin, or start a new one.",
+      "gone": "Your guest pilot could not be found any more. You can start a new one."
+    },
+    "claim": {
+      "title": "Save your pilot",
+      "text": "Add an email and a password and this pilot is yours on any device. Clearing your browser's data would otherwise lose it.",
+      "nameLabel": "Pilot name (optional)",
+      "nameHint": "3–24 characters: letters, digits, _ or -. Leave empty to keep the name you have.",
+      "submit": "Save pilot",
+      "error": "Could not save the pilot. Try again."
+    },
+    "leave": {
+      "title": "Sign out as a guest?",
+      "text": "A guest pilot has no email to sign back in with. If you sign out you will lose this pilot. Save it first to keep it.",
+      "keep": "Keep playing",
+      "confirm": "Sign out and lose the pilot"
+    }
+  },
   "login": {
     "title": "Sign in",
     "emailLabel": "Email",

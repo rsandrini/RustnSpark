@@ -339,3 +339,13 @@
 .auth-alt a {
   color: var(--brass);
 }
+
+/* "Play as guest" sits under the sign-in / register form, set apart by a rule. */
+.guest-start {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+.guest-start .help-text {
+  margin: 6px 0 0;
+}

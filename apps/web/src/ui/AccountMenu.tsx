@@ -10,6 +10,8 @@ import { LanguageSwitcher } from '../i18n/language-switcher';
 import { APP_VERSION } from '../version';
 import { useWalletAnswer } from './use-wallet-answer';
 import { BugReportDialog } from './BugReportDialog';
+import { ClaimPopup } from '../features/auth/claim-popup';
+import { Popup } from './Popup';
 
 /** Two letters for the avatar button: the pilot's initials, never empty. */
 function initialsOf(name: string | undefined): string {
@@ -41,6 +43,9 @@ export function AccountMenu() {
   // The list is folded away until the pilot opens it: it is rarely needed.
   const [talkOpen, setTalkOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const isGuest = user?.isGuest === true;
   useEffect(() => {
     if (!open) setTalkOpen(false);
   }, [open]);
@@ -99,6 +104,21 @@ export function AccountMenu() {
       {open && (
         <div className="shell-menu" id="account-menu">
           <div className="label shell-menu-name">{user?.name}</div>
+          {isGuest && (
+            <>
+              <div className="label shell-menu-guest">{t('guest.label')}</div>
+              <button
+                type="button"
+                className="shell-menu-item"
+                onClick={() => {
+                  setOpen(false);
+                  setSaving(true);
+                }}
+              >
+                {t('guest.saveMenu')}
+              </button>
+            </>
+          )}
           <Link className="shell-menu-item" to="/profile" onClick={() => setOpen(false)}>
             {t('nav.profile')}
           </Link>
@@ -177,7 +197,17 @@ export function AccountMenu() {
           <div className="shell-menu-lang">
             <LanguageSwitcher />
           </div>
-          <button type="button" className="shell-menu-item" onClick={() => logout.mutate()}>
+          <button
+            type="button"
+            className="shell-menu-item"
+            onClick={() => {
+              // A guest has no email to sign back in with: leaving loses the pilot, so ask first.
+              if (isGuest) {
+                setOpen(false);
+                setLeaving(true);
+              } else logout.mutate();
+            }}
+          >
             {t('nav.logout')}
           </button>
           <div className="label shell-menu-version" data-testid="app-version">
@@ -186,6 +216,24 @@ export function AccountMenu() {
         </div>
       )}
       <BugReportDialog open={reporting} onClose={() => setReporting(false)} />
+      <ClaimPopup open={saving} onClose={() => setSaving(false)} />
+      <Popup
+        open={leaving}
+        title={t('guest.leave.title')}
+        onClose={() => setLeaving(false)}
+        actions={
+          <>
+            <button type="button" className="btn primary" onClick={() => setLeaving(false)}>
+              {t('guest.leave.keep')}
+            </button>
+            <button type="button" className="btn" onClick={() => logout.mutate()}>
+              {t('guest.leave.confirm')}
+            </button>
+          </>
+        }
+      >
+        <p>{t('guest.leave.text')}</p>
+      </Popup>
     </div>
   );
 }

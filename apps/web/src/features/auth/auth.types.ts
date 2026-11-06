@@ -26,3 +26,17 @@ export interface RegisterData {
   email: string;
   password: string;
 }
+
+/** Saving a guest pilot: an email and password, and optionally a pilot name instead of guest-xxxxxx. */
+export interface ClaimData {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface GuestStartResponse {
+  accessToken: string;
+  /** Shown once: the browser keeps it and signs the guest back in with it. */
+  guestKey: string;
+  player: UserProfile;
+}

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
 import { ApiError } from '../../api/client';
-import { useLogin } from './auth.hooks';
+import { useAuth, useLogin } from './auth.hooks';
+import { GuestButton } from './guest-button';
 import { HeroShip, LandingStory, useLanding } from './landing';
 import { RegisterForm } from './register-form';
 import { tablistKeys } from '../../ui/tablist';
@@ -10,6 +11,7 @@ import { tablistKeys } from '../../ui/tablist';
 export function LoginPage() {
   const { t } = useTranslation();
   const login = useLogin();
+  const { guestLost } = useAuth();
   const landing = useLanding();
   // One page for both: /register is the same landing with the panel on its Create account tab.
   const registering = useLocation().pathname === '/register';
@@ -78,6 +80,11 @@ export function LoginPage() {
                 {t('register.title')}
               </Link>
             </div>
+            {guestLost !== null && (
+              <p className="notice warn" role="alert">
+                {t(`guest.lost.${guestLost}`)}
+              </p>
+            )}
             <h2 id="auth-title" className="sr-only">
               {registering ? t('register.title') : t('login.title')}
             </h2>
@@ -129,6 +136,7 @@ export function LoginPage() {
                 </p>
               </>
             )}
+            <GuestButton />
           </section>
         </div>
       </header>

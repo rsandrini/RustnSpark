@@ -1,4 +1,31 @@
 {
+  "guest": {
+    "label": "Piloto convidado",
+    "play": "Jogar como convidado",
+    "playHint": "Sem e-mail e sem senha. Este navegador guarda seu piloto; depois você pode salvá-lo com um e-mail.",
+    "saveMenu": "Salvar seu piloto",
+    "error": {
+      "generic": "Não foi possível começar um piloto convidado. Tente de novo."
+    },
+    "lost": {
+      "frozen": "Seu piloto convidado foi congelado depois de muito tempo parado. Fale com o admin ou comece outro.",
+      "gone": "Não encontramos mais seu piloto convidado. Você pode começar outro."
+    },
+    "claim": {
+      "title": "Salvar seu piloto",
+      "text": "Informe um e-mail e uma senha e este piloto passa a ser seu em qualquer aparelho. Se você limpar os dados do navegador, ele se perde.",
+      "nameLabel": "Nome do piloto (opcional)",
+      "nameHint": "3 a 24 caracteres: letras, dígitos, _ ou -. Deixe vazio para manter o nome atual.",
+      "submit": "Salvar piloto",
+      "error": "Não foi possível salvar o piloto. Tente de novo."
+    },
+    "leave": {
+      "title": "Sair como convidado?",
+      "text": "Um piloto convidado não tem e-mail para entrar de novo. Se você sair, perde este piloto. Salve-o antes para mantê-lo.",
+      "keep": "Continuar jogando",
+      "confirm": "Sair e perder o piloto"
+    }
+  },
   "login": {
     "title": "Entrar",
     "emailLabel": "E-mail",
