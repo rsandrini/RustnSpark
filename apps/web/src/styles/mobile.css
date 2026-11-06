@@ -505,3 +505,17 @@
     display: none;
   }
 }
+
+/* A phone that stays open on a long flight must not keep repainting: the endless decorations stop.
+   Anything that shows progress or a wait (the spinners) keeps moving; the route, the ship's dot and
+   the status light are still there, they just do not animate. */
+@media (max-width: 700px), (hover: none) {
+  .flight-path,
+  .route-map.animated .rm-path,
+  .route-map .rm-ship-pulse,
+  .here-pulse,
+  .landing-ship .flame,
+  .ship-identity-status::before {
+    animation: none;
+  }
+}
