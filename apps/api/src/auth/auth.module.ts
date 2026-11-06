@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AdminModule } from '../admin/admin.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { GuestService } from './guest.service.js';
 import { PasswordService } from './password.service.js';
 import { RefreshTokenService } from './refresh-token.service.js';
 import { TokenService } from './token.service.js';
@@ -17,7 +18,7 @@ import { StatsModule } from '../stats/stats.module.js';
 @Module({
   imports: [StatsModule, AdminModule, EmailModule, ConfigModule],
   controllers: [AuthController],
-  providers: [AuthService, PasswordService, RefreshTokenService, TokenService],
-  exports: [AuthService],
+  providers: [AuthService, GuestService, PasswordService, RefreshTokenService, TokenService],
+  exports: [AuthService, GuestService],
 })
 export class AuthModule {}

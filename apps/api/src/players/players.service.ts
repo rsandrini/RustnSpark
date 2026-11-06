@@ -18,9 +18,11 @@ export interface PlayerProfile {
   tutorialDone: boolean;
   /** The random address of the pilot's public card. */
   publicId: string;
+  /** Started as a guest (no email or password yet): the account menu offers to save the pilot. */
+  isGuest: boolean;
 }
 
-export function toPlayerProfile(player: Player, role: string): PlayerProfile {
+export function toPlayerProfile(player: Player, role: string, isGuest = false): PlayerProfile {
   return {
     id: player.id,
     name: player.name,
@@ -30,6 +32,7 @@ export function toPlayerProfile(player: Player, role: string): PlayerProfile {
     factionId: player.factionId,
     tutorialDone: player.tutorialDone,
     publicId: player.publicId,
+    isGuest,
   };
 }
 
@@ -55,10 +58,10 @@ export class PlayersService {
   async getProfile(playerId: string): Promise<PlayerProfile> {
     const player = await this.prisma.player.findUnique({
       where: { id: playerId },
-      include: { account: { select: { role: true } } },
+      include: { account: { select: { role: true, isGuest: true } } },
     });
     if (!player || !player.account) throw new NotFoundException('player not found');
-    return toPlayerProfile(player, player.account.role);
+    return toPlayerProfile(player, player.account.role, player.account.isGuest);
   }
 
   /** The checklist's action steps, from the player's own records (so they survive a cleared browser or a new device). */
@@ -111,9 +114,9 @@ export class PlayersService {
       const player = await this.prisma.player.update({
         where: { id: playerId },
         data,
-        include: { account: { select: { role: true } } },
+        include: { account: { select: { role: true, isGuest: true } } },
       });
-      return toPlayerProfile(player, player.account.role);
+      return toPlayerProfile(player, player.account.role, player.account.isGuest);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('player not found');

@@ -19,6 +19,8 @@ enum AccountRole {
 enum AccountStatus {
   ACTIVE
   BANNED
+  // An unclaimed guest idle for too long: kept as it is, cannot sign in until an admin unfreezes it.
+  FROZEN
 }
 
 model Account {
@@ -28,6 +30,10 @@ model Account {
   passwordHash  String
   role          AccountRole    @default(PLAYER)
   status        AccountStatus  @default(ACTIVE)
+  // A pilot started without an email and password (play as guest); claiming one turns this off.
+  isGuest       Boolean        @default(false)
+  // SHA-256 of the random key the guest's browser keeps; the key itself is never stored.
+  guestKeyHash  String?        @unique
   createdAt     DateTime       @default(now())
   player        Player?
   refreshTokens RefreshToken[]

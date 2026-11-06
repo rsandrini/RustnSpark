@@ -53,6 +53,8 @@ export const PlayerProfileResponseSchema = z.object({
   tutorialDone: z.boolean(),
   /** The random address of the pilot's public card (/pilots/:publicId). */
   publicId: z.string().optional(),
+  /** Started as a guest (no email or password yet); the account menu offers to save the pilot. */
+  isGuest: z.boolean().optional(),
 });
 export type PlayerProfileResponse = z.infer<typeof PlayerProfileResponseSchema>;
 

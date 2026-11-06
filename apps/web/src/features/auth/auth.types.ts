@@ -12,6 +12,8 @@ export interface UserProfile {
   factionId: string | null;
   /** The newcomer tutorial was skipped or finished; false while it should still show. */
   tutorialDone?: boolean;
+  /** Started as a guest: the account menu offers to save the pilot with an email and password. */
+  isGuest?: boolean;
 }
 
 export interface LoginCredentials {

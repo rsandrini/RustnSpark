@@ -159,7 +159,7 @@ export class AuthService {
     return account !== null || player !== null;
   }
 
-  private async buildSession(
+  async buildSession(
     account: Account,
     player: Player,
     refresh: IssuedRefreshToken,
@@ -169,15 +169,15 @@ export class AuthService {
       playerId: player.id,
       role: account.role,
     });
-    return { accessToken, refresh, player: toPlayerProfile(player, account.role) };
+    return { accessToken, refresh, player: toPlayerProfile(player, account.role, account.isGuest) };
   }
 
   async forgotPassword(rawEmail: string): Promise<void> {
     const email = rawEmail.toLowerCase().trim();
     const account = await this.prisma.account.findUnique({
-       where: { email }, 
-       select: { id: true, email: true }
-      });
+      where: { email },
+      select: { id: true, email: true },
+    });
 
     if (!account) return;
 
@@ -185,7 +185,7 @@ export class AuthService {
       where: {
         accountId: account.id,
         usedAt: null,
-        createdAt: {gt: new Date(Date.now() - 5 * 60 * 1000)},
+        createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) },
       },
     });
 
@@ -209,7 +209,9 @@ export class AuthService {
     } catch (error) {
       // The answer is the same whether or not the account exists (no enumeration): a failed send is
       // logged for the operator, never shown to the caller.
-      this.logger.error(`password reset email failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.error(
+        `password reset email failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -235,10 +237,9 @@ export class AuthService {
         data: { usedAt: new Date() },
       });
 
-      await tx.refreshToken.deleteMany({ 
-        where: { accountId: resetToken.accountId } 
+      await tx.refreshToken.deleteMany({
+        where: { accountId: resetToken.accountId },
       });
     });
-
   }
 }

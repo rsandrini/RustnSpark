@@ -54,7 +54,8 @@ describe('GET /v1/players/me profile shape', () => {
       role: 'PLAYER',
       factionId: null,
       tutorialDone: false,
-      publicId: expect.any(String),
+      tutorialDone: false,
+      isGuest: false,
     });
     expect((meResponse.body as Record<string, unknown>).email).toBeUndefined();
   });

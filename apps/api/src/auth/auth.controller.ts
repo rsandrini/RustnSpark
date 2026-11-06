@@ -131,4 +131,3 @@ function readRefreshCookie(request: Request): string | undefined {
   if (!header) return undefined;
   return parseCookie(header)[REFRESH_COOKIE_NAME];
 }
-
