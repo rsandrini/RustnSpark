@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { sheetStat, useDisplay } from '../../ui/display';
+import { scaleSpeed, sheetStat, useDisplay } from '../../ui/display';
 import { useTranslation } from 'react-i18next';
 import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/generated';
 import { conditionTone } from '../../ui/Gauge';
@@ -126,6 +126,10 @@ export function ShipSheetPanel({
   // Mobility is shown on the admin's display scale (default x10), one decimal at most.
   const mobilityNumber = (value: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(value);
+  // Under the minimum the server grounds the ship (MOB_TOO_LOW: raw mobility < 1), so the figure
+  // is drawn red on the same display scale the sheet reads.
+  const mobilityTone: Tone =
+    sheet !== undefined && sheetStat(sheet, 'mob', display) < scaleSpeed(1, display) ? 'bad' : 'ok';
 
   const classRow = (
     <>
@@ -272,13 +276,15 @@ export function ShipSheetPanel({
       );
     }
     const tone: Tone | null =
-      key === 'autonomy'
-        ? autonomyBand
-        : key === 'condition'
-          ? conditionBand
-          : key === 'structure'
-            ? structureBand
-            : null;
+      key === 'mob'
+        ? mobilityTone
+        : key === 'autonomy'
+          ? autonomyBand
+          : key === 'condition'
+            ? conditionBand
+            : key === 'structure'
+              ? structureBand
+              : null;
     return <b className={tone !== null ? `tone-${tone}` : undefined}>{valueFor(key)}</b>;
   };
 
@@ -316,7 +322,7 @@ export function ShipSheetPanel({
           </div>
           <div className="sheet-headline-tile" title={t('hangar.statHelp.mob')}>
             <span>{t('hangar.headline.mobility')}</span>
-            <b>
+            <b className={`tone-${mobilityTone}`}>
               {mobilityNumber(sheetStat(sheet, 'mob', display))}
               {onTuneEngines !== undefined && (
                 <button

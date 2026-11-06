@@ -85,8 +85,10 @@ export function FlightWatcher() {
     dispatched.delete(newest);
     watched.current = null;
     // The pilot is assembling the ship: leaving the screen would throw the edits away. Say the
-    // report is ready and let them go when they choose.
-    if (feedback.available && hasUnsavedLayout()) {
+    // report is ready and let them go when they choose. A job that runs in place (scavenging) is the
+    // one the pilot edits during, so on My Ship it always asks, even if no unsaved edit is detected.
+    const workingOnShip = fromWatch !== null && fromWatch.inPlace && pathname === '/ship';
+    if (feedback.available && (hasUnsavedLayout() || workingOnShip)) {
       feedback.notify(t('feedback.flightEndedUnsaved'), {
         next: { label: t('feedback.nextReport'), to: `/report/${newest}` },
       });

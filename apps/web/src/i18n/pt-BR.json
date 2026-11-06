@@ -2197,6 +2197,7 @@
     "places": "Lugares",
     "line": "Mapa do setor · {{count}} lugares",
     "lineAt": "Você está em {{place}}",
+    "lineFlying": "Voando de {{from}} para {{to}}",
     "title": "Mapa do setor",
     "hint": "Selecione um lugar para ver as missões.",
     "youAreHere": "Você está aqui",

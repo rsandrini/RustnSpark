@@ -35,6 +35,12 @@ export function serverNow(): number {
   return Date.now() + serverOffsetMs;
 }
 
+/** A precise server timestamp (a response body's own `serverTime`) sets the same clock every countdown reads. */
+export function syncServerTime(iso: string): void {
+  const parsed = Date.parse(iso);
+  if (!Number.isNaN(parsed)) serverOffsetMs = parsed - Date.now();
+}
+
 export function serverOffset(): number {
   return serverOffsetMs;
 }

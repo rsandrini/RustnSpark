@@ -223,6 +223,13 @@ export function MapPage({ guided = false }: MapPageProps) {
       ? positionAt(journey.stops, flight.legWindows, now)
       : null;
   const inFlight = position !== null && !position.docked;
+  // While the ship flies its stored place is still the departure port: the line names the leg instead.
+  const flightFrom =
+    inFlight && journey !== null ? byId.get(journey.stops[position.legIndex]?.id ?? '') : undefined;
+  const flightTo =
+    inFlight && journey !== null
+      ? byId.get(journey.stops[position.legIndex + 1]?.id ?? '')
+      : undefined;
   // Which places the map draws at this zoom: `main` ones always, `regional` ones once zoomed in a little,
   // `local` ones zoomed in close. What the pilot is using always shows: the selected place, the ship's own,
   // both ends of a trip under way and the places of an accepted mission.
@@ -307,11 +314,18 @@ export function MapPage({ guided = false }: MapPageProps) {
                 {t('map.zoomHint', { count: hiddenCount })}
               </>
             )}
-            {shipPlace !== undefined && (
+            {flightFrom !== undefined && flightTo !== undefined ? (
               <>
                 {SEPARATOR}
-                <b>{t('map.lineAt', { place: nameOf(shipPlace) })}</b>
+                <b>{t('map.lineFlying', { from: nameOf(flightFrom), to: nameOf(flightTo) })}</b>
               </>
+            ) : (
+              shipPlace !== undefined && (
+                <>
+                  {SEPARATOR}
+                  <b>{t('map.lineAt', { place: nameOf(shipPlace) })}</b>
+                </>
+              )
             )}
           </>
         }

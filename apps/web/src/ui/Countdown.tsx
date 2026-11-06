@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { serverOffset } from '../api/client';
+import { serverNow, syncServerTime } from '../api/client';
 
 export interface CountdownProps {
   /** ISO timestamp of the deadline (server-produced: expiresAt, arrivalAt…). */
@@ -24,12 +24,13 @@ function pad(value: number): string {
 export function Countdown({ until, serverTime, onElapsed }: CountdownProps) {
   const { t } = useTranslation();
   const target = useMemo(() => Date.parse(until), [until]);
-  const offset = useMemo(
-    () => (serverTime !== undefined ? Date.parse(serverTime) - Date.now() : serverOffset()),
-    [serverTime],
-  );
+  // One clock for every countdown and for the trip bar and map: the server clock the client keeps.
+  // A precise `serverTime` from the caller refreshes that clock instead of making a private offset.
+  useMemo(() => {
+    if (serverTime !== undefined) syncServerTime(serverTime);
+  }, [serverTime]);
 
-  const [remaining, setRemaining] = useState(() => target - (Date.now() + offset));
+  const [remaining, setRemaining] = useState(() => target - serverNow());
   const firedRef = useRef(false);
   const elapsedRef = useRef(onElapsed);
   useEffect(() => {
@@ -39,7 +40,7 @@ export function Countdown({ until, serverTime, onElapsed }: CountdownProps) {
   useEffect(() => {
     firedRef.current = false;
     const tick = () => {
-      const left = target - (Date.now() + offset);
+      const left = target - serverNow();
       setRemaining(left);
       if (left <= 0 && !firedRef.current) {
         firedRef.current = true;
@@ -49,7 +50,7 @@ export function Countdown({ until, serverTime, onElapsed }: CountdownProps) {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [target, offset]);
+  }, [target]);
 
   const seconds = Math.max(0, Math.ceil(remaining / 1000));
   const hours = Math.floor(seconds / 3600);
