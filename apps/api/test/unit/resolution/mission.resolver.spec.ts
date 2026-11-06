@@ -763,7 +763,7 @@ describe("the pilot's mining job digs in ticks", () => {
       job_fuel_per_tick: 50,
     },
   };
-  const dig = (miningTicks: number | undefined, crg = 20) => {
+  const dig = (miningTicks: number | undefined, crg = 20, fuelUse?: number) => {
     const job = mission({
       type: 'MINING',
       unpaid: true,
@@ -781,7 +781,9 @@ describe("the pilot's mining job digs in ticks", () => {
         miner: { min: 5, condition: 100 },
       },
     });
-    const snap = snapshot({ sheet: { ...snapshot().sheet, crg } });
+    const snap = snapshot({
+      sheet: { ...snapshot().sheet, crg, ...(fuelUse === undefined ? {} : { fuelUse }) },
+    });
     return resolveMission({ seed: 'dig', snapshot: snap, mission: job, rules: richRules });
   };
   const oreOf = (out: ReturnType<typeof dig>) =>
@@ -799,6 +801,13 @@ describe("the pilot's mining job digs in ticks", () => {
     expect(out.legs[0]?.miningTicksRun).toBe(2);
     expect(oreOf(out)).toBe(20);
     expect(out.fuel).toBe(1000 - 2 * 50);
+  });
+
+  it('a ship whose engines burn no fuel (ion only) digs for free', () => {
+    const out = dig(2, 100, 0);
+    expect(out.legs[0]?.miningTicksRun).toBe(2);
+    expect(oreOf(out)).toBe(20);
+    expect(out.fuel).toBe(1000);
   });
 
   it('a board mining mission (no ticks) digs its one stop and burns no mining fuel', () => {

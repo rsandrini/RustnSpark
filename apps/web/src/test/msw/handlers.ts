@@ -80,6 +80,9 @@ const profile = (factionId: string | null = null) => ({
   tutorialDone: true,
 });
 
+/** A test switch: the mock ship has only ion engines, so it burns no fuel. */
+export const ionShip = { on: false };
+
 const sheet = () => ({
   pot: 25,
   pdf: 0,
@@ -96,7 +99,7 @@ const sheet = () => ({
   batOutput: 10,
   batInput: 8,
   fuelCap: 40,
-  fuelUse: 1,
+  fuelUse: ionShip.on ? 0 : 1,
   structureUsed: 18,
   structureBudget: 40,
   autonomy: 40,
@@ -486,6 +489,7 @@ export function resetEconomyState(): void {
   rescueWaitMs = 600_000;
   inventoryState = starterInventory();
   repairShop.holdsEverything = false;
+  ionShip.on = false;
   tutorialProgressState = {
     refuelled: false,
     repaired: false,

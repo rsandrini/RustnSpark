@@ -495,7 +495,8 @@ export class DispatchService {
       const miningTicks = legs[0]?.miningTicks;
       if (mission.type === 'MINING' && miningTicks !== undefined) {
         const ran = await this.miningTicksRun(tx, mission, snapshot, rules);
-        const fuelForRun = ran * rules.mining.job_fuel_per_tick;
+        // Only a ship that burns fuel pays for the dig in fuel: an ion-only ship digs for free.
+        const fuelForRun = sheet.fuelUse > 0 ? ran * rules.mining.job_fuel_per_tick : 0;
         if (fuelForRun > ship.fuel) {
           throw new ConflictException({
             error: 'FUEL_INSUFFICIENT',

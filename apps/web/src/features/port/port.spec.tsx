@@ -12,6 +12,7 @@ import {
   resetEconomyState,
   setShipActivity,
   repairShop,
+  ionShip,
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
@@ -520,6 +521,16 @@ describe('port (S10.9)', () => {
     await waitFor(() =>
       expect(screen.getByRole('group', { name: 'Assembly yard' })).toBeInTheDocument(),
     );
+  });
+
+  it('a ship whose engines burn no fuel digs for free: the Mining tab shows no fuel at all', async () => {
+    ionShip.on = true;
+    await renderPort();
+    openPortTab('Mining');
+    const mining = await screen.findByTestId('mining-job');
+    expect(within(mining).queryByTestId('mine-fuel')).toBeNull();
+    expect(within(mining).queryByText('Fuel')).toBeNull();
+    expect(within(mining).getByRole('button', { name: 'Send the ship mining' })).toBeEnabled();
   });
 
   it('lets the pilot pick how long to dig, shows the fuel for it, and sends the ticks', async () => {

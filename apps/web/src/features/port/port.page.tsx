@@ -199,7 +199,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const [mineTicks, setMineTicks] = useState(1);
   const mineMaxTicks = minableQuery.data?.maxTicks ?? 1;
   const mineTickSeconds = minableQuery.data?.tickSeconds ?? 0;
-  const mineFuelPerTick = minableQuery.data?.fuelPerTick ?? 0;
+  // A ship whose engines burn no fuel (ion only) digs for free: no fuel tile, no fuel per length, no fuel bar.
+  const mineFuelPerTick =
+    (ship?.sheet.fuelUse ?? 0) > 0 ? (minableQuery.data?.fuelPerTick ?? 0) : 0;
+  const mineBurnsFuel = mineFuelPerTick > 0;
   useEffect(() => {
     if (tab === 'mining' && minableQuery.data?.minable === false) setTab('market');
   }, [tab, minableQuery.data]);
@@ -1689,10 +1692,12 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <small>{t('port.mine.tile.hold')}</small>
               <b>{t('port.mine.tile.holdValue', { units: ship.sheet.crg })}</b>
             </li>
-            <li>
-              <small>{t('port.mine.tile.fuel')}</small>
-              <b>{t('port.mine.tile.fuelValue', { units: mineTicks * mineFuelPerTick })}</b>
-            </li>
+            {mineBurnsFuel && (
+              <li>
+                <small>{t('port.mine.tile.fuel')}</small>
+                <b>{t('port.mine.tile.fuelValue', { units: mineTicks * mineFuelPerTick })}</b>
+              </li>
+            )}
           </ul>
           {mineTickSeconds > 0 && (
             <fieldset className="mine-lengths" data-testid="mine-lengths">
@@ -1710,17 +1715,24 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                     aria-label={formatDuration(ticks * mineTickSeconds, t)}
                   />
                   <b className="mine-length-time">{formatDuration(ticks * mineTickSeconds, t)}</b>
-                  <span className="sub">
-                    {t('port.mine.option', { fuel: ticks * mineFuelPerTick })}
-                  </span>
+                  {mineBurnsFuel && (
+                    <span className="sub">
+                      {t('port.mine.option', { fuel: ticks * mineFuelPerTick })}
+                    </span>
+                  )}
                 </label>
               ))}
             </fieldset>
           )}
-          <p className="sub" data-testid="mine-fuel">
-            {t('port.mine.fuel', { perTick: mineFuelPerTick, total: mineTicks * mineFuelPerTick })}
-          </p>
-          {ship.sheet.fuelCap > 0 && (
+          {mineBurnsFuel && (
+            <p className="sub" data-testid="mine-fuel">
+              {t('port.mine.fuel', {
+                perTick: mineFuelPerTick,
+                total: mineTicks * mineFuelPerTick,
+              })}
+            </p>
+          )}
+          {mineBurnsFuel && ship.sheet.fuelCap > 0 && (
             <FuelBlock
               have={ship.fuel}
               needed={mineTicks * mineFuelPerTick}

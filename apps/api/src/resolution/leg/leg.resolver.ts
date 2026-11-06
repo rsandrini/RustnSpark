@@ -1009,8 +1009,9 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
       }
       if (room <= 0) break;
     }
-    if (input.route.miningTicks !== undefined) {
-      // The job burns fuel for the ticks it really ran, not for the ones it was allowed.
+    if (input.route.miningTicks !== undefined && ship.sheet.fuelUse > 0) {
+      // The job burns fuel for the ticks it really ran, not for the ones it was allowed. A ship whose engines
+      // burn no fuel (ion only) digs for free.
       ship = {
         ...ship,
         fuel: Math.max(0, ship.fuel - miningTicksRun * rules.mining.job_fuel_per_tick),

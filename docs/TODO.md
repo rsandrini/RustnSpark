@@ -4,6 +4,21 @@ The owner's backlog, by priority (P0 first). Items are written as the owner aske
 note on where the code lives so whoever picks one up can start quickly. Delete an item when it
 ships (the commit has the history). Raise questions before starting anything marked *needs design*.
 
+## Bugs to investigate (owner reports, 2026-11-05)
+
+Raised from play and from the in-game bug report. Not looked at yet: reproduce first, then fix.
+
+- [ ] **The phone gets very hot while the game is open** (bug report from the pilot's phone, page `/ship`, pt-BR). Measure what the
+  game costs on a phone (CPU, battery, memory) and find the cause: the ship yard svg and its animations, polling (`/missions/active`,
+  tutorial progress, dialogue, ship preview), the take-off and wallet animations, re-renders. Compare with the tab in the background.
+- [ ] **Mobility reads below 1 but the ship sheet does not update** after swapping or removing parts, even after saving the layout.
+  Check that the sheet is refetched and re-derived after `assemble`, and what the preview shows against the saved ship.
+- [ ] **A mission that ends while the ship is being assembled redirects the pilot to the report and the unsaved layout changes are
+  lost.** The flight watcher (`features/transit/flight-watcher.tsx`) navigates to `/report/:id` from any screen. Do not throw
+  away an unsaved edit (ask first, or keep the draft and offer the report as a link).
+- [ ] **The part popup on the ship stays fixed in front of the assembly** (maybe already fixed by moving every popup to the page
+  body, and the pilot saw a cached build). Verify on a phone after a hard reload.
+
 ## Next (owner playtest, 2026-10-22)
 - [ ] Upgrades (the upgrade tab, materials, costs): to be discussed with the owner after balance round 6 is playtested.
 - [ ] Balance round 6b (applied 2026-10-27 in the defaults and the seed, no migration; the dev DB is reset to take it): wear 0.5/0.85 and hull_to_condition 0.15, Epic/Legendary pay x2.5/x3.25, Legendary parts x8. In the sim (r9/r14) the chem builds reach Legendary at ~150 h; Epic comes at ~70 h (target 90-130 h). Retest after the reset, then tune.

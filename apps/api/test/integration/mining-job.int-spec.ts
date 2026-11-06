@@ -273,6 +273,17 @@ describe('independent mining job (round 10)', () => {
     expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(rules.mining.job_duration_seconds + 5);
   });
 
+  it('a ship whose engines burn no fuel digs with an empty tank (no FUEL_INSUFFICIENT)', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    // an ion-only ship: nothing aboard burns fuel
+    await prisma.partCatalog.updateMany({ data: { fuelUse: 0 } });
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 0 } });
+    const response = await start(player.token, 'ceres').send({ ticks: 4 });
+    expect(response.status).toBe(200);
+  });
+
   it('refuses a dig the tank cannot pay for (FUEL_INSUFFICIENT)', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
