@@ -1,33 +1,75 @@
 import { createPortal } from 'react-dom';
+import type { PartCatalogStats } from '../../api/generated';
+import type { PortMark } from './connectors';
+import { PartBlockArt } from './part-block-art';
+import type { Rot } from './hangar.geometry';
+import type { PartLook } from './ship-yard';
 
-/**
- * The part being carried, from the moment it is picked up: the part's own shape (its footprint at the yard's
- * zoom), its rarity colour and its name, centred on the pointer and drawn above everything. It sits on the page
- * body, not inside a panel: a scrolling list or a layer of its own can clip a fixed element or cover it.
- * Decoration only: the real drop is decided by the yard.
- */
-export function CarriedPart({
-  name,
-  rarity,
-  width,
-  height,
-  x,
-  y,
-}: {
+export interface CarriedPartProps {
+  catalog: PartCatalogStats;
   name: string;
-  rarity: string;
-  width: number;
-  height: number;
+  look: PartLook | undefined;
+  colorBy: 'rarity' | 'condition';
+  rot: Rot;
+  /** The part's footprint in cells, and how many screen pixels one cell is at the yard's zoom. */
+  widthCells: number;
+  heightCells: number;
+  cellPx: number;
+  /** The same wrapped name and font the parts on the ship use. */
+  lines: readonly string[];
+  labelFont: number;
+  portMarks: readonly PortMark[];
+  /** Where the pointer is. */
   x: number;
   y: number;
-}) {
+}
+
+/**
+ * The part being carried, drawn with the very same art as a part on the ship (its rarity border, name, condition
+ * bar, facing arrow and connector ports), at the size it will have there, centred on the pointer and above every
+ * panel. It sits on the page body: inside a scrolling panel a fixed element can be clipped or covered. Decoration
+ * only: the real drop is decided by the yard.
+ */
+export function CarriedPart({
+  catalog,
+  name,
+  look,
+  colorBy,
+  rot,
+  widthCells,
+  heightCells,
+  cellPx,
+  lines,
+  labelFont,
+  portMarks,
+  x,
+  y,
+}: CarriedPartProps) {
   return createPortal(
     <div
-      className={`carried-part rarity-${rarity.toLowerCase()}`}
+      className="carried-part"
       aria-hidden="true"
-      style={{ left: x, top: y, width, height }}
+      style={{ left: x, top: y, width: widthCells * cellPx, height: heightCells * cellPx }}
     >
-      <span className="carried-part-name">{name}</span>
+      <svg
+        viewBox={`0 0 ${widthCells} ${heightCells}`}
+        width="100%"
+        height="100%"
+        overflow="visible"
+      >
+        <PartBlockArt
+          gx={0}
+          gy={0}
+          rot={rot}
+          catalog={catalog}
+          name={name}
+          look={look}
+          colorBy={colorBy}
+          portMarks={portMarks}
+          lines={lines}
+          labelFont={labelFont}
+        />
+      </svg>
     </div>,
     document.body,
   );

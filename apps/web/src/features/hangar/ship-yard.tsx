@@ -12,12 +12,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../api/generated';
-import { conditionTone } from '../../ui/Gauge';
 import { PortGlyph } from '../parts/connector-grid';
 import { computePortMarks } from './connectors';
+import { PartBlockArt } from './part-block-art';
 import {
   directionViolations,
-  facingOf,
   footprint,
   isOutsideYard,
   nextRot,
@@ -74,10 +73,6 @@ export function labelAreaFactor(yardArea: number): number {
   return Math.min(1, Math.max(LABEL_AREA_FACTOR_MIN, factor));
 }
 
-function formatCondition(condition: number): string {
-  return `${Math.round(condition)}%`;
-}
-
 /** Word-wrap a part name into the lines that fit a block of the given size at this zoom.
     areaFactor (1 = classic_square) shrinks/grows the font with the yard's total area —
     capacity is ∝ 1/font, so a smaller font fits more characters and lines. */
@@ -119,46 +114,6 @@ export function labelLines(
   return shown;
 }
 
-const ARROW_HALF = 0.14;
-const ARROW_DEPTH = 0.16;
-const ARROW_EDGE_INSET = 0.04;
-
-/** A small triangle on the facing edge of an engine (exhaust) or weapon (muzzle). */
-function FacingArrow({
-  gx,
-  gy,
-  width,
-  height,
-  facing,
-  label,
-}: {
-  gx: number;
-  gy: number;
-  width: number;
-  height: number;
-  facing: 'N' | 'E' | 'S' | 'W';
-  label: string;
-}) {
-  const midX = gx + width / 2;
-  const midY = gy + height / 2;
-  const points: Record<typeof facing, string> = {
-    N: `${midX - ARROW_HALF},${gy + ARROW_EDGE_INSET + ARROW_DEPTH} ${midX + ARROW_HALF},${gy + ARROW_EDGE_INSET + ARROW_DEPTH} ${midX},${gy + ARROW_EDGE_INSET}`,
-    S: `${midX - ARROW_HALF},${gy + height - ARROW_EDGE_INSET - ARROW_DEPTH} ${midX + ARROW_HALF},${gy + height - ARROW_EDGE_INSET - ARROW_DEPTH} ${midX},${gy + height - ARROW_EDGE_INSET}`,
-    W: `${gx + ARROW_EDGE_INSET + ARROW_DEPTH},${midY - ARROW_HALF} ${gx + ARROW_EDGE_INSET + ARROW_DEPTH},${midY + ARROW_HALF} ${gx + ARROW_EDGE_INSET},${midY}`,
-    E: `${gx + width - ARROW_EDGE_INSET - ARROW_DEPTH},${midY - ARROW_HALF} ${gx + width - ARROW_EDGE_INSET - ARROW_DEPTH},${midY + ARROW_HALF} ${gx + width - ARROW_EDGE_INSET},${midY}`,
-  };
-  return (
-    <polygon
-      className="facing-arrow"
-      data-facing={facing}
-      points={points[facing]}
-      style={{ pointerEvents: 'none' }}
-    >
-      <title>{label}</title>
-    </polygon>
-  );
-}
-
 export interface PartLook {
   readonly rarity: string;
   /** Condition in percent (0..100). */
@@ -193,6 +148,10 @@ export interface ShipYardHandle {
   ghostRot: () => Rot | null;
   /** How many screen pixels one yard cell is at the current zoom (null before the yard is on screen). */
   cellPx: () => number | null;
+  /** The yard's own name wrapping and font size for a block of this size, and its colour mode: a carried part is
+      drawn with the same label as the parts on the ship. */
+  labelFor: (name: string, width: number, height: number) => { lines: string[]; font: number };
+  colorMode: () => 'rarity' | 'condition';
 }
 
 export interface ShipYardProps {
@@ -373,6 +332,13 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
   };
   const [ghost, setGhost] = useState<Ghost | null>(null);
   const ghostRef = useRef<Ghost | null>(null);
+  // What a carried part needs to be drawn like the parts on the ship (set again on every render, further down).
+  const drawing = useRef<{
+    zoom: number;
+    areaFactor: number;
+    labelFont: number;
+    colorBy: 'rarity' | 'condition';
+  }>({ zoom: 1, areaFactor: 1, labelFont: 0.2, colorBy: 'rarity' });
   ghostRef.current = ghost;
   // A part that just turned (R, the toolbar button) pulses for a moment, so the pilot sees which one.
   const lastRots = useRef<Map<string, Rot>>(new Map());
@@ -616,6 +582,11 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
           valid: placementIssue(layout, catalogById, partInstanceId, gx, gy, rot, cellSet) === null,
         };
       },
+      labelFor: (name, width, height) => ({
+        lines: labelLines(name, width, height, drawing.current.zoom, drawing.current.areaFactor),
+        font: drawing.current.labelFont,
+      }),
+      colorMode: () => drawing.current.colorBy,
       ghostRot: () => ghostRef.current?.rot ?? null,
       cellPx: () => {
         const svg = svgRef.current;
@@ -714,6 +685,7 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
   // yard the player is building on, whatever is installed right now.
   const areaFactor = labelAreaFactor(cells.length);
   const labelFont = (LABEL_FONT * areaFactor) / labelBoost;
+  drawing.current = { zoom, areaFactor, labelFont, colorBy };
   return (
     <div className="stage hangar-scene" ref={sceneRef} data-tour="ship_grid">
       {callouts}
@@ -805,9 +777,6 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
           // The origin block of a live ghost drag: it stays dimmed in place while the ghost floats.
           const isGhosting = ghost?.partInstanceId === placement.partInstanceId;
           const isRotating = rotatingId === placement.partInstanceId;
-          const lineHeight = labelFont * 1.15;
-          // Nudged up so the condition bar along the bottom edge never sits on the text.
-          const firstY = placement.gy + height / 2 - 0.1 - ((lines.length - 1) * lineHeight) / 2;
           const { gx, gy } = placement;
           return (
             <g key={placement.partInstanceId} className="yard-block">
@@ -831,127 +800,48 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
                   style={{ pointerEvents: 'none' }}
                 />
               )}
-              <rect
-                data-part-id={placement.partInstanceId}
-                data-gx={placement.gx}
-                data-gy={placement.gy}
-                className={[
-                  'block',
-                  look?.broken === true ? 'broken' : '',
-                  disconnectedPartIds?.has(placement.partInstanceId) === true ? 'disconnected' : '',
-                  outsideIds.has(placement.partInstanceId) ? 'outside' : '',
-                  directionBlocked.has(placement.partInstanceId) ? 'dir-blocked' : '',
-                  look === undefined
-                    ? ''
-                    : colorBy === 'rarity'
-                      ? `rar-${look.rarity.toLowerCase()}`
-                      : `cond-${conditionTone(look.condition)}`,
-                  catalog.partClass === 'BRIDGE' ? 'bridge' : '',
-                  selectedId === placement.partInstanceId ? 'selected' : '',
-                  isGhosting ? 'ghosting' : '',
-                  isRotating ? 'rotating' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                x={placement.gx + 0.04}
-                y={placement.gy + 0.04}
-                width={width - 0.08}
-                height={height - 0.08}
-                style={isGhosting ? { pointerEvents: 'none' } : undefined}
-                onPointerDown={(event) => handleBlockDown(event, placement)}
-                onPointerEnter={(event) => {
-                  setHoveredPartId(placement.partInstanceId);
-                  // A finger never leaves a block the way a mouse does, so the stats card it would
-                  // open would stay in front of the assembly: touch gets no hover card.
-                  if (showsHoverCard(event.pointerType)) onHoverPart?.(placement.partInstanceId);
+              <PartBlockArt
+                gx={placement.gx}
+                gy={placement.gy}
+                rot={placement.rot}
+                catalog={catalog}
+                name={name}
+                look={look}
+                colorBy={colorBy}
+                portMarks={portMarks.filter(
+                  (mark) => mark.partInstanceId === placement.partInstanceId,
+                )}
+                lines={lines}
+                labelFont={labelFont}
+                flags={{
+                  disconnected: disconnectedPartIds?.has(placement.partInstanceId) === true,
+                  outside: outsideIds.has(placement.partInstanceId),
+                  directionBlocked: directionBlocked.has(placement.partInstanceId),
+                  selected: selectedId === placement.partInstanceId,
+                  ghosting: isGhosting,
+                  rotating: isRotating,
                 }}
-                onPointerLeave={() => onHoverPart?.(null)}
-              />
-              <title>
-                {[
-                  look === undefined
-                    ? name
-                    : `${name} — ${t('parts.condition')} ${Math.round(look.condition)}%`,
+                extraTitle={[
                   directionBlocked.has(placement.partInstanceId)
                     ? t(`hangar.placement.${directionBlocked.get(placement.partInstanceId)}`)
                     : '',
                   outsideIds.has(placement.partInstanceId) ? t('hangar.outside.tag') : '',
-                ]
-                  .filter(Boolean)
-                  .join('\n')}
-              </title>
-              {look !== undefined && (
-                <g style={{ pointerEvents: 'none' }}>
-                  <rect
-                    className="cond-track"
-                    x={placement.gx + 0.14}
-                    y={placement.gy + height - 0.24}
-                    width={width - 0.28}
-                    height={0.1}
-                    rx={0.05}
-                  />
-                  <rect
-                    className={`cond-bar cond-${conditionTone(look.condition)}`}
-                    x={placement.gx + 0.14}
-                    y={placement.gy + height - 0.24}
-                    width={((width - 0.28) * Math.min(100, Math.max(0, look.condition))) / 100}
-                    height={0.1}
-                    rx={0.05}
-                  />
-                  {/* HP/condition percent, small, centered on the bar itself (owner request). */}
-                  <text
-                    className="cond-label"
-                    x={placement.gx + width / 2}
-                    y={placement.gy + height - 0.155}
-                  >
-                    {formatCondition(look.condition)}
-                  </text>
-                </g>
-              )}
-              {(catalog.partClass === 'ENGINE' || catalog.partClass === 'WEAPON') && (
-                <FacingArrow
-                  gx={placement.gx}
-                  gy={placement.gy}
-                  width={width}
-                  height={height}
-                  facing={facingOf(placement.rot)}
-                  label={t(
-                    catalog.partClass === 'ENGINE'
-                      ? 'hangar.facing.exhaust'
-                      : 'hangar.facing.weapon',
-                  )}
-                />
-              )}
-              {portMarks
-                .filter((mark) => mark.partInstanceId === placement.partInstanceId)
-                .map((mark) => (
-                  <PortGlyph
-                    key={`${mark.x},${mark.y},${mark.side}`}
-                    x={mark.x}
-                    y={mark.y}
-                    side={mark.side}
-                    kind={mark.kind}
-                    state={mark.state}
-                    title={`${t(`connectors.kinds.${mark.kind}`)} — ${t(`connectors.states.${mark.state}`)}`}
-                  />
-                ))}
-              <text
-                className="block-label"
-                x={placement.gx + width / 2}
-                style={{ pointerEvents: 'none', fontSize: `${labelFont}px` }}
-              >
-                {(look?.broken === true ? [...lines.slice(0, 1), t('parts.broken')] : lines).map(
-                  (line, index) => (
-                    <tspan
-                      key={line + String(index)}
-                      x={placement.gx + width / 2}
-                      y={firstY + index * lineHeight + labelFont * 0.35}
-                    >
-                      {line}
-                    </tspan>
-                  ),
-                )}
-              </text>
+                ]}
+                rectProps={{
+                  'data-part-id': placement.partInstanceId,
+                  'data-gx': placement.gx,
+                  'data-gy': placement.gy,
+                  ...(isGhosting ? { style: { pointerEvents: 'none' as const } } : {}),
+                  onPointerDown: (event) => handleBlockDown(event, placement),
+                  onPointerEnter: (event) => {
+                    setHoveredPartId(placement.partInstanceId);
+                    // A finger never leaves a block the way a mouse does, so the stats card it would
+                    // open would stay in front of the assembly: touch gets no hover card.
+                    if (showsHoverCard(event.pointerType)) onHoverPart?.(placement.partInstanceId);
+                  },
+                  onPointerLeave: () => onHoverPart?.(null),
+                }}
+              />
             </g>
           );
         })}

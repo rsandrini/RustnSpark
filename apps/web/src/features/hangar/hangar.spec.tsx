@@ -1142,8 +1142,11 @@ describe('hangar (S10.4)', () => {
       );
       // what follows the pointer is the part itself (its size, its rarity colour, its name), not a list card
       const chip = document.querySelector('.carried-part') as HTMLElement;
-      expect(chip).toHaveClass('rarity-common');
-      expect(chip.textContent ?? '').toMatch(/cargo/i);
+      expect(chip).toHaveClass('carried-part');
+      // drawn with the very same art as a part inside the ship: the block in its rarity colour, its name, its bar
+      expect(chip.querySelector('svg rect.block.rar-common')).not.toBeNull();
+      expect(chip.querySelector('svg text.block-label')?.textContent ?? '').toMatch(/cargo/i);
+      expect(chip.querySelector('svg rect.cond-bar')).not.toBeNull();
       // on the page body, so no panel can clip it or cover it
       expect(chip.parentElement).toBe(document.body);
 

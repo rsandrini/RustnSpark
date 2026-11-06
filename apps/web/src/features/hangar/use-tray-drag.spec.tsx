@@ -23,6 +23,8 @@ function setup(options: { enabled?: boolean; preview?: DropPreview | null } = {}
       rotateGhost: vi.fn(),
       ghostRot: () => null,
       cellPx: () => 20,
+      labelFor: () => ({ lines: [], font: 0.2 }),
+      colorMode: () => 'rarity',
     } as ShipYardHandle,
   };
   const onDrop = vi.fn();

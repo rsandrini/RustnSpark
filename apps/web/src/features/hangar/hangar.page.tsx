@@ -51,6 +51,7 @@ import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
 import { insideBox } from './drag-geometry';
 import { CarriedPart } from './carried-part';
+import { computePortMarks } from './connectors';
 import { useCarriedPointer } from './use-carried-pointer';
 import { useRotateKey } from './use-rotate-key';
 import { useTrayDrag } from './use-tray-drag';
@@ -604,12 +605,25 @@ export function HangarPage({ guided = false }: HangarPageProps) {
       effectiveLayout.find((placement) => placement.partInstanceId === id)?.rot ??
       0;
     const { width, height } = footprint(catalog, rot);
-    const cell = yardRef.current?.cellPx() ?? FALLBACK_CELL_PX;
+    const name = nameById.get(id) ?? catalog.partType;
+    const label = yardRef.current?.labelFor(name, width, height) ?? { lines: [name], font: 0.2 };
     return {
-      name: nameById.get(id) ?? '',
-      rarity: lookById.get(id)?.rarity ?? 'common',
-      width: width * cell,
-      height: height * cell,
+      catalog,
+      name,
+      look: lookById.get(id),
+      colorBy: yardRef.current?.colorMode() ?? 'rarity',
+      rot,
+      widthCells: width,
+      heightCells: height,
+      cellPx: yardRef.current?.cellPx() ?? FALLBACK_CELL_PX,
+      lines: label.lines,
+      labelFont: label.font,
+      // the ports of the part alone: its own connectors, none of them wired to a neighbour yet
+      portMarks: computePortMarks(
+        [{ partInstanceId: id, gx: 0, gy: 0, rot }],
+        catalogById,
+        connectorsById,
+      ),
       x: at.x,
       y: at.y,
     };
