@@ -50,7 +50,7 @@ import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
 import { insideBox } from './drag-geometry';
-import { TrayDragChip } from './tray-drag-chip';
+import { CarriedPart } from './carried-part';
 import { useCarriedPointer } from './use-carried-pointer';
 import { useRotateKey } from './use-rotate-key';
 import { useTrayDrag } from './use-tray-drag';
@@ -102,6 +102,8 @@ const SOFT_CODES: ReadonlySet<string> = new Set([
 ]);
 
 const PREVIEW_DEBOUNCE_MS = 400;
+// A carried part is drawn this many pixels per cell when the yard has not been measured yet.
+const FALLBACK_CELL_PX = 40;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
 
 export interface HangarPageProps {
@@ -569,6 +571,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   // Pulling a loose part out of the parts list onto the ship (mouse and pen; a finger keeps tap-then-tap).
   const yardRef = useRef<ShipYardHandle>(null);
+  const [, setTurns] = useState(0);
   const trayDrag = useTrayDrag({
     yard: yardRef,
     enabled: !modifyBlocked && !phone,
@@ -585,6 +588,33 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     yardBox !== undefined &&
     !insideBox(yardBox, carriedPointer.x, carriedPointer.y);
 
+  // What is carried right now, drawn as the part itself (its footprint at the yard's zoom) above everything:
+  // a part pulled out of the list shows it from the first move, and a placed part carried across the yard shows
+  // it once it is off the yard (inside, the yard draws its own ghost).
+  const carried = (() => {
+    const fromList = trayDrag.dragging;
+    const id = fromList?.partInstanceId ?? (carriedOut ? draggingId : null);
+    const at = fromList ?? carriedPointer;
+    if (id === null || at === null) return null;
+    const catalog = catalogById.get(id);
+    if (catalog === undefined) return null;
+    const rot: Rot =
+      fromList?.rot ??
+      yardRef.current?.ghostRot() ??
+      effectiveLayout.find((placement) => placement.partInstanceId === id)?.rot ??
+      0;
+    const { width, height } = footprint(catalog, rot);
+    const cell = yardRef.current?.cellPx() ?? FALLBACK_CELL_PX;
+    return {
+      name: nameById.get(id) ?? '',
+      rarity: lookById.get(id)?.rarity ?? 'common',
+      width: width * cell,
+      height: height * cell,
+      x: at.x,
+      y: at.y,
+    };
+  })();
+
   // R turns the part being carried (out of the list, or across the ship), else the one under the pointer,
   // else the selected one.
   const rotateTarget = trayDrag.dragging?.partInstanceId ?? draggingId ?? hoveredId ?? selectedId;
@@ -593,8 +623,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
     target: () => rotateTarget,
     onRotate: (id) => {
       if (trayDrag.dragging !== null) trayDrag.rotate();
-      else if (draggingId !== null) yardRef.current?.rotateGhost();
-      else rotatePart(id);
+      else if (draggingId !== null) {
+        yardRef.current?.rotateGhost();
+        setTurns((count) => count + 1); // the carried part redraws with its new shape
+      } else rotatePart(id);
     },
   });
 
@@ -773,25 +805,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
               // A part dragged out of the ship and released over this list leaves the ship (Parts tab only).
               data-drop-zone={removeZoneOn ? 'parts' : undefined}
             >
-              {trayDrag.dragging !== null && (
-                <TrayDragChip
-                  name={nameById.get(trayDrag.dragging.partInstanceId) ?? ''}
-                  rarity={
-                    parts.find((part) => part.id === trayDrag.dragging?.partInstanceId)?.rarity ??
-                    'common'
-                  }
-                  x={trayDrag.dragging.x}
-                  y={trayDrag.dragging.y}
-                />
-              )}
-              {carriedOut && draggingId !== null && carriedPointer !== null && (
-                <TrayDragChip
-                  name={nameById.get(draggingId) ?? ''}
-                  rarity={lookById.get(draggingId)?.rarity ?? 'common'}
-                  x={carriedPointer.x}
-                  y={carriedPointer.y}
-                />
-              )}
+              {carried !== null && <CarriedPart {...carried} />}
               {removeZoneOn && draggingId !== null && (
                 <p className="drop-hint" aria-hidden="true">
                   {t('hangar.drag.removeHint')}

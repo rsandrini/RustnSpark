@@ -1059,24 +1059,22 @@ describe('hangar (S10.4)', () => {
       vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 400));
       // over the yard the ghost in the yard is enough
       fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
-      await waitFor(() =>
-        expect(container.ownerDocument.querySelector('.tray-drag-chip')).toBeNull(),
-      );
+      await waitFor(() => expect(document.querySelector('.carried-part')).toBeNull());
 
       // out over the parts list (to the right of the yard): the chip carries the part's name
       fireEvent.pointerMove(window, { clientX: 700, clientY: 200 });
       const chip = await waitFor(() => {
-        const found = document.querySelector('.tray-drag-chip');
+        const found = document.querySelector('.carried-part');
         expect(found).not.toBeNull();
         return found as Element;
       });
       expect(chip.textContent ?? '').toMatch(/cargo/i);
+      expect(chip.parentElement).toBe(document.body);
+      expect(chip).toHaveClass('carried-part');
 
       // back over the yard: the ghost in the yard is enough, the chip goes away
       fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
-      await waitFor(() =>
-        expect(container.ownerDocument.querySelector('.tray-drag-chip')).toBeNull(),
-      );
+      await waitFor(() => expect(document.querySelector('.carried-part')).toBeNull());
       fireEvent.pointerUp(svg, toClient(2.5, 2.5));
     });
 
@@ -1142,13 +1140,12 @@ describe('hangar (S10.4)', () => {
       expect(container.querySelector('g.yard-ghost .ghost-label')?.textContent ?? '').toMatch(
         /cargo/i,
       );
-      // what follows the pointer looks like a part of the list (rarity colour, tile, name), not a plain box
-      const chip = document.querySelector('.tray-drag-chip') as HTMLElement;
-      expect(chip).toHaveClass('part-btn', 'rarity-common');
+      // what follows the pointer is the part itself (its size, its rarity colour, its name), not a list card
+      const chip = document.querySelector('.carried-part') as HTMLElement;
+      expect(chip).toHaveClass('rarity-common');
+      expect(chip.textContent ?? '').toMatch(/cargo/i);
       // on the page body, so no panel can clip it or cover it
       expect(chip.parentElement).toBe(document.body);
-      expect(chip.querySelector('.part-thumb')).not.toBeNull();
-      expect(chip.textContent ?? '').toMatch(/cargo/i);
 
       fireEvent.pointerUp(window, at(5, 0.5));
       const placed = block(container, 'part-cargo-b');
@@ -1156,6 +1153,40 @@ describe('hangar (S10.4)', () => {
       expect(placed?.getAttribute('data-gy')).toBe('0');
       expect(screen.queryByTestId('drop-preview')).toBeNull();
       expect(screen.getByRole('button', { name: 'Save layout' })).toBeEnabled();
+    });
+
+    it('the moment you pick a part up it takes the part size, long before it reaches the ship, and R turns it', async () => {
+      server.use(onboarded());
+      const { container } = renderWithRouter(routes, { initialEntries: ['/hangar'] });
+      const { row } = await ready(container);
+      const svg = container.querySelector('.hangar-scene svg') as SVGSVGElement;
+      const span = Number((svg.getAttribute('viewBox') ?? '0 0 20 20').split(' ')[2]);
+      const cellPx = SIZE / span;
+
+      fireEvent.pointerDown(row, { clientX: 100, clientY: 300, button: 0 });
+      // still on the parts list, far from the yard: no landing cell, but the carried part already has its shape
+      fireEvent.pointerMove(window, { clientX: 900, clientY: 320 });
+      const chip = await waitFor(() => {
+        const found = document.querySelector('.carried-part');
+        expect(found).not.toBeNull();
+        return found as HTMLElement;
+      });
+      expect(screen.queryByTestId('drop-preview')).toBeNull();
+      // a 2x1 part: two cells wide and one tall at the yard's zoom
+      expect(chip.style.width).toBe(`${2 * cellPx}px`);
+      expect(chip.style.height).toBe(`${cellPx}px`);
+
+      fireEvent.keyDown(window, { key: 'r' });
+      await waitFor(() =>
+        expect((document.querySelector('.carried-part') as HTMLElement).style.height).toBe(
+          `${2 * cellPx}px`,
+        ),
+      );
+      expect((document.querySelector('.carried-part') as HTMLElement).style.width).toBe(
+        `${cellPx}px`,
+      );
+      fireEvent.pointerUp(window, { clientX: 900, clientY: 320 });
+      expect(document.querySelector('.carried-part')).toBeNull();
     });
 
     it('a taken spot shows a red outline and the release leaves the part in the list', async () => {

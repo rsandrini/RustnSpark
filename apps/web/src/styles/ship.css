@@ -1139,18 +1139,43 @@ details.collapsible > summary h2 {
   z-index: 1;
 }
 
-/* A part being carried: it looks like a row of the parts list and follows the pointer above everything. */
-.tray-drag-chip.part-btn {
+/* The part being carried: its own shape at the yard's zoom, in its rarity colour, centred on the pointer and
+   above everything (it lives on the page body, so no panel can clip it or cover it). */
+.carried-part {
   position: fixed;
-  z-index: 60;
-  width: auto;
-  margin: 0;
-  transform: translate(12px, 12px);
-  background: var(--paper-3);
-  box-shadow: 0 6px 18px color-mix(in oklab, var(--black) 55%, transparent);
+  z-index: 100000;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--paper-3) 92%, transparent);
+  border: 2px solid var(--steel-lt);
+  border-radius: 4px;
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--black) 60%, transparent);
+  color: var(--white);
   pointer-events: none;
-  white-space: nowrap;
-  cursor: grabbing;
+  user-select: none;
+}
+.carried-part.rarity-uncommon {
+  border-color: var(--rar-uncommon);
+}
+.carried-part.rarity-rare {
+  border-color: var(--rar-rare);
+}
+.carried-part.rarity-epic {
+  border-color: var(--rar-epic);
+}
+.carried-part.rarity-legendary {
+  border-color: var(--rar-legendary);
+}
+.carried-part-name {
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  word-break: break-word;
 }
 body.dragging-part {
   cursor: grabbing;

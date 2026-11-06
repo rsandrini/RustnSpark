@@ -189,6 +189,10 @@ export interface ShipYardHandle {
   ) => DropPreview | null;
   /** Turns the part the pilot is carrying across the yard (a placed part's ghost) a quarter turn. */
   rotateGhost: () => void;
+  /** The rotation of the part carried across the yard, null when none is. */
+  ghostRot: () => Rot | null;
+  /** How many screen pixels one yard cell is at the current zoom (null before the yard is on screen). */
+  cellPx: () => number | null;
 }
 
 export interface ShipYardProps {
@@ -368,6 +372,8 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
     valid: boolean;
   };
   const [ghost, setGhost] = useState<Ghost | null>(null);
+  const ghostRef = useRef<Ghost | null>(null);
+  ghostRef.current = ghost;
   // A part that just turned (R, the toolbar button) pulses for a moment, so the pilot sees which one.
   const lastRots = useRef<Map<string, Rot>>(new Map());
   useEffect(() => {
@@ -609,6 +615,13 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
           height,
           valid: placementIssue(layout, catalogById, partInstanceId, gx, gy, rot, cellSet) === null,
         };
+      },
+      ghostRot: () => ghostRef.current?.rot ?? null,
+      cellPx: () => {
+        const svg = svgRef.current;
+        if (svg === null) return null;
+        const width = svg.getBoundingClientRect().width;
+        return width > 0 ? width / viewRef.current.span : null;
       },
       rotateGhost: () => {
         setGhost((current) => {

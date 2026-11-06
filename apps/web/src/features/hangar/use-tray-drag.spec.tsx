@@ -17,7 +17,14 @@ const press = (pointerType = 'mouse', button = 0) =>
 
 function setup(options: { enabled?: boolean; preview?: DropPreview | null } = {}) {
   const cellFor = vi.fn(() => (options.preview === undefined ? fits : options.preview));
-  const yard = { current: { cellFor, rotateGhost: vi.fn() } as ShipYardHandle };
+  const yard = {
+    current: {
+      cellFor,
+      rotateGhost: vi.fn(),
+      ghostRot: () => null,
+      cellPx: () => 20,
+    } as ShipYardHandle,
+  };
   const onDrop = vi.fn();
   const view = renderHook(() => useTrayDrag({ yard, enabled: options.enabled ?? true, onDrop }));
   return { view, cellFor, onDrop };
