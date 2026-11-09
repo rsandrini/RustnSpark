@@ -133,11 +133,14 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // easy/short mission and a hard/long one at the same tier (was ~3x, now ~6x).
     reward_danger_divisor: 3,
     reward_distance_ref: 800,
-    reward_distance_divisor: 1500,
+    // v0.1.3 balance (sim screening round, pay per hour by tier): distance counts for less, so a long
+    // trip no longer out-pays everything else. Was 1500.
+    reward_distance_divisor: 4000,
     reward_type_bonus: { escort: 1, mining: 1, rescue: 1.1, delivery: 1, transport: 1 },
     // Mission pay follows the part-price ladder: the better the bridge, the more a contract pays.
     // Round 6b (2026-10-27): Epic and Legendary pay ~30% more (2.5 / 3.25), so a rich ship can pay its repairs.
-    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.4, EPIC: 2.5, LEGENDARY: 3.25 },
+    // Milder bonus for the better bridges (was RARE 1.4, EPIC 2.5, LEGENDARY 3.25).
+    reward_by_bridge: { COMMON: 1, UNCOMMON: 1, RARE: 1.25, EPIC: 1.8, LEGENDARY: 2.2 },
     // A won fight pays nothing: pilots are not pirates (owner 2026-10-23); fights cost wear and a lost one a penalty.
     // The knobs stay for a future exception that makes a fight worth money.
     combat_win_base: 0,

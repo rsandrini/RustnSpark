@@ -33,6 +33,8 @@ export const APPENDIX_E_RULES: GameRules = {
     repair_factor: 0.8,
     maintenance_per_tier: 100,
     reward_danger_divisor: 8,
+    // the v0.1.3 balance round flattened the distance pay (4000); the oracle formula is checked on the old 1500
+    reward_distance_divisor: 1500,
     reward_base: 200,
     reward_by_bridge: {},
     reward_per_tier: 120,
