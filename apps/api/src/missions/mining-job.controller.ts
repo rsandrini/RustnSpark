@@ -13,8 +13,8 @@ export class MiningJobController {
   constructor(private readonly jobs: MiningJobService) {}
 
   @Get(':id/mine/info')
-  info(@Param('id') locationId: string) {
-    return this.jobs.info(locationId);
+  info(@CurrentUser() user: CurrentUserPayload, @Param('id') locationId: string) {
+    return this.jobs.info(user.playerId, locationId);
   }
 
   @Post(':id/mine')

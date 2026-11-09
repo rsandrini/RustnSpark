@@ -47,7 +47,8 @@ const SELF_SCOPED_PARAM_ROUTES: Record<string, string> = {
   'GET /v1/locations/:id/market': 'world data; prices computed for the caller',
   'GET /v1/locations/:id/missions': 'world data; the board hides other players’ private missions',
   'GET /v1/locations/:id/scavenge': 'world odds plus the caller’s own attempt counter only',
-  'GET /v1/locations/:id/mine/info': 'world data; whether the location can be mined at all',
+  'GET /v1/locations/:id/mine/info':
+    'world data plus the caller’s own ore space; whether the location can be mined at all',
   'POST /v1/locations/:id/scavenge': 'acts on the caller’s own ship/counter at that location',
   'POST /v1/locations/:id/mine':
     'service checks the caller’s ship is at the location and has no active mission',

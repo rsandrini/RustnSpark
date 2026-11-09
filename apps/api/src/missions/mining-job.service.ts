@@ -8,6 +8,8 @@ import { Prisma } from '@prisma/client';
 import { Clock } from '../common/clock/clock.js';
 import { createRng } from '../common/rng/rng.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import type { GameRules } from '../config/game-config.types.js';
+import { findsPerTick, oreSpace } from '../resolution/mining/mining-yield.js';
 import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
@@ -39,6 +41,19 @@ export interface MiningJobInfo {
   readonly tickSeconds: number;
   readonly maxTicks: number;
   readonly fuelPerTick: number;
+  /** Ore space of one trip for the player's ship (twice its cargo, whatever the time asked); null without a ship. */
+  readonly spaceUnits: number | null;
+  /** How long the ship's drill takes to fill that space here, in mission seconds (null without a drill or finds). */
+  readonly fillSeconds: number | null;
+  /** The ores a dig here can find (empty when the place cannot be mined). */
+  readonly ores: readonly MiningOreInfo[];
+}
+
+/** One ore a dig can find. Each find rolls its ore by rarity, so only the name and rarity are listed. */
+export interface MiningOreInfo {
+  readonly id: string;
+  readonly displayName: unknown;
+  readonly rarity: string;
 }
 
 export const MINING_JOB_TEMPLATE_ID = 'mining_job_generic';
@@ -68,7 +83,7 @@ export class MiningJobService {
 
   /** Whether this location can be mined at all (a template that fits it exists): the port screen
       only offers the Mining tab where the answer is yes. */
-  async info(locationId: string): Promise<MiningJobInfo> {
+  async info(playerId: string, locationId: string): Promise<MiningJobInfo> {
     const location = await this.prisma.location.findUnique({ where: { id: locationId } });
     if (!location) throw new NotFoundException('location not found');
     const templates = await this.prisma.missionTemplate.findMany({
@@ -84,12 +99,101 @@ export class MiningJobService {
       },
       templates,
     );
-    const { mining } = this.config.snapshot().rules;
+    const { rules } = this.config.snapshot();
+    const { mining } = rules;
+    const place = minable ? await this.oresAt(location, templates) : { ores: [], richness: 0 };
+    const drill = await this.drillOf(playerId, rules);
+    const space = drill === null ? null : oreSpace(drill.crg, rules);
+    const perTick =
+      drill === null || !minable || drill.min < 1
+        ? 0
+        : findsPerTick({ min: drill.min, condition: drill.condition }, place.richness, rules);
     return {
       minable,
       tickSeconds: mining.job_duration_seconds,
       maxTicks: mining.job_max_ticks,
       fuelPerTick: mining.job_fuel_per_tick,
+      spaceUnits: space,
+      fillSeconds:
+        space === null || perTick <= 0
+          ? null
+          : Math.ceil(space / perTick) * mining.job_duration_seconds,
+      ores: place.ores,
+    };
+  }
+
+  /** The player's ship as a driller: its cargo, mining and drill condition (null without a ship). */
+  private async drillOf(
+    playerId: string,
+    rules: GameRules,
+  ): Promise<{ crg: number; min: number; condition: number } | null> {
+    const ship = await this.prisma.ship.findFirst({
+      where: { ownerPlayerId: playerId },
+      orderBy: { id: 'asc' },
+    });
+    if (!ship) return null;
+    const rows = await this.parts.findPlayerParts(playerId);
+    const installedRows = rows.filter(
+      (part) => part.location === 'INSTALLED' && part.shipId === ship.id,
+    );
+    const installed = installedRows.map((part) => ({
+      instance: part,
+      catalog: pickCatalogStats(part.partCatalog),
+    }));
+    const catalog = new Map(installed.map((p) => [p.instance.id, p.catalog]));
+    const connectors = new Map(
+      installedRows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+    );
+    const connected = connectedPartIds(
+      (ship.layout as unknown as Placement[]) ?? [],
+      conductiveCatalog(catalog, installed, rules),
+      connectors,
+    );
+    const sheet = deriveSheet(applyConnectivity(installed, connected), rules);
+    return { crg: sheet.crg, min: sheet.min, condition: sheet.condition };
+  }
+
+  /** The ores a dig at `location` can find, and the place's richness (its first route's environment). */
+  private async oresAt(
+    location: FillerLocation,
+    templates: Parameters<typeof miningMaterialsFor>[1],
+  ): Promise<{ ores: MiningOreInfo[]; richness: number }> {
+    const { mining } = this.config.snapshot().rules;
+    const materials = await this.prisma.material.findMany({
+      where: { active: true, fixedPrice: false },
+      orderBy: { id: 'asc' },
+    });
+    const minable = miningMaterialsFor(location, templates, materials);
+    const routes = await this.prisma.route.findMany({
+      where: { OR: [{ nodeAId: location.id }, { nodeBId: location.id }] },
+      orderBy: { id: 'asc' },
+    });
+    const route = routes[0];
+    let envId = 'open';
+    if (route !== undefined) {
+      const [locations, routeEnvironments, environments] = await Promise.all([
+        this.prisma.location.findMany(),
+        this.prisma.routeEnvironment.findMany(),
+        this.prisma.environment.findMany(),
+      ]);
+      const world: FillerWorld = {
+        locations,
+        routes,
+        routeEnvironments,
+        environments,
+        templates: [],
+        materials: [],
+      };
+      envId = legForRoute(route, new Map(locations.map((entry) => [entry.id, entry])), world).env
+        .id;
+    }
+    return {
+      richness: mining.richness[envId] ?? 0,
+      ores: minable.map((material) => ({
+        id: material.id,
+        displayName: material.displayName,
+        rarity: material.rarity.toLowerCase(),
+      })),
     };
   }
 
@@ -190,7 +294,7 @@ export class MiningJobService {
     const materials = await this.prisma.material.findMany({
       // ores only: the scrap materials have a fixed price and are found by scavenging, not dug up
       where: { active: true, fixedPrice: false },
-      select: { id: true },
+      select: { id: true, rarity: true },
     });
     if (materials.length === 0) throw new ConflictException({ error: 'NOT_MINABLE' });
 
@@ -218,8 +322,7 @@ export class MiningJobService {
     const base = legForRoute(route, new Map(locations.map((entry) => [entry.id, entry])), world);
     const danger = routes.reduce((peak, entry) => Math.max(peak, entry.danger), 0);
     // A distance that makes the dig last `ticks` × job_duration_seconds for THIS ship (mission time)
-    // — same trick ScavengeJobService uses for its own fixed duration. The dispatch trims it when
-    // the hold fills before the time is up.
+    // — same trick ScavengeJobService uses for its own fixed duration. The dig always runs the whole time.
     const distance = Math.max(
       1,
       Math.round(

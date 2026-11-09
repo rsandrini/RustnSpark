@@ -45,6 +45,8 @@ export interface DispatchLeg {
   readonly env: { readonly id: string; readonly level: number; readonly fuelMult: number };
   /** An independent mining job: the ticks it digs (it always runs them all). */
   readonly miningTicks?: number;
+  /** A board mining contract (on its last leg): the most ticks it may dig; it stops once the amount is reached. */
+  readonly digTicks?: number;
 }
 
 // D19: the snapshot frozen at dispatch time is what resolution (S7.3) and replay (S7.6)
@@ -127,6 +129,7 @@ export function parseDispatchLegs(legs: unknown): DispatchLeg[] {
       zone: candidate.zone ?? 0,
       env: candidate.env ?? { id: 'none', level: 1, fuelMult: 1 },
       ...(typeof candidate.miningTicks === 'number' ? { miningTicks: candidate.miningTicks } : {}),
+      ...(typeof candidate.digTicks === 'number' ? { digTicks: candidate.digTicks } : {}),
     };
   });
 }
@@ -428,7 +431,21 @@ export class DispatchService {
         throw new ConflictException({ error: 'FUEL_EMPTY' });
       }
 
-      const legs = parseDispatchLegs(mission.legs);
+      // A board mining contract digs at its destination: the last leg carries the tick cap (the dry
+      // run below says how many ticks THIS ship needs; the cap is stored on the mission so a rebuilt
+      // job digs the same).
+      const contractedDig =
+        mission.type === 'MINING' &&
+        legs0Ticks(mission.legs) === undefined &&
+        ((mission.cargo ?? {}) as { contracted?: unknown }).contracted === true;
+      const parsedLegs = parseDispatchLegs(mission.legs);
+      const legs = contractedDig
+        ? parsedLegs.map((leg, index) =>
+            index === parsedLegs.length - 1
+              ? { ...leg, digTicks: rules.mining.contract_max_ticks }
+              : leg,
+          )
+        : parsedLegs;
       // The burn per leg is fixed by distance, terrain and the engines, and nothing refuels the
       // ship on the way: a route that needs more fuel than is aboard ends adrift every time, so
       // it never leaves port (a pump failing on the way can only make the burn worse).
@@ -518,6 +535,21 @@ export class DispatchService {
           (ran > 0 ? ran : miningTicks) * rules.mining.job_duration_seconds,
         );
       }
+      // A contract adds the dig to the flight: the dry run of the very same seeded run says how many
+      // ticks this ship needs for the amount (it stops once it is reached), and a chemical ship pays
+      // fuel for them on top of the trip.
+      if (contractedDig) {
+        const ran = await this.miningTicksRun(tx, mission, snapshot, rules);
+        const digFuel = sheet.fuelUse > 0 ? ran * rules.mining.job_fuel_per_tick : 0;
+        if (fuelNeeded + digFuel > ship.fuel) {
+          throw new ConflictException({
+            error: 'FUEL_INSUFFICIENT',
+            needed: Math.ceil(fuelNeeded + digFuel),
+            have: Math.floor(ship.fuel),
+          });
+        }
+        durationSeconds += ran * rules.mining.job_duration_seconds;
+      }
       const arrivalAt = new Date(serverTime.getTime() + durationSeconds * MS_PER_SECOND);
 
       const missionUpdate = await tx.missionInstance.updateMany({
@@ -525,6 +557,7 @@ export class DispatchService {
         data: {
           status: 'IN_TRANSIT',
           arrivalAt,
+          ...(contractedDig ? { legs: legs as unknown as Prisma.InputJsonValue } : {}),
           // what the delivery loaded, kept on the row so a rebuilt job pays the same
           ...(snapshot.cargo !== undefined
             ? { cargo: { ...((mission.cargo as object) ?? {}), load: snapshot.cargo } }

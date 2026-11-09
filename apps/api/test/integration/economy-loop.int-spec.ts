@@ -3,6 +3,7 @@ import type { Server } from 'node:http';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
+import type { Prisma } from '@prisma/client';
 import type { Job, Queue } from 'bullmq';
 import request from 'supertest';
 import { assembleStarterKit } from '../support/assemble.js';
@@ -132,7 +133,8 @@ describe('economy milestone M8', () => {
     type: 'MINING' | 'DELIVERY',
     originId: string,
     destinationId: string,
-    cargo: Record<string, string>,
+    cargo: Record<string, unknown>,
+    reward = 100,
   ) {
     const template = await prisma.missionTemplate.findFirstOrThrow({
       where: { type },
@@ -155,8 +157,8 @@ describe('economy milestone M8', () => {
             env: { id: 'debris', level: 1, fuelMult: 1 },
           },
         ],
-        cargo,
-        reward: 100,
+        cargo: cargo as Prisma.InputJsonValue,
+        reward,
         expiresAt: new Date(Date.now() + 30 * 60_000),
         seed: seedValue,
         status: 'ACCEPTED',
@@ -249,18 +251,21 @@ describe('economy milestone M8', () => {
     const listed = await get(player.token, '/v1/materials');
     expect(listed.status).toBe(200);
     const holdings = (listed.body as { materials: MaterialHolding[] }).materials;
-    expect(holdings).toHaveLength(1);
-    const holding = holdings[0]!;
-    expect(holding.quantity).toBeGreaterThan(0);
-
-    const salePrice = holding.unitPrice * holding.quantity;
-    const sold = await post(player.token, '/v1/market/sell-material', randomUUID(), {
-      materialId: holding.materialId,
-      quantity: holding.quantity,
-      expectedPrice: salePrice,
-    });
-    expect(sold.status).toBe(200);
-    expect(sold.body).toMatchObject({ price: salePrice });
+    // the dig brings a mix by rarity (v0.1.3): sell every material it found
+    expect(holdings.length).toBeGreaterThan(0);
+    let totalSalePrice = 0;
+    for (const holding of holdings) {
+      expect(holding.quantity).toBeGreaterThan(0);
+      const salePrice = holding.unitPrice * holding.quantity;
+      totalSalePrice += salePrice;
+      const sold = await post(player.token, '/v1/market/sell-material', randomUUID(), {
+        materialId: holding.materialId,
+        quantity: holding.quantity,
+        expectedPrice: salePrice,
+      });
+      expect(sold.status).toBe(200);
+      expect(sold.body).toMatchObject({ price: salePrice });
+    }
     expect(await get(player.token, '/v1/materials')).toHaveProperty('body.materials', []);
 
     // 3. Spend: a partial refuel of 10 units (tank is far from full after the burn).
@@ -309,7 +314,7 @@ describe('economy milestone M8', () => {
     const credits = await currentCredits(player.seeded.player.id);
     const movement = await walletMovement(player.seeded.player.id);
     expect(credits).toBe(movement);
-    // onboarding credit, mission payout, material sale, refuel debit, part purchase
+    // onboarding credit, mission payout, one credit per material sold, refuel debit, part purchase
     await expect(
       prisma.playerEvent.count({
         where: {
@@ -317,14 +322,106 @@ describe('economy milestone M8', () => {
           type: { in: ['wallet.credit', 'wallet.debit'] },
         },
       }),
-    ).resolves.toBe(5);
+    ).resolves.toBe(4 + holdings.length);
     expect(movement).toBe(
       START +
         result.credited +
-        salePrice -
+        totalSalePrice -
         (refueled.body as { cost: number }).cost -
         listing.price,
     );
+  }, 30_000);
+
+  it('a mining contract digs until the amount is reached, hands the ore over and pays the contract', async () => {
+    await freshSeededApp();
+    const player = await onboardPlayer();
+    const rig = await prisma.partInstance.create({
+      data: {
+        partType: 'mining_rig',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const reactor = await prisma.partInstance.create({
+      data: {
+        partType: 'reactor_solar',
+        ownerPlayerId: player.seeded.player.id,
+        condition: 100,
+        location: 'INVENTORY',
+      },
+    });
+    const installed = await prisma.partInstance.findMany({
+      where: {
+        ownerPlayerId: player.seeded.player.id,
+        location: 'INSTALLED',
+        shipId: player.shipId,
+      },
+      select: { id: true },
+    });
+    const assembled = await request(httpServer(testApp.app))
+      .post(`/v1/ships/${player.shipId}/auto-assemble`)
+      .set(auth(player.token))
+      .send({ partInstanceIds: [...installed.map((p) => p.id), rig.id, reactor.id] });
+    expect(assembled.status).toBe(200);
+    await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 200 } });
+    // a strong drill, so the contract is reached on the first tick
+    await prisma.partCatalog.update({ where: { partType: 'mining_rig' }, data: { min: 100 } });
+
+    const mission = await createMission(
+      player,
+      'contract-seed',
+      'MINING',
+      'ceres',
+      'hedus',
+      { materialId: 'common_ore', contracted: true, quantity: 6 },
+      1000,
+    );
+    const dispatched = await post(player.token, `/v1/ships/${player.shipId}/dispatch`, undefined, {
+      missionId: mission.id,
+    });
+    expect(dispatched.status).toBe(200);
+    // the cap is stored on the mission's last leg, so a rebuilt job digs the same
+    const stored = await prisma.missionInstance.findUniqueOrThrow({ where: { id: mission.id } });
+    const legs = stored.legs as Array<{ digTicks?: number }>;
+    expect(legs[legs.length - 1]?.digTicks).toBe(
+      configService.snapshot().rules.mining.contract_max_ticks,
+    );
+    // the audit row carries the plan
+    const audit = await prisma.playerEvent.findFirstOrThrow({
+      where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+    });
+    expect(audit.payload).toMatchObject({ missionId: mission.id, missionType: 'MINING' });
+
+    const job = await missionQueue.getJob(mission.id);
+    expect(job).toBeTruthy();
+    const result = await processor.process(job as Job<DispatchJobData>);
+    expect(result.status).toBe('DONE');
+    // the whole contract is paid (6 of 6 delivered)
+    expect(result.credited).toBe(1000);
+    // the contracted ore was handed over: what stays is the surplus (never the 6), and other ores
+    const log = await prisma.missionLog.findFirstOrThrow({ where: { missionId: mission.id } });
+    const events = (
+      log.legs as {
+        events: Array<{
+          type: string;
+          magnitude: number;
+          effects: { loot: Array<{ materialId: string }> };
+        }>;
+      }
+    ).events;
+    const found = events
+      .filter(
+        (event) => event.type === 'mining' && event.effects.loot[0]?.materialId === 'common_ore',
+      )
+      .reduce((sum, event) => sum + event.magnitude, 0);
+    expect(found).toBeGreaterThanOrEqual(6);
+    const held = await prisma.playerMaterial.findUnique({
+      where: {
+        playerId_materialId: { playerId: player.seeded.player.id, materialId: 'common_ore' },
+      },
+    });
+    expect(held?.quantity ?? 0).toBe(found - 6);
   }, 30_000);
 
   it('money invariants under parallelism: concurrent sells cannot oversell the stack', async () => {

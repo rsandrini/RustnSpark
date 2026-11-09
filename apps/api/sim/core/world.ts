@@ -166,7 +166,7 @@ export function buildFillerWorld(snapshot: Snapshot): FillerWorld {
   // filter `loadWorld` applies.
   const materials: FillerMaterial[] = snapshot.materials
     .filter((row) => row.active && !row.fixedPrice)
-    .map((row) => ({ id: row.id }));
+    .map((row) => ({ id: row.id, rarity: row.rarity }));
   return { locations, routes, routeEnvironments, environments, templates, materials };
 }
 

@@ -138,12 +138,27 @@ describe('independent mining job (round 10)', () => {
       fuelPerTick: 50,
       tickSeconds: 300,
     });
+    // what a dig here can turn up, for the map's place card: names and rarity only
+    const body = yes.body as {
+      spaceUnits: number | null;
+      fillSeconds: number | null;
+      ores: { id: string; rarity: string; chancePerMin?: unknown; pickShare?: unknown }[];
+    };
+    expect(body.ores.length).toBeGreaterThan(0);
+    for (const ore of body.ores) {
+      expect(['common', 'uncommon', 'rare']).toContain(ore.rarity);
+      expect(ore.chancePerMin).toBeUndefined();
+      expect(ore.pickShare).toBeUndefined();
+    }
+    // the ore space of one trip is twice the ship's cargo; no rig yet, so no fill time
+    expect(body.spaceUnits).toBeGreaterThan(0);
+    expect(body.fillSeconds).toBeNull();
 
     await prisma.missionTemplate.updateMany({ where: { type: 'MINING' }, data: { active: false } });
     const no = await request(httpServer(testApp.app))
       .get('/v1/locations/ceres/mine/info')
       .set(auth(player.token));
-    expect(no.body).toMatchObject({ minable: false });
+    expect(no.body).toMatchObject({ minable: false, ores: [] });
   });
 
   it('refuses without a mining rig installed (NO_MINING_RIG)', async () => {
@@ -200,6 +215,18 @@ describe('independent mining job (round 10)', () => {
     expect(activity.kind).toBe('mining');
     expect(activity.missionId).toBe(mission.id);
 
+    // The dispatch leaves an audit row: what the card quoted next to what was planned.
+    const audit = await prisma.playerEvent.findFirstOrThrow({
+      where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+    });
+    expect(audit.payload).toMatchObject({
+      missionId: mission.id,
+      missionType: 'MINING',
+      plannedSeconds: body.durationSeconds,
+    });
+    expect(audit.payload).toHaveProperty('quotedSeconds');
+    expect(audit.payload).toHaveProperty('driftPct');
+
     // One flight at a time.
     expect((await start(player.token, 'ceres')).status).toBe(409);
   });
@@ -230,7 +257,10 @@ describe('independent mining job (round 10)', () => {
     const response = await start(player.token, 'ceres').send({ ticks: 3 });
     expect(response.status).toBe(200);
     const body = response.body as { missionId: string; durationSeconds?: number };
-    // up to three ticks (the hold may fill first); never longer than asked
+    // the whole time asked: the ore space caps the load, never the time
+    expect(body.durationSeconds ?? 0).toBeGreaterThanOrEqual(
+      3 * rules.mining.job_duration_seconds - 5,
+    );
     expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(
       3 * rules.mining.job_duration_seconds + 5,
     );
@@ -241,27 +271,16 @@ describe('independent mining job (round 10)', () => {
     expect((job.legs as Array<{ miningTicks?: number }>)[0]?.miningTicks).toBe(3);
   });
 
-  it('a hold that fills early ends the dig early and burns only the ticks it ran', async () => {
+  it('a hold that fills on the first tick still digs the whole time asked, and burns every tick', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await installMiningRig(player.token, player.seeded.player.id, player.shipId);
     await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 1000 } });
-    // A field so rich that the first tick already fills any hold. Each attempt is a roll at the rig's
-    // chance, which depends on its rolled condition: make every attempt certain (rig `min` far above 1 is
-    // clamped to a chance of 1) so a tick always yields exactly `attempts_per_stop` units, never a lucky or
-    // unlucky draw.
+    // A field so rich that the first tick already fills any ore space (a huge drill on rich ground).
     await prisma.partCatalog.update({ where: { partType: 'mining_rig' }, data: { min: 100 } });
-    await prisma.gameConfig.update({
-      where: { key: 'mining.attempts_per_stop' },
-      data: { value: 100 },
-    });
     await prisma.gameConfig.update({
       where: { key: 'mining.richness' },
       data: { value: { open: 1, radiation: 1, gravitational: 1, debris: 1 } },
-    });
-    await prisma.gameConfig.update({
-      where: { key: 'mining.rarity' },
-      data: { value: { common: 0, uncommon: 0, rare: 0 } },
     });
     await configService.refresh();
     const { rules } = configService.snapshot();
@@ -269,8 +288,10 @@ describe('independent mining job (round 10)', () => {
     const response = await start(player.token, 'ceres').send({ ticks: 4 });
     expect(response.status).toBe(200);
     const body = response.body as { durationSeconds?: number };
-    // one tick of four
-    expect(body.durationSeconds ?? 0).toBeLessThanOrEqual(rules.mining.job_duration_seconds + 5);
+    // all four ticks: the hold caps each tick's load, not the time
+    expect(body.durationSeconds ?? 0).toBeGreaterThanOrEqual(
+      4 * rules.mining.job_duration_seconds - 5,
+    );
   });
 
   it('a ship whose engines burn no fuel digs with an empty tank (no FUEL_INSUFFICIENT)', async () => {
