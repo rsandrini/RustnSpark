@@ -65,7 +65,7 @@
 **Files:**
 - Create: `apps/api/src/resolution/mining/mining-yield.ts`
 - Test: `apps/api/test/unit/resolution/mining-yield.spec.ts`
-- Modify: `apps/api/src/resolution/mining/mining.resolver.ts` (keep `performance` use; `miningChance` and `resolveMining` are replaced by the module below, remove them and their tests)
+- Keep `apps/api/src/resolution/mining/mining.resolver.ts` `miningChance`/`resolveMining`/`settleContractedMining` as they are for now: the approved Appendix E tapes (`mining.resolver.spec.ts`) pin them. The leg resolver stops calling them in Task 3 (mark them legacy in a comment there).
 
 **Interfaces:**
 - Produces (all exported, pure, rules passed in):
@@ -81,7 +81,7 @@
 - [ ] **Step 1:** Failing tests (names and assertions): `keepBest` with found {common 20, uncommon 5, rare 1}, limit 20 -> kept {rare 1, uncommon 5, common 14}, dropped {common 6}; reserved contract ore is never dropped before other ore; ties break by price then id; `oreMix` with weights 60/30/10 and tier RARE bias gives rare share above 0.10 and shares sum to 1, one ore -> 1; `rollFinds` mean over 4000 seeded draws within 3% of expected; `findsPerTick` for min 2, condition 100, debris, K from rules = `2 x 0.6 x K`; `chanceToReach(10, 1.5, 2, 1)` small, `ticksFor` returns null past the cap and monotone in drill strength; space: cargo 16 -> 32.
 - [ ] **Step 2:** Run `jest --selectProjects unit mining-yield`, expect FAIL (module missing).
 - [ ] **Step 3:** Implement the signatures above; the Poisson tail by summing the pmf.
-- [ ] **Step 4:** Run, expect PASS. Remove the old `miningChance`/`resolveMining` tests.
+- [ ] **Step 4:** Run, expect PASS. The old `miningChance`/`resolveMining` tests stay (Appendix E tapes).
 - [ ] **Step 5:** Commit `feat(mining): pure yield, mix, space and odds rules`.
 
 ### Task 3: The dig loop in the leg resolver
@@ -131,7 +131,7 @@
 ### Task 6: Board generator and pay
 
 **Files:**
-- Modify: `apps/api/src/missions/generator/template.filler.ts` (`miningCargo`: draw the ore rarity by `contract_rarity_weights`, then an ore of that rarity minable at the origin (fall back to any minable one), quantity in `contract_quantity[rarity]`; the reward = `contract_unit_pay[rarity] x quantity` instead of the distance formula; remove `MAX_CONTRACT_QUANTITY` and the old comment)
+- Modify: `apps/api/src/missions/generator/template.filler.ts` (`miningCargo`: draw the ore rarity by `contract_rarity_weights`, then an ore of that rarity minable at the origin (fall back to any minable one), quantity between `contract_quantity_min[rarity]` and `contract_quantity_max[rarity]`; the reward = `contract_unit_pay[rarity] x quantity` instead of the distance formula; remove `MAX_CONTRACT_QUANTITY` and the old comment)
 - Test: `apps/api/test/unit/missions/template.filler.spec.ts` (or the existing generator spec)
 
 **Interfaces:**
