@@ -22,6 +22,12 @@ import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { createTestApp, type TestApp } from '../support/app-factory.js';
 import { seedAccountWithPlayer, type SeededPlayer } from '../support/auth-fixtures.js';
 import { resetDatabase } from '../support/test-db.js';
+import type { ConnectorLayout } from '../../src/parts/connectors.js';
+import type { Placement } from '../../src/parts/part.types.js';
+import { pickCatalogStats } from '../../src/parts/parts.service.js';
+import { directionErrors } from '../../src/ships/direction.js';
+import { conductiveCatalog } from '../../src/ships/connectivity.js';
+import { connectedPartIds, incorrectPortPartIds } from '../../src/ships/geometry.js';
 
 function httpServer(app: INestApplication): Server {
   return app.getHttpServer() as Server;
@@ -278,6 +284,157 @@ describe('ship dispatch API (S7.2)', () => {
     } finally {
       await configService.refresh();
     }
+  });
+
+  // Item 6 (v0.1.3): the card said about 1h30m for a mission that took 19 minutes. The card the pilot
+  // sees on an accepted mission (GET /v1/missions/active -> info.estimate) must say what the dispatch
+  // then plans, for a plain ship, for engines pushed past 1 and for a much faster ship.
+  describe('the card and the dispatch plan the same trip (item 6)', () => {
+    const cardAndPlan = async (
+      player: AuthPair,
+      legDistances: readonly number[],
+    ): Promise<{
+      card: { durationSeconds: number; fuelNeeded: number };
+      planned: number;
+      auditFuel: number;
+    }> => {
+      const mission = await createMission(player, legDistances);
+      const active = await request(httpServer(testApp.app))
+        .get('/v1/missions/active')
+        .set(auth(player.token));
+      const row = (
+        active.body as Array<{
+          id: string;
+          info: { estimate: { durationSeconds: number; fuelNeeded: number } };
+        }>
+      ).find((entry) => entry.id === mission.id)!;
+      const response = await dispatch(player.token, player.shipId, mission.id);
+      expect(response.status).toBe(200);
+      const audit = await prisma.playerEvent.findFirstOrThrow({
+        where: { playerId: player.seeded.player.id, type: 'mission.dispatch' },
+        orderBy: { at: 'desc' },
+      });
+      return {
+        card: row.info.estimate,
+        planned: (response.body as { durationSeconds: number }).durationSeconds,
+        auditFuel: (audit.payload as { fuelNeeded: number }).fuelNeeded,
+      };
+    };
+
+    it('a plain ship: the card time and fuel are the dispatch time and fuel', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      const { card, planned, auditFuel } = await cardAndPlan(player, [900, 700]);
+      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+      expect(Math.round(card.fuelNeeded)).toBe(auditFuel);
+    });
+
+    it("engines pushed past 1: the card follows the pilot's levels like the dispatch", async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { fuel: 5000, chemLevel: 1.4, ionLevel: 1.6 },
+      });
+      const { card, planned, auditFuel } = await cardAndPlan(player, [900, 700]);
+      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+      expect(Math.round(card.fuelNeeded)).toBe(auditFuel);
+    });
+
+    it('an engine blocked by another part gives no thrust at dispatch: the card says so too', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      // A second engine, so that blocking one still leaves the ship able to fly.
+      const extra = await prisma.partInstance.create({
+        data: {
+          partType: 'engine_chem_small',
+          ownerPlayerId: player.seeded.player.id,
+          condition: 100,
+          location: 'INVENTORY',
+        },
+      });
+      const placed = await prisma.partInstance.findMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        select: { id: true },
+      });
+      const assembled = await request(httpServer(testApp.app))
+        .post(`/v1/ships/${player.shipId}/auto-assemble`)
+        .set(auth(player.token))
+        .send({ partInstanceIds: [...placed.map((part) => part.id), extra.id] });
+      expect(assembled.status).toBe(200);
+      // Park a part right in front of an engine's exhaust (a layout warning, the ship still flies).
+      const ship = await prisma.ship.findUniqueOrThrow({ where: { id: player.shipId } });
+      const rows = await prisma.partInstance.findMany({
+        where: { shipId: player.shipId, location: 'INSTALLED' },
+        include: { partCatalog: true },
+      });
+      const catalog = new Map(rows.map((row) => [row.id, pickCatalogStats(row.partCatalog)]));
+      const connectors = new Map(
+        rows.map((row) => [row.id, row.connectors as ConnectorLayout | null]),
+      );
+      const installedForConnectivity = rows.map((row) => ({
+        instance: row,
+        catalog: pickCatalogStats(row.partCatalog),
+      }));
+      const layout = ship.layout as unknown as Placement[];
+      const movable = layout.filter(
+        (placement) => catalog.get(placement.partInstanceId)?.partClass !== 'BRIDGE',
+      );
+      let blocked: Placement[] | undefined;
+      // Search a small neighbourhood for a move or turn that blocks an exhaust and still leaves every
+      // part connected with matching ports (a warning, not a grounded ship).
+      for (const mover of movable) {
+        for (let gx = -3; gx <= 3 && blocked === undefined; gx += 1) {
+          for (let gy = -3; gy <= 3 && blocked === undefined; gy += 1) {
+            for (const rot of [0, 90, 180, 270]) {
+              const trial = layout.map((placement) =>
+                placement.partInstanceId === mover.partInstanceId
+                  ? { ...placement, gx, gy, rot }
+                  : placement,
+              );
+              const sameCell =
+                new Set(trial.map((entry) => `${entry.gx},${entry.gy}`)).size !== trial.length;
+              if (
+                !sameCell &&
+                directionErrors(trial, catalog, connectors).some(
+                  (e) => e.code === 'EXHAUST_BLOCKED',
+                ) &&
+                incorrectPortPartIds(trial, catalog, connectors).size === 0 &&
+                connectedPartIds(
+                  trial,
+                  conductiveCatalog(catalog, installedForConnectivity, GAME_CONFIG_DEFAULTS),
+                  connectors,
+                ).size === trial.length
+              ) {
+                blocked = trial;
+                break;
+              }
+            }
+          }
+        }
+        if (blocked !== undefined) break;
+      }
+      expect(blocked).toBeDefined();
+      await prisma.ship.update({
+        where: { id: player.shipId },
+        data: { layout: blocked as unknown as Prisma.InputJsonValue },
+      });
+      const { card, planned, auditFuel } = await cardAndPlan(player, [900, 700]);
+      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+      expect(Math.round(card.fuelNeeded)).toBe(auditFuel);
+    });
+
+    it('a much faster ship (engines 6x thrust): the card is not minutes off the plan', async () => {
+      await freshSeededApp();
+      const player = await onboardPlayer();
+      await prisma.ship.update({ where: { id: player.shipId }, data: { fuel: 5000 } });
+      await prisma.$executeRaw`UPDATE "PartCatalog" SET "pot" = "pot" * 6 WHERE "pot" > 0`;
+      const { card, planned, auditFuel } = await cardAndPlan(player, [2500, 1500, 1000]);
+      expect(Math.abs(card.durationSeconds - planned)).toBeLessThanOrEqual(1);
+      expect(Math.round(card.fuelNeeded)).toBe(auditFuel);
+    });
   });
 
   // S10.7: the transit screen counts down per leg against the windows the server

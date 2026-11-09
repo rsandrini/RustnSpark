@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { applyConnectivity, conductiveCatalog } from '../ships/connectivity.js';
 import { connectedPartIds } from '../ships/geometry.js';
 import { shipTier } from '../ships/ship-tier.js';
+import { flightShip } from '../ships/penalties.js';
 import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 import { cargoTermsOf } from './cargo-mode.js';
@@ -175,6 +176,9 @@ interface ViewerContext {
   readonly bridgeRarity: string | undefined;
   readonly ship: Ship | undefined;
   readonly installed: InstalledPart[];
+  /** The ship as it would fly: connected parts with the layout warnings' penalties (a blocked engine
+      gives no thrust), the same view the dispatch plans the trip from. */
+  readonly flightParts: InstalledPart[];
 }
 
 // The highest per-leg zone a mission's route touches (GDD §2: zone 0-1 is the safe core, same
@@ -713,6 +717,13 @@ export class MissionsService implements OnModuleInit {
       connectorsByInstance,
     );
     const installed = applyConnectivity(installedRaw, connectedIds);
+    const flightParts = flightShip(
+      installed,
+      (ship?.layout as unknown as Placement[]) ?? [],
+      catalogForConnectivity,
+      connectorsByInstance,
+      rules,
+    ).parts;
     const tier =
       ship === undefined
         ? DEFAULT_VIEWER_TIER
@@ -725,6 +736,7 @@ export class MissionsService implements OnModuleInit {
       bridgeRarity: bridgeRarityOf(installed.map((part) => part.catalog)),
       ship,
       installed,
+      flightParts,
     };
   }
 
@@ -805,7 +817,7 @@ export class MissionsService implements OnModuleInit {
       viewer.ship === undefined || levels === undefined
         ? null
         : {
-            sheet: deriveSheet(applyEngineLevels(viewer.installed, levels, rules), rules),
+            sheet: deriveSheet(applyEngineLevels(viewer.flightParts, levels, rules), rules),
             pushed: levels.chem > 1 || levels.ion > 1,
           };
 
