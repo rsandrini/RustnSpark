@@ -1682,8 +1682,9 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 1,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.rarity),
     description: {
-      en: 'Rarity threshold per material rarity.',
-      'pt-BR': 'Limiar de raridade por raridade de material.',
+      en: 'LEGACY, no longer read by mining (rarity lives in mining.mix_weights): rarity threshold per material rarity.',
+      'pt-BR':
+        'LEGADO, a mineração não lê mais (a raridade está em mining.mix_weights): limiar de raridade por raridade de material.',
     },
   },
   {
@@ -1694,8 +1695,137 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     max: 100,
     factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.attempts_per_stop),
     description: {
-      en: 'Number of mining attempts allowed per stop.',
-      'pt-BR': 'Número de tentativas de mineração permitidas por parada.',
+      en: 'LEGACY, no longer read by mining (see mining.yield_k): number of mining attempts per stop.',
+      'pt-BR':
+        'LEGADO, a mineração não lê mais (veja mining.yield_k): número de tentativas de mineração por parada.',
+    },
+  },
+  {
+    key: 'mining.yield_k',
+    group: 'mining',
+    type: 'number',
+    min: 0,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.yield_k),
+    description: {
+      en: 'Finds per 5 minutes of a dig = mining x tool condition x place richness x this.',
+      'pt-BR':
+        'Achados a cada 5 minutos de uma mineração = mineração x condição da ferramenta x riqueza do lugar x este valor.',
+    },
+  },
+  {
+    key: 'mining.mix_weights',
+    group: 'mining',
+    type: 'json',
+    min: 0,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.mix_weights),
+    description: {
+      en: 'How likely each ore is to be what a find turns out to be, by ore rarity (relative weights).',
+      'pt-BR':
+        'A chance de cada minério ser o que um achado revela, por raridade do minério (pesos relativos).',
+    },
+  },
+  {
+    key: 'mining.tier_bias',
+    group: 'mining',
+    type: 'json',
+    min: 0,
+    max: 10,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.tier_bias),
+    description: {
+      en: 'How much a drill of each rarity shifts the ore mix towards rarer ores: weight x (1 + bias x rank), rank 0 common, 1 uncommon, 2 rare.',
+      'pt-BR':
+        'Quanto uma broca de cada raridade desloca o mix para minérios mais raros: peso x (1 + viés x posto), posto 0 comum, 1 incomum, 2 raro.',
+    },
+  },
+  {
+    key: 'mining.space_factor',
+    group: 'mining',
+    type: 'number',
+    min: 1,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.space_factor),
+    description: {
+      en: 'Ore space of a trip = the cargo of the ship x this, for the whole job whatever its length. Over it, the cheapest ore is dropped.',
+      'pt-BR':
+        'Espaço de minério de uma viagem = a carga da nave x este valor, para o trabalho inteiro, qualquer que seja a duração. Acima dele, o minério mais barato é descartado.',
+    },
+  },
+  {
+    key: 'mining.contract_max_ticks',
+    group: 'mining',
+    type: 'integer',
+    min: 1,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_max_ticks),
+    description: {
+      en: 'A mining contract takes at most this many ticks of the dig (the card shows the odds inside the cap).',
+      'pt-BR':
+        'Um contrato de mineração leva no máximo este número de ticks de escavação (o cartão mostra as chances dentro do limite).',
+    },
+  },
+  {
+    key: 'mining.contract_confidence',
+    group: 'mining',
+    type: 'number',
+    min: 0.5,
+    max: 0.999,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_confidence),
+    description: {
+      en: 'The time of a contract is the fewest ticks whose chance of reaching the amount is at least this.',
+      'pt-BR':
+        'O tempo de um contrato é o menor número de ticks cuja chance de alcançar a quantidade é de pelo menos este valor.',
+    },
+  },
+  {
+    key: 'mining.contract_rarity_weights',
+    group: 'mining',
+    type: 'json',
+    min: 0,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_rarity_weights),
+    description: {
+      en: 'How often a board mining contract asks for each ore rarity (relative weights): common ones for common ships.',
+      'pt-BR':
+        'Com que frequência um contrato de mineração do quadro pede cada raridade de minério (pesos relativos): comuns para naves comuns.',
+    },
+  },
+  {
+    key: 'mining.contract_quantity_min',
+    group: 'mining',
+    type: 'json',
+    min: 1,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_quantity_min),
+    description: {
+      en: 'The fewest units a mining contract asks for, by ore rarity.',
+      'pt-BR': 'O mínimo de unidades que um contrato de mineração pede, por raridade do minério.',
+    },
+  },
+  {
+    key: 'mining.contract_quantity_max',
+    group: 'mining',
+    type: 'json',
+    min: 1,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_quantity_max),
+    description: {
+      en: 'The most units a mining contract asks for, by ore rarity.',
+      'pt-BR': 'O máximo de unidades que um contrato de mineração pede, por raridade do minério.',
+    },
+  },
+  {
+    key: 'mining.contract_unit_pay',
+    group: 'mining',
+    type: 'json',
+    min: 0,
+    max: 1000000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.contract_unit_pay),
+    description: {
+      en: 'Credits a mining contract pays per unit delivered, by ore rarity.',
+      'pt-BR':
+        'Créditos que um contrato de mineração paga por unidade entregue, por raridade do minério.',
     },
   },
   {

@@ -112,11 +112,21 @@ const EXPECTED_KEYS: readonly string[] = [
   'integrity.combat_factor',
   'integrity.env_factor',
   'mining.attempts_per_stop',
+  'mining.contract_confidence',
+  'mining.contract_max_ticks',
+  'mining.contract_quantity_max',
+  'mining.contract_quantity_min',
+  'mining.contract_rarity_weights',
+  'mining.contract_unit_pay',
   'mining.job_duration_seconds',
   'mining.job_fuel_per_tick',
   'mining.job_max_ticks',
+  'mining.mix_weights',
   'mining.rarity',
   'mining.richness',
+  'mining.space_factor',
+  'mining.tier_bias',
+  'mining.yield_k',
   'missions.board_max_same_type',
   'missions.board_min_by_detail',
   'missions.board_min_per_location',
@@ -282,5 +292,50 @@ describe('config registry', () => {
     expect(getRegistryEntry('missing.key')).toBeUndefined();
     expect(isValidConfigKey('combat.dodge_factor')).toBe(true);
     expect(isValidConfigKey('invalid.key')).toBe(false);
+  });
+  describe('mining rework keys (v0.1.3)', () => {
+    it('carry the calibrated defaults', () => {
+      const mining = GAME_CONFIG_DEFAULTS.mining;
+      expect(mining.yield_k).toBe(8.33);
+      expect(mining.mix_weights).toEqual({ common: 60, uncommon: 30, rare: 10 });
+      expect(mining.space_factor).toBe(2);
+      expect(mining.contract_max_ticks).toBe(12);
+      expect(mining.contract_confidence).toBe(0.9);
+      expect(mining.contract_unit_pay).toEqual({ common: 400, uncommon: 1200, rare: 4000 });
+    });
+
+    it('a stored rule set from before the rework still validates and gets the defaults', () => {
+      const old = structuredClone(GAME_CONFIG_DEFAULTS) as unknown as {
+        mining: Record<string, unknown>;
+      };
+      for (const key of [
+        'yield_k',
+        'mix_weights',
+        'tier_bias',
+        'space_factor',
+        'contract_max_ticks',
+        'contract_confidence',
+        'contract_rarity_weights',
+        'contract_quantity_min',
+        'contract_quantity_max',
+        'contract_unit_pay',
+      ]) {
+        delete old.mining[key];
+      }
+      const rules = validateGameRules(old);
+      expect(rules.mining.space_factor).toBe(GAME_CONFIG_DEFAULTS.mining.space_factor);
+      expect(rules.mining.mix_weights).toEqual(GAME_CONFIG_DEFAULTS.mining.mix_weights);
+    });
+
+    it('refuses an ore space below the cargo and a negative weight', () => {
+      const bad = structuredClone(GAME_CONFIG_DEFAULTS) as unknown as {
+        mining: Record<string, unknown>;
+      };
+      bad.mining['space_factor'] = 0.5;
+      expect(() => validateGameRules(bad)).toThrow();
+      bad.mining['space_factor'] = 2;
+      bad.mining['mix_weights'] = { common: -1, uncommon: 30, rare: 10 };
+      expect(() => validateGameRules(bad)).toThrow();
+    });
   });
 });

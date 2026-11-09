@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { GameRules } from './game-config.types.js';
 import { GameConfigValidationError } from './game-config.types.js';
 import { getRegistryEntry } from './config-registry.js';
+import { GAME_CONFIG_DEFAULTS } from './game-config.defaults.js';
 
 const adminSchema = z.object({
   debug_fast_ops_seconds: z.number().int().min(1).max(300),
@@ -192,6 +193,38 @@ const miningSchema = z.object({
   richness: z.record(z.string(), z.number().min(0).max(1)),
   rarity: z.record(z.string(), z.number().min(0).max(1)),
   attempts_per_stop: z.number().int().min(1).max(100),
+  // Old stored rule sets (before v0.1.3) have none of these: they get the defaults.
+  yield_k: z.number().min(0).max(1000).default(GAME_CONFIG_DEFAULTS.mining.yield_k),
+  mix_weights: z
+    .record(z.string(), z.number().min(0).max(1000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.mix_weights }),
+  tier_bias: z
+    .record(z.string(), z.number().min(0).max(10))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.tier_bias }),
+  space_factor: z.number().min(1).max(20).default(GAME_CONFIG_DEFAULTS.mining.space_factor),
+  contract_max_ticks: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(GAME_CONFIG_DEFAULTS.mining.contract_max_ticks),
+  contract_confidence: z
+    .number()
+    .min(0.5)
+    .max(0.999)
+    .default(GAME_CONFIG_DEFAULTS.mining.contract_confidence),
+  contract_rarity_weights: z
+    .record(z.string(), z.number().min(0).max(1000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.contract_rarity_weights }),
+  contract_quantity_min: z
+    .record(z.string(), z.number().int().min(1).max(1000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.contract_quantity_min }),
+  contract_quantity_max: z
+    .record(z.string(), z.number().int().min(1).max(1000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.contract_quantity_max }),
+  contract_unit_pay: z
+    .record(z.string(), z.number().min(0).max(1000000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.contract_unit_pay }),
   job_duration_seconds: z.number().int().min(1).max(86400),
   job_max_ticks: z.number().int().min(1).max(24),
   job_fuel_per_tick: z.number().min(0).max(100000),

@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Code in English; every player-facing string in `en.json` AND `pt-BR.json`; no hard-coded strings (language policy).
-- All tunables live in the config registry with an en + pt-BR description; the DB value wins over the TS default (tuning policy). New keys: `mining.yield_k`, `mining.mix_weights`, `mining.tier_bias`, `mining.space_factor`, `mining.contract_max_ticks`, `mining.contract_confidence`, `mining.contract_rarity_weights`, `mining.contract_quantity`, `mining.contract_unit_pay`.
+- All tunables live in the config registry with an en + pt-BR description; the DB value wins over the TS default (tuning policy). New keys: `mining.yield_k`, `mining.mix_weights`, `mining.tier_bias`, `mining.space_factor`, `mining.contract_max_ticks`, `mining.contract_confidence`, `mining.contract_rarity_weights`, `mining.contract_quantity_min`, `mining.contract_quantity_max`, `mining.contract_unit_pay`.
 - API `src` must not import the contract package (local types; parse in int-spec). New error codes need en + pt-BR.
 - Determinism: a resolution is a pure function of seed + snapshot + rules; document the rng draw order in the new module's header; never reorder it later.
 - Run only the specs for touched files; int specs need the test stack (postgres-test 5433, redis-test 6380); sims need Node 22 (`PATH=~/.nvm/versions/node/v22.23.2/bin`). Before the push run `test:e2e` and grep old literals (rule: default changes break e2e).
@@ -39,7 +39,7 @@
 - Modify: `docs/TODO_v0.1.3.md` (item 8: the chosen values)
 
 **Interfaces:**
-- Produces: the starting values for the config keys of Task 1 (`yield_k` about 8.3, `mix_weights` 60/30/10, `tier_bias` COMMON 0 / UNCOMMON 0.15 / RARE 0.3 / EPIC 0.45 / LEGENDARY 0.6 as `weight x (1 + bias x rank)` with rank common 0, uncommon 1, rare 2, `space_factor` 2, `contract_max_ticks` 12, `contract_confidence` 0.9, plus `contract_quantity` per rarity and `contract_unit_pay` per rarity).
+- Produces: the starting values for the config keys of Task 1 (`yield_k` about 8.3, `mix_weights` 60/30/10, `tier_bias` COMMON 0 / UNCOMMON 0.15 / RARE 0.3 / EPIC 0.45 / LEGENDARY 0.6 as `weight x (1 + bias x rank)` with rank common 0, uncommon 1, rare 2, `space_factor` 2, `contract_max_ticks` 12, `contract_confidence` 0.9, plus `contract_quantity_min`/`_max` per rarity and `contract_unit_pay` per rarity).
 
 - [ ] **Step 1:** Write the script: Poisson-luck finds per 5 min `E = min x perf x richness x yield_k`; for each drill (small 1x2 and heavy 2x2, tiers common/rare/legendary) x place (debris 0.6, open 0.2) x contract (common/uncommon/rare, quantities from a table) print minutes for the confidence and the chance inside the cap. Also print contract pay per hour (`unit_pay x N / minutes`) next to the prod pay per hour per mission type from `backups/prod-2026-11-09/` (13-43k early game, 100-400k late).
 - [ ] **Step 2:** Run it; choose `contract_quantity` (min, max per rarity; larger than today's 1-3, the common ones achievable by a small common drill in about 20-30 min in debris, rare ones needing a better drill) and `contract_unit_pay` so mining pays at or below the early-game pay per hour of other mission types. Record the table and the chosen values in item 8.
@@ -52,7 +52,7 @@
 - Test: the existing config registry/schema specs (`apps/api/test/unit/config`)
 
 **Interfaces:**
-- Produces: `rules.mining` gains `yield_k: number`, `mix_weights: Record<'common'|'uncommon'|'rare', number>`, `tier_bias: Record<RarityEnum, number>`, `space_factor: number`, `contract_max_ticks: number`, `contract_confidence: number`, `contract_rarity_weights: Record<'common'|'uncommon'|'rare', number>`, `contract_quantity: Record<'common'|'uncommon'|'rare', {min:number;max:number}>`, `contract_unit_pay: Record<'common'|'uncommon'|'rare', number>`. Removes `mining.rarity` and `mining.attempts_per_stop` (check how the registry retires keys and what a stale DB row does; follow the existing convention and add a migration only if one exists for retired keys).
+- Produces: `rules.mining` gains `yield_k: number`, `mix_weights: Record<'common'|'uncommon'|'rare', number>`, `tier_bias: Record<RarityEnum, number>`, `space_factor: number`, `contract_max_ticks: number`, `contract_confidence: number`, `contract_rarity_weights: Record<'common'|'uncommon'|'rare', number>`, `contract_quantity_min` and `contract_quantity_max: Record<'common'|'uncommon'|'rare', number>` (flat: the registry validates records of numbers), `contract_unit_pay: Record<'common'|'uncommon'|'rare', number>`. `mining.rarity` and `mining.attempts_per_stop` are KEPT as legacy keys (the approved Appendix E fixtures and old stored rule sets pin them): the registry text says they are no longer read by mining. New schema keys carry `.default(...)` so a stored old rule set still validates.
 
 - [ ] **Step 1:** Failing test: the registry lists every new key with en + pt-BR description and the default equals the Task 0 value; the schema rejects a negative weight and `space_factor < 1`.
 - [ ] **Step 2:** Run it, expect FAIL.

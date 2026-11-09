@@ -128,11 +128,21 @@ export type ConfigKey =
   | 'integrity.combat_factor'
   | 'integrity.env_factor'
   | 'mining.attempts_per_stop'
+  | 'mining.contract_confidence'
+  | 'mining.contract_max_ticks'
+  | 'mining.contract_quantity_max'
+  | 'mining.contract_quantity_min'
+  | 'mining.contract_rarity_weights'
+  | 'mining.contract_unit_pay'
   | 'mining.job_duration_seconds'
   | 'mining.job_fuel_per_tick'
   | 'mining.job_max_ticks'
+  | 'mining.mix_weights'
   | 'mining.rarity'
   | 'mining.richness'
+  | 'mining.space_factor'
+  | 'mining.tier_bias'
+  | 'mining.yield_k'
   | 'missions.board_max_same_type'
   | 'missions.board_min_per_location'
   | 'missions.board_min_by_detail'
@@ -487,8 +497,31 @@ export type GameRules = Readonly<{
   }>;
   mining: Readonly<{
     richness: Readonly<Record<string, number>>;
+    /** LEGACY (before v0.1.3): the per-try rarity penalty and the number of tries. Mining no longer
+        reads them (rarity lives in `mix_weights`); kept because the approved Appendix E tables and old
+        stored rule sets carry them. */
     rarity: Readonly<Record<string, number>>;
     attempts_per_stop: number;
+    /** Finds per 5 minutes = mining x performance x richness x this. */
+    yield_k: number;
+    /** How likely each ore is to be the one a find turns out to be, by material rarity (relative weights). */
+    mix_weights: Readonly<Record<string, number>>;
+    /** A drill's rarity (COMMON..LEGENDARY) shifts the mix towards rarer ores: weight x (1 + bias x rank),
+        rank common 0, uncommon 1, rare 2. */
+    tier_bias: Readonly<Record<string, number>>;
+    /** Ore space of a trip = the ship's cargo x this, for the whole job whatever its length. */
+    space_factor: number;
+    /** A mining contract's time is capped at this many ticks (the card shows the odds inside the cap). */
+    contract_max_ticks: number;
+    /** A contract's time is the fewest ticks whose chance of reaching the amount is at least this. */
+    contract_confidence: number;
+    /** How often a board contract asks for each ore rarity (relative weights). */
+    contract_rarity_weights: Readonly<Record<string, number>>;
+    /** Units a contract asks for, by ore rarity (inclusive range). */
+    contract_quantity_min: Readonly<Record<string, number>>;
+    contract_quantity_max: Readonly<Record<string, number>>;
+    /** Credits paid per unit delivered, by ore rarity. */
+    contract_unit_pay: Readonly<Record<string, number>>;
     /** An independent mining job at a minable location: it runs in ticks of this length (mission
         time, scaled by `missions.time_scale`), same place in and out. Each tick digs
         `attempts_per_stop` times. */
