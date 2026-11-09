@@ -103,8 +103,11 @@ describe('S5.6 — integrity payout (GDD §12)', () => {
   });
 
   it('mining is exempt: contracted pays the fixed base only when settled', () => {
-    expect(contractedMiningPayout(500, true)).toBe(500);
-    expect(contractedMiningPayout(500, false)).toBe(0);
+    expect(contractedMiningPayout(500, 10, 10)).toBe(500);
+    expect(contractedMiningPayout(500, 12, 10)).toBe(500);
+    expect(contractedMiningPayout(500, 4, 10)).toBe(200);
+    expect(contractedMiningPayout(500, 0, 10)).toBe(0);
+    expect(contractedMiningPayout(500, 3, 0)).toBe(0);
   });
 });
 

@@ -768,7 +768,7 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
     readonly crg?: number;
     readonly fuelUse?: number;
     readonly ores?: typeof ORES;
-    readonly contract?: { materialId: string; required: number };
+    readonly contract?: { materialId: string; required: number; pay?: number };
     readonly rarity?: string;
     readonly min?: number;
     readonly seed?: string;
@@ -807,6 +807,7 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
             contractedMining: {
               materialId: contract.materialId,
               requiredQuantity: contract.required,
+              ...(contract.pay === undefined ? {} : { pay: contract.pay }),
             },
           }),
     });
@@ -916,7 +917,8 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
       contract: { materialId: 'iron', required: 8 },
     });
     expect(run.legs[0]?.miningTicksRun).toBeLessThan(8);
-    expect(oreOf(run, 'iron')).toBeGreaterThanOrEqual(8);
+    // the amount was reached (and handed over): the contract is paid in full
+    expect(eventsOf(run, 'mining_paid')).toHaveLength(1);
   });
 
   it('a contract the drill cannot reach digs the whole time allowed and brings what it found', () => {
@@ -939,11 +941,86 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
       contract: { materialId: 'iron', required: 6 },
     });
     // ore space 8: six iron are reserved even though the rare ore is dearer
-    expect(oreOf(run, 'iron')).toBeGreaterThanOrEqual(6);
+    expect(eventsOf(run, 'mining_paid')).toHaveLength(1);
   });
 
   it('is deterministic: the dry run at dispatch and the real run agree', () => {
     expect(dig({ miningTicks: 4 })).toEqual(dig({ miningTicks: 4 }));
+  });
+
+  describe('contract settlement: delivered ore, proportional pay', () => {
+    const foundOf = (out: ReturnType<typeof dig>, id: string) =>
+      eventsOf(out, 'mining')
+        .filter((event) => event.effects.loot[0]?.materialId === id)
+        .reduce((sum, event) => sum + event.magnitude, 0);
+    const iron = [ORES[0]!];
+
+    it('the full amount pays the whole contract and hands the contracted ore over (surplus stays)', () => {
+      const out = dig({
+        digTicks: 8,
+        crg: 100,
+        ores: iron,
+        contract: { materialId: 'iron', required: 8, pay: 1000 },
+      });
+      expect(out.creditsDelta).toBe(1000);
+      expect(eventsOf(out, 'mining_paid')).toHaveLength(1);
+      expect(oreOf(out, 'iron')).toBe(foundOf(out, 'iron') - 8);
+    });
+
+    it('less than the amount pays a share, delivers all of it and is a partial failure', () => {
+      const out = dig({
+        digTicks: 1,
+        crg: 100,
+        ores: iron,
+        contract: { materialId: 'iron', required: 500, pay: 1000 },
+      });
+      const found = foundOf(out, 'iron');
+      expect(found).toBeGreaterThan(0);
+      expect(out.creditsDelta).toBe(Math.round((1000 * found) / 500));
+      expect(out.status).toBe('partial_failure');
+      expect(eventsOf(out, 'mining_partial_failure')).toHaveLength(1);
+      expect(oreOf(out, 'iron')).toBe(0);
+    });
+
+    it('nothing delivered pays nothing', () => {
+      const dry: GameRules = {
+        ...richRules,
+        mining: { ...richRules.mining, richness: { open: 0 } },
+      };
+      const out = resolveMission({
+        seed: 'dig',
+        snapshot: snapshot(),
+        mission: mission({
+          type: 'MINING',
+          legs: [
+            {
+              distance: 100,
+              danger: 0,
+              zone: 1,
+              env: { id: 'open', level: 1, fuelMult: 0 },
+              digTicks: 2,
+            },
+          ],
+          mining: {
+            stop: { env: 'open', materialId: 'iron', materialRarity: 'common', ores: iron },
+            miner: { min: 5, condition: 100 },
+          },
+          contractedMining: { materialId: 'iron', requiredQuantity: 5, pay: 1000 },
+        }),
+        rules: dry,
+      });
+      expect(out.creditsDelta).toBe(0);
+      expect(out.status).toBe('partial_failure');
+    });
+
+    it('other ores found during the contract stay with the pilot', () => {
+      const out = dig({
+        digTicks: 8,
+        crg: 100,
+        contract: { materialId: 'iron', required: 5, pay: 1000 },
+      });
+      expect(oreOf(out, 'gems')).toBe(foundOf(out, 'gems'));
+    });
   });
 
   it('a board mining mission with no ticks digs its one stop', () => {

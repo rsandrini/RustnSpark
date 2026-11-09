@@ -8,7 +8,6 @@ import {
   rewardBase,
   shortTripFactor,
 } from '../../economy/reward.calculator.js';
-import { settleContractedMining } from '../mining/mining.resolver.js';
 import { missionEvent } from '../events/mission-event.js';
 import type { MissionEvent, MissionLoot } from '../events/mission-event.js';
 import {
@@ -83,6 +82,8 @@ export interface MissionInput {
   readonly contractedMining?: {
     readonly materialId: string;
     readonly requiredQuantity: number;
+    /** What the whole contract pays (its stored reward); absent in older logs: the distance formula. */
+    readonly pay?: number;
   };
   /** SCAVENGE jobs: what the place can give (frozen with the run, D19). */
   readonly scavenge?: ScavengeContext;
@@ -336,26 +337,30 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       (input.mission.cargoExtra ?? 0) * shortTripFactor(totalDistance, input.rules);
 
     if (input.mission.contractedMining !== undefined) {
+      const contract = input.mission.contractedMining;
       const mined = loot
-        .filter((entry) => entry.materialId === input.mission.contractedMining?.materialId)
+        .filter((entry) => entry.materialId === contract.materialId)
         .reduce((sum, entry) => sum + entry.quantity, 0);
-      const { settled } = settleContractedMining(
-        mined,
-        input.mission.contractedMining.requiredQuantity,
+      // The contracted ore is handed over (it does not stay with the pilot); any surplus and every
+      // other ore stays.
+      const delivered = Math.min(mined, Math.max(0, contract.requiredQuantity));
+      takeUnits(loot, contract.materialId, delivered);
+      const full = contract.requiredQuantity > 0 && delivered >= contract.requiredQuantity;
+      const payout = Math.round(
+        contractedMiningPayout(contract.pay ?? base, delivered, contract.requiredQuantity),
       );
-      const payout = contractedMiningPayout(base, settled);
       creditsDelta += payout;
       events.push(
         missionEvent({
           leg: lastLeg,
           category: 'payment',
-          type: settled ? 'mining_paid' : 'mining_partial_failure',
+          type: full ? 'mining_paid' : 'mining_partial_failure',
           actors,
           magnitude: payout,
           credits: payout,
         }),
       );
-      if (!settled) {
+      if (!full) {
         status = 'partial_failure';
       }
     } else {
@@ -476,4 +481,19 @@ function buildLegContexts(mission: MissionInput): LegMissionContext[] {
     ...(mission.engine !== undefined ? { engine: mission.engine } : {}),
     ...(mission.scavenge?.onFoot === true ? { onFoot: true } : {}),
   }));
+}
+
+/** Takes `units` of `materialId` out of the loot (first entries first), dropping emptied entries. */
+function takeUnits(loot: MissionLoot[], materialId: string, units: number): void {
+  let left = units;
+  for (let index = 0; index < loot.length && left > 0; index += 1) {
+    const entry = loot[index]!;
+    if (entry.materialId !== materialId) continue;
+    const taken = Math.min(entry.quantity, left);
+    left -= taken;
+    loot[index] = { ...entry, quantity: entry.quantity - taken };
+  }
+  for (let index = loot.length - 1; index >= 0; index -= 1) {
+    if (loot[index]!.quantity <= 0) loot.splice(index, 1);
+  }
 }

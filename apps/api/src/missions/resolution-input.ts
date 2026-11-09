@@ -49,7 +49,12 @@ export interface ResolutionContext {
     /** The ores a dig here can find, frozen with the run (absent in logs from before v0.1.3). */
     readonly ores?: readonly MineableOre[];
   };
-  readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
+  /** A board mining contract: the ore asked, how much, and what the whole contract pays (its stored reward). */
+  readonly contractedMining?: {
+    readonly materialId: string;
+    readonly requiredQuantity: number;
+    readonly pay?: number;
+  };
   /** The pilot's own free mining job (no contract, no reward): it pays no credits, only the ore. */
   readonly unpaid?: boolean;
   /** SCAVENGE only: what the place can give, frozen with the run (D19). */
@@ -153,7 +158,13 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
     ...(cargo['contracted'] === true &&
     materialId !== undefined &&
     typeof cargo['quantity'] === 'number'
-      ? { contractedMining: { materialId, requiredQuantity: cargo['quantity'] } }
+      ? {
+          contractedMining: {
+            materialId,
+            requiredQuantity: cargo['quantity'],
+            ...((source.reward ?? 0) > 0 ? { pay: source.reward } : {}),
+          },
+        }
       : {}),
   };
 }

@@ -84,11 +84,11 @@ export function integrityPayout(base: number, integrity: number, rules: GameRule
 }
 
 /**
- * Contracted mining pays its fixed base only when the required quantity was
- * mined; otherwise the mission is a partial failure and pays nothing
- * (GDD §12 / design missoes §4). Free mining pays nothing here — the player
+ * Contracted mining pays the contract in proportion to what was delivered (v0.1.3): all of it for
+ * the full amount, a share for less, nothing for none. Free mining pays nothing here — the pilot
  * sells the ore.
  */
-export function contractedMiningPayout(base: number, settled: boolean): number {
-  return settled ? base : 0;
+export function contractedMiningPayout(base: number, delivered: number, required: number): number {
+  if (required <= 0 || delivered <= 0) return 0;
+  return base * Math.min(1, delivered / required);
 }

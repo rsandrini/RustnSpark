@@ -10,11 +10,16 @@ interface RewardLeg {
 // The board's estimate (viewer's tier, D29 preview) and accept-time finalization
 // (the accepting ship's tier, D29) are the same formula over the stored legs.
 export function missionReward(
-  row: Pick<MissionInstance, 'legs' | 'type'>,
+  row: Pick<MissionInstance, 'legs' | 'type'> & Partial<Pick<MissionInstance, 'cargo' | 'reward'>>,
   tier: number,
   rules: GameRules,
   bridgeRarity?: string,
 ): number {
+  // A mining contract pays what it was posted at (ore value x amount), not by distance and tier.
+  const cargo = (row.cargo ?? {}) as { contracted?: unknown };
+  if (row.type === 'MINING' && cargo.contracted === true && typeof row.reward === 'number') {
+    return row.reward;
+  }
   const legs = (Array.isArray(row.legs) ? row.legs : []) as unknown as RewardLeg[];
   const totalDistance = legs.reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
   const maxDanger = legs.reduce(
