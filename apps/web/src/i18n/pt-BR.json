@@ -329,7 +329,7 @@
           },
           "mining": {
             "title": "Mineração",
-            "text": "Minerar exige uma broca de mineração instalada. Uma extração livre leva {{miningJob}} e traz uma mistura dos minérios do lugar, mais dos comuns; uma broca melhor acha mais e puxa para os minérios mais raros. O espaço de minério de uma viagem é o dobro da sua carga, qualquer que seja o tempo: acima dele, o minério mais barato é descartado primeiro; uma missão de mineração pede um minério específico e paga por inteiro se você entregar 100%, e proporcionalmente se entregar menos; as chances e o tempo no cartão são para a sua própria broca. A riqueza depende do lugar."
+            "text": "Minerar exige uma broca de mineração instalada. Uma extração livre leva {{miningJob}} e traz uma mistura de minérios que depende do lugar: lugares iniciais dão só minério comum, e os minérios mais raros vêm das zonas mais fundas e perigosas e dos campos distantes; uma broca melhor acha mais e puxa para os minérios mais raros. O espaço de minério de uma viagem é o dobro da sua carga, qualquer que seja o tempo: acima dele, o minério mais barato é descartado primeiro; uma missão de mineração pede um minério específico e paga por inteiro se você entregar 100%, e proporcionalmente se entregar menos; as chances e o tempo no cartão são para a sua própria broca. A riqueza depende do lugar."
           }
         }
       },

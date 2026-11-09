@@ -752,7 +752,7 @@ export class DispatchService {
           destinationIsolation: destination.isolation,
           materialRarity: material?.rarity.toLowerCase(),
           ...(mission.type === 'MINING'
-            ? { ores: await loadMiningOres(tx, mission.destinationId) }
+            ? await loadMiningOres(tx, mission.destinationId, rules)
             : {}),
           reward: mission.reward,
         }),

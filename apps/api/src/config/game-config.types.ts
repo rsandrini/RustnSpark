@@ -138,6 +138,7 @@ export type ConfigKey =
   | 'mining.job_fuel_per_tick'
   | 'mining.job_max_ticks'
   | 'mining.mix_weights'
+  | 'mining.place_mix'
   | 'mining.rarity'
   | 'mining.richness'
   | 'mining.space_factor'
@@ -506,6 +507,10 @@ export type GameRules = Readonly<{
     yield_k: number;
     /** How likely each ore is to be the one a find turns out to be, by material rarity (relative weights). */
     mix_weights: Readonly<Record<string, number>>;
+    /** The mix of a dig by PLACE, as '<place>.<rarity>' -> weight, where <place> is the place type (deep_field)
+        or its zone (0..3). A place with no entry of its own falls back to `mix_weights`. A weight of 0 means
+        that rarity never drops there (a drill's bias cannot create it). */
+    place_mix: Readonly<Record<string, number>>;
     /** A drill's rarity (COMMON..LEGENDARY) shifts the mix towards rarer ores: weight x (1 + bias x rank),
         rank common 0, uncommon 1, rare 2. */
     tier_bias: Readonly<Record<string, number>>;

@@ -1727,6 +1727,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'mining.place_mix',
+    group: 'mining',
+    type: 'json',
+    min: 0,
+    max: 1000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.mining.place_mix),
+    description: {
+      en: 'The ore mix of a dig by place, as <place>.<rarity>: weight. The place is its type (deep_field) or its zone (0 to 3). A weight of 0 means the rarity never drops there; a place with no entry uses mining.mix_weights.',
+      'pt-BR':
+        'A mistura de minérios de uma mineração por lugar, como <lugar>.<raridade>: peso. O lugar é o seu tipo (deep_field) ou a sua zona (0 a 3). Peso 0 significa que a raridade nunca cai ali; um lugar sem entrada usa mining.mix_weights.',
+    },
+  },
+  {
     key: 'mining.tier_bias',
     group: 'mining',
     type: 'json',

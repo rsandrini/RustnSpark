@@ -4,6 +4,7 @@ import { GAME_CONFIG_DEFAULTS } from '../../../src/config/game-config.defaults.j
 import {
   chanceToReach,
   findsPerTick,
+  placeKeyOf,
   keepBest,
   oreMix,
   oreSpace,
@@ -104,6 +105,45 @@ describe('mining yield rules (v0.1.3)', () => {
       expect(rare.get('rare_crystals')!).toBeGreaterThan(common.get('rare_crystals')!);
       expect(legendary.get('rare_crystals')!).toBeGreaterThan(rare.get('rare_crystals')!);
       expect([...legendary.values()].reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 9);
+    });
+
+    describe('by place (v0.1.3 place_mix)', () => {
+      it('the key is the place type when the config has a mix for it, else its zone', () => {
+        expect(placeKeyOf({ type: 'deep_field', zone: 3 }, rules)).toBe('deep_field');
+        expect(placeKeyOf({ type: 'port', zone: 2 }, rules)).toBe('2');
+        expect(placeKeyOf({ type: 'scrap_field', zone: 0 }, rules)).toBe('0');
+      });
+
+      it('starter places drop only common ore, even for a legendary drill', () => {
+        const mix = oreMix(ores, 'LEGENDARY', rules, '0');
+        expect(mix.get('common_ore')).toBe(1);
+        expect(mix.get('uncommon_minerals')).toBe(0);
+        expect(mix.get('rare_crystals')).toBe(0);
+        expect(oreMix(ores, 'COMMON', rules, '1').get('rare_crystals')).toBe(0);
+      });
+
+      it('zone 3 and the far deep fields follow the agreed table (common drill)', () => {
+        const zone3 = oreMix(ores, 'COMMON', rules, '3');
+        expect(zone3.get('common_ore')).toBeCloseTo(0.35, 5);
+        expect(zone3.get('uncommon_minerals')).toBeCloseTo(0.4, 5);
+        expect(zone3.get('rare_crystals')).toBeCloseTo(0.25, 5);
+        const far = oreMix(ores, 'COMMON', rules, 'deep_field');
+        expect(far.get('common_ore')).toBeCloseTo(0.3, 5);
+        expect(far.get('uncommon_minerals')).toBeCloseTo(0.35, 5);
+        expect(far.get('rare_crystals')).toBeCloseTo(0.35, 5);
+      });
+
+      it('a better drill leans the zone mix to the rarer ores; a place with no entry uses the global weights', () => {
+        const common = oreMix(ores, 'COMMON', rules, '2');
+        const legendary = oreMix(ores, 'LEGENDARY', rules, '2');
+        expect(legendary.get('rare_crystals')!).toBeGreaterThan(common.get('rare_crystals')!);
+        expect(oreMix(ores, 'COMMON', rules, '9').get('common_ore')).toBeCloseTo(0.6, 5);
+      });
+
+      it('a place whose ores all weigh nothing splits evenly instead of dividing by zero', () => {
+        const mix = oreMix([{ id: 'rare_crystals', rarity: 'rare' }], 'COMMON', rules, '0');
+        expect(mix.get('rare_crystals')).toBe(1);
+      });
     });
 
     it('a place with one ore is that ore at 100%', () => {

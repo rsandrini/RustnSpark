@@ -99,6 +99,21 @@ def jobs_table():
             print(f'  {drill:16s} ' + ' | '.join(cells))
 
 
+PLACE_MIX = {  # mining.place_mix (v0.1.3): common / uncommon / rare weights by zone and for the far deep fields
+    'zone 0': (100, 0, 0), 'zone 1': (80, 20, 0), 'zone 2': (55, 35, 10), 'zone 3': (35, 40, 25),
+    'far deep field': (30, 35, 35),
+}
+
+
+def place_table():
+    print('\nOre mix by place (common drill) and the market value of one find')
+    for place, weights in PLACE_MIX.items():
+        total = sum(weights)
+        shares = [w / total for w in weights]
+        value = sum(s * PRICE[o] for s, o in zip(shares, ('common', 'uncommon', 'rare')))
+        print(f'  {place:15s} {shares[0]:4.0%} / {shares[1]:4.0%} / {shares[2]:4.0%}   {value:6.0f} per find')
+
+
 def main():
     print(f'ore space = {SPACE_FACTOR} x cargo (cargo 16 -> {16 * SPACE_FACTOR}); K={YIELD_K}; cap {MAX_TICKS * 5} min; confidence {CONFIDENCE}')
     print('\nUnits found per 5 min (all ores) and the mix, by drill and place')
@@ -130,6 +145,7 @@ def main():
         shares = mix(tier)
         e = YIELD_K * RICHNESS['debris'] * m
         print(f'  {name:16s} {e:5.1f} units -> {sum(e * shares[o] * PRICE[o] for o in MIX):7,.0f} cr  ({sum(e * shares[o] * PRICE[o] for o in MIX) * 12:9,.0f}/h)')
+    place_table()
     jobs_table()
     print('\nProd reference (backups/prod-2026-11-09): pay per hour 13-43k on Nov 5, 100-210k on Nov 6, 180-400k for zone 3 trips')
 

@@ -38,6 +38,8 @@ export function contractOdds(
     readonly materialId: string;
     readonly required: number;
     readonly ores: readonly MineableOre[];
+    /** The place's row of `mining.place_mix` (see `placeKeyOf`). */
+    readonly placeKey?: string;
     readonly richness: number;
     readonly drill: { readonly min: number; readonly condition: number; readonly crg: number };
     readonly drillRarity: string;
@@ -47,7 +49,7 @@ export function contractOdds(
   const { materialId, required, ores, richness, drill } = args;
   const miner = { min: drill.min, condition: drill.condition, rigPower: 1 };
   const totalExpected = findsPerTick(miner, richness, rules);
-  const shareOfTarget = oreMix(ores, args.drillRarity, rules).get(materialId) ?? 0;
+  const shareOfTarget = oreMix(ores, args.drillRarity, rules, args.placeKey).get(materialId) ?? 0;
   const targetExpected = totalExpected * shareOfTarget;
   const tick = rules.mining.job_duration_seconds;
   const capSeconds = rules.mining.contract_max_ticks * tick;

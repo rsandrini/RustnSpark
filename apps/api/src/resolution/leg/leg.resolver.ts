@@ -1009,6 +1009,7 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
     const digged = dig(
       {
         ores,
+        ...(stop.placeKey === undefined ? {} : { placeKey: stop.placeKey }),
         miner,
         richness: rules.mining.richness[stop.env] ?? 0,
         maxTicks,

@@ -48,6 +48,8 @@ export interface ResolutionContext {
     readonly minimumYield?: number;
     /** The ores a dig here can find, frozen with the run (absent in logs from before v0.1.3). */
     readonly ores?: readonly MineableOre[];
+    /** Which row of `mining.place_mix` the place uses, frozen with the run. */
+    readonly placeKey?: string;
   };
   /** A board mining contract: the ore asked, how much, and what the whole contract pays (its stored reward). */
   readonly contractedMining?: {
@@ -117,8 +119,9 @@ export interface LiveContextSource {
   readonly destinationIsolation: number;
   /** Rarity of the mined material (lower-case), when the mission mines one. */
   readonly materialRarity?: string | null;
-  /** MINING: the ores a dig here can find (see `loadMiningOres`). */
+  /** MINING: the ores a dig here can find, and the place's row of `mining.place_mix` (see `loadMiningOres`). */
   readonly ores?: readonly MineableOre[];
+  readonly placeKey?: string;
   /** What the mission pays: a paid mining quest is guaranteed at least one unit of ore. */
   readonly reward?: number;
   /** SCAVENGE jobs: the place's scavenging context. */
@@ -145,6 +148,7 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
             materialRarity: source.materialRarity ?? 'common',
             ...((source.reward ?? 0) > 0 ? { minimumYield: 1 } : {}),
             ...(source.ores !== undefined && source.ores.length > 0 ? { ores: source.ores } : {}),
+            ...(source.placeKey === undefined ? {} : { placeKey: source.placeKey }),
           },
         }
       : {}),
@@ -356,6 +360,9 @@ export function buildResolveInput(args: {
                 ? { minimumYield: context.mining.minimumYield }
                 : {}),
               ...(context.mining.ores !== undefined ? { ores: context.mining.ores } : {}),
+              ...(context.mining.placeKey === undefined
+                ? {}
+                : { placeKey: context.mining.placeKey }),
             },
             miner: { min: sheet.min, condition: sheet.condition, rarity: drillRarityOf(snapshot) },
           },

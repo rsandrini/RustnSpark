@@ -198,6 +198,9 @@ const miningSchema = z.object({
   mix_weights: z
     .record(z.string(), z.number().min(0).max(1000))
     .default({ ...GAME_CONFIG_DEFAULTS.mining.mix_weights }),
+  place_mix: z
+    .record(z.string(), z.number().min(0).max(1000))
+    .default({ ...GAME_CONFIG_DEFAULTS.mining.place_mix }),
   tier_bias: z
     .record(z.string(), z.number().min(0).max(10))
     .default({ ...GAME_CONFIG_DEFAULTS.mining.tier_bias }),

@@ -109,14 +109,14 @@ const MINING_TEMPLATE = {
   factionId: FAR_FACTION,
   displayName: { en: 'Deep crystal dig', 'pt-BR': 'Escavação de cristais profundos' },
   description: {
-    en: 'Dig rare crystals out of a far, hostile field. The trip is long and the vein is stingy.',
+    en: 'Dig ore out of a far, hostile field. The trip is long, and the field gives the best share of rare crystals anywhere.',
     'pt-BR':
-      'Escave cristais raros em um campo distante e hostil. A viagem é longa e a veia é avarenta.',
+      'Escave minério em um campo distante e hostil. A viagem é longa, e o campo dá a maior parte de cristais raros de todos.',
   },
+  // No pinned ore: a dig here follows the far field's own mix (mining.place_mix, deep_field).
   requirements: {
     originFactions: [FAR_FACTION],
     originTypes: [FAR_PLACE_TYPE],
-    materialIds: ['rare_crystals'],
     cargo: 4,
   },
 };

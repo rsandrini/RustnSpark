@@ -3,6 +3,7 @@ import type { Rng } from '../../common/rng/rng.js';
 import { createRng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { rewardBase } from '../../economy/reward.calculator.js';
+import { droppableOres, placeKeyOf } from '../../resolution/mining/mining-yield.js';
 import type { LegRoute } from '../../resolution/leg/leg.resolver.js';
 import { generateCompetitors } from '../../resolution/race/race.resolver.js';
 import { type GiverShape, typeWeight, weightedPick } from './giver.picker.js';
@@ -415,14 +416,20 @@ function pinnedMaterials(
 
 function miningCargo(
   rng: Rng,
-  materials: readonly FillerMaterial[],
+  allMaterials: readonly FillerMaterial[],
   rules: GameRules,
+  place: { readonly type: string; readonly zone: number },
 ): Record<string, unknown> {
-  if (materials.length === 0) {
+  if (allMaterials.length === 0) {
     throw new MissionGenerationError('No minable material available for mining offer');
   }
-
-  const rarities = Object.keys(rules.mining.contract_rarity_weights);
+  // only an ore that can drop at the place (a starter place never offers a rare contract)
+  const materials = droppableOres(allMaterials, rules, placeKeyOf(place, rules));
+  const present = new Set(materials.map((material) => material.rarity.toLowerCase()));
+  const drawable = Object.keys(rules.mining.contract_rarity_weights).filter((name) =>
+    present.has(name.toLowerCase()),
+  );
+  const rarities = drawable.length > 0 ? drawable : [...present];
   const rarity = weightedPick(
     rarities,
     (r) => rules.mining.contract_rarity_weights[r] ?? 0,
@@ -433,10 +440,15 @@ function miningCargo(
   );
   const pool = byRarity.length > 0 ? byRarity : materials;
   const material = rng.child('mining').pick(pool);
+  // the amount and the pay follow the ore the contract really asks for
+  const contractRarity = material.rarity.toLowerCase();
   const contracted = rng.child('contracted').float() < CONTRACTED_CHANCE;
   if (contracted) {
-    const minQuantity = rules.mining.contract_quantity_min[rarity] ?? 1;
-    const maxQuantity = Math.max(minQuantity, rules.mining.contract_quantity_max[rarity] ?? minQuantity);
+    const minQuantity = rules.mining.contract_quantity_min[contractRarity] ?? 1;
+    const maxQuantity = Math.max(
+      minQuantity,
+      rules.mining.contract_quantity_max[contractRarity] ?? minQuantity,
+    );
     return {
       materialId: material.id,
       rarity: material.rarity,
@@ -578,7 +590,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   // race, and the resolution plays against exactly those ships.
   const cargo =
     template.type === 'MINING'
-      ? miningCargo(rng, pinnedMaterials(template, world.materials), rules)
+      ? miningCargo(rng, pinnedMaterials(template, world.materials), rules, destination)
       : template.type === 'RACE'
         ? { race: { competitors: generateCompetitors(rng.child('race'), rules) } }
         : {};
@@ -615,7 +627,8 @@ export function fillMission(input: FillMissionInput): MissionDraft {
   // Mining contracts pay by ore value × amount, not by distance/danger.
   if (template.type === 'MINING' && cargo.contracted === true) {
     const miningCargo = cargo as { rarity?: string; quantity?: number };
-    const rarity = miningCargo.rarity ?? 'common';
+    // the material's rarity comes from the database in upper case (COMMON), the config keys are lower case
+    const rarity = (miningCargo.rarity ?? 'common').toLowerCase();
     const quantity = miningCargo.quantity ?? 0;
     reward = Math.round(quantity * (rules.mining.contract_unit_pay[rarity] ?? 0));
   }

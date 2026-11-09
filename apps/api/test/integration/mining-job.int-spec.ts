@@ -345,25 +345,37 @@ describe('independent mining job (round 10)', () => {
     expect(problems?.map((problem) => problem.code)).toContain('NO_CARGO_HOLD');
   });
 
-  it('a far deep field holds only rare crystals: every job there digs them', async () => {
+  it('ores by place: a starter place lists only common ore, a far deep field all three', async () => {
     await freshSeededApp();
     const player = await onboardPlayer();
     await installMiningRig(player.token, player.seeded.player.id, player.shipId);
+    const oresAt = async (locationId: string) => {
+      const info = await request(httpServer(testApp.app))
+        .get(`/v1/locations/${locationId}/mine/info`)
+        .set(auth(player.token));
+      expect(info.body).toMatchObject({ minable: true });
+      return (info.body as { ores: { id: string; rarity: string }[] }).ores;
+    };
+
+    // the far field's mining template pins nothing any more: it follows its own mix
+    expect((await oresAt('halcyon')).map((ore) => ore.rarity).sort()).toEqual([
+      'common',
+      'rare',
+      'uncommon',
+    ]);
+    // a zone 0 place weighs uncommon and rare at 0: they are not listed there
+    const starters = await prisma.location.findMany({ where: { zone: 0 }, take: 1 });
+    expect(starters.length).toBe(1);
+    const starter = await oresAt(starters[0]!.id);
+    expect(starter.map((ore) => ore.rarity)).toEqual(['common']);
+
+    // and a dig at the far field starts (the ore of the job is drawn among what can drop)
     await prisma.ship.update({
       where: { id: player.shipId },
       data: { currentLocationId: 'halcyon' },
     });
-    const info = await request(httpServer(testApp.app))
-      .get('/v1/locations/halcyon/mine/info')
-      .set(auth(player.token));
-    expect(info.body).toMatchObject({ minable: true });
-
     const response = await start(player.token, 'halcyon');
     expect(response.status).toBe(200);
-    const job = await prisma.missionInstance.findUniqueOrThrow({
-      where: { id: (response.body as { missionId: string }).missionId },
-    });
-    expect((job.cargo as { materialId: string }).materialId).toBe('rare_crystals');
   });
 
   // Part direction rules: mining flies the ship out, so an engine with a part behind its exhaust

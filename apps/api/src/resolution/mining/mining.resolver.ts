@@ -17,6 +17,8 @@ export interface MiningStop {
   readonly minimumYield?: number;
   /** The ores a dig here can find (v0.1.3); absent in older contexts: the one `materialId`. */
   readonly ores?: readonly MineableOre[];
+  /** The place's row of `mining.place_mix` (absent in older runs: the global weights). */
+  readonly placeKey?: string;
 }
 
 export interface MinerRig {

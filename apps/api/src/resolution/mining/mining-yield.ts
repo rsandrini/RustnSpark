@@ -80,6 +80,20 @@ export function rollFinds(expected: number, rng: Rng): number {
 }
 
 /**
+ * Which row of `mining.place_mix` a place uses: its type when the config has a mix for that type
+ * (the far deep fields), else its zone.
+ */
+export function placeKeyOf(
+  place: { readonly type: string; readonly zone: number },
+  rules: GameRules,
+): string {
+  const byType = Object.keys(rules.mining.place_mix).some((key) =>
+    key.startsWith(`${place.type}.`),
+  );
+  return byType ? place.type : String(place.zone);
+}
+
+/**
  * The share each minable ore has of the finds: the weight of its rarity, lifted by the drill's own
  * rarity bias (`weight x (1 + bias x rank)`). Ores of one rarity each carry the rarity's weight.
  * One ore -> 100%; weights that add up to nothing -> an even split.
@@ -88,11 +102,18 @@ export function oreMix(
   ores: readonly { readonly id: string; readonly rarity: string }[],
   drillRarity: string,
   rules: GameRules,
+  placeKey?: string,
 ): ReadonlyMap<string, number> {
   const bias = rules.mining.tier_bias[drillRarity.toUpperCase()] ?? 0;
+  const hasPlaceMix =
+    placeKey !== undefined &&
+    Object.keys(rules.mining.place_mix).some((key) => key.startsWith(`${placeKey}.`));
   const weights = ores.map((ore) => {
     const rarity = ore.rarity.toLowerCase();
-    const base = rules.mining.mix_weights[rarity] ?? 0;
+    // a place with a mix of its own: a rarity it lists at 0 (or leaves out) never drops there
+    const base = hasPlaceMix
+      ? (rules.mining.place_mix[`${placeKey}.${rarity}`] ?? 0)
+      : (rules.mining.mix_weights[rarity] ?? 0);
     return { id: ore.id, weight: Math.max(0, base * (1 + bias * (RARITY_RANK[rarity] ?? 0))) };
   });
   const total = weights.reduce((sum, entry) => sum + entry.weight, 0);
@@ -101,6 +122,17 @@ export function oreMix(
     mix.set(entry.id, total > 0 ? entry.weight / total : 1 / weights.length);
   }
   return mix;
+}
+
+/** The ores that can drop at a place at all (a rarity the place weighs at 0 never does, whatever the drill). */
+export function droppableOres<T extends { readonly id: string; readonly rarity: string }>(
+  ores: readonly T[],
+  rules: GameRules,
+  placeKey?: string,
+): T[] {
+  const mix = oreMix(ores, 'COMMON', rules, placeKey);
+  const droppable = ores.filter((ore) => (mix.get(ore.id) ?? 0) > 0);
+  return droppable.length > 0 ? droppable : [...ores];
 }
 
 /** One find's ore, by the mix (a single float). */
@@ -195,6 +227,8 @@ export function ticksFor(
 
 export interface DigArgs {
   readonly ores: readonly MineableOre[];
+  /** The place's row of `place_mix` (see `placeKeyOf`); absent in older runs: the global weights. */
+  readonly placeKey?: string;
   readonly miner: DrillRig & { readonly rarity?: string };
   readonly richness: number;
   readonly maxTicks: number;
@@ -213,7 +247,7 @@ export interface DigResult {
  * ore roll per find. A contract stops at the first tick that holds the contracted amount.
  */
 export function dig(args: DigArgs, rules: GameRules, rng: Rng): DigResult {
-  const mix = oreMix(args.ores, args.miner.rarity ?? 'COMMON', rules);
+  const mix = oreMix(args.ores, args.miner.rarity ?? 'COMMON', rules, args.placeKey);
   const expected = findsPerTick(args.miner, args.richness, rules);
   const found = new Map<string, number>();
   let ticksRun = 0;

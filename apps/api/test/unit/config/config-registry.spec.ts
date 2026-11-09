@@ -122,6 +122,7 @@ const EXPECTED_KEYS: readonly string[] = [
   'mining.job_fuel_per_tick',
   'mining.job_max_ticks',
   'mining.mix_weights',
+  'mining.place_mix',
   'mining.rarity',
   'mining.richness',
   'mining.space_factor',
@@ -311,6 +312,7 @@ describe('config registry', () => {
       for (const key of [
         'yield_k',
         'mix_weights',
+        'place_mix',
         'tier_bias',
         'space_factor',
         'contract_max_ticks',

@@ -329,7 +329,7 @@
           },
           "mining": {
             "title": "Mining",
-            "text": "Mining needs a mining rig installed. A free dig takes {{miningJob}} and brings back a mix of the place's ores, more of the common ones; a better drill finds more and leans to the rarer ores. The ore space of a trip is twice your cargo, whatever the time: over it, the cheapest ore is dropped first. A mining mission asks for a named ore and pays in full for 100% delivered, in part for less; the odds and time on its card are for your own drill. Richness depends on the place."
+            "text": "Mining needs a mining rig installed. A free dig takes {{miningJob}} and brings back a mix of ores that depends on the place: starter places give only common ore, and the rarer ores come from the deeper, more dangerous zones and the far fields; a better drill finds more and leans to the rarer ores. The ore space of a trip is twice your cargo, whatever the time: over it, the cheapest ore is dropped first. A mining mission asks for a named ore and pays in full for 100% delivered, in part for less; the odds and time on its card are for your own drill. Richness depends on the place."
           }
         }
       },

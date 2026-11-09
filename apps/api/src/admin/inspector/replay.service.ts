@@ -112,7 +112,7 @@ export class ReplayService {
       destinationIsolation: destination.isolation,
       materialRarity,
       ...(mission.type === 'MINING'
-        ? { ores: await loadMiningOres(this.prisma, mission.destinationId) }
+        ? await loadMiningOres(this.prisma, mission.destinationId, this.config.snapshot().rules)
         : {}),
       scavenge:
         mission.type === 'SCAVENGE'

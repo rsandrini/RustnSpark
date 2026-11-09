@@ -170,11 +170,13 @@ export class EnginePreviewService {
         typeof cargo.materialId === 'string' &&
         typeof cargo.quantity === 'number'
       ) {
+        const place = await loadMiningOres(this.prisma, mission.destinationId, rules);
         contractSeconds = contractOdds(
           {
             materialId: cargo.materialId,
             required: cargo.quantity,
-            ores: await loadMiningOres(this.prisma, mission.destinationId),
+            ores: place.ores,
+            placeKey: place.placeKey,
             richness: rules.mining.richness[legs[legs.length - 1]?.env.id ?? 'open'] ?? 0,
             drill: { min: tunedSheet.min, condition: tunedSheet.condition, crg: tunedSheet.crg },
             drillRarity: drillRarityOf(tunedParts),

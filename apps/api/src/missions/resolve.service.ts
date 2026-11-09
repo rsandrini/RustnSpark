@@ -153,7 +153,7 @@ export class MissionResolveService {
       destinationIsolation: destination.isolation,
       materialRarity,
       ...(mission.type === 'MINING'
-        ? { ores: await loadMiningOres(this.prisma, mission.destinationId) }
+        ? await loadMiningOres(this.prisma, mission.destinationId, rules)
         : {}),
       reward: mission.reward,
       scavenge:

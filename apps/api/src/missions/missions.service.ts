@@ -1,5 +1,5 @@
 import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
-import type { MineableOre } from '../resolution/mining/mining-yield.js';
+import { placeKeyOf, type MineableOre } from '../resolution/mining/mining-yield.js';
 import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
 import {
   BadRequestException,
@@ -771,6 +771,24 @@ export class MissionsService implements OnModuleInit {
         })
       : [];
 
+    // where each mining offer digs (its destination's zone and type pick the row of the ore mix)
+    const miningPlaces = hasMining
+      ? new Map(
+          (
+            await this.prisma.location.findMany({
+              where: {
+                id: {
+                  in: [
+                    ...new Set(rows.filter((r) => r.type === 'MINING').map((r) => r.destinationId)),
+                  ],
+                },
+              },
+              select: { id: true, type: true, zone: true },
+            })
+          ).map((entry) => [entry.id, entry]),
+        )
+      : new Map<string, { id: string; type: string; zone: number }>();
+
     const active = await this.prisma.missionInstance.count({
       where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
     });
@@ -825,6 +843,7 @@ export class MissionsService implements OnModuleInit {
         wordsById.get(row.templateId),
         materialsById,
         allMinable,
+        miningPlaces.get(row.destinationId),
         sheet,
         viewer.ship === undefined ? null : viewer.installed,
         requirementsById.get(row.templateId),
@@ -868,6 +887,7 @@ function offerInfo(
     readonly rarity: string;
     readonly basePrice: number;
   }[],
+  place: { readonly type: string; readonly zone: number } | undefined,
   sheet: ReturnType<typeof deriveSheet> | null,
   parts: readonly InstalledPart[] | null,
   requirementsJson: unknown,
@@ -942,6 +962,7 @@ function offerInfo(
               materialId,
               required: typeof cargo.quantity === 'number' ? cargo.quantity : 0,
               ores,
+              ...(place === undefined ? {} : { placeKey: placeKeyOf(place, rules) }),
               richness: rules.mining.richness[lastEnvId] ?? 0,
               drill: { min: sheet.min, condition: sheet.condition, crg: sheet.crg },
               drillRarity: drillRarityOf(parts),

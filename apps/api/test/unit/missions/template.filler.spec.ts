@@ -819,3 +819,83 @@ describe('quest givers in the template filler', () => {
     expect(fill('same', LOC_ALPHA)).toEqual(plain);
   });
 });
+
+describe('mining contracts by place (v0.1.3 place_mix)', () => {
+  // the database keeps rarity in upper case (COMMON): the generator must read it like the config does
+  const DB_MATERIALS: FillerMaterial[] = [
+    { id: 'common_ore', rarity: 'COMMON' },
+    { id: 'uncommon_minerals', rarity: 'UNCOMMON' },
+    { id: 'rare_crystals', rarity: 'RARE' },
+  ];
+  const draw = (destination: FillerLocation, epochs: number, destinationTypes?: string[]) => {
+    const route: FillerRoute = {
+      id: 'o-d',
+      nodeAId: 'origin',
+      nodeBId: destination.id,
+      distance: 500,
+      danger: 2,
+    };
+    const origin: FillerLocation = {
+      id: 'origin',
+      type: 'outpost',
+      zone: 0,
+      factionId: 'explorers',
+    };
+    const template: FillerTemplate = {
+      id: 'mining_any',
+      type: 'MINING',
+      factionId: 'explorers',
+      active: true,
+      requirements: {
+        originFactions: ['explorers'],
+        ...(destinationTypes === undefined ? {} : { destinationTypes }),
+      },
+    };
+    return Array.from({ length: epochs }, (_, epoch) =>
+      fillMission({
+        seed: `place|${destination.id}|${epoch}`,
+        origin,
+        world: {
+          locations: [origin, destination],
+          routes: [route],
+          routeEnvironments: [{ routeId: 'o-d', environmentId: 'open', order: 0 }],
+          environments: ENVELOPES,
+          templates: [template],
+          materials: DB_MATERIALS,
+        },
+        rules,
+        now: NOW,
+      }),
+    );
+  };
+
+  it('a starter place never offers an uncommon or rare contract', () => {
+    const starter: FillerLocation = { id: 'start', type: 'port', zone: 0, factionId: 'luna' };
+    for (const offer of draw(starter, 60)) {
+      expect((offer.cargo as { materialId: string }).materialId).toBe('common_ore');
+    }
+  });
+
+  it('a far deep field offers all three ores, and the contract pays ore value x amount (rarity read in upper case)', () => {
+    const far: FillerLocation = { id: 'far', type: 'deep_field', zone: 3, factionId: 'explorers' };
+    const offers = draw(far, 200, ['deep_field']);
+    const seen = new Set(offers.map((offer) => (offer.cargo as { materialId: string }).materialId));
+    expect(seen).toEqual(new Set(['common_ore', 'uncommon_minerals', 'rare_crystals']));
+    for (const offer of offers) {
+      const cargo = offer.cargo as {
+        materialId: string;
+        contracted?: boolean;
+        quantity?: number;
+        rarity: string;
+      };
+      if (cargo.contracted !== true) continue;
+      const rarity = cargo.rarity.toLowerCase();
+      expect(cargo.quantity!).toBeGreaterThanOrEqual(rules.mining.contract_quantity_min[rarity]!);
+      expect(cargo.quantity!).toBeLessThanOrEqual(rules.mining.contract_quantity_max[rarity]!);
+      expect(offer.reward).toBe(
+        Math.round(cargo.quantity! * rules.mining.contract_unit_pay[rarity]!),
+      );
+      expect(offer.reward).toBeGreaterThan(0);
+    }
+  });
+});

@@ -9,7 +9,12 @@ import { Clock } from '../common/clock/clock.js';
 import { createRng } from '../common/rng/rng.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
-import { findsPerTick, oreSpace } from '../resolution/mining/mining-yield.js';
+import {
+  droppableOres,
+  findsPerTick,
+  oreSpace,
+  placeKeyOf,
+} from '../resolution/mining/mining-yield.js';
 import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { PartsService, pickCatalogStats } from '../parts/parts.service.js';
@@ -189,11 +194,16 @@ export class MiningJobService {
     }
     return {
       richness: mining.richness[envId] ?? 0,
-      ores: minable.map((material) => ({
-        id: material.id,
-        displayName: material.displayName,
-        rarity: material.rarity.toLowerCase(),
-      })),
+      // only what can drop here: a place that weighs a rarity at 0 does not list it
+      ores: droppableOres(
+        minable.map((material) => ({
+          id: material.id,
+          displayName: material.displayName,
+          rarity: material.rarity.toLowerCase(),
+        })),
+        this.config.snapshot().rules,
+        placeKeyOf(location, this.config.snapshot().rules),
+      ),
     };
   }
 
@@ -347,7 +357,10 @@ export class MiningJobService {
       await this.prisma.missionTemplate.findMany({ where: { type: 'MINING', active: true } }),
       materials,
     );
-    const materialId = createRng(seed).child('mining-pick').pick(minable).id;
+    const { rules: pickRules } = this.config.snapshot();
+    const materialId = createRng(seed)
+      .child('mining-pick')
+      .pick(droppableOres(minable, pickRules, placeKeyOf(location, pickRules))).id;
 
     const player = await this.prisma.player.findUniqueOrThrow({
       where: { id: playerId },

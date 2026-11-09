@@ -14,7 +14,7 @@ import { missionDuration } from '../../src/missions/duration.calculator.js';
 import { missionReward } from '../../src/missions/mission.reward.js';
 import { buildResolveInput, contextFromLive } from '../../src/missions/resolution-input.js';
 import { miningMaterialsFor } from '../../src/missions/generator/template.filler.js';
-import type { MineableOre } from '../../src/resolution/mining/mining-yield.js';
+import { placeKeyOf, type MineableOre } from '../../src/resolution/mining/mining-yield.js';
 import { checkMissionRequirements } from '../../src/missions/requirements.checker.js';
 import { isDead } from '../../src/parts/condition.js';
 import { allocatePower, powerPartOf } from '../../src/resolution/power/power.js';
@@ -148,18 +148,25 @@ function materialRarityOf(snapshot: Snapshot, cargo: Record<string, unknown>): s
 }
 
 /** The ores a dig at `locationId` can find, as the game freezes them in the run's context (`loadMiningOres`). */
-function miningOresOf(snapshot: Snapshot, locationId: string): MineableOre[] {
+function miningOresOf(
+  snapshot: Snapshot,
+  locationId: string,
+  rules: GameRules,
+): { ores: MineableOre[]; placeKey?: string } {
   const location = snapshot.locations.find((row) => row.id === locationId);
-  if (location === undefined) return [];
+  if (location === undefined) return { ores: [] };
   const templates = snapshot.templates.filter((row) => row.active && row.type === 'MINING');
   const materials = snapshot.materials
     .filter((row) => row.active && !row.fixedPrice)
     .sort((left, right) => (left.id < right.id ? -1 : 1));
-  return miningMaterialsFor(location, templates, materials).map((row) => ({
-    id: row.id,
-    rarity: row.rarity.toLowerCase(),
-    price: row.basePrice,
-  }));
+  return {
+    ores: miningMaterialsFor(location, templates, materials).map((row) => ({
+      id: row.id,
+      rarity: row.rarity.toLowerCase(),
+      price: row.basePrice,
+    })),
+    placeKey: placeKeyOf(location, rules),
+  };
 }
 
 /** Accept, fly and resolve one offer, applying the outcome to the player exactly like the game. */
@@ -278,7 +285,7 @@ export function takeMission(
     playerFactionId: state.factionId,
     destinationIsolation: destination.isolation,
     materialRarity: materialRarityOf(snapshot, cargo),
-    ...(offer.type === 'MINING' ? { ores: miningOresOf(snapshot, offer.destinationId) } : {}),
+    ...(offer.type === 'MINING' ? miningOresOf(snapshot, offer.destinationId, rules) : {}),
     reward: scaledReward,
     scavenge:
       offer.type === 'SCAVENGE'
