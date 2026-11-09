@@ -2263,8 +2263,7 @@
         "missions": "Missões"
       },
       "mining": "Mineração",
-      "noMining": "Nada para minerar aqui.",
-      "rarity": { "common": "comum", "uncommon": "incomum", "rare": "raro" }
+      "noMining": "Nada para minerar aqui."
     },
     "popup": {
       "missionsHere": "Missões aqui",

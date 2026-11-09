@@ -1,11 +1,6 @@
 import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
-import {
-  chanceToReach,
-  findsPerTick,
-  oreMix,
-  oreSpace,
-  type MineableOre,
-} from '../resolution/mining/mining-yield.js';
+import type { MineableOre } from '../resolution/mining/mining-yield.js';
+import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
 import {
   BadRequestException,
   ConflictException,
@@ -762,7 +757,9 @@ export class MissionsService implements OnModuleInit {
             where: { id: { in: [...new Set(materialIds)] } },
             select: { id: true, displayName: true, rarity: true, basePrice: true },
           });
-    const materialsById = new Map(referencedMaterials.map((entry) => [entry.id, entry.displayName]));
+    const materialsById = new Map(
+      referencedMaterials.map((entry) => [entry.id, entry.displayName]),
+    );
     // Mining offer estimates need the full minable set (or the template's pinned subset) to
     // compute the target ore's share of the local mix, without an extra query per destination.
     const hasMining = rows.some((row) => row.type === 'MINING');
@@ -862,24 +859,15 @@ interface OfferLeg {
   readonly env?: { readonly fuelMult?: number; readonly id?: string };
 }
 
-const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
-
-/** The rarity of the best connected mining rig on the ship: it sets how the ore mix leans. */
-function drillRarityOf(parts: readonly InstalledPart[]): string {
-  let best = 'COMMON';
-  for (const part of parts) {
-    const rarity = part.catalog.rarity ?? 'COMMON';
-    if (part.catalog.min <= 0) continue;
-    if (RARITY_ORDER.indexOf(rarity) > RARITY_ORDER.indexOf(best)) best = rarity;
-  }
-  return best;
-}
-
 function offerInfo(
   row: BoardMission,
   template: { displayName: unknown; description: unknown } | undefined,
   materialsById: ReadonlyMap<string, unknown>,
-  allMinable: readonly { readonly id: string; readonly rarity: string; readonly basePrice: number }[],
+  allMinable: readonly {
+    readonly id: string;
+    readonly rarity: string;
+    readonly basePrice: number;
+  }[],
   sheet: ReturnType<typeof deriveSheet> | null,
   parts: readonly InstalledPart[] | null,
   requirementsJson: unknown,
@@ -925,6 +913,53 @@ function offerInfo(
   };
   const materialName =
     typeof cargo.materialId === 'string' ? materialsById.get(cargo.materialId) : undefined;
+  // Mining offers: expected time, success chance and cargo space for the viewer's drill.
+  const miningOffer =
+    row.type === 'MINING' && sheet !== null && parts !== null && viability?.viable === true
+      ? ((): OfferInfo['mining'] => {
+          const materialId = typeof cargo.materialId === 'string' ? cargo.materialId : undefined;
+          if (materialId === undefined) return null;
+          const material = allMinable.find((entry) => entry.id === materialId);
+          if (material === undefined) return null;
+
+          const rawReq = requirementsJson as { materialIds?: unknown } | null | undefined;
+          const pinnedIds = Array.isArray(rawReq?.materialIds)
+            ? (rawReq.materialIds as unknown[]).filter((id): id is string => typeof id === 'string')
+            : [];
+          const ores: readonly MineableOre[] = (
+            pinnedIds.length > 0
+              ? allMinable.filter((entry) => pinnedIds.includes(entry.id))
+              : allMinable
+          ).map((entry) => ({
+            id: entry.id,
+            rarity: entry.rarity.toLowerCase(),
+            price: entry.basePrice,
+          }));
+
+          const lastEnvId = legs[legs.length - 1]?.env?.id ?? 'open';
+          return contractOdds(
+            {
+              materialId,
+              required: typeof cargo.quantity === 'number' ? cargo.quantity : 0,
+              ores,
+              richness: rules.mining.richness[lastEnvId] ?? 0,
+              drill: { min: sheet.min, condition: sheet.condition, crg: sheet.crg },
+              drillRarity: drillRarityOf(parts),
+            },
+            rules,
+          );
+        })()
+      : null;
+  // A mining contract adds its dig to the trip: the time the drill expects to need, and (for a ship
+  // that burns fuel) the fuel of those ticks. The card then says what the dispatch will plan.
+  if (estimate !== null && miningOffer !== null && tuned !== null) {
+    const dig = digExtra(miningOffer.expectedSeconds, tuned.sheet.fuelUse, rules);
+    estimate = {
+      durationSeconds: estimate.durationSeconds + dig.seconds,
+      fuelNeeded: estimate.fuelNeeded + dig.fuel,
+    };
+  }
+
   const requirements =
     sheet === null || parts === null
       ? []
@@ -939,66 +974,6 @@ function offerInfo(
             ? [fuelCapacityCheck(estimate.fuelNeeded, sheet.fuelCap)]
             : []),
         ];
-  // Mining offers: expected time, success chance and cargo space for the viewer's drill.
-  const miningOffer =
-    row.type === 'MINING' && sheet !== null && parts !== null && viability?.viable === true
-      ? ((): OfferInfo['mining'] => {
-          const materialId = typeof cargo.materialId === 'string' ? cargo.materialId : undefined;
-          if (materialId === undefined) return null;
-          const material = allMinable.find((entry) => entry.id === materialId);
-          if (material === undefined) return null;
-
-          const rawReq = requirementsJson as { materialIds?: unknown } | null | undefined;
-          const pinnedIds = Array.isArray(rawReq?.materialIds)
-            ? (rawReq.materialIds as unknown[]).filter((id): id is string => typeof id === 'string')
-            : [];
-          const ores: readonly MineableOre[] = (pinnedIds.length > 0
-            ? allMinable.filter((entry) => pinnedIds.includes(entry.id))
-            : allMinable
-          ).map((entry) => ({
-            id: entry.id,
-            rarity: entry.rarity.toLowerCase(),
-            price: entry.basePrice,
-          }));
-
-          const lastEnvId = legs[legs.length - 1]?.env?.id ?? 'open';
-          const richness = rules.mining.richness[lastEnvId] ?? 0;
-          const drillRarity = drillRarityOf(parts);
-          const miner = { min: sheet.min, condition: sheet.condition, rigPower: 1 };
-          const totalExpected = findsPerTick(miner, richness, rules);
-          const mix = oreMix(ores, drillRarity, rules);
-          const shareOfTarget = mix.get(materialId) ?? 0;
-          const targetExpected = totalExpected * shareOfTarget;
-          const required = typeof cargo.quantity === 'number' ? cargo.quantity : 0;
-          const capSeconds = rules.mining.contract_max_ticks * rules.mining.job_duration_seconds;
-          const expectedSeconds =
-            targetExpected > 0 && required > 0
-              ? Math.min(
-                  capSeconds,
-                  Math.round((required / targetExpected) * rules.mining.job_duration_seconds),
-                )
-              : 0;
-          const successChance =
-            required > 0
-              ? chanceToReach(
-                  required,
-                  totalExpected,
-                  rules.mining.contract_max_ticks,
-                  shareOfTarget,
-                )
-              : 1;
-          const spaceUnits = oreSpace(Math.max(0, sheet.crg), rules);
-
-          return {
-            required,
-            materialId,
-            expectedSeconds,
-            capSeconds,
-            successChance,
-            spaceUnits,
-          };
-        })()
-      : null;
 
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.

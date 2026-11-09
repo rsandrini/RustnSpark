@@ -424,3 +424,8 @@
   display: grid;
   gap: 2px;
 }
+
+.map-panel-title .you-badge {
+  margin-left: 10px;
+  vertical-align: middle;
+}

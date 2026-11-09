@@ -659,7 +659,12 @@ export function MapPage({ guided = false }: MapPageProps) {
           ) : (
             <section className="map-place-card" aria-label={nameOf(selected)}>
               <header className="map-panel-head">
-                <h2 className="map-panel-title">{nameOf(selected)}</h2>
+                <h2 className="map-panel-title">
+                  {nameOf(selected)}
+                  {selected.id === shipLocation && !inFlight && (
+                    <span className="you-badge">{t('map.youAreHere')}</span>
+                  )}
+                </h2>
                 <button type="button" className="btn" onClick={() => setSelectedId(null)}>
                   {t('ui.close')}
                 </button>
@@ -742,12 +747,7 @@ function PlaceFacts({
         <>
           <ul className="place-ores" data-testid="place-ores">
             {ores.map((ore) => (
-              <li key={ore.id} className="row-between">
-                <span>{pickLocalized(ore.displayName, i18n.language)}</span>
-                <small className="sub">
-                  {t(`map.facts.rarity.${ore.rarity}`, { defaultValue: ore.rarity })}
-                </small>
-              </li>
+              <li key={ore.id}>{pickLocalized(ore.displayName, i18n.language)}</li>
             ))}
           </ul>
         </>
@@ -797,22 +797,20 @@ function PlaceDetails({
             t(`map.types.${place.type}`, { defaultValue: place.type }),
             t('map.zone', { zone: place.zone }),
           ].join(' · ')}
+          {(place.pilotCount ?? 0) > 0 && (
+            <>
+              {' · '}
+              <span data-testid="place-pilots">
+                {t('map.pilotsDocked', { count: place.pilotCount })}
+              </span>
+            </>
+          )}
         </p>
         <p className="help-text">{description}</p>
         <div className="row-between">
           <FactionBadge factionId={place.factionId} />
           <RiskBadge band={place.risk} />
         </div>
-        {isHere && (
-          <p>
-            <span className="you-badge">{t('map.youAreHere')}</span>
-          </p>
-        )}
-        {(place.pilotCount ?? 0) > 0 && (
-          <p className="sub" data-testid="place-pilots">
-            {t('map.pilotsDocked', { count: place.pilotCount })}
-          </p>
-        )}
       </div>
 
       <div className="stack place-col">

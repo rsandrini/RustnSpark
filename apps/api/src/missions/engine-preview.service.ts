@@ -23,6 +23,8 @@ import { deriveSheet, rawMobility } from '../ships/sheet.deriver.js';
 import { parseDispatchLegs } from './dispatch.service.js';
 import { missionDuration } from './duration.calculator.js';
 import { ACTIVE_STATUSES } from './missions.service.js';
+import { contractOdds, digExtra, drillRarityOf } from './mining-odds.js';
+import { loadMiningOres } from './mining-context.js';
 
 export interface EngineTrip {
   readonly missionId: string;
@@ -152,27 +154,67 @@ export class EnginePreviewService {
       if (!mission) throw new NotFoundException('mission not found');
       if (mission.type === 'SCAVENGE') throw new ConflictException({ error: 'NOT_A_FLIGHT' });
       const legs = parseDispatchLegs(mission.legs);
+      // A mining mission also digs: a free job burns fuel for every tick it was set for; a contract
+      // for the time the ship's drill expects to need (the dispatch plans the same way).
+      const cargo = (mission.cargo ?? {}) as {
+        materialId?: unknown;
+        contracted?: unknown;
+        quantity?: unknown;
+      };
+      const jobTicks = legs[0]?.miningTicks;
+      let contractSeconds = 0;
+      if (
+        mission.type === 'MINING' &&
+        jobTicks === undefined &&
+        cargo.contracted === true &&
+        typeof cargo.materialId === 'string' &&
+        typeof cargo.quantity === 'number'
+      ) {
+        contractSeconds = contractOdds(
+          {
+            materialId: cargo.materialId,
+            required: cargo.quantity,
+            ores: await loadMiningOres(this.prisma, mission.destinationId),
+            richness: rules.mining.richness[legs[legs.length - 1]?.env.id ?? 'open'] ?? 0,
+            drill: { min: tunedSheet.min, condition: tunedSheet.condition, crg: tunedSheet.crg },
+            drillRarity: drillRarityOf(tunedParts),
+          },
+          rules,
+        ).expectedSeconds;
+      }
+      const digFuelOf = (sheet: ReturnType<typeof deriveSheet>): number =>
+        mission.type !== 'MINING'
+          ? 0
+          : jobTicks !== undefined
+            ? sheet.fuelUse > 0
+              ? jobTicks * rules.mining.job_fuel_per_tick
+              : 0
+            : digExtra(contractSeconds, sheet.fuelUse, rules).fuel;
       const tripOf = (sheet: ReturnType<typeof deriveSheet>) => ({
-        durationSeconds: missionDuration({
-          totalDistance: legs.reduce((sum, leg) => sum + leg.distance, 0),
-          mobility: sheet.mob,
-          durationK: rules.missions.duration_k,
-          shortTripBelow: rules.missions.short_trip_below,
-          shortTripMinSeconds: rules.missions.short_trip_min_seconds,
-          shortTripExemptBelow: rules.missions.short_trip_exempt_below,
-          timeScale: rules.missions.time_scale,
-          classCutoffs: rules.missions.duration_class_cutoffs,
-        }).durationSeconds,
-        fuelNeeded: legs.reduce(
-          (sum, leg) =>
-            sum +
-            fuelUnits({
-              fuelUse: sheet.fuelUse,
-              distance: leg.distance,
-              envFuelMult: leg.env.fuelMult,
-            }),
-          0,
-        ),
+        durationSeconds:
+          contractSeconds +
+          missionDuration({
+            totalDistance: legs.reduce((sum, leg) => sum + leg.distance, 0),
+            mobility: sheet.mob,
+            durationK: rules.missions.duration_k,
+            shortTripBelow: rules.missions.short_trip_below,
+            shortTripMinSeconds: rules.missions.short_trip_min_seconds,
+            shortTripExemptBelow: rules.missions.short_trip_exempt_below,
+            timeScale: rules.missions.time_scale,
+            classCutoffs: rules.missions.duration_class_cutoffs,
+          }).durationSeconds,
+        fuelNeeded:
+          digFuelOf(sheet) +
+          legs.reduce(
+            (sum, leg) =>
+              sum +
+              fuelUnits({
+                fuelUse: sheet.fuelUse,
+                distance: leg.distance,
+                envFuelMult: leg.env.fuelMult,
+              }),
+            0,
+          ),
       });
       const tuned = tripOf(tunedSheet);
       trip = {

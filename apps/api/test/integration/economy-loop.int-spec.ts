@@ -377,6 +377,19 @@ describe('economy milestone M8', () => {
       { materialId: 'common_ore', contracted: true, quantity: 6 },
       1000,
     );
+    // the ship's mission card (engine preview) counts the dig's fuel on top of the trip: the ticks
+    // the drill expects to need, at the fuel each burns (this ship burns fuel)
+    const preview = await post(
+      player.token,
+      `/v1/ships/${player.shipId}/engine-preview`,
+      undefined,
+      { missionId: mission.id },
+    );
+    expect(preview.status).toBe(200);
+    const trip = (preview.body as { trip: { fuelNeeded: number; durationSeconds: number } }).trip;
+    expect(trip.fuelNeeded).toBeGreaterThanOrEqual(
+      configService.snapshot().rules.mining.job_fuel_per_tick,
+    );
     const dispatched = await post(player.token, `/v1/ships/${player.shipId}/dispatch`, undefined, {
       missionId: mission.id,
     });
