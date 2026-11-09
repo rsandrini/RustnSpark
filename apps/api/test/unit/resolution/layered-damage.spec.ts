@@ -522,7 +522,7 @@ describe('a whole run in the layered model', () => {
     expect(out.events.some((event) => event.type === 'mission_wear')).toBe(false);
   });
 
-  it('mined ore rides in the cargo space: past it the rest stays behind, and the report says so', () => {
+  it('mined ore rides in the ore space (twice the cargo): past it the cheapest stays behind, and the report says so', () => {
     const quietRules = {
       ...rules,
       encounter: { ...rules.encounter, chance_divisor: 100000 },
@@ -546,15 +546,15 @@ describe('a whole run in the layered model', () => {
       });
       return {
         units: out.loot.reduce((sum, entry) => sum + entry.quantity, 0),
-        full: out.events.find((event) => event.type === 'mining_cargo_full'),
+        full: out.events.find((event) => event.type === 'mining_dropped'),
       };
     };
     const roomy = mined(100);
-    expect(roomy.units).toBeGreaterThan(3);
+    expect(roomy.units).toBeGreaterThan(6);
     expect(roomy.full).toBeUndefined();
     const tight = mined(3);
-    expect(tight.units).toBe(3);
-    expect(tight.full?.magnitude).toBe(roomy.units - 3);
+    expect(tight.units).toBe(6);
+    expect(tight.full?.magnitude).toBe(roomy.units - 6);
   });
 
   it("the journey's hit is recorded by the layer that took it", () => {

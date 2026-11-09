@@ -11,6 +11,7 @@ import {
 import type { MissionInstance, Prisma } from '@prisma/client';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import { buildResolveInput, contextFromLive } from './resolution-input.js';
+import { loadMiningOres } from './mining-context.js';
 import { MissionProducer } from '../jobs/producers/mission.producer.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import type { GameRules } from '../config/game-config.types.js';
@@ -18,6 +19,7 @@ import type { ConnectorLayout } from '../parts/connectors.js';
 import type { Placement } from '../parts/part.types.js';
 import { pickCatalogStats, PartsService } from '../parts/parts.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PlayerEventService } from '../players/player-event.service.js';
 import {
   applyConnectivity,
   conductiveCatalog,
@@ -41,7 +43,7 @@ export interface DispatchLeg {
   readonly danger: number;
   readonly zone: number;
   readonly env: { readonly id: string; readonly level: number; readonly fuelMult: number };
-  /** An independent mining job: the most ticks it digs; it ends sooner when the hold fills. */
+  /** An independent mining job: the ticks it digs (it always runs them all). */
   readonly miningTicks?: number;
 }
 
@@ -212,6 +214,11 @@ function arrivalOf(mission: MissionInstance): Date {
   return mission.arrivalAt;
 }
 
+// The audit row compares the card's quote with the real plan; a gap above this share is logged.
+const DRIFT_WARN_PCT = 5;
+const PERCENT = 100;
+const DRIFT_DECIMALS = 10;
+
 @Injectable()
 export class DispatchService {
   private readonly logger = new Logger(DispatchService.name);
@@ -221,6 +228,7 @@ export class DispatchService {
     private readonly config: GameConfigService,
     private readonly parts: PartsService,
     private readonly producer: MissionProducer,
+    private readonly events: PlayerEventService,
   ) {}
 
   async dispatch(
@@ -489,8 +497,8 @@ export class DispatchService {
         layered: true,
       };
 
-      // An independent mining job ends when its time is up or its hold is full, whichever comes
-      // first. The seeded resolver is deterministic, so a dry run of the very same dig tells now how
+      // An independent mining job runs the whole time asked (the hold caps each tick's load, not the
+      // job). The seeded resolver is deterministic, so a dry run of the very same dig tells now how
       // many ticks it will run: that sets when the ship is back and what fuel it must carry.
       const miningTicks = legs[0]?.miningTicks;
       if (mission.type === 'MINING' && miningTicks !== undefined) {
@@ -538,6 +546,64 @@ export class DispatchService {
         if (shipUpdate.count === 0) {
           throw new ConflictException({ error: 'SHIP_NOT_IN_PORT' });
         }
+      }
+
+      // Audit trail (anti-cheat and logic checks): what the board card quoted for this ship (every
+      // installed part, engines at their levels: the same inputs the offer uses) next to what the
+      // dispatch really planned (connected parts, direction penalties). A drift means the card lied
+      // or the ship changed between the card and the flight; the row is kept either way.
+      const cardLevels = clampLevels({ chem: ship.chemLevel, ion: ship.ionLevel }, rules);
+      const cardSheet = deriveSheet(applyEngineLevels(installed, cardLevels, rules), rules);
+      const quotedSeconds =
+        cardSheet.mob > 0
+          ? missionDuration({
+              totalDistance,
+              mobility: cardSheet.mob,
+              durationK: rules.missions.duration_k,
+              shortTripBelow: rules.missions.short_trip_below,
+              shortTripMinSeconds: rules.missions.short_trip_min_seconds,
+              shortTripExemptBelow: rules.missions.short_trip_exempt_below,
+              timeScale: rules.missions.time_scale,
+              classCutoffs: rules.missions.duration_class_cutoffs,
+            }).durationSeconds
+          : null;
+      const driftPct =
+        quotedSeconds === null || durationSeconds <= 0
+          ? null
+          : Math.round(
+              ((durationSeconds - quotedSeconds) / quotedSeconds) * PERCENT * DRIFT_DECIMALS,
+            ) / DRIFT_DECIMALS;
+      await this.events.record(
+        {
+          playerId,
+          type: 'mission.dispatch',
+          payload: {
+            missionId: mission.id,
+            missionType: mission.type,
+            shipId: ship.id,
+            legs: legs.length,
+            distance: Math.round(totalDistance),
+            quotedSeconds,
+            quotedMobility: cardSheet.mob,
+            plannedSeconds: durationSeconds,
+            plannedMobility: flight.sheet.mob,
+            durationK: rules.missions.duration_k,
+            timeScale: rules.missions.time_scale,
+            driftPct,
+            engine: { chem: cardLevels.chem, ion: cardLevels.ion },
+            penalties: flight.penalties.length,
+            fuelNeeded: Math.round(fuelNeeded),
+            fuelAboard: Math.round(ship.fuel),
+            reward: mission.reward,
+            arrivalAt: arrivalAt.toISOString(),
+          },
+        },
+        tx,
+      );
+      if (driftPct !== null && Math.abs(driftPct) > DRIFT_WARN_PCT) {
+        this.logger.warn(
+          `mission ${mission.id}: the card quoted ${quotedSeconds}s, the dispatch planned ${durationSeconds}s (${driftPct}%)`,
+        );
       }
 
       // Presence windows split [serverTime, arrivalAt] pro-rata by leg distance.
@@ -652,6 +718,9 @@ export class DispatchService {
           playerFactionId: player.factionId,
           destinationIsolation: destination.isolation,
           materialRarity: material?.rarity.toLowerCase(),
+          ...(mission.type === 'MINING'
+            ? { ores: await loadMiningOres(tx, mission.destinationId) }
+            : {}),
           reward: mission.reward,
         }),
         rules,

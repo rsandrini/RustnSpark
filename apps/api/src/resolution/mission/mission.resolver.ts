@@ -188,7 +188,20 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
         ...context,
         client,
         storage,
-        mining: isLast ? (input.mission.mining ?? null) : null,
+        mining:
+          isLast && input.mission.mining !== undefined
+            ? {
+                ...input.mission.mining,
+                ...(input.mission.contractedMining === undefined
+                  ? {}
+                  : {
+                      contract: {
+                        materialId: input.mission.contractedMining.materialId,
+                        required: input.mission.contractedMining.requiredQuantity,
+                      },
+                    }),
+              }
+            : null,
       },
       objectIntegrity: integrity,
     };

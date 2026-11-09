@@ -68,6 +68,8 @@ const CATEGORY_OF = {
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_cargo_full: 'loot',
+  mining_dropped: 'loot',
+  mining_empty: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',

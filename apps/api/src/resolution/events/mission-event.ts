@@ -35,6 +35,8 @@ export const MISSION_EVENT_TYPES = [
   'pvp_encounter',
   'mining',
   'mining_cargo_full',
+  'mining_dropped',
+  'mining_empty',
   'mining_paid',
   'mining_partial_failure',
   'motor',

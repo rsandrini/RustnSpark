@@ -14,6 +14,7 @@ import { WalletService } from '../players/wallet.service.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import { isDead } from '../parts/condition.js';
 import { buildResolveInput, contextFromLive } from './resolution-input.js';
+import { loadMiningOres } from './mining-context.js';
 import { EncounterService } from './encounters/encounter.service.js';
 // S9.1: the event union is closed — every log is validated against the zod
 // schema its version selects before it is written.
@@ -151,6 +152,9 @@ export class MissionResolveService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      ...(mission.type === 'MINING'
+        ? { ores: await loadMiningOres(this.prisma, mission.destinationId) }
+        : {}),
       reward: mission.reward,
       scavenge:
         mission.type === 'SCAVENGE'

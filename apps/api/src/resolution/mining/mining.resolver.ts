@@ -1,6 +1,7 @@
 import type { Rng } from '../../common/rng/rng.js';
 import type { GameRules } from '../../config/game-config.types.js';
 import { performance } from '../../parts/condition.js';
+import type { MineableOre } from './mining-yield.js';
 
 /** Environment key into `mining.richness` (open | radiation | gravitational | debris). */
 export type MiningEnvKey = string;
@@ -14,6 +15,8 @@ export interface MiningStop {
   readonly materialRarity: MaterialRarityKey;
   /** A paid mining quest never comes back empty: at least this many units, whatever the rolls say. */
   readonly minimumYield?: number;
+  /** The ores a dig here can find (v0.1.3); absent in older contexts: the one `materialId`. */
+  readonly ores?: readonly MineableOre[];
 }
 
 export interface MinerRig {
@@ -21,6 +24,8 @@ export interface MinerRig {
   readonly min: number;
   /** Miner part condition (%) feeding the S4.2 performance table. */
   readonly condition: number;
+  /** Rarity of the drill (COMMON..LEGENDARY): a better one shifts the ore mix to rarer ores. */
+  readonly rarity?: string;
 }
 
 export interface MiningYield {
@@ -37,6 +42,9 @@ export interface MiningLootEvent {
 }
 
 /**
+ * LEGACY (before v0.1.3): the per-try model. The leg resolver digs with `mining-yield.ts` now; these
+ * stay because the approved Appendix E tapes pin them.
+ *
  * Per-attempt find chance (Appendix E / D18):
  * `richness(env) × (1 − rarity(material)) × efficiency`,
  * `efficiency = MIN × performance(minerCondition)`, clamped to [0, 1].

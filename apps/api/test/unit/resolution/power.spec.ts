@@ -8,7 +8,12 @@ import {
 } from '../../../src/resolution/power/power.js';
 
 const rules = GAME_CONFIG_DEFAULTS;
-const p = (id: string, kind: PowerPart['kind'], demand: number, over: Partial<PowerPart> = {}): PowerPart => ({
+const p = (
+  id: string,
+  kind: PowerPart['kind'],
+  demand: number,
+  over: Partial<PowerPart> = {},
+): PowerPart => ({
   id,
   kind,
   demand,
@@ -42,7 +47,12 @@ describe('successChance', () => {
 describe('allocatePower', () => {
   it('with enough power every system gets everything', () => {
     const state = allocatePower(
-      [generator('g', 20), p('bridge', 'bridge', 2), p('sensor', 'sensor', 4), p('gun', 'weapon', 3)],
+      [
+        generator('g', 20),
+        p('bridge', 'bridge', 2),
+        p('sensor', 'sensor', 4),
+        p('gun', 'weapon', 3),
+      ],
       'cruise',
       rules,
     );
@@ -98,20 +108,35 @@ describe('allocatePower', () => {
 });
 
 describe('powerPartOf', () => {
-  const base = { partClass: 'UTILITY', energyCont: -6, esc: 0, min: 1, pressurized: false, lifeSupport: false };
+  const base = {
+    partClass: 'UTILITY',
+    energyCont: -6,
+    esc: 0,
+    min: 1,
+    pressurized: false,
+    lifeSupport: false,
+  };
   it('reads the role from the part', () => {
     expect(powerPartOf('r', base, 1).kind).toBe('rig');
     expect(powerPartOf('t', { ...base, partClass: 'TANK', min: 0 }, 1).kind).toBe('pump');
-    expect(powerPartOf('s', { ...base, partClass: 'DEFENSE', esc: 14, min: 0 }, 1).kind).toBe('shield');
-    expect(powerPartOf('c', { ...base, partClass: 'CARGO', pressurized: true, min: 0 }, 1).kind).toBe('life');
-    expect(powerPartOf('e', { ...base, partClass: 'ENGINE', energyCont: 3, min: 0 }, 1)).toMatchObject({
+    expect(powerPartOf('s', { ...base, partClass: 'DEFENSE', esc: 14, min: 0 }, 1).kind).toBe(
+      'shield',
+    );
+    expect(
+      powerPartOf('c', { ...base, partClass: 'CARGO', pressurized: true, min: 0 }, 1).kind,
+    ).toBe('life');
+    expect(
+      powerPartOf('e', { ...base, partClass: 'ENGINE', energyCont: 3, min: 0 }, 1),
+    ).toMatchObject({
       supply: 3,
       demand: 0,
       engine: true,
     });
   });
   it('a laser can idle on 2, other systems on the default', () => {
-    expect(powerPartOf('l', { ...base, partClass: 'WEAPON', min: 0, idlePower: 2 }, 1).idle).toBe(2);
+    expect(powerPartOf('l', { ...base, partClass: 'WEAPON', min: 0, idlePower: 2 }, 1).idle).toBe(
+      2,
+    );
     expect(powerPartOf('b', { ...base, partClass: 'WEAPON', min: 0 }, 1).idle).toBe(1);
   });
 });

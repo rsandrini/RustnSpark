@@ -81,8 +81,15 @@ function collectEmittedTypeLiterals(): Set<string> {
 function variableTypedTypes(): Set<string> {
   const failureTypes = Object.keys(FAILURE_CONSEQUENCE);
   const miningType = toMiningLootEvents([{ materialId: 'iron', quantity: 1 }])[0]!.type;
-  return new Set([...failureTypes, miningType]);
+  return new Set([...failureTypes, miningType, ...RETIRED_TYPES]);
 }
+
+/**
+ * Types no emitter writes any more but that stay in the frozen union (D36: no renames), because
+ * logs stored before the change still carry them: mining_cargo_full (v0.1.3: the ore space drops
+ * the cheapest ore and logs mining_dropped instead).
+ */
+const RETIRED_TYPES: readonly string[] = ['mining_cargo_full'];
 
 describe('S9.1 — event-type coverage (frozen union, D36)', () => {
   const emitted = collectEmittedTypeLiterals();

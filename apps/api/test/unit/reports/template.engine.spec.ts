@@ -42,6 +42,8 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   pvp_encounter: 'combat',
   mining: 'loot',
   mining_cargo_full: 'loot',
+  mining_dropped: 'loot',
+  mining_empty: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
   motor: 'failure',
@@ -55,7 +57,15 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
 };
 
 const CASCADE_TYPES = ['combat_win', 'combat_loss', 'combat_draw', 'escort_absorbed'];
-const PART_FAILURE_TYPES = ['motor', 'engine_push', 'battery', 'tank', 'shield', 'weapon', 'sensor'];
+const PART_FAILURE_TYPES = [
+  'motor',
+  'engine_push',
+  'battery',
+  'tank',
+  'shield',
+  'weapon',
+  'sensor',
+];
 
 function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unknown> {
   const base: Record<string, unknown> = {
@@ -88,7 +98,7 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
           ? 754
           : -120,
       loot:
-        type === 'mining' || type === 'core_drop'
+        type === 'mining' || type === 'mining_dropped' || type === 'core_drop'
           ? [{ materialId: 'common_ore', quantity: 3 }]
           : [],
     },
@@ -199,7 +209,16 @@ describe('S9.2 — determinism', () => {
   it('changes the variant when the seed changes for some position', () => {
     const event = eventOf('mission_wear');
     const texts = new Set<string>();
-    for (const seed of ['seed-a', 'seed-b', 'seed-c', 'seed-d', 'seed-e', 'seed-f', 'seed-g', 'seed-h']) {
+    for (const seed of [
+      'seed-a',
+      'seed-b',
+      'seed-c',
+      'seed-d',
+      'seed-e',
+      'seed-f',
+      'seed-g',
+      'seed-h',
+    ]) {
       texts.add(renderEventLine(event, 0, seed, 'en', NAMES).text);
     }
     expect(texts.size).toBeGreaterThan(2);

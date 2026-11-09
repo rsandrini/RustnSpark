@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "There was no room: {quantity} of {material} stayed behind.",
+    "The ore space was full — {quantity} of {material} could not be brought back, the cheapest went first.",
+    "{quantity} of {material} were left in the rock to make room for dearer ore.",
+    "Past the limit of the hold: {quantity} of {material} dropped, the best kept.",
+    "The hold chose its cargo and let {quantity} of {material} go.",
+    "To fit the trip, {quantity} of {material} was left behind."
+  ]
+}

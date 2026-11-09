@@ -7,6 +7,7 @@ import {
   type ResolutionContext,
 } from '../../missions/resolution-input.js';
 import { GameConfigService } from '../../config/game-config.service.js';
+import { loadMiningOres } from '../../missions/mining-context.js';
 import { loadScavengeContext } from '../../missions/scavenge-context.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -110,6 +111,9 @@ export class ReplayService {
       playerFactionId: player.factionId,
       destinationIsolation: destination.isolation,
       materialRarity,
+      ...(mission.type === 'MINING'
+        ? { ores: await loadMiningOres(this.prisma, mission.destinationId) }
+        : {}),
       scavenge:
         mission.type === 'SCAVENGE'
           ? await loadScavengeContext(this.prisma, mission.destinationId)

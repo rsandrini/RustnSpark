@@ -285,7 +285,10 @@ describe('round-2 playtest fix — passive classes wear from usage only, exposed
     const withDefense = partAmbientWear('DEFENSE', 6, 1, 1, rules, baseRng());
     const otherExposedWithDefense = partAmbientWear('ENGINE', 6, 1, 1, rules, baseRng());
     expect(withDefense).toBeCloseTo(noDefense * (1 + rules.wear.defense_wear_bonus), 10);
-    expect(otherExposedWithDefense).toBeCloseTo(noDefense * rules.wear.other_exposed_wear_factor, 10);
+    expect(otherExposedWithDefense).toBeCloseTo(
+      noDefense * rules.wear.other_exposed_wear_factor,
+      10,
+    );
   });
 });
 

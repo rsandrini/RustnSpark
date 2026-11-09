@@ -132,7 +132,7 @@ describe('computeReportStats', () => {
     ]);
   });
 
-  it('travelWear counts the journey\'s own wear apart from combat, per part', () => {
+  it("travelWear counts the journey's own wear apart from combat, per part", () => {
     const withParts: ReportLog = {
       ...log([
         event({
@@ -170,11 +170,20 @@ describe('computeReportStats', () => {
     });
   });
 
-  it('travelLayers adds up where the journey\'s own damage went', () => {
+  it("travelLayers adds up where the journey's own damage went", () => {
     const stats = computeReportStats(
       log([
-        event({ type: 'mission_wear', category: 'environment', cascade: { shield: 4, armor: 7, hp: 1 } }),
-        event({ type: 'mission_wear', category: 'environment', leg: 1, cascade: { shield: 0, armor: 3, hp: 2 } }),
+        event({
+          type: 'mission_wear',
+          category: 'environment',
+          cascade: { shield: 4, armor: 7, hp: 1 },
+        }),
+        event({
+          type: 'mission_wear',
+          category: 'environment',
+          leg: 1,
+          cascade: { shield: 0, armor: 3, hp: 2 },
+        }),
         // a fight's own cascade is combat damage, not the journey's
         event({ type: 'combat_win', cascade: { shield: 9, armor: 9, hp: 9 } }),
       ]),
@@ -184,8 +193,19 @@ describe('computeReportStats', () => {
   });
 
   it('summarises the engine tuning: level, legs pushed or eased, failures, and the chance of a clean run', () => {
-    const tuning = (leg: number, group: 'chem' | 'ion', levelPct: number, chancePct: number, outcome: string) =>
-      event({ type: 'engine_tuning', category: 'transit', leg, tuning: { group, levelPct, chancePct, outcome } });
+    const tuning = (
+      leg: number,
+      group: 'chem' | 'ion',
+      levelPct: number,
+      chancePct: number,
+      outcome: string,
+    ) =>
+      event({
+        type: 'engine_tuning',
+        category: 'transit',
+        leg,
+        tuning: { group, levelPct, chancePct, outcome },
+      });
     const stats = computeReportStats(
       log([
         tuning(0, 'ion', 250, 40, 'held'),
@@ -197,7 +217,14 @@ describe('computeReportStats', () => {
     );
     expect(stats.engines).toEqual([
       { group: 'ion', levelPct: 250, pushedLegs: 2, easedLegs: 0, failures: 1, cleanChancePct: 36 },
-      { group: 'chem', levelPct: 50, pushedLegs: 0, easedLegs: 2, failures: 0, cleanChancePct: 100 },
+      {
+        group: 'chem',
+        levelPct: 50,
+        pushedLegs: 0,
+        easedLegs: 2,
+        failures: 0,
+        cleanChancePct: 100,
+      },
     ]);
   });
 

@@ -27,6 +27,8 @@ export const TEMPLATE_PLACEHOLDERS: Readonly<Record<string, readonly string[]>> 
   pvp_encounter: [],
   mining: ['material', 'quantity'],
   mining_cargo_full: ['quantity'],
+  mining_dropped: ['material', 'quantity'],
+  mining_empty: [],
   mining_paid: ['credits'],
   mining_partial_failure: ['credits'],
   motor: PART_FAILURE,

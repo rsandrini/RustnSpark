@@ -752,21 +752,41 @@ describe("the pilot's own free mining job", () => {
   });
 });
 
-describe("the pilot's mining job digs in ticks", () => {
-  // Every attempt finds ore: each tick yields attempts_per_stop (10) units, the hold takes 20.
+describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', () => {
+  // K = 2 and a drill of 5 in open space (richness 1): about 10 finds per 5-minute tick.
   const richRules: GameRules = {
     ...rules,
-    mining: {
-      ...rules.mining,
-      richness: { open: 1 },
-      rarity: { common: 0 },
-      job_fuel_per_tick: 50,
-    },
+    mining: { ...rules.mining, richness: { open: 1 }, yield_k: 2, job_fuel_per_tick: 50 },
   };
-  const dig = (miningTicks: number | undefined, crg = 20, fuelUse?: number) => {
+  const ORES = [
+    { id: 'iron', rarity: 'common', price: 200 },
+    { id: 'gems', rarity: 'rare', price: 2000 },
+  ];
+  interface DigOptions {
+    readonly miningTicks?: number;
+    readonly digTicks?: number;
+    readonly crg?: number;
+    readonly fuelUse?: number;
+    readonly ores?: typeof ORES;
+    readonly contract?: { materialId: string; required: number };
+    readonly rarity?: string;
+    readonly min?: number;
+    readonly seed?: string;
+  }
+  const dig = (options: DigOptions = {}) => {
+    const {
+      miningTicks,
+      digTicks,
+      crg = 20,
+      fuelUse,
+      ores = ORES,
+      contract,
+      rarity,
+      min = 5,
+    } = options;
     const job = mission({
       type: 'MINING',
-      unpaid: true,
+      unpaid: contract === undefined,
       legs: [
         {
           distance: 100,
@@ -774,51 +794,163 @@ describe("the pilot's mining job digs in ticks", () => {
           zone: 1,
           env: { id: 'open', level: 1, fuelMult: 0 },
           ...(miningTicks === undefined ? {} : { miningTicks }),
+          ...(digTicks === undefined ? {} : { digTicks }),
         },
       ],
       mining: {
-        stop: { env: 'open', materialId: 'iron', materialRarity: 'common' },
-        miner: { min: 5, condition: 100 },
+        stop: { env: 'open', materialId: ores[0]!.id, materialRarity: 'common', ores },
+        miner: { min, condition: 100, ...(rarity === undefined ? {} : { rarity }) },
       },
+      ...(contract === undefined
+        ? {}
+        : {
+            contractedMining: {
+              materialId: contract.materialId,
+              requiredQuantity: contract.required,
+            },
+          }),
     });
     const snap = snapshot({
       sheet: { ...snapshot().sheet, crg, ...(fuelUse === undefined ? {} : { fuelUse }) },
     });
-    return resolveMission({ seed: 'dig', snapshot: snap, mission: job, rules: richRules });
+    return resolveMission({
+      seed: options.seed ?? 'dig',
+      snapshot: snap,
+      mission: job,
+      rules: richRules,
+    });
   };
-  const oreOf = (out: ReturnType<typeof dig>) =>
-    out.loot.reduce((sum, entry) => sum + entry.quantity, 0);
+  const oreOf = (out: ReturnType<typeof dig>, id?: string) =>
+    out.loot
+      .filter((entry) => id === undefined || entry.materialId === id)
+      .reduce((sum, entry) => sum + entry.quantity, 0);
+  const eventsOf = (out: ReturnType<typeof dig>, type: string) =>
+    out.events.filter((event) => event.type === type);
+  const droppedOf = (out: ReturnType<typeof dig>) =>
+    eventsOf(out, 'mining_dropped').reduce((sum, event) => sum + event.magnitude, 0);
 
-  it('runs every tick the time allows when the hold has room, and burns fuel for each', () => {
-    const out = dig(2, 100);
+  it('runs every tick of a free job when the space has room, and burns fuel for each', () => {
+    const out = dig({ miningTicks: 2, crg: 100 });
     expect(out.legs[0]?.miningTicksRun).toBe(2);
-    expect(oreOf(out)).toBe(20);
+    expect(oreOf(out)).toBeGreaterThan(0);
+    expect(droppedOf(out)).toBe(0);
     expect(out.fuel).toBe(1000 - 2 * 50);
   });
 
-  it('stops when the hold is full and burns only the ticks it ran', () => {
-    const out = dig(4);
-    expect(out.legs[0]?.miningTicksRun).toBe(2);
-    expect(oreOf(out)).toBe(20);
-    expect(out.fuel).toBe(1000 - 2 * 50);
+  it('the ore space is one trip whatever the time: a 20 min job keeps no more than a 5 min one could', () => {
+    // cargo 6 -> ore space 12
+    const long = dig({ miningTicks: 4, crg: 6 });
+    const short = dig({ miningTicks: 1, crg: 6 });
+    expect(long.legs[0]?.miningTicksRun).toBe(4);
+    expect(oreOf(long)).toBe(12);
+    expect(oreOf(short)).toBeLessThanOrEqual(12);
+    expect(droppedOf(long)).toBeGreaterThan(0);
+    expect(out(long)).toBe(true);
+    function out(o: typeof long) {
+      return oreOf(o) + droppedOf(o) > 12;
+    }
+  });
+
+  it('over the space the cheapest ore goes first: found = kept + dropped, and the rare is kept before the common', () => {
+    const run = dig({ miningTicks: 4, crg: 3, rarity: 'LEGENDARY', min: 20 });
+    const space = 6;
+    expect(oreOf(run)).toBe(space);
+    const foundRare = oreOf(run, 'gems') + droppedFor(run, 'gems');
+    // every rare found fits (6 places) unless more than 6 were found
+    expect(oreOf(run, 'gems')).toBe(Math.min(foundRare, space));
+    function droppedFor(o: typeof run, id: string) {
+      return eventsOf(o, 'mining_dropped')
+        .filter((event) => event.effects.loot[0]?.materialId === id)
+        .reduce((sum, event) => sum + event.magnitude, 0);
+    }
+  });
+
+  it('a place with one ore yields only that ore', () => {
+    const run = dig({ miningTicks: 2, crg: 100, ores: [ORES[1]!] });
+    expect(oreOf(run, 'iron')).toBe(0);
+    expect(oreOf(run, 'gems')).toBeGreaterThan(0);
+  });
+
+  it('a dig that finds nothing says so', () => {
+    const none: GameRules = {
+      ...richRules,
+      mining: { ...richRules.mining, richness: { open: 0 } },
+    };
+    const run = resolveMission({
+      seed: 'dig',
+      snapshot: snapshot(),
+      mission: mission({
+        type: 'MINING',
+        unpaid: true,
+        legs: [
+          {
+            distance: 100,
+            danger: 0,
+            zone: 1,
+            env: { id: 'open', level: 1, fuelMult: 0 },
+            miningTicks: 2,
+          },
+        ],
+        mining: {
+          stop: { env: 'open', materialId: 'iron', materialRarity: 'common', ores: ORES },
+          miner: { min: 5, condition: 100 },
+        },
+      }),
+      rules: none,
+    });
+    expect(oreOf(run)).toBe(0);
+    expect(eventsOf(run, 'mining_empty')).toHaveLength(1);
   });
 
   it('a ship whose engines burn no fuel (ion only) digs for free', () => {
-    const out = dig(2, 100, 0);
-    expect(out.legs[0]?.miningTicksRun).toBe(2);
-    expect(oreOf(out)).toBe(20);
-    expect(out.fuel).toBe(1000);
+    const run = dig({ miningTicks: 2, crg: 100, fuelUse: 0 });
+    expect(run.legs[0]?.miningTicksRun).toBe(2);
+    expect(run.fuel).toBe(1000);
   });
 
-  it('a board mining mission (no ticks) digs its one stop and burns no mining fuel', () => {
-    const out = dig(undefined);
-    expect(out.legs[0]?.miningTicksRun).toBeUndefined();
-    expect(oreOf(out)).toBe(10);
-    expect(out.fuel).toBe(1000);
+  it('a contract stops as soon as the contracted ore is reached', () => {
+    const run = dig({
+      digTicks: 8,
+      crg: 100,
+      ores: [ORES[0]!],
+      contract: { materialId: 'iron', required: 8 },
+    });
+    expect(run.legs[0]?.miningTicksRun).toBeLessThan(8);
+    expect(oreOf(run, 'iron')).toBeGreaterThanOrEqual(8);
+  });
+
+  it('a contract the drill cannot reach digs the whole time allowed and brings what it found', () => {
+    const run = dig({
+      digTicks: 2,
+      crg: 100,
+      ores: [ORES[0]!],
+      contract: { materialId: 'iron', required: 500 },
+    });
+    expect(run.legs[0]?.miningTicksRun).toBe(2);
+    expect(oreOf(run, 'iron')).toBeLessThan(500);
+  });
+
+  it('the contract ore is kept before any other ore when the space is short', () => {
+    const run = dig({
+      digTicks: 4,
+      crg: 4,
+      rarity: 'LEGENDARY',
+      min: 20,
+      contract: { materialId: 'iron', required: 6 },
+    });
+    // ore space 8: six iron are reserved even though the rare ore is dearer
+    expect(oreOf(run, 'iron')).toBeGreaterThanOrEqual(6);
   });
 
   it('is deterministic: the dry run at dispatch and the real run agree', () => {
-    expect(dig(4)).toEqual(dig(4));
+    expect(dig({ miningTicks: 4 })).toEqual(dig({ miningTicks: 4 }));
+  });
+
+  it('a board mining mission with no ticks digs its one stop', () => {
+    const run = dig({});
+    expect(run.legs[0]?.miningTicksRun).toBeUndefined();
+    expect(oreOf(run)).toBeGreaterThan(0);
+    expect(run.fuel).toBe(1000);
   });
 });
 

@@ -5,6 +5,7 @@ import type { FactionRelation, Stance } from '../resolution/encounter/encounter-
 import type { EscortClient, LegRoute, PartSnapshot } from '../resolution/leg/leg.resolver.js';
 import type { ScavengeContext } from '../resolution/scavenge/scavenge.resolver.js';
 import type { RaceCompetitor } from '../resolution/race/race.resolver.js';
+import type { MineableOre } from '../resolution/mining/mining-yield.js';
 import { resolveMission } from '../resolution/mission/mission.resolver.js';
 import type { MissionInput, MissionSnapshot } from '../resolution/mission/mission.resolver.js';
 import type { InstalledPart } from '../parts/part.types.js';
@@ -45,6 +46,8 @@ export interface ResolutionContext {
     readonly materialId: string;
     readonly materialRarity: string;
     readonly minimumYield?: number;
+    /** The ores a dig here can find, frozen with the run (absent in logs from before v0.1.3). */
+    readonly ores?: readonly MineableOre[];
   };
   readonly contractedMining?: { readonly materialId: string; readonly requiredQuantity: number };
   /** The pilot's own free mining job (no contract, no reward): it pays no credits, only the ore. */
@@ -109,6 +112,8 @@ export interface LiveContextSource {
   readonly destinationIsolation: number;
   /** Rarity of the mined material (lower-case), when the mission mines one. */
   readonly materialRarity?: string | null;
+  /** MINING: the ores a dig here can find (see `loadMiningOres`). */
+  readonly ores?: readonly MineableOre[];
   /** What the mission pays: a paid mining quest is guaranteed at least one unit of ore. */
   readonly reward?: number;
   /** SCAVENGE jobs: the place's scavenging context. */
@@ -134,6 +139,7 @@ export function contextFromLive(source: LiveContextSource): ResolutionContext {
             materialId,
             materialRarity: source.materialRarity ?? 'common',
             ...((source.reward ?? 0) > 0 ? { minimumYield: 1 } : {}),
+            ...(source.ores !== undefined && source.ores.length > 0 ? { ores: source.ores } : {}),
           },
         }
       : {}),
@@ -338,8 +344,9 @@ export function buildResolveInput(args: {
               ...(context.mining.minimumYield !== undefined
                 ? { minimumYield: context.mining.minimumYield }
                 : {}),
+              ...(context.mining.ores !== undefined ? { ores: context.mining.ores } : {}),
             },
-            miner: { min: sheet.min, condition: sheet.condition },
+            miner: { min: sheet.min, condition: sheet.condition, rarity: drillRarityOf(snapshot) },
           },
         }
       : {}),
@@ -355,4 +362,17 @@ export function buildResolveInput(args: {
     ...(context.race && context.race.competitors.length > 0 ? { race: context.race } : {}),
   };
   return { seed: args.seed, snapshot: missionSnapshot, mission: missionInput, rules };
+}
+
+const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+
+/** The rarity of the best mining rig that is connected: it sets how the ore mix leans (COMMON when none). */
+function drillRarityOf(snapshot: DispatchSnapshot): string {
+  let best = 'COMMON';
+  for (const part of snapshot.parts) {
+    const rarity = part.catalog.rarity ?? 'COMMON';
+    if (!part.connected || part.catalog.min <= 0) continue;
+    if (RARITY_ORDER.indexOf(rarity) > RARITY_ORDER.indexOf(best)) best = rarity;
+  }
+  return best;
 }

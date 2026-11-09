@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "Não havia espaço: {quantity} de {material} ficaram para trás.",
+    "O espaço de minério estava cheio — {quantity} de {material} não puderam ser trazidos, o mais barato saiu primeiro.",
+    "{quantity} de {material} foram deixados na rocha para dar lugar a minério mais caro.",
+    "Além do limite do porão: {quantity} de {material} descartados, o melhor foi mantido.",
+    "O porão escolheu a carga e deixou {quantity} de {material} de fora.",
+    "Para caber na viagem, {quantity} de {material} ficaram para trás."
+  ]
+}

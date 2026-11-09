@@ -33,9 +33,23 @@ export interface DrillRig {
   readonly rigPower?: number;
 }
 
+/** An ore a dig can find: the place's minable materials, frozen with the run. */
+export interface MineableOre {
+  readonly id: string;
+  /** Lower-case material rarity (common | uncommon | rare). */
+  readonly rarity: string;
+  /** Base price: ties in rarity are broken by it when the cheapest ore is dropped. */
+  readonly price: number;
+}
+
 export interface OreValue {
   readonly rarityRank: number;
   readonly price: number;
+}
+
+/** Rank of a material rarity (common 0, uncommon 1, rare 2); unknown ones rank as common. */
+export function rarityRankOf(rarity: string): number {
+  return RARITY_RANK[rarity.toLowerCase()] ?? 0;
 }
 
 /** Expected finds per 5 minutes: mining x power x condition x place richness x `yield_k`. */
@@ -177,4 +191,42 @@ export function ticksFor(
     if (chanceToReach(required, expectedPerTick, ticks, shareOfTarget) >= confidence) return ticks;
   }
   return null;
+}
+
+export interface DigArgs {
+  readonly ores: readonly MineableOre[];
+  readonly miner: DrillRig & { readonly rarity?: string };
+  readonly richness: number;
+  readonly maxTicks: number;
+  /** A contract: stop at the first tick that has this much of the ore. */
+  readonly target?: { readonly id: string; readonly required: number };
+}
+
+export interface DigResult {
+  /** Everything found over the ticks run, before the ore space is applied. */
+  readonly found: Map<string, number>;
+  readonly ticksRun: number;
+}
+
+/**
+ * The dig itself, tick by tick (5 minutes each): the luck roll for the number of finds, then one
+ * ore roll per find. A contract stops at the first tick that holds the contracted amount.
+ */
+export function dig(args: DigArgs, rules: GameRules, rng: Rng): DigResult {
+  const mix = oreMix(args.ores, args.miner.rarity ?? 'COMMON', rules);
+  const expected = findsPerTick(args.miner, args.richness, rules);
+  const found = new Map<string, number>();
+  let ticksRun = 0;
+  for (let tick = 0; tick < args.maxTicks; tick += 1) {
+    ticksRun += 1;
+    const finds = rollFinds(expected, rng);
+    for (let find = 0; find < finds; find += 1) {
+      const id = rollOre(mix, rng);
+      found.set(id, (found.get(id) ?? 0) + 1);
+    }
+    if (args.target !== undefined && (found.get(args.target.id) ?? 0) >= args.target.required) {
+      break;
+    }
+  }
+  return { found, ticksRun };
 }
