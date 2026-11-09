@@ -69,6 +69,7 @@ const CATEGORY_OF = {
   mining: 'loot',
   mining_cargo_full: 'loot',
   mining_dropped: 'loot',
+  mining_delivered: 'payment',
   mining_empty: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',

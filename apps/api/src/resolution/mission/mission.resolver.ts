@@ -345,6 +345,18 @@ export function resolveMission(input: ResolveMissionInput): MissionOutcome {
       // other ore stays.
       const delivered = Math.min(mined, Math.max(0, contract.requiredQuantity));
       takeUnits(loot, contract.materialId, delivered);
+      if (delivered > 0) {
+        events.push(
+          missionEvent({
+            leg: lastLeg,
+            category: 'payment',
+            type: 'mining_delivered',
+            actors,
+            magnitude: delivered,
+            loot: [{ materialId: contract.materialId, quantity: delivered }],
+          }),
+        );
+      }
       const full = contract.requiredQuantity > 0 && delivered >= contract.requiredQuantity;
       const payout = Math.round(
         contractedMiningPayout(contract.pay ?? base, delivered, contract.requiredQuantity),

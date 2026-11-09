@@ -429,6 +429,10 @@ describe('economy milestone M8', () => {
       )
       .reduce((sum, event) => sum + event.magnitude, 0);
     expect(found).toBeGreaterThanOrEqual(6);
+    // the report says how much was handed over
+    expect(
+      events.filter((event) => event.type === 'mining_delivered').map((event) => event.magnitude),
+    ).toEqual([6]);
     const held = await prisma.playerMaterial.findUnique({
       where: {
         playerId_materialId: { playerId: player.seeded.player.id, materialId: 'common_ore' },

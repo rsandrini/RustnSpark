@@ -43,6 +43,7 @@ const CATEGORY: Record<(typeof MISSION_EVENT_TYPES)[number], string> = {
   mining: 'loot',
   mining_cargo_full: 'loot',
   mining_dropped: 'loot',
+  mining_delivered: 'payment',
   mining_empty: 'loot',
   mining_paid: 'payment',
   mining_partial_failure: 'payment',
@@ -98,7 +99,10 @@ function v2Event(type: (typeof MISSION_EVENT_TYPES)[number]): Record<string, unk
           ? 754
           : -120,
       loot:
-        type === 'mining' || type === 'mining_dropped' || type === 'core_drop'
+        type === 'mining' ||
+        type === 'mining_dropped' ||
+        type === 'mining_delivered' ||
+        type === 'core_drop'
           ? [{ materialId: 'common_ore', quantity: 3 }]
           : [],
     },

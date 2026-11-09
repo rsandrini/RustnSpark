@@ -36,6 +36,7 @@ export const MISSION_EVENT_TYPES = [
   'mining',
   'mining_cargo_full',
   'mining_dropped',
+  'mining_delivered',
   'mining_empty',
   'mining_paid',
   'mining_partial_failure',

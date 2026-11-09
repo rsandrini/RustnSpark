@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "{quantity} of {material} handed over to the contract.",
+    "The contract took {quantity} of {material} from the hold.",
+    "Delivered: {quantity} of {material}, weighed and signed for.",
+    "{quantity} of {material} went to the buyer.",
+    "The buyer counted {quantity} of {material} off your haul.",
+    "You handed over {quantity} of {material} against the contract."
+  ]
+}

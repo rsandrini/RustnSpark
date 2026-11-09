@@ -964,6 +964,11 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
       });
       expect(out.creditsDelta).toBe(1000);
       expect(eventsOf(out, 'mining_paid')).toHaveLength(1);
+      // the report says how much ore was handed over
+      const delivered = eventsOf(out, 'mining_delivered');
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0]?.magnitude).toBe(8);
+      expect(delivered[0]?.effects.loot).toEqual([{ materialId: 'iron', quantity: 8 }]);
       expect(oreOf(out, 'iron')).toBe(foundOf(out, 'iron') - 8);
     });
 
@@ -980,6 +985,8 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
       expect(out.status).toBe('partial_failure');
       expect(eventsOf(out, 'mining_partial_failure')).toHaveLength(1);
       expect(oreOf(out, 'iron')).toBe(0);
+      // everything found of the contracted ore is handed over, short of the amount
+      expect(eventsOf(out, 'mining_delivered')[0]?.magnitude).toBe(found);
     });
 
     it('nothing delivered pays nothing', () => {
@@ -1011,6 +1018,8 @@ describe('the mining dig (v0.1.3): rarity mix, one-trip ore space, contracts', (
       });
       expect(out.creditsDelta).toBe(0);
       expect(out.status).toBe('partial_failure');
+      // nothing delivered: no delivery line
+      expect(eventsOf(out, 'mining_delivered')).toHaveLength(0);
     });
 
     it('other ores found during the contract stay with the pilot', () => {

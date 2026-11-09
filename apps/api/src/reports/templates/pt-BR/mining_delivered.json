@@ -1,0 +1,10 @@
+{
+  "variants": [
+    "{quantity} de {material} entregues ao contrato.",
+    "O contrato levou {quantity} de {material} do porão.",
+    "Entregue: {quantity} de {material}, pesados e assinados.",
+    "{quantity} de {material} foram para o comprador.",
+    "O comprador contou {quantity} de {material} da sua carga.",
+    "Você entregou {quantity} de {material} para o contrato."
+  ]
+}
