@@ -78,7 +78,11 @@ const MINING_EXPLORERS: FillerTemplate = {
   requirements: { originFactions: ['explorers'] },
 };
 
-const MATERIALS: FillerMaterial[] = [{ id: 'iron' }, { id: 'copper' }];
+const MATERIALS: FillerMaterial[] = [
+  { id: 'iron', rarity: 'common' },
+  { id: 'copper', rarity: 'uncommon' },
+  { id: 'crystal', rarity: 'rare' },
+];
 
 interface FixtureWorld {
   readonly locations: readonly FillerLocation[];
@@ -126,6 +130,7 @@ function legsOf(draft: ReturnType<typeof fillMission>): TestLeg[] {
 
 interface MiningCargo {
   readonly materialId?: string;
+  readonly rarity?: string;
   readonly contracted?: boolean;
   readonly quantity?: number;
 }
@@ -385,32 +390,20 @@ describe('S6.2 — template filler (pure generation)', () => {
     expect(contracts.some((c) => !c)).toBe(true);
   });
 
-  it('never contracts for more ore than a single stop can possibly yield', () => {
-    // One mining stop rolls rules.mining.attempts_per_stop independent attempts, at most
-    // one unit each — a contract above that cap is mechanically unfulfillable no matter
-    // how good the ship's mining rig is (owner playtest: mining contracts "almost always
-    // fail").
+  it('contracts use the rarity quantity range and unit pay', () => {
+    // v0.1.3: each rarity tier has its own min/max quantity and per-unit pay. The reward
+    // for a contracted mining offer is quantity × unit_pay for the picked ore's rarity.
     for (let epoch = 0; epoch < 50; epoch += 1) {
-      const draft = fill(`gamma|${epoch}|v1`, LOC_GAMMA, [MINING_EXPLORERS]);
+      const draft = fill(`gamma|${epoch}|v3`, LOC_GAMMA, [MINING_EXPLORERS]);
       const cargo = draft.cargo as MiningCargo;
-      if (cargo.contracted === true) {
-        expect(cargo.quantity!).toBeLessThanOrEqual(rules.mining.attempts_per_stop);
-      }
-    }
-  });
-
-  it('caps contracted quantity at an achievable 1-3 units', () => {
-    // A starter rig (MIN 1) in open space has a ~14% find chance per attempt, so the
-    // expected yield per mission is ~1.4 units. Asking for 5-10 made contracts fail
-    // most of the time; the calibrated cap keeps common-rarity contracts winnable
-    // while rarer materials still reward upgrading the rig.
-    for (let epoch = 0; epoch < 50; epoch += 1) {
-      const draft = fill(`gamma|${epoch}|v2`, LOC_GAMMA, [MINING_EXPLORERS]);
-      const cargo = draft.cargo as MiningCargo;
-      if (cargo.contracted === true) {
-        expect(cargo.quantity!).toBeGreaterThanOrEqual(1);
-        expect(cargo.quantity!).toBeLessThanOrEqual(3);
-      }
+      if (cargo.contracted !== true || cargo.rarity === undefined) continue;
+      const rarity = cargo.rarity;
+      const min = rules.mining.contract_quantity_min[rarity] ?? 1;
+      const max = rules.mining.contract_quantity_max[rarity] ?? min;
+      expect(cargo.quantity!).toBeGreaterThanOrEqual(min);
+      expect(cargo.quantity!).toBeLessThanOrEqual(max);
+      const unitPay = rules.mining.contract_unit_pay[rarity] ?? 0;
+      expect(draft.reward).toBe(Math.round((cargo.quantity ?? 0) * unitPay));
     }
   });
 

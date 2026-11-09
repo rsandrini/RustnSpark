@@ -91,6 +91,7 @@ describe('missions accept/hold API (S6.4)', () => {
       expiresAt?: Date;
       reward?: number;
       legs?: unknown;
+      cargo?: unknown;
     } = {},
   ): Promise<MissionInstance> {
     const type = overrides.type ?? 'DELIVERY';
@@ -108,7 +109,7 @@ describe('missions accept/hold API (S6.4)', () => {
         legs: overrides.legs ?? [
           { distance: 40, danger: 1, zone: 0, env: { id: 'belt', level: 1, fuelMult: 1 } },
         ],
-        cargo: {},
+        cargo: overrides.cargo ?? {},
         // Deliberately wrong provisional: accept must finalize it from the ship's tier (D29).
         reward: overrides.reward ?? 1,
         expiresAt: overrides.expiresAt ?? new Date(Date.now() + 30 * 60_000),
@@ -310,6 +311,44 @@ describe('missions accept/hold API (S6.4)', () => {
     const miningRequirements = byId.get(mining.id)?.info.requirements ?? [];
     const miner = miningRequirements.find((entry) => entry.code === 'MINER');
     expect(miner?.met).toBe(false);
+  });
+
+  it('includes mining odds and time on mining offers (T7)', async () => {
+    await freshSeededApp();
+    const { token, seeded } = await onboardPlayer();
+    await makeVeteran(seeded.player.id);
+    const server = httpServer(testApp.app);
+
+    const mining = await createMission({
+      type: 'MINING',
+      cargo: { materialId: 'common_ore', rarity: 'common', contracted: true, quantity: 10 },
+    });
+
+    const board = await request(server).get('/v1/locations/ceres/missions').set(auth(token));
+    expect(board.status).toBe(200);
+    const row = (board.body as Array<{ id: string; info: { mining: unknown } }>).find(
+      (entry) => entry.id === mining.id,
+    );
+    expect(row).toBeDefined();
+    const miningInfo = row!.info.mining as {
+      required: number;
+      materialId: string;
+      expectedSeconds: number;
+      capSeconds: number;
+      successChance: number;
+      spaceUnits: number;
+    };
+    expect(miningInfo).toMatchObject({
+      required: 10,
+      materialId: 'common_ore',
+      capSeconds: expect.any(Number),
+      spaceUnits: expect.any(Number),
+    });
+    expect(miningInfo.capSeconds).toBeGreaterThan(0);
+    expect(miningInfo.spaceUnits).toBeGreaterThan(0);
+    // Starter ship has no mining rig, so the chance to fulfill the contract is zero.
+    expect(miningInfo.successChance).toBe(0);
+    expect(miningInfo.expectedSeconds).toBe(0);
   });
 
   it('warns on a mission whose trip needs more fuel than the tank can ever hold (FUEL_CAPACITY), and only then', async () => {

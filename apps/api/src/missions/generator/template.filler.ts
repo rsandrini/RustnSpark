@@ -13,18 +13,11 @@ const BOARD_EXPIRY_MIN_SECONDS = 360; // 6 minutes
 const BOARD_EXPIRY_MAX_SECONDS = 2400; // 40 minutes
 const MS_PER_SECOND = 1000;
 
-// Mining contracts (design missoes §4 "dois modos"): v0.1 placeholder split and quantity
-// range, both explicitly listed as calibratable later (design missoes §8).
-//
-// Quantity is capped low because a single mining stop rolls attempts_per_stop independent
-// find rolls and each success yields one unit. A starter rig (MIN 1) in open space has a
-// ~14% find chance per attempt → expected yield of ~1.4 units per mission. Asking for 5-10
-// units made contracted mining "almost always fail" even though the recent cap prevented
-// values above attempts_per_stop. Keeping the max at 3 keeps common-rarity contracts
-// achievable for starter rigs while rarer materials still reward upgrading the rig.
+// Mining contracts (v0.1.3): draw a rarity tier by the admin weights, pick an ore of that
+// rarity from the template's pinned/available set, and — when contracted — ask for a quantity
+// and pay per unit taken from the matching rarity column. The resolver's mining-yield module
+// owns the actual dig math; the generator only sets the contract terms here.
 const CONTRACTED_CHANCE = 0.5;
-const MIN_CONTRACT_QUANTITY = 1;
-const MAX_CONTRACT_QUANTITY = 3;
 
 // D29 finalizes reward from the accepting ship's tier; the stored figure is the
 // provisional board value at generation time (starter-ship tier).
@@ -76,6 +69,7 @@ export interface FillerTemplate {
 
 export interface FillerMaterial {
   readonly id: string;
+  readonly rarity: string;
 }
 
 export interface FillerWorld {
@@ -424,20 +418,33 @@ function miningCargo(
   materials: readonly FillerMaterial[],
   rules: GameRules,
 ): Record<string, unknown> {
-  const material = rng.child('mining').pick(materials);
+  if (materials.length === 0) {
+    throw new MissionGenerationError('No minable material available for mining offer');
+  }
+
+  const rarities = Object.keys(rules.mining.contract_rarity_weights);
+  const rarity = weightedPick(
+    rarities,
+    (r) => rules.mining.contract_rarity_weights[r] ?? 0,
+    rng.child('rarity'),
+  );
+  const byRarity = materials.filter(
+    (material) => material.rarity.toLowerCase() === rarity.toLowerCase(),
+  );
+  const pool = byRarity.length > 0 ? byRarity : materials;
+  const material = rng.child('mining').pick(pool);
   const contracted = rng.child('contracted').float() < CONTRACTED_CHANCE;
   if (contracted) {
-    // A single mining stop can yield at most attempts_per_stop units (mining.resolver.ts
-    // rolls that many independent attempts, one unit each) — a contract above that cap is
-    // unfulfillable no matter the ship's rig, so it is clamped to never exceed it.
-    const maxQuantity = Math.min(MAX_CONTRACT_QUANTITY, rules.mining.attempts_per_stop);
+    const minQuantity = rules.mining.contract_quantity_min[rarity] ?? 1;
+    const maxQuantity = Math.max(minQuantity, rules.mining.contract_quantity_max[rarity] ?? minQuantity);
     return {
       materialId: material.id,
+      rarity: material.rarity,
       contracted: true,
-      quantity: rng.child('quantity').int(MIN_CONTRACT_QUANTITY, maxQuantity),
+      quantity: rng.child('quantity').int(minQuantity, maxQuantity),
     };
   }
-  return { materialId: material.id, contracted: false };
+  return { materialId: material.id, rarity: material.rarity, contracted: false };
 }
 
 /**
@@ -594,7 +601,7 @@ export function fillMission(input: FillMissionInput): MissionDraft {
 
   const totalDistance = legs.reduce((sum, leg) => sum + leg.distance, 0);
   const maxDanger = legs.reduce((peak, leg) => (leg.danger > peak ? leg.danger : peak), 0);
-  const reward = Math.round(
+  let reward = Math.round(
     rewardBase(
       {
         tier: PROVISIONAL_TIER,
@@ -605,6 +612,13 @@ export function fillMission(input: FillMissionInput): MissionDraft {
       rules,
     ) * (template.type === 'RACE' ? rules.race.prize_share_1 : 1),
   );
+  // Mining contracts pay by ore value × amount, not by distance/danger.
+  if (template.type === 'MINING' && cargo.contracted === true) {
+    const miningCargo = cargo as { rarity?: string; quantity?: number };
+    const rarity = miningCargo.rarity ?? 'common';
+    const quantity = miningCargo.quantity ?? 0;
+    reward = Math.round(quantity * (rules.mining.contract_unit_pay[rarity] ?? 0));
+  }
 
   return {
     templateId: template.id,

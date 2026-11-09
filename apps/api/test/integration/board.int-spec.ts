@@ -192,7 +192,7 @@ describe('mission board (S6.2)', () => {
     expect(live).toBe(3);
   }, 15000);
 
-  it('fills a port with different offers: no two share both template and destination', async () => {
+  it('fills a port with different offers: no two share template, destination and (for mining) material', async () => {
     await config!.setValue(
       'missions.board_min_by_detail',
       { main: 6, regional: 6, local: 4 },
@@ -202,7 +202,12 @@ describe('mission board (S6.2)', () => {
     for (const port of ['ceres', 'hedus', 'cair']) {
       const rows = await board!.getBoard(port, 1);
       expect(rows.length).toBeGreaterThanOrEqual(6);
-      const pairs = rows.map((row) => `${row.templateId}>${row.destinationId}`);
+      const pairs = rows.map((row) => {
+        const materialId = (row.cargo as { materialId?: string } | null)?.materialId;
+        return row.type === 'MINING' && materialId !== undefined
+          ? `${row.templateId}>${row.destinationId}>${materialId}`
+          : `${row.templateId}>${row.destinationId}`;
+      });
       expect(new Set(pairs).size).toBe(pairs.length);
     }
   }, 30000);

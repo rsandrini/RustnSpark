@@ -28,7 +28,7 @@ import {
   environmentIntegrityLoss,
   escortIntegrity,
 } from '../object/integrity.js';
-import type { MiningStop, MinerRig, MiningYield } from '../mining/mining.resolver.js';
+import type { MiningStop, MinerRig } from '../mining/mining.resolver.js';
 import { dig, keepBest, oreSpace, rarityRankOf, type MineableOre } from '../mining/mining-yield.js';
 import { missionEvent } from '../events/mission-event.js';
 import type {

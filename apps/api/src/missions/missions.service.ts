@@ -1,5 +1,12 @@
 import { applyEngineLevels, clampLevels } from '../resolution/engine/engine.js';
 import {
+  chanceToReach,
+  findsPerTick,
+  oreMix,
+  oreSpace,
+  type MineableOre,
+} from '../resolution/mining/mining-yield.js';
+import {
   BadRequestException,
   ConflictException,
   Injectable,
@@ -97,6 +104,15 @@ export interface OfferInfo {
     readonly name: { readonly en: string; readonly 'pt-BR': string };
     readonly contracted: boolean;
     readonly quantity: number | null;
+  } | null;
+  /** Mining offers: time and odds for the viewing ship's own drill; null on non-mining offers or without a rig. */
+  readonly mining: {
+    readonly required: number;
+    readonly materialId: string;
+    readonly expectedSeconds: number;
+    readonly capSeconds: number;
+    readonly successChance: number;
+    readonly spaceUnits: number;
   } | null;
   /** Round-10 owner request: the full requirement checklist (met + unmet), not just the
       failure reasons — so the board can show what a mission demands even when the viewer's
@@ -739,14 +755,24 @@ export class MissionsService implements OnModuleInit {
       const id = (row.cargo as { materialId?: unknown } | null)?.materialId;
       return typeof id === 'string' ? [id] : [];
     });
-    const materials =
+    const referencedMaterials =
       materialIds.length === 0
         ? []
         : await this.prisma.material.findMany({
             where: { id: { in: [...new Set(materialIds)] } },
-            select: { id: true, displayName: true },
+            select: { id: true, displayName: true, rarity: true, basePrice: true },
           });
-    const materialsById = new Map(materials.map((entry) => [entry.id, entry.displayName]));
+    const materialsById = new Map(referencedMaterials.map((entry) => [entry.id, entry.displayName]));
+    // Mining offer estimates need the full minable set (or the template's pinned subset) to
+    // compute the target ore's share of the local mix, without an extra query per destination.
+    const hasMining = rows.some((row) => row.type === 'MINING');
+    const allMinable = hasMining
+      ? await this.prisma.material.findMany({
+          where: { active: true, fixedPrice: false },
+          select: { id: true, displayName: true, rarity: true, basePrice: true },
+          orderBy: { id: 'asc' },
+        })
+      : [];
 
     const active = await this.prisma.missionInstance.count({
       where: { playerId, status: { in: [...ACTIVE_STATUSES] } },
@@ -801,6 +827,7 @@ export class MissionsService implements OnModuleInit {
         row,
         wordsById.get(row.templateId),
         materialsById,
+        allMinable,
         sheet,
         viewer.ship === undefined ? null : viewer.installed,
         requirementsById.get(row.templateId),
@@ -832,13 +859,27 @@ interface OfferLeg {
   readonly distance?: number;
   readonly danger?: number;
   readonly zone?: number;
-  readonly env?: { readonly fuelMult?: number };
+  readonly env?: { readonly fuelMult?: number; readonly id?: string };
+}
+
+const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'];
+
+/** The rarity of the best connected mining rig on the ship: it sets how the ore mix leans. */
+function drillRarityOf(parts: readonly InstalledPart[]): string {
+  let best = 'COMMON';
+  for (const part of parts) {
+    const rarity = part.catalog.rarity ?? 'COMMON';
+    if (part.catalog.min <= 0) continue;
+    if (RARITY_ORDER.indexOf(rarity) > RARITY_ORDER.indexOf(best)) best = rarity;
+  }
+  return best;
 }
 
 function offerInfo(
   row: BoardMission,
   template: { displayName: unknown; description: unknown } | undefined,
   materialsById: ReadonlyMap<string, unknown>,
+  allMinable: readonly { readonly id: string; readonly rarity: string; readonly basePrice: number }[],
   sheet: ReturnType<typeof deriveSheet> | null,
   parts: readonly InstalledPart[] | null,
   requirementsJson: unknown,
@@ -898,6 +939,67 @@ function offerInfo(
             ? [fuelCapacityCheck(estimate.fuelNeeded, sheet.fuelCap)]
             : []),
         ];
+  // Mining offers: expected time, success chance and cargo space for the viewer's drill.
+  const miningOffer =
+    row.type === 'MINING' && sheet !== null && parts !== null && viability?.viable === true
+      ? ((): OfferInfo['mining'] => {
+          const materialId = typeof cargo.materialId === 'string' ? cargo.materialId : undefined;
+          if (materialId === undefined) return null;
+          const material = allMinable.find((entry) => entry.id === materialId);
+          if (material === undefined) return null;
+
+          const rawReq = requirementsJson as { materialIds?: unknown } | null | undefined;
+          const pinnedIds = Array.isArray(rawReq?.materialIds)
+            ? (rawReq.materialIds as unknown[]).filter((id): id is string => typeof id === 'string')
+            : [];
+          const ores: readonly MineableOre[] = (pinnedIds.length > 0
+            ? allMinable.filter((entry) => pinnedIds.includes(entry.id))
+            : allMinable
+          ).map((entry) => ({
+            id: entry.id,
+            rarity: entry.rarity.toLowerCase(),
+            price: entry.basePrice,
+          }));
+
+          const lastEnvId = legs[legs.length - 1]?.env?.id ?? 'open';
+          const richness = rules.mining.richness[lastEnvId] ?? 0;
+          const drillRarity = drillRarityOf(parts);
+          const miner = { min: sheet.min, condition: sheet.condition, rigPower: 1 };
+          const totalExpected = findsPerTick(miner, richness, rules);
+          const mix = oreMix(ores, drillRarity, rules);
+          const shareOfTarget = mix.get(materialId) ?? 0;
+          const targetExpected = totalExpected * shareOfTarget;
+          const required = typeof cargo.quantity === 'number' ? cargo.quantity : 0;
+          const capSeconds = rules.mining.contract_max_ticks * rules.mining.job_duration_seconds;
+          const expectedSeconds =
+            targetExpected > 0 && required > 0
+              ? Math.min(
+                  capSeconds,
+                  Math.round((required / targetExpected) * rules.mining.job_duration_seconds),
+                )
+              : 0;
+          const successChance =
+            required > 0
+              ? chanceToReach(
+                  required,
+                  totalExpected,
+                  rules.mining.contract_max_ticks,
+                  shareOfTarget,
+                )
+              : 1;
+          const spaceUnits = oreSpace(Math.max(0, sheet.crg), rules);
+
+          return {
+            required,
+            materialId,
+            expectedSeconds,
+            capSeconds,
+            successChance,
+            spaceUnits,
+          };
+        })()
+      : null;
+
   // A race offer lists its rivals (their speed and how long they would take over this route) so
   // the pilot can judge the field before entering.
   const scaled = (seconds: number): number => Math.round(seconds * rules.missions.time_scale);
@@ -969,6 +1071,7 @@ function offerInfo(
             contracted: cargo.contracted === true,
             quantity: typeof cargo.quantity === 'number' ? cargo.quantity : null,
           },
+    mining: miningOffer,
     requirements,
     cargo: cargoTermsOf(row.type, requirementsJson, rules),
     race:
