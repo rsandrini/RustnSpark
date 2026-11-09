@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { renderWithRouter } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { routes } from '../../app/router';
-import { resetActiveState, setShipStatus, world } from '../../test/msw/handlers';
+import { resetActiveState, setShipStatus, ship, world } from '../../test/msw/handlers';
 
 const onboarded = () =>
   http.get('/v1/players/me', () =>
@@ -245,6 +245,32 @@ describe('map (S10.5)', () => {
     expect(fuel).toHaveAttribute('data-state', 'ok');
     expect(within(box).getByText(/pays nothing/)).toBeInTheDocument();
     expect(within(box).getByRole('button', { name: /Fly to Estaleiro Tycho/ })).toBeEnabled();
+  });
+
+  it('a place card lists what is available and what can be mined, with only ore names and rarity', async () => {
+    const { svg } = await renderMap();
+    fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    const services = await screen.findByTestId('place-services');
+    expect(within(services).getByText('Market')).toBeInTheDocument();
+    expect(within(services).getByText('Repair')).toBeInTheDocument();
+    const ores = await screen.findByTestId('place-ores');
+    // only the ores that can be dug here, with their rarity; no odds and no explanation
+    expect(within(ores).getByText('Iron ore')).toBeInTheDocument();
+    expect(within(ores).queryByText(/per 5 min|%/)).toBeNull();
+  });
+
+  it('a pure-ion ship sees no fuel bar in the trip quote', async () => {
+    const base = ship();
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json([{ ...base, sheet: { ...base.sheet, fuelUse: 0 } }]),
+      ),
+    );
+    const { svg } = await renderMap();
+    fireEvent.keyDown(node(svg, 'Estaleiro Tycho'), { key: 'Enter' });
+    const box = await screen.findByTestId('travel');
+    expect(await within(box).findByText('2m 30s')).toBeInTheDocument();
+    expect(within(box).queryByTestId('mcard-fuel')).toBeNull();
   });
 
   it('suggests missions from the pilot\'s own board that deliver to a place other than "here", not that place\'s own (remote) board', async () => {

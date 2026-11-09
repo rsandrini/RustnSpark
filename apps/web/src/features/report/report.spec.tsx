@@ -282,6 +282,54 @@ describe('report (S10.8)', () => {
     expect(popup).toHaveTextContent('Rarity');
   });
 
+  it('labels mining events as kept, dropped and empty in the story view', async () => {
+    server.use(
+      http.get('/v1/reports/:missionId', () =>
+        HttpResponse.json(
+          {
+            locale: 'en',
+            outcome: 'partial_failure',
+            stats: { ...STATS, loot: [{ materialId: 'iron', name: 'Iron', quantity: 14 }] },
+            view: 'narrative',
+            chapters: [
+              {
+                leg: 0,
+                header: { text: 'Leg 1', segments: [{ t: 'text', value: 'Leg 1' }] },
+                lines: [
+                  {
+                    text: 'Kept: 14 common ore',
+                    category: 'mining',
+                    segments: [{ t: 'text', value: 'Kept: 14 common ore' }],
+                  },
+                  {
+                    text: 'Dropped: 6 common ore (no room)',
+                    category: 'mining_dropped',
+                    segments: [{ t: 'text', value: 'Dropped: 6 common ore (no room)' }],
+                  },
+                  {
+                    text: 'Found nothing else',
+                    category: 'mining_empty',
+                    segments: [{ t: 'text', value: 'Found nothing else' }],
+                  },
+                ],
+              },
+            ],
+          },
+          { status: 200 },
+        ),
+      ),
+    );
+    renderWithRouter(routes, { initialEntries: ['/report/m-1'] });
+    fireEvent.click(await screen.findByRole('tab', { name: 'The story' }));
+
+    const kept = await screen.findByText('Kept: 14 common ore');
+    expect(kept.closest('li')?.querySelector('.ev-tag')).toHaveTextContent('Kept');
+    const dropped = await screen.findByText('Dropped: 6 common ore (no room)');
+    expect(dropped.closest('li')?.querySelector('.ev-tag')).toHaveTextContent('Dropped');
+    const empty = await screen.findByText('Found nothing else');
+    expect(empty.closest('li')?.querySelector('.ev-tag')).toHaveTextContent('Empty');
+  });
+
   it('still opens a popup for a reference that has left the catalog (404)', async () => {
     server.use(
       http.get('/v1/reports/:missionId', () =>

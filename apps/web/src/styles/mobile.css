@@ -173,10 +173,14 @@
 
 @media (max-width: 700px) {
   /* The ship sheet: the ready / problems line stays, the tiles repeat what the yard already shows (FP, DEF, CRG,
-     MOB, RNG) and the long list is behind its own toggle. The newcomer hints ("your ship needs...") are out. */
-  .sheet-headline,
-  .needs-row {
+     MOB, RNG) except the structure budget, which the yard does not show, so that one stays as the summary. The long
+     list is behind its own toggle. The newcomer hints ("your ship needs...") are out. */
+  .needs-row,
+  .sheet-headline-tile:not(.sheet-headline-structure) {
     display: none;
+  }
+  .sheet-headline {
+    grid-template-columns: 1fr;
   }
 
   /* Every popup is a sheet from the bottom of the screen: the width of the phone, as tall as it needs, with
@@ -330,7 +334,9 @@
     gap: 6px;
     margin: 0;
   }
-  .market-panel .pcard > :not(.pcard-head):not(.pcard-meta):not(.pcard-actions):not(.compare-hover-card) {
+  .market-panel
+    .pcard
+    > :not(.pcard-head):not(.pcard-meta):not(.pcard-actions):not(.compare-hover-card) {
     grid-column: 1 / -1;
   }
 }

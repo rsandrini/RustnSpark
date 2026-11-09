@@ -85,7 +85,7 @@ export function ConnectorGrid({
   w: number;
   h: number;
   connectors: readonly ConnectorCell[];
-  size?: 'mini' | 'full';
+  size?: 'mini' | 'full' | 'large';
 }) {
   const { t } = useTranslation();
   if (connectors.length === 0) return null;

@@ -727,6 +727,26 @@ export const WorldResponseSchema = z.object({
 });
 export type WorldResponse = z.infer<typeof WorldResponseSchema>;
 
+/** GET /v1/locations/:id/mine/info — what a place yields and what the viewer's ship can carry. */
+export const MineInfoResponseSchema = z.object({
+  minable: z.boolean(),
+  tickSeconds: z.number(),
+  maxTicks: z.number(),
+  fuelPerTick: z.number(),
+  /** Ore space for the whole job (2 x cargo); null without a ship/rig. */
+  spaceUnits: z.number().nullable(),
+  /** Expected seconds to fill the ore space; null without a ship/rig. */
+  fillSeconds: z.number().nullable(),
+  ores: z.array(
+    z.object({
+      id: z.string(),
+      displayName: LocalizedTextSchema,
+      rarity: z.string(),
+    }),
+  ),
+});
+export type MineInfoResponse = z.infer<typeof MineInfoResponseSchema>;
+
 export const EligibilityReasonSchema = z.object({ code: z.string(), message: z.string() });
 export type EligibilityReason = z.infer<typeof EligibilityReasonSchema>;
 
@@ -789,6 +809,17 @@ export const OfferInfoSchema = z.object({
   /** Mining offers: what to dig for. */
   material: z
     .object({ name: LocalizedTextSchema, contracted: z.boolean(), quantity: z.number().nullable() })
+    .nullable(),
+  /** Mining offers: time and odds for the viewing ship's own drill; null on non-mining offers or without a rig. */
+  mining: z
+    .object({
+      required: z.number(),
+      materialId: z.string(),
+      expectedSeconds: z.number(),
+      capSeconds: z.number(),
+      successChance: z.number(),
+      spaceUnits: z.number(),
+    })
     .nullable(),
   /** Full requirement checklist (met + unmet); empty when the viewer has no ship to check. */
   requirements: z.array(RequirementCheckSchema),

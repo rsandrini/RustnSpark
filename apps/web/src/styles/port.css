@@ -445,7 +445,8 @@
   background: var(--paper-2);
   font-size: var(--text-sm);
 }
-.upgrade-rules > b {
+.upgrade-rules > summary {
+  cursor: pointer;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 500;

@@ -275,6 +275,26 @@ export function MissionCard({
           </p>
         )}
 
+        {info.mining != null && (
+          <p className="mcard-mining-odds sub" data-testid="mcard-mining-odds">
+            {info.mining.required > 0
+              ? t('board.mining.odds', {
+                  time: formatDuration(info.mining.expectedSeconds, t),
+                  chance: Math.round(info.mining.successChance * 100),
+                })
+              : t('board.mining.space', { units: info.mining.spaceUnits })}
+            {info.mining.required > 0 && info.mining.required > info.mining.spaceUnits && (
+              <span className="warn-text" data-testid="mcard-mining-cargo-warning">
+                {' '}
+                {t('board.mining.cargoWarning', {
+                  required: info.mining.required,
+                  space: info.mining.spaceUnits,
+                })}
+              </span>
+            )}
+          </p>
+        )}
+
         {info.race !== null && <RaceField race={info.race} reward={offer.reward} money={money} />}
 
         <dl className="mcard-facts">

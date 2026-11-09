@@ -13,6 +13,7 @@ import {
   setShipActivity,
   repairShop,
   ionShip,
+  ship,
 } from '../../test/msw/handlers';
 import { queryByRoleSafe } from '../../test/queries';
 import { routes } from '../../app/router';
@@ -99,6 +100,20 @@ describe('port (S10.9)', () => {
     expect(screen.getByRole('tab', { name: 'Refuel' })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('a ship whose engines burn no fuel (ion only) has no Refuel tab', async () => {
+    const base = ship();
+    server.use(
+      http.get('/v1/ships', () =>
+        HttpResponse.json([{ ...base, sheet: { ...base.sheet, fuelUse: 0 } }]),
+      ),
+    );
+    server.use(onboarded());
+    renderWithRouter(routes, { initialEntries: ['/hangar/port?tab=refuel'] });
+    // the address asks for Refuel, but the tab is closed for this ship: the Port opens another one
+    await screen.findByRole('tab', { selected: true });
+    expect(screen.queryByRole('tab', { name: 'Refuel' })).toBeNull();
+  });
+
   it('a link to another tab, followed while the Port is open, moves to that tab', async () => {
     const { router } = renderWithRouter(routes, { initialEntries: ['/port?tab=refuel'] });
     await screen.findByRole('tab', { name: 'Refuel' });
@@ -143,6 +158,10 @@ describe('port (S10.9)', () => {
       name: 'Buy Plated Hull for 300 ¢?',
     });
     expect(popup).toHaveTextContent('Balance after: 4,520 ¢');
+    // the part's footprint and ports, big enough to read, and its size in cells
+    const shape = within(popup).getByTestId('buy-shape');
+    expect(within(shape).getByTestId('connector-grid')).toHaveClass('connector-grid-large');
+    expect(shape).toHaveTextContent(/Size: \d×\d cells/);
     fireEvent.click(within(popup).getByRole('button', { name: 'Buy' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Bought Plated Hull for 300 ¢.');
@@ -533,7 +552,7 @@ describe('port (S10.9)', () => {
     expect(within(mining).getByRole('button', { name: 'Send the ship mining' })).toBeEnabled();
   });
 
-  it('lets the pilot pick how long to dig, shows the fuel for it, and sends the ticks', async () => {
+  it('shows ore space and the drop rule, and lets the pilot pick how long to dig', async () => {
     let sent: unknown = null;
     server.use(
       http.post('/v1/locations/:id/mine', async ({ request }) => {
@@ -550,10 +569,17 @@ describe('port (S10.9)', () => {
     openPortTab('Mining');
     const mining = await screen.findByTestId('mining-job');
 
+    // Ore space is twice the cargo (fixture crg = 10) and the rule is shown before the job.
+    expect(within(mining).getByTestId('mine-tiles')).toHaveTextContent('Ore space20 units');
+    expect(within(mining).getByTestId('mine-tiles')).toHaveTextContent('Fills in about10m');
+    expect(within(mining).getByTestId('mine-rule')).toHaveTextContent(
+      'Ore space is twice your cargo (20 units). If you find more, the cheapest ore is dropped first.',
+    );
+
     // one tick by default; the fuel line follows the choice (50 per tick)
-    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('up to 50');
+    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('50 for this length');
     fireEvent.click(within(mining).getByRole('radio', { name: /^20m/ }));
-    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('up to 200');
+    expect(within(mining).getByTestId('mine-fuel')).toHaveTextContent('200 for this length');
 
     fireEvent.click(within(mining).getByRole('button', { name: 'Send the ship mining' }));
     await waitFor(() => expect(sent).toEqual({ ticks: 4 }));
@@ -573,6 +599,8 @@ describe('port (S10.9)', () => {
     openPortTab('Upgrade');
     const why = await screen.findByTestId('upgrade-why');
     expect(why).toHaveTextContent(/not at 100% condition/);
+    // the rules sit folded behind their title
+    expect(screen.getByTestId('upgrade-rules')).not.toHaveAttribute('open');
     expect(screen.getByTestId('upgrade-rules')).toHaveTextContent('100% condition');
     fireEvent.click(within(why).getByRole('button', { name: 'Go to Repair' }));
     expect(await screen.findByRole('tab', { name: /^Repair/, selected: true })).toBeInTheDocument();
@@ -878,7 +906,7 @@ describe('port (S10.9)', () => {
     const needs = (await screen.findAllByTestId('upgrade-needs'))[0]!;
     expect(
       within(needs)
-        .getByText(/Credits: 115 ¢ \(you have 1 ¢\)/)
+        .getByText(/Credits: 115 ¢/)
         .closest('li'),
     ).toHaveClass('req-unmet');
     expect(within(needs).getByText(/missing/)).toBeInTheDocument();
@@ -898,7 +926,7 @@ describe('port (S10.9)', () => {
     expect(await screen.findByText('Plated Hull')).toBeInTheDocument();
     const needs = (await screen.findAllByTestId('upgrade-needs'))[0]!;
     const li = needs.querySelector('li');
-    expect(li).toHaveTextContent(/^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/);
+    expect(li).toHaveTextContent(/^[✓✗]?Credits: 115 ¢$/);
   });
 
   it('shows what the pilot holds and groups the cards by what is missing', async () => {
@@ -976,8 +1004,8 @@ describe('port (S10.9)', () => {
     expect(popup).toHaveTextContent('Upgrade Plated Hull to Reinforced Hull for 115 ¢?');
     // The whole price: credits and what else it asks for, against what the pilot holds.
     const price = within(popup).getByTestId('upgrade-price');
-    expect(price).toHaveTextContent('Credits: 115 ¢ (you have');
-    expect(price).toHaveTextContent('Scrap (any part): 5 of 2');
+    expect(price).toHaveTextContent('Credits: 115 ¢');
+    expect(price).toHaveTextContent('Scrap (any part): 2 (you have 5)');
     // Both names wear their rarity's colour: what it is now, and what it becomes.
     expect(within(popup).getByText('Plated Hull')).toHaveClass('rarity-name', 'rarity-common');
     expect(within(popup).getByText('Reinforced Hull')).toHaveClass(
@@ -1034,11 +1062,11 @@ describe('port (S10.9)', () => {
     openPortTab('Upgrade');
     await screen.findByText('Plated Hull');
     const list = (await screen.findAllByTestId('upgrade-needs'))[0]!;
-    expect(list).toHaveTextContent('Scrap (any part): 1 of 4');
+    expect(list).toHaveTextContent('Scrap (any part): 4 (you have 1)');
     expect(list).toHaveTextContent('(missing 3)');
     expect(within(list).getByText(/Scrap/).closest('li')).toHaveClass('req-unmet');
     // credits are listed first, with the price before what the pilot has
-    expect(list.querySelector('li')).toHaveTextContent(/^✓?Credits: 115 ¢ \(you have [\d,]+ ¢\)$/);
+    expect(list.querySelector('li')).toHaveTextContent(/^[✓✗]?Credits: 115 ¢$/);
     // and where to get it
     expect(
       screen.getAllByText(/Scrap comes from scavenging and from repairs/).length,

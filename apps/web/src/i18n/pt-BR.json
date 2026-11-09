@@ -329,7 +329,7 @@
           },
           "mining": {
             "title": "Mineração",
-            "text": "Minerar exige uma broca de mineração instalada. Uma extração livre leva {{miningJob}} e traz o que o lugar dá; uma missão de mineração pede um material específico e só paga se você trouxer a quantidade completa. A riqueza depende do lugar."
+            "text": "Minerar exige uma broca de mineração instalada. Uma extração livre leva {{miningJob}} e traz uma mistura dos minérios do lugar, mais dos comuns; uma broca melhor acha mais e puxa para os minérios mais raros. O espaço de minério de uma viagem é o dobro da sua carga, qualquer que seja o tempo: acima dele, o minério mais barato é descartado primeiro; uma missão de mineração pede um minério específico e paga por inteiro se você entregar 100%, e proporcionalmente se entregar menos; as chances e o tempo no cartão são para a sua própria broca. A riqueza depende do lugar."
           }
         }
       },
@@ -1596,15 +1596,18 @@
     },
     "mine": {
       "title": "Minerar o campo",
-      "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos e volta quando o tempo acaba ou o porão enche. Sem pagamento adiantado: você vê o que ela achou quando o trabalho termina.",
+      "what": "Mande a nave cavar onde ela está. Ela cava em ticks de 5 minutos durante todo o tempo escolhido. O espaço de minério é o dobro da carga para toda a viagem, seja qual for o tempo: se achar mais, o minério mais barato é descartado primeiro. Sem pagamento adiantado: você vê o que ela achou quando o trabalho termina.",
       "action": "Enviar a nave para minerar",
       "length": "Por quanto tempo cavar",
       "option": "até {{fuel}} de combustível",
-      "fuel": "Cada tick cavado queima {{perTick}} de combustível: até {{total}} nesta duração, menos se o porão encher antes.",
+      "fuel": "Cada tick cavado queima {{perTick}} de combustível: {{total}} nesta duração.",
+      "rule": "O espaço de minério é o dobro da carga ({{units}} unidades). Se achar mais, o minério mais barato é descartado primeiro.",
       "tile": {
         "time": "Tempo",
-        "hold": "Porão de carga",
-        "holdValue": "{{units}} unid.",
+        "space": "Espaço de minério",
+        "spaceValue": "{{units}} unidades",
+        "fill": "Enche em cerca de",
+        "fillValue": "{{time}}",
         "fuel": "Combustível",
         "fuelValue": "até {{units}}"
       }
@@ -1645,8 +1648,8 @@
     "upgradeNoneAffordable": "Nada que você possa melhorar com os créditos de agora. Desligue o filtro para ver tudo que pode ser melhorado.",
     "scavengeFoot": "Vasculhar a pé",
     "upgradeFromTo": "{{from}} → {{to}}",
-    "upgradeMaterial": "{{name}}: {{have}} de {{needed}}",
-    "upgradeNeedCredits": "Créditos: {{needed}} (você tem {{have}})",
+    "upgradeMaterial": "{{name}}: {{needed}} (você tem {{have}})",
+    "upgradeNeedCredits": "Créditos: {{needed}}",
     "upgradeMissingCredits": "(faltam {{amount}})",
     "upgradeMissing": "(faltam {{amount}})",
     "upgradeNeedMoreCredits": "Faltam {{amount}}",
@@ -1681,7 +1684,7 @@
     "upgradeBlockedTop_other": "{{count}} peças já estão na raridade máxima.",
     "upgradeBlockedNoTier": "{{count}} peça não tem próxima raridade para evoluir.",
     "upgradeBlockedNoTier_other": "{{count}} peças não têm próxima raridade para evoluir.",
-    "upgradePriceCredits": "Créditos: {{cost}} (você tem {{have}})",
+    "upgradePriceCredits": "Créditos: {{cost}}",
     "bridgeResize": {
       "expandDone": "Expandida: {{name}} está no seu inventário. Instale no hangar.",
       "shrinkDone": "Reduzida: {{name}} está no seu inventário. Instale no hangar.",
@@ -1965,14 +1968,17 @@
       }
     },
     "story": {
-      "leg": "Trecho {{index}} · {{from}} → {{to}}",
+      "leg": "Etapa {{index}} · {{from}} → {{to}}",
       "categories": {
         "combat": "Luta",
         "transit": "Voo",
         "failure": "Problema",
         "environment": "Espaço",
         "loot": "Achado",
-        "payment": "Pagamento"
+        "payment": "Pagamento",
+        "mining": "Ficou",
+        "mining_dropped": "Descartado",
+        "mining_empty": "Vazio"
       }
     },
     "logTable": {
@@ -2155,8 +2161,11 @@
       "RACE": "uma nave rápida: precisa superar a velocidade de entrada, e quanto mais rápida melhor."
     },
     "mining": {
-      "contracted": "Contrato: minere {{quantity}} × {{material}}. Só paga se trouxer a quantidade completa.",
-      "free": "Minere {{material}}: você fica com o que extrair e vende num porto."
+      "contracted": "Contrato: minere {{quantity}} × {{material}}. Pagamento integral por 100% entregue, proporcional abaixo, nada por zero.",
+      "free": "Minerar {{material}}: você fica com o que cavar e vende em um porto.",
+      "odds": "cerca de {{time}}, {{chance}}% de chance",
+      "space": "Espaço de minério: {{units}} unidades",
+      "cargoWarning": "precisa de mais carga ({{required}} > {{space}} de espaço)"
     },
     "race": {
       "title": "O grid",
@@ -2243,6 +2252,20 @@
     "headingTo": "rumo a {{destination}}, chegando em",
     "dockedAt": "Atracado em {{place}}",
     "shipHere": "Sua nave",
+    "facts": {
+      "services": "Disponível aqui",
+      "service": {
+        "market": "Mercado",
+        "goods": "Vender bens",
+        "repair": "Reparo",
+        "refuel": "Reabastecer",
+        "upgrade": "Melhorias",
+        "missions": "Missões"
+      },
+      "mining": "Mineração",
+      "noMining": "Nada para minerar aqui.",
+      "rarity": { "common": "comum", "uncommon": "incomum", "rare": "raro" }
+    },
     "popup": {
       "missionsHere": "Missões aqui",
       "missionsToHere": "Missões para cá",
@@ -2566,6 +2589,7 @@
     "noMatches": "Nenhuma peça combina com esses filtros.",
     "used": "Usada",
     "youPay": "Você paga",
+    "sizeCells": "Tamanho: {{w}}×{{h}} células",
     "rarity": "Raridade",
     "rarityAll": "Qualquer raridade",
     "size": "Tamanho",

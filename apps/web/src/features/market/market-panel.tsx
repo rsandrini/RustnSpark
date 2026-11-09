@@ -9,6 +9,7 @@ import { pickLocalized } from '../../i18n/localized';
 import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
+import { ConnectorGrid } from '../parts/connector-grid';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
 import { useNotice, type FeedbackOptions } from '../../ui/feedback';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
@@ -20,6 +21,8 @@ interface ConfirmBuy {
   price: number;
   listingId: string;
   hint?: string;
+  /** The part's footprint and ports, drawn big in the popup (the card's drawing is too small to read). */
+  listing?: MarketListing;
 }
 
 type Condition = 'all' | 'new' | 'used';
@@ -422,7 +425,12 @@ export function MarketPanel({
                   disabled={!affordable}
                   onClick={() => {
                     setNotice(null);
-                    setConfirm({ name, price: listing.price, listingId: listing.listingId });
+                    setConfirm({
+                      name,
+                      price: listing.price,
+                      listingId: listing.listingId,
+                      listing,
+                    });
                   }}
                 >
                   {affordable
@@ -444,6 +452,22 @@ export function MarketPanel({
       >
         {confirm !== null && (
           <div className="stack">
+            {confirm.listing?.connectors !== undefined && confirm.listing.connectors.length > 0 && (
+              <figure className="buy-shape" data-testid="buy-shape">
+                <ConnectorGrid
+                  w={confirm.listing.catalog.w}
+                  h={confirm.listing.catalog.h}
+                  connectors={confirm.listing.connectors}
+                  size="large"
+                />
+                <figcaption className="sub">
+                  {t('market.sizeCells', {
+                    w: confirm.listing.catalog.w,
+                    h: confirm.listing.catalog.h,
+                  })}
+                </figcaption>
+              </figure>
+            )}
             <p>{t('port.balanceAfter', { balance: money(wallet - confirm.price) })}</p>
             {confirm.hint !== undefined && <p className="sub">{confirm.hint}</p>}
             {insufficient && <p className="error-text">{t('port.insufficient')}</p>}

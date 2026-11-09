@@ -107,6 +107,7 @@ describe('transit (S10.7)', () => {
                 material: null,
                 requirements: [],
                 race: null,
+                mining: null,
               },
             }),
           ],
@@ -143,6 +144,7 @@ describe('transit (S10.7)', () => {
                   { code: 'WEAPONS', message: 'weapons', met: false },
                 ],
                 race: null,
+                mining: null,
               },
             }),
           ],
@@ -183,6 +185,7 @@ describe('transit (S10.7)', () => {
           material: null,
           requirements: [],
           race: null,
+          mining: null,
         },
       });
 
@@ -310,6 +313,7 @@ describe('transit (S10.7)', () => {
                 estimate: null,
                 material: null,
                 requirements: [],
+                mining: null,
                 race: {
                   rivals: [],
                   you: null,

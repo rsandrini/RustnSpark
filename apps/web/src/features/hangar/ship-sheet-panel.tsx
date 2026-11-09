@@ -300,7 +300,10 @@ export function ShipSheetPanel({
       </div>
       {!showAll && (
         <div className="sheet-headline" data-testid="sheet-headline">
-          <div className="sheet-headline-tile" title={t('hangar.statHelp.structure')}>
+          <div
+            className="sheet-headline-tile sheet-headline-structure"
+            title={t('hangar.statHelp.structure')}
+          >
             <span>{t('hangar.headline.structure')}</span>
             <b className={`tone-${structureBand}`}>{structureText}</b>
           </div>

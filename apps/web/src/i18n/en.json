@@ -329,7 +329,7 @@
           },
           "mining": {
             "title": "Mining",
-            "text": "Mining needs a mining rig installed. A free dig takes {{miningJob}} and brings back what the place gives; a mining mission asks for a named material and pays only if you bring the full amount. Richness depends on the place."
+            "text": "Mining needs a mining rig installed. A free dig takes {{miningJob}} and brings back a mix of the place's ores, more of the common ones; a better drill finds more and leans to the rarer ores. The ore space of a trip is twice your cargo, whatever the time: over it, the cheapest ore is dropped first. A mining mission asks for a named ore and pays in full for 100% delivered, in part for less; the odds and time on its card are for your own drill. Richness depends on the place."
           }
         }
       },
@@ -1596,15 +1596,18 @@
     },
     "mine": {
       "title": "Mine the field",
-      "what": "Send the ship to dig where it sits. It digs in 5-minute ticks and heads back when the time is up or the hold is full. No pay up front: you see what it turned up when the job ends.",
+      "what": "Send the ship to dig where it sits. It digs in 5-minute ticks for the whole time you pick. Ore space is twice your cargo for the whole trip, whatever the time: if you find more, the cheapest ore is dropped first. No pay up front: you see what it turned up when the job ends.",
       "action": "Send the ship mining",
       "length": "How long to dig",
       "option": "up to {{fuel}} fuel",
-      "fuel": "Each tick it digs burns {{perTick}} fuel: up to {{total}} for this length, less if the hold fills first.",
+      "fuel": "Each tick it digs burns {{perTick}} fuel: {{total}} for this length.",
+      "rule": "Ore space is twice your cargo ({{units}} units). If you find more, the cheapest ore is dropped first.",
       "tile": {
         "time": "Time",
-        "hold": "Cargo hold",
-        "holdValue": "{{units}} units",
+        "space": "Ore space",
+        "spaceValue": "{{units}} units",
+        "fill": "Fills in about",
+        "fillValue": "{{time}}",
         "fuel": "Fuel",
         "fuelValue": "up to {{units}}"
       }
@@ -1645,8 +1648,8 @@
     "upgradeNoneAffordable": "Nothing you can upgrade with your credits right now. Turn the filter off to see everything that can be upgraded.",
     "scavengeFoot": "Go scavenging on foot",
     "upgradeFromTo": "{{from}} → {{to}}",
-    "upgradeMaterial": "{{name}}: {{have}} of {{needed}}",
-    "upgradeNeedCredits": "Credits: {{needed}} (you have {{have}})",
+    "upgradeMaterial": "{{name}}: {{needed}} (you have {{have}})",
+    "upgradeNeedCredits": "Credits: {{needed}}",
     "upgradeMissingCredits": "(missing {{amount}})",
     "upgradeMissing": "(missing {{amount}})",
     "upgradeNeedMoreCredits": "Need {{amount}} more",
@@ -1681,7 +1684,7 @@
     "upgradeBlockedTop_other": "{{count}} parts are already at the top rarity.",
     "upgradeBlockedNoTier": "{{count}} part has no next tier to upgrade to.",
     "upgradeBlockedNoTier_other": "{{count}} parts have no next tier to upgrade to.",
-    "upgradePriceCredits": "Credits: {{cost}} (you have {{have}})",
+    "upgradePriceCredits": "Credits: {{cost}}",
     "bridgeResize": {
       "expandDone": "Expanded: {{name}} is in your inventory. Install it in the hangar.",
       "shrinkDone": "Shrunk: {{name}} is in your inventory. Install it in the hangar.",
@@ -1972,7 +1975,10 @@
         "failure": "Trouble",
         "environment": "Space",
         "loot": "Find",
-        "payment": "Pay"
+        "payment": "Pay",
+        "mining": "Kept",
+        "mining_dropped": "Dropped",
+        "mining_empty": "Empty"
       }
     },
     "logTable": {
@@ -2155,8 +2161,11 @@
       "RACE": "a fast ship: it must beat the entry speed, and the faster the better."
     },
     "mining": {
-      "contracted": "Contract: mine {{quantity}} × {{material}}. It pays only if you bring the full amount.",
-      "free": "Mine {{material}}: you keep what you dig up and sell it at a port."
+      "contracted": "Contract: mine {{quantity}} × {{material}}. Pay is full for 100% delivered, partial below, nothing for zero.",
+      "free": "Mine {{material}}: you keep what you dig up and sell it at a port.",
+      "odds": "about {{time}}, {{chance}}% chance",
+      "space": "Ore space: {{units}} units",
+      "cargoWarning": "needs more cargo ({{required}} > {{space}} space)"
     },
     "race": {
       "title": "The field",
@@ -2243,6 +2252,20 @@
     "headingTo": "heading to {{destination}}, arriving in",
     "dockedAt": "Docked at {{place}}",
     "shipHere": "Your ship",
+    "facts": {
+      "services": "Available here",
+      "service": {
+        "market": "Market",
+        "goods": "Sell goods",
+        "repair": "Repair",
+        "refuel": "Refuel",
+        "upgrade": "Upgrades",
+        "missions": "Missions"
+      },
+      "mining": "Mining",
+      "noMining": "Nothing to mine here.",
+      "rarity": { "common": "common", "uncommon": "uncommon", "rare": "rare" }
+    },
     "popup": {
       "missionsHere": "Missions here",
       "missionsToHere": "Missions to here",
@@ -2566,6 +2589,7 @@
     "noMatches": "No parts match these filters.",
     "used": "Used",
     "youPay": "You pay",
+    "sizeCells": "Size: {{w}}×{{h}} cells",
     "rarity": "Rarity",
     "rarityAll": "Any rarity",
     "size": "Size",

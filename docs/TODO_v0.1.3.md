@@ -66,7 +66,7 @@ Delete an item when it ships (the commit has the history).
 
 ## 8. Mining rework: mix by rarity, ore space x2, one-trip cap, specialist contracts (owner, 2026-11-09)
 
-- [ ] Designed, not built. Check the numbers in the sim first (small vs heavy drill, common vs rare ore). Agreed rules:
+- [x] Built (2026-11-09), waiting for the owner's test. Plan: `docs/superpowers/plans/2026-11-09-mining-rework.md`. The numbers were checked in `apps/api/sim/mining_calibration.py` first. Agreed rules:
   - Mining value = amount per 5 minutes: `mining x tool condition x place richness x K` (K about 8.3 keeps today's income). Luck stays:
     the amount rolls around that expectation. The map card shows only the ores minable there (done), no odds, no text.
   - Each unit found rolls its ore by a weight by rarity (about 60 / 30 / 10 common / uncommon / rare). The per-try rarity penalty goes
@@ -93,3 +93,9 @@ Delete an item when it ships (the commit has the history).
     the odds). With the one-trip cap a long job adds nothing once the space is full (heavy rare, cargo 16: 5 min 162k/h, 20 min 111k/h
     at base price), but free digging with heavy drills pays 160-270k/h at base price, the same range as the zone-3 trips that were too
     easy: part of item 5 (K and the ore prices are the levers), not changed here.
+  - Built as: `resolution/mining/mining-yield.ts` (rules), the dig in `leg.resolver.ts`, payout in `mission.resolver.ts`, dispatch + info in
+    `dispatch.service.ts` / `mining-job.service.ts`, the board contract in `template.filler.ts` + `missions.service.ts`, the web in the
+    port mining tab, the mission card and the report. Legacy `mining.rarity` / `mining.attempts_per_stop` stay in the config (Appendix E
+    tapes), mining no longer reads them; `mining_cargo_full` stays readable for stored logs.
+  - Still open: the sim's mining bot does not pick contracts by odds yet (it digs the ores of the place); free digging with big drills pays
+    160-270k/h at base price (item 5: K and the ore prices are the levers).

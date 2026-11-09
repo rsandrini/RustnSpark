@@ -317,6 +317,17 @@
   max-width: 44px;
   margin-top: 4px;
 }
+.connector-grid-large {
+  height: 160px;
+  width: auto;
+  max-width: 100%;
+}
+.buy-shape {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
 .connector-grid-full {
   height: 72px;
   width: auto;

@@ -15,6 +15,7 @@ import type {
   TravelQuote,
   WorldLocation,
   WorldResponse,
+  MineInfoResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { FactionBadge } from '../../ui/FactionBadge';
@@ -353,7 +354,7 @@ export function MapPage({ guided = false }: MapPageProps) {
         </span>
       </div>
 
-      <div className="map-layout">
+      <div className={selected === undefined ? 'map-layout' : 'map-layout'}>
         <div className="stage map-stage" ref={camera.stageRef} {...camera.stageHandlers}>
           <div className="map-zoom" role="group" aria-label={t('map.zoom.label')}>
             <button
@@ -670,6 +671,7 @@ export function MapPage({ guided = false }: MapPageProps) {
                 isHere={selected.id === shipLocation && !inFlight}
                 shipLocation={shipLocation}
                 byId={byId}
+                fuelUse={ship?.sheet.fuelUse}
               />
             </section>
           )}
@@ -690,6 +692,68 @@ interface PlaceDetailsProps {
       ship isn't at and can't accept from). Null with no ship. */
   shipLocation: string | null;
   byId: ReadonlyMap<string, WorldLocation>;
+  /** The ship's fuel burn rate (0 = pure ion: no fuel to show). */
+  fuelUse?: number | undefined;
+}
+
+/** The services a place card lists, in this order: [key in `place.services`, label key]. */
+const PLACE_SERVICES: readonly (readonly [string, string])[] = [
+  ['buy', 'market'],
+  ['sell', 'goods'],
+  ['repair', 'repair'],
+  ['refuel', 'refuel'],
+  ['upgrade', 'upgrade'],
+  ['missions', 'missions'],
+];
+
+// What the place offers (its services) and what can be dug there. The map card lists only the
+// ore names and rarity; odds and time live on the port picker and the board card.
+function PlaceFacts({
+  place,
+}: {
+  place: WorldLocation;
+}) {
+  const { t, i18n } = useTranslation();
+  const mineQuery = useQuery({
+    queryKey: ['mineInfo', place.id],
+    queryFn: () => client.get<MineInfoResponse>(`/v1/locations/${place.id}/mine/info`),
+  });
+  // Only an explicit `false` closes a service (same rule as the port tabs).
+  const open = PLACE_SERVICES.filter(([key]) => place.services?.[key] !== false);
+  const ores = mineQuery.data?.minable === true ? (mineQuery.data.ores ?? []) : [];
+  return (
+    <section className="place-facts" data-testid="place-facts">
+      <h3>{t('map.facts.services')}</h3>
+      <ul className="chip-list" data-testid="place-services">
+        {open.map(([, label]) => (
+          <li key={label} className="badge ok">
+            {t(`map.facts.service.${label}`)}
+          </li>
+        ))}
+      </ul>
+      <h3>{t('map.facts.mining')}</h3>
+      {mineQuery.isLoading && <p className="sub">{t('loading')}</p>}
+      {mineQuery.isSuccess && ores.length === 0 && (
+        <p className="sub" data-testid="place-no-mining">
+          {t('map.facts.noMining')}
+        </p>
+      )}
+      {ores.length > 0 && (
+        <>
+          <ul className="place-ores" data-testid="place-ores">
+            {ores.map((ore) => (
+              <li key={ore.id} className="row-between">
+                <span>{pickLocalized(ore.displayName, i18n.language)}</span>
+                <small className="sub">
+                  {t(`map.facts.rarity.${ore.rarity}`, { defaultValue: ore.rarity })}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
 }
 
 // What a place offers, in one dialog: who runs it, how risky it is, and missions relevant to it.
@@ -704,6 +768,7 @@ function PlaceDetails({
   isHere,
   shipLocation,
   byId,
+  fuelUse,
 }: PlaceDetailsProps) {
   const { t, i18n } = useTranslation();
   const suggestingDeliveries = !isHere && shipLocation !== null;
@@ -722,76 +787,87 @@ function PlaceDetails({
 
   return (
     <div className="stack place-details">
-      <PlaceArt placeId={place.id} variant="square" />
-      <p className="sub">
-        {[
-          t(`map.types.${place.type}`, { defaultValue: place.type }),
-          t('map.zone', { zone: place.zone }),
-        ].join(' · ')}
-      </p>
-      <p className="help-text">{description}</p>
-      <div className="row-between">
-        <FactionBadge factionId={place.factionId} />
-        <RiskBadge band={place.risk} />
+      <div className="place-top">
+        <PlaceArt placeId={place.id} variant="square" />
+        <PlaceFacts place={place} />
       </div>
-      {isHere && (
-        <p>
-          <span className="you-badge">{t('map.youAreHere')}</span>
+      <div className="stack place-col">
+        <p className="sub">
+          {[
+            t(`map.types.${place.type}`, { defaultValue: place.type }),
+            t('map.zone', { zone: place.zone }),
+          ].join(' · ')}
         </p>
-      )}
-      {(place.pilotCount ?? 0) > 0 && (
-        <p className="sub" data-testid="place-pilots">
-          {t('map.pilotsDocked', { count: place.pilotCount })}
-        </p>
-      )}
+        <p className="help-text">{description}</p>
+        <div className="row-between">
+          <FactionBadge factionId={place.factionId} />
+          <RiskBadge band={place.risk} />
+        </div>
+        {isHere && (
+          <p>
+            <span className="you-badge">{t('map.youAreHere')}</span>
+          </p>
+        )}
+        {(place.pilotCount ?? 0) > 0 && (
+          <p className="sub" data-testid="place-pilots">
+            {t('map.pilotsDocked', { count: place.pilotCount })}
+          </p>
+        )}
+      </div>
 
-      {!isHere && canTravel && <TravelSection place={place} byId={byId} />}
+      <div className="stack place-col">
+        {!isHere && canTravel && <TravelSection place={place} byId={byId} fuelUse={fuelUse} />}
 
-      <h3>{suggestingDeliveries ? t('map.popup.missionsToHere') : t('map.popup.missionsHere')}</h3>
-      {boardQuery.isLoading && <p className="sub">{t('loading')}</p>}
-      {boardQuery.isSuccess && offers.length === 0 && <p className="sub">{t('map.noMissions')}</p>}
-      <ul className="place-missions">
-        {offers.map((offer) => (
-          <li key={offer.id} className="place-mission">
-            <div className="row-between">
-              <b>{pickLocalized(offer.info.title, i18n.language)}</b>
-              <span className="spark">{t('board.reward', { amount: offer.reward })}</span>
-            </div>
-            <div className="sub">
-              {suggestingDeliveries
-                ? t('map.popup.from', { origin: placeName(offer.originId) })
-                : t('map.popup.to', { destination: placeName(offer.destinationId) })}
-            </div>
-            <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
-              {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
-            </span>
-            {!offer.eligibility.eligible && (
-              // Same requirement reasons the Board shows (owner: "I see some that I cannot
-              // get for requirements but I cannot see why ... in the quest panel I can see
-              // but not here").
-              <ul className="reasons">
-                {offer.eligibility.reasons.map((reason, index) => (
-                  <li key={`${reason.code}-${index}`}>
-                    {t(`board.reasons.${reason.code}`, {
-                      defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
-                    })}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+        <h3>
+          {suggestingDeliveries ? t('map.popup.missionsToHere') : t('map.popup.missionsHere')}
+        </h3>
+        {boardQuery.isLoading && <p className="sub">{t('loading')}</p>}
+        {boardQuery.isSuccess && offers.length === 0 && (
+          <p className="sub">{t('map.noMissions')}</p>
+        )}
+        <ul className="place-missions">
+          {offers.map((offer) => (
+            <li key={offer.id} className="place-mission">
+              <div className="row-between">
+                <b>{pickLocalized(offer.info.title, i18n.language)}</b>
+                <span className="spark">{t('board.reward', { amount: offer.reward })}</span>
+              </div>
+              <div className="sub">
+                {suggestingDeliveries
+                  ? t('map.popup.from', { origin: placeName(offer.originId) })
+                  : t('map.popup.to', { destination: placeName(offer.destinationId) })}
+              </div>
+              <span className={`badge ${offer.eligibility.eligible ? 'ok' : 'warn'}`}>
+                {offer.eligibility.eligible ? t('board.eligible') : t('board.blocked')}
+              </span>
+              {!offer.eligibility.eligible && (
+                // Same requirement reasons the Board shows (owner: "I see some that I cannot
+                // get for requirements but I cannot see why ... in the quest panel I can see
+                // but not here").
+                <ul className="reasons">
+                  {offer.eligibility.reasons.map((reason, index) => (
+                    <li key={`${reason.code}-${index}`}>
+                      {t(`board.reasons.${reason.code}`, {
+                        defaultValue: t(`error.${reason.code}`, { defaultValue: reason.message }),
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
 
-      <Link
-        className="btn primary block"
-        // Suggested deliveries live on the pilot's OWN board (their ship's location), not this
-        // place's — that's the whole point (the remote board's offers can't be accepted here).
-        to={suggestingDeliveries ? '/missions' : `/missions?location=${place.id}`}
-        style={{ textAlign: 'center', textDecoration: 'none' }}
-      >
-        {t('map.board')}
-      </Link>
+        <Link
+          className="btn primary block"
+          // Suggested deliveries live on the pilot's OWN board (their ship's location), not this
+          // place's — that's the whole point (the remote board's offers can't be accepted here).
+          to={suggestingDeliveries ? '/missions' : `/missions?location=${place.id}`}
+          style={{ textAlign: 'center', textDecoration: 'none' }}
+        >
+          {t('map.board')}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -799,11 +875,14 @@ function PlaceDetails({
 interface TravelSectionProps {
   place: WorldLocation;
   byId: ReadonlyMap<string, WorldLocation>;
+  /** The ship's fuel burn rate: 0 (a pure-ion ship) means there is no fuel to show. */
+  fuelUse?: number | undefined;
 }
 
 // "Fly there without a mission": the server prices the trip (route, time, fuel) and says
 // whether the ship can leave; the pilot only confirms. The trip costs fuel and pays nothing.
-function TravelSection({ place, byId }: TravelSectionProps) {
+function TravelSection({ place, byId, fuelUse }: TravelSectionProps) {
+  const burnsFuel = fuelUse === undefined || fuelUse > 0;
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -843,7 +922,7 @@ function TravelSection({ place, byId }: TravelSectionProps) {
             <b>{t('distanceValue', { n: quote.totalDistance })}</b>
           </div>
           {/* The same fuel block as a mission card: what is aboard, what the trip burns, the verdict and the bar. */}
-          {(quote.fuelCap ?? 0) > 0 ? (
+          {!burnsFuel ? null : (quote.fuelCap ?? 0) > 0 ? (
             <FuelBlock have={quote.fuelHave} needed={quote.fuelNeeded} cap={quote.fuelCap ?? 0} />
           ) : (
             <Gauge

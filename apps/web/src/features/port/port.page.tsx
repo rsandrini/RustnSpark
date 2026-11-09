@@ -25,6 +25,7 @@ import type {
   ShipResponse,
   WorldResponse,
   PreviewResponse,
+  MineInfoResponse,
 } from '../../api/generated';
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
@@ -111,13 +112,7 @@ export interface PortPageProps {
   onGoToShip?: () => void;
 }
 
-/** What the mine endpoint says about a place: whether it can be mined, and the job's limits. */
-interface MiningInfo {
-  minable: boolean;
-  tickSeconds?: number;
-  maxTicks?: number;
-  fuelPerTick?: number;
-}
+const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] as const;
 
 export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
@@ -192,10 +187,10 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const minableQuery = useQuery({
     queryKey: ['mineInfo', locationId],
     enabled: locationId !== undefined,
-    queryFn: () => client.get<MiningInfo>(`/v1/locations/${locationId ?? ''}/mine/info`),
+    queryFn: () => client.get<MineInfoResponse>(`/v1/locations/${locationId ?? ''}/mine/info`),
   });
   const minable = minableQuery.data?.minable === true;
-  // How many 5-minute ticks the next dig may run (the server states the limits and the fuel).
+  // How many 5-minute ticks the next dig runs (the server states the limits and the fuel).
   const [mineTicks, setMineTicks] = useState(1);
   const mineMaxTicks = minableQuery.data?.maxTicks ?? 1;
   const mineTickSeconds = minableQuery.data?.tickSeconds ?? 0;
@@ -203,6 +198,8 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const mineFuelPerTick =
     (ship?.sheet.fuelUse ?? 0) > 0 ? (minableQuery.data?.fuelPerTick ?? 0) : 0;
   const mineBurnsFuel = mineFuelPerTick > 0;
+  const mineSpaceUnits = minableQuery.data?.spaceUnits ?? null;
+  const mineFillSeconds = minableQuery.data?.fillSeconds ?? null;
   useEffect(() => {
     if (tab === 'mining' && minableQuery.data?.minable === false) setTab('market');
   }, [tab, minableQuery.data]);
@@ -285,13 +282,15 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
   const serviceClosed = (id: PortTabId): boolean =>
     (id === 'market' && placeServices?.buy === false) ||
     (id === 'goods' && placeServices?.sell === false) ||
-    (id === 'upgrade' && placeServices?.upgrade === false);
+    (id === 'upgrade' && placeServices?.upgrade === false) ||
+    // a ship whose engines burn no fuel (ion only) has nothing to refuel
+    (id === 'refuel' && ship !== undefined && ship.sheet.fuelUse <= 0);
   useEffect(() => {
     if (!serviceClosed(tab)) return;
     const next = PORT_GROUPS.flatMap((entry) => entry.tabs).find((id) => !serviceClosed(id));
     if (next !== undefined) setTab(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, placeServices]);
+  }, [tab, placeServices, ship?.sheet.fuelUse]);
 
   // Upgrade mechanism only (round 5): eligibility comes from the catalog's own tier-naming
   // convention server-side, not anything decided here — this tab just quotes every owned part
@@ -1187,14 +1186,14 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       {tab === 'upgrade' && (
         <section className="stack" data-testid="upgrade">
           <p className="sub help-text">{t('port.upgradeHelp')}</p>
-          <div className="upgrade-rules" data-testid="upgrade-rules">
-            <b>{t('port.upgradeRulesTitle')}</b>
+          <details className="upgrade-rules" data-testid="upgrade-rules">
+            <summary>{t('port.upgradeRulesTitle')}</summary>
             <ol>
               <li>{t('port.upgradeRule1')}</li>
               <li>{t('port.upgradeRule2')}</li>
               <li>{t('port.upgradeRule3')}</li>
             </ol>
-          </div>
+          </details>
           {bridgeResize.dialog}
           {(() => {
             const quotes = upgradeQuotesQuery.data;
@@ -1309,6 +1308,16 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               const quote = quotes?.get(item.id);
               if (quote !== undefined) groups[readinessOf(upgradeNeeds(quote, wallet))].push(item);
             }
+            // Inside each group the cheapest tier first: lowest rarity to highest.
+            const rarityRank = (rarity: string) => {
+              const index = RARITY_ORDER.indexOf(
+                rarity.toUpperCase() as (typeof RARITY_ORDER)[number],
+              );
+              return index === -1 ? RARITY_ORDER.length : index;
+            };
+            for (const group of Object.values(groups)) {
+              group.sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity));
+            }
             const renderCard = (item: InventoryItem) => {
               const quote = quotes?.get(item.id);
               if (quote === undefined) return null;
@@ -1371,10 +1380,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
                               {need.met ? '✓' : '✗'}
                             </span>
                             {need.kind === 'credits'
-                              ? t('port.upgradeNeedCredits', {
-                                  have: money(need.have),
-                                  needed: money(need.needed),
-                                })
+                              ? t('port.upgradeNeedCredits', { needed: money(need.needed) })
                               : t('port.upgradeMaterial', {
                                   name: pickLocalized(
                                     need.name ?? { en: need.id, 'pt-BR': need.id },
@@ -1688,10 +1694,18 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               <small>{t('port.mine.tile.time')}</small>
               <b>{formatDuration(mineTicks * mineTickSeconds, t)}</b>
             </li>
-            <li>
-              <small>{t('port.mine.tile.hold')}</small>
-              <b>{t('port.mine.tile.holdValue', { units: ship.sheet.crg })}</b>
-            </li>
+            {mineSpaceUnits !== null && (
+              <li>
+                <small>{t('port.mine.tile.space')}</small>
+                <b>{t('port.mine.tile.spaceValue', { units: mineSpaceUnits })}</b>
+              </li>
+            )}
+            {mineFillSeconds !== null && mineFillSeconds > 0 && (
+              <li>
+                <small>{t('port.mine.tile.fill')}</small>
+                <b>{t('port.mine.tile.fillValue', { time: formatDuration(mineFillSeconds, t) })}</b>
+              </li>
+            )}
             {mineBurnsFuel && (
               <li>
                 <small>{t('port.mine.tile.fuel')}</small>
@@ -1699,6 +1713,11 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               </li>
             )}
           </ul>
+          {mineSpaceUnits !== null && (
+            <p className="sub help-text" data-testid="mine-rule">
+              {t('port.mine.rule', { units: mineSpaceUnits })}
+            </p>
+          )}
           {mineTickSeconds > 0 && (
             <fieldset className="mine-lengths" data-testid="mine-lengths">
               <legend>{t('port.mine.length')}</legend>
@@ -1833,10 +1852,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
             </p>
             <ul className="upgrade-price" data-testid="upgrade-price">
               <li className={wallet >= upgradeConfirm.cost ? 'req-met' : 'req-unmet'}>
-                {t('port.upgradePriceCredits', {
-                  cost: money(upgradeConfirm.cost),
-                  have: money(wallet),
-                })}
+                {t('port.upgradePriceCredits', { cost: money(upgradeConfirm.cost) })}
               </li>
               {upgradeConfirm.materials.map((need) => (
                 <li

@@ -52,6 +52,7 @@ import type {
   PublicProfileResponse,
   RaceRoutesResponse,
   RankingResponse,
+  MineInfoResponse,
 } from '../../api/generated';
 import { myStatsFixture, publicProfileFixture } from '../../features/profile/profile-fixtures';
 import { raceRoutesFixture, rankingFixture } from '../../features/rankings/rankings-fixtures';
@@ -1445,7 +1446,26 @@ export const handlers = [
     }),
   ),
   http.get('/v1/locations/:id/mine/info', () =>
-    HttpResponse.json({ minable: true, tickSeconds: 300, maxTicks: 4, fuelPerTick: 50 }),
+    ok<MineInfoResponse>({
+      minable: true,
+      tickSeconds: 300,
+      maxTicks: 4,
+      fuelPerTick: 50,
+      spaceUnits: ship().sheet.crg * 2,
+      fillSeconds: 600,
+      ores: [
+        {
+          id: 'iron',
+          displayName: { en: 'Iron ore', 'pt-BR': 'Minério de ferro' },
+          rarity: 'common',
+        },
+        {
+          id: 'crystal',
+          displayName: { en: 'Crystal', 'pt-BR': 'Cristal' },
+          rarity: 'rare',
+        },
+      ],
+    }),
   ),
   http.get('/v1/locations/:id/scavenge', ({ params }) => {
     const retry = Math.max(0, Math.ceil((scavCooldownUntil - Date.now()) / 1000));
@@ -1775,6 +1795,7 @@ const boardOffer = (
     material: null,
     requirements: [],
     race: null,
+    mining: null,
     ...infoOverride,
   },
   ...over,
@@ -1808,6 +1829,7 @@ const boardState: MissionOffer[] = [
       destinationId: 'spur',
       reward: 2400,
       rewardEstimate: 2600,
+      cargo: { materialId: 'iron', contracted: true, quantity: 25 },
       eligibility: {
         eligible: false,
         reasons: [
@@ -1843,6 +1865,14 @@ const boardState: MissionOffer[] = [
           unit: 'mobility',
         },
       ],
+      mining: {
+        required: 25,
+        materialId: 'iron',
+        expectedSeconds: 2400,
+        capSeconds: 3600,
+        successChance: 0.42,
+        spaceUnits: 20,
+      },
     },
   ),
   boardOffer({

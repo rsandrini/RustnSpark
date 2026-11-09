@@ -115,6 +115,22 @@ describe('board (S10.6)', () => {
     expect(screen.getAllByText('A mining rig installed')).toHaveLength(2);
   });
 
+  it('shows mining contract time, odds and a cargo warning when the contract exceeds ore space', async () => {
+    await renderBoard();
+    fireEvent.click(screen.getByRole('button', { name: 'Only eligible' }));
+
+    const miningCard = (await screen.findAllByText('Mobility too low'))
+      .map((node) => node.closest('article'))
+      .find((article) => article !== null);
+    expect(miningCard).not.toBeNull();
+    const card = within(miningCard!);
+
+    expect(card.getByTestId('mcard-mining-odds')).toHaveTextContent('about 40m 0s, 42% chance');
+    expect(card.getByTestId('mcard-mining-cargo-warning')).toHaveTextContent(
+      'needs more cargo (25 > 20 space)',
+    );
+  });
+
   it('an open-cargo delivery says what the extra units pay', async () => {
     await renderBoard();
     const line = await screen.findByTestId('mcard-cargo');
