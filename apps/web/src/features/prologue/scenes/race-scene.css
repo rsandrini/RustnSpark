@@ -1,0 +1,30 @@
+.race-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.race-scene .race-stage {
+  margin: 0 -12px;
+}
+
+.race-scene .actions {
+  margin-top: auto;
+}
+
+.race-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.race-prize {
+  font-size: 18px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .race-scene {
+    gap: 8px;
+  }
+}

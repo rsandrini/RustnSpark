@@ -100,8 +100,25 @@
         "place": "{{place}} place",
         "continue": "Continue"
       }
+    },
+    "fight": {
+      "title": "Ambush",
+      "ambush": "Pirate ships drop out of the dust cloud.",
+      "friendDestroyed": "Kite’s ship takes a direct hit and breaks apart.",
+      "playerWrecked": "Your ship is torn open and drifts, silent.",
+      "continue": "Continue"
+    },
+    "loss": {
+      "title": "Rescued",
+      "rescue": "A rescue cutter pulls you from the wreck. Nothing else made it.",
+      "lostTitle": "Lost",
+      "savedTitle": "Saved",
+      "ship": "The ship",
+      "parts": "Its parts",
+      "player": "You",
+      "credits": "Your credits",
+      "continue": "Continue"
     }
-  
   },
   "onboarding": {
     "title": "Choose your faction",

@@ -100,8 +100,25 @@
         "place": "{{place}} lugar",
         "continue": "Continuar"
       }
+    },
+    "fight": {
+      "title": "Emboscada",
+      "ambush": "Naves piratas saem das nuvens de poeira.",
+      "friendDestroyed": "A nave de Kite leva um acerto direto e se despedaça.",
+      "playerWrecked": "Sua nave é rasgada e fica à deriva, silenciosa.",
+      "continue": "Continuar"
+    },
+    "loss": {
+      "title": "Resgatado",
+      "rescue": "Um cortador de resgate o puxa do destroço. Nada mais sobreviveu.",
+      "lostTitle": "Perdido",
+      "savedTitle": "Salvo",
+      "ship": "A nave",
+      "parts": "As peças dela",
+      "player": "Você",
+      "credits": "Seus créditos",
+      "continue": "Continuar"
     }
-  
   },
   "onboarding": {
     "title": "Escolha sua facção",
