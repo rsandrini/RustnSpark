@@ -118,6 +118,20 @@
       "player": "Você",
       "credits": "Seus créditos",
       "continue": "Continuar"
+    },
+    "fit": {
+      "title": "Encaixe a peça",
+      "hint": "Arraste a peça para a nave, ou toque nela e depois em uma célula.",
+      "place": "Coloque onde ela conecte.",
+      "partMeta": "{{class}} · {{w}}×{{h}}",
+      "outside": "Esse lugar fica fora da nave.",
+      "overlap": "Esse lugar sobrepõe outra peça.",
+      "notConnected": "A peça precisa encostar num conector compatível.",
+      "done": "Encaixada.",
+      "mobile": {
+        "parts": "Peças",
+        "close": "Fechar"
+      }
     }
   },
   "onboarding": {

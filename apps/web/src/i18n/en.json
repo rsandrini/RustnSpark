@@ -118,6 +118,20 @@
       "player": "You",
       "credits": "Your credits",
       "continue": "Continue"
+    },
+    "fit": {
+      "title": "Fit the part",
+      "hint": "Drag the part onto the ship, or tap it and then tap a cell.",
+      "place": "Place it where it connects.",
+      "partMeta": "{{class}} · {{w}}×{{h}}",
+      "outside": "That spot is outside the ship.",
+      "overlap": "That spot overlaps another part.",
+      "notConnected": "The part must touch a matching connector.",
+      "done": "Fitted.",
+      "mobile": {
+        "parts": "Parts",
+        "close": "Close"
+      }
     }
   },
   "onboarding": {
