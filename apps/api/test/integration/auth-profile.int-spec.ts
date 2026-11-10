@@ -54,6 +54,7 @@ describe('GET /v1/players/me profile shape', () => {
       role: 'PLAYER',
       factionId: null,
       tutorialDone: false,
+      prologueOutcome: null,
       publicId: expect.any(String),
       isGuest: false,
     });

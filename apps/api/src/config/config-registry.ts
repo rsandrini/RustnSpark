@@ -2792,6 +2792,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'onboarding.prologue_payout_shares',
+    group: 'onboarding',
+    type: 'json',
+    min: 0,
+    max: 100,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.prologue_payout_shares),
+    description: {
+      en: 'How the new pilot opening pays the starting credits: three whole percentages (the race, then the two first-stop missions) that add up to 100. Skipping the opening gives the same total.',
+      'pt-BR':
+        'Como a abertura do piloto novo paga os créditos iniciais: três porcentagens inteiras (a corrida e as duas missões da primeira parada) que somam 100. Pular a abertura dá o mesmo total.',
+    },
+  },
+  {
     key: 'onboarding.home_locations',
     group: 'onboarding',
     type: 'json',

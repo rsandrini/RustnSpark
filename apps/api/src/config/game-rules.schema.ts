@@ -354,10 +354,23 @@ const partsSchema = z.object({
   replacement_types: z.record(z.string(), z.string().min(1)),
 });
 
+/** The payouts the opening hands out: the race, then the two missions at the first stop. */
+const PROLOGUE_STEPS_PAID = 3;
+
 const onboardingSchema = z.object({
   starter_parts: z.array(z.string().min(1)),
   home_locations: z.record(z.string(), z.string().min(1)),
   start_fuel_fraction: z.number().min(0).max(1),
+  // How the new pilot's opening earns the starting credits: three payouts (the race, then the two missions at the
+  // first stop) as whole percentages that add up to 100. An older stored rule set without the key replays with
+  // the default.
+  prologue_payout_shares: z
+    .array(z.number().int().min(0).max(100))
+    .length(PROLOGUE_STEPS_PAID)
+    .refine((shares) => shares.reduce((sum, share) => sum + share, 0) === 100, {
+      message: 'the payout shares must add up to 100',
+    })
+    .default([20, 30, 50]),
 });
 
 const worldSchema = z.object({

@@ -11,6 +11,8 @@ import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
+import { PlayerEventService } from './player-event.service.js';
+import { prologuePayouts, type PrologueOutcome } from './prologue.js';
 import { ShipsService } from '../ships/ships.service.js';
 import type { ConnectorLayout } from '../parts/connectors.js';
 import { pickCatalogStats } from '../parts/parts.service.js';
@@ -22,6 +24,7 @@ import { deriveSheet } from '../ships/sheet.deriver.js';
 import { checkViability } from '../ships/viability.js';
 
 const ONBOARDING_REASON = 'onboarding starter credits';
+export const PROLOGUE_EVENT = 'onboarding.prologue';
 
 @Injectable()
 export class OnboardingService {
@@ -30,7 +33,41 @@ export class OnboardingService {
     private readonly configService: GameConfigService,
     private readonly shipsService: ShipsService,
     private readonly walletService: WalletService,
+    private readonly events: PlayerEventService,
   ) {}
+
+  /** The opening's payouts, which add up to exactly the credits a new pilot starts with. */
+  prologue(): { startCredits: number; payouts: number[] } {
+    const { economy, onboarding } = this.configService.snapshot().rules;
+    return {
+      startCredits: economy.start_credits,
+      payouts: prologuePayouts(economy.start_credits, onboarding.prologue_payout_shares),
+    };
+  }
+
+  /**
+   * Remembers how the opening ended, once: it never shows again for this account, on any device. A second call
+   * keeps the first answer.
+   */
+  async savePrologueOutcome(playerId: string, outcome: PrologueOutcome): Promise<PrologueOutcome> {
+    const saved = await this.prisma.$transaction(async (tx) => {
+      const changed = await tx.player.updateMany({
+        where: { id: playerId, prologueOutcome: null },
+        data: { prologueOutcome: outcome },
+      });
+      if (changed.count > 0) {
+        await this.events.record({ playerId, type: PROLOGUE_EVENT, payload: { outcome } }, tx);
+        return outcome;
+      }
+      const player = await tx.player.findUnique({
+        where: { id: playerId },
+        select: { prologueOutcome: true },
+      });
+      if (!player) throw new NotFoundException('player not found');
+      return (player.prologueOutcome ?? outcome) as PrologueOutcome;
+    });
+    return saved;
+  }
 
   async onboard(playerId: string, faction: string) {
     const rules = this.configService.snapshot().rules;

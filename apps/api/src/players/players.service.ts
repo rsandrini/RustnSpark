@@ -16,6 +16,8 @@ export interface PlayerProfile {
   factionId: string | null;
   /** The newcomer tutorial was skipped or finished (reopening it sets this back to false). */
   tutorialDone: boolean;
+  /** How the new-pilot opening ended: null while it still shows, then played or skipped. */
+  prologueOutcome: string | null;
   /** The random address of the pilot's public card. */
   publicId: string;
   /** Started as a guest (no email or password yet): the account menu offers to save the pilot. */
@@ -31,6 +33,7 @@ export function toPlayerProfile(player: Player, role: string, isGuest = false): 
     role,
     factionId: player.factionId,
     tutorialDone: player.tutorialDone,
+    prologueOutcome: player.prologueOutcome,
     publicId: player.publicId,
     isGuest,
   };

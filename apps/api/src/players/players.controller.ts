@@ -6,6 +6,7 @@ import {
 import { UpdateLocaleDto } from './dto/update-locale.dto.js';
 import { UpdateTutorialDto } from './dto/update-tutorial.dto.js';
 import { OnboardingDto } from './dto/onboarding.dto.js';
+import { PrologueOutcomeDto } from './dto/prologue-outcome.dto.js';
 import { OnboardingService } from './onboarding.service.js';
 import { PlayersService, type PlayerProfile, type TutorialProgress } from './players.service.js';
 
@@ -44,6 +45,19 @@ export class PlayersController {
     @Body() dto: UpdateTutorialDto,
   ): Promise<PlayerProfile> {
     return this.playersService.updateTutorial(user.playerId, dto.done);
+  }
+
+  @Get('me/prologue')
+  getPrologue() {
+    return this.onboardingService.prologue();
+  }
+
+  @Post('me/prologue')
+  @HttpCode(200)
+  async savePrologue(@CurrentUser() user: CurrentUserPayload, @Body() dto: PrologueOutcomeDto) {
+    return {
+      outcome: await this.onboardingService.savePrologueOutcome(user.playerId, dto.outcome),
+    };
   }
 
   @Post('me/onboarding')

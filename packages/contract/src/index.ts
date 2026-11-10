@@ -51,6 +51,8 @@ export const PlayerProfileResponseSchema = z.object({
   factionId: z.string().nullable(),
   /** The newcomer tutorial was skipped or finished; false again when it is reopened. */
   tutorialDone: z.boolean(),
+  /** How the new-pilot opening ended: null while it still shows, then played or skipped (it never shows again). */
+  prologueOutcome: z.enum(['played', 'skipped']).nullable().optional(),
   /** The random address of the pilot's public card (/pilots/:publicId). */
   publicId: z.string().optional(),
   /** Started as a guest (no email or password yet); the account menu offers to save the pilot. */
@@ -85,6 +87,17 @@ export const UpdateTutorialRequestSchema = z.object({ done: z.boolean() });
 export type UpdateTutorialRequest = z.infer<typeof UpdateTutorialRequestSchema>;
 export const UpdateTutorialResponseSchema = z.object({ tutorialDone: z.boolean() });
 export type UpdateTutorialResponse = z.infer<typeof UpdateTutorialResponseSchema>;
+
+/** The new-pilot opening: the payouts it hands out (they add up to `startCredits`) and how it ended. */
+export const PrologueResponseSchema = z.object({
+  startCredits: z.number().int(),
+  payouts: z.array(z.number().int()),
+});
+export type PrologueResponse = z.infer<typeof PrologueResponseSchema>;
+export const SavePrologueRequestSchema = z.object({ outcome: z.enum(['played', 'skipped']) });
+export type SavePrologueRequest = z.infer<typeof SavePrologueRequestSchema>;
+export const SavePrologueResponseSchema = z.object({ outcome: z.enum(['played', 'skipped']) });
+export type SavePrologueResponse = z.infer<typeof SavePrologueResponseSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Ships, parts, assembly

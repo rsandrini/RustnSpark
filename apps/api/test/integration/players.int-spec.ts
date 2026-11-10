@@ -64,6 +64,7 @@ describe('players/me endpoints (S2.3)', () => {
       factionId: null,
       isGuest: false,
       tutorialDone: false,
+      prologueOutcome: null,
       publicId: seeded.player.publicId,
     });
   });

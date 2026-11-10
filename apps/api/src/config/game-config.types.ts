@@ -167,6 +167,7 @@ export type ConfigKey =
   | 'onboarding.home_locations'
   | 'onboarding.starter_parts'
   | 'onboarding.start_fuel_fraction'
+  | 'onboarding.prologue_payout_shares'
   | 'parts.replacement_condition'
   | 'parts.replacement_types'
   | 'parts.starter_condition'
@@ -673,6 +674,8 @@ export type GameRules = Readonly<{
     home_locations: Readonly<Record<string, string>>;
     /** The share of the tank a new ship starts with (the tutorial's first step is to fill it). */
     start_fuel_fraction: number;
+    /** The opening's three payouts as whole percentages of `economy.start_credits` (they add up to 100). */
+    prologue_payout_shares: readonly number[];
   }>;
   world: Readonly<{
     seed: string;

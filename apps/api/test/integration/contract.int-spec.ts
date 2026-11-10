@@ -18,6 +18,8 @@ import {
   MaterialsResponseSchema,
   MissionOfferSchema,
   PlayerProfileResponseSchema,
+  PrologueResponseSchema,
+  SavePrologueResponseSchema,
   PreviewResponseSchema,
   RefreshResponseSchema,
   RefuelQuoteResponseSchema,
@@ -165,6 +167,12 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
     const locale = await post('/v1/players/me/locale', { locale: 'pt-BR' });
     contract(UpdateLocaleResponseSchema, locale.body, 'POST /players/me/locale');
+
+    const prologue = await get('/v1/players/me/prologue');
+    const payouts = contract(PrologueResponseSchema, prologue.body, 'GET /players/me/prologue');
+    expect(payouts.payouts.reduce((sum, payout) => sum + payout, 0)).toBe(payouts.startCredits);
+    const outcome = await post('/v1/players/me/prologue', { outcome: 'skipped' });
+    contract(SavePrologueResponseSchema, outcome.body, 'POST /players/me/prologue');
 
     const tutorial = await post('/v1/players/me/tutorial', { done: true });
     expect(

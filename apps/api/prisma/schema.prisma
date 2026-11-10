@@ -76,6 +76,8 @@ model Player {
   tutorialDone    Boolean           @default(false)
   // The mentor's dialogue scenes (docs/design/mentor-dialogue-plan.md): off = only the checklist.
   dialogueEnabled Boolean           @default(true)
+  // How the new-pilot opening ended: null while it has not (it shows), then 'played' or 'skipped' (it never shows again).
+  prologueOutcome String?
   dialogues       PlayerDialogue[]
   createdAt       DateTime          @default(now())
   events          PlayerEvent[]
