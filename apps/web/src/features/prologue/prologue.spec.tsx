@@ -6,6 +6,7 @@ import { routes } from '../../app/router';
 import { server } from '../../test/msw/server';
 import { renderWithRouter } from '../../test/utils';
 import { clearPrologueSteps } from './prologue-state';
+import { dismissGuide } from './prologue-test-utils';
 
 type Outcome = 'played' | 'skipped' | null | undefined;
 
@@ -25,10 +26,16 @@ function pilot(getOutcome: () => Outcome, factionId: string | null = null) {
   );
 }
 
+/** The server's payouts for the opening (they add up to the credits a pilot starts with). */
+const payouts = http.get('/v1/players/me/prologue', () =>
+  HttpResponse.json({ startCredits: 3000, payouts: [600, 900, 1500] }),
+);
+
 describe('the new-pilot opening: gating, resume and skip', () => {
   beforeEach(() => {
     window.localStorage.clear();
     clearPrologueSteps();
+    server.use(payouts);
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -88,9 +95,12 @@ describe('the new-pilot opening: gating, resume and skip', () => {
     server.use(pilot(() => null));
     renderWithRouter(routes, { initialEntries: ['/onboarding'] });
 
-    await userEvent.click(await screen.findByRole('button', { name: /continue/i }));
+    await screen.findByTestId('gift-scene');
+    await dismissGuide();
 
-    expect(screen.getByTestId('prologue')).toHaveAttribute('data-step', 'fit-engine');
+    await waitFor(() =>
+      expect(screen.getByTestId('prologue')).toHaveAttribute('data-step', 'fit-engine'),
+    );
     expect(window.localStorage.getItem('rs.prologue.player-1')).toBe('fit-engine');
   });
 
@@ -116,7 +126,7 @@ describe('the new-pilot opening: gating, resume and skip', () => {
 
     // backing out keeps the opening
     await userEvent.click(screen.getByRole('button', { name: /play the opening/i }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('dialog', { name: /skip the opening\?/i })).toBeNull();
     expect(posted).toEqual([]);
 
     await userEvent.click(screen.getByRole('button', { name: /skip the opening/i }));
@@ -143,12 +153,25 @@ describe('the new-pilot opening: gating, resume and skip', () => {
     );
     renderWithRouter(routes, { initialEntries: ['/onboarding'] });
 
-    await userEvent.click(await screen.findByRole('button', { name: /continue/i }));
+    await screen.findByTestId('rescue-scene');
+    await dismissGuide();
 
     await waitFor(() => expect(posted).toEqual([{ outcome: 'played' }]));
     expect(
       await screen.findByRole('heading', { name: /choose your faction/i }),
     ).toBeInTheDocument();
     expect(window.localStorage.getItem('rs.prologue.player-1')).toBeNull();
+  });
+
+  it('puts the harbour office above the picker after a played opening, and not after a skipped one', async () => {
+    server.use(pilot(() => 'played'));
+    const played = renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+    expect(await screen.findByTestId('prologue-port')).toHaveTextContent(/kite's gone/i);
+    played.unmount();
+
+    server.use(pilot(() => 'skipped'));
+    renderWithRouter(routes, { initialEntries: ['/onboarding'] });
+    await screen.findByRole('heading', { name: /choose your faction/i });
+    expect(screen.queryByTestId('prologue-port')).toBeNull();
   });
 });

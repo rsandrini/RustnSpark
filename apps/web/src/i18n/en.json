@@ -86,7 +86,6 @@
       "play": "Play the opening",
       "confirm": "Skip anyway"
     },
-    "pending": "This part of the opening is not ready yet.",
     "next": "Continue",
     "race": {
       "title": "The race",
@@ -132,6 +131,66 @@
         "parts": "Parts",
         "close": "Close"
       }
+    },
+    "script": {
+      "guides": {
+        "friend": {
+          "name": "Kite",
+          "title": "Free pilot"
+        },
+        "rescuer": {
+          "name": "Dara Voss",
+          "title": "Rescue crew chief"
+        },
+        "harbour": {
+          "name": "Marshal Oren",
+          "title": "Harbour office"
+        }
+      },
+      "gift": {
+        "l1": "Hey, you made it. I'm Kite. That ship's yours now, and she's got good bones. Out here a ship earns by carrying people and cargo between stations, and every trip pays.",
+        "l2": "Credits buy parts, parts make a better ship, and a better ship gets you out to the far fields, past the pirates. Right now she's got no engine, but I've got an old one in the shed. Worn, but it runs."
+      },
+      "fitEngine": {
+        "l1": "Drag it onto the back of the hull. The exhaust needs clear space behind it, and the ports have to line up. She saves by herself.",
+        "done": "That's it. Hear that? She's alive. Let's see what she can do."
+      },
+      "raceBoard": {
+        "l1": "Dockside sprint: three legs, you against me. Nothing at stake but bragging rights. Hit Dispatch."
+      },
+      "stopOne": {
+        "l1": "Dockside. You were close. Top her off, it's on the house today, then pick a job. Passengers or crates, they pay the same."
+      },
+      "fitCargo": {
+        "l1": "You flew half empty. Passengers pay by the head, so a bigger hold means a bigger payday. There's a cargo hold in the shed: fit it the same way.",
+        "done": "Now she can carry."
+      },
+      "stopTwo": {
+        "l1": "Now we're talking. A full hold pays more. Take your pick."
+      },
+      "finalBoard": {
+        "l1": "Cinder Reach pays four times the going rate, and there's a reason nobody wants the run: pirates. Forty people are asking for us by name. I'll fly beside you."
+      },
+      "rescue": {
+        "l1": "Easy. Easy now. You're the only one we found; the pods held. I'm sorry. Kite didn't make it.",
+        "l2": "Take a minute. Then come with me: the harbour office has something to say to you."
+      }
+    },
+    "board": {
+      "refuel": "Refuel (on the house)",
+      "refuelled": "Tank full",
+      "chooseOne": "Pick one job.",
+      "refuelFirst": "Fill the tank first.",
+      "dispatch": "Dispatch",
+      "credits": "{{amount}} ¢"
+    },
+    "transit": {
+      "title": "Under way",
+      "detail": "A short hop, shown shorter than a real trip."
+    },
+    "port": {
+      "title": "Harbour office",
+      "body": "Kite's gone, and he won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
     }
   },
   "onboarding": {

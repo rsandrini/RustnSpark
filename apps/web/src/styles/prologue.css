@@ -8,6 +8,18 @@
   justify-content: flex-end;
 }
 
+/* The harbour office above the faction picker, after the opening's loss. */
+.prologue-port {
+  display: grid;
+  gap: 8px;
+  margin-bottom: var(--gap);
+}
+.prologue-port p {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: 1.45;
+}
+
 /* The warning before skipping: big and plain on purpose; the safe choice comes first. */
 .modal.prologue-skip {
   width: min(520px, 94vw);

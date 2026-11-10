@@ -86,7 +86,6 @@
       "play": "Jogar a abertura",
       "confirm": "Pular mesmo assim"
     },
-    "pending": "Esta parte da abertura ainda não está pronta.",
     "next": "Continuar",
     "race": {
       "title": "A corrida",
@@ -132,6 +131,66 @@
         "parts": "Peças",
         "close": "Fechar"
       }
+    },
+    "script": {
+      "guides": {
+        "friend": {
+          "name": "Kite",
+          "title": "Piloto livre"
+        },
+        "rescuer": {
+          "name": "Dara Voss",
+          "title": "Chefe da equipe de resgate"
+        },
+        "harbour": {
+          "name": "Marshal Oren",
+          "title": "Escritório do porto"
+        }
+      },
+      "gift": {
+        "l1": "Ei, você chegou. Eu sou o Kite. Essa nave é sua agora, e ela tem boa estrutura. Aqui fora uma nave ganha dinheiro levando gente e carga entre estações, e cada viagem paga.",
+        "l2": "Créditos compram peças, peças fazem uma nave melhor, e uma nave melhor te leva até os campos distantes, passando pelos piratas. Por enquanto ela está sem motor, mas eu tenho um velho no galpão. Gasto, mas funciona."
+      },
+      "fitEngine": {
+        "l1": "Arraste para a parte de trás do casco. O escapamento precisa de espaço livre atrás, e as portas têm que se alinhar. Ela salva sozinha.",
+        "done": "Pronto. Ouviu isso? Ela está viva. Vamos ver o que ela faz."
+      },
+      "raceBoard": {
+        "l1": "Corrida até Dockside: três trechos, você contra mim. Nada em jogo além de se gabar. Aperte Despachar."
+      },
+      "stopOne": {
+        "l1": "Dockside. Você chegou perto. Encha o tanque, hoje é por conta da casa, e escolha um trabalho. Passageiros ou caixas, pagam igual."
+      },
+      "fitCargo": {
+        "l1": "Você voou meio vazio. Passageiro paga por cabeça, então um compartimento maior é um pagamento maior. Tem um compartimento de carga no galpão: encaixe do mesmo jeito.",
+        "done": "Agora ela carrega."
+      },
+      "stopTwo": {
+        "l1": "Agora sim. Compartimento cheio paga mais. Escolha."
+      },
+      "finalBoard": {
+        "l1": "Cinder Reach paga quatro vezes o normal, e tem um motivo para ninguém querer a rota: piratas. Quarenta pessoas estão pedindo por nós pelo nome. Eu voo ao seu lado."
+      },
+      "rescue": {
+        "l1": "Calma. Calma. Você é o único que encontramos; as cápsulas aguentaram. Sinto muito. O Kite não conseguiu.",
+        "l2": "Respire um minuto. Depois venha comigo: o escritório do porto tem algo a dizer para você."
+      }
+    },
+    "board": {
+      "refuel": "Reabastecer (por conta da casa)",
+      "refuelled": "Tanque cheio",
+      "chooseOne": "Escolha um trabalho.",
+      "refuelFirst": "Encha o tanque primeiro.",
+      "dispatch": "Despachar",
+      "credits": "{{amount}} ¢"
+    },
+    "transit": {
+      "title": "A caminho",
+      "detail": "Uma viagem curta, mostrada mais curta que uma real."
+    },
+    "port": {
+      "title": "Escritório do porto",
+      "body": "O Kite se foi, e não será o último. Os três poderes agora lutam contra os piratas, cada um à sua maneira. Escolha a bandeira pela qual você vai voar, e eles te dão uma nave."
     }
   },
   "onboarding": {

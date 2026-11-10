@@ -6,7 +6,8 @@ import { ApiError, client } from '../../api/client';
 import { pickLocalized } from '../../i18n/localized';
 import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
 import { factionBlurb, factionName, useFactions } from '../../ui/factions';
-import { GiverBadge } from '../../ui/GiverBadge';
+import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
+import { giverOf } from '../prologue/prologue-script';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
@@ -44,7 +45,7 @@ export function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const { list, byId } = useFactions();
   const navigate = useNavigate();
-  const { refresh } = useAuthContext();
+  const { refresh, user } = useAuthContext();
   const [selected, setSelected] = useState<string | null>(null);
   const factionArt = useFactionArt();
   // The picker lists the factions the admin marks playable (database); the built-in three only
@@ -81,6 +82,13 @@ export function OnboardingPage() {
       }
     >
       <PageTitle title={t('onboarding.title')} line={t('onboarding.subtitle')} />
+      {user?.prologueOutcome === 'played' && (
+        // After the opening's loss: the harbour office says why the pilot is choosing a flag at all.
+        <div className="panel prologue-port" data-testid="prologue-port">
+          <GiverBadge {...giverBadgeOf(giverOf('harbour'), i18n.language)} size="card" />
+          <p>{t('prologue.port.body')}</p>
+        </div>
+      )}
       <p className="sub onboarding-hint">{t('onboarding.hint')}</p>
 
       <fieldset className="faction-picker" disabled={onboarding.isPending}>
