@@ -50,10 +50,12 @@ Web (`apps/web/src/features/prologue/`, all new):
 - `prologue.css`, plus i18n keys under `prologue.*`.
 - Edited: `features/onboarding/onboarding.page.tsx` (the picker after the story, with the guides' faces), `app/router.tsx` only if a route is needed.
 
-## Split between two agents
+## Split between two agents (updated 2026-11-10; Task 1 is done, `e8756c5`)
 
-- **Agent A:** Task 1 (API) and Task 10 (docs and the owner's playtest checklist). Independent of the rest.
-- **Agent B:** Tasks 2 to 9 in order. After Tasks 2 and 3, Tasks 4, 5, 6 and 7 touch separate scene files and can be shared.
+- **Agent A (the main session):** Tasks 2, 3, 5, 8, 9 and 10: the state, the gating, the runner, the skip warning, the fixtures, the board scenes and the choice of offers, the voices and texts, the port and the handoff, the end-to-end check.
+- **Agent B (the other agent):** Tasks 6 and 7 (the race, the fight and the loss popup) right away, then Task 4 (the fitting scene) once Agent A has committed `prologue-fixtures.ts` (Task 3).
+- **Where they meet (agreed interfaces):** Agent B exports `RaceScene({ legSeconds: readonly number[]; prize: number; onDone: () => void })`, `FightScene({ onDone: () => void })`, `LossPopup({ onContinue: () => void })` and, later, `FitScene({ ship: PrologueShip; part: ProloguePart; onFitted: () => void })` (the two types come from `prologue-fixtures.ts`). Agent A's runner calls them.
+- **No clashes in the shared working tree:** Agent B writes only inside `apps/web/src/features/prologue/scenes/` (its own files and specs) and its own stylesheets `scenes/*.css`. Its i18n keys live under `prologue.race.*`, `prologue.fight.*`, `prologue.loss.*` and `prologue.fit.*`; Agent A uses `prologue.script.*`, `prologue.skip.*`, `prologue.board.*` and `prologue.port.*`. Both edit `en.json` and `pt-BR.json` with small exact-string edits, never a rewrite of the file, and each commits only its own paths (`git add <paths>`, never `git add -A`).
 
 ---
 
