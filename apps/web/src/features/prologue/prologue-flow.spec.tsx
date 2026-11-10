@@ -87,6 +87,14 @@ describe('the opening, step by step', () => {
     await waitFor(() => expect(stepOf()).toBe('offer-run-1'));
   });
 
+  it('lets the guide be read and then gets out of the way of the card', async () => {
+    openAt('race-board');
+    expect(await screen.findByTestId('dialogue')).toBeInTheDocument();
+    await dismissGuide();
+    expect(screen.queryByTestId('dialogue')).toBeNull();
+    expect(dispatchButtons()).toHaveLength(1);
+  });
+
   it('shows a short trip and then the second fitting', async () => {
     openAt('offer-run-1');
     await userEvent.click(await screen.findByRole('button', { name: /continue/i }));

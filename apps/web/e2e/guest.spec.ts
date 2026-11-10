@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { dialoguesOff } from './support';
+import { dialoguesOff, skipOpening } from './support';
 
 /**
  * Play as a guest against the real stack: no email and no password, the browser keeps the pilot
@@ -11,6 +11,7 @@ test('a guest plays, comes back with only the key, saves the pilot and signs in 
 }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Play as guest' }).click();
+  await skipOpening(page);
   await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible();
   await page.locator('label.faction-card', { hasText: /luna/i }).click();
   await page.getByRole('button', { name: 'Launch' }).click();

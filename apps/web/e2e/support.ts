@@ -69,6 +69,18 @@ export async function apiPost(page: Page, path: string, body: unknown): Promise<
   expect(result.status, result.text).toBe(200);
 }
 
+/** A new pilot first meets the opening; the suites that are not about it skip it (the warning asks twice). */
+export async function skipOpening(page: Page): Promise<void> {
+  const skip = page.getByRole('button', { name: 'Skip the opening' });
+  await expect(
+    skip.or(page.getByRole('heading', { name: 'Choose your faction' })).first(),
+  ).toBeVisible();
+  if (await skip.isVisible()) {
+    await skip.click();
+    await page.getByRole('button', { name: 'Skip anyway' }).click();
+  }
+}
+
 export async function registerAndLaunch(
   page: Page,
   faction: (typeof FACTIONS)[number],
@@ -87,7 +99,11 @@ export async function registerAndLaunch(
     await page.getByLabel('Password').fill('e2e-player-password-1');
     await page.getByRole('button', { name: 'Create account' }).click();
     const outcome = await Promise.race([
-      heading.waitFor({ timeout: 10_000 }).then(() => 'ok' as const),
+      heading
+        .or(page.getByRole('button', { name: 'Skip the opening' }))
+        .first()
+        .waitFor({ timeout: 10_000 })
+        .then(() => 'ok' as const),
       page
         .getByRole('alert')
         .waitFor({ timeout: 10_000 })
@@ -97,6 +113,7 @@ export async function registerAndLaunch(
     await page.waitForTimeout(22_000);
   }
 
+  await skipOpening(page);
   await expect(heading).toBeVisible();
   await page.locator('label.faction-card', { hasText: new RegExp(faction, 'i') }).click();
   await page.getByRole('button', { name: 'Launch' }).click();

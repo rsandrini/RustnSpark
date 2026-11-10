@@ -25,6 +25,7 @@ export function BoardScene({ offers, onDispatch, needsRefuel = false, guide }: B
   const { t } = useTranslation();
   const [refuelled, setRefuelled] = useState(!needsRefuel);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [guideRead, setGuideRead] = useState(false);
   const fuelHave = refuelled ? TANK_CAP : TANK_CAP * START_FUEL_SHARE;
   const world = PROLOGUE_WORLD;
   const place = (id: string) => world.locations.find((location) => location.id === id);
@@ -74,8 +75,8 @@ export function BoardScene({ offers, onDispatch, needsRefuel = false, guide }: B
           />
         ))}
       </div>
-      {guide !== undefined && (
-        <GuideLines guide={guide.who} lines={guide.lines} onDone={() => {}} />
+      {guide !== undefined && !guideRead && (
+        <GuideLines guide={guide.who} lines={guide.lines} onDone={() => setGuideRead(true)} />
       )}
     </section>
   );

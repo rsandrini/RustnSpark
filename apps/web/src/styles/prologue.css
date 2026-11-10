@@ -6,6 +6,10 @@
 .prologue-bar {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  /* above the dimmed backdrop of a spoken line (z-index 90), so the pilot can skip at any moment */
+  position: relative;
+  z-index: 95;
 }
 
 /* The harbour office above the faction picker, after the opening's loss. */

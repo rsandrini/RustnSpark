@@ -23,14 +23,17 @@ export function giverOf(guide: GuideId): GiverRef {
   };
 }
 
-/** One dialogue node per line key; the last one ends the conversation. Non-blocking, so the screen stays usable. */
+/**
+ * One dialogue node per line key; the last one ends the conversation. Blocking: the screen behind is dimmed until the
+ * line is read, so the box never sits over a button the pilot is about to press.
+ */
 export function nodesOf(lineKeys: readonly string[]): DialogueNode[] {
   return lineKeys.map((key, index) => ({
     id: key,
     text: localized(key),
     position: 'bottom',
     anchor: null,
-    blocking: false,
+    blocking: true,
     next: index < lineKeys.length - 1 ? (lineKeys[index + 1] ?? null) : null,
     choices: [],
   }));
