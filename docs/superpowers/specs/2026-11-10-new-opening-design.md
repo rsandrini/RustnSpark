@@ -80,9 +80,13 @@ The faction is currently chosen **before** a ship exists. This design needs a st
 
 The data model for the no-faction ship state, how scripted missions are run, how the dialogue scenes are authored, the exact race length and rival stats, art for the portraits, the rescue popup's layout, and how the existing tutorial is entered after the new ship.
 
-## Open questions for the owner (the answers change what gets built)
+## Decisions from the owner (2026-11-10)
 
-1. Is the opening **skippable**? A returning tester or a second account may not want it. (Writer's guess: a small skip, with the death replayable later.)
-2. Does the friend appear again later in the game (a memory, a ship named after them, a rival's wreck on the map), or is the death only the opening's end?
-3. After the rescue, does the player **keep the credits** they earned in the opening? (The existing ship-loss rule keeps money; the writer assumes the same.)
-4. Which faction does the friend belong to, and does that nudge the player's choice? (Writer's guess: the friend is neutral, a free pilot, so no flag is favoured.)
+1. **Skippable, with a big warning.** The opening can be skipped, but skipping shows a BIG, unmissable warning that the opening matters for first-time players and they should follow it. The warning is part of the design, not polish. A returning tester or second account can still skip.
+2. **The friend is gone for good.** The death is final: no return, no memory, no ship or wreck later. The friend does not appear again.
+3. **The player keeps the credits.** The amount the normal game starts a player with is **aligned to the amount a player ends the opening with**, so a player who skips has exactly the same money as one who played it. Consequence: the opening's earnings must be **fixed and known** (scripted payouts), so the normal start can be set to the same number. If the opening's payouts change, the normal start changes with it; the builder should keep both in one config value.
+4. **The friend is a free pilot.** Not tied to any faction, so no flag is favoured when the player chooses at the end.
+
+## Still open
+
+Nothing the owner has flagged. The "left to the builder" list above stands.
