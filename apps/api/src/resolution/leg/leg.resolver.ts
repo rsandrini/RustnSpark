@@ -19,7 +19,7 @@ import type {
   PolicyDecision,
   Stance,
 } from '../encounter/encounter-policy.js';
-import { generatePirate } from '../encounter/pirate.generator.js';
+import { fixedPirateFor, generatePirate } from '../encounter/pirate.generator.js';
 import { rollPirateDemand, type StoredPart } from '../encounter/pirate-motive.js';
 import type { CombatSheet, CombatSide } from '../combat/combat.types.js';
 import {
@@ -666,15 +666,25 @@ export function resolveLeg(input: LegInput, rules: GameRules, rng: Rng): LegOutc
   }
 
   // 3. Encounter (D17: per leg).
-  const pirate = generatePirate(
-    combatSheetFor(ship, chokeFlags, rules),
-    rules,
-    encounterRng,
-    rules.encounter.pirate_zone_strength[String(input.route.zone)],
-    input.context.bridgeRarity === undefined
-      ? 1
-      : (rules.encounter.pirate_strength_by_bridge[input.context.bridgeRarity] ?? 1),
-  );
+  const playerCombat = combatSheetFor(ship, chokeFlags, rules);
+  // Fixed pirates by region (v0.1.3), or the old way (built from the player's own ship) for runs stored before.
+  const pirate =
+    rules.encounter.pirate_mode === 'relative'
+      ? generatePirate(
+          playerCombat,
+          rules,
+          encounterRng,
+          rules.encounter.pirate_zone_strength[String(input.route.zone)],
+          input.context.bridgeRarity === undefined
+            ? 1
+            : (rules.encounter.pirate_strength_by_bridge[input.context.bridgeRarity] ?? 1),
+        )
+      : fixedPirateFor(
+          rules,
+          input.route.zone,
+          input.route.danger,
+          playerCombat.armor !== undefined,
+        );
   const encounter: EncounterOutcome = resolveEncounter(
     {
       zone: input.route.zone,

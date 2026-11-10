@@ -228,7 +228,8 @@ export function startingPools(
     esc,
     armor,
     escRegen: regen,
-    escRegenEnergy: regen > 0 ? energy / regen : 0,
+    // what a shield pays per point recovered, times the rule's factor (raised so the energy supply matters)
+    escRegenEnergy: regen > 0 ? (energy / regen) * rules.combat.shield_energy_factor : 0,
     // The batteries leave the port full.
     battery,
     batteryRecharge: recharge,
@@ -302,7 +303,7 @@ export function buildResolveInput(args: {
     esc: pools?.esc ?? sheet.esc,
     energyMode,
     weaponEnergyDraw,
-    shieldEnergyDraw,
+    shieldEnergyDraw: shieldEnergyDraw * rules.combat.shield_energy_factor,
     ...(pierceShare(installed) > 0 ? { pierceShare: pierceShare(installed) } : {}),
     ...(pools !== null
       ? {

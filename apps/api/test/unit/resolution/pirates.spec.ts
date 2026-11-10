@@ -8,7 +8,12 @@ import {
   type MissionSnapshot,
 } from '../../../src/resolution/mission/mission.resolver.js';
 
-const rules: GameRules = GAME_CONFIG_DEFAULTS;
+// These tests are about the encounter policy and the wear, with the pirate built from the player's ship (the old
+// mode); the fixed pirates have their own spec (fixed-pirate.spec.ts).
+const rules: GameRules = {
+  ...GAME_CONFIG_DEFAULTS,
+  encounter: { ...GAME_CONFIG_DEFAULTS.encounter, pirate_mode: 'relative' },
+};
 
 const PARTS = [
   { id: 'engine-1', partClass: 'ENGINE', providesEsc: false, condition: 80 },

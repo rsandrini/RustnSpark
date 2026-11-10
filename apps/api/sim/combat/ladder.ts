@@ -1,5 +1,6 @@
 /** The fighters of the fight lab: from the starter ship to a maximum-power fighter, all from real catalog parts. */
 import {
+  baseRules,
   buildFighter,
   type Dials,
   type Fighter,
@@ -168,19 +169,28 @@ export function ladder(dials?: Dials): Fighter[] {
   return LAYOUTS.map((layout) => buildFighter(layout.name, layout.note, layout.parts, dials));
 }
 
-/** Fixed pirates by region, weakest to strongest (stats: hull, firepower, armor, shield, mobility, sensors). */
+/** The game's fixed pirates (encounter.pirate_tiers), weakest to strongest. */
 export function fixedLadder(): Pirate[] {
-  return [
-    fixedPirate('P0 raider (zone 0-1)', 50, 2, 0, 0, 2),
-    fixedPirate('P1 pirate (zone 1)', 90, 3, 1, 0, 3),
-    fixedPirate('P2 marauder (zone 2)', 220, 5, 1, 20, 5, 1),
-    fixedPirate('P3 warband (zone 3)', 400, 6, 2, 20, 6, 1),
-    fixedPirate('P4 reaver (far)', 600, 8, 0, 20, 8, 1),
-    fixedPirate('P5 raider lord (far hard)', 600, 12, 2, 20, 10, 2),
-    fixedPirate('P6 corsair (elite)', 900, 18, 4, 60, 10, 3),
-    fixedPirate('P7 warlord (elite+)', 1400, 30, 8, 120, 12, 5),
-    fixedPirate('P8 dread (boss)', 2200, 50, 14, 220, 14, 8),
-  ];
+  const tiers = baseRules.encounter.pirate_tiers;
+  const count = Math.max(...Object.keys(tiers).map((key) => Number(key.split('.')[0]))) + 1;
+  return Array.from({ length: count }, (_, tier) => {
+    const stat = (name: string): number => tiers[`${tier}.${name}`] ?? 0;
+    return fixedPirate(
+      `P${tier} (zone ${
+        Object.entries(baseRules.encounter.pirate_zone_tier)
+          .filter(([, value]) => value === tier)
+          .map(([zone]) => zone)
+          .join(',') || '-'
+      })`,
+      stat('hp'),
+      stat('pdf'),
+      stat('bli'),
+      stat('esc'),
+      stat('mob'),
+      stat('sen'),
+      stat('esc') > 0 ? stat('regen') / stat('esc') : 0,
+    );
+  });
 }
 
 export function todayPirates(): Pirate[] {

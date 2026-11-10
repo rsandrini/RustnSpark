@@ -21,6 +21,7 @@ const dials: Dials = {
   shieldEsc: Number(flag('shield', '1')),
   shieldRegen: Number(flag('regen', '1')),
   combatEnergy: Number(flag('energy', '1')),
+  shieldEnergy: Number(flag('shield-energy', '1')),
   supply: Number(flag('supply', '1')),
 };
 const which = flag('pirates', 'all');

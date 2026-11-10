@@ -20,6 +20,8 @@ const combatSchema = z.object({
   pierce_ratio: z.number().min(0).max(1),
   pierce_min_pdf: z.number().int().min(0).max(50),
   shield_regen: z.number().min(0).max(20),
+  // A rule set stored before v0.1.3 has no factor: a shield paid the energy its part says (x1).
+  shield_energy_factor: z.number().min(0).max(50).default(1),
   armor_pool_factor: z.number().min(0).max(50),
   armor_reduction: z.number().min(0).max(10),
   armor_reduction_max_share: z.number().min(0).max(1),
@@ -161,6 +163,17 @@ const encounterSchema = z.object({
   pirate_bli_ratio: z.number().min(0).max(1),
   pirate_min_pdf: z.number().int().min(0).max(10),
   pirate_min_hp: z.number().int().min(1).max(500),
+  // A rule set stored before v0.1.3 built the pirate from the player's ship: it replays that way.
+  pirate_mode: z.string().min(1).default('relative'),
+  pirate_tiers: z
+    .record(z.string(), z.number().min(0).max(100000))
+    .default({ ...GAME_CONFIG_DEFAULTS.encounter.pirate_tiers }),
+  pirate_zone_tier: z
+    .record(z.string(), z.number().int().min(0).max(20))
+    .default({ ...GAME_CONFIG_DEFAULTS.encounter.pirate_zone_tier }),
+  pirate_danger_steps: z
+    .array(z.number().int().min(0).max(20))
+    .default([...GAME_CONFIG_DEFAULTS.encounter.pirate_danger_steps]),
 });
 
 const escapeSchema = z.object({

@@ -285,6 +285,7 @@ function sweepCombatRules() {
     loss_bridge_wear: 0,
     loss_bridge_wear_min_zone: 0,
     loss_wear_scale: {},
+    shield_energy_factor: 1,
   } as const;
 }
 

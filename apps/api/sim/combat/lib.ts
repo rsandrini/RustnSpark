@@ -44,6 +44,8 @@ export interface Dials {
   shieldRegen: number;
   /** combat energy drawn by shields and weapons (energyCombat) */
   combatEnergy: number;
+  /** combat energy a shield pays for what it recovers (the game's combat.shield_energy_factor) */
+  shieldEnergy: number;
   /** output of reactors and batteries */
   supply: number;
 }
@@ -52,6 +54,7 @@ export const NO_DIALS: Dials = {
   shieldEsc: 1,
   shieldRegen: 1,
   combatEnergy: 1,
+  shieldEnergy: 1,
   supply: 1,
 };
 
@@ -64,7 +67,10 @@ function adjustedRow(row: CatalogRow, dials: Dials): CatalogRow {
     if (typeof special['shieldRegen'] === 'number')
       special['shieldRegen'] = special['shieldRegen'] * dials.shieldRegen;
   }
-  if (row.energyCombat !== 0) next.energyCombat = row.energyCombat * dials.combatEnergy;
+  if (row.energyCombat !== 0) {
+    next.energyCombat =
+      row.energyCombat * dials.combatEnergy * (row.esc > 0 ? dials.shieldEnergy : 1);
+  }
   if (row.partClass === 'REACTOR' && row.energyCont > 0)
     next.energyCont = row.energyCont * dials.supply;
   if (row.partClass === 'BATTERY') {
@@ -127,7 +133,8 @@ export function buildFighter(
     batOutput: sheet.batOutput,
     energyCont: sheet.energyCont,
     weaponEnergyDraw: draw.weaponEnergyDraw,
-    shieldEnergyDraw: draw.shieldEnergyDraw,
+    // the game multiplies both by combat.shield_energy_factor (escRegenEnergy in startingPools)
+    shieldEnergyDraw: draw.shieldEnergyDraw * baseRules.combat.shield_energy_factor,
     ...(pierce > 0 ? { pierceShare: pierce } : {}),
   };
   return {
@@ -169,6 +176,7 @@ export function fixedPirate(
   esc: number,
   mob: number,
   sen = 0,
+  regenRatio = 0.2,
 ): Pirate {
   const sheet: CombatSheet = {
     hp,
@@ -179,7 +187,7 @@ export function fixedPirate(
     sen,
     armor: bli * baseRules.combat.armor_pool_factor,
     escMax: esc,
-    escRegen: Math.round(esc / 5),
+    escRegen: Math.round(esc * regenRatio),
     escRegenEnergy: 0,
   };
   return { name, make: () => sheet };

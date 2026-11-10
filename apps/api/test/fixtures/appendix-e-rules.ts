@@ -13,6 +13,8 @@ export const APPENDIX_E_RULES: GameRules = {
     ...GAME_CONFIG_DEFAULTS.combat,
     armor_reduction: 0.25,
     armor_pool_factor: 5,
+    // the oracle tapes were made with shields that paid the energy their part says
+    shield_energy_factor: 1,
     loss_wear_scale: { 0: 0.1, 1: 0.4, 2: 0.5, 3: 1 },
   },
   economy: {
@@ -50,6 +52,8 @@ export const APPENDIX_E_RULES: GameRules = {
   },
   encounter: {
     ...GAME_CONFIG_DEFAULTS.encounter,
+    // the oracle tapes were made with pirates built from the player's ship
+    pirate_mode: 'relative',
     pirate_zone_strength: { 0: 0.7, 1: 0.85, 2: 1.0, 3: 1.1 },
   },
   integrity: { ...GAME_CONFIG_DEFAULTS.integrity, combat_factor: 0.6, env_factor: 0.4 },

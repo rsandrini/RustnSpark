@@ -255,6 +255,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'combat.shield_energy_factor',
+    group: 'combat',
+    type: 'number',
+    min: 0,
+    max: 50,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.combat.shield_energy_factor),
+    description: {
+      en: 'What a shield pays in combat energy for each point it recovers, times the part own figure (1 = as the part says). Raise it so the reactors and batteries matter in a fight.',
+      'pt-BR':
+        'O que um escudo paga em energia de combate por cada ponto que recupera, vezes o valor da própria peça (1 = como a peça diz). Aumente para que reatores e baterias importem numa luta.',
+    },
+  },
+  {
     key: 'combat.max_rounds',
     group: 'combat',
     type: 'integer',
@@ -1386,6 +1399,58 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     description: {
       en: 'Minimum HP for a spawned pirate ship.',
       'pt-BR': 'HP mínimo para uma nave pirata gerada.',
+    },
+  },
+  {
+    key: 'encounter.pirate_mode',
+    group: 'encounter',
+    type: 'string',
+    min: 0,
+    max: 0,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_mode),
+    description: {
+      en: "How a pirate is made: 'fixed' = a set of stats by region (encounter.pirate_tiers), 'relative' = built from the player's own ship (the old way).",
+      'pt-BR':
+        "Como um pirata é feito: 'fixed' = estatísticas fixas por região (encounter.pirate_tiers), 'relative' = construído a partir da nave do jogador (o jeito antigo).",
+    },
+  },
+  {
+    key: 'encounter.pirate_tiers',
+    group: 'encounter',
+    type: 'json',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_tiers),
+    description: {
+      en: 'The fixed pirates, as <tier>.<stat>: value. Stats: hp (hull), pdf (firepower), bli (armor), esc (shield), regen (shield recovery per round), mob (mobility), sen (sensors).',
+      'pt-BR':
+        'Os piratas fixos, como <nível>.<atributo>: valor. Atributos: hp (casco), pdf (poder de fogo), bli (blindagem), esc (escudo), regen (recuperação do escudo por rodada), mob (mobilidade), sen (sensores).',
+    },
+  },
+  {
+    key: 'encounter.pirate_zone_tier',
+    group: 'encounter',
+    type: 'json',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_zone_tier),
+    description: {
+      en: 'Zone -> the pirate tier met there (0 weakest). The route danger can raise it (encounter.pirate_danger_steps).',
+      'pt-BR':
+        'Zona -> o nível de pirata encontrado ali (0 é o mais fraco). O perigo da rota pode subir o nível (encounter.pirate_danger_steps).',
+    },
+  },
+  {
+    key: 'encounter.pirate_danger_steps',
+    group: 'encounter',
+    type: 'json',
+    min: 0,
+    max: 20,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.encounter.pirate_danger_steps),
+    description: {
+      en: 'A route at least this dangerous raises the pirate tier by 1 (first number) and by 2 (second number).',
+      'pt-BR':
+        'Uma rota pelo menos tão perigosa sobe o nível do pirata em 1 (primeiro número) e em 2 (segundo número).',
     },
   },
   {

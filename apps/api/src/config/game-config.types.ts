@@ -53,6 +53,7 @@ export type ConfigKey =
   | 'combat.armor_reduction'
   | 'combat.armor_reduction_max_share'
   | 'combat.scrap_win_min'
+  | 'combat.shield_energy_factor'
   | 'combat.scrap_win_max'
   | 'detection.ambush_cap'
   | 'detection.ambush_per_sen_point'
@@ -110,6 +111,10 @@ export type ConfigKey =
   | 'engine.push_wear'
   | 'encounter.chance_divisor'
   | 'encounter.pirate_bli_ratio'
+  | 'encounter.pirate_danger_steps'
+  | 'encounter.pirate_mode'
+  | 'encounter.pirate_tiers'
+  | 'encounter.pirate_zone_tier'
   | 'encounter.pirate_min_hp'
   | 'encounter.pirate_min_pdf'
   | 'encounter.pirate_mob_jitter'
@@ -313,6 +318,9 @@ export type GameRules = Readonly<{
     loss_wear_scale: Readonly<Record<string, number>>;
     /** Shield points a shield with no regen stat of its own recovers per round (legacy shields). */
     shield_regen: number;
+    /** What a shield pays in combat energy for each point it recovers, times the part's own figure
+        (1 = as the part says). Raised so the energy supply matters. */
+    shield_energy_factor: number;
     /** Absorbed damage per armor point: armor is a pool that wears down in a fight. */
     armor_pool_factor: number;
     /** Armor cuts every hit that gets past the shield by this much per point of armor rating it
@@ -474,6 +482,15 @@ export type GameRules = Readonly<{
     pirate_bli_ratio: number;
     pirate_min_pdf: number;
     pirate_min_hp: number;
+    /** How a pirate is made: 'fixed' = a set of stats by region (`pirate_tiers`), 'relative' = built from the
+        player's own sheet (the way it was before v0.1.3; kept so older logs replay). */
+    pirate_mode: string;
+    /** The fixed pirates, as '<tier>.<stat>' -> value; stats: hp, pdf, bli, esc, regen, mob, sen. */
+    pirate_tiers: Readonly<Record<string, number>>;
+    /** Zone -> the pirate tier met there. */
+    pirate_zone_tier: Readonly<Record<string, number>>;
+    /** A route this dangerous (>= the first number) raises the tier by 1, by 2 at the second number. */
+    pirate_danger_steps: readonly number[];
   }>;
   escape: Readonly<{
     enemy_sen_weight: number;

@@ -55,3 +55,59 @@ export function generatePirate(
     hp: Math.max(e.pirate_min_hp, roundHalfEven(player.hp * strength)),
   };
 }
+
+/** How many tiers the second danger step adds (the first adds 1). */
+const SECOND_STEP = 2;
+
+/**
+ * The pirate tier of a leg (fixed pirates, v0.1.3): the zone's tier, raised by 1 when the route is at least as
+ * dangerous as the first danger step and by 2 at the second, and never past the last tier the config has.
+ */
+export function pirateTierFor(rules: GameRules, zone: number, danger: number): number {
+  const e = rules.encounter;
+  const zoneTiers = Object.values(e.pirate_zone_tier);
+  const base =
+    e.pirate_zone_tier[String(zone)] ?? (zoneTiers.length > 0 ? Math.max(...zoneTiers) : 0);
+  const [first, second] = e.pirate_danger_steps;
+  const raise =
+    second !== undefined && danger >= second
+      ? SECOND_STEP
+      : first !== undefined && danger >= first
+        ? 1
+        : 0;
+  const tiers = Object.keys(e.pirate_tiers).map((key) => Number(key.split('.')[0]));
+  const last = tiers.length > 0 ? Math.max(...tiers) : 0;
+  return Math.min(base + raise, last);
+}
+
+/**
+ * A fixed pirate: its stats are the config's for the leg's tier, whatever ship it meets (no draws). Against a ship
+ * in the layered damage model its armor is a pool of the same kind and its shield recovers `regen` per round.
+ */
+export function fixedPirateFor(
+  rules: GameRules,
+  zone: number,
+  danger: number,
+  layered: boolean,
+): CombatSheet {
+  const tier = pirateTierFor(rules, zone, danger);
+  const stat = (name: string): number => rules.encounter.pirate_tiers[`${tier}.${name}`] ?? 0;
+  const bli = stat('bli');
+  const esc = stat('esc');
+  return {
+    ...(layered
+      ? {
+          armor: bli * rules.combat.armor_pool_factor,
+          escMax: esc,
+          escRegen: stat('regen'),
+          escRegenEnergy: 0,
+        }
+      : {}),
+    hp: stat('hp'),
+    pdf: stat('pdf'),
+    bli,
+    esc,
+    mob: stat('mob'),
+    sen: stat('sen'),
+  };
+}
