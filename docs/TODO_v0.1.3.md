@@ -30,11 +30,15 @@ Delete an item when it ships (the commit has the history).
 
 ## 5. Balance: ion-only is too easy (prod run)
 
-- [ ] ION has no fuel cost, so no distance limit. A prod run (ion only, about 1M credits in 5 days, nearly a Rare ship) was too easy.
-  Extract the numbers from the prod DB (read only), compare with the sim (`apps/api/sim`, add an ion-only bot), then tune.
-  Do this step last.
-  Prod extract analysed (2026-11-09): see `docs/BALANCE_prod_2026-11-09.md` (income concentrated in 7 long zone-3 trips; exposure
-  is per leg, not per distance; dodge makes pirates miss 88%; pirates scale off the player's own sheet).
+- [x] Built (2026-11-09), waiting for the owner's test on the local stack. Analysis: `docs/BALANCE_prod_2026-11-09.md`. Changes:
+  - Money: `economy.reward_distance_divisor` 1500 -> 4000, `economy.reward_by_bridge` RARE 1.25 / EPIC 1.8 / LEGENDARY 2.2 (sim screening
+    round: pay per hour by tier in the target band; ion at the top tier 230k -> about 103k). A migration moves the stored rows that still
+    hold the old value; prod will be reset and redeployed, so it only matters for a DB that is kept.
+  - Fights: pirates are a fixed ladder by region (`encounter.pirate_tiers`, `pirate_zone_tier`, `pirate_danger_steps`, mode `fixed`), tuned in
+    the fight lab (`apps/api/sim/combat`, `tune.ts`); shields pay 3x the energy (`combat.shield_energy_factor`).
+  - Sim result (4 builds): fights won 43-62%, mission success 83-94%, income per run -25% to -66%, tier 5 reached in 6-13 h of play.
+  - Not done: the pace to the best tier is unchanged (about 10 h; the owner took about 20 h), and a lost fight costs little hull. Left for
+    the owner to decide after the test.
 
 ## 6. A long mission (8 legs) finished much faster than the card said (prod, 2026-11-08)
 
