@@ -87,7 +87,21 @@
       "confirm": "Skip anyway"
     },
     "pending": "This part of the opening is not ready yet.",
-    "next": "Continue"
+    "next": "Continue",
+    "race": {
+      "title": "The race",
+      "leg": "Leg {{current}} of {{total}}",
+      "skip": "Skip",
+      "friendName": "Kite",
+      "rivalName": "Rattler",
+      "you": "you",
+      "result": {
+        "title": "Race over",
+        "place": "{{place}} place",
+        "continue": "Continue"
+      }
+    }
+  
   },
   "onboarding": {
     "title": "Choose your faction",

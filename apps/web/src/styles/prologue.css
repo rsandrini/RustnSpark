@@ -1,0 +1,38 @@
+/* The new-pilot opening (docs/superpowers/specs/2026-11-10-new-opening-design.md). */
+.prologue {
+  display: grid;
+  gap: var(--gap);
+}
+.prologue-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* The warning before skipping: big and plain on purpose; the safe choice comes first. */
+.modal.prologue-skip {
+  width: min(520px, 94vw);
+  border-color: var(--warn);
+  padding: 26px;
+}
+.prologue-skip h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+}
+.prologue-skip-label {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--warn);
+}
+.prologue-skip-body {
+  margin: 0 0 12px;
+  font-size: var(--text-lg);
+  line-height: 1.45;
+}
+.prologue-skip-warning {
+  margin: 0;
+  font-weight: 600;
+  color: var(--warn);
+}

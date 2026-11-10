@@ -10,6 +10,7 @@ import { GiverBadge } from '../../ui/GiverBadge';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
+import { PrologueFlow } from '../prologue/prologue.page';
 
 // The playable factions are the keys of the admin-editable `onboarding.home_locations`
 // config; these three are the factory defaults (GDD §10). The server re-validates.
@@ -30,6 +31,11 @@ export function OnboardingRoute() {
   }
   if (user.factionId) {
     return <Navigate to="/ship" replace />;
+  }
+  // The new-pilot opening comes first: the server says it has not ended for this pilot (null). A server that does not
+  // send the field at all (undefined) goes straight to the picker, as before.
+  if (user.prologueOutcome === null) {
+    return <PrologueFlow />;
   }
   return <OnboardingPage />;
 }

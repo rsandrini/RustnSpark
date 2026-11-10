@@ -23,6 +23,7 @@ import './styles/map.css';
 import './styles/profile.css';
 import './styles/rankings.css';
 import './styles/onboarding.css';
+import './styles/prologue.css';
 import './styles/auth.css';
 import './styles/report.css';
 import './styles/ship.css';

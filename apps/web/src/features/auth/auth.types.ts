@@ -12,6 +12,8 @@ export interface UserProfile {
   factionId: string | null;
   /** The newcomer tutorial was skipped or finished; false while it should still show. */
   tutorialDone?: boolean;
+  /** How the new-pilot opening ended: null while it still shows, then played or skipped. Absent from an older server. */
+  prologueOutcome?: 'played' | 'skipped' | null;
   /** Started as a guest: the account menu offers to save the pilot with an email and password. */
   isGuest?: boolean;
 }

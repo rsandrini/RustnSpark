@@ -87,7 +87,21 @@
       "confirm": "Pular mesmo assim"
     },
     "pending": "Esta parte da abertura ainda não está pronta.",
-    "next": "Continuar"
+    "next": "Continuar",
+    "race": {
+      "title": "A corrida",
+      "leg": "Trecho {{current}} de {{total}}",
+      "skip": "Pular",
+      "friendName": "Kite",
+      "rivalName": "Rattler",
+      "you": "você",
+      "result": {
+        "title": "Corrida encerrada",
+        "place": "{{place}} lugar",
+        "continue": "Continuar"
+      }
+    }
+  
   },
   "onboarding": {
     "title": "Escolha sua facção",
