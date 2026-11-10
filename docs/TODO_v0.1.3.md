@@ -103,3 +103,21 @@ Delete an item when it ships (the commit has the history).
     tapes), mining no longer reads them; `mining_cargo_full` stays readable for stored logs.
   - Still open: the sim's mining bot does not pick contracts by odds yet (it digs the ores of the place); free digging with big drills pays
     160-270k/h at base price (item 5: K and the ore prices are the levers).
+
+## 9. A new opening instead of the faction picker first (owner, 2026-11-10)
+
+- Spec `docs/superpowers/specs/2026-11-10-new-opening-design.md`, plan `docs/superpowers/plans/2026-11-10-new-opening.md`.
+- **Built (2026-11-10), waiting for the owner's test on the local stack.** A new account meets a scripted story before the faction picker:
+  the friend Kite hands over an old engine (fitted on the real yard), a 3-leg race (15 / 20 / 30 s, the friend wins), the first stop
+  (free refuel, a choice of two jobs that pay the same), a cargo hold fitted, a second job, then the dangerous Cinder Reach run: the friend is
+  destroyed, a full-screen loss popup, a rescue, the harbour office, and the existing faction picker, then the existing tutorial.
+- Skippable behind a big two-step warning. How it ended is saved on the player (`Player.prologueOutcome`: played or skipped), so it never
+  shows again on any device. The step a pilot is on mid-opening stays in the browser (resume).
+- Money: `onboarding.prologue_payout_shares` [20, 30, 50] percent of `economy.start_credits`; the payouts always add up to exactly the start
+  credits, so skipping gives the same money. The refuel in the opening is free (the plan said a small fixed cost; free keeps the total exact).
+- Checked on the real stack, desktop and phone (e2e `prologue.spec.ts`), and the older suites (smoke, guest, tutorial) still pass with the skip.
+- **Still to do (owner):** rewrite the lines (all in `prologue.script.*`, en + pt-BR, the names Kite / Dara Voss / Marshal Oren are drafts),
+  art for the portraits (Kite, Dara Voss, Marshal Oren, and the three faction people), the race and fight wording, and play it through.
+  The final run's reward on the card is `2 x (the two job payouts)`; it is never paid.
+- Not done: the faction people are not shown before the picker (the plan had them appear in the port scene); the picker uses the existing
+  mentor cards.
