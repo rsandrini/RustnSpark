@@ -15,15 +15,16 @@ export interface BoardSceneProps {
   offers: readonly MissionOffer[];
   /** The pilot pressed Dispatch on this offer. */
   onDispatch: (offer: MissionOffer) => void;
-  /** The tank starts a quarter full: Dispatch waits for the (free) refuel. */
-  needsRefuel?: boolean;
+  /** The tank starts a quarter full: Dispatch waits for the refuel, which the pilot pays for. */
+  refuel?: { cost: number; credits: number; paid: boolean; onPay: () => void };
   guide?: { who: GuideId; lines: readonly string[] };
 }
 
 /** The real mission card (with its map) for each offer, and nothing else on the board: only Dispatch works. */
-export function BoardScene({ offers, onDispatch, needsRefuel = false, guide }: BoardSceneProps) {
+export function BoardScene({ offers, onDispatch, refuel, guide }: BoardSceneProps) {
   const { t } = useTranslation();
-  const [refuelled, setRefuelled] = useState(!needsRefuel);
+  const refuelled = refuel === undefined || refuel.paid;
+  const affordable = refuel === undefined || refuel.credits >= refuel.cost;
   const [chosen, setChosen] = useState<string | null>(null);
   const [guideRead, setGuideRead] = useState(false);
   const fuelHave = refuelled ? TANK_CAP : TANK_CAP * START_FUEL_SHARE;
@@ -32,17 +33,23 @@ export function BoardScene({ offers, onDispatch, needsRefuel = false, guide }: B
 
   return (
     <section className="prologue-scene prologue-board" data-testid="board-scene">
-      {needsRefuel && (
+      {refuel !== undefined && (
         <div className="panel prologue-refuel">
           <button
             type="button"
             className="btn primary"
-            disabled={refuelled}
-            onClick={() => setRefuelled(true)}
+            disabled={refuelled || !affordable}
+            onClick={refuel.onPay}
           >
-            {refuelled ? t('prologue.board.refuelled') : t('prologue.board.refuel')}
+            {refuelled
+              ? t('prologue.board.refuelled')
+              : t('prologue.board.refuel', { cost: refuel.cost })}
           </button>
-          {!refuelled && <span className="sub">{t('prologue.board.refuelFirst')}</span>}
+          {!refuelled && (
+            <span className="sub">
+              {affordable ? t('prologue.board.refuelFirst') : t('prologue.board.notEnough')}
+            </span>
+          )}
         </div>
       )}
       {offers.length > 1 && <p className="sub">{t('prologue.board.chooseOne')}</p>}

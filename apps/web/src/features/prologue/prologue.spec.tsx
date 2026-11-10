@@ -28,7 +28,7 @@ function pilot(getOutcome: () => Outcome, factionId: string | null = null) {
 
 /** The server's payouts for the opening (they add up to the credits a pilot starts with). */
 const payouts = http.get('/v1/players/me/prologue', () =>
-  HttpResponse.json({ startCredits: 3000, payouts: [600, 900, 1500] }),
+  HttpResponse.json({ startCredits: 3000, refuelCost: 100, payouts: [620, 930, 1550] }),
 );
 
 describe('the new-pilot opening: gating, resume and skip', () => {

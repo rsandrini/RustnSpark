@@ -53,14 +53,15 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
 
   const server = () => httpServer(testApp.app);
 
-  it('GET returns payouts that add up to economy.start_credits', async () => {
+  it('GET returns payouts that cover the refuel and leave exactly economy.start_credits', async () => {
     const { auth } = await pilot();
     const response = await request(server()).get('/v1/players/me/prologue').set(auth);
     expect(response.status).toBe(200);
-    const body = response.body as { startCredits: number; payouts: number[] };
+    const body = response.body as { startCredits: number; refuelCost: number; payouts: number[] };
     expect(body.startCredits).toBe(START);
     expect(body.payouts).toHaveLength(3);
-    expect(body.payouts.reduce((sum, payout) => sum + payout, 0)).toBe(START);
+    expect(body.refuelCost).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost);
+    expect(body.payouts.reduce((sum, payout) => sum + payout, 0) - body.refuelCost).toBe(START);
   });
 
   it('requires an access token', async () => {

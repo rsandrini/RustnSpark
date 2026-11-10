@@ -159,7 +159,7 @@
         "l1": "Dockside sprint: three legs, you against me. Nothing at stake but bragging rights. Hit Dispatch."
       },
       "stopOne": {
-        "l1": "Dockside. You were close. Top her off, it's on the house today, then pick a job. Passengers or crates, they pay the same."
+        "l1": "Dockside. You were close. Top her off, fuel isn't free, then pick a job. Passengers or crates, they pay the same."
       },
       "fitCargo": {
         "l1": "You flew half empty. Passengers pay by the head, so a bigger hold means a bigger payday. There's a cargo hold in the shed: fit it the same way.",
@@ -177,12 +177,13 @@
       }
     },
     "board": {
-      "refuel": "Refuel (on the house)",
+      "refuel": "Refuel ({{cost}} ¢)",
       "refuelled": "Tank full",
       "chooseOne": "Pick one job.",
       "refuelFirst": "Fill the tank first.",
       "dispatch": "Dispatch",
-      "credits": "{{amount}} ¢"
+      "credits": "{{amount}} ¢",
+      "notEnough": "Not enough credits."
     },
     "transit": {
       "title": "Under way",

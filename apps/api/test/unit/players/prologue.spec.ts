@@ -33,6 +33,15 @@ describe('onboarding.prologue_payout_shares', () => {
     expect(validateGameRules(GAME_CONFIG_DEFAULTS)).toEqual(GAME_CONFIG_DEFAULTS);
   });
 
+  it('has a refuel cost that is a whole number of credits', () => {
+    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost).toBe(100);
+    const negative = {
+      ...GAME_CONFIG_DEFAULTS,
+      onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_refuel_cost: -1 },
+    };
+    expect(() => validateGameRules(negative)).toThrow(GameConfigValidationError);
+  });
+
   it('rejects shares that do not sum to 100', () => {
     expect(() => validateGameRules(withShares([20, 30, 40]))).toThrow(GameConfigValidationError);
   });

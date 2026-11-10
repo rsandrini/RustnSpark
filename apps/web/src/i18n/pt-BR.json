@@ -159,7 +159,7 @@
         "l1": "Corrida até Dockside: três trechos, você contra mim. Nada em jogo além de se gabar. Aperte Despachar."
       },
       "stopOne": {
-        "l1": "Dockside. Você chegou perto. Encha o tanque, hoje é por conta da casa, e escolha um trabalho. Passageiros ou caixas, pagam igual."
+        "l1": "Dockside. Você chegou perto. Encha o tanque, combustível não é de graça, e escolha um trabalho. Passageiros ou caixas, pagam igual."
       },
       "fitCargo": {
         "l1": "Você voou meio vazio. Passageiro paga por cabeça, então um compartimento maior é um pagamento maior. Tem um compartimento de carga no galpão: encaixe do mesmo jeito.",
@@ -177,12 +177,13 @@
       }
     },
     "board": {
-      "refuel": "Reabastecer (por conta da casa)",
+      "refuel": "Reabastecer ({{cost}} ¢)",
       "refuelled": "Tanque cheio",
       "chooseOne": "Escolha um trabalho.",
       "refuelFirst": "Encha o tanque primeiro.",
       "dispatch": "Despachar",
-      "credits": "{{amount}} ¢"
+      "credits": "{{amount}} ¢",
+      "notEnough": "Créditos insuficientes."
     },
     "transit": {
       "title": "A caminho",

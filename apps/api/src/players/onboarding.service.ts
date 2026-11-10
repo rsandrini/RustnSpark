@@ -36,12 +36,18 @@ export class OnboardingService {
     private readonly events: PlayerEventService,
   ) {}
 
-  /** The opening's payouts, which add up to exactly the credits a new pilot starts with. */
-  prologue(): { startCredits: number; payouts: number[] } {
+  /** The opening's payouts (they cover the refuel, so the pilot ends with exactly the credits a new pilot starts with). */
+  prologue(): { startCredits: number; refuelCost: number; payouts: number[] } {
     const { economy, onboarding } = this.configService.snapshot().rules;
+    const refuelCost = onboarding.prologue_refuel_cost;
     return {
       startCredits: economy.start_credits,
-      payouts: prologuePayouts(economy.start_credits, onboarding.prologue_payout_shares),
+      refuelCost,
+      // the refuel is paid out of what the opening earns, so the pilot ends with exactly the start credits
+      payouts: prologuePayouts(
+        economy.start_credits + refuelCost,
+        onboarding.prologue_payout_shares,
+      ),
     };
   }
 

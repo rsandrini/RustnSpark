@@ -8,6 +8,7 @@ import {
   type PrologueShip,
 } from './prologue-fixtures';
 import { usePrologueData } from './prologue-data';
+import { creditsAt } from './prologue-script';
 import type { StepId } from './prologue-state';
 import { BoardScene } from './scenes/board-scene';
 import { FightScene } from './scenes/fight-scene';
@@ -98,12 +99,17 @@ function Race({ onDone }: SceneProps) {
 }
 
 function StopOne({ onDone }: SceneProps) {
-  const { offers } = usePrologueData();
+  const { offers, payouts, refuelCost, refuelled, payRefuel } = usePrologueData();
   return (
     <BoardScene
       offers={offers.firstStop}
       onDispatch={onDone}
-      needsRefuel
+      refuel={{
+        cost: refuelCost,
+        credits: creditsAt('stop-one', payouts),
+        paid: refuelled,
+        onPay: payRefuel,
+      }}
       guide={{ who: 'friend', lines: ['prologue.script.stopOne.l1'] }}
     />
   );

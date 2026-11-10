@@ -91,6 +91,8 @@ export type UpdateTutorialResponse = z.infer<typeof UpdateTutorialResponseSchema
 /** The new-pilot opening: the payouts it hands out (they add up to `startCredits`) and how it ended. */
 export const PrologueResponseSchema = z.object({
   startCredits: z.number().int(),
+  /** What the refuel at the first stop costs; the payouts add up to `startCredits + refuelCost`. */
+  refuelCost: z.number().int(),
   payouts: z.array(z.number().int()),
 });
 export type PrologueResponse = z.infer<typeof PrologueResponseSchema>;

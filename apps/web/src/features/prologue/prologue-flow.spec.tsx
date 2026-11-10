@@ -9,7 +9,9 @@ import { creditsAt } from './prologue-script';
 import { clearPrologueSteps, PROLOGUE_STEPS, type StepId } from './prologue-state';
 import { dismissGuide } from './prologue-test-utils';
 
-const PAYOUTS = [600, 900, 1500];
+/** The payouts cover the refuel: they add up to the start credits plus its cost. */
+const PAYOUTS = [620, 930, 1550];
+const REFUEL_COST = 100;
 
 function openAt(step: StepId) {
   window.localStorage.clear();
@@ -29,7 +31,7 @@ function openAt(step: StepId) {
       }),
     ),
     http.get('/v1/players/me/prologue', () =>
-      HttpResponse.json({ startCredits: 3000, payouts: PAYOUTS }),
+      HttpResponse.json({ startCredits: 3000, refuelCost: REFUEL_COST, payouts: PAYOUTS }),
     ),
   );
   return renderWithRouter(routes, { initialEntries: ['/onboarding'] });
@@ -44,13 +46,16 @@ describe('the opening, step by step', () => {
     clearPrologueSteps();
   });
 
-  it('adds the payouts up to exactly what a pilot starts with', () => {
-    expect(creditsAt('gift', PAYOUTS)).toBe(0);
-    expect(creditsAt('race', PAYOUTS)).toBe(0);
-    expect(creditsAt('stop-one', PAYOUTS)).toBe(600);
-    expect(creditsAt('fit-cargo', PAYOUTS)).toBe(1500);
-    expect(creditsAt('final-board', PAYOUTS)).toBe(3000);
-    expect(creditsAt('rescue', PAYOUTS)).toBe(3000);
+  it('ends the opening with exactly what a pilot starts with once the refuel is paid for', () => {
+    expect(creditsAt('gift', PAYOUTS, REFUEL_COST)).toBe(0);
+    expect(creditsAt('race', PAYOUTS, REFUEL_COST)).toBe(0);
+    // at the first stop the race has paid; the refuel is only spent once the pilot pays it
+    expect(creditsAt('stop-one', PAYOUTS, REFUEL_COST)).toBe(620);
+    expect(creditsAt('stop-one', PAYOUTS, REFUEL_COST, true)).toBe(520);
+    expect(creditsAt('offer-run-1', PAYOUTS, REFUEL_COST)).toBe(520);
+    expect(creditsAt('fit-cargo', PAYOUTS, REFUEL_COST)).toBe(1450);
+    expect(creditsAt('final-board', PAYOUTS, REFUEL_COST)).toBe(3000);
+    expect(creditsAt('rescue', PAYOUTS, REFUEL_COST)).toBe(3000);
     expect(PROLOGUE_STEPS.at(-1)).toBe('rescue');
   });
 
@@ -74,14 +79,16 @@ describe('the opening, step by step', () => {
   it('makes the pilot refuel before the first stop lets them dispatch, and offers two jobs that pay the same', async () => {
     openAt('stop-one');
     await screen.findAllByText(/passengers to dockside/i);
-    expect(screen.getByTestId('prologue-credits')).toHaveTextContent('600');
+    expect(screen.getByTestId('prologue-credits')).toHaveTextContent('620');
     const buttons = dispatchButtons();
     expect(buttons).toHaveLength(2);
     for (const button of buttons) expect(button).toBeDisabled();
     const rewards = [...document.querySelectorAll('.mcard-reward b')].map((b) => b.textContent);
     expect(rewards[0]).toBe(rewards[1]);
 
-    await userEvent.click(screen.getByRole('button', { name: /refuel/i }));
+    await userEvent.click(screen.getByRole('button', { name: /refuel \(100/i }));
+    // the refuel is paid for: the wallet drops by its cost
+    await waitFor(() => expect(screen.getByTestId('prologue-credits')).toHaveTextContent('520'));
     for (const button of dispatchButtons()) expect(button).toBeEnabled();
     await userEvent.click(dispatchButtons()[1] as HTMLElement);
     await waitFor(() => expect(stepOf()).toBe('offer-run-1'));
@@ -99,7 +106,7 @@ describe('the opening, step by step', () => {
     openAt('offer-run-1');
     await userEvent.click(await screen.findByRole('button', { name: /continue/i }));
     await waitFor(() => expect(stepOf()).toBe('fit-cargo'));
-    expect(screen.getByTestId('prologue-credits')).toHaveTextContent('1,500');
+    expect(screen.getByTestId('prologue-credits')).toHaveTextContent('1,450');
   });
 
   it('puts the dangerous final run on the card and goes on to the fight when dispatched', async () => {

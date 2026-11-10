@@ -40,15 +40,23 @@ export function nodesOf(lineKeys: readonly string[]): DialogueNode[] {
 }
 
 /**
- * The credits the pilot has at a step: nothing until the race pays, then each payout as its job is done. The
- * ship's loss costs nothing (the money is kept), so it stays at the total from the final run on.
+ * The credits the pilot has at a step: nothing until the race pays, then each payout as its job is done, less the
+ * refuel. The payouts cover the refuel, so the pilot ends with exactly the start credits. The ship's loss costs
+ * nothing (the money is kept), so it stays at that total from the final run on.
  */
-export function creditsAt(step: StepId, payouts: readonly number[]): number {
+export function creditsAt(
+  step: StepId,
+  payouts: readonly number[],
+  refuelCost = 0,
+  refuelled = false,
+): number {
   const at = PROLOGUE_STEPS.indexOf(step);
   const [race = 0, first = 0, second = 0] = payouts;
   let credits = 0;
   if (at >= PROLOGUE_STEPS.indexOf('stop-one')) credits += race;
   if (at >= PROLOGUE_STEPS.indexOf('fit-cargo')) credits += first;
   if (at >= PROLOGUE_STEPS.indexOf('final-board')) credits += second;
+  // the refuel at the first stop is paid for: from the next step on it is always spent
+  if (refuelled || at > PROLOGUE_STEPS.indexOf('stop-one')) credits -= refuelCost;
   return credits;
 }

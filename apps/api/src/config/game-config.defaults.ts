@@ -560,6 +560,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     // The opening pays out the starting credits in three steps (the race, then the two missions at the first
     // stop), as whole percentages adding up to 100, so a pilot who skips it starts with the same money.
     prologue_payout_shares: [20, 30, 50],
+    // The refuel at the opening's first stop costs this; the payouts cover it, so the pilot still ends with the start credits.
+    prologue_refuel_cost: 100,
   },
   world: {
     seed: 'rust-and-spark-world-seed-v0.1',

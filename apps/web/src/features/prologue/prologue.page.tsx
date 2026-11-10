@@ -14,6 +14,7 @@ type Outcome = 'played' | 'skipped';
 
 interface PrologueResponse {
   startCredits: number;
+  refuelCost: number;
   payouts: number[];
 }
 
@@ -33,12 +34,19 @@ export function PrologueFlow() {
     queryFn: () => client.get<PrologueResponse>('/v1/players/me/prologue'),
     staleTime: Infinity,
   });
+  const [refuelled, setRefuelled] = useState(false);
   const data = useMemo(
     () =>
       prologue.data === undefined
         ? null
-        : { payouts: prologue.data.payouts, offers: prologueOffers(prologue.data.payouts) },
-    [prologue.data],
+        : {
+            payouts: prologue.data.payouts,
+            refuelCost: prologue.data.refuelCost,
+            refuelled,
+            payRefuel: () => setRefuelled(true),
+            offers: prologueOffers(prologue.data.payouts),
+          },
+    [prologue.data, refuelled],
   );
 
   const finish = useMutation({
@@ -64,7 +72,9 @@ export function PrologueFlow() {
         {data !== null && (
           <span className="wallet-chip prologue-credits" data-testid="prologue-credits">
             {t('prologue.board.credits', {
-              amount: new Intl.NumberFormat(i18n.language).format(creditsAt(step, data.payouts)),
+              amount: new Intl.NumberFormat(i18n.language).format(
+                creditsAt(step, data.payouts, data.refuelCost, data.refuelled),
+              ),
             })}
           </span>
         )}
