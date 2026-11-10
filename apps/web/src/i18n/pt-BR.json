@@ -76,6 +76,19 @@
       "invalidToken": "Link de redefinição inválido ou expirado"
     }
   },
+  "prologue": {
+    "skip": {
+      "link": "Pular a abertura",
+      "label": "Importante",
+      "title": "Pular a abertura?",
+      "body": "A abertura é uma história curta que mostra como o jogo funciona: encaixar peças, aceitar trabalhos e o que os piratas fazem. Se é a sua primeira vez, por favor acompanhe.",
+      "warning": "Você não poderá voltar a ela depois.",
+      "play": "Jogar a abertura",
+      "confirm": "Pular mesmo assim"
+    },
+    "pending": "Esta parte da abertura ainda não está pronta.",
+    "next": "Continuar"
+  },
   "onboarding": {
     "title": "Escolha sua facção",
     "subtitle": "Uma escolha para todo o contrato — sua bandeira voa em cada missão depois disto.",

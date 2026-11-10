@@ -76,6 +76,19 @@
       "invalidToken": "Invalid or expired reset link"
     }
   },
+  "prologue": {
+    "skip": {
+      "link": "Skip the opening",
+      "label": "Important",
+      "title": "Skip the opening?",
+      "body": "The opening is a short story that shows you how the game works: fitting parts, taking jobs, and what the pirates do. If this is your first time, please follow it.",
+      "warning": "You cannot come back to it later.",
+      "play": "Play the opening",
+      "confirm": "Skip anyway"
+    },
+    "pending": "This part of the opening is not ready yet.",
+    "next": "Continue"
+  },
   "onboarding": {
     "title": "Choose your faction",
     "subtitle": "One choice for the whole contract — your flag flies on every mission after this.",
