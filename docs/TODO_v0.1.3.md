@@ -121,3 +121,34 @@ Delete an item when it ships (the commit has the history).
   The final run's reward on the card is `2 x (the two job payouts)`; it is never paid.
 - Not done: the faction people are not shown before the picker (the plan had them appear in the port scene); the picker uses the existing
   mentor cards.
+
+### 9b. Fixes after the owner's first look at the opening (2026-11-10), waiting for the go on the approach
+
+The owner's list (the approach is still to be approved: rebuild the opening on the REAL screens over a fake in-browser server, with a director
+layer that speaks the story; texts as admin-editable dialogue scenes; or patch the current scenes):
+
+1. The spoken text goes in the MIDDLE of the screen, not at the bottom.
+2. The texts editable in the Admin, with the guide's name, picture and so on, and the owner can add or remove steps in the conversation
+   (full control over how and when it happens).
+3. The ship-building screen is broken: the ship area is much smaller than on the first screen.
+4. A part dragged from the list does not land at the mouse position (too low and far).
+5. A wrong drop must NOT reset the part: keep it there, show what is wrong, wait for the fix. The connectors must be visible while moving it.
+6. The race: at least 3 legs; a bigger map; no "best of the day" on the first race; the friend's real name instead of "Free pilot"; almost no
+   fuel at the start (just enough for the race); ship animations with both ships; no "expires in"; ONLY the pilot and the friend (today 3
+   racers); show the map, the positions and the partial results; radio lines from the friend in each leg.
+7. "Race over" is broken and dull ("Pilot {{place}} place"): show the animation or the ship parts, with the friend talking.
+8. Refuel in the port tab, with the real interface.
+9. Refuel and the other actions get the game's animation and notifications.
+10. Missions use the real missions-screen layout, without "expires", with different destinations.
+11. Missions have a conclusion (the report); today steps are skipped.
+12. The talk is friendlier and cozier (rewrite, the owner reviews).
+13. After picking the mission type the pilot buys, with money, the module for it: passengers get the passenger module, a delivery gets the
+    cargo area.
+14. More feedback on every interaction; the rescue screen is not good: a dramatic way to tell it, closer to what the game has, with animations.
+
+## 10. The real tutorial hides things on the first flights (owner, 2026-11-10)
+
+- The guided tutorial (the one after the faction pick) can hide information on the first flights: the "Your ship needs" note, the ship sheet,
+  and the "your starter kit" text. They show up later, after the first flights.
+- The first ship can arrive PRE-MOUNTED: the pilot adds only the last parts and completes it.
+- Related to item 9 (the new opening): decide together how much the opening and the first minutes of the real tutorial overlap.
