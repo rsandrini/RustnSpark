@@ -62,7 +62,11 @@ const isDirectional = (partClass: string | undefined): boolean =>
   partClass === 'ENGINE' || partClass === 'WEAPON';
 
 /** A ready-made rule set. Engines/weapons keep their facing side W at none. */
-function preset(kinds: readonly Kind[], oneKindPerPart: boolean, directional: boolean): ConnectorRules {
+function preset(
+  kinds: readonly Kind[],
+  oneKindPerPart: boolean,
+  directional: boolean,
+): ConnectorRules {
   const open = kinds.map((kind) => ({ kind, weight: 1 }));
   const closed = [{ kind: 'none' as const, weight: 1 }];
   return {
@@ -76,7 +80,13 @@ function preset(kinds: readonly Kind[], oneKindPerPart: boolean, directional: bo
 // relative weight); a live panel shows, from the server's own generator, every combination it can
 // roll with its chance plus a few sample parts. The rules are only read when a part is generated:
 // the generated layout is stored on the part and never changes.
-export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass }: ConnectorRulesEditorProps) {
+export function ConnectorRulesEditor({
+  value,
+  onChange,
+  w = 1,
+  h = 1,
+  partClass,
+}: ConnectorRulesEditorProps) {
   const { t } = useTranslation();
   const rules = value ?? EMPTY;
   const forbidden = rules.forbidden ?? [];
@@ -175,7 +185,14 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                           value={weight}
                           disabled={disabled}
                           onChange={(event) =>
-                            onChange(withWeight(rules, side, kind, Math.max(0, Number(event.target.value))))
+                            onChange(
+                              withWeight(
+                                rules,
+                                side,
+                                kind,
+                                Math.max(0, Number(event.target.value)),
+                              ),
+                            )
                           }
                         />
                       )}
@@ -221,7 +238,11 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
               type="number"
               min={0}
               max={MAX_SIDES}
-              placeholder={t(key === 'minConnected' ? 'tuning.connectorRules.defaultOne' : 'tuning.connectorRules.unlimited')}
+              placeholder={t(
+                key === 'minConnected'
+                  ? 'tuning.connectorRules.defaultOne'
+                  : 'tuning.connectorRules.unlimited',
+              )}
               data-testid={`rules-${key}`}
               value={rules[key] ?? ''}
               onChange={(event) => onChange(withLimit(rules, key, event.target.value))}
@@ -244,7 +265,9 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                     const { [side]: _removed, ...others } = pattern;
                     void _removed;
                     const updated =
-                      event.target.value === '' ? others : { ...others, [side]: event.target.value as Kind };
+                      event.target.value === ''
+                        ? others
+                        : { ...others, [side]: event.target.value as Kind };
                     setForbidden(forbidden.map((p, i) => (i === index ? updated : p)));
                   }}
                 >
@@ -257,7 +280,10 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                 </select>
               </label>
             ))}
-            <button type="button" onClick={() => setForbidden(forbidden.filter((_, i) => i !== index))}>
+            <button
+              type="button"
+              onClick={() => setForbidden(forbidden.filter((_, i) => i !== index))}
+            >
               {t('tuning.connectorRules.removeForbidden')}
             </button>
           </div>
@@ -270,7 +296,9 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
       {value !== null && value !== undefined && (
         <section className="rules-preview" aria-label={t('tuning.connectorRules.previewTitle')}>
           <h4>{t('tuning.connectorRules.previewTitle')}</h4>
-          {preview.isError && <p className="muted">{t('tuning.connectorRules.previewUnavailable')}</p>}
+          {preview.isError && (
+            <p className="muted">{t('tuning.connectorRules.previewUnavailable')}</p>
+          )}
           {preview.data?.problem !== undefined && preview.data.problem !== null && (
             <p role="alert" className="error-text" data-testid="rules-problem">
               {preview.data.problem}
@@ -281,7 +309,11 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
               <ul className="rules-combos" data-testid="rules-combos">
                 {preview.data.combos.slice(0, COMBOS_SHOWN).map((entry) => (
                   <li key={SIDES.map((side) => entry.sides[side]).join('-')}>
-                    <b>{t('tuning.connectorRules.percent', { value: Math.round(entry.probability * PERCENT * 10) / 10 })}</b>
+                    <b>
+                      {t('tuning.connectorRules.percent', {
+                        value: Math.round(entry.probability * PERCENT * 10) / 10,
+                      })}
+                    </b>
                     {SIDES.map((side) => (
                       <span key={side} className="rules-combo-side">
                         {side}
@@ -292,7 +324,9 @@ export function ConnectorRulesEditor({ value, onChange, w = 1, h = 1, partClass 
                 ))}
                 {preview.data.combos.length > COMBOS_SHOWN && (
                   <li className="muted">
-                    {t('tuning.connectorRules.moreCombos', { count: preview.data.combos.length - COMBOS_SHOWN })}
+                    {t('tuning.connectorRules.moreCombos', {
+                      count: preview.data.combos.length - COMBOS_SHOWN,
+                    })}
                   </li>
                 )}
               </ul>

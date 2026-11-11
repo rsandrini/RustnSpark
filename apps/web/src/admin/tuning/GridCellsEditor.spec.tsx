@@ -25,12 +25,23 @@ describe('GridCellsEditor', () => {
     const onChange = vi.fn();
     render(<GridCellsEditor value={[[0, 0]]} onChange={onChange} />);
     fireEvent.click(screen.getByTestId('grid-cell-1-0'));
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [1, 0]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [1, 0],
+    ]);
   });
 
   it('erases a painted cell on a second click', () => {
     const onChange = vi.fn();
-    render(<GridCellsEditor value={[[0, 0], [1, 0]]} onChange={onChange} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+        ]}
+        onChange={onChange}
+      />,
+    );
     fireEvent.click(screen.getByTestId('grid-cell-1-0'));
     expect(onChange).toHaveBeenCalledWith([[0, 0]]);
   });
@@ -52,12 +63,27 @@ describe('GridCellsEditor', () => {
     fireEvent.pointerDown(cell(1, 0));
     fireEvent.pointerMove(cell(3, 0));
     fireEvent.pointerUp(cell(3, 0));
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [1, 0], [2, 0], [3, 0]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [3, 0],
+    ]);
   });
 
   it('drag-erases a horizontal run from a painted seed', () => {
     const onChange = vi.fn();
-    render(<GridCellsEditor value={[[0, 0], [1, 0], [2, 0], [3, 0]]} onChange={onChange} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+          [2, 0],
+          [3, 0],
+        ]}
+        onChange={onChange}
+      />,
+    );
     fireEvent.pointerDown(cell(1, 0));
     fireEvent.pointerMove(cell(3, 0));
     fireEvent.pointerUp(cell(3, 0));
@@ -70,16 +96,33 @@ describe('GridCellsEditor', () => {
     fireEvent.pointerDown(cell(0, 1));
     fireEvent.pointerMove(cell(0, 3));
     fireEvent.pointerUp(cell(0, 3));
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [0, 1], [0, 2], [0, 3]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [0, 1],
+      [0, 2],
+      [0, 3],
+    ]);
   });
 
   it('never erases the anchor in a drag stroke', () => {
     const onChange = vi.fn();
-    render(<GridCellsEditor value={[[0, 0], [0, 1], [1, 0]]} onChange={onChange} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [0, 1],
+          [1, 0],
+        ]}
+        onChange={onChange}
+      />,
+    );
     fireEvent.pointerDown(cell(1, 0));
     fireEvent.pointerMove(cell(0, 0));
     fireEvent.pointerUp(cell(0, 0));
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [0, 1]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [0, 1],
+    ]);
   });
 
   it('shows a paint preview while dragging and applies on pointerup', () => {
@@ -91,7 +134,11 @@ describe('GridCellsEditor', () => {
     expect(cell(2, 0)).toHaveClass('preview-paint');
     fireEvent.pointerUp(cell(2, 0));
     expect(cell(1, 0)).not.toHaveClass('preview-paint');
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [1, 0], [2, 0]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ]);
   });
 
   it('shift+click two cells selects a rectangle and Add paints every selected cell', () => {
@@ -115,7 +162,17 @@ describe('GridCellsEditor', () => {
 
   it('Remove erases every selected cell but keeps the anchor', () => {
     const onChange = vi.fn();
-    render(<GridCellsEditor value={[[0, 0], [1, 0], [2, 0], [3, 0]]} onChange={onChange} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+          [2, 0],
+          [3, 0],
+        ]}
+        onChange={onChange}
+      />,
+    );
     fireEvent.pointerDown(cell(1, 0), { shiftKey: true });
     fireEvent.pointerDown(cell(3, 0), { shiftKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
@@ -124,11 +181,23 @@ describe('GridCellsEditor', () => {
 
   it('Invert toggles each selected cell individually', () => {
     const onChange = vi.fn();
-    render(<GridCellsEditor value={[[0, 0], [1, 0], [2, 0]]} onChange={onChange} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ]}
+        onChange={onChange}
+      />,
+    );
     fireEvent.pointerDown(cell(1, 0), { shiftKey: true });
     fireEvent.pointerDown(cell(3, 0), { shiftKey: true });
     fireEvent.click(screen.getByRole('button', { name: 'Invert' }));
-    expect(onChange).toHaveBeenCalledWith([[0, 0], [3, 0]]);
+    expect(onChange).toHaveBeenCalledWith([
+      [0, 0],
+      [3, 0],
+    ]);
   });
 
   it('Clear dismisses the selection without emitting', () => {
@@ -159,7 +228,16 @@ describe('GridCellsEditor', () => {
   });
 
   it('shows drawn/target count under the grid when a target is set', () => {
-    render(<GridCellsEditor value={[[0, 0], [1, 0]]} onChange={vi.fn()} target={5} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+        ]}
+        onChange={vi.fn()}
+        target={5}
+      />,
+    );
     const count = screen.getByTestId('grid-cells-count');
     expect(count).toHaveTextContent('2 / 5');
     expect(count).not.toHaveClass('over');
@@ -167,7 +245,17 @@ describe('GridCellsEditor', () => {
   });
 
   it('marks the budget as over (red count) when drawn exceeds target', () => {
-    render(<GridCellsEditor value={[[0, 0], [1, 0], [2, 0]]} onChange={vi.fn()} target={2} />);
+    render(
+      <GridCellsEditor
+        value={[
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ]}
+        onChange={vi.fn()}
+        target={2}
+      />,
+    );
     const count = screen.getByTestId('grid-cells-count');
     expect(count).toHaveTextContent('3 / 2 (+1)');
     expect(count).toHaveClass('over');

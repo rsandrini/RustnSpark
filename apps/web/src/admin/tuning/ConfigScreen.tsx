@@ -149,101 +149,101 @@ export function ConfigScreen() {
             <span className="muted">{entries.length}</span>
           </summary>
           <div className="tuning-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{t('tuning.key')}</th>
-                <th>{t('tuning.description')}</th>
-                <th>{t('tuning.currentValue')}</th>
-                <th className="col-center">{t('tuning.factoryDefault')}</th>
-                <th>{t('tuning.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => {
-                const editValue = edits[entry.key] ?? serializeValue(entry.currentValue);
-                const isJson = entry.type === 'json';
-                const inputType =
-                  entry.type === 'integer' || entry.type === 'float' || entry.type === 'number'
-                    ? 'number'
-                    : isJson
-                      ? undefined
-                      : 'text';
-                return (
-                  <tr key={entry.key}>
-                    <td>
-                      {entry.key}
-                      {entry.modified && <span>{t('tuning.modified')}</span>}
-                    </td>
-                    <td>
-                      {entry.description[locale]}
-                      {entry.unit && <small>{t('tuning.unit', { unit: entry.unit })}</small>}
-                    </td>
-                    <td>
-                      {isJson ? (
-                        <textarea
-                          value={editValue}
-                          onChange={(event) =>
-                            setEdits((prev) => ({
-                              ...prev,
-                              [entry.key]: event.target.value,
-                            }))
-                          }
-                          rows={3}
-                          aria-label={entry.key}
-                        />
-                      ) : (
-                        <input
-                          type={inputType}
-                          value={editValue}
-                          min={entry.min}
-                          max={entry.max}
-                          onChange={(event) =>
-                            setEdits((prev) => ({
-                              ...prev,
-                              [entry.key]: event.target.value,
-                            }))
-                          }
-                          aria-label={entry.key}
-                        />
-                      )}
-                      {errors[entry.key] && <span role="alert">{errors[entry.key]}</span>}
-                    </td>
-                    <td className="col-center">{serializeValue(entry.factoryDefault)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          try {
-                            const value = parseConfigValue(
-                              edits[entry.key] ?? serializeValue(entry.currentValue),
-                              entry.type,
-                            );
-                            updateMutation.mutate({ key: entry.key, value });
-                          } catch {
-                            setErrors((prev) => ({
-                              ...prev,
-                              [entry.key]: t('tuning.invalidJson'),
-                            }));
-                          }
-                        }}
-                        aria-label={`${t('tuning.save')} ${entry.key}`}
-                      >
-                        {t('tuning.save')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmReset(entry.key)}
-                        aria-label={`${t('tuning.reset')} ${entry.key}`}
-                      >
-                        {t('tuning.reset')}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            <table>
+              <thead>
+                <tr>
+                  <th>{t('tuning.key')}</th>
+                  <th>{t('tuning.description')}</th>
+                  <th>{t('tuning.currentValue')}</th>
+                  <th className="col-center">{t('tuning.factoryDefault')}</th>
+                  <th>{t('tuning.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => {
+                  const editValue = edits[entry.key] ?? serializeValue(entry.currentValue);
+                  const isJson = entry.type === 'json';
+                  const inputType =
+                    entry.type === 'integer' || entry.type === 'float' || entry.type === 'number'
+                      ? 'number'
+                      : isJson
+                        ? undefined
+                        : 'text';
+                  return (
+                    <tr key={entry.key}>
+                      <td>
+                        {entry.key}
+                        {entry.modified && <span>{t('tuning.modified')}</span>}
+                      </td>
+                      <td>
+                        {entry.description[locale]}
+                        {entry.unit && <small>{t('tuning.unit', { unit: entry.unit })}</small>}
+                      </td>
+                      <td>
+                        {isJson ? (
+                          <textarea
+                            value={editValue}
+                            onChange={(event) =>
+                              setEdits((prev) => ({
+                                ...prev,
+                                [entry.key]: event.target.value,
+                              }))
+                            }
+                            rows={3}
+                            aria-label={entry.key}
+                          />
+                        ) : (
+                          <input
+                            type={inputType}
+                            value={editValue}
+                            min={entry.min}
+                            max={entry.max}
+                            onChange={(event) =>
+                              setEdits((prev) => ({
+                                ...prev,
+                                [entry.key]: event.target.value,
+                              }))
+                            }
+                            aria-label={entry.key}
+                          />
+                        )}
+                        {errors[entry.key] && <span role="alert">{errors[entry.key]}</span>}
+                      </td>
+                      <td className="col-center">{serializeValue(entry.factoryDefault)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              const value = parseConfigValue(
+                                edits[entry.key] ?? serializeValue(entry.currentValue),
+                                entry.type,
+                              );
+                              updateMutation.mutate({ key: entry.key, value });
+                            } catch {
+                              setErrors((prev) => ({
+                                ...prev,
+                                [entry.key]: t('tuning.invalidJson'),
+                              }));
+                            }
+                          }}
+                          aria-label={`${t('tuning.save')} ${entry.key}`}
+                        >
+                          {t('tuning.save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmReset(entry.key)}
+                          aria-label={`${t('tuning.reset')} ${entry.key}`}
+                        >
+                          {t('tuning.reset')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </details>
       ))}

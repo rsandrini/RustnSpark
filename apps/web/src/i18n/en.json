@@ -122,8 +122,7 @@
       "dispatch-job": "Accept your job, then press Dispatch.",
       "job-report": "Read your report.",
       "stop-two": "Take a job and fly it.",
-      "final-board": "Accept the big job.",
-      "final-run": "Press Dispatch.",
+      "final-run": "Accept the big job, then press Dispatch.",
       "rescue": "You were rescued.",
       "upgrade": "Upgrade your hull: press Upgrade, then confirm."
     },
@@ -131,7 +130,6 @@
       "gift": "Take the engine",
       "race-report": "On to the port",
       "job-report": "Next stop",
-      "stop-two": "Continue",
       "rescue": "Choose your faction"
     }
   },
@@ -1038,8 +1036,6 @@
         "prologue_upgrade_done": "Opening · Upgrade the hull · when it is done",
         "prologue_stop-two_enter": "Opening · Second job · when it starts",
         "prologue_stop-two_done": "Opening · Second job · when it is done",
-        "prologue_final-board_enter": "Opening · The last job · when it starts",
-        "prologue_final-board_done": "Opening · The last job · when it is done",
         "prologue_final-run_enter": "Opening · The last run · when it starts",
         "prologue_final-run_done": "Opening · The last run · when it is done",
         "prologue_loss_enter": "Opening · The loss · when it starts",

@@ -58,7 +58,6 @@ const PROLOGUE_STEP_IDS = [
   'job-report',
   'upgrade',
   'stop-two',
-  'final-board',
   'final-run',
   'loss',
   'rescue',

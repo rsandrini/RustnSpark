@@ -98,7 +98,12 @@ export function GiverLinesEditor({ value, onChange }: GiverLinesEditorProps) {
                 <button
                   type="button"
                   data-testid={`giver-remove-${key}-${index}`}
-                  onClick={() => setPool(key, lines.filter((_, i) => i !== index))}
+                  onClick={() =>
+                    setPool(
+                      key,
+                      lines.filter((_, i) => i !== index),
+                    )
+                  }
                 >
                   {t('admin.givers.removeLine')}
                 </button>

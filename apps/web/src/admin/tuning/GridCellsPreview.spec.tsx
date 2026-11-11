@@ -4,7 +4,15 @@ import { GridCellsPreview } from './GridCellsPreview';
 
 describe('GridCellsPreview', () => {
   it('renders one rect per cell and an anchor distinct from painted cells', () => {
-    render(<GridCellsPreview cells={[[0, 0], [1, 0], [2, 0]]} />);
+    render(
+      <GridCellsPreview
+        cells={[
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ]}
+      />,
+    );
     const img = screen.getByRole('img');
     expect(img.getAttribute('aria-label')).toBe('Ship format preview (3 cells)');
     const rects = img.querySelectorAll('rect');
@@ -14,7 +22,14 @@ describe('GridCellsPreview', () => {
   });
 
   it('keeps negative coordinates inside the viewBox', () => {
-    render(<GridCellsPreview cells={[[0, 0], [-1, 2]]} />);
+    render(
+      <GridCellsPreview
+        cells={[
+          [0, 0],
+          [-1, 2],
+        ]}
+      />,
+    );
     const img = screen.getByRole('img');
     expect(img.getAttribute('viewBox')).toBe('-1.2 -0.2 2.4 3.4');
   });

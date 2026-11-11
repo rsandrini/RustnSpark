@@ -10,7 +10,10 @@ export function cloneOf(
   const name = row.displayName;
   if (typeof name === 'object' && name !== null) {
     copy.displayName = Object.fromEntries(
-      Object.entries(name as Record<string, string>).map(([locale, text]) => [locale, `${text} ${suffix}`]),
+      Object.entries(name as Record<string, string>).map(([locale, text]) => [
+        locale,
+        `${text} ${suffix}`,
+      ]),
     );
   }
   return copy;

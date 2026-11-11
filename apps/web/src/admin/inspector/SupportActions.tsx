@@ -12,14 +12,7 @@ const MIN_PASSWORD = 10;
 const MAX_PASSWORD = 128;
 
 export type SupportActionKey =
-  | 'grant'
-  | 'remove'
-  | 'clear'
-  | 'password'
-  | 'unstick'
-  | 'ban'
-  | 'reset'
-  | 'fastOps';
+  'grant' | 'remove' | 'clear' | 'password' | 'unstick' | 'ban' | 'reset' | 'fastOps';
 
 interface PendingAction {
   readonly key: SupportActionKey;

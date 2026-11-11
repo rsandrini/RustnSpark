@@ -248,6 +248,6 @@ describe('the director: the story on the real screens', () => {
   }, 15000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
-    expect(OPENING_STEPS).toHaveLength(17);
+    expect(OPENING_STEPS).toHaveLength(16);
   });
 });

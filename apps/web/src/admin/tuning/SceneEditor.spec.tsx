@@ -133,8 +133,6 @@ describe('Admin scene editor', () => {
       'prologue_upgrade_done',
       'prologue_stop-two_enter',
       'prologue_stop-two_done',
-      'prologue_final-board_enter',
-      'prologue_final-board_done',
       'prologue_final-run_enter',
       'prologue_final-run_done',
       'prologue_loss_enter',

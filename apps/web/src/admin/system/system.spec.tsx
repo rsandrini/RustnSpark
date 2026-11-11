@@ -133,7 +133,10 @@ describe('system screen (S11.5 screen E)', () => {
       ),
       http.post('/v1/admin/system/notices', () =>
         HttpResponse.json(
-          { statusCode: 400, message: ['message.en must be shorter than or equal to 500 characters'] },
+          {
+            statusCode: 400,
+            message: ['message.en must be shorter than or equal to 500 characters'],
+          },
           { status: 400 },
         ),
       ),

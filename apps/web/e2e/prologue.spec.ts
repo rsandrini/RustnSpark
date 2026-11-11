@@ -162,16 +162,16 @@ async function playOpening(page: Page): Promise<void> {
   await read(page);
   await accept(page);
   await dispatch(page);
-  await expect(page.getByTestId('opening-continue')).toBeVisible({ timeout: 120_000 });
-  await read(page);
-  await next(page);
+  // the second job needs no report to read: the story goes on by itself
+  for (let guard = 0; guard < 90; guard += 1) {
+    await read(page);
+    if ((await bar(page).getAttribute('data-step')) !== 'stop-two') break;
+    await page.waitForTimeout(2000);
+  }
 
-  await onStep(page, 'final-board');
-  await read(page);
-  await accept(page);
-  await read(page);
   await onStep(page, 'final-run');
   await read(page);
+  await accept(page);
   await dispatch(page);
   for (let guard = 0; guard < 90; guard += 1) {
     await read(page);

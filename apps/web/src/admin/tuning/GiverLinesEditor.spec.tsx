@@ -40,7 +40,10 @@ describe('GiverLinesEditor (admin, plan §4/§5)', () => {
   it('adds a bilingual line to a pool', () => {
     const onChange = vi.fn();
     renderWithProviders(
-      <GiverLinesEditor value={{ accepted: [{ en: 'Aye.', 'pt-BR': 'Sim.' }] }} onChange={onChange} />,
+      <GiverLinesEditor
+        value={{ accepted: [{ en: 'Aye.', 'pt-BR': 'Sim.' }] }}
+        onChange={onChange}
+      />,
     );
     fireEvent.click(screen.getByTestId('giver-add-accepted'));
     expect(onChange).toHaveBeenCalledWith({
@@ -54,7 +57,10 @@ describe('GiverLinesEditor (admin, plan §4/§5)', () => {
   it('removes a line and drops the pool key when the last one goes', () => {
     const onChange = vi.fn();
     renderWithProviders(
-      <GiverLinesEditor value={{ first_flight: [{ en: 'Test hop.', 'pt-BR': 'Voo de teste.' }] }} onChange={onChange} />,
+      <GiverLinesEditor
+        value={{ first_flight: [{ en: 'Test hop.', 'pt-BR': 'Voo de teste.' }] }}
+        onChange={onChange}
+      />,
     );
     fireEvent.click(screen.getByTestId('giver-remove-first_flight-0'));
     expect(onChange).toHaveBeenCalledWith({});

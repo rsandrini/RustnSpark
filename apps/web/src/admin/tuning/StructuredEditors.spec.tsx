@@ -28,7 +28,11 @@ describe('structured editors (what used to be raw JSON)', () => {
     expect(screen.getByText(/Players can buy parts here/)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('service-missions'));
     expect(onChange).toHaveBeenCalledWith({
-      buy: true, sell: false, repair: true, custom: 'keep', missions: true,
+      buy: true,
+      sell: false,
+      repair: true,
+      custom: 'keep',
+      missions: true,
     });
   });
 
@@ -53,7 +57,11 @@ describe('structured editors (what used to be raw JSON)', () => {
   it('mission requirements: check location types and factions from the real lists, set a race entry speed', async () => {
     server.use(
       http.get('/v1/admin/tuning/locations', () =>
-        HttpResponse.json([{ id: 'a', type: 'port' }, { id: 'b', type: 'shipyard' }, { id: 'c', type: 'port' }]),
+        HttpResponse.json([
+          { id: 'a', type: 'port' },
+          { id: 'b', type: 'shipyard' },
+          { id: 'c', type: 'port' },
+        ]),
       ),
       http.get('/v1/admin/tuning/factions', () =>
         HttpResponse.json([
@@ -75,12 +83,19 @@ describe('structured editors (what used to be raw JSON)', () => {
     expect(await screen.findByLabelText('Luna Authority')).toBeChecked();
 
     fireEvent.click(shipyard);
-    expect(onChange).toHaveBeenLastCalledWith({ originTypes: ['port', 'shipyard'], originFactions: ['luna'] });
+    expect(onChange).toHaveBeenLastCalledWith({
+      originTypes: ['port', 'shipyard'],
+      originFactions: ['luna'],
+    });
     // unchecking the last one removes the key: "anywhere" again
     fireEvent.click(screen.getByTestId('req-faction-luna'));
     expect(onChange).toHaveBeenLastCalledWith({ originTypes: ['port'] });
     fireEvent.change(screen.getByTestId('req-minMobility'), { target: { value: '3.5' } });
-    expect(onChange).toHaveBeenLastCalledWith({ originTypes: ['port'], originFactions: ['luna'], minMobility: 3.5 });
+    expect(onChange).toHaveBeenLastCalledWith({
+      originTypes: ['port'],
+      originFactions: ['luna'],
+      minMobility: 3.5,
+    });
   });
 
   it('drop tiers: rows of rarity + percent with a live total that flags anything but 100%', () => {
@@ -116,7 +131,11 @@ describe('structured editors (what used to be raw JSON)', () => {
     );
     const onChange = vi.fn();
     renderWithProviders(
-      <RelationsEditor rowId="luna" value={{ sun: 'neutral', pirates: 'hostile' }} onChange={onChange} />,
+      <RelationsEditor
+        rowId="luna"
+        value={{ sun: 'neutral', pirates: 'hostile' }}
+        onChange={onChange}
+      />,
     );
     const select = await screen.findByLabelText('Relation sun');
     expect(screen.queryByLabelText('Relation luna')).toBeNull(); // not itself

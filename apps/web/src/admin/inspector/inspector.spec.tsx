@@ -202,7 +202,7 @@ describe('support actions (S11.5, S11.4 acceptance)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('turns the player\'s fast-missions switch on with a reason, from the player sheet', async () => {
+  it("turns the player's fast-missions switch on with a reason, from the player sheet", async () => {
     mockReads();
     let body: unknown = null;
     server.use(

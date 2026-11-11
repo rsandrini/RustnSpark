@@ -77,7 +77,7 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
     sandbox.upgradeHull(PROLOGUE_HULL_UPGRADED, sandbox.config.upgradeCost, UPGRADE_SCRAP);
   }
   // the second job flown
-  if (index >= at('final-board')) {
+  if (index > at('stop-two')) {
     const job = jobOf(sandbox, 2, chosen);
     if (job !== null) fly(sandbox, job);
   }

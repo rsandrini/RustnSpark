@@ -281,24 +281,12 @@ const KITE: SceneData[] = [
   scene(
     'final_board',
     ['One last run', 'Uma última viagem'],
-    'prologue_final-board_enter',
+    'prologue_final-run_enter',
     17,
     [
       node('k_final_board', [
         'One last run. Dangerous lane, but the pay fixes everything. You in?',
         'Uma última viagem. Rota perigosa, mas o pagamento conserta tudo. Vamos?',
-      ]),
-    ],
-  ),
-  scene(
-    'final_board_done',
-    ['Both ships fixed', 'As duas naves consertadas'],
-    'prologue_final-board_done',
-    18,
-    [
-      node('k_final_board_done', [
-        'Let us earn enough to make both ships faster. Then we plan the next race.',
-        'Vamos ganhar o suficiente para deixar as duas naves mais rápidas. Depois planejamos a próxima corrida.',
       ]),
     ],
   ),
@@ -551,7 +539,6 @@ export const PROLOGUE_STEPS = [
   'job-report',
   'upgrade',
   'stop-two',
-  'final-board',
   'final-run',
   'loss',
   'rescue',

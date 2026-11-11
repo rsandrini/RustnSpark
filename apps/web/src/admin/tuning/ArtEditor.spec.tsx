@@ -85,14 +85,19 @@ describe('ArtEditor (factions)', () => {
     );
     const { container } = renderWithProviders(<FactionBadge factionId="luna" />);
     await waitFor(() => expect(container.querySelector('img.fac-logo')).not.toBeNull());
-    expect(container.querySelector('img.fac-logo')).toHaveAttribute('src', '/v1/art/luna-logo-9.png');
+    expect(container.querySelector('img.fac-logo')).toHaveAttribute(
+      'src',
+      '/v1/art/luna-logo-9.png',
+    );
   });
 
   it('places: wide/square/icon slots default to the built-in place files and upload to the locations endpoint', async () => {
     let seen: string | null = null;
     server.use(
       http.get('/v1/places/art', () =>
-        HttpResponse.json({ places: { ceres: { wide: null, square: '/v1/art/ceres-square-1.png', icon: null } } }),
+        HttpResponse.json({
+          places: { ceres: { wide: null, square: '/v1/art/ceres-square-1.png', icon: null } },
+        }),
       ),
       http.post('/v1/admin/tuning/locations/ceres/art/:slot', ({ params }) => {
         seen = String(params.slot);
@@ -110,7 +115,7 @@ describe('ArtEditor (factions)', () => {
     await waitFor(() => expect(seen).toBe('icon'));
   });
 
-  it('a faction badge shows the admin\'s name and colour, not the language file\'s', async () => {
+  it("a faction badge shows the admin's name and colour, not the language file's", async () => {
     server.use(
       http.get('/v1/factions', () =>
         HttpResponse.json({

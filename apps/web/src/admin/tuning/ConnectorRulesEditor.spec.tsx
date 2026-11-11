@@ -48,7 +48,7 @@ describe('ConnectorRulesEditor', () => {
     expect((onChange.mock.calls[1]![0] as ConnectorRules).sides.N).toEqual([]);
   });
 
-  it('shows each allowed kind\'s share of its side, so a side can be given a chance of having no port', () => {
+  it("shows each allowed kind's share of its side, so a side can be given a chance of having no port", () => {
     const maybeBare: ConnectorRules = {
       sides: {
         ...central.sides,
@@ -83,7 +83,9 @@ describe('ConnectorRulesEditor', () => {
     expect(screen.getByTestId('rules-chip-W-universal')).toBeDisabled();
     expect(screen.getByText(/facing side: always none/i)).toBeInTheDocument();
     // a non-directional part keeps W free
-    renderWithProviders(<ConnectorRulesEditor value={central} onChange={vi.fn()} partClass="TANK" />);
+    renderWithProviders(
+      <ConnectorRulesEditor value={central} onChange={vi.fn()} partClass="TANK" />,
+    );
     expect(screen.getAllByTestId('rules-chip-W-central')[1]).toBeEnabled();
   });
 
@@ -132,7 +134,10 @@ describe('ConnectorRulesEditor', () => {
     second.unmount();
 
     renderWithProviders(
-      <ConnectorRulesEditor value={{ ...central, forbidden: [{ N: 'split' }] }} onChange={onChange} />,
+      <ConnectorRulesEditor
+        value={{ ...central, forbidden: [{ N: 'split' }] }}
+        onChange={onChange}
+      />,
     );
     fireEvent.click(screen.getByRole('button', { name: /^remove$/i }));
     expect('forbidden' in (onChange.mock.calls[2]![0] as ConnectorRules)).toBe(false);
@@ -152,14 +157,20 @@ describe('ConnectorRulesEditor', () => {
     const combos = await screen.findByTestId('rules-combos');
     expect(within(combos).getByText('60%')).toBeInTheDocument();
     expect(within(combos).getByText('40%')).toBeInTheDocument();
-    expect(within(screen.getByTestId('rules-samples')).getAllByTestId('connector-grid')).toHaveLength(1);
+    expect(
+      within(screen.getByTestId('rules-samples')).getAllByTestId('connector-grid'),
+    ).toHaveLength(1);
     expect(asked).toMatchObject({ w: 2, h: 1, partClass: 'CARGO' });
   });
 
-  it('shows the server\'s reason when the rules cannot generate anything', async () => {
+  it("shows the server's reason when the rules cannot generate anything", async () => {
     server.use(
       http.post('/v1/admin/tuning/connector-rules/preview', () =>
-        HttpResponse.json({ problem: 'no side combination satisfies the weights', combos: [], samples: [] }),
+        HttpResponse.json({
+          problem: 'no side combination satisfies the weights',
+          combos: [],
+          samples: [],
+        }),
       ),
     );
     renderWithProviders(<ConnectorRulesEditor value={central} onChange={vi.fn()} />);

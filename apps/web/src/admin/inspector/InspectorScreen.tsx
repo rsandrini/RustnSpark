@@ -225,7 +225,6 @@ export function InspectorDetailScreen() {
         )}
       </section>
 
-
       <section aria-label={t('admin.timeline')}>
         <h3>{t('admin.timeline')}</h3>
         {timeline.isError && <p role="alert">{t('admin.loadError')}</p>}

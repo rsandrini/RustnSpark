@@ -109,9 +109,9 @@ function rebuildCells(
 function cellFromEvent(event: React.PointerEvent): Cell | null {
   const target = event.target as HTMLElement | null;
   const fromTarget = target?.closest?.('[data-x]') as HTMLElement | null;
-  const fromPoint = (document.elementFromPoint?.(event.clientX, event.clientY) as
-    | HTMLElement
-    | null)?.closest('[data-x]') as HTMLElement | null;
+  const fromPoint = (
+    document.elementFromPoint?.(event.clientX, event.clientY) as HTMLElement | null
+  )?.closest('[data-x]') as HTMLElement | null;
   const el = fromTarget ?? fromPoint;
   if (!el) return null;
   return [Number(el.dataset.x), Number(el.dataset.y)];
