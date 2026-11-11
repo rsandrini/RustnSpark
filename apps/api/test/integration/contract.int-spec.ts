@@ -170,9 +170,13 @@ describe('HTTP contract: real responses match packages/contract', () => {
 
     const prologue = await get('/v1/players/me/prologue');
     const payouts = contract(PrologueResponseSchema, prologue.body, 'GET /players/me/prologue');
-    expect(payouts.payouts.reduce((sum, payout) => sum + payout, 0) - payouts.refuelCost).toBe(
-      payouts.startCredits,
-    );
+    expect(
+      payouts.payouts.reduce((sum, payout) => sum + payout, 0) +
+        payouts.purse -
+        payouts.refuelCost -
+        payouts.moduleCost,
+    ).toBe(payouts.startCredits);
+    expect(payouts.guides).toHaveLength(3);
     const outcome = await post('/v1/players/me/prologue', { outcome: 'skipped' });
     contract(SavePrologueResponseSchema, outcome.body, 'POST /players/me/prologue');
 

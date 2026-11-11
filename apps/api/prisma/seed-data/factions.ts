@@ -48,6 +48,17 @@ const FACTIONS = [
     playable: false,
     relations: { luna: 'hostile', sun: 'hostile', explorers: 'hostile', pirates: 'hostile' },
   },
+  {
+    id: 'free',
+    displayName: { en: 'Free pilots', 'pt-BR': 'Pilotos livres' },
+    description: {
+      en: 'Pilots who fly under no flag, until the moment they choose one.',
+      'pt-BR': 'Pilotos que voam sob nenhuma bandeira, até o momento de escolher uma.',
+    },
+    color: '#9ca3af',
+    playable: false,
+    relations: { luna: 'neutral', sun: 'neutral', explorers: 'neutral', pirates: 'neutral', free: 'neutral' },
+  },
 ];
 
 export async function seedFactions(prisma: PrismaClient): Promise<void> {

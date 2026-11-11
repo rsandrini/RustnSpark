@@ -168,7 +168,9 @@ export type ConfigKey =
   | 'onboarding.starter_parts'
   | 'onboarding.start_fuel_fraction'
   | 'onboarding.prologue_payout_shares'
+  | 'onboarding.prologue_purse'
   | 'onboarding.prologue_refuel_cost'
+  | 'onboarding.prologue_module_cost'
   | 'parts.replacement_condition'
   | 'parts.replacement_types'
   | 'parts.starter_condition'
@@ -677,8 +679,12 @@ export type GameRules = Readonly<{
     start_fuel_fraction: number;
     /** The opening's three payouts as whole percentages of `economy.start_credits` (they add up to 100). */
     prologue_payout_shares: readonly number[];
+    /** The small purse the pilot starts the opening with. */
+    prologue_purse: number;
     /** What the opening's refuel costs; the payouts add up to the start credits plus this. */
     prologue_refuel_cost: number;
+    /** What the module bought at the first stop costs; the payouts also cover this. */
+    prologue_module_cost: number;
   }>;
   world: Readonly<{
     seed: string;

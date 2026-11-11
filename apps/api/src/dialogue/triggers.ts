@@ -1,4 +1,4 @@
-import type { SceneData, Trigger } from './scenes.js';
+import { PROLOGUE_TRIGGERS, type SceneData, type Trigger } from './scenes.js';
 
 /** The pilot's own records a scene's trigger reads. */
 export interface DialogueFacts {
@@ -29,6 +29,8 @@ export interface DialogueFacts {
 export const LOW_TANK_FRACTION = 0.3;
 
 export function triggerHolds(trigger: Trigger, facts: DialogueFacts): boolean {
+  // Prologue triggers are fired by the director, not by the pilot's records; when asked, they hold.
+  if ((PROLOGUE_TRIGGERS as readonly string[]).includes(trigger)) return true;
   switch (trigger) {
     case 'onboarded':
       return facts.onboarded;
@@ -63,6 +65,7 @@ export function triggerHolds(trigger: Trigger, facts: DialogueFacts): boolean {
         facts.tankFraction < LOW_TANK_FRACTION
       );
   }
+  return false;
 }
 
 export type SceneStatus = 'OPEN' | 'SKIPPED' | 'DONE' | 'REPLAY';

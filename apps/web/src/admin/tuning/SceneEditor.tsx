@@ -43,6 +43,26 @@ export interface SceneEditorProps {
   giver?: GiverRef;
 }
 
+/** The steps of the new-pilot opening, in the order the director advances through them. */
+const PROLOGUE_STEP_IDS = [
+  'gift',
+  'fit-engine',
+  'race-board',
+  'race',
+  'race-report',
+  'stop-port',
+  'choose-job',
+  'buy-module',
+  'fit-module',
+  'dispatch-job',
+  'job-report',
+  'stop-two',
+  'final-board',
+  'final-run',
+  'loss',
+  'rescue',
+] as const;
+
 /** The moments a scene can start at (the server's `TRIGGERS`). */
 export const SCENE_TRIGGERS = [
   'onboarded',
@@ -58,6 +78,10 @@ export const SCENE_TRIGGERS = [
   'checklist_done',
   'first_pirates',
   'first_scrap',
+  ...PROLOGUE_STEP_IDS.flatMap((step) => [`prologue_${step}_enter`, `prologue_${step}_done`]),
+  'prologue_race_leg_1',
+  'prologue_race_leg_2',
+  'prologue_race_leg_3',
 ] as const;
 
 const PLACEHOLDER_GIVER: GiverRef = {
@@ -97,7 +121,7 @@ function asScenes(value: unknown): SceneData[] {
         return {
           id: typeof node.id === 'string' ? node.id : '',
           text: pair(node.text),
-          position: typeof node.position === 'string' ? node.position : 'bottom',
+          position: typeof node.position === 'string' ? node.position : 'center',
           anchor: typeof node.anchor === 'string' ? node.anchor : null,
           blocking: node.blocking === true,
           next: typeof node.next === 'string' ? node.next : null,
@@ -120,7 +144,7 @@ function asScenes(value: unknown): SceneData[] {
 const blankNode = (id: string): SceneNodeData => ({
   id,
   text: { en: '', 'pt-BR': '' },
-  position: 'bottom',
+  position: 'center',
   anchor: null,
   blocking: false,
   next: null,

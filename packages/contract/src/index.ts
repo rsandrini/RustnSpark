@@ -88,14 +88,6 @@ export type UpdateTutorialRequest = z.infer<typeof UpdateTutorialRequestSchema>;
 export const UpdateTutorialResponseSchema = z.object({ tutorialDone: z.boolean() });
 export type UpdateTutorialResponse = z.infer<typeof UpdateTutorialResponseSchema>;
 
-/** The new-pilot opening: the payouts it hands out (they add up to `startCredits`) and how it ended. */
-export const PrologueResponseSchema = z.object({
-  startCredits: z.number().int(),
-  /** What the refuel at the first stop costs; the payouts add up to `startCredits + refuelCost`. */
-  refuelCost: z.number().int(),
-  payouts: z.array(z.number().int()),
-});
-export type PrologueResponse = z.infer<typeof PrologueResponseSchema>;
 export const SavePrologueRequestSchema = z.object({ outcome: z.enum(['played', 'skipped']) });
 export type SavePrologueRequest = z.infer<typeof SavePrologueRequestSchema>;
 export const SavePrologueResponseSchema = z.object({ outcome: z.enum(['played', 'skipped']) });
@@ -371,6 +363,30 @@ export type DialogueEvent = z.infer<typeof DialogueEventSchema>;
  */
 export const DialogueSettingsSchema = z.object({ enabled: z.boolean() });
 export type DialogueSettings = z.infer<typeof DialogueSettingsSchema>;
+
+/**
+ * GET /v1/players/me/prologue — the new-pilot opening: the payouts it hands out and the guides who
+ * speak its story.
+ */
+export const PrologueResponseSchema = z.object({
+  startCredits: z.number().int(),
+  /** The small purse the pilot starts the opening with. */
+  purse: z.number().int(),
+  /** What the refuel at the first stop costs. */
+  refuelCost: z.number().int(),
+  /** What the module bought at the first stop costs. */
+  moduleCost: z.number().int(),
+  /** The three payouts (race, job one, job two) that add up to `startCredits - purse + refuelCost + moduleCost`. */
+  payouts: z.array(z.number().int()),
+  /** The free faction guides and their editable dialogue scenes. */
+  guides: z.array(
+    z.object({
+      giver: GiverRefSchema,
+      scenes: z.array(DialogueSceneSchema),
+    }),
+  ),
+});
+export type PrologueResponse = z.infer<typeof PrologueResponseSchema>;
 
 // ---------------------------------------------------------------------------------------------
 // Faction art (admin-uploadable images; the static files are the defaults)

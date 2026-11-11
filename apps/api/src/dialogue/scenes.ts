@@ -9,6 +9,39 @@ export interface Localized {
 }
 
 export const POSITIONS = ['center', 'bottom', 'left', 'right', 'top'] as const;
+
+/** The steps of the new-pilot opening, in order. The director advances through them. */
+export const PROLOGUE_STEP_IDS = [
+  'gift',
+  'fit-engine',
+  'race-board',
+  'race',
+  'race-report',
+  'stop-port',
+  'choose-job',
+  'buy-module',
+  'fit-module',
+  'dispatch-job',
+  'job-report',
+  'stop-two',
+  'final-board',
+  'final-run',
+  'loss',
+  'rescue',
+] as const;
+
+export type PrologueStepId = (typeof PROLOGUE_STEP_IDS)[number];
+
+/** Triggers the opening's scenes can fire on: entering or leaving any step, plus a radio line per race leg. */
+export const PROLOGUE_TRIGGERS = [
+  ...PROLOGUE_STEP_IDS.flatMap((step) => [`prologue_${step}_enter`, `prologue_${step}_done`] as const),
+  'prologue_race_leg_1',
+  'prologue_race_leg_2',
+  'prologue_race_leg_3',
+] as const;
+
+export type PrologueTrigger = (typeof PROLOGUE_TRIGGERS)[number];
+
 export const ANCHORS = [
   'ship_grid',
   'auto_layout',
@@ -50,6 +83,8 @@ export const TRIGGERS = [
   // Later tips, each at the first time the pilot meets the thing.
   'first_pirates',
   'first_scrap',
+  // The new-pilot opening: a trigger for entering and leaving every step, plus race leg radio lines.
+  ...PROLOGUE_TRIGGERS,
 ] as const;
 
 export type Trigger = (typeof TRIGGERS)[number];

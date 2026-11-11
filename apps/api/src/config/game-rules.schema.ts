@@ -371,9 +371,13 @@ const onboardingSchema = z.object({
       message: 'the payout shares must add up to 100',
     })
     .default([20, 30, 50]),
-  // What the refuel at the opening's first stop costs the pilot. The payouts add up to the start credits PLUS this, so the
-  // pilot ends the opening with exactly `economy.start_credits`, the same as one who skips it.
+  // The pilot starts the opening with this small purse; the engine is a gift, so it costs nothing.
+  prologue_purse: z.number().int().min(0).max(100000).default(300),
+  // What the refuel at the opening's first stop costs the pilot. The payouts add up to the start credits PLUS the refuel
+  // AND the module cost, so the pilot ends the opening with exactly `economy.start_credits`, the same as one who skips it.
   prologue_refuel_cost: z.number().int().min(0).max(100000).default(100),
+  // What the module bought at the first stop costs; the payouts also cover it.
+  prologue_module_cost: z.number().int().min(0).max(100000).default(800),
 });
 
 const worldSchema = z.object({

@@ -2818,6 +2818,32 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'onboarding.prologue_purse',
+    group: 'onboarding',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.prologue_purse),
+    description: {
+      en: "The small purse the pilot starts the new-pilot opening with. The engine is the friend's gift, so it costs nothing.",
+      'pt-BR':
+        'A pequena bolsa com que o piloto começa a abertura do piloto novo. O motor é presente do amigo, então não custa nada.',
+    },
+  },
+  {
+    key: 'onboarding.prologue_module_cost',
+    group: 'onboarding',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.prologue_module_cost),
+    description: {
+      en: "What the module bought at the opening's first stop costs. The opening payouts cover it, so the pilot still ends with the start credits.",
+      'pt-BR':
+        'Quanto custa o módulo comprado na primeira parada da abertura. Os pagamentos da abertura o cobrem, então o piloto ainda termina com os créditos iniciais.',
+    },
+  },
+  {
     key: 'onboarding.home_locations',
     group: 'onboarding',
     type: 'json',

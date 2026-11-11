@@ -7,6 +7,10 @@ import {
 import { prologuePayouts } from '../../../src/players/prologue.js';
 
 const SHARES = [20, 30, 50];
+const PURSE = 300;
+const REFUEL = 100;
+const MODULE = 800;
+const POOL = 3000 - PURSE + REFUEL + MODULE;
 const withShares = (shares: number[]) => ({
   ...GAME_CONFIG_DEFAULTS,
   onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_payout_shares: shares },
@@ -14,32 +18,43 @@ const withShares = (shares: number[]) => ({
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
 describe('prologuePayouts', () => {
-  it.each([3000, 3001, 1])('sums to exactly the start credits for %i', (startCredits) => {
-    expect(sum(prologuePayouts(startCredits, SHARES))).toBe(startCredits);
-  });
-
-  it('splits 3000 as 600, 900 and 1500 with shares 20, 30 and 50', () => {
-    expect(prologuePayouts(3000, SHARES)).toEqual([600, 900, 1500]);
+  it('splits the pool so start - purse + refuel + module is covered exactly', () => {
+    const payouts = prologuePayouts(3000, PURSE, REFUEL, MODULE, SHARES);
+    expect(sum(payouts)).toBe(POOL);
+    expect(payouts).toEqual([720, 1080, 1800]);
   });
 
   it('gives the rounding remainder to the last payout', () => {
-    expect(prologuePayouts(3001, SHARES)).toEqual([600, 900, 1501]);
+    const payouts = prologuePayouts(3001, PURSE, REFUEL, MODULE, SHARES);
+    expect(sum(payouts)).toBe(3001 - PURSE + REFUEL + MODULE);
+    expect(payouts).toEqual([720, 1080, 1801]);
+  });
+
+  it('returns an empty list for no shares', () => {
+    expect(prologuePayouts(3000, PURSE, REFUEL, MODULE, [])).toEqual([]);
   });
 });
 
-describe('onboarding.prologue_payout_shares', () => {
+describe('onboarding.prologue config', () => {
   it('is part of the factory defaults and validates', () => {
     expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_payout_shares).toEqual(SHARES);
+    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_purse).toBe(PURSE);
+    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost).toBe(REFUEL);
+    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_module_cost).toBe(MODULE);
     expect(validateGameRules(GAME_CONFIG_DEFAULTS)).toEqual(GAME_CONFIG_DEFAULTS);
   });
 
-  it('has a refuel cost that is a whole number of credits', () => {
-    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost).toBe(100);
-    const negative = {
+  it('has a refuel cost and a module cost that are whole numbers of credits', () => {
+    const negativeRefuel = {
       ...GAME_CONFIG_DEFAULTS,
       onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_refuel_cost: -1 },
     };
-    expect(() => validateGameRules(negative)).toThrow(GameConfigValidationError);
+    expect(() => validateGameRules(negativeRefuel)).toThrow(GameConfigValidationError);
+    const negativeModule = {
+      ...GAME_CONFIG_DEFAULTS,
+      onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_module_cost: -1 },
+    };
+    expect(() => validateGameRules(negativeModule)).toThrow(GameConfigValidationError);
   });
 
   it('rejects shares that do not sum to 100', () => {
@@ -54,9 +69,19 @@ describe('onboarding.prologue_payout_shares', () => {
     expect(() => validateGameRules(withShares([-10, 60, 50]))).toThrow(GameConfigValidationError);
   });
 
-  it('is replayable from an older stored rule set that lacks the key', () => {
+  it('rejects a negative purse', () => {
+    const negative = {
+      ...GAME_CONFIG_DEFAULTS,
+      onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_purse: -1 },
+    };
+    expect(() => validateGameRules(negative)).toThrow(GameConfigValidationError);
+  });
+
+  it('is replayable from an older stored rule set that lacks the new keys', () => {
     const { prologue_payout_shares: _omitted, ...older } = GAME_CONFIG_DEFAULTS.onboarding;
     const rules = validateGameRules({ ...GAME_CONFIG_DEFAULTS, onboarding: older });
     expect(rules.onboarding.prologue_payout_shares).toEqual(SHARES);
+    expect(rules.onboarding.prologue_purse).toBe(PURSE);
+    expect(rules.onboarding.prologue_module_cost).toBe(MODULE);
   });
 });

@@ -612,6 +612,41 @@ const GIVERS: readonly GiverSeed[] = [
       'report.failure': [L('The rock does not forgive.', 'A rocha não perdoa.')],
     },
   },
+
+  // ---------------------------------------------------------------- Prologue guides (non-playable free faction)
+  {
+    id: 'free_mentor_kite',
+    factionId: 'free',
+    role: 'MENTOR',
+    name: 'Kite',
+    title: L('Free pilot', 'Piloto livre'),
+    personality: { types: { RACE: 1 }, minZone: 0, maxZone: 0, tone: 'friendly' },
+    weight: 10,
+    locationIds: [],
+    lines: {},
+  },
+  {
+    id: 'free_mentor_dara',
+    factionId: 'free',
+    role: 'MENTOR',
+    name: 'Dara Voss',
+    title: L('Rescue crew chief', 'Chefe da equipe de resgate'),
+    personality: { types: { RESCUE: 1 }, minZone: 0, maxZone: 0, tone: 'calm' },
+    weight: 10,
+    locationIds: [],
+    lines: {},
+  },
+  {
+    id: 'free_mentor_oren',
+    factionId: 'free',
+    role: 'MENTOR',
+    name: 'Marshal Oren',
+    title: L('Harbour office', 'Escritório portuário'),
+    personality: { types: { DELIVERY: 1 }, minZone: 0, maxZone: 0, tone: 'formal' },
+    weight: 10,
+    locationIds: [],
+    lines: {},
+  },
 ];
 
 export async function seedQuestGivers(prisma: PrismaClient): Promise<void> {

@@ -9,6 +9,9 @@ import type { Prisma } from '@prisma/client';
 import type { GameRules } from '../config/game-config.types.js';
 import { toJsonInput } from '../common/prisma-json.js';
 import { GameConfigService } from '../config/game-config.service.js';
+import { parseScenes, type SceneData } from '../dialogue/scenes.js';
+import { giverRefOf } from '../missions/giver-ref.js';
+import type { GiverRef } from '../missions/giver-types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { WalletService } from './wallet.service.js';
 import { PlayerEventService } from './player-event.service.js';
@@ -36,19 +39,46 @@ export class OnboardingService {
     private readonly events: PlayerEventService,
   ) {}
 
-  /** The opening's payouts (they cover the refuel, so the pilot ends with exactly the credits a new pilot starts with). */
-  prologue(): { startCredits: number; refuelCost: number; payouts: number[] } {
+  /** The opening's payouts and guides (the payouts cover the refuel and the module, so the pilot ends with exactly the credits a new pilot starts with). */
+  async prologue(): Promise<{
+    startCredits: number;
+    purse: number;
+    refuelCost: number;
+    moduleCost: number;
+    payouts: number[];
+    guides: { giver: GiverRef; scenes: SceneData[] }[];
+  }> {
     const { economy, onboarding } = this.configService.snapshot().rules;
+    const purse = onboarding.prologue_purse;
     const refuelCost = onboarding.prologue_refuel_cost;
+    const moduleCost = onboarding.prologue_module_cost;
+    const guides = await this.prologueGuides();
     return {
       startCredits: economy.start_credits,
+      purse,
       refuelCost,
-      // the refuel is paid out of what the opening earns, so the pilot ends with exactly the start credits
+      moduleCost,
+      // the refuel and module are paid out of what the opening earns, so the pilot ends with exactly the start credits
       payouts: prologuePayouts(
-        economy.start_credits + refuelCost,
+        economy.start_credits,
+        purse,
+        refuelCost,
+        moduleCost,
         onboarding.prologue_payout_shares,
       ),
+      guides,
     };
+  }
+
+  private async prologueGuides(): Promise<{ giver: GiverRef; scenes: SceneData[] }[]> {
+    const rows = await this.prisma.questGiver.findMany({
+      where: { factionId: 'free', role: 'MENTOR', active: true },
+      orderBy: { id: 'asc' },
+    });
+    return rows.map((row) => ({
+      giver: giverRefOf(row),
+      scenes: parseScenes(row.scenes),
+    }));
   }
 
   /**

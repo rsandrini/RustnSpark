@@ -53,15 +53,35 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
 
   const server = () => httpServer(testApp.app);
 
-  it('GET returns payouts that cover the refuel and leave exactly economy.start_credits', async () => {
+  it('GET returns payouts, purse, module cost and the free guides with scenes', async () => {
     const { auth } = await pilot();
     const response = await request(server()).get('/v1/players/me/prologue').set(auth);
     expect(response.status).toBe(200);
-    const body = response.body as { startCredits: number; refuelCost: number; payouts: number[] };
+    const body = response.body as {
+      startCredits: number;
+      purse: number;
+      refuelCost: number;
+      moduleCost: number;
+      payouts: number[];
+      guides: { giver: { id: string }; scenes: unknown[] }[];
+    };
     expect(body.startCredits).toBe(START);
-    expect(body.payouts).toHaveLength(3);
+    expect(body.purse).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_purse);
     expect(body.refuelCost).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost);
-    expect(body.payouts.reduce((sum, payout) => sum + payout, 0) - body.refuelCost).toBe(START);
+    expect(body.moduleCost).toBe(GAME_CONFIG_DEFAULTS.onboarding.prologue_module_cost);
+    expect(body.payouts).toHaveLength(3);
+    expect(
+      body.payouts.reduce((sum, payout) => sum + payout, 0) +
+        body.purse -
+        body.refuelCost -
+        body.moduleCost,
+    ).toBe(START);
+    expect(body.guides.map((guide) => guide.giver.id)).toEqual([
+      'free_mentor_kite',
+      'free_mentor_dara',
+      'free_mentor_oren',
+    ]);
+    expect(body.guides.every((guide) => guide.scenes.length > 0)).toBe(true);
   });
 
   it('requires an access token', async () => {
