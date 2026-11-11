@@ -4,7 +4,12 @@ import { http, HttpResponse } from 'msw';
 import type { DialogueNode, DialogueScene } from '../../api/generated';
 import { routes } from '../../app/router';
 import { server } from '../../test/msw/server';
-import { dialogueEvents, dialogueSettings, resetEconomyState, setDialogue } from '../../test/msw/handlers';
+import {
+  dialogueEvents,
+  dialogueSettings,
+  resetEconomyState,
+  setDialogue,
+} from '../../test/msw/handlers';
 import { renderWithRouter } from '../../test/utils';
 import { useTypewriter } from './typewriter';
 
@@ -210,9 +215,7 @@ describe('the mentor dialogue', () => {
     renderWithRouter(routes, { initialEntries: ['/ship'] });
     const box = await screen.findByRole('dialog', {}, SEEN);
     fireEvent.click(within(box).getByRole('button', { name: 'Skip' }));
-    expect(
-      within(screen.getByRole('dialog')).getByText(/Skip the guide/),
-    ).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByText(/Skip the guide/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'No, go on' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Words of w1.');
     fireEvent.keyDown(document, { key: 'Escape' });

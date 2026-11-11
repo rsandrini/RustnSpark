@@ -909,6 +909,10 @@ details.collapsible > summary h2 {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* the opening hides the yard while a job is taken (the phone rules hide it the same way) */
+.hangar-layout[hidden] {
+  display: none;
+}
 .hangar-layout {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) 300px;

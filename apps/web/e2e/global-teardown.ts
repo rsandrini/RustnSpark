@@ -21,9 +21,16 @@ export default async function globalTeardown(config: FullConfig): Promise<void> 
   const { accessToken } = (await login.json()) as { accessToken: string };
   const headers = { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` };
 
-  for (const key of ['missions.time_scale', 'race.min_mobility', 'race.reference_mob', 'race.speed_spread']) {
+  for (const key of [
+    'missions.time_scale',
+    'race.min_mobility',
+    'race.reference_mob',
+    'race.speed_spread',
+  ]) {
     const revisions = await fetch(`${baseURL}/v1/admin/tuning/revisions?limit=1`, { headers });
-    const latest = revisions.ok ? ((await revisions.json()) as Array<{ id: string }>)[0] : undefined;
+    const latest = revisions.ok
+      ? ((await revisions.json()) as Array<{ id: string }>)[0]
+      : undefined;
     await fetch(`${baseURL}/v1/admin/tuning/config/${key}/reset`, {
       method: 'POST',
       headers,

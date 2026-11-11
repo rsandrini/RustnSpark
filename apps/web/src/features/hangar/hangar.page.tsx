@@ -47,6 +47,7 @@ import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
 import { RescueBanner } from '../rescue/rescue-banner';
 import { TransitPage } from '../transit/transit.page';
+import { useActiveMissions } from '../transit/use-active-mission';
 import { useIsPhone } from '../../ui/use-phone';
 import { useAnswer, useFeedback } from '../../ui/feedback';
 import { useProblemText } from './problem-text';
@@ -654,6 +655,8 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
   // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
   const opening = usePrologueMode().active;
+  // in the opening a pilot with a job taken (or flying it) sees the job and nothing else: no yard below it
+  const jobTaken = (useActiveMissions().data?.length ?? 0) > 0;
   const autoSaveBlocked =
     save.isPending ||
     modifyBlocked ||
@@ -813,7 +816,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
 
       {pageTab === 'ship' && (
         <>
-          {modifyBlocked && !phone && (
+          {modifyBlocked && !phone && !opening && (
             <p className="error-text">{t('hangar.errors.SHIP_ON_MISSION')}</p>
           )}
           {pendingPartId !== null && (
@@ -825,7 +828,10 @@ export function HangarPage({ guided = false }: HangarPageProps) {
           )}
 
           {/* On a phone a ship that is out on a mission shows only its flight: the yard cannot be edited then. */}
-          <div className="hangar-layout" hidden={phone && modifyBlocked}>
+          <div
+            className="hangar-layout"
+            hidden={(phone && modifyBlocked) || (opening && (modifyBlocked || jobTaken))}
+          >
             {phone && partsOpen && (
               <div
                 className="phone-sheet-backdrop"

@@ -80,7 +80,10 @@ test.describe('admin layout audit', () => {
   for (const entity of EDITABLE) {
     test(`${entity}: edit and create open as pages inside the shell`, async () => {
       await page.goto(`/admin/tuning/entities/${entity}`);
-      await page.getByRole('link', { name: /^Edit / }).first().click();
+      await page
+        .getByRole('link', { name: /^Edit / })
+        .first()
+        .click();
       await expect(page).toHaveURL(new RegExp(`/admin/tuning/entities/${entity}/[^/]+$`));
       await page.waitForLoadState('networkidle');
       await assertShellAndNoSidewaysScroll(page, `${entity} edit`);

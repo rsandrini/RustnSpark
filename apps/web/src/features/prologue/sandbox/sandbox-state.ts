@@ -1,4 +1,5 @@
 import type { ConnectorCell, PartCatalogStats, Placement } from '../../../api/generated';
+import { serverNow } from '../../../api/client';
 import {
   PROLOGUE_BRIDGE,
   PROLOGUE_ENGINE,
@@ -22,7 +23,7 @@ export interface SandboxConfig {
   readonly upgradeCost: number;
   /** The friend's name, from the guide the admin edits (the race table and the reports use it). */
   readonly friendName?: string;
-  /** The clock, in milliseconds (a test drives it; the opening uses the real one). */
+  /** The clock, in milliseconds (a test drives it; the opening uses the app's clock, the one the screens read). */
   readonly clock?: () => number;
   /** The pilot's real profile, so the screens see the real name and id. */
   readonly profile: {
@@ -143,7 +144,7 @@ export class Sandbox {
 
   /** The time, in milliseconds. */
   now(): number {
-    return (this.config.clock ?? Date.now)();
+    return (this.config.clock ?? serverNow)();
   }
 
   get state(): SandboxSnapshot {

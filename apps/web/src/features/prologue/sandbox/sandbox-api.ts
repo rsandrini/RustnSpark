@@ -50,8 +50,6 @@ const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
 const CONFLICT = 409;
 const MS = 1000;
-/** A beat after the arrival time, so the settle timer never fires a hair early. */
-const SETTLE_SLACK_MS = 50;
 
 /**
  * What a refuel costs: always the whole tank, at the opening's refuel price. A part of a tank would leave the next job
@@ -215,10 +213,6 @@ const ROUTES: readonly Route[] = [
     const flying = sandbox.dispatch(needed);
     const arrival = flying.arrivalAt ?? 0;
     const startedAt = flying.startedAt ?? 0;
-    // a real browser run: bring the flight home on time even if nobody asks; a test drives its own clock
-    if (sandbox.config.clock === undefined) {
-      setTimeout(() => sandbox.settle(), arrival - startedAt + SETTLE_SLACK_MS);
-    }
     return {
       missionId: flying.id,
       arrivalAt: new Date(arrival).toISOString(),

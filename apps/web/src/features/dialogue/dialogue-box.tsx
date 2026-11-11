@@ -14,6 +14,8 @@ export interface DialogueBoxProps {
   node: DialogueNode;
   /** Ask "skip the whole conversation?" before the skip goes through (the first scene). */
   confirmSkip?: boolean;
+  /** The button of the last line: "Close" (a mentor's talk) or "Continue" (the opening goes on after it). */
+  endLabel?: 'close' | 'continue';
   /** A preview in Admin: no focus grab, no keyboard shortcuts, and it stays inside its own frame. */
   preview?: boolean;
   onContinue: () => void;
@@ -32,6 +34,7 @@ export function DialogueBox({
   node,
   confirmSkip = false,
   preview = false,
+  endLabel = 'close',
   onContinue,
   onChoose,
   onSkip,
@@ -161,7 +164,7 @@ export function DialogueBox({
                 ref={firstButton}
                 onClick={() => (done ? onContinue() : finish())}
               >
-                {t(node.next === null ? 'dialogue.close' : 'dialogue.continue')}
+                {t(node.next === null ? `dialogue.${endLabel}` : 'dialogue.continue')}
               </button>
             )}
             {!preview && (

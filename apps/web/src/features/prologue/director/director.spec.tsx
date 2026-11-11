@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { client } from '../../../api/client';
+import { client, serverNow } from '../../../api/client';
 import { routes } from '../../../app/router';
 import { server } from '../../../test/msw/server';
 import { renderWithRouter } from '../../../test/utils';
@@ -197,6 +197,36 @@ describe('the director: the story on the real screens', () => {
     await client.post('/v1/parts/prologue-hull/upgrade', {});
     await waitFor(() => expect(readSaved('player-1').step).toBe('stop-two'));
   });
+
+  it('stops the race at the end of a leg while the friend speaks, and goes on when the line is read', async () => {
+    server.use(story([scene('leg-one', 'prologue_race_leg_1', 1, 'First leg down.')]));
+    saveStep('race');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    await screen.findByTestId('opening-bar');
+    await client.post('/v1/ships/prologue-ship/dispatch', { missionId: 'sandbox-race' });
+
+    // twenty seconds go by at once: the first leg (about 18 s) is over
+    const real = Date.now;
+    const jump = 20_000;
+    const spy = vi.spyOn(Date, 'now').mockImplementation(() => real() + jump);
+    expect(
+      await screen.findByText('First leg down.', undefined, { timeout: 4000 }),
+    ).toBeInTheDocument();
+
+    // the clock stands still while the line is on the screen
+    const stopped = serverNow();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(serverNow()).toBe(stopped);
+
+    // the last line says Continue (not Close), and reading it lets the race go on
+    const button = await screen.findByRole('button', { name: 'Continue' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    await waitFor(() => expect(screen.queryByTestId('dialogue')).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(serverNow()).toBeGreaterThan(stopped);
+    spy.mockRestore();
+  }, 20000);
 
   it('asks twice before skipping, at any step', async () => {
     server.use(story([]));

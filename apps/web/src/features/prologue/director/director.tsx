@@ -2,7 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { client, setApiInterceptor } from '../../../api/client';
+import {
+  client,
+  holdClock,
+  resetClockHold,
+  resumeClock,
+  serverNow,
+  setApiInterceptor,
+} from '../../../api/client';
 import { DialogueBox } from '../../dialogue/dialogue-box';
 import { useAuth } from '../../auth/auth.hooks';
 import { usePrologueMode } from '../prologue-mode';
@@ -35,6 +42,8 @@ type Outcome = 'played' | 'skipped';
 
 const NO_ZONES: readonly string[] = [];
 const MS = 1000;
+/** How often the story looks at the clock. */
+const TICK_MS = 100;
 
 /** Did the pilot's save leave a ship the step is happy with (the engine fitted, the module fitted, nothing broken)? */
 function fitted(sandbox: Sandbox, step: StepId): boolean {
@@ -69,6 +78,7 @@ function Speaker({ spoken, onDone }: { spoken: Spoken; onDone: () => void }) {
       onContinue={() => goTo(node.next)}
       onChoose={(choice) => goTo(choice.next)}
       onSkip={onDone}
+      endLabel="continue"
     />
   );
 }
@@ -207,14 +217,27 @@ export function Director() {
     }
   }, [stored.step, step, phase, satisfied, def, queue, beginLeave]);
 
+  // The race waits for the pilot: at the end of a leg the world's clock stops while the friend speaks, and goes on when
+  // the last line is read (so a slow reader never has lines piling up, nor a race running behind a popup).
+  const raceLegs = useRef<{ ends: number[]; next: number } | null>(null);
+  const holding = useRef(false);
+  useEffect(() => {
+    if (holding.current && queue.length === 0) {
+      holding.current = false;
+      resumeClock();
+    }
+  }, [queue.length]);
+  useEffect(
+    () => () => {
+      holding.current = false;
+      resetClockHold();
+    },
+    [],
+  );
+
   // what happens in the sandbox
-  const legTimers = useRef<number[]>([]);
   useEffect(() => {
     if (sandbox === null) return undefined;
-    const clearLegs = () => {
-      legTimers.current.forEach((timer) => window.clearTimeout(timer));
-      legTimers.current = [];
-    };
     const off = sandbox.subscribe((event) => {
       const current = defRef.current;
       if (event.type === 'chosen') {
@@ -223,28 +246,47 @@ export function Director() {
         void queryClientRef.current.invalidateQueries();
       }
       if (event.type === 'dispatched' && current.id === 'race') {
-        // a radio line at the end of each leg of the race
-        const legs = sandbox.state.mission?.legSeconds ?? [];
-        let elapsed = 0;
-        clearLegs();
-        legs.forEach((seconds, index) => {
-          elapsed += seconds;
-          legTimers.current.push(window.setTimeout(() => speak(legOf(index + 1)), elapsed * MS));
-        });
+        const flight = sandbox.state.mission;
+        let end = flight?.startedAt ?? serverNow();
+        raceLegs.current = {
+          ends: (flight?.legSeconds ?? []).map((seconds) => (end += seconds * MS)),
+          next: 0,
+        };
       }
       // a flight is over: the pilot reads its report (the game's own jump to it is off in the opening)
       if (event.type === 'arrived') {
+        raceLegs.current = null;
         // the screens must know the ship is back in port before the pilot walks to the next one
         void queryClientRef.current.invalidateQueries();
         void navigateRef.current(`/report/${event.missionId}`, { replace: true });
       }
       if (completes(current, event, sandbox)) update((state) => ({ ...state, satisfied: true }));
     });
+    // the story's own heartbeat: the end of a race leg, and a flight coming home (the sandbox has no timers of its own)
+    const timer = window.setInterval(() => {
+      const race = raceLegs.current;
+      if (race !== null && !holding.current) {
+        const end = race.ends[race.next];
+        if (end !== undefined && serverNow() >= end) {
+          race.next += 1;
+          const leg = race.next;
+          if (scenesFor(guides, legOf(leg)).length > 0) {
+            // the last leg ends in the arrival and the report: only the earlier ones stop the clock
+            if (leg < race.ends.length) {
+              holdClock(end);
+              holding.current = true;
+            }
+            speak(legOf(leg));
+          }
+        }
+      }
+      sandbox.settle();
+    }, TICK_MS);
     return () => {
       off();
-      clearLegs();
+      window.clearInterval(timer);
     };
-  }, [sandbox, playerId, speak, update]);
+  }, [sandbox, playerId, guides, speak, update]);
 
   // the screens this step leaves alive
   const allow = useMemo(

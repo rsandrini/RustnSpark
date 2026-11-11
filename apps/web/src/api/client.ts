@@ -31,12 +31,37 @@ export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
 
+// The new-pilot opening runs its own world on this same clock, and it can hold it still while a guide speaks (a race
+// waits for the pilot to read): `frozenAt` is the moment it stands at, `heldMs` the time already spent standing.
+let frozenAt: number | null = null;
+let heldMs = 0;
+
 export function serverNow(): number {
-  return Date.now() + serverOffsetMs;
+  return frozenAt ?? Date.now() + serverOffsetMs - heldMs;
+}
+
+/** Holds the clock still at `at` (default: now) until `resumeClock`. */
+export function holdClock(at: number = serverNow()): void {
+  if (frozenAt === null) frozenAt = at;
+}
+
+/** Lets the held clock run on from where it stood. */
+export function resumeClock(): void {
+  if (frozenAt === null) return;
+  heldMs += Date.now() + serverOffsetMs - heldMs - frozenAt;
+  frozenAt = null;
+}
+
+/** Back to the plain server clock (the opening is over). */
+export function resetClockHold(): void {
+  frozenAt = null;
+  heldMs = 0;
 }
 
 /** A precise server timestamp (a response body's own `serverTime`) sets the same clock every countdown reads. */
 export function syncServerTime(iso: string): void {
+  // the opening's world keeps its own time: a server timestamp must not move it
+  if (interceptor !== null) return;
   const parsed = Date.parse(iso);
   if (!Number.isNaN(parsed)) serverOffsetMs = parsed - Date.now();
 }
@@ -188,7 +213,8 @@ async function rawRequest<T>(
   const dateHeader = res.headers.get('date');
   if (dateHeader !== null) {
     const parsed = Date.parse(dateHeader);
-    if (!Number.isNaN(parsed)) {
+    // while the opening runs, the clock is the opening's own: a real call's Date header must not shift it
+    if (!Number.isNaN(parsed) && interceptor === null) {
       serverOffsetMs = parsed - Date.now();
     }
   }
