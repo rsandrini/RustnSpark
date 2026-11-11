@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './auth.hooks';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export function RequireFaction({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { user, isLoading } = useAuth();
+  const opening = usePrologueMode();
 
   if (isLoading) {
     return <div aria-live="polite">{t('loading')}</div>;
@@ -31,7 +33,8 @@ export function RequireFaction({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.factionId) {
+  // A pilot in the new-pilot opening has a (sandbox) ship and no faction yet.
+  if (!user.factionId && !opening.active) {
     return <Navigate to="/onboarding" replace />;
   }
 

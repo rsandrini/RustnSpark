@@ -12,6 +12,7 @@ import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
 import { PrologueFlow } from '../prologue/prologue.page';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 // The playable factions are the keys of the admin-editable `onboarding.home_locations`
 // config; these three are the factory defaults (GDD §10). The server re-validates.
@@ -23,6 +24,7 @@ export type PlayableFaction = (typeof PLAYABLE_FACTIONS)[number];
 export function OnboardingRoute() {
   const { t } = useTranslation();
   const { user, isLoading } = useAuth();
+  const opening = usePrologueMode();
 
   if (isLoading) {
     return <div aria-live="polite">{t('loading')}</div>;
@@ -30,7 +32,7 @@ export function OnboardingRoute() {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (user.factionId) {
+  if (user.factionId || opening.active) {
     return <Navigate to="/ship" replace />;
   }
   // The new-pilot opening comes first: the server says it has not ended for this pilot (null). A server that does not

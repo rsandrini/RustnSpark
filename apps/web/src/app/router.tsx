@@ -27,6 +27,7 @@ import { DialogueHost } from '../features/dialogue/dialogue-host';
 import { FlightWatcher } from '../features/transit/flight-watcher';
 import { GuestReminder } from '../features/auth/guest-reminder';
 import { TutorialCard } from '../features/tutorial/tutorial-card';
+import { PrologueModeProvider, usePrologueMode } from '../features/prologue/prologue-mode';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
 
@@ -78,7 +79,8 @@ function InGameChrome() {
 
 function AppChrome() {
   const { user } = useAuthContext();
-  const inGame = user?.factionId != null;
+  const opening = usePrologueMode();
+  const inGame = user?.factionId != null || opening.active;
   return (
     <FeedbackProvider>
       {inGame ? <InGameChrome /> : <LanguageSwitcher />}
@@ -90,7 +92,9 @@ function AppChrome() {
 function RootLayout() {
   return (
     <AuthProvider>
-      <AppChrome />
+      <PrologueModeProvider>
+        <AppChrome />
+      </PrologueModeProvider>
     </AuthProvider>
   );
 }

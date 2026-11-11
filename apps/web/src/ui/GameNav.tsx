@@ -3,6 +3,7 @@ import { NavLink } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { client } from '../api/client';
 import type { ShipResponse } from '../api/generated';
+import { usePrologueMode } from '../features/prologue/prologue-mode';
 
 // The game's four places, in this order: Ship, Port, Missions, Map (phase 2 of the redesign). The
 // ids are the i18n keys under `nav.*` ("hangar" is the Ship, "board" the Missions); the paths are
@@ -11,8 +12,18 @@ import type { ShipResponse } from '../api/generated';
 const GAME_LINKS = [
   { id: 'hangar', to: '/ship', tour: 'ship_tab', icon: 'M3 12l5-6h8l5 6-5 6H8z M12 10v4 M10 12h4' },
   { id: 'port', to: '/port', tour: 'port_tab', icon: 'M4 20V10l8-6 8 6v10z M9 20v-6h6v6' },
-  { id: 'board', to: '/missions', tour: 'missions_tab', icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3' },
-  { id: 'map', to: '/map', tour: 'map_tab', icon: 'M6 8h.01 M18 6h.01 M14 18h.01 M8 8l8-2 M7 10l6 7 M17 8l-3 9' },
+  {
+    id: 'board',
+    to: '/missions',
+    tour: 'missions_tab',
+    icon: 'M5 4h14v16H5z M9 9h6 M9 13h6 M9 17h3',
+  },
+  {
+    id: 'map',
+    to: '/map',
+    tour: 'map_tab',
+    icon: 'M6 8h.01 M18 6h.01 M14 18h.01 M8 8l8-2 M7 10l6 7 M17 8l-3 9',
+  },
 ] as const;
 
 /**
@@ -21,6 +32,7 @@ const GAME_LINKS = [
  */
 export function GameNav({ bar = false }: { bar?: boolean }) {
   const { t } = useTranslation();
+  const opening = usePrologueMode();
   // The Port and Missions need the ship at rest in a port; while it travels or works the pilot is
   // sent back to the Ship screen, so those two are shown off instead of bouncing the pilot back.
   const ships = useQuery({
@@ -47,7 +59,8 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
             <path d={icon} />
           </svg>
         );
-        if (away && (id === 'port' || id === 'board')) {
+        const locked = opening.allowedPaths !== null && !opening.allowedPaths.includes(to);
+        if (locked || (away && (id === 'port' || id === 'board'))) {
           return (
             <span
               key={id}
