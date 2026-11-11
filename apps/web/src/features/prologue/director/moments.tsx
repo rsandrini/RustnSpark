@@ -55,6 +55,9 @@ export function LossMoment({ onReady, friend, settled, onContinue }: MomentProps
               <li>
                 {LOST_GLYPH} {t('prologue.loss.parts')}
               </li>
+              <li>
+                {LOST_GLYPH} {t('prologue.loss.friend', { friend })}
+              </li>
             </ul>
           </section>
           <section className="moment-col saved">
@@ -88,7 +91,7 @@ export function LossMoment({ onReady, friend, settled, onContinue }: MomentProps
 /**
  * The rescue: stars, a cutter coming in out of the dark with its light on the wreck. Quiet after the loss, and warm.
  */
-export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
+export function RescueMoment({ onReady, friend }: Pick<MomentProps, 'onReady' | 'friend'>) {
   const { t } = useTranslation();
   useEffect(() => {
     const timer = window.setTimeout(onReady, RESCUE_BEAT_MS);
@@ -107,6 +110,14 @@ export function RescueMoment({ onReady }: Pick<MomentProps, 'onReady'>) {
         <div className="moment-cutter-body" />
       </div>
       <p className="moment-caption rescue">{t('prologue.moment.rescueCaption')}</p>
+      <ul className="moment-verdict" data-testid="rescue-verdict">
+        <li className="saved">
+          {SAVED_GLYPH} {t('prologue.moment.rescued')}
+        </li>
+        <li className="lost">
+          {LOST_GLYPH} {t('prologue.moment.friendLost', { friend })}
+        </li>
+      </ul>
     </div>
   );
 }

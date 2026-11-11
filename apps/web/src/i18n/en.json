@@ -92,18 +92,46 @@
       "ship": "The ship",
       "parts": "Its parts",
       "player": "You",
-      "credits": "Your credits"
+      "credits": "Your credits",
+      "friend": "{{friend}} (signal lost)"
     },
     "port": {
       "body": "Kite's gone, and he won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
     },
     "director": {
-      "continue": "Continue"
+      "continue": "Continue",
+      "choose": "Choose this job"
     },
     "moment": {
       "signalLost": "SIGNAL LOST",
-      "lossCaption": "{{friend}}'s ship is gone too. Nothing is moving out there.",
-      "rescueCaption": "A rescue cutter has found your beacon."
+      "lossCaption": "Pirates ambushed you in the lane. Your ship is wrecked, and {{friend}} has stopped answering.",
+      "rescueCaption": "A rescue cutter found your beacon.",
+      "rescued": "You were pulled out alive.",
+      "friendLost": "{{friend}} was not found."
+    },
+    "hint": {
+      "gift": "Your friend is giving you an engine.",
+      "fit-engine": "Drag the engine onto your ship. It saves by itself.",
+      "race-board": "Accept the race.",
+      "race": "Press Dispatch to start the race.",
+      "race-report": "Read how the race went.",
+      "stop-port": "Fill your tank: press Buy.",
+      "choose-job": "Choose the job you want to fly.",
+      "buy-module": "Buy the module your job needs.",
+      "fit-module": "Drag the module onto your ship.",
+      "dispatch-job": "Accept your job, then press Dispatch.",
+      "job-report": "Read your report.",
+      "stop-two": "Take a job and fly it.",
+      "final-board": "Accept the big job.",
+      "final-run": "Press Dispatch.",
+      "rescue": "You were rescued."
+    },
+    "continueLabel": {
+      "gift": "Take the engine",
+      "race-report": "On to the port",
+      "job-report": "Next stop",
+      "stop-two": "Continue",
+      "rescue": "Choose your faction"
     }
   },
   "onboarding": {
@@ -2159,6 +2187,8 @@
       "ACTIVE_MISSION_EXISTS": "A mission is already active",
       "SHIP_NOT_AT_ORIGIN": "Your ship is not at this location",
       "CARGO_TYPE": "Cargo hold does not fit this cargo",
+      "PASSENGER_MODULE": "Needs a Passenger Module fitted on the ship",
+      "CARGO_MODULE": "Needs a Cargo Module fitted on the ship",
       "PRESSURIZED_LIFE_SUPPORT": "Needs a Passenger Cabin and Life Support (both installed)",
       "WEAPONS": "Needs weapons",
       "MIN_MOBILITY": "Mobility below the mission minimum",
@@ -2179,6 +2209,8 @@
     },
     "requirements": {
       "CARGO_TYPE": "Cargo capacity for this load",
+      "PASSENGER_MODULE": "A Passenger Module fitted on the ship",
+      "CARGO_MODULE": "A Cargo Module fitted on the ship",
       "PRESSURIZED_LIFE_SUPPORT": "Passenger Cabin and Life Support, both installed",
       "WEAPONS": "At least one installed weapon",
       "MIN_MOBILITY": "Mobility above the escort minimum",
@@ -2198,7 +2230,7 @@
       "fuel": "Fuel needed"
     },
     "fuel": {
-      "sentence": "You have {{have}} · the trip needs <need>{{needed}}</need> · tank {{cap}}",
+      "sentence": "Fuel: you have {{have}} · the trip needs <need>{{needed}}</need> · tank {{cap}}",
       "state": {
         "ok": "Enough",
         "short": "Short by {{missing}}",

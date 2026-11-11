@@ -50,16 +50,48 @@ function place(
   };
 }
 
-const ROUTE_DEFS = [
-  { id: 'sandbox-r1', a: PLACE.haven, b: PLACE.tern, distance: 60, danger: 0, seconds: 15 },
-  { id: 'sandbox-r2', a: PLACE.tern, b: PLACE.reef, distance: 65, danger: 0, seconds: 20 },
-  { id: 'sandbox-r3', a: PLACE.reef, b: PLACE.dockside, distance: 70, danger: 0, seconds: 30 },
-  { id: 'sandbox-r4', a: PLACE.dockside, b: PLACE.quarry, distance: 80, danger: 0, seconds: 20 },
-  { id: 'sandbox-r5', a: PLACE.quarry, b: PLACE.cinder, distance: 110, danger: 6, seconds: 25 },
-  { id: 'sandbox-r6', a: PLACE.quarry, b: PLACE.reef, distance: 75, danger: 0, seconds: 20 },
-] as const;
+export type RouteId =
+  'sandbox-r1' | 'sandbox-r2' | 'sandbox-r3' | 'sandbox-r4' | 'sandbox-r5' | 'sandbox-r6';
 
-export type RouteId = (typeof ROUTE_DEFS)[number]['id'];
+/** Where each place sits on the opening's map. */
+const AT = {
+  [PLACE.haven]: [0, 0],
+  [PLACE.tern]: [70, -40],
+  [PLACE.reef]: [150, -15],
+  [PLACE.dockside]: [230, -45],
+  [PLACE.quarry]: [290, 15],
+  [PLACE.cinder]: [390, 70],
+} as const;
+
+/**
+ * A flight takes as long as the line it draws on the map, so the ship on the map is always where the clock says (a leg
+ * that took longer than its drawing would leave the ship behind on the map while the list had moved on).
+ */
+const SECONDS_PER_MAP_UNIT = 0.22;
+function secondsOf(a: keyof typeof AT, b: keyof typeof AT): number {
+  const length = Math.hypot(AT[a][0] - AT[b][0], AT[a][1] - AT[b][1]);
+  return Math.round(length * SECONDS_PER_MAP_UNIT * 10) / 10;
+}
+
+const ROUTE_RAW: ReadonlyArray<{
+  id: RouteId;
+  a: string;
+  b: string;
+  distance: number;
+  danger: number;
+}> = [
+  { id: 'sandbox-r1', a: PLACE.haven, b: PLACE.tern, distance: 60, danger: 0 },
+  { id: 'sandbox-r2', a: PLACE.tern, b: PLACE.reef, distance: 65, danger: 0 },
+  { id: 'sandbox-r3', a: PLACE.reef, b: PLACE.dockside, distance: 70, danger: 0 },
+  { id: 'sandbox-r4', a: PLACE.dockside, b: PLACE.quarry, distance: 80, danger: 0 },
+  { id: 'sandbox-r5', a: PLACE.quarry, b: PLACE.cinder, distance: 110, danger: 6 },
+  { id: 'sandbox-r6', a: PLACE.quarry, b: PLACE.reef, distance: 75, danger: 0 },
+];
+
+const ROUTE_DEFS = ROUTE_RAW.map((route) => ({
+  ...route,
+  seconds: secondsOf(route.a as keyof typeof AT, route.b as keyof typeof AT),
+}));
 
 export const SANDBOX_WORLD: WorldResponse = {
   locations: [
@@ -88,6 +120,12 @@ export function routeOf(id: string) {
 export function legSecondsOf(routeIds: readonly string[]): number[] {
   return routeIds.map((id) => routeOf(id)?.seconds ?? 0);
 }
+
+/** The pilot's own three legs of the race (the flight's real times) and the friend's: ahead early, behind at the end. */
+export const RACE_PILOT_LEGS: readonly number[] = ROUTE_DEFS.slice(0, 3).map(
+  (route) => route.seconds,
+);
+export const RACE_FRIEND_LEGS = [19.5, 16, 17.5] as const;
 
 /** The race's three legs, Haven to Dockside. */
 export const RACE_ROUTES = ['sandbox-r1', 'sandbox-r2', 'sandbox-r3'] as const;
@@ -146,8 +184,11 @@ export const SANDBOX_DESCRIPTIONS: Record<string, LocalizedText> = {
 };
 
 /** Both modules cost the same (one price, in the opening's config), so the choice of job never changes the money. */
-export function marketListingsOf(price: number): MarketListing[] {
-  return [SANDBOX_PASSENGER_MODULE, PROLOGUE_CARGO].map((part) => ({
+export function marketListingsOf(price: number, chosen: ModuleKind | null = null): MarketListing[] {
+  const sold = [SANDBOX_PASSENGER_MODULE, PROLOGUE_CARGO].filter(
+    (part) => chosen === null || (chosen === 'passengers') === (part === SANDBOX_PASSENGER_MODULE),
+  );
+  return sold.map((part) => ({
     listingId: `catalog:sandbox:${part.catalog.partType}`,
     kind: 'catalog',
     partType: part.catalog.partType,

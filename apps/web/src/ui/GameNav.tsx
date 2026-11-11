@@ -79,6 +79,9 @@ export function GameNav({ bar = false }: { bar?: boolean }) {
             key={id}
             to={to}
             data-tour={tour}
+            data-opening-here={
+              opening.active && opening.allowedPaths?.includes(to) ? '' : undefined
+            }
             className={({ isActive }) => `nav-link${isActive ? ' on' : ''}`}
           >
             {mark}

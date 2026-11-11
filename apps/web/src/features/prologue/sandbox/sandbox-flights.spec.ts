@@ -5,6 +5,7 @@ import {
   ReportListResponseSchema,
   ReportResponseSchema,
 } from '@rustandspark/contract';
+import { SANDBOX_WORLD } from './sandbox-world';
 import { describe, expect, it } from 'vitest';
 import { PROLOGUE_CARGO, PROLOGUE_ENGINE, PROLOGUE_START_PARTS } from '../prologue-fixtures';
 import { sandboxInterceptor } from './sandbox-api';
@@ -108,14 +109,14 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     ).rejects.toMatchObject({ status: 409 });
   });
 
-  it('sends the race out over three legs of 15, 20 and 30 seconds', async () => {
+  it('sends the race out over three legs that each take as long as their line on the map', async () => {
     const env = fresh();
     await fitEngine(env);
     await env.call('POST', '/v1/missions/sandbox-race/accept');
     const sent = DispatchResponseSchema.parse(
       await env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: 'sandbox-race' }),
     );
-    expect(sent.durationSeconds).toBe(65);
+    expect(sent.durationSeconds).toBeCloseTo(54.9, 5);
     const [active] = (await env.call('GET', '/v1/missions/active')) as unknown[];
     const mission = ActiveMissionSchema.parse(active);
     expect(mission.status).toBe('IN_TRANSIT');
@@ -123,7 +124,18 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const seconds = mission.legWindows.map(
       (window) => (Date.parse(window.to) - Date.parse(window.from)) / 1000,
     );
-    expect(seconds).toEqual([15, 20, 30]);
+    expect(seconds).toEqual([17.7, 18.4, 18.8]);
+    // the ship on the map follows the clock: every leg's share of the time is its share of the drawn route
+    const world = SANDBOX_WORLD;
+    const spot = (id: string) => world.locations.find((entry) => entry.id === id)!;
+    const lengths = mission.legWindows.map((window, index) => {
+      const route = world.routes.find((entry) => entry.id === window.routeId)!;
+      const from = spot(index === 0 ? mission.originId : route.nodeAId);
+      const to = spot(route.nodeBId);
+      return Math.hypot(from.x - to.x, from.y - to.y);
+    });
+    const ratio = seconds.map((value, index) => value / (lengths[index] ?? 1));
+    ratio.forEach((value) => expect(value).toBeCloseTo(ratio[0] ?? 0, 1));
     const ships = (await env.call('GET', '/v1/ships')) as Array<{ status: string }>;
     expect(ships[0]?.status).toBe('ON_MISSION');
     expect(await board(env)).toEqual([]);

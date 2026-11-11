@@ -66,7 +66,8 @@ async function dragPart(page: Page, name: RegExp, gx: number, gy: number): Promi
   const box = await cell.boundingBox();
   if (box === null) throw new Error('no such cell');
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await page.getByRole('button', { name: 'Save layout' }).click();
+  // there is no Save button in the opening: the layout saves itself a moment after the drop
+  await expect(page.getByRole('button', { name: 'Save layout' })).toHaveCount(0);
   // the lines said when the step ends
   await read(page);
 }
@@ -117,7 +118,8 @@ async function playOpening(page: Page): Promise<void> {
 
   await onStep(page, 'choose-job');
   await read(page);
-  await next(page);
+  await page.locator('[data-opening="choose"]').first().click();
+  await read(page);
 
   await onStep(page, 'buy-module');
   await read(page);

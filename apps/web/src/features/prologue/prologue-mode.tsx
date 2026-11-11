@@ -79,29 +79,32 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
     if (!wants || profile === null) return undefined;
     let cancelled = false;
     let installed = false;
-    void client.get<PrologueConfig>('/v1/players/me/prologue').then((config) => {
-      if (cancelled) return;
-      const found = config.guides ?? [];
-      const next = createSandbox({
-        friendName: friendOf(found)?.name,
-        payouts: config.payouts,
-        purse: config.purse ?? DEFAULT_PURSE,
-        refuelCost: config.refuelCost,
-        moduleCost: config.moduleCost ?? DEFAULT_MODULE_COST,
-        profile,
+    void client
+      .get<PrologueConfig>('/v1/players/me/prologue')
+      .then((config) => {
+        if (cancelled) return;
+        const found = config.guides ?? [];
+        const next = createSandbox({
+          friendName: friendOf(found)?.name,
+          payouts: config.payouts,
+          purse: config.purse ?? DEFAULT_PURSE,
+          refuelCost: config.refuelCost,
+          moduleCost: config.moduleCost ?? DEFAULT_MODULE_COST,
+          profile,
+        });
+        // back where the pilot left the story (a closed tab): the ship, the money and the jobs as they were then
+        const saved = readSaved(profile.id);
+        restoreSandbox(next, saved.step, saved.kind);
+        // what the real screens may already have cached from the real server must not leak in
+        queryClient.clear();
+        setGuides(found);
+        setApiInterceptor(sandboxInterceptor(next));
+        installed = true;
+        setSandbox(next);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
       });
-      // back where the pilot left the story (a closed tab): the ship, the money and the jobs as they were then
-      const saved = readSaved(profile.id);
-      restoreSandbox(next, saved.step, saved.kind);
-      // what the real screens may already have cached from the real server must not leak in
-      queryClient.clear();
-      setGuides(found);
-      setApiInterceptor(sandboxInterceptor(next));
-      installed = true;
-      setSandbox(next);
-    }).catch(() => {
-      if (!cancelled) setFailed(true);
-    });
     return () => {
       cancelled = true;
       if (installed) {

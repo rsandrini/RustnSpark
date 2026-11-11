@@ -73,7 +73,10 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   // Defaults on (owner request): most offers on a busy board are ones the ship can't take yet,
   // and the pilot generally wants to see what they CAN take first.
   // In the opening the pilot sees every job, even the ones the ship cannot take yet: that is what the first stop is about.
-  const opening = usePrologueMode().active;
+  const { active: opening, sandbox } = usePrologueMode();
+  // the first stop of the opening: the pilot picks the kind of job (its module is bought next)
+  const choosing =
+    opening && sandbox !== null && sandbox.state.slot === 1 && sandbox.state.chosen === null;
   const [onlyEligible, setOnlyEligible] = useState(!opening);
   const [sortKey, setSortKey] = useState<SortKey>('reward');
   const [actionError, setActionError] = useState<string | null>(null);
@@ -353,7 +356,19 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
               mine={mine}
               actions={
                 <>
-                  {offer.status === 'AVAILABLE' && (
+                  {choosing && offer.status === 'AVAILABLE' && (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      data-opening="choose"
+                      onClick={() =>
+                        sandbox.choose(offer.type === 'TRANSPORT' ? 'passengers' : 'crates')
+                      }
+                    >
+                      {t('prologue.director.choose')}
+                    </button>
+                  )}
+                  {!choosing && offer.status === 'AVAILABLE' && (
                     <button
                       type="button"
                       className="btn primary"

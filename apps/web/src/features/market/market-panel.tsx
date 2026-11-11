@@ -10,6 +10,7 @@ import { Popup } from '../../ui/Popup';
 import { useAuthContext } from '../auth/auth.context';
 import { PartCard } from '../parts/part-card';
 import { ConnectorGrid } from '../parts/connector-grid';
+import { usePrologueMode } from '../prologue/prologue-mode';
 import { ShipNeedsList, isShield, lackingParts, useDismissedNeeds } from './ship-needs';
 import { useNotice, type FeedbackOptions } from '../../ui/feedback';
 import { rankReplaceCandidates, type InstalledPartForCompare } from '../parts/part-compare-match';
@@ -60,6 +61,8 @@ export function MarketPanel({
   showNeeds = true,
 }: MarketPanelProps) {
   const { t, i18n } = useTranslation();
+  // the opening buys one module for one job: no list of what the ship lacks
+  const opening = usePrologueMode().active;
   const { user, reloadProfile } = useAuthContext();
   const queryClient = useQueryClient();
   const buyKey = useIntentKey();
@@ -256,7 +259,7 @@ export function MarketPanel({
       )}
 
       <ShipNeedsList
-        needs={showNeeds ? needs : []}
+        needs={showNeeds && !opening ? needs : []}
         onShow={(need) => setPartClass(need.partClass)}
         onDismiss={dismissNeed}
       />

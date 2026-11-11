@@ -1,5 +1,10 @@
 import { PROLOGUE_ENGINE, PROLOGUE_CARGO } from '../prologue-fixtures';
-import { fuelNeededFor, jobsAt, SANDBOX_PASSENGER_MODULE, type ModuleKind } from '../sandbox/sandbox-world';
+import {
+  fuelNeededFor,
+  jobsAt,
+  SANDBOX_PASSENGER_MODULE,
+  type ModuleKind,
+} from '../sandbox/sandbox-world';
 import { previewOf, tankSpace } from '../sandbox/sandbox-ship';
 import type { Sandbox } from '../sandbox/sandbox-state';
 import { OPENING_STEPS, type StepId } from './steps';
@@ -51,7 +56,8 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
     const { space } = tankSpace(sandbox);
     sandbox.refuel(space, sandbox.config.refuelCost);
   }
-  // the module bought, then fitted
+  // the kind of job chosen, the module bought, then fitted
+  if (index >= at('buy-module')) sandbox.choose(chosen);
   if (index > at('buy-module')) {
     const part = MODULE_OF[chosen];
     const id = sandbox.buy(part, sandbox.config.moduleCost);

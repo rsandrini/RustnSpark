@@ -260,7 +260,7 @@ describe('board (S10.6)', () => {
     // Default fixture: ship has 25/40 fuel, every offer needs 8 — comfortably enough.
     const block = screen.getAllByTestId('mcard-fuel')[0]!;
     expect(block).toHaveAttribute('data-state', 'ok');
-    expect(block).toHaveTextContent('You have 25 · the trip needs 8 · tank 40');
+    expect(block).toHaveTextContent('Fuel: you have 25 · the trip needs 8 · tank 40');
     expect(block.querySelector('.fuel-need')).toHaveTextContent('8');
     expect(within(block).getByTestId('fuel-verdict')).toHaveTextContent('Enough');
     const bar = within(block).getByRole('progressbar', { name: 'Fuel needed' });

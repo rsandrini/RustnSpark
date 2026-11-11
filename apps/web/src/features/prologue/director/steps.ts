@@ -95,9 +95,9 @@ export const STEPS: readonly StepDef[] = [
     id: 'choose-job',
     path: '/missions',
     nav: ['/missions'],
-    allow: NONE,
-    until: null,
-    confirm: true,
+    allow: ['[data-opening="choose"]'],
+    until: 'chosen',
+    confirm: false,
   },
   {
     id: 'buy-module',

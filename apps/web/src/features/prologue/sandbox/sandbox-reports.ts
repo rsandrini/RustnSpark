@@ -5,7 +5,7 @@ import type {
   ReportResponse,
   ReportStats,
 } from '../../../api/generated';
-import { routeOf, SANDBOX_WORLD } from './sandbox-world';
+import { RACE_FRIEND_LEGS, RACE_PILOT_LEGS, routeOf, SANDBOX_WORLD } from './sandbox-world';
 import type { Sandbox, SandboxResult } from './sandbox-state';
 
 /*
@@ -13,8 +13,8 @@ import type { Sandbox, SandboxResult } from './sandbox-state';
  * are written from what the sandbox did: where the ship went, what it was paid, and, on the race, who finished where.
  */
 
-const FRIEND_LEGS = [15, 19, 28] as const;
-const PILOT_LEGS = [14, 21, 31] as const;
+const FRIEND_LEGS = RACE_FRIEND_LEGS;
+const PILOT_LEGS = RACE_PILOT_LEGS;
 
 type Say = (en: string, pt: string) => string;
 

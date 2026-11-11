@@ -162,6 +162,11 @@ export function Director() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
   useEffect(() => () => setAllowedPaths(null), [setAllowedPaths]);
+  // every screen the story walks to fades in (see director.css), so a jump between screens is not a hard cut
+  useEffect(() => {
+    document.body.setAttribute('data-opening', '');
+    return () => document.body.removeAttribute('data-opening');
+  }, []);
 
   const advance = useCallback(() => {
     if (playerId === undefined) return;
@@ -209,8 +214,10 @@ export function Director() {
     };
     const off = sandbox.subscribe((event) => {
       const current = defRef.current;
-      if (event.type === 'bought' && playerId !== undefined) {
-        writeKind(playerId, event.partType === 'passenger_module' ? 'passengers' : 'crates');
+      if (event.type === 'chosen') {
+        if (playerId !== undefined) writeKind(playerId, event.kind);
+        // the market sells the module of the chosen job only: what it showed before is out of date
+        void queryClientRef.current.invalidateQueries();
       }
       if (event.type === 'dispatched' && current.id === 'race') {
         // a radio line at the end of each leg of the race
@@ -264,9 +271,14 @@ export function Director() {
           onContinue={beginLeave}
         />
       )}
-      {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} />}
+      {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} friend={friendName} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
       <div className="opening-bar" data-opening-free="" data-testid="opening-bar" data-step={step}>
+        {ready && !satisfied && def.moment === undefined && (
+          <p className="opening-hint" data-testid="opening-hint">
+            {t(`prologue.hint.${step}`)}
+          </p>
+        )}
         {ready && satisfied && def.confirm && (
           <button
             type="button"
@@ -274,7 +286,7 @@ export function Director() {
             data-testid="opening-continue"
             onClick={beginLeave}
           >
-            {t('prologue.director.continue')}
+            {t(`prologue.continueLabel.${step}`, { defaultValue: t('prologue.director.continue') })}
           </button>
         )}
         <button

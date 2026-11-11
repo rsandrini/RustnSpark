@@ -6,7 +6,7 @@ import {
   PROLOGUE_TANK,
   type ProloguePart,
 } from '../prologue-fixtures';
-import { PLACE, legSecondsOf, type JobSpec } from './sandbox-world';
+import { PLACE, legSecondsOf, type JobSpec, type ModuleKind } from './sandbox-world';
 
 /** What the sandbox is built from: the server's numbers for the opening and the pilot's real profile. */
 export interface SandboxConfig {
@@ -44,6 +44,7 @@ export type SandboxEvent =
   | { type: 'layout_saved' }
   | { type: 'part_fitted'; partId: string }
   | { type: 'part_removed'; partId: string }
+  | { type: 'chosen'; kind: ModuleKind }
   | { type: 'refuelled' }
   | { type: 'bought'; partType: string }
   | { type: 'accepted'; missionId: string }
@@ -90,6 +91,8 @@ export interface SandboxSnapshot {
   readonly history: readonly SandboxResult[];
   /** The final run was lost: the ship is gone. */
   readonly shipLost: boolean;
+  /** The kind of job the pilot chose at the first stop (null = not yet). */
+  readonly chosen: ModuleKind | null;
 }
 
 /** The tank starts almost empty: just enough for the first race (the owner's call). */
@@ -128,6 +131,7 @@ export class Sandbox {
       mission: null,
       history: [],
       shipLost: false,
+      chosen: null,
     };
   }
 
@@ -186,6 +190,12 @@ export class Sandbox {
         this.emit({ type: 'part_removed', partId: entry.id });
       }
     }
+  }
+
+  /** The pilot picks the kind of job to take at the first stop. */
+  choose(kind: ModuleKind): void {
+    this.snapshot = { ...this.snapshot, chosen: kind };
+    this.emit({ type: 'chosen', kind });
   }
 
   /** What a job pays: the race, the two jobs, and the final run (shown on its card, never paid). */

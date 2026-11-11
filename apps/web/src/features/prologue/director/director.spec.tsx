@@ -154,13 +154,36 @@ describe('the director: the story on the real screens', () => {
     await waitFor(() => expect(view.router.state.location.pathname).toBe('/missions'));
 
     await waitFor(() =>
-      expect(document.querySelector('[data-tour="accept_button"][data-opening-allowed]')).not.toBeNull(),
+      expect(
+        document.querySelector('[data-tour="accept_button"][data-opening-allowed]'),
+      ).not.toBeNull(),
     );
     // the sort chips and the nav are inert
     expect(document.querySelectorAll('[data-opening-locked]').length).toBeGreaterThan(0);
     for (const el of Array.from(document.querySelectorAll('[data-opening-locked]'))) {
       expect(el).toHaveAttribute('inert');
     }
+  });
+
+  it('says what to do now, and the button says what it does', async () => {
+    server.use(story([]));
+    saveStep('gift');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    expect(await screen.findByTestId('opening-continue')).toHaveTextContent('Take the engine');
+  });
+
+  it('the pilot chooses the job themselves: nothing moves on until they press Choose', async () => {
+    server.use(story([]));
+    saveStep('choose-job');
+    renderWithRouter(routes, { initialEntries: ['/missions'] });
+    expect(await screen.findByTestId('opening-hint')).toHaveTextContent('Choose the job');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(readSaved('player-1').step).toBe('choose-job');
+
+    const choose = (await screen.findAllByRole('button', { name: 'Choose this job' }))[1];
+    fireEvent.click(choose as HTMLElement);
+    await waitFor(() => expect(readSaved('player-1').step).toBe('buy-module'));
+    expect(readSaved('player-1').kind).toBe('crates');
   });
 
   it('asks twice before skipping, at any step', async () => {

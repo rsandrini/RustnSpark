@@ -5,6 +5,8 @@ import type { PartCatalogStats, RouteCoverage, ShipSheet } from '../../api/gener
 import { conditionTone } from '../../ui/Gauge';
 
 export interface ShipSheetPanelProps {
+  /** Only the headline tiles: no "show all stats" (the new-pilot opening). */
+  compact?: boolean;
   shipClass: string | undefined;
   /** The ship's own name, shown at the top of the sheet with a Rename button (when `onRename` is given). */
   shipName?: string | undefined;
@@ -104,6 +106,7 @@ export function defensePools(
 }
 
 export function ShipSheetPanel({
+  compact = false,
   shipClass,
   shipName,
   onRename,
@@ -366,31 +369,33 @@ export function ShipSheetPanel({
           </div>
         </div>
       )}
-      <details className="sheet-details" open={showAll}>
-        <summary
-          onClick={(event) => {
-            event.preventDefault();
-            setShowAll((open) => !open);
-          }}
-        >
-          {t('hangar.summary.showAllStats')}
-        </summary>
-        {GROUP_ORDER.map((group) => (
-          <div className="sheet-group" key={group}>
-            <div className="sheet-group-title">{t(`hangar.groups.${group}`)}</div>
-            {rowsByGroup(group).map((row) => (
-              <div
-                className="statrow"
-                key={row.key}
-                title={t(`hangar.statHelp.${row.key}`, { defaultValue: '' })}
-              >
-                <span>{t(`hangar.stats.${row.key}`)}</span>
-                {renderRowValue(row.key)}
-              </div>
-            ))}
-          </div>
-        ))}
-      </details>
+      {!compact && (
+        <details className="sheet-details" open={showAll}>
+          <summary
+            onClick={(event) => {
+              event.preventDefault();
+              setShowAll((open) => !open);
+            }}
+          >
+            {t('hangar.summary.showAllStats')}
+          </summary>
+          {GROUP_ORDER.map((group) => (
+            <div className="sheet-group" key={group}>
+              <div className="sheet-group-title">{t(`hangar.groups.${group}`)}</div>
+              {rowsByGroup(group).map((row) => (
+                <div
+                  className="statrow"
+                  key={row.key}
+                  title={t(`hangar.statHelp.${row.key}`, { defaultValue: '' })}
+                >
+                  <span>{t(`hangar.stats.${row.key}`)}</span>
+                  {renderRowValue(row.key)}
+                </div>
+              ))}
+            </div>
+          ))}
+        </details>
+      )}
     </>
   );
 }

@@ -277,8 +277,8 @@ const KITE: SceneData[] = [
     19,
     [
       node('k_final_run', [
-        'Stay close. This lane has pirates. We fly through together.',
-        'Fique perto. Essa rota tem piratas. Vamos atravessar juntos.',
+        'Stay close. Pirates hunt this lane. We fly through together.',
+        'Fique perto. Piratas caçam nessa rota. Vamos atravessar juntos.',
       ]),
     ],
   ),
@@ -291,14 +291,14 @@ const KITE: SceneData[] = [
       node(
         'k_loss_1',
         [
-          'Kite! Watch out!',
-          'Kite! Cuidado!',
+          'Pirates! They are on us! Break away, I will draw them off!',
+          'Piratas! Estão em cima de nós! Fuja, eu vou distraí-los!',
         ],
         { next: 'k_loss_2' },
       ),
       node('k_loss_2', [
-        '...static...',
-        '...estática...',
+        '...they hit me... my engines are gone... I am losing... [static]',
+        '...me acertaram... meus motores pararam... estou perdendo... [estática]',
       ]),
     ],
   ),
@@ -309,8 +309,8 @@ const KITE: SceneData[] = [
     21,
     [
       node('k_loss_done', [
-        'Kite is gone. Your ship made it through. But Kite...',
-        'Kite se foi. Sua nave passou. Mas Kite...',
+        'The pirates hit you both. Your ship is wrecked and drifting, and Kite stopped answering. Your beacon is still on.',
+        'Os piratas atingiram vocês dois. Sua nave está destruída e à deriva, e Kite parou de responder. Seu sinal ainda está ligado.',
       ]),
     ],
   ),
@@ -326,14 +326,14 @@ const DARA: SceneData[] = [
       node(
         'd_rescue_1',
         [
-          'This is Dara Voss, rescue crew. We found you drifting.',
-          'Aqui é Dara Voss, equipe de resgate. Encontramos você à deriva.',
+          'This is Dara Voss, rescue cutter. Your beacon was the only signal in the lane. We have you.',
+          'Aqui é Dara Voss, cortador de resgate. Seu sinal era o único na rota. Pegamos você.',
         ],
         { next: 'd_rescue_2' },
       ),
       node('d_rescue_2', [
-        'Only you came out of that lane. I am so sorry.',
-        'Só você saiu dessa rota. Sinto muito.',
+        'We are pulling you aboard. You are alive. We searched for Kite and found only wreckage. Kite did not make it. I am so sorry.',
+        'Estamos puxando você para bordo. Você está vivo. Procuramos Kite e só achamos destroços. Kite não sobreviveu. Sinto muito.',
       ]),
     ],
   ),
@@ -479,8 +479,8 @@ const OREN: SceneData[] = [
     50,
     [
       node('o_final_done', [
-        'You made it back. Your friend did not. I am sorry.',
-        'Você conseguiu voltar. Seu amigo não. Sinto muito.',
+        'You were rescued. Your friend was not. The pirates are the reason. I am sorry.',
+        'Você foi resgatado. Seu amigo não. Os piratas são o motivo. Sinto muito.',
       ]),
     ],
   ),

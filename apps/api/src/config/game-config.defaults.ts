@@ -559,7 +559,7 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     start_fuel_fraction: 0.25,
     // The opening pays out the starting credits in three steps (the race, then the two missions at the first
     // stop), as whole percentages adding up to 100, so a pilot who skips it starts with the same money.
-    prologue_payout_shares: [20, 30, 50],
+    prologue_payout_shares: [17, 13, 70],
     // The pilot starts the opening with this small purse; the engine is the friend's gift, so it costs nothing.
     prologue_purse: 300,
     // The refuel at the opening's first stop costs this; the payouts add up to the start credits plus this.

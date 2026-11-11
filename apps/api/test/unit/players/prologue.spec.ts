@@ -6,7 +6,7 @@ import {
 } from '../../../src/config/game-rules.schema.js';
 import { prologuePayouts } from '../../../src/players/prologue.js';
 
-const SHARES = [20, 30, 50];
+const SHARES = [17, 13, 70];
 const PURSE = 300;
 const REFUEL = 100;
 const MODULE = 800;
@@ -21,13 +21,13 @@ describe('prologuePayouts', () => {
   it('splits the pool so start - purse + refuel + module is covered exactly', () => {
     const payouts = prologuePayouts(3000, PURSE, REFUEL, MODULE, SHARES);
     expect(sum(payouts)).toBe(POOL);
-    expect(payouts).toEqual([720, 1080, 1800]);
+    expect(payouts).toEqual([612, 468, 2520]);
   });
 
   it('gives the rounding remainder to the last payout', () => {
     const payouts = prologuePayouts(3001, PURSE, REFUEL, MODULE, SHARES);
     expect(sum(payouts)).toBe(3001 - PURSE + REFUEL + MODULE);
-    expect(payouts).toEqual([720, 1080, 1801]);
+    expect(payouts).toEqual([612, 468, 2521]);
   });
 
   it('returns an empty list for no shares', () => {

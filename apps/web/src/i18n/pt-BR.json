@@ -92,18 +92,46 @@
       "ship": "A nave",
       "parts": "As peças dela",
       "player": "Você",
-      "credits": "Seus créditos"
+      "credits": "Seus créditos",
+      "friend": "{{friend}} (sinal perdido)"
     },
     "port": {
       "body": "O Kite se foi, e não será o último. Os três poderes agora lutam contra os piratas, cada um à sua maneira. Escolha a bandeira pela qual você vai voar, e eles te dão uma nave."
     },
     "director": {
-      "continue": "Continuar"
+      "continue": "Continuar",
+      "choose": "Escolher este trabalho"
     },
     "moment": {
       "signalLost": "SINAL PERDIDO",
-      "lossCaption": "A nave de {{friend}} também se foi. Nada se move lá fora.",
-      "rescueCaption": "Um cortador de resgate encontrou o seu sinal."
+      "lossCaption": "Piratas emboscaram vocês na rota. Sua nave foi destruída, e {{friend}} parou de responder.",
+      "rescueCaption": "Um cortador de resgate achou o seu sinal.",
+      "rescued": "Você foi resgatado com vida.",
+      "friendLost": "{{friend}} não foi encontrado."
+    },
+    "hint": {
+      "gift": "Seu amigo vai te dar um motor.",
+      "fit-engine": "Arraste o motor para a sua nave. Ele salva sozinho.",
+      "race-board": "Aceite a corrida.",
+      "race": "Aperte Despachar para começar a corrida.",
+      "race-report": "Leia como foi a corrida.",
+      "stop-port": "Encha o tanque: aperte Comprar.",
+      "choose-job": "Escolha o trabalho que quer voar.",
+      "buy-module": "Compre o módulo que o seu trabalho precisa.",
+      "fit-module": "Arraste o módulo para a sua nave.",
+      "dispatch-job": "Aceite o trabalho e aperte Despachar.",
+      "job-report": "Leia o seu relatório.",
+      "stop-two": "Pegue um trabalho e voe.",
+      "final-board": "Aceite o trabalho grande.",
+      "final-run": "Aperte Despachar.",
+      "rescue": "Você foi resgatado."
+    },
+    "continueLabel": {
+      "gift": "Pegar o motor",
+      "race-report": "Ir para o porto",
+      "job-report": "Próxima parada",
+      "stop-two": "Continuar",
+      "rescue": "Escolher a facção"
     }
   },
   "onboarding": {
@@ -2159,6 +2187,8 @@
       "ACTIVE_MISSION_EXISTS": "Já existe uma missão ativa",
       "SHIP_NOT_AT_ORIGIN": "Sua nave não está neste local",
       "CARGO_TYPE": "Porão não comporta essa carga",
+      "PASSENGER_MODULE": "Precisa de um Módulo de Passageiros instalado na nave",
+      "CARGO_MODULE": "Precisa de um Módulo de Carga instalado na nave",
       "PRESSURIZED_LIFE_SUPPORT": "Requer Cabine de Passageiros e Suporte de Vida (os dois instalados)",
       "WEAPONS": "Requer armamentos",
       "MIN_MOBILITY": "Mobilidade abaixo do mínimo da missão",
@@ -2179,6 +2209,8 @@
     },
     "requirements": {
       "CARGO_TYPE": "Capacidade de carga para esta carga",
+      "PASSENGER_MODULE": "Um Módulo de Passageiros instalado na nave",
+      "CARGO_MODULE": "Um Módulo de Carga instalado na nave",
       "PRESSURIZED_LIFE_SUPPORT": "Cabine de passageiros e suporte de vida, ambos instalados",
       "WEAPONS": "Pelo menos uma arma instalada",
       "MIN_MOBILITY": "Mobilidade acima do mínimo de escolta",
@@ -2198,7 +2230,7 @@
       "fuel": "Combustível"
     },
     "fuel": {
-      "sentence": "Você tem {{have}} · a viagem precisa de <need>{{needed}}</need> · tanque {{cap}}",
+      "sentence": "Combustível: você tem {{have}} · a viagem precisa de <need>{{needed}}</need> · tanque {{cap}}",
       "state": {
         "ok": "Suficiente",
         "short": "Faltam {{missing}}",

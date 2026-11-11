@@ -41,6 +41,7 @@ import { TrayPartRow } from './tray-part-row';
 import { EngineTuning } from './engine-tuning';
 import { YardCallouts } from './yard-callouts';
 import { ShipSheetPanel } from './ship-sheet-panel';
+import { usePrologueMode } from '../prologue/prologue-mode';
 import { ShipNeedsNote } from '../market/ship-needs';
 import { BoardPage } from '../board/board.page';
 import { PortPage } from '../port/port.page';
@@ -104,6 +105,8 @@ const SOFT_CODES: ReadonlySet<string> = new Set([
 ]);
 
 const PREVIEW_DEBOUNCE_MS = 400;
+/** The opening saves the layout this long after a part lands (the preview must have caught up). */
+const AUTO_SAVE_MS = 900;
 // A carried part is drawn this many pixels per cell when the yard has not been measured yet.
 const FALLBACK_CELL_PX = 40;
 const STAGE_COLLAPSE_KEY = 'rs.hangar.stageCollapsed';
@@ -648,6 +651,21 @@ export function HangarPage({ guided = false }: HangarPageProps) {
   const sheet = preview?.sheet ?? ship?.sheet;
   const shipClass = preview?.shipClass ?? ship?.shipClass;
   const viabilityProblems = preview?.viability.problems ?? [];
+
+  // In the opening there is no Save button: a part dropped on the ship is saved a moment later (when the ship is sound).
+  const opening = usePrologueMode().active;
+  const autoSaveBlocked =
+    save.isPending ||
+    modifyBlocked ||
+    outsideCount > 0 ||
+    viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED');
+  useEffect(() => {
+    if (!opening || !dirty || autoSaveBlocked) return undefined;
+    const timer = setTimeout(() => save.mutate(), AUTO_SAVE_MS);
+    return () => clearTimeout(timer);
+    // the mutation object changes every render; the layout and the blockers decide when to save
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opening, dirty, autoSaveBlocked, layout]);
   const everyProblem = [
     ...viabilityProblems,
     ...(preview?.viability.warnings ?? []),
@@ -972,51 +990,58 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                     </button>
                   </>
                 )}
-                <span className="hangar-actions-sep" aria-hidden="true" />
-                <button
-                  type="button"
-                  className={`btn primary${saveAnswer === 'busy' ? ' answer-busy' : saveAnswer === 'done' ? ' answer-done' : ''}`}
-                  disabled={!dirty || save.isPending || modifyBlocked}
-                  onClick={() => {
-                    setSaved(false);
-                    setSaveError(null);
-                    if (
-                      viabilityProblems.some((problem) => problem.code === 'STRUCTURE_EXCEEDED') ||
-                      outsideCount > 0
-                    ) {
-                      setOverBudgetOpen(true);
-                      return;
-                    }
-                    save.mutate();
-                  }}
-                >
-                  {save.isPending
-                    ? t('hangar.state.saving')
-                    : saveAnswer === 'done'
-                      ? t('feedback.doneSave')
-                      : t('hangar.actions.save')}
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  data-tour="auto_layout"
-                  disabled={auto.isPending || modifyBlocked}
-                  aria-busy={auto.isPending}
-                  onClick={() => {
-                    setSaved(false);
-                    setSaveError(null);
-                    auto.mutate();
-                  }}
-                >
-                  {auto.isPending ? t('hangar.state.arranging') : t('hangar.actions.auto')}
-                </button>
-                {phone ? (
-                  <details className="hangar-more">
-                    <summary className="btn">{t('hangar.mobile.more')}</summary>
-                    <div className="hangar-more-body">{secondaryActions}</div>
-                  </details>
-                ) : (
-                  secondaryActions
+                {/* the opening keeps only what the lesson needs: the layout saves itself on a drop */}
+                {!opening && (
+                  <>
+                    <span className="hangar-actions-sep" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className={`btn primary${saveAnswer === 'busy' ? ' answer-busy' : saveAnswer === 'done' ? ' answer-done' : ''}`}
+                      disabled={!dirty || save.isPending || modifyBlocked}
+                      onClick={() => {
+                        setSaved(false);
+                        setSaveError(null);
+                        if (
+                          viabilityProblems.some(
+                            (problem) => problem.code === 'STRUCTURE_EXCEEDED',
+                          ) ||
+                          outsideCount > 0
+                        ) {
+                          setOverBudgetOpen(true);
+                          return;
+                        }
+                        save.mutate();
+                      }}
+                    >
+                      {save.isPending
+                        ? t('hangar.state.saving')
+                        : saveAnswer === 'done'
+                          ? t('feedback.doneSave')
+                          : t('hangar.actions.save')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      data-tour="auto_layout"
+                      disabled={auto.isPending || modifyBlocked}
+                      aria-busy={auto.isPending}
+                      onClick={() => {
+                        setSaved(false);
+                        setSaveError(null);
+                        auto.mutate();
+                      }}
+                    >
+                      {auto.isPending ? t('hangar.state.arranging') : t('hangar.actions.auto')}
+                    </button>
+                    {phone ? (
+                      <details className="hangar-more">
+                        <summary className="btn">{t('hangar.mobile.more')}</summary>
+                        <div className="hangar-more-body">{secondaryActions}</div>
+                      </details>
+                    ) : (
+                      secondaryActions
+                    )}
+                  </>
                 )}
               </div>
               {rotateTarget !== null && !modifyBlocked && (
@@ -1200,15 +1225,17 @@ export function HangarPage({ guided = false }: HangarPageProps) {
             </section>
 
             <section aria-label={t('hangar.sheet')} className="hangar-sheet">
-              <ShipNeedsNote
-                sheet={ship.sheet}
-                installedParts={parts.filter((part) => part.location === 'INSTALLED')}
-                canShop={ship.status === 'IN_PORT'}
-                onShow={(partClass) => {
-                  setStoreClass(partClass);
-                  setSideTab('store');
-                }}
-              />
+              {!opening && (
+                <ShipNeedsNote
+                  sheet={ship.sheet}
+                  installedParts={parts.filter((part) => part.location === 'INSTALLED')}
+                  canShop={ship.status === 'IN_PORT'}
+                  onShow={(partClass) => {
+                    setStoreClass(partClass);
+                    setSideTab('store');
+                  }}
+                />
+              )}
               {allProblems.length > 0 && (
                 <details open className="panel collapsible">
                   <summary>
@@ -1315,6 +1342,7 @@ export function HangarPage({ guided = false }: HangarPageProps) {
                   layers={preview?.layers}
                   routeCoverage={preview?.routeCoverage ?? ship?.routeCoverage ?? null}
                   installedCatalogs={installedCatalogs}
+                  compact={opening}
                 />
                 {previewing && <p className="muted">{t('hangar.state.previewing')}</p>}
                 {!previewing && layout !== null && layout.length === 0 && (

@@ -45,3 +45,43 @@
     right: 12px;
   }
 }
+
+/* Where the pilot is: the menu entry and the port tabs of the step stay lit, even though they are not for pressing. */
+[data-opening-here] {
+  opacity: 1;
+  filter: none;
+  box-shadow: 0 0 0 2px rgba(255, 196, 77, 0.85);
+  border-radius: 8px;
+}
+
+/* What to do now, in one line, next to the skip link. */
+.opening-hint {
+  margin: 0;
+  max-width: 320px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(20, 24, 32, 0.92);
+  border: 1px solid rgba(255, 196, 77, 0.7);
+  color: var(--text, #f3f4f6);
+  font-size: 0.95rem;
+}
+
+/* Smooth hand-over between the screens of the story: a new screen fades and settles in instead of cutting. */
+body[data-opening] main.app {
+  animation: opening-screen-in 0.55s ease-out both;
+}
+@keyframes opening-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-opening] main.app {
+    animation: none;
+  }
+}

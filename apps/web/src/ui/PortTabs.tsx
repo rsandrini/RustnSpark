@@ -1,3 +1,4 @@
+import { usePrologueMode } from '../features/prologue/prologue-mode';
 import { tablistKeys } from './tablist';
 
 export interface PortTab {
@@ -21,6 +22,8 @@ export interface PortTabsProps {
 // Tab strip shared by the port screen (market · repair · refuel · scavenging) and
 // anywhere else the shell needs one row of destinations.
 export function PortTabs({ tabs, activeId, onChange, variant = 'tabs', label }: PortTabsProps) {
+  // in the new-pilot opening the tab the pilot is on glows: "you are here" (Port > Services > Refuel)
+  const opening = usePrologueMode().active;
   return (
     <div
       className={variant === 'segment' ? 'segment' : 'tabs'}
@@ -34,6 +37,7 @@ export function PortTabs({ tabs, activeId, onChange, variant = 'tabs', label }: 
           type="button"
           role="tab"
           data-tour={tab.tour}
+          data-opening-here={opening && tab.id === activeId ? '' : undefined}
           aria-selected={tab.id === activeId}
           tabIndex={tab.id === activeId ? 0 : -1}
           className={`${variant === 'segment' ? 'seg' : 'tab'}${tab.id === activeId ? ' on' : ''}`}

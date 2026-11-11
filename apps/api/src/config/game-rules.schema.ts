@@ -370,7 +370,7 @@ const onboardingSchema = z.object({
     .refine((shares) => shares.reduce((sum, share) => sum + share, 0) === 100, {
       message: 'the payout shares must add up to 100',
     })
-    .default([20, 30, 50]),
+    .default([17, 13, 70]),
   // The pilot starts the opening with this small purse; the engine is a gift, so it costs nothing.
   prologue_purse: z.number().int().min(0).max(100000).default(300),
   // What the refuel at the opening's first stop costs the pilot. The payouts add up to the start credits PLUS the refuel

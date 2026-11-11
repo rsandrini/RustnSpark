@@ -113,7 +113,7 @@ Delete an item when it ships (the commit has the history).
   Reach run: the friend is destroyed, a loss, a rescue, the harbour office, and the existing faction picker, then the existing tutorial.
 - Skippable behind a big two-step warning. How it ended is saved on the player (`Player.prologueOutcome`: played or skipped), so it never
   shows again on any device. The step a pilot is on mid-opening stays in the browser (resume).
-- Money: `onboarding.prologue_payout_shares` [20, 30, 50] percent of `economy.start_credits`; the payouts always add up to exactly the start
+- Money: `onboarding.prologue_payout_shares` [17, 13, 70] percent of `economy.start_credits`; the payouts always add up to exactly the start
   credits, so skipping gives the same money. The refuel in the opening is free (the plan said a small fixed cost; free keeps the total exact).
 - Checked on the real stack, desktop and phone (e2e `prologue.spec.ts`), and the older suites (smoke, guest, tutorial) still pass with the skip.
 - **Still to do (owner):** rewrite the lines (all in `prologue.script.*`, en + pt-BR, the names Kite / Dara Voss / Marshal Oren are drafts),
@@ -146,7 +146,7 @@ point of the owner's list was answered:
     ship breaks up, what is lost and what is saved) and the rescue a quiet one (a cutter comes in with its light on the wreck), then Dara Voss and
     Marshal Oren speak.
 
-Config: `onboarding.prologue_purse` (300), `prologue_refuel_cost` (100), `prologue_module_cost` (800), `prologue_payout_shares` [20, 30, 50]: the
+Config: `onboarding.prologue_purse` (300), `prologue_refuel_cost` (100), `prologue_module_cost` (800), `prologue_payout_shares` [17, 13, 70]: the
 three payouts always bring the pilot back to exactly `economy.start_credits` (3000), so played = skipped.
 
 Owner to do: play it on the local stack, rewrite every line and name in the Admin, upload the portraits (Kite, Dara Voss, Marshal Oren).

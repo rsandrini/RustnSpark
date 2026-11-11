@@ -48,14 +48,46 @@
   opacity: 0;
   animation: moment-shard 2.6s ease-out 1s forwards;
 }
-.moment-shard.s0 { --dx: -120px; --dy: -70px; --r: 200deg; }
-.moment-shard.s1 { --dx: 130px; --dy: -60px; --r: -160deg; }
-.moment-shard.s2 { --dx: -90px; --dy: 80px; --r: 140deg; }
-.moment-shard.s3 { --dx: 110px; --dy: 90px; --r: -210deg; }
-.moment-shard.s4 { --dx: 0px; --dy: -110px; --r: 90deg; }
-.moment-shard.s5 { --dx: 20px; --dy: 120px; --r: -90deg; }
-.moment-shard.s6 { --dx: -170px; --dy: 10px; --r: 260deg; }
-.moment-shard.s7 { --dx: 180px; --dy: 20px; --r: -250deg; }
+.moment-shard.s0 {
+  --dx: -120px;
+  --dy: -70px;
+  --r: 200deg;
+}
+.moment-shard.s1 {
+  --dx: 130px;
+  --dy: -60px;
+  --r: -160deg;
+}
+.moment-shard.s2 {
+  --dx: -90px;
+  --dy: 80px;
+  --r: 140deg;
+}
+.moment-shard.s3 {
+  --dx: 110px;
+  --dy: 90px;
+  --r: -210deg;
+}
+.moment-shard.s4 {
+  --dx: 0px;
+  --dy: -110px;
+  --r: 90deg;
+}
+.moment-shard.s5 {
+  --dx: 20px;
+  --dy: 120px;
+  --r: -90deg;
+}
+.moment-shard.s6 {
+  --dx: -170px;
+  --dy: 10px;
+  --r: 260deg;
+}
+.moment-shard.s7 {
+  --dx: 180px;
+  --dy: 20px;
+  --r: -250deg;
+}
 .moment-alert {
   margin: 8px 0 0;
   font-family: var(--font-display, inherit);
@@ -84,11 +116,26 @@
   background: rgba(255, 255, 255, 0.07);
   text-align: left;
 }
-.moment-col h2 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
-.moment-col ul { margin: 0; padding: 0; list-style: none; }
-.moment-col.lost li { color: #ff9e95; }
-.moment-col.saved li { color: #9be6b0; }
-.moment-continue { animation: moment-fade-in 0.8s ease-out both; }
+.moment-col h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.moment-col ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.moment-col.lost li {
+  color: #ff9e95;
+}
+.moment-col.saved li {
+  color: #9be6b0;
+}
+.moment-continue {
+  animation: moment-fade-in 0.8s ease-out both;
+}
 
 /* ------------------------------------------------------------------ the rescue */
 .moment-rescue {
@@ -153,29 +200,104 @@
   color: #d9e6ff;
 }
 
-@keyframes moment-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes moment-flash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
-@keyframes moment-blink { 50% { opacity: 0.15; } }
+@keyframes moment-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes moment-flash {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes moment-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
 @keyframes moment-shake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-4px, 2px) rotate(-1deg); }
-  75% { transform: translate(4px, -2px) rotate(1deg); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-4px, 2px) rotate(-1deg);
+  }
+  75% {
+    transform: translate(4px, -2px) rotate(1deg);
+  }
 }
 @keyframes moment-break {
-  0% { opacity: 1; filter: none; }
-  100% { opacity: 0; filter: blur(3px) brightness(2); transform: scale(1.1); }
+  0% {
+    opacity: 1;
+    filter: none;
+  }
+  100% {
+    opacity: 0;
+    filter: blur(3px) brightness(2);
+    transform: scale(1.1);
+  }
 }
 @keyframes moment-shard {
-  0% { opacity: 1; transform: translate(-50%, -50%); }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)); }
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r));
+  }
 }
 @keyframes moment-drift {
-  from { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(0deg); }
-  to { transform: translate(calc(var(--dx, 0px) / 2), calc(var(--dy, 0px) / 3)) rotate(var(--r, 40deg)); }
+  from {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(0deg);
+  }
+  to {
+    transform: translate(calc(var(--dx, 0px) / 2), calc(var(--dy, 0px) / 3)) rotate(var(--r, 40deg));
+  }
 }
-@keyframes moment-twinkle { 50% { opacity: 0.6; } }
-@keyframes moment-cutter-in { to { left: 52%; } }
+@keyframes moment-twinkle {
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes moment-cutter-in {
+  to {
+    left: 52%;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .moment *, .moment { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+  .moment *,
+  .moment {
+    animation-duration: 0.01s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* After the rescue: who was pulled out and who was not. */
+.moment-verdict {
+  position: absolute;
+  bottom: 6%;
+  opacity: 0;
+  animation: moment-fade-in 1s ease-out 3.2s forwards;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  font-size: 1.05rem;
+}
+.moment-verdict .saved {
+  color: #8fe3a7;
+}
+.moment-verdict .lost {
+  color: #ff9a9a;
 }

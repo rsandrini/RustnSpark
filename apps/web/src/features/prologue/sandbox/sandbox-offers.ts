@@ -2,6 +2,8 @@ import type { ActiveMission, MissionOffer, RequirementCheck } from '../../../api
 import { previewOf, shipOf } from './sandbox-ship';
 import {
   PLACE,
+  RACE_FRIEND_LEGS,
+  RACE_PILOT_LEGS,
   SANDBOX_WORLD,
   fuelNeededFor,
   jobsAt,
@@ -16,8 +18,8 @@ const MS = 1000;
 /** Mobility a race needs, and the friend's and the pilot's pace over the three legs (seconds each). */
 const RACE_MIN_MOBILITY = 1;
 const FRIEND_MOBILITY = 3.5;
-const FRIEND_LEGS = [15, 19, 28] as const;
-const PILOT_LEGS = [14, 21, 31] as const;
+const FRIEND_LEGS = RACE_FRIEND_LEGS;
+const PILOT_LEGS = RACE_PILOT_LEGS;
 const RACE_WINDOW = 3;
 
 const TYPE_OF: Record<JobSpec['kind'], MissionOffer['type']> = {
@@ -60,8 +62,8 @@ function requirementsOf(sandbox: Sandbox, job: JobSpec): RequirementCheck[] {
     });
   } else if (job.kind === 'crates') {
     checks.push({
-      code: 'CARGO_TYPE',
-      message: 'Cargo hold does not fit this cargo',
+      code: 'CARGO_MODULE',
+      message: 'Needs a Cargo Module fitted on the ship',
       met: ship.sheet.crg >= job.cargoNeed,
       needed: job.cargoNeed,
       actual: ship.sheet.crg,
@@ -69,11 +71,9 @@ function requirementsOf(sandbox: Sandbox, job: JobSpec): RequirementCheck[] {
     });
   } else {
     checks.push({
-      code: 'PRESSURIZED_LIFE_SUPPORT',
-      message: 'Needs a Passenger Cabin and Life Support (both installed)',
-      met:
-        installed.some((stats) => stats?.pressurized === true) &&
-        installed.some((stats) => stats?.lifeSupport === true),
+      code: 'PASSENGER_MODULE',
+      message: 'Needs a Passenger Module fitted on the ship',
+      met: installed.some((stats) => stats?.pressurized === true),
     });
   }
   return checks;

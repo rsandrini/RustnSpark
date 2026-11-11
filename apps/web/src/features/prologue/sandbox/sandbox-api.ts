@@ -225,7 +225,7 @@ const ROUTES: readonly Route[] = [
   }),
   route('GET', '/v1/locations/:id/market', ({ sandbox, params }) => ({
     locationId: params.id,
-    listings: marketListingsOf(sandbox.config.moduleCost),
+    listings: marketListingsOf(sandbox.config.moduleCost, sandbox.state.chosen),
     sellOffers: [],
     sellMinCondition: 1,
   })),
@@ -234,7 +234,7 @@ const ROUTES: readonly Route[] = [
       listingId?: string;
       expectedPrice?: number;
     };
-    const listing = marketListingsOf(sandbox.config.moduleCost).find(
+    const listing = marketListingsOf(sandbox.config.moduleCost, sandbox.state.chosen).find(
       (entry) => entry.listingId === listingId,
     );
     if (listing === undefined) throw new ApiError(404, 'listing not found', 'NOT_FOUND');

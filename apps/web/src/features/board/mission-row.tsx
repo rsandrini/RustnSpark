@@ -167,7 +167,8 @@ export function MissionRow({
         </div>
       </div>
 
-      <details className="mrow-details">
+      {/* in the opening the map and the numbers are shown at once: that is what the pilot weighs */}
+      <details className="mrow-details" open={opening}>
         <summary>{t('board.details')}</summary>
         <MissionCard
           offer={offer}
