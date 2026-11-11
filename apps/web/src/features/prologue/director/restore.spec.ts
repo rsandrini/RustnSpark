@@ -6,10 +6,11 @@ import { OPENING_STEPS, type StepId } from './steps';
 
 function at(step: StepId, kind: 'passengers' | 'crates' | null = 'passengers') {
   const sandbox = createSandbox({
-    payouts: [720, 1080, 1800],
+    payouts: [646, 494, 2660],
     purse: 300,
     refuelCost: 100,
     moduleCost: 800,
+    upgradeCost: 200,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
   });
   restoreSandbox(sandbox, step, kind);
@@ -36,7 +37,7 @@ describe('coming back to the opening (the sandbox is rebuilt to where the pilot 
     const after = at('race-report').state;
     expect(after.mission).toBeNull();
     expect(after.history.map((h) => h.id)).toEqual(['sandbox-race']);
-    expect(after.credits).toBe(300 + 720);
+    expect(after.credits).toBe(300 + 646);
     expect(after.fuel).toBeLessThan(STARTING_FUEL);
   });
 
@@ -52,7 +53,7 @@ describe('coming back to the opening (the sandbox is rebuilt to where the pilot 
     ['crates', 'crates'],
   ] as const)('fits the %s module the pilot chose, and only then', (kind, expected) => {
     expect(moduleKindOf(at('fit-module', kind))).toBeNull();
-    expect(at('fit-module', kind).state.credits).toBe(300 + 720 - 100 - 800);
+    expect(at('fit-module', kind).state.credits).toBe(300 + 646 - 100 - 800);
     expect(moduleKindOf(at('dispatch-job', kind))).toBe(expected);
   });
 
@@ -67,8 +68,8 @@ describe('coming back to the opening (the sandbox is rebuilt to where the pilot 
     for (const step of OPENING_STEPS) {
       const credits = at(step).state.credits;
       expect(credits).toBeGreaterThanOrEqual(0);
-      // the only drops are the refuel and the module
-      if (credits < last) expect([100, 800]).toContain(last - credits);
+      // the only drops are the refuel, the module and the hull upgrade
+      if (credits < last) expect([100, 800, 200]).toContain(last - credits);
       last = credits;
     }
   });

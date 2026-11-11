@@ -1,8 +1,9 @@
-import { PROLOGUE_ENGINE, PROLOGUE_CARGO } from '../prologue-fixtures';
+import { PROLOGUE_ENGINE, PROLOGUE_CARGO, PROLOGUE_HULL_UPGRADED } from '../prologue-fixtures';
 import {
   fuelNeededFor,
   jobsAt,
   SANDBOX_PASSENGER_MODULE,
+  UPGRADE_SCRAP,
   type ModuleKind,
 } from '../sandbox/sandbox-world';
 import { previewOf, tankSpace } from '../sandbox/sandbox-ship';
@@ -69,6 +70,11 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
   if (index >= at('job-report')) {
     const job = jobOf(sandbox, 1, chosen);
     if (job !== null) fly(sandbox, job);
+  }
+  // the hull upgraded (the friend's advice), once the first job is flown
+  if (index >= at('upgrade')) sandbox.giveScrap(UPGRADE_SCRAP);
+  if (index > at('upgrade')) {
+    sandbox.upgradeHull(PROLOGUE_HULL_UPGRADED, sandbox.config.upgradeCost, UPGRADE_SCRAP);
   }
   // the second job flown
   if (index >= at('final-board')) {

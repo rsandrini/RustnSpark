@@ -378,6 +378,8 @@ const onboardingSchema = z.object({
   prologue_refuel_cost: z.number().int().min(0).max(100000).default(100),
   // What the module bought at the first stop costs; the payouts also cover it.
   prologue_module_cost: z.number().int().min(0).max(100000).default(800),
+  // What the hull upgrade at the second stop costs; the payouts also cover it.
+  prologue_upgrade_cost: z.number().int().min(0).max(100000).default(200),
 });
 
 const worldSchema = z.object({

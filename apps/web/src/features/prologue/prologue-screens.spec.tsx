@@ -31,7 +31,8 @@ describe('the real Board and Port screens on the sandbox', () => {
           refuelCost: 100,
           purse: 300,
           moduleCost: 800,
-          payouts: [720, 1080, 1800],
+          upgradeCost: 200,
+          payouts: [646, 494, 2660],
         }),
       ),
     );

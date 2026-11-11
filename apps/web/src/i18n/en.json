@@ -124,7 +124,8 @@
       "stop-two": "Take a job and fly it.",
       "final-board": "Accept the big job.",
       "final-run": "Press Dispatch.",
-      "rescue": "You were rescued."
+      "rescue": "You were rescued.",
+      "upgrade": "Upgrade your hull: press Upgrade, then confirm."
     },
     "continueLabel": {
       "gift": "Take the engine",
@@ -1033,6 +1034,8 @@
         "prologue_dispatch-job_done": "Opening · Fly the job · when it is done",
         "prologue_job-report_enter": "Opening · Job report · when it starts",
         "prologue_job-report_done": "Opening · Job report · when it is done",
+        "prologue_upgrade_enter": "Opening · Upgrade the hull · when it starts",
+        "prologue_upgrade_done": "Opening · Upgrade the hull · when it is done",
         "prologue_stop-two_enter": "Opening · Second job · when it starts",
         "prologue_stop-two_done": "Opening · Second job · when it is done",
         "prologue_final-board_enter": "Opening · The last job · when it starts",

@@ -383,7 +383,9 @@ export const PrologueResponseSchema = z.object({
   refuelCost: z.number().int(),
   /** What the module bought at the first stop costs. */
   moduleCost: z.number().int(),
-  /** The three payouts (race, job one, job two) that add up to `startCredits - purse + refuelCost + moduleCost`. */
+  /** What the hull upgrade at the second stop costs. */
+  upgradeCost: z.number().int(),
+  /** The three payouts (race, job one, job two) that add up to `startCredits - purse + refuelCost + moduleCost + upgradeCost`. */
   payouts: z.array(z.number().int()),
   /** The free faction guides and their editable dialogue scenes. */
   guides: z.array(

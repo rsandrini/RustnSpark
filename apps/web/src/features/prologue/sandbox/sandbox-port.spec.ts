@@ -2,6 +2,8 @@ import {
   BuyResponseSchema,
   InventoryItemSchema,
   MarketResponseSchema,
+  PartUpgradeQuoteResponseSchema,
+  PartUpgradeResponseSchema,
   RefuelQuoteResponseSchema,
   RefuelResponseSchema,
 } from '@rustandspark/contract';
@@ -16,10 +18,11 @@ const MODULE = 'catalog:sandbox:passenger_module';
 function fresh() {
   let now = T0;
   const sandbox = createSandbox({
-    payouts: [720, 1080, 1800],
+    payouts: [646, 494, 2660],
     purse: 300,
     refuelCost: 100,
     moduleCost: 800,
+    upgradeCost: 200,
     clock: () => now,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
   });
@@ -149,6 +152,11 @@ describe('the sandbox port: the market and the refuel', () => {
       ],
     });
     for (const slot of [1, 2]) {
+      if (slot === 2) {
+        // between the two jobs the friend hands over scrap and the pilot upgrades the hull
+        env.sandbox.giveScrap(5);
+        await env.call('POST', '/v1/parts/prologue-hull/upgrade');
+      }
       const [first] = (await env.call(
         'GET',
         `/v1/locations/${env.sandbox.state.locationId}/missions`,
@@ -160,7 +168,60 @@ describe('the sandbox port: the market and the refuel', () => {
       await env.call('GET', '/v1/missions/active');
       expect(env.sandbox.state.slot).toBe(slot + 1);
     }
-    expect(env.sandbox.state.credits).toBe(300 + 720 - 100 - 800 + 1080 + 1800);
+    expect(env.sandbox.state.credits).toBe(300 + 646 - 100 - 800 + 494 - 200 + 2660);
     expect(env.sandbox.state.credits).toBe(3000);
+  });
+});
+
+async function sheetNow(env: ReturnType<typeof fresh>) {
+  const ships = (await env.call('GET', '/v1/ships')) as Array<{
+    sheet: { hp: number; pdf: number };
+  }>;
+  return ships[0]!.sheet;
+}
+
+describe('the sandbox upgrade: the hull, with the scrap the friend gives', () => {
+  it('quotes only the hull, takes the credits and the scrap, and makes the sheet stronger', async () => {
+    const env = fresh();
+    await raceDone(env);
+    const before = await sheetNow(env);
+
+    const none = PartUpgradeQuoteResponseSchema.parse(
+      await env.call('POST', '/v1/parts/prologue-engine/upgrade/quote'),
+    );
+    expect(none.eligible).toBe(false);
+
+    env.sandbox.giveScrap(5);
+    const credits = env.sandbox.state.credits;
+    const quote = PartUpgradeQuoteResponseSchema.parse(
+      await env.call('POST', '/v1/parts/prologue-hull/upgrade/quote'),
+    );
+    expect(quote).toMatchObject({ eligible: true, cost: 200, nextRarity: 'UNCOMMON' });
+    expect(quote.materials).toEqual([expect.objectContaining({ needed: 5, have: 5 })]);
+
+    PartUpgradeResponseSchema.parse(await env.call('POST', '/v1/parts/prologue-hull/upgrade'));
+    expect(env.sandbox.state.credits).toBe(credits - 200);
+    expect(env.sandbox.state.scrap).toBe(0);
+    expect(env.events).toContainEqual({ type: 'upgraded', partId: 'prologue-hull' });
+    const after = await sheetNow(env);
+    expect(after.hp).toBeGreaterThan(before.hp);
+    expect(after.pdf).toBeGreaterThan(before.pdf);
+    const again = PartUpgradeQuoteResponseSchema.parse(
+      await env.call('POST', '/v1/parts/prologue-hull/upgrade/quote'),
+    );
+    expect(again.eligible).toBe(false);
+  });
+
+  it('refuses without the scrap, or without the credits', async () => {
+    const env = fresh();
+    await raceDone(env);
+    await expect(env.call('POST', '/v1/parts/prologue-hull/upgrade')).rejects.toMatchObject({
+      code: 'INSUFFICIENT_MATERIALS',
+    });
+    env.sandbox.giveScrap(5);
+    env.sandbox.addCredits(-env.sandbox.state.credits);
+    await expect(env.call('POST', '/v1/parts/prologue-hull/upgrade')).rejects.toMatchObject({
+      code: 'INSUFFICIENT_FUNDS',
+    });
   });
 });

@@ -14,6 +14,7 @@ interface PrologueConfig {
   refuelCost: number;
   purse?: number;
   moduleCost?: number;
+  upgradeCost?: number;
   payouts: number[];
   guides?: Guide[];
 }
@@ -21,6 +22,7 @@ interface PrologueConfig {
 /** Defaults until the server sends its own (the opening's purse and module price). */
 const DEFAULT_PURSE = 300;
 const DEFAULT_MODULE_COST = 800;
+const DEFAULT_UPGRADE_COST = 200;
 
 /**
  * The new-pilot opening runs on the sandbox (the real screens over a fake server in the browser). A build can switch it
@@ -90,6 +92,7 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
           purse: config.purse ?? DEFAULT_PURSE,
           refuelCost: config.refuelCost,
           moduleCost: config.moduleCost ?? DEFAULT_MODULE_COST,
+          upgradeCost: config.upgradeCost ?? DEFAULT_UPGRADE_COST,
           profile,
         });
         // back where the pilot left the story (a closed tab): the ship, the money and the jobs as they were then

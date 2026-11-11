@@ -146,6 +146,18 @@ async function playOpening(page: Page): Promise<void> {
   await read(page);
   await next(page);
 
+  // the friend warns about the pirates, hands over scrap, and the pilot makes the hull stronger
+  await onStep(page, 'upgrade');
+  await read(page);
+  await expect(page.getByTestId('upgrade-needs')).toBeVisible();
+  await page
+    .getByRole('button', { name: /^Upgrade$/ })
+    .first()
+    .click();
+  const sure = page.getByRole('dialog').getByRole('button', { name: /Upgrade/ });
+  if (await sure.isVisible().catch(() => false)) await sure.click();
+  await read(page);
+
   await onStep(page, 'stop-two');
   await read(page);
   await accept(page);

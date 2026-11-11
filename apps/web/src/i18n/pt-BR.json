@@ -124,7 +124,8 @@
       "stop-two": "Pegue um trabalho e voe.",
       "final-board": "Aceite o trabalho grande.",
       "final-run": "Aperte Despachar.",
-      "rescue": "Você foi resgatado."
+      "rescue": "Você foi resgatado.",
+      "upgrade": "Melhore o casco: aperte Melhorar e confirme."
     },
     "continueLabel": {
       "gift": "Pegar o motor",
@@ -1033,6 +1034,8 @@
         "prologue_dispatch-job_done": "Abertura · Voar o trabalho · quando termina",
         "prologue_job-report_enter": "Abertura · Relatório do trabalho · quando começa",
         "prologue_job-report_done": "Abertura · Relatório do trabalho · quando termina",
+        "prologue_upgrade_enter": "Abertura · Melhorar o casco · quando começa",
+        "prologue_upgrade_done": "Abertura · Melhorar o casco · quando termina",
         "prologue_stop-two_enter": "Abertura · Segundo trabalho · quando começa",
         "prologue_stop-two_done": "Abertura · Segundo trabalho · quando termina",
         "prologue_final-board_enter": "Abertura · O último trabalho · quando começa",

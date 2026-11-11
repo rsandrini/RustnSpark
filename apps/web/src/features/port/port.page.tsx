@@ -46,6 +46,7 @@ import { PartCard } from '../parts/part-card';
 import { useDisplay } from '../../ui/display';
 import { readinessOf, upgradeNeeds, firstMissing, type UpgradeReadiness } from './upgrade-needs';
 import { useBridgeResize } from './bridge-resize-panel';
+import { usePrologueMode } from '../prologue/prologue-mode';
 import type { PartInfoData } from '../parts/part-detail';
 
 // The seven tabs sit under three groups: what you buy, what the workshop does for the ship, and the
@@ -117,6 +118,7 @@ const RARITY_ORDER = ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] as cons
 export function PortPage({ guided = false, embedded = false, onGoToShip }: PortPageProps) {
   const { t, i18n } = useTranslation();
   const { user, reloadProfile } = useAuthContext();
+  const opening = usePrologueMode().active;
   const queryClient = useQueryClient();
   // `/port?tab=refuel` opens that tab (the board's "refuel first" link uses it).
   const [searchParams] = useSearchParams();
@@ -1184,7 +1186,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       )}
 
       {tab === 'upgrade' && (
-        <section className="stack" data-testid="upgrade">
+        <section className="stack" data-testid="upgrade" data-opening="upgrade">
           <p className="sub help-text">{t('port.upgradeHelp')}</p>
           <details className="upgrade-rules" data-testid="upgrade-rules">
             <summary>{t('port.upgradeRulesTitle')}</summary>
@@ -1279,7 +1281,9 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
               ...eligible,
               ...upgradeCandidates.filter(
                 (item) =>
-                  bridgeResize.isBridge(item) && !eligible.some((entry) => entry.id === item.id),
+                  !opening &&
+                  bridgeResize.isBridge(item) &&
+                  !eligible.some((entry) => entry.id === item.id),
               ),
             ];
             if (cards.length === 0) {

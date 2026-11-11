@@ -235,6 +235,38 @@ const KITE: SceneData[] = [
     ],
   ),
   scene(
+    'upgrade',
+    ['Pirates ahead', 'Piratas à frente'],
+    'prologue_upgrade_enter',
+    15,
+    [
+      node(
+        'k_upgrade_1',
+        [
+          'Listen. The lane ahead has pirates, and they shoot everything that flies. Your hull is too thin for that.',
+          'Escute. A rota à frente tem piratas, e eles atiram em tudo que voa. Seu casco é fino demais para isso.',
+        ],
+        { next: 'k_upgrade_2' },
+      ),
+      node('k_upgrade_2', [
+        'Here, take this scrap. It is enough to make the hull stronger. Open the Upgrade tab and do it. Be ready.',
+        'Tome esta sucata. Ela basta para deixar o casco mais forte. Abra a aba de Melhorias e faça isso. Esteja preparado.',
+      ]),
+    ],
+  ),
+  scene(
+    'upgrade_done',
+    ['Sturdier', 'Mais resistente'],
+    'prologue_upgrade_done',
+    15,
+    [
+      node('k_upgrade_done', [
+        'Look at those numbers. She can take a hit now. Let us earn some more.',
+        'Olhe esses números. Agora ela aguenta um tiro. Vamos ganhar mais um pouco.',
+      ]),
+    ],
+  ),
+  scene(
     'stop_two',
     ['Second job', 'Segundo serviço'],
     'prologue_stop-two_enter',
@@ -517,6 +549,7 @@ export const PROLOGUE_STEPS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'upgrade',
   'stop-two',
   'final-board',
   'final-run',

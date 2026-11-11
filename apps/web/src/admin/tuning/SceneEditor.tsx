@@ -56,6 +56,7 @@ const PROLOGUE_STEP_IDS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'upgrade',
   'stop-two',
   'final-board',
   'final-run',

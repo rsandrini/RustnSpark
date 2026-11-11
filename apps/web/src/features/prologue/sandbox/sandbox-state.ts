@@ -18,6 +18,8 @@ export interface SandboxConfig {
   readonly refuelCost: number;
   /** What the module for the job costs. */
   readonly moduleCost: number;
+  /** What the hull upgrade costs (the friend gives the scrap). */
+  readonly upgradeCost: number;
   /** The friend's name, from the guide the admin edits (the race table and the reports use it). */
   readonly friendName?: string;
   /** The clock, in milliseconds (a test drives it; the opening uses the real one). */
@@ -45,6 +47,7 @@ export type SandboxEvent =
   | { type: 'part_fitted'; partId: string }
   | { type: 'part_removed'; partId: string }
   | { type: 'chosen'; kind: ModuleKind }
+  | { type: 'upgraded'; partId: string }
   | { type: 'refuelled' }
   | { type: 'bought'; partType: string }
   | { type: 'accepted'; missionId: string }
@@ -93,6 +96,8 @@ export interface SandboxSnapshot {
   readonly shipLost: boolean;
   /** The kind of job the pilot chose at the first stop (null = not yet). */
   readonly chosen: ModuleKind | null;
+  /** Scrap in the hold (the friend hands it over for the hull upgrade). */
+  readonly scrap: number;
 }
 
 /** The tank starts almost empty: just enough for the first race (the owner's call). */
@@ -132,6 +137,7 @@ export class Sandbox {
       history: [],
       shipLost: false,
       chosen: null,
+      scrap: 0,
     };
   }
 
@@ -190,6 +196,25 @@ export class Sandbox {
         this.emit({ type: 'part_removed', partId: entry.id });
       }
     }
+  }
+
+  /** The friend hands over scrap: the hold holds at least `units` of it afterwards. */
+  giveScrap(units: number): void {
+    this.snapshot = { ...this.snapshot, scrap: Math.max(this.snapshot.scrap, units) };
+  }
+
+  /** The hull goes one tier up: it costs credits and scrap, and the new part takes the old one's place on the ship. */
+  upgradeHull(upgraded: ProloguePart, price: number, scrap: number): void {
+    const id = PROLOGUE_HULL.id;
+    this.snapshot = {
+      ...this.snapshot,
+      credits: this.snapshot.credits - price,
+      scrap: Math.max(0, this.snapshot.scrap - scrap),
+      parts: this.snapshot.parts.map((entry) =>
+        entry.id === id ? { ...entry, part: upgraded } : entry,
+      ),
+    };
+    this.emit({ type: 'upgraded', partId: id });
   }
 
   /** The pilot picks the kind of job to take at the first stop. */

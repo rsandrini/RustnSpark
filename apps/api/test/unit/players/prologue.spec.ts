@@ -10,7 +10,8 @@ const SHARES = [17, 13, 70];
 const PURSE = 300;
 const REFUEL = 100;
 const MODULE = 800;
-const POOL = 3000 - PURSE + REFUEL + MODULE;
+const UPGRADE = 200;
+const POOL = 3000 - PURSE + REFUEL + MODULE + UPGRADE;
 const withShares = (shares: number[]) => ({
   ...GAME_CONFIG_DEFAULTS,
   onboarding: { ...GAME_CONFIG_DEFAULTS.onboarding, prologue_payout_shares: shares },
@@ -19,19 +20,19 @@ const sum = (values: readonly number[]) => values.reduce((total, value) => total
 
 describe('prologuePayouts', () => {
   it('splits the pool so start - purse + refuel + module is covered exactly', () => {
-    const payouts = prologuePayouts(3000, PURSE, REFUEL, MODULE, SHARES);
+    const payouts = prologuePayouts(3000, PURSE, REFUEL, MODULE, UPGRADE, SHARES);
     expect(sum(payouts)).toBe(POOL);
-    expect(payouts).toEqual([612, 468, 2520]);
+    expect(payouts).toEqual([646, 494, 2660]);
   });
 
   it('gives the rounding remainder to the last payout', () => {
-    const payouts = prologuePayouts(3001, PURSE, REFUEL, MODULE, SHARES);
-    expect(sum(payouts)).toBe(3001 - PURSE + REFUEL + MODULE);
-    expect(payouts).toEqual([612, 468, 2521]);
+    const payouts = prologuePayouts(3001, PURSE, REFUEL, MODULE, UPGRADE, SHARES);
+    expect(sum(payouts)).toBe(3001 - PURSE + REFUEL + MODULE + UPGRADE);
+    expect(payouts).toEqual([646, 494, 2661]);
   });
 
   it('returns an empty list for no shares', () => {
-    expect(prologuePayouts(3000, PURSE, REFUEL, MODULE, [])).toEqual([]);
+    expect(prologuePayouts(3000, PURSE, REFUEL, MODULE, UPGRADE, [])).toEqual([]);
   });
 });
 
@@ -41,6 +42,7 @@ describe('onboarding.prologue config', () => {
     expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_purse).toBe(PURSE);
     expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_refuel_cost).toBe(REFUEL);
     expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_module_cost).toBe(MODULE);
+    expect(GAME_CONFIG_DEFAULTS.onboarding.prologue_upgrade_cost).toBe(UPGRADE);
     expect(validateGameRules(GAME_CONFIG_DEFAULTS)).toEqual(GAME_CONFIG_DEFAULTS);
   });
 

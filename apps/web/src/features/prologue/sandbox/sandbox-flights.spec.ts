@@ -17,10 +17,11 @@ const T0 = 1_700_000_000_000;
 function fresh() {
   let now = T0;
   const sandbox = createSandbox({
-    payouts: [720, 1080, 1800],
+    payouts: [646, 494, 2660],
     purse: 300,
     refuelCost: 100,
     moduleCost: 800,
+    upgradeCost: 200,
     friendName: 'Kite',
     clock: () => now,
     profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
@@ -157,7 +158,7 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
   it('brings the ship in on time: paid, docked at the destination, a report left behind', async () => {
     const env = fresh();
     await flyRace(env);
-    expect(env.sandbox.state.credits).toBe(300 + 720);
+    expect(env.sandbox.state.credits).toBe(300 + 646);
     expect(env.sandbox.state.locationId).toBe(PLACE.dockside);
     expect(env.sandbox.state.slot).toBe(1);
     expect(env.sandbox.state.fuel).toBe(1);
@@ -204,8 +205,8 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const offers = await board(env);
     expect(offers.map((offer) => offer.type).sort()).toEqual(['DELIVERY', 'TRANSPORT']);
     expect(new Set(offers.map((offer) => offer.destinationId)).size).toBe(2);
-    expect(offers[0]?.reward).toBe(1080);
-    expect(offers[1]?.reward).toBe(1080);
+    expect(offers[0]?.reward).toBe(494);
+    expect(offers[1]?.reward).toBe(494);
     for (const offer of offers) {
       expect(offer.eligibility.eligible).toBe(false);
     }
@@ -228,12 +229,12 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     await env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: first?.id });
     env.advance(60);
     await env.call('GET', '/v1/missions/active');
-    expect(env.sandbox.state.credits).toBe(300 + 720 + 1080);
+    expect(env.sandbox.state.credits).toBe(300 + 646 + 494);
     const second = await board(env);
     expect(second).toHaveLength(2);
     expect(second.every((offer) => offer.type === 'DELIVERY')).toBe(true);
     expect(new Set(second.map((offer) => offer.destinationId)).size).toBe(2);
-    expect(second[0]?.reward).toBe(1800);
+    expect(second[0]?.reward).toBe(2660);
   });
 
   it('loses the ship on the final run: nothing is paid and the report says so', async () => {
@@ -260,7 +261,7 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const [final] = await board(env);
     expect(final?.info.peakDanger).toBeGreaterThan(0);
     expect(final?.info.legCount).toBeGreaterThanOrEqual(1);
-    expect(final?.reward).toBe((1080 + 1800) * 2);
+    expect(final?.reward).toBe((494 + 2660) * 2);
     // the final run needs the passenger module, so give the pilot one (the ship is rebuilt for the test)
     env.sandbox.addPart(SANDBOX_PASSENGER_MODULE, SANDBOX_PASSENGER_MODULE.id);
     await env.call('POST', '/v1/ships/prologue-ship/assemble', {

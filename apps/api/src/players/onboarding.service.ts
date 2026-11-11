@@ -45,6 +45,7 @@ export class OnboardingService {
     purse: number;
     refuelCost: number;
     moduleCost: number;
+    upgradeCost: number;
     payouts: number[];
     guides: { giver: GiverRef; scenes: SceneData[] }[];
   }> {
@@ -52,18 +53,21 @@ export class OnboardingService {
     const purse = onboarding.prologue_purse;
     const refuelCost = onboarding.prologue_refuel_cost;
     const moduleCost = onboarding.prologue_module_cost;
+    const upgradeCost = onboarding.prologue_upgrade_cost;
     const guides = await this.prologueGuides();
     return {
       startCredits: economy.start_credits,
       purse,
       refuelCost,
       moduleCost,
+      upgradeCost,
       // the refuel and module are paid out of what the opening earns, so the pilot ends with exactly the start credits
       payouts: prologuePayouts(
         economy.start_credits,
         purse,
         refuelCost,
         moduleCost,
+        upgradeCost,
         onboarding.prologue_payout_shares,
       ),
       guides,

@@ -16,6 +16,7 @@ export const OPENING_STEPS = [
   'fit-module',
   'dispatch-job',
   'job-report',
+  'upgrade',
   'stop-two',
   'final-board',
   'final-run',
@@ -124,6 +125,14 @@ export const STEPS: readonly StepDef[] = [
     confirm: false,
   },
   { id: 'job-report', path: null, nav: [], allow: NONE, until: null, confirm: true },
+  {
+    id: 'upgrade',
+    path: '/port?tab=upgrade',
+    nav: ['/port'],
+    allow: ['[data-opening="upgrade"]'],
+    until: 'upgraded',
+    confirm: false,
+  },
   {
     id: 'stop-two',
     path: '/missions',

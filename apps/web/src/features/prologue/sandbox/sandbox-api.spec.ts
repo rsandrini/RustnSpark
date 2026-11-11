@@ -22,10 +22,11 @@ import { sandboxInterceptor } from './sandbox-api';
 import { createSandbox, STARTING_FUEL, type SandboxEvent } from './sandbox-state';
 
 const CONFIG = {
-  payouts: [720, 1080, 1800],
+  payouts: [646, 494, 2660],
   purse: 300,
   refuelCost: 100,
   moduleCost: 800,
+  upgradeCost: 200,
   profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' as const },
 };
 

@@ -129,6 +129,8 @@ describe('Admin scene editor', () => {
       'prologue_dispatch-job_done',
       'prologue_job-report_enter',
       'prologue_job-report_done',
+      'prologue_upgrade_enter',
+      'prologue_upgrade_done',
       'prologue_stop-two_enter',
       'prologue_stop-two_done',
       'prologue_final-board_enter',

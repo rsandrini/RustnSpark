@@ -29,7 +29,8 @@ const config = http.get('/v1/players/me/prologue', () =>
     refuelCost: 100,
     purse: 300,
     moduleCost: 800,
-    payouts: [720, 1080, 1800],
+    upgradeCost: 200,
+    payouts: [646, 494, 2660],
   }),
 );
 

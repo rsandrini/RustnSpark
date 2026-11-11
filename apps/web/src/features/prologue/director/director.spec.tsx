@@ -46,7 +46,8 @@ function story(scenes: ReturnType<typeof scene>[]) {
       purse: 300,
       refuelCost: 100,
       moduleCost: 800,
-      payouts: [720, 1080, 1800],
+      upgradeCost: 200,
+      payouts: [646, 494, 2660],
       guides: [{ giver: KITE, scenes }],
     }),
   );
@@ -186,6 +187,17 @@ describe('the director: the story on the real screens', () => {
     expect(readSaved('player-1').kind).toBe('crates');
   });
 
+  it('hands over the scrap on the upgrade step and moves on when the hull is upgraded', async () => {
+    server.use(story([]));
+    saveStep('upgrade');
+    const view = renderWithRouter(routes, { initialEntries: ['/port'] });
+    await waitFor(() => expect(view.router.state.location.pathname).toBe('/port'));
+    expect(await screen.findByTestId('opening-hint')).toHaveTextContent('Upgrade your hull');
+
+    await client.post('/v1/parts/prologue-hull/upgrade', {});
+    await waitFor(() => expect(readSaved('player-1').step).toBe('stop-two'));
+  });
+
   it('asks twice before skipping, at any step', async () => {
     server.use(story([]));
     for (const step of ['gift', 'race', 'stop-two', 'rescue'] as const) {
@@ -236,6 +248,6 @@ describe('the director: the story on the real screens', () => {
   }, 15000);
 
   it('has a step for every moment the Admin can hang a line on', () => {
-    expect(OPENING_STEPS).toHaveLength(16);
+    expect(OPENING_STEPS).toHaveLength(17);
   });
 });

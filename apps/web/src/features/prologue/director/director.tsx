@@ -10,6 +10,7 @@ import { forgetStep, usePrologueStep, writeKind, writeStep } from '../prologue-s
 import { SkipWarning } from '../skip-warning';
 import { moduleKindOf } from '../sandbox/sandbox-offers';
 import { previewOf } from '../sandbox/sandbox-ship';
+import { UPGRADE_SCRAP } from '../sandbox/sandbox-world';
 import type { Sandbox, SandboxEvent } from '../sandbox/sandbox-state';
 import { doneOf, enterOf, legOf, scenesFor, startNode, type Moment, type Spoken } from './lines';
 import { useOpeningLocks } from './locks';
@@ -151,6 +152,8 @@ export function Director() {
   // a step starts: put the pilot where it happens and narrow the nav
   useEffect(() => {
     setAllowedPaths(def.nav);
+    // the friend hands over the scrap the hull upgrade takes
+    if (def.id === 'upgrade') sandbox?.giveScrap(UPGRADE_SCRAP);
     const last = sandbox?.state.history.at(-1);
     if (def.path !== null) {
       void navigate(def.path, { replace: true });

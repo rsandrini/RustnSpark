@@ -146,7 +146,7 @@ point of the owner's list was answered:
     ship breaks up, what is lost and what is saved) and the rescue a quiet one (a cutter comes in with its light on the wreck), then Dara Voss and
     Marshal Oren speak.
 
-Config: `onboarding.prologue_purse` (300), `prologue_refuel_cost` (100), `prologue_module_cost` (800), `prologue_payout_shares` [17, 13, 70]: the
+Config: `onboarding.prologue_purse` (300), `prologue_refuel_cost` (100), `prologue_module_cost` (800), `prologue_upgrade_cost` (200), `prologue_payout_shares` [17, 13, 70]: the
 three payouts always bring the pilot back to exactly `economy.start_credits` (3000), so played = skipped.
 
 Owner to do: play it on the local stack, rewrite every line and name in the Admin, upload the portraits (Kite, Dara Voss, Marshal Oren).

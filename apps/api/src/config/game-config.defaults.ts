@@ -566,6 +566,8 @@ export const GAME_CONFIG_DEFAULTS: GameRules = {
     prologue_refuel_cost: 100,
     // The module the pilot buys at the first stop costs this; the payouts also cover it.
     prologue_module_cost: 800,
+    // The hull upgrade at the second stop costs this (the friend gives the scrap); the payouts also cover it.
+    prologue_upgrade_cost: 200,
   },
   world: {
     seed: 'rust-and-spark-world-seed-v0.1',

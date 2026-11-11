@@ -6,6 +6,7 @@ import {
   PROLOGUE_CARGO,
   PROLOGUE_ENGINE,
   PROLOGUE_HULL,
+  PROLOGUE_HULL_UPGRADED,
   PROLOGUE_TANK,
 } from '../prologue-fixtures';
 import {
@@ -29,6 +30,8 @@ import { tankSpace } from './sandbox-ship';
 import {
   SANDBOX_WORLD,
   SANDBOX_PASSENGER_MODULE,
+  SCRAP_NAME,
+  UPGRADE_SCRAP,
   fuelNeededFor,
   jobsAt,
   marketListingsOf,
@@ -293,11 +296,57 @@ const ROUTES: readonly Route[] = [
       message: { error: 'NO_REPAIR_TARGETS' },
     });
   }),
-  route('POST', '/v1/parts/:id/upgrade/quote', ({ params }) => ({
-    partInstanceId: params.id,
-    eligible: false,
-    reason: 'NO_NEXT_TIER',
-  })),
+  route('POST', '/v1/parts/:id/upgrade/quote', ({ sandbox, params }) => {
+    const entry = sandbox.state.parts.find((part) => part.id === params.id);
+    const partInstanceId = params.id ?? '';
+    // only the hull can go up a tier in the opening; the rest of the ship has no next tier to show
+    if (entry === undefined || entry.id !== PROLOGUE_HULL.id) {
+      return { partInstanceId, eligible: false, reason: 'NO_NEXT_TIER' };
+    }
+    if (entry.part.rarity !== 'COMMON')
+      return { partInstanceId, eligible: false, reason: 'MAX_TIER' };
+    const next = PROLOGUE_HULL_UPGRADED;
+    return {
+      partInstanceId,
+      eligible: true,
+      nextPartType: next.catalog.partType,
+      nextDisplayName: next.name,
+      cost: sandbox.config.upgradeCost,
+      materials: [
+        {
+          materialId: 'scrap',
+          displayName: SCRAP_NAME,
+          needed: UPGRADE_SCRAP,
+          have: sandbox.state.scrap,
+        },
+      ],
+      nextRarity: next.rarity,
+      nextDescription: descriptionOf(next),
+      nextCatalog: next.catalog,
+    };
+  }),
+  route('POST', '/v1/parts/:id/upgrade', ({ sandbox, params }) => {
+    const entry = sandbox.state.parts.find((part) => part.id === params.id);
+    if (entry === undefined || entry.id !== PROLOGUE_HULL.id || entry.part.rarity !== 'COMMON') {
+      throw new ApiError(CONFLICT, 'cannot upgrade', 'NO_NEXT_TIER');
+    }
+    if (sandbox.state.credits < sandbox.config.upgradeCost) {
+      throw new ApiError(CONFLICT, 'not enough credits', 'INSUFFICIENT_FUNDS');
+    }
+    if (sandbox.state.scrap < UPGRADE_SCRAP) {
+      throw new ApiError(CONFLICT, 'not enough scrap', 'INSUFFICIENT_MATERIALS');
+    }
+    sandbox.upgradeHull(PROLOGUE_HULL_UPGRADED, sandbox.config.upgradeCost, UPGRADE_SCRAP);
+    return {
+      partInstanceId: entry.id,
+      partType: PROLOGUE_HULL_UPGRADED.catalog.partType,
+      displayName: PROLOGUE_HULL_UPGRADED.name,
+      rarity: PROLOGUE_HULL_UPGRADED.rarity,
+      condition: 100,
+      cost: sandbox.config.upgradeCost,
+      credits: sandbox.state.credits,
+    };
+  }),
   route('GET', '/v1/reports', ({ sandbox }) => reportListOf(sandbox)),
   route('GET', '/v1/reports/:missionId', ({ sandbox, params, query }) => {
     const report = reportOf(sandbox, params.missionId ?? '', query.get('view') ?? 'summary');

@@ -76,7 +76,7 @@ export interface ProloguePart {
   readonly catalog: PartCatalogStats;
   /** Ports in the part's own (authored) cells; a side with kind `none` carries no port. */
   readonly connectors: readonly ConnectorCell[];
-  readonly rarity: 'COMMON';
+  readonly rarity: 'COMMON' | 'UNCOMMON';
   /** The one spot (and turn) where the part joins the ship, for the guide to point at. */
   readonly target: Placement;
 }
@@ -151,6 +151,23 @@ export const PROLOGUE_HULL: ProloguePart = {
   connectors: [central(0, 0, 'W'), central(1, 0, 'E')],
   rarity: 'COMMON',
   target: { partInstanceId: 'prologue-hull', gx: -3, gy: 0, rot: 0 },
+};
+
+/**
+ * The hull one tier up (the friend's advice before the dangerous run): sturdier, heavier, and it turns shots aside, so the
+ * ship sheet shows the jump at once. Same id and place as the plain hull: the upgrade replaces the part on the ship.
+ */
+export const PROLOGUE_HULL_UPGRADED: ProloguePart = {
+  ...PROLOGUE_HULL,
+  name: { en: 'Hull Frame', 'pt-BR': 'Estrutura de Casco' },
+  catalog: {
+    ...PROLOGUE_HULL.catalog,
+    mass: 10,
+    partHp: 140,
+    pdf: 18,
+    bli: 12,
+  },
+  rarity: 'UNCOMMON',
 };
 
 /**

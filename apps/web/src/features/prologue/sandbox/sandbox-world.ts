@@ -138,6 +138,13 @@ export function fuelNeededFor(routeIds: readonly string[], fuelUse: number): num
 }
 
 // ---------------------------------------------------------------------------------------------
+// The hull upgrade at the second stop
+
+/** The scrap the friend hands over, and the scrap the hull upgrade takes. */
+export const UPGRADE_SCRAP = 5;
+export const SCRAP_NAME: LocalizedText = { en: 'Scrap', 'pt-BR': 'Sucata' };
+
+// ---------------------------------------------------------------------------------------------
 // The module the job needs, sold at every port
 
 /** The passenger module of the opening: a cabin with its life support built in, one square. */

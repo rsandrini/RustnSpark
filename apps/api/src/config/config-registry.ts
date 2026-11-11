@@ -2844,6 +2844,19 @@ export const CONFIG_REGISTRY: readonly ConfigRegistryEntry[] = [
     },
   },
   {
+    key: 'onboarding.prologue_upgrade_cost',
+    group: 'onboarding',
+    type: 'integer',
+    min: 0,
+    max: 100000,
+    factoryDefault: structuredClone(GAME_CONFIG_DEFAULTS.onboarding.prologue_upgrade_cost),
+    description: {
+      en: "What the hull upgrade at the opening's second stop costs (the friend hands over the scrap it needs). The opening payouts cover it, so the pilot still ends with the start credits.",
+      'pt-BR':
+        'Quanto custa a melhoria do casco na segunda parada da abertura (o amigo entrega a sucata necessária). Os pagamentos da abertura a cobrem, então o piloto ainda termina com os créditos iniciais.',
+    },
+  },
+  {
     key: 'onboarding.home_locations',
     group: 'onboarding',
     type: 'json',

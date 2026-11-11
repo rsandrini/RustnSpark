@@ -62,6 +62,7 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
       purse: number;
       refuelCost: number;
       moduleCost: number;
+      upgradeCost: number;
       payouts: number[];
       guides: { giver: { id: string }; scenes: unknown[] }[];
     };
@@ -74,7 +75,8 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
       body.payouts.reduce((sum, payout) => sum + payout, 0) +
         body.purse -
         body.refuelCost -
-        body.moduleCost,
+        body.moduleCost -
+        body.upgradeCost,
     ).toBe(START);
     expect(body.guides.map((guide) => guide.giver.id)).toEqual([
       'free_mentor_dara',
