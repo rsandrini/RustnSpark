@@ -107,10 +107,10 @@ Delete an item when it ships (the commit has the history).
 ## 9. A new opening instead of the faction picker first (owner, 2026-11-10)
 
 - Spec `docs/superpowers/specs/2026-11-10-new-opening-design.md`, plan `docs/superpowers/plans/2026-11-10-new-opening.md`.
-- **Built (2026-11-10), waiting for the owner's test on the local stack.** A new account meets a scripted story before the faction picker:
-  the friend Kite hands over an old engine (fitted on the real yard), a 3-leg race (15 / 20 / 30 s, the friend wins), the first stop
-  (free refuel, a choice of two jobs that pay the same), a cargo hold fitted, a second job, then the dangerous Cinder Reach run: the friend is
-  destroyed, a full-screen loss popup, a rescue, the harbour office, and the existing faction picker, then the existing tutorial.
+- **Built (2026-11-10), second round on the real screens (see 9b), waiting for the owner's test on the local stack.** A new account meets a
+  scripted story before the faction picker: the friend Kite hands over an old engine (fitted on the real yard), a 3-leg race (15 / 20 / 30 s,
+  the friend wins), the first stop (refuel, buy the module for the job you pick), a second job flown together, then the dangerous Cinder
+  Reach run: the friend is destroyed, a loss, a rescue, the harbour office, and the existing faction picker, then the existing tutorial.
 - Skippable behind a big two-step warning. How it ended is saved on the player (`Player.prologueOutcome`: played or skipped), so it never
   shows again on any device. The step a pilot is on mid-opening stays in the browser (resume).
 - Money: `onboarding.prologue_payout_shares` [20, 30, 50] percent of `economy.start_credits`; the payouts always add up to exactly the start
@@ -122,29 +122,36 @@ Delete an item when it ships (the commit has the history).
 - Not done: the faction people are not shown before the picker (the plan had them appear in the port scene); the picker uses the existing
   mentor cards.
 
-### 9b. Fixes after the owner's first look at the opening (2026-11-10), waiting for the go on the approach
+### 9b. Fixes after the owner's first look at the opening (2026-11-10): built, waiting for the owner's second test
 
-The owner's list (the approach is still to be approved: rebuild the opening on the REAL screens over a fake in-browser server, with a director
-layer that speaks the story; texts as admin-editable dialogue scenes; or patch the current scenes):
+The opening was rebuilt on the REAL screens (Ship, Port, Missions, transit, report) over a fake server that lives in the browser (the sandbox,
+`apps/web/src/features/prologue/sandbox`); a director (`.../prologue/director`) speaks the story and locks the screen step by step. How each
+point of the owner's list was answered:
 
-1. The spoken text goes in the MIDDLE of the screen, not at the bottom.
-2. The texts editable in the Admin, with the guide's name, picture and so on, and the owner can add or remove steps in the conversation
-   (full control over how and when it happens).
-3. The ship-building screen is broken: the ship area is much smaller than on the first screen.
-4. A part dragged from the list does not land at the mouse position (too low and far).
-5. A wrong drop must NOT reset the part: keep it there, show what is wrong, wait for the fix. The connectors must be visible while moving it.
-6. The race: at least 3 legs; a bigger map; no "best of the day" on the first race; the friend's real name instead of "Free pilot"; almost no
-   fuel at the start (just enough for the race); ship animations with both ships; no "expires in"; ONLY the pilot and the friend (today 3
-   racers); show the map, the positions and the partial results; radio lines from the friend in each leg.
-7. "Race over" is broken and dull ("Pilot {{place}} place"): show the animation or the ship parts, with the friend talking.
-8. Refuel in the port tab, with the real interface.
-9. Refuel and the other actions get the game's animation and notifications.
-10. Missions use the real missions-screen layout, without "expires", with different destinations.
-11. Missions have a conclusion (the report); today steps are skipped.
-12. The talk is friendlier and cozier (rewrite, the owner reviews).
-13. After picking the mission type the pilot buys, with money, the module for it: passengers get the passenger module, a delivery gets the
-    cargo area.
-14. More feedback on every interaction; the rescue screen is not good: a dramatic way to tell it, closer to what the game has, with animations.
+1. Spoken text in the MIDDLE of the screen: the default position of every line (the Admin can change it per line).
+2. Texts editable in the Admin: the guides are `free`-faction mentors (name, title, portrait, scenes) in the existing scene editor; every
+   step has `prologue_<step>_enter` / `_done` triggers and the race has `prologue_race_leg_1..3`; lines can be added or removed freely (a step
+   with no lines still advances).
+3. to 5. The real ship yard (size, drag position, a wrong drop is kept and flagged, connectors visible): it is the real screen. The step moves on
+   only when the saved ship can fly (and, for the module, carries it).
+6. The race: three legs (15 / 20 / 30 s), the friend only, his name from the guide, the real transit screen with both ships and the standings,
+   no "best of the day", no "expires in" (only while in the opening), a tank with just enough fuel, a radio line at the end of each leg.
+7. Race over: the real report (with the standings), then the friend's lines.
+8. and 9. Refuel in the real Port tab (always the whole tank, for the price in the config), with the game's own notices and animations.
+10. and 11. Missions on the real board (every job shown, the ones the ship cannot take yet say why), different destinations, a real report after each.
+12. Friendlier lines: the default scenes (en + pt-BR) were rewritten warm and short.
+13. The job type is chosen by buying its module with money (passenger module or cargo area), fitted on the real yard; the second job is the same
+    type, flown together with the friend.
+14. More feedback: every action goes through the real screens, so it has the game's notices; the loss is a full-screen moment (signal lost, the
+    ship breaks up, what is lost and what is saved) and the rescue a quiet one (a cutter comes in with its light on the wreck), then Dara Voss and
+    Marshal Oren speak.
+
+Config: `onboarding.prologue_purse` (300), `prologue_refuel_cost` (100), `prologue_module_cost` (800), `prologue_payout_shares` [20, 30, 50]: the
+three payouts always bring the pilot back to exactly `economy.start_credits` (3000), so played = skipped.
+
+Owner to do: play it on the local stack, rewrite every line and name in the Admin, upload the portraits (Kite, Dara Voss, Marshal Oren).
+A pilot who closes the tab resumes at the step they were on (the sandbox is rebuilt: ship, parts, jobs flown, money). Build flag
+`VITE_PROLOGUE_SANDBOX=0` switches the opening off (straight to the faction picker).
 
 ## 10. The real tutorial hides things on the first flights (owner, 2026-11-10)
 

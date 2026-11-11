@@ -368,6 +368,13 @@ export type DialogueSettings = z.infer<typeof DialogueSettingsSchema>;
  * GET /v1/players/me/prologue — the new-pilot opening: the payouts it hands out and the guides who
  * speak its story.
  */
+/** A scene of a guide of the opening: the dialogue scene (the giver is the guide it belongs to) plus when it plays. */
+export const PrologueSceneSchema = DialogueSceneSchema.omit({ giver: true }).extend({
+  trigger: z.string(),
+  order: z.number().int(),
+});
+export type PrologueScene = z.infer<typeof PrologueSceneSchema>;
+
 export const PrologueResponseSchema = z.object({
   startCredits: z.number().int(),
   /** The small purse the pilot starts the opening with. */
@@ -382,7 +389,7 @@ export const PrologueResponseSchema = z.object({
   guides: z.array(
     z.object({
       giver: GiverRefSchema,
-      scenes: z.array(DialogueSceneSchema),
+      scenes: z.array(PrologueSceneSchema),
     }),
   ),
 });

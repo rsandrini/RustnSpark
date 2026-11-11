@@ -77,8 +77,8 @@ describe('the new-pilot opening: payouts and a saved outcome', () => {
         body.moduleCost,
     ).toBe(START);
     expect(body.guides.map((guide) => guide.giver.id)).toEqual([
-      'free_mentor_kite',
       'free_mentor_dara',
+      'free_mentor_kite',
       'free_mentor_oren',
     ]);
     expect(body.guides.every((guide) => guide.scenes.length > 0)).toBe(true);

@@ -58,6 +58,8 @@ const FACTION_VAR: Record<string, string> = {
   pirates: '--pirata',
 };
 
+const DOT_SEPARATOR = ' · ';
+
 export interface MapPageProps {
   /** Placeholder for the future guided tour (GDD §16; not built in v0.1, S10.3). */
   guided?: boolean;
@@ -713,11 +715,7 @@ const PLACE_SERVICES: readonly (readonly [string, string])[] = [
 
 // What the place offers (its services) and what can be dug there. The map card lists only the
 // ore names and rarity; odds and time live on the port picker and the board card.
-function PlaceFacts({
-  place,
-}: {
-  place: WorldLocation;
-}) {
+function PlaceFacts({ place }: { place: WorldLocation }) {
   const { t, i18n } = useTranslation();
   const mineQuery = useQuery({
     queryKey: ['mineInfo', place.id],
@@ -796,10 +794,10 @@ function PlaceDetails({
           {[
             t(`map.types.${place.type}`, { defaultValue: place.type }),
             t('map.zone', { zone: place.zone }),
-          ].join(' · ')}
+          ].join(DOT_SEPARATOR)}
           {(place.pilotCount ?? 0) > 0 && (
             <>
-              {' · '}
+              {DOT_SEPARATOR}
               <span data-testid="place-pilots">
                 {t('map.pilotsDocked', { count: place.pilotCount })}
               </span>

@@ -266,7 +266,7 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     const report = ReportResponseSchema.parse(
       await env.call('GET', `/v1/reports/${final?.id}?view=summary`),
     );
-    expect(report.outcome).toBe('failure');
+    expect(report.outcome).toBe('failed');
     expect(report.stats.credits).toBe(0);
   });
 });

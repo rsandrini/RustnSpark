@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ApiError, client } from '../../api/client';
 import { pickLocalized } from '../../i18n/localized';
@@ -45,6 +45,7 @@ export function OnboardingPage() {
   const { refresh, user } = useAuthContext();
   const [selected, setSelected] = useState<string | null>(null);
   const factionArt = useFactionArt();
+  const queryClient = useQueryClient();
   // The picker lists the factions the admin marks playable (database); the built-in three only
   // stand in while that loads or if the server lists none.
   const playable: string[] = list.some((faction) => faction.playable)
@@ -56,6 +57,8 @@ export function OnboardingPage() {
     onSuccess: async () => {
       // Reload the profile so factionId flips from null before leaving the screen.
       await refresh();
+      // whatever the screens asked while there was no ship (or while the opening's fake server was going away) is stale now
+      queryClient.clear();
       void navigate('/ship');
     },
   });

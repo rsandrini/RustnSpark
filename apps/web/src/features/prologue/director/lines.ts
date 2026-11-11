@@ -1,7 +1,7 @@
-import type { DialogueNode, DialogueScene, GiverRef } from '../../../api/generated';
+import type { DialogueNode, GiverRef, PrologueScene } from '../../../api/generated';
 
-/** A scene as the opening's endpoint sends it: the dialogue scene plus the trigger and order the Admin gave it. */
-export type GuideScene = DialogueScene & { trigger?: string; order?: number };
+/** A scene as the opening's endpoint sends it: the lines plus the trigger and order the Admin gave it. */
+export type GuideScene = PrologueScene;
 
 export interface Guide {
   readonly giver: GiverRef;
@@ -12,7 +12,7 @@ export interface Guide {
 export interface Spoken {
   readonly key: string;
   readonly giver: GiverRef;
-  readonly scene: DialogueScene;
+  readonly scene: GuideScene;
 }
 
 /** The moments of the story a line can be hung on: entering a step, leaving it, or a leg of the race. */
@@ -32,7 +32,7 @@ export function scenesFor(guides: readonly Guide[], moment: Moment): Spoken[] {
       guide.scenes
         .filter((scene) => scene.trigger === moment && scene.nodes.length > 0)
         .map((scene) => ({
-          order: scene.order ?? 0,
+          order: scene.order,
           spoken: { key: `${guide.giver.id}:${scene.id}`, giver: guide.giver, scene },
         })),
     )
@@ -40,15 +40,12 @@ export function scenesFor(guides: readonly Guide[], moment: Moment): Spoken[] {
     .map((entry) => entry.spoken);
 }
 
-/** The friend: the guide who speaks at the very start. Their name is on the race table and in the reports. */
+/** The friend: whoever speaks first in the story. Their name is on the race table and in the reports. */
 export function friendOf(guides: readonly Guide[]): GiverRef | null {
-  return (
-    guides.find((guide) => guide.scenes.some((scene) => scene.trigger === enterOf('gift')))
-      ?.giver ?? null
-  );
+  return scenesFor(guides, enterOf('gift'))[0]?.giver ?? null;
 }
 
 /** The node a scene opens on (a missing start falls back to the first node). */
-export function startNode(scene: DialogueScene): DialogueNode | null {
+export function startNode(scene: Pick<GuideScene, 'nodes' | 'start'>): DialogueNode | null {
   return scene.nodes.find((node) => node.id === scene.start) ?? scene.nodes[0] ?? null;
 }

@@ -1,10 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { walletOf } from './support';
 
 /**
- * The new-pilot opening against the real stack: a fresh account meets the story before the faction picker,
- * skipping asks twice, a played opening and a skipped one end with the same credits, and once it is over (or
- * skipped) it never shows again.
+ * The new-pilot opening against the real stack: a fresh account meets the story on the game's own screens before the
+ * faction picker, skipping asks twice, a played opening and a skipped one end with the same credits, and once it is over
+ * (or skipped) it never shows again.
  */
 
 async function register(page: Page): Promise<void> {
@@ -16,8 +16,8 @@ async function register(page: Page): Promise<void> {
     await page.getByLabel('Password').fill('e2e-player-password-1');
     await page.getByRole('button', { name: 'Create account' }).click();
     const ok = await page
-      .getByTestId('prologue')
-      .waitFor({ timeout: 10_000 })
+      .getByTestId('opening-bar')
+      .waitFor({ timeout: 15_000 })
       .then(() => true)
       .catch(() => false);
     if (ok) return;
@@ -26,82 +26,159 @@ async function register(page: Page): Promise<void> {
   throw new Error('could not register');
 }
 
-const stepOf = (page: Page) => page.getByTestId('prologue');
+const bar = (page: Page) => page.getByTestId('opening-bar');
+const onStep = (page: Page, id: string, timeout = 15_000) =>
+  expect(bar(page)).toHaveAttribute('data-step', id, { timeout });
 
 /** Reads a guide's lines to the end: the first press finishes the typing, the next goes on. */
-async function dismissGuide(page: Page): Promise<void> {
+async function read(page: Page): Promise<void> {
   const box = page.getByTestId('dialogue');
-  for (let guard = 0; guard < 12 && (await box.isVisible().catch(() => false)); guard += 1) {
-    await box.getByRole('button').first().click();
+  // the lines of a step open a moment after the step starts
+  await box.waitFor({ timeout: 3000 }).catch(() => undefined);
+  for (let guard = 0; guard < 40 && (await box.isVisible().catch(() => false)); guard += 1) {
+    await box
+      .locator('.dialogue-actions .btn.primary')
+      .first()
+      .click({ timeout: 2000 })
+      .catch(() => undefined);
     await page.waitForTimeout(150);
   }
 }
 
-/** Fits the part the scene offers: pick it from the tray, then click the cell it belongs in. */
-async function fitPart(page: Page, gx: number, gy: number): Promise<void> {
-  const sheet = page.getByTestId('fit-open-sheet');
-  if (await sheet.isVisible().catch(() => false)) await sheet.click();
-  await page.getByTestId('fit-part').click();
-  await page.locator(`rect[data-gx="${gx}"][data-gy="${gy}"]`).first().click();
-  await expect(page.getByTestId('fit-done')).toBeVisible();
+/** The step's button that moves the story on (a report to read, the gift, the choice of job). */
+async function next(page: Page): Promise<void> {
+  await page.getByTestId('opening-continue').click();
+  // the lines said when a step ends
+  await read(page);
 }
 
-async function dispatch(page: Page, index = 0): Promise<void> {
-  await page
-    .getByRole('button', { name: /^Dispatch$/ })
-    .nth(index)
-    .click();
+/** Puts a loose part on the yard (tap the part, then tap the cell) and saves the layout. */
+async function dragPart(page: Page, name: RegExp, gx: number, gy: number): Promise<void> {
+  const row: Locator = page.locator('.hangar-side .part-btn', { hasText: name }).first();
+  // on a phone the loose parts are in a sheet behind the Parts button
+  const sheet = page.getByRole('button', { name: /^Parts \(/ });
+  if (await sheet.isVisible().catch(() => false)) await sheet.click();
+  await expect(row).toBeVisible();
+  await row.click();
+  const cell = page
+    .locator(`.hangar-scene svg rect.yard-cell[data-gx="${gx}"][data-gy="${gy}"]`)
+    .first();
+  const box = await cell.boundingBox();
+  if (box === null) throw new Error('no such cell');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.getByRole('button', { name: 'Save layout' }).click();
+  // the lines said when the step ends
+  await read(page);
+}
+
+async function dispatch(page: Page): Promise<void> {
+  await page.locator('[data-tour="dispatch_button"]').click();
+}
+
+async function accept(page: Page, index = 0): Promise<void> {
+  await page.locator('[data-tour="accept_button"]:not([disabled])').nth(index).click();
 }
 
 /** Plays the whole opening up to the faction picker. */
 async function playOpening(page: Page): Promise<void> {
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'gift');
-  await dismissGuide(page);
+  await onStep(page, 'gift');
+  await read(page);
+  await next(page);
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'fit-engine');
-  await dismissGuide(page);
-  await fitPart(page, -4, 0);
-  await dismissGuide(page);
+  await onStep(page, 'fit-engine');
+  await read(page);
+  await dragPart(page, /engine/i, -4, 0);
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'race-board');
-  await dismissGuide(page);
+  await onStep(page, 'race-board');
+  await read(page);
+  await accept(page);
+  await read(page);
+  await onStep(page, 'race');
+  await read(page);
   await dispatch(page);
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'race');
-  for (let leg = 0; leg < 3; leg += 1) await page.getByTestId('race-skip').click();
-  await page.getByRole('button', { name: 'Continue' }).click();
+  // the three legs take about a minute; the friend's radio lines come on the way
+  for (let guard = 0; guard < 60; guard += 1) {
+    await read(page);
+    if ((await bar(page).getAttribute('data-step')) !== 'race') break;
+    await page.waitForTimeout(2000);
+  }
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'stop-one');
-  await dismissGuide(page);
-  await page.getByRole('button', { name: /^Refuel/ }).click();
-  await dispatch(page, 1);
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'offer-run-1');
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await onStep(page, 'race-report');
+  await read(page);
+  await next(page);
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'fit-cargo');
-  await dismissGuide(page);
-  await fitPart(page, 1, 0);
-  await dismissGuide(page);
+  await onStep(page, 'stop-port');
+  await read(page);
+  await expect(page).toHaveURL(/\/port/, { timeout: 10_000 });
+  const refuelTab = page.getByRole('tab', { name: /^Refuel/ });
+  if ((await refuelTab.getAttribute('aria-selected')) !== 'true') await refuelTab.click();
+  await page.getByRole('button', { name: /^Buy \d+/ }).click({ timeout: 15_000 });
+  await read(page);
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'stop-two');
-  await dismissGuide(page);
-  await dispatch(page, 0);
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'offer-run-2');
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await onStep(page, 'choose-job');
+  await read(page);
+  await next(page);
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'final-board');
-  await dismissGuide(page);
+  await onStep(page, 'buy-module');
+  await read(page);
+  await page.getByRole('button', { name: /^Buy/ }).first().click();
+  const confirm = page.getByRole('dialog').getByRole('button', { name: /^Buy/ });
+  if (await confirm.isVisible().catch(() => false)) await confirm.click();
+  await read(page);
+
+  await onStep(page, 'fit-module');
+  await read(page);
+  await dragPart(page, /module|cargo/i, 1, 0);
+
+  await onStep(page, 'dispatch-job');
+  await read(page);
+  await accept(page);
   await dispatch(page);
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'final-run');
-  await page
-    .getByRole('button', { name: /continue|next/i })
-    .first()
-    .click();
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'loss');
-  await page.getByRole('alertdialog').getByRole('button').click();
+  for (let guard = 0; guard < 60; guard += 1) {
+    if ((await bar(page).getAttribute('data-step')) !== 'dispatch-job') break;
+    await read(page);
+    await page.waitForTimeout(2000);
+  }
 
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'rescue');
-  await dismissGuide(page);
-  await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible();
+  await onStep(page, 'job-report');
+  await read(page);
+  await next(page);
+
+  await onStep(page, 'stop-two');
+  await read(page);
+  await accept(page);
+  await dispatch(page);
+  await expect(page.getByTestId('opening-continue')).toBeVisible({ timeout: 120_000 });
+  await read(page);
+  await next(page);
+
+  await onStep(page, 'final-board');
+  await read(page);
+  await accept(page);
+  await read(page);
+  await onStep(page, 'final-run');
+  await read(page);
+  await dispatch(page);
+  for (let guard = 0; guard < 90; guard += 1) {
+    await read(page);
+    if ((await bar(page).getAttribute('data-step')) !== 'final-run') break;
+    await page.waitForTimeout(2000);
+  }
+
+  await onStep(page, 'loss');
+  await expect(page.getByTestId('loss-moment')).toBeVisible();
+  await read(page);
+  await page.getByTestId('loss-continue').click();
+  await read(page);
+
+  await onStep(page, 'rescue');
+  await expect(page.getByTestId('rescue-moment')).toBeVisible();
+  await read(page);
+  await next(page);
+  await read(page);
+  await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible({
+    timeout: 20_000,
+  });
 }
 
 async function launch(page: Page): Promise<void> {
@@ -119,7 +196,7 @@ test('a new pilot meets the opening first, and skipping asks twice', async ({ pa
   await expect(warning).toContainText('first time');
   await warning.getByRole('button', { name: 'Play the opening' }).click();
   await expect(warning).toHaveCount(0);
-  await expect(stepOf(page)).toBeVisible();
+  await expect(bar(page)).toBeVisible();
 
   await page.getByRole('button', { name: 'Skip the opening' }).click();
   await page.getByRole('button', { name: 'Skip anyway' }).click();
@@ -128,21 +205,35 @@ test('a new pilot meets the opening first, and skipping asks twice', async ({ pa
   // gone for good, even after a reload
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Choose your faction' })).toBeVisible();
-  await expect(stepOf(page)).toHaveCount(0);
+  await expect(bar(page)).toHaveCount(0);
+});
+
+test('the guide speaks in the middle of the screen, and the screen around it is locked', async ({
+  page,
+}) => {
+  await register(page);
+  const box = page.getByTestId('dialogue').locator('.dialogue-box');
+  await expect(box).toHaveAttribute('data-position', 'center');
+  await read(page);
+  await next(page);
+  await onStep(page, 'fit-engine');
+  // the other tabs are shown, but off
+  await expect(page.locator('[aria-disabled="true"].nav-link').first()).toBeVisible();
 });
 
 test('the opening resumes where the pilot left it', async ({ page }) => {
   await register(page);
-  await dismissGuide(page);
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'fit-engine');
+  await read(page);
+  await next(page);
+  await onStep(page, 'fit-engine');
   await page.reload();
-  await expect(stepOf(page)).toHaveAttribute('data-step', 'fit-engine');
+  await onStep(page, 'fit-engine');
 });
 
 test('a played opening and a skipped one end with the same credits', async ({ page, browser }) => {
+  test.setTimeout(900_000);
   await register(page);
   await playOpening(page);
-  await expect(page.getByTestId('prologue-port')).toBeVisible();
   await launch(page);
   const played = await walletOf(page);
 

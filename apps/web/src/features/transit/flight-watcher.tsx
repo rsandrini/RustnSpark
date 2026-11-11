@@ -6,6 +6,7 @@ import { client, serverNow } from '../../api/client';
 import type { ActiveMission, ReportListResponse } from '../../api/generated';
 import { useFeedback } from '../../ui/feedback';
 import { hasUnsavedLayout } from '../hangar/unsaved-layout';
+import { usePrologueMode } from '../prologue/prologue-mode';
 import { transitPollInterval } from './poll';
 
 /** Flights the pilot dispatched in this tab that may be over before the active list ever showed them. */
@@ -27,6 +28,8 @@ export function FlightWatcher() {
   const feedback = useFeedback();
   const { pathname } = useLocation();
   const watched = useRef<{ id: string; inPlace: boolean } | null>(null);
+  // in the new-pilot opening the director takes the pilot to each report itself
+  const opening = usePrologueMode().active;
 
   const activeQuery = useQuery({
     queryKey: ['active'],
@@ -74,7 +77,7 @@ export function FlightWatcher() {
   }, [activeIsEmpty]);
 
   useEffect(() => {
-    if (!activeIsEmpty || latestReportQuery.isFetching || newest === undefined) return;
+    if (opening || !activeIsEmpty || latestReportQuery.isFetching || newest === undefined) return;
     const fromDispatch = dispatched.has(newest);
     const fromWatch = watched.current?.id === newest ? watched.current : null;
     if (!fromDispatch && fromWatch === null) return;
@@ -95,7 +98,16 @@ export function FlightWatcher() {
       return;
     }
     void navigate(`/report/${newest}`);
-  }, [activeIsEmpty, latestReportQuery.isFetching, newest, navigate, pathname, feedback, t]);
+  }, [
+    opening,
+    activeIsEmpty,
+    latestReportQuery.isFetching,
+    newest,
+    navigate,
+    pathname,
+    feedback,
+    t,
+  ]);
 
   return null;
 }

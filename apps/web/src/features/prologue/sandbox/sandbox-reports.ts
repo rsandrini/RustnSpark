@@ -174,7 +174,7 @@ export function reportOf(sandbox: Sandbox, missionId: string, view: string): Rep
   const say: Say = (en, pt) => (sandbox.config.profile.locale === 'pt-BR' ? pt : en);
   const base = {
     locale: sandbox.config.profile.locale,
-    outcome: result.outcome,
+    outcome: result.outcome === 'failure' ? ('failed' as const) : ('success' as const),
     stats: statsOf(sandbox, result),
     mission: {
       type:
@@ -201,7 +201,7 @@ export function reportListOf(sandbox: Sandbox): ReportListResponse {
   return {
     items: [...sandbox.state.history].reverse().map((result) => ({
       missionId: result.id,
-      outcome: result.outcome,
+      outcome: result.outcome === 'failure' ? ('failed' as const) : ('success' as const),
       credits: result.paid,
       legs: result.job.routes.length,
       createdAt: new Date(result.finishedAt).toISOString(),

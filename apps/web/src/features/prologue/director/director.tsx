@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { client, setApiInterceptor } from '../../../api/client';
@@ -105,6 +105,11 @@ export function Director() {
   const { phase, satisfied, momentReady, queue } = run;
   const [warning, setWarning] = useState(false);
 
+  const queryClient = useQueryClient();
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const stepRef = useRef(step);
   stepRef.current = step;
   const update = useCallback(
@@ -136,7 +141,10 @@ export function Director() {
 
   const speak = useCallback(
     (moment: Moment) =>
-      update((current) => ({ ...current, queue: [...current.queue, ...scenesFor(guides, moment)] })),
+      update((current) => ({
+        ...current,
+        queue: [...current.queue, ...scenesFor(guides, moment)],
+      })),
     [guides, update],
   );
 
@@ -147,6 +155,7 @@ export function Director() {
     if (def.path !== null) {
       void navigate(def.path, { replace: true });
     } else if (last !== undefined && !pathRef.current.startsWith('/report/')) {
+      // a report step: the pilot reads the report of the flight they just made (or of the last one, coming back)
       void navigate(`/report/${last.id}`, { replace: true });
     }
     // only a new step starts a step; the guides and the nav setter do not change inside one
@@ -212,6 +221,12 @@ export function Director() {
           elapsed += seconds;
           legTimers.current.push(window.setTimeout(() => speak(legOf(index + 1)), elapsed * MS));
         });
+      }
+      // a flight is over: the pilot reads its report (the game's own jump to it is off in the opening)
+      if (event.type === 'arrived') {
+        // the screens must know the ship is back in port before the pilot walks to the next one
+        void queryClientRef.current.invalidateQueries();
+        void navigateRef.current(`/report/${event.missionId}`, { replace: true });
       }
       if (completes(current, event, sandbox)) update((state) => ({ ...state, satisfied: true }));
     });

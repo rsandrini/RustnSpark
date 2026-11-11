@@ -9,6 +9,7 @@ const CANONICAL_FACTION_COLORS: Readonly<Record<string, string>> = {
   sun: '#e3b341',
   explorers: '#3fa66a',
   pirates: '#c23b3b',
+  free: '#9ca3af',
 };
 
 const ISOLATION_BY_ZONE: Readonly<Record<number, number>> = {
@@ -117,11 +118,11 @@ describe('database seed (S3.4)', () => {
 
     const counts = await countRows(prisma);
     // One row per CONFIG_REGISTRY entry; bumps whenever a new tunable is registered.
-    expect(counts.gameConfig).toBe(225);
+    expect(counts.gameConfig).toBe(227);
     expect(counts.locations).toBe(29);
     expect(counts.routes).toBe(35);
     expect(counts.environments).toBe(4);
-    expect(counts.factions).toBe(4);
+    expect(counts.factions).toBe(5);
     expect(counts.parts).toBeGreaterThanOrEqual(12);
     // 3 ores + the core fragment (the one upgrade piece) + the one generic scrap.
     expect(counts.materials).toBe(3 + 1 + 1);
