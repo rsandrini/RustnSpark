@@ -25,7 +25,14 @@ import { activeOf, boardOf, moduleKindOf, offerOf } from './sandbox-offers';
 import { reportListOf, reportOf } from './sandbox-reports';
 import { assertSavable, enginePreviewOf, flaggedLayout, previewOf, shipOf } from './sandbox-ship';
 import { SHIP_ID, type Sandbox } from './sandbox-state';
-import { SANDBOX_WORLD, SANDBOX_PASSENGER_MODULE, fuelNeededFor, jobsAt } from './sandbox-world';
+import { tankSpace } from './sandbox-ship';
+import {
+  SANDBOX_WORLD,
+  SANDBOX_PASSENGER_MODULE,
+  fuelNeededFor,
+  jobsAt,
+  marketListingsOf,
+} from './sandbox-world';
 
 const CATALOG_PARTS = [
   SANDBOX_PASSENGER_MODULE,
@@ -42,6 +49,25 @@ const CONFLICT = 409;
 const MS = 1000;
 /** A beat after the arrival time, so the settle timer never fires a hair early. */
 const SETTLE_SLACK_MS = 50;
+
+/** What a refuel of `body.mode` costs: filling the whole tank costs the opening's refuel price, a part of it a part of that. */
+function refuelQuoteOf(sandbox: Sandbox, body: unknown) {
+  const request = (body ?? {}) as { mode?: string; amount?: number };
+  const space = tankSpace(sandbox);
+  const units = request.mode === 'full' ? space.space : Math.min(request.amount ?? 0, space.space);
+  const cost =
+    units <= 0 || space.space <= 0
+      ? 0
+      : Math.max(1, Math.round((sandbox.config.refuelCost * units) / space.space));
+  return {
+    units,
+    cost,
+    unitPrice: units > 0 ? cost / units : 0,
+    fuel: sandbox.state.fuel,
+    fuelCap: space.cap,
+    space: space.space,
+  };
+}
 
 type Params = Record<string, string>;
 type Handler = (context: {
@@ -198,6 +224,81 @@ const ROUTES: readonly Route[] = [
       durationSeconds: (arrival - startedAt) / MS,
     };
   }),
+  route('GET', '/v1/locations/:id/market', ({ sandbox, params }) => ({
+    locationId: params.id,
+    listings: marketListingsOf(sandbox.config.moduleCost),
+    sellOffers: [],
+    sellMinCondition: 1,
+  })),
+  route('POST', '/v1/market/buy', ({ sandbox, body }) => {
+    const { listingId, expectedPrice } = (body ?? {}) as {
+      listingId?: string;
+      expectedPrice?: number;
+    };
+    const listing = marketListingsOf(sandbox.config.moduleCost).find(
+      (entry) => entry.listingId === listingId,
+    );
+    if (listing === undefined) throw new ApiError(404, 'listing not found', 'NOT_FOUND');
+    if (listing.price !== expectedPrice) {
+      throw new ApiError(CONFLICT, 'price changed', 'PRICE_CHANGED', {
+        statusCode: CONFLICT,
+        message: { error: 'PRICE_CHANGED', actual: listing.price },
+      });
+    }
+    if (sandbox.state.credits < listing.price) {
+      throw new ApiError(CONFLICT, 'not enough credits', 'INSUFFICIENT_FUNDS');
+    }
+    const part = CATALOG_PARTS.find((entry) => entry.catalog.partType === listing.partType);
+    if (part === undefined) throw new ApiError(404, 'listing not found', 'NOT_FOUND');
+    const id = sandbox.buy(part, listing.price);
+    return {
+      partInstanceId: id,
+      partType: listing.partType,
+      condition: listing.condition,
+      price: listing.price,
+      credits: sandbox.state.credits,
+    };
+  }),
+  route('POST', '/v1/ships/:id/refuel/quote', ({ sandbox, body }) => {
+    const quote = refuelQuoteOf(sandbox, body);
+    return { shipId: SHIP_ID, ...quote };
+  }),
+  route('POST', '/v1/ships/:id/refuel', ({ sandbox, body }) => {
+    const quote = refuelQuoteOf(sandbox, body);
+    if (quote.cost > sandbox.state.credits) {
+      throw new ApiError(CONFLICT, 'not enough credits', 'INSUFFICIENT_FUNDS');
+    }
+    sandbox.refuel(quote.units, quote.cost);
+    return {
+      shipId: SHIP_ID,
+      units: quote.units,
+      cost: quote.cost,
+      fuel: sandbox.state.fuel,
+      fuelCap: quote.fuelCap,
+      credits: sandbox.state.credits,
+    };
+  }),
+  // the other port tabs are shown but cannot be used in the opening; their questions get the plain answer
+  route('GET', '/v1/locations/:id/mine/info', () => ({
+    minable: false,
+    tickSeconds: 300,
+    maxTicks: 4,
+    fuelPerTick: 0,
+    spaceUnits: null,
+    fillSeconds: null,
+    ores: [],
+  })),
+  route('POST', '/v1/ships/:id/repair/quote', () => {
+    throw new ApiError(CONFLICT, 'nothing to repair', 'NO_REPAIR_TARGETS', {
+      statusCode: CONFLICT,
+      message: { error: 'NO_REPAIR_TARGETS' },
+    });
+  }),
+  route('POST', '/v1/parts/:id/upgrade/quote', ({ params }) => ({
+    partInstanceId: params.id,
+    eligible: false,
+    reason: 'NO_NEXT_TIER',
+  })),
   route('GET', '/v1/reports', ({ sandbox }) => reportListOf(sandbox)),
   route('GET', '/v1/reports/:missionId', ({ sandbox, params, query }) => {
     const report = reportOf(sandbox, params.missionId ?? '', query.get('view') ?? 'summary');

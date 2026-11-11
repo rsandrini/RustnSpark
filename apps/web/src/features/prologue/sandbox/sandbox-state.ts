@@ -110,6 +110,7 @@ type Listener = (event: SandboxEvent) => void;
 export class Sandbox {
   private snapshot: SandboxSnapshot;
   private readonly listeners = new Set<Listener>();
+  private boughtCount = 0;
 
   constructor(readonly config: SandboxConfig) {
     const installed = [PROLOGUE_BRIDGE, PROLOGUE_TANK, PROLOGUE_HULL];
@@ -266,6 +267,23 @@ export class Sandbox {
       shipLost: lost,
     };
     this.emit({ type: 'arrived', missionId: mission.id });
+  }
+
+  /** Buys a part: it costs `price` and arrives loose in the hold. Returns its id. */
+  buy(part: ProloguePart, price: number): string {
+    this.boughtCount += 1;
+    const id = `sandbox-bought-${this.boughtCount}`;
+    this.addCredits(-price);
+    this.addPart(part, id);
+    this.emit({ type: 'bought', partType: part.catalog.partType });
+    return id;
+  }
+
+  /** Pays for fuel and puts it in the tank. */
+  refuel(units: number, cost: number): void {
+    this.addCredits(-cost);
+    this.setFuel(this.snapshot.fuel + units);
+    if (units > 0) this.emit({ type: 'refuelled' });
   }
 
   addCredits(delta: number): void {

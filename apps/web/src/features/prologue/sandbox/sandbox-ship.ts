@@ -184,3 +184,9 @@ export function assertSavable(sandbox: Sandbox, layout: readonly Placement[]): v
     });
   }
 }
+
+/** The tank's size (the connected tanks) and how much of it is empty. */
+export function tankSpace(sandbox: Sandbox): { cap: number; space: number } {
+  const cap = shipOf(sandbox).sheet.fuelCap;
+  return { cap, space: Math.max(0, cap - sandbox.state.fuel) };
+}
