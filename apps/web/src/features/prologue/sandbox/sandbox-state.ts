@@ -6,6 +6,7 @@ import {
   PROLOGUE_TANK,
   type ProloguePart,
 } from '../prologue-fixtures';
+import { PLACE, legSecondsOf, type JobSpec } from './sandbox-world';
 
 /** What the sandbox is built from: the server's numbers for the opening and the pilot's real profile. */
 export interface SandboxConfig {
@@ -17,6 +18,10 @@ export interface SandboxConfig {
   readonly refuelCost: number;
   /** What the module for the job costs. */
   readonly moduleCost: number;
+  /** The friend's name, from the guide the admin edits (the race table and the reports use it). */
+  readonly friendName?: string;
+  /** The clock, in milliseconds (a test drives it; the opening uses the real one). */
+  readonly clock?: () => number;
   /** The pilot's real profile, so the screens see the real name and id. */
   readonly profile: {
     readonly id: string;
@@ -46,17 +51,55 @@ export type SandboxEvent =
   | { type: 'arrived'; missionId: string }
   | { type: 'report_opened'; missionId: string };
 
+/** A job the pilot has taken: waiting to be dispatched, or under way. */
+export interface SandboxMission {
+  readonly id: string;
+  readonly job: JobSpec;
+  /** What it pays when it succeeds (the card shows it even when the run is lost). */
+  readonly reward: number;
+  readonly status: 'ACCEPTED' | 'IN_TRANSIT';
+  readonly acceptedAt: number;
+  readonly startedAt: number | null;
+  readonly arrivalAt: number | null;
+  /** Seconds each leg takes. */
+  readonly legSeconds: readonly number[];
+  readonly fuelNeeded: number;
+}
+
+/** A finished run: what it paid and how it ended. */
+export interface SandboxResult {
+  readonly id: string;
+  readonly job: JobSpec;
+  readonly reward: number;
+  readonly paid: number;
+  readonly outcome: 'success' | 'failure';
+  readonly finishedAt: number;
+  readonly legSeconds: readonly number[];
+}
+
 export interface SandboxSnapshot {
   readonly credits: number;
   readonly fuel: number;
   readonly parts: readonly SandboxPart[];
   readonly layout: readonly Placement[];
+  /** Where the ship is docked (or was when it left). */
+  readonly locationId: string;
+  /** How many jobs are finished: the board shows the next one. */
+  readonly slot: number;
+  readonly mission: SandboxMission | null;
+  readonly history: readonly SandboxResult[];
+  /** The final run was lost: the ship is gone. */
+  readonly shipLost: boolean;
 }
 
 /** The tank starts almost empty: just enough for the first race (the owner's call). */
-export const STARTING_FUEL = 6;
+export const STARTING_FUEL = 15;
 export const SHIP_ID = 'prologue-ship';
 export const SHIP_NAME = 'Wayfarer';
+
+const MS = 1000;
+/** The final run's card shows twice what the two jobs pay together (it is never paid). */
+const FINAL_REWARD_FACTOR = 2;
 
 type Listener = (event: SandboxEvent) => void;
 
@@ -79,7 +122,17 @@ export class Sandbox {
         { id: PROLOGUE_ENGINE.id, part: PROLOGUE_ENGINE, location: 'INVENTORY' as const },
       ],
       layout: installed.map((part) => part.target),
+      locationId: PLACE.haven,
+      slot: 0,
+      mission: null,
+      history: [],
+      shipLost: false,
     };
+  }
+
+  /** The time, in milliseconds. */
+  now(): number {
+    return (this.config.clock ?? Date.now)();
   }
 
   get state(): SandboxSnapshot {
@@ -132,6 +185,87 @@ export class Sandbox {
         this.emit({ type: 'part_removed', partId: entry.id });
       }
     }
+  }
+
+  /** What a job pays: the race, the two jobs, and the final run (shown on its card, never paid). */
+  rewardOf(job: JobSpec): number {
+    const [race = 0, first = 0, second = 0] = this.config.payouts;
+    if (job.slot === 0) return race;
+    if (job.slot === 1) return first;
+    if (job.slot === 2) return second;
+    return (first + second) * FINAL_REWARD_FACTOR;
+  }
+
+  /** Takes a job (it is the pilot's current one until it is dispatched or given back). */
+  accept(job: JobSpec): SandboxMission {
+    const mission: SandboxMission = {
+      id: job.id,
+      job,
+      reward: this.rewardOf(job),
+      status: 'ACCEPTED',
+      acceptedAt: this.now(),
+      startedAt: null,
+      arrivalAt: null,
+      legSeconds: legSecondsOf(job.routes),
+      fuelNeeded: 0,
+    };
+    this.snapshot = { ...this.snapshot, mission };
+    this.emit({ type: 'accepted', missionId: mission.id });
+    return mission;
+  }
+
+  abandon(): void {
+    this.snapshot = { ...this.snapshot, mission: null };
+  }
+
+  /** Sends the ship out on the job it has taken. */
+  dispatch(fuelNeeded: number): SandboxMission {
+    const mission = this.snapshot.mission;
+    if (mission === null) throw new Error('no mission to dispatch');
+    const startedAt = this.now();
+    const total = mission.legSeconds.reduce((sum, seconds) => sum + seconds, 0);
+    const flying: SandboxMission = {
+      ...mission,
+      status: 'IN_TRANSIT',
+      startedAt,
+      arrivalAt: startedAt + total * MS,
+      fuelNeeded,
+    };
+    this.snapshot = { ...this.snapshot, mission: flying };
+    this.emit({ type: 'dispatched', missionId: flying.id });
+    return flying;
+  }
+
+  /**
+   * Brings a flight home once its time is up: the ship docks at the destination, the fuel is spent and the job is
+   * paid (the final run is lost instead). Called before every answer, so the world is never behind the clock.
+   */
+  settle(): void {
+    const mission = this.snapshot.mission;
+    if (mission === null || mission.status !== 'IN_TRANSIT' || mission.arrivalAt === null) return;
+    if (this.now() < mission.arrivalAt) return;
+    const lost = mission.job.kind === 'final';
+    const paid = lost ? 0 : mission.reward;
+    const result: SandboxResult = {
+      id: mission.id,
+      job: mission.job,
+      reward: mission.reward,
+      paid,
+      outcome: lost ? 'failure' : 'success',
+      finishedAt: mission.arrivalAt,
+      legSeconds: mission.legSeconds,
+    };
+    this.snapshot = {
+      ...this.snapshot,
+      credits: this.snapshot.credits + paid,
+      fuel: Math.max(0, this.snapshot.fuel - mission.fuelNeeded),
+      locationId: mission.job.destination,
+      slot: this.snapshot.slot + 1,
+      mission: null,
+      history: [...this.snapshot.history, result],
+      shipLost: lost,
+    };
+    this.emit({ type: 'arrived', missionId: mission.id });
   }
 
   addCredits(delta: number): void {

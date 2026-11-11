@@ -13,6 +13,7 @@ import type {
 } from '../../../api/generated';
 import { PROLOGUE_CELLS, PROLOGUE_PLACES, type ProloguePart } from '../prologue-fixtures';
 import type { SandboxPart } from './sandbox-state';
+import { SANDBOX_DESCRIPTIONS } from './sandbox-world';
 
 /** The words the screens show for a part, from the seeded catalog (the first sentences). */
 const DESCRIPTIONS: Record<string, LocalizedText> = {
@@ -43,7 +44,9 @@ const DESCRIPTIONS: Record<string, LocalizedText> = {
 };
 
 export function descriptionOf(part: ProloguePart): LocalizedText {
-  return DESCRIPTIONS[part.catalog.partType] ?? part.name;
+  return (
+    DESCRIPTIONS[part.catalog.partType] ?? SANDBOX_DESCRIPTIONS[part.catalog.partType] ?? part.name
+  );
 }
 
 /** A part the pilot owns, as the inventory endpoint lists it. */

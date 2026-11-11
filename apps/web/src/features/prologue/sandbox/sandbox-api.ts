@@ -1,28 +1,17 @@
 import type { ApiInterceptor, InterceptedRequest } from '../../../api/client';
 import { ApiError } from '../../../api/client';
-import type {
-  EnginePreview,
-  PartCatalogStats,
-  Placement,
-  PreviewResponse,
-  ShipResponse,
-} from '../../../api/generated';
-import { computePortMarks } from '../../hangar/connectors';
-import { directionViolations, isOutsideYard, placementIssue } from '../../hangar/hangar.geometry';
+import type { Placement } from '../../../api/generated';
 import {
   PROLOGUE_BRIDGE,
   PROLOGUE_CARGO,
   PROLOGUE_ENGINE,
   PROLOGUE_HULL,
-  PROLOGUE_PLACES,
   PROLOGUE_TANK,
-  PROLOGUE_WORLD,
 } from '../prologue-fixtures';
 import {
   SANDBOX_DIALOGUE,
   SANDBOX_DISPLAY,
   SANDBOX_FACTIONS,
-  SANDBOX_FORMAT_ID,
   SANDBOX_FORMATS,
   SANDBOX_MATERIALS,
   SANDBOX_NOTICES,
@@ -32,10 +21,14 @@ import {
   descriptionOf,
   inventoryItemOf,
 } from './sandbox-fixtures';
-import { connectedPartIds, sheetOf } from './sandbox-geometry';
-import { SHIP_ID, SHIP_NAME, type Sandbox } from './sandbox-state';
+import { activeOf, boardOf, moduleKindOf, offerOf } from './sandbox-offers';
+import { reportListOf, reportOf } from './sandbox-reports';
+import { assertSavable, enginePreviewOf, flaggedLayout, previewOf, shipOf } from './sandbox-ship';
+import { SHIP_ID, type Sandbox } from './sandbox-state';
+import { SANDBOX_WORLD, SANDBOX_PASSENGER_MODULE, fuelNeededFor, jobsAt } from './sandbox-world';
 
 const CATALOG_PARTS = [
+  SANDBOX_PASSENGER_MODULE,
   PROLOGUE_BRIDGE,
   PROLOGUE_TANK,
   PROLOGUE_HULL,
@@ -45,142 +38,18 @@ const CATALOG_PARTS = [
 
 const NOT_FOUND = 404;
 const BAD_REQUEST = 400;
-const ONE_ROUTE_COVERED = { covered: 1, total: 1 } as const;
-
-/** The yard's parts keyed by instance id, with the catalog stats the geometry reads. */
-function viewOf(sandbox: Sandbox, layout: readonly Placement[]) {
-  const { catalogById, connectorsById } = sandbox.lookups();
-  const connected = connectedPartIds(layout, catalogById, connectorsById);
-  const disconnected = layout
-    .map((placement) => placement.partInstanceId)
-    .filter((id) => !connected.has(id));
-  const counted = layout
-    .filter((placement) => connected.has(placement.partInstanceId))
-    .map((placement) => catalogById.get(placement.partInstanceId))
-    .filter((stats): stats is PartCatalogStats => stats !== undefined);
-  return { catalogById, connectorsById, disconnected, counted };
-}
-
-const YARD_CELLS = new Set(SANDBOX_FORMATS[0]?.cells.map(([x, y]) => `${x},${y}`));
-
-/** The placements as the server stores them: a part with a cell outside the yard is flagged `outside` (it is parked). */
-function flaggedLayout(sandbox: Sandbox, layout: readonly Placement[]): Placement[] {
-  const { catalogById } = sandbox.lookups();
-  return layout.map((placement) => {
-    const stats = catalogById.get(placement.partInstanceId);
-    const outside =
-      stats !== undefined &&
-      isOutsideYard(stats, placement.gx, placement.gy, placement.rot, YARD_CELLS);
-    const { outside: _drop, ...rest } = placement;
-    return outside ? { ...rest, outside: true } : rest;
-  });
-}
-
-function previewOf(sandbox: Sandbox, candidate: readonly Placement[]): PreviewResponse {
-  const layout = flaggedLayout(sandbox, candidate);
-  const onShip = layout.filter((placement) => placement.outside !== true);
-  const outsideIds = new Set(
-    layout
-      .filter((placement) => placement.outside === true)
-      .map((placement) => placement.partInstanceId),
-  );
-  const { catalogById, connectorsById, disconnected, counted } = viewOf(sandbox, onShip);
-  const sheet = sheetOf(counted, sandbox.state.fuel);
-  const problems: PreviewResponse['viability']['problems'] = [];
-  if (!counted.some((stats) => stats.partClass === 'BRIDGE')) {
-    problems.push({ code: 'NO_BRIDGE', message: 'Ship has no bridge installed.' });
-  }
-  if (!counted.some((stats) => stats.partClass === 'ENGINE')) {
-    problems.push({ code: 'NO_ENGINE', message: 'Ship has no engine installed.' });
-  }
-  if (disconnected.length > 0) {
-    problems.push({
-      code: 'PART_DISCONNECTED',
-      message: `${disconnected.length} installed part(s) are not connected to the bridge: fix their connectors or remove them.`,
-    });
-  }
-  if (outsideIds.size > 0) {
-    problems.push({
-      code: 'PART_OUTSIDE',
-      message: `${outsideIds.size} part(s) are outside the ship: move them inside or remove them.`,
-    });
-  }
-  const wrong = new Set(
-    computePortMarks(onShip, catalogById, connectorsById)
-      .filter((mark) => mark.state === 'incorrect')
-      .map((mark) => mark.partInstanceId),
-  );
-  if (wrong.size > 0) {
-    problems.push({
-      code: 'PORT_INCORRECT',
-      message: `${wrong.size} installed part(s) have a connector against one that does not fit: move or rotate them.`,
-    });
-  }
-  const warnings: PreviewResponse['viability']['warnings'] = [];
-  for (const violation of directionViolations(onShip, catalogById)) {
-    warnings.push({
-      code: violation.kind === 'exhaust' ? 'EXHAUST_BLOCKED' : 'FACING_BLOCKED',
-      message: 'A part is in the way of an engine or weapon.',
-    });
-  }
-  return {
-    sheet,
-    shipClass: 'TRANSPORT',
-    viability: { viable: problems.length === 0, problems, warnings },
-    layout,
-    omittedPartInstanceIds: [],
-    disconnectedPartIds: disconnected,
-    routeCoverage: sheet.fuelUse > 0 ? ONE_ROUTE_COVERED : null,
-  };
-}
-
-/** The ship as the screens read it: the layout, the sheet of the connected parts, the fuel. */
-export function shipOf(sandbox: Sandbox): ShipResponse {
-  const state = sandbox.state;
-  const preview = previewOf(sandbox, state.layout);
-  return {
-    id: SHIP_ID,
-    ownerPlayerId: sandbox.config.profile.id,
-    name: SHIP_NAME,
-    fuel: state.fuel,
-    status: 'IN_PORT',
-    currentLocationId: PROLOGUE_PLACES.home,
-    stance: 'NEUTRAL',
-    energyMode: 'FULL',
-    engineLevels: { chem: 1, ion: 1 },
-    formatId: SANDBOX_FORMAT_ID,
-    formatChangeRequired: false,
-    float: null,
-    rescue: null,
-    layout: [...state.layout],
-    sheet: preview.sheet,
-    shipClass: 'TRANSPORT',
-    yard: { cells: SANDBOX_FORMATS[0]?.cells.map(([x, y]) => [x, y] as [number, number]) ?? [] },
-    disconnectedPartIds: preview.disconnectedPartIds,
-    routeCoverage: preview.routeCoverage,
-    activity: { kind: 'idle', until: null, missionId: null, repairUntil: null },
-  };
-}
-
-function enginePreviewOf(sandbox: Sandbox, chem: number, ion: number): EnginePreview {
-  const sheet = shipOf(sandbox).sheet;
-  return {
-    levels: { chem, ion },
-    ranges: { chem: [0.5, 1.5], ion: [0.5, 2.5] },
-    groups: sheet.pot > 0 ? ['chem'] : [],
-    thrust: { chem: sheet.pot * chem, ion: 0 },
-    baselineThrust: { chem: sheet.pot, ion: 0 },
-    mobility: sheet.mob * chem,
-    fuelUse: sheet.fuelUse * chem,
-    baseline: { mobility: sheet.mob, fuelUse: sheet.fuelUse },
-    power: { supply: 10, demand: 7, spare: 3 },
-    wearPerLeg: { chem: 0, ion: 0, battery: 0 },
-    cleanChance: 1,
-  };
-}
+const CONFLICT = 409;
+const MS = 1000;
+/** A beat after the arrival time, so the settle timer never fires a hair early. */
+const SETTLE_SLACK_MS = 50;
 
 type Params = Record<string, string>;
-type Handler = (context: { sandbox: Sandbox; params: Params; body: unknown }) => unknown;
+type Handler = (context: {
+  sandbox: Sandbox;
+  params: Params;
+  query: URLSearchParams;
+  body: unknown;
+}) => unknown;
 
 interface Route {
   readonly method: string;
@@ -204,36 +73,6 @@ const layoutOf = (body: unknown): Placement[] => {
   if (!Array.isArray(layout)) throw new ApiError(BAD_REQUEST, 'layout is required', 'BAD_REQUEST');
   return layout;
 };
-
-/**
- * What the server refuses on a save: parts on top of each other, or the bridge outside the yard. Any other part may
- * be parked outside (it is flagged and keeps the ship on the ground); a wrong connection is only reported.
- */
-function assertSavable(sandbox: Sandbox, layout: readonly Placement[]): void {
-  const { catalogById } = sandbox.lookups();
-  const problems: Array<{ code: string; message: string }> = [];
-  for (const placement of layout) {
-    const others = layout.filter((other) => other.partInstanceId !== placement.partInstanceId);
-    const issue = placementIssue(
-      others,
-      catalogById,
-      placement.partInstanceId,
-      placement.gx,
-      placement.gy,
-      placement.rot,
-      YARD_CELLS,
-    );
-    if (issue === 'overlap') problems.push({ code: 'OVERLAP', message: 'Parts overlap.' });
-    if (issue === 'bounds')
-      problems.push({ code: 'OUT_OF_BOUNDS', message: 'Part is outside the grid.' });
-  }
-  if (problems.length > 0) {
-    throw new ApiError(409, 'The layout is not valid.', 'INVALID_LAYOUT', {
-      statusCode: 409,
-      message: { error: 'INVALID_LAYOUT', problems },
-    });
-  }
-}
 
 const ROUTES: readonly Route[] = [
   route('GET', '/v1/players/me', ({ sandbox }) => ({
@@ -261,7 +100,7 @@ const ROUTES: readonly Route[] = [
   route('GET', '/v1/system/notices', () => SANDBOX_NOTICES),
   route('GET', '/v1/materials', () => SANDBOX_MATERIALS),
   route('GET', '/v1/ship-formats', () => SANDBOX_FORMATS),
-  route('GET', '/v1/locations', () => PROLOGUE_WORLD),
+  route('GET', '/v1/locations', () => SANDBOX_WORLD),
   route('GET', '/v1/parts/catalog', () => catalogListOf(CATALOG_PARTS)),
   route('GET', '/v1/catalog/parts/:partType', ({ params }) => {
     const part = CATALOG_PARTS.find((entry) => entry.catalog.partType === params.partType);
@@ -297,6 +136,75 @@ const ROUTES: readonly Route[] = [
   }),
   route('POST', '/v1/ships/:id/energy-mode', ({ sandbox }) => shipOf(sandbox)),
   route('POST', '/v1/ships/:id/engine-levels', ({ sandbox }) => shipOf(sandbox)),
+  route('GET', '/v1/locations/:id/missions', ({ sandbox, params }) =>
+    params.id === sandbox.state.locationId ? boardOf(sandbox) : [],
+  ),
+  route('POST', '/v1/missions/:id/accept', ({ sandbox, params }) => {
+    const offer = boardOf(sandbox).find((entry) => entry.id === params.id);
+    if (offer === undefined) throw new ApiError(404, 'mission not found', 'NOT_FOUND');
+    if (sandbox.state.mission !== null) {
+      throw new ApiError(CONFLICT, 'A mission is already active', 'ACTIVE_MISSION_EXISTS');
+    }
+    if (!offer.eligibility.eligible) {
+      throw new ApiError(CONFLICT, 'not eligible', 'NOT_ELIGIBLE', {
+        statusCode: CONFLICT,
+        message: { error: 'NOT_ELIGIBLE', reasons: offer.eligibility.reasons },
+      });
+    }
+    const job = jobsAt(
+      Math.min(sandbox.state.slot, 3) as 0 | 1 | 2 | 3,
+      sandbox.state.locationId,
+      moduleKindOf(sandbox),
+    ).find((entry) => entry.id === params.id);
+    if (job === undefined) throw new ApiError(404, 'mission not found', 'NOT_FOUND');
+    sandbox.accept(job);
+    return offerOf(sandbox, job);
+  }),
+  route('POST', '/v1/missions/:id/abandon', ({ sandbox }) => {
+    sandbox.abandon();
+    return { status: 'AVAILABLE' };
+  }),
+  route('GET', '/v1/missions/active', ({ sandbox }) =>
+    sandbox.state.mission === null ? [] : [activeOf(sandbox, sandbox.state.mission)],
+  ),
+  route('POST', '/v1/ships/:id/dispatch', ({ sandbox, body }) => {
+    const mission = sandbox.state.mission;
+    const asked = (body as { missionId?: string } | null)?.missionId;
+    if (mission === null || mission.status !== 'ACCEPTED' || mission.id !== asked) {
+      throw new ApiError(404, 'no accepted mission to dispatch', 'NOT_FOUND');
+    }
+    const preview = previewOf(sandbox, sandbox.state.layout);
+    if (!preview.viability.viable) {
+      throw new ApiError(CONFLICT, 'The ship cannot fly', 'SHIP_NOT_VIABLE', {
+        statusCode: CONFLICT,
+        message: { error: 'SHIP_NOT_VIABLE', problems: preview.viability.problems },
+      });
+    }
+    const needed = fuelNeededFor(mission.job.routes, preview.sheet.fuelUse);
+    if (sandbox.state.fuel < needed) {
+      throw new ApiError(CONFLICT, 'Not enough fuel', 'INSUFFICIENT_FUEL');
+    }
+    const flying = sandbox.dispatch(needed);
+    const arrival = flying.arrivalAt ?? 0;
+    const startedAt = flying.startedAt ?? 0;
+    // a real browser run: bring the flight home on time even if nobody asks; a test drives its own clock
+    if (sandbox.config.clock === undefined) {
+      setTimeout(() => sandbox.settle(), arrival - startedAt + SETTLE_SLACK_MS);
+    }
+    return {
+      missionId: flying.id,
+      arrivalAt: new Date(arrival).toISOString(),
+      serverTime: new Date(startedAt).toISOString(),
+      durationSeconds: (arrival - startedAt) / MS,
+    };
+  }),
+  route('GET', '/v1/reports', ({ sandbox }) => reportListOf(sandbox)),
+  route('GET', '/v1/reports/:missionId', ({ sandbox, params, query }) => {
+    const report = reportOf(sandbox, params.missionId ?? '', query.get('view') ?? 'summary');
+    if (report === null) throw new ApiError(404, 'report not found', 'NOT_FOUND');
+    sandbox.emit({ type: 'report_opened', missionId: params.missionId ?? '' });
+    return report;
+  }),
   route('POST', '/v1/ships/:id/engine-preview', ({ sandbox, body }) => {
     const levels = (body ?? {}) as { chem?: number; ion?: number };
     return enginePreviewOf(sandbox, levels.chem ?? 1, levels.ion ?? 1);
@@ -326,9 +234,13 @@ export function sandboxInterceptor(sandbox: Sandbox): ApiInterceptor {
   return async (request) => {
     const found = matchRoute(request);
     if (found === null) return { handled: false };
+    // the world is never behind the clock: a flight that is over is settled before anything answers
+    sandbox.settle();
+    const query = new URLSearchParams(request.path.split('?')[1] ?? '');
     const value = await found.route.handler({
       sandbox,
       params: found.params,
+      query,
       body: request.body,
     });
     return { handled: true, value };
