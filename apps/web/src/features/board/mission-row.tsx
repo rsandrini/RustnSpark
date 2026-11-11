@@ -11,6 +11,7 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { scaleSpeed, useDisplay } from '../../ui/display';
 import { fuelStatus } from './fuel-status';
 import { MissionCard } from './mission-card';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 const DOT = ' · ';
 
@@ -53,6 +54,7 @@ export function MissionRow({
   const money = (value: number) => `${new Intl.NumberFormat(i18n.language).format(value)} ¢`;
   const place = (location: WorldLocation | undefined, fallback: string) =>
     location === undefined ? fallback : pickLocalized(location.displayName, i18n.language);
+  const opening = usePrologueMode().active;
   const expired = Date.parse(offer.expiresAt) <= useNow(true);
   const blocked = !taken && !offer.eligibility.eligible;
   const burnsFuel = fuelUse === undefined || fuelUse > 0;
@@ -88,7 +90,7 @@ export function MissionRow({
             {/* The face on the row (48 px, plan §1); none for offers from before givers. */}
             {info.giver != null && <GiverBadge {...giverBadgeOf(info.giver, i18n.language)} />}
             {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
-            {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+            {!opening && (!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
               <span className="mrow-expires">
                 {expired ? (
                   t('board.expiredLabel')

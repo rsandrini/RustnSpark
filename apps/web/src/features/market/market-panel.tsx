@@ -237,7 +237,7 @@ export function MarketPanel({
   };
 
   return (
-    <section className="stack market-panel">
+    <section className="stack market-panel" data-opening="market">
       {showBalance && (
         <p className="balance" data-testid="store-balance">
           <span className="muted">{t('port.wallet')}</span> <b>{money(wallet)}</b>

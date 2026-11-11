@@ -20,6 +20,7 @@ import type {
 import { pickLocalized } from '../../i18n/localized';
 import { useAuthContext } from '../auth/auth.context';
 import { RescueBanner } from '../rescue/rescue-banner';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 const BOARD_REFETCH_MS = 15000;
 
@@ -71,7 +72,9 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
   const [typeFilter, setTypeFilter] = useState<MissionType | 'all'>('all');
   // Defaults on (owner request): most offers on a busy board are ones the ship can't take yet,
   // and the pilot generally wants to see what they CAN take first.
-  const [onlyEligible, setOnlyEligible] = useState(true);
+  // In the opening the pilot sees every job, even the ones the ship cannot take yet: that is what the first stop is about.
+  const opening = usePrologueMode().active;
+  const [onlyEligible, setOnlyEligible] = useState(!opening);
   const [sortKey, setSortKey] = useState<SortKey>('reward');
   const [actionError, setActionError] = useState<string | null>(null);
 

@@ -18,6 +18,7 @@ import { RouteMap, pathOfLegs } from '../../ui/RouteMap';
 import { FuelBlock } from './fuel-block';
 import { factionName, useFactions } from '../../ui/factions';
 import { useNow } from '../../ui/useNow';
+import { usePrologueMode } from '../prologue/prologue-mode';
 
 /** The game compares whole-number speeds: "needs 3" means 2.5 or more on the unrounded sheet. */
 const HALF = 0.5;
@@ -99,6 +100,7 @@ export function MissionCard({
   // that expired while the board was open kept its countdown. The ticker runs every second;
   // once the label flips the server will also refuse the accept, so nothing else changes.
   const now = useNow(true);
+  const opening = usePrologueMode().active;
   const expired = Date.parse(offer.expiresAt) <= now;
   // info.requirements is the full checklist (met + unmet); eligibility.reasons also carries
   // general blocking reasons (viability, no ship, already on a mission). Anything the
@@ -179,7 +181,7 @@ export function MissionCard({
       <div className="mcard-meta">
         {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
         {/* A mission under way no longer has a start deadline. */}
-        {(!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
+        {!opening && (!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
           <span className="sub">
             {expired ? (
               t('board.expiredLabel')
@@ -380,6 +382,7 @@ function RaceField({
   money: (value: number) => string;
 }) {
   const { t, i18n } = useTranslation();
+  const opening = usePrologueMode().active;
   const display = useDisplay();
   const speed = (raw: number) =>
     new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
@@ -415,7 +418,7 @@ function RaceField({
             <th>{t('board.race.pilot')}</th>
             <th>{t('board.race.speed')}</th>
             <th title={t('board.race.expectedHint')}>{t('board.race.expected')}</th>
-            <th title={t('board.race.bestHint')}>{t('board.race.best')}</th>
+            {!opening && <th title={t('board.race.bestHint')}>{t('board.race.best')}</th>}
           </tr>
         </thead>
         <tbody>
@@ -440,7 +443,9 @@ function RaceField({
               <td>
                 {row.expected === null ? t('board.race.none') : formatDuration(row.expected, t)}
               </td>
-              <td>{row.best === null ? t('board.race.none') : formatDuration(row.best, t)}</td>
+              {!opening && (
+                <td>{row.best === null ? t('board.race.none') : formatDuration(row.best, t)}</td>
+              )}
             </tr>
           ))}
         </tbody>

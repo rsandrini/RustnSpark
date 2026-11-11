@@ -192,6 +192,14 @@
     "port": {
       "title": "Harbour office",
       "body": "Kite's gone, and he won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
+    },
+    "director": {
+      "continue": "Continue"
+    },
+    "moment": {
+      "signalLost": "SIGNAL LOST",
+      "lossCaption": "{{friend}}'s ship is gone too. Nothing is moving out there.",
+      "rescueCaption": "A rescue cutter has found your beacon."
     }
   },
   "onboarding": {

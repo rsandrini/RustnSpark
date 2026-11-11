@@ -28,6 +28,7 @@ import { FlightWatcher } from '../features/transit/flight-watcher';
 import { GuestReminder } from '../features/auth/guest-reminder';
 import { TutorialCard } from '../features/tutorial/tutorial-card';
 import { PrologueModeProvider, usePrologueMode } from '../features/prologue/prologue-mode';
+import { Director } from '../features/prologue/director/director';
 
 const AdminRoutes = lazy(() => import('../admin/admin-routes'));
 
@@ -65,14 +66,15 @@ function useScrollToTopOnPhone() {
 function InGameChrome() {
   useWalletSync();
   useScrollToTopOnPhone();
+  const opening = usePrologueMode();
   return (
     <>
       <TopBar />
       <NoticeBanner />
-      <TutorialCard />
+      {opening.active ? <Director /> : <TutorialCard />}
       <DialogueHost />
       <FlightWatcher />
-      <GuestReminder />
+      {!opening.active && <GuestReminder />}
     </>
   );
 }

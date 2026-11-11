@@ -6,12 +6,10 @@ import { ApiError, client } from '../../api/client';
 import { pickLocalized } from '../../i18n/localized';
 import { factionCardStyle, useFactionArt } from '../../ui/factionArt';
 import { factionBlurb, factionName, useFactions } from '../../ui/factions';
-import { GiverBadge, giverBadgeOf } from '../../ui/GiverBadge';
-import { giverOf } from '../prologue/prologue-script';
+import { GiverBadge } from '../../ui/GiverBadge';
 import { useAuthContext } from '../auth/auth.context';
 import { useAuth } from '../auth/auth.hooks';
 import { PageTitle } from '../../ui/PageTitle';
-import { PrologueFlow } from '../prologue/prologue.page';
 import { usePrologueMode } from '../prologue/prologue-mode';
 
 // The playable factions are the keys of the admin-editable `onboarding.home_locations`
@@ -35,11 +33,8 @@ export function OnboardingRoute() {
   if (user.factionId || opening.active) {
     return <Navigate to="/ship" replace />;
   }
-  // The new-pilot opening comes first: the server says it has not ended for this pilot (null). A server that does not
-  // send the field at all (undefined) goes straight to the picker, as before.
-  if (user.prologueOutcome === null) {
-    return <PrologueFlow />;
-  }
+  // The new-pilot opening comes first and plays on the game's own screens (see the director); this picker is what
+  // follows it, or what a pilot sees when the opening could not start.
   return <OnboardingPage />;
 }
 
@@ -87,7 +82,6 @@ export function OnboardingPage() {
       {user?.prologueOutcome === 'played' && (
         // After the opening's loss: the harbour office says why the pilot is choosing a flag at all.
         <div className="panel prologue-port" data-testid="prologue-port">
-          <GiverBadge {...giverBadgeOf(giverOf('harbour'), i18n.language)} size="card" />
           <p>{t('prologue.port.body')}</p>
         </div>
       )}

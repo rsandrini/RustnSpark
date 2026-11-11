@@ -50,15 +50,14 @@ const MS = 1000;
 /** A beat after the arrival time, so the settle timer never fires a hair early. */
 const SETTLE_SLACK_MS = 50;
 
-/** What a refuel of `body.mode` costs: filling the whole tank costs the opening's refuel price, a part of it a part of that. */
-function refuelQuoteOf(sandbox: Sandbox, body: unknown) {
-  const request = (body ?? {}) as { mode?: string; amount?: number };
+/**
+ * What a refuel costs: always the whole tank, at the opening's refuel price. A part of a tank would leave the next job
+ * without fuel, and the story's money only adds up with one full refuel.
+ */
+function refuelQuoteOf(sandbox: Sandbox) {
   const space = tankSpace(sandbox);
-  const units = request.mode === 'full' ? space.space : Math.min(request.amount ?? 0, space.space);
-  const cost =
-    units <= 0 || space.space <= 0
-      ? 0
-      : Math.max(1, Math.round((sandbox.config.refuelCost * units) / space.space));
+  const units = space.space;
+  const cost = units <= 0 ? 0 : sandbox.config.refuelCost;
   return {
     units,
     cost,
@@ -259,12 +258,12 @@ const ROUTES: readonly Route[] = [
       credits: sandbox.state.credits,
     };
   }),
-  route('POST', '/v1/ships/:id/refuel/quote', ({ sandbox, body }) => {
-    const quote = refuelQuoteOf(sandbox, body);
+  route('POST', '/v1/ships/:id/refuel/quote', ({ sandbox }) => {
+    const quote = refuelQuoteOf(sandbox);
     return { shipId: SHIP_ID, ...quote };
   }),
-  route('POST', '/v1/ships/:id/refuel', ({ sandbox, body }) => {
-    const quote = refuelQuoteOf(sandbox, body);
+  route('POST', '/v1/ships/:id/refuel', ({ sandbox }) => {
+    const quote = refuelQuoteOf(sandbox);
     if (quote.cost > sandbox.state.credits) {
       throw new ApiError(CONFLICT, 'not enough credits', 'INSUFFICIENT_FUNDS');
     }

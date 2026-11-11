@@ -1,0 +1,181 @@
+.moment {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  overflow: hidden;
+  padding: 20px;
+  color: #fff;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ the loss */
+.moment-loss {
+  background: radial-gradient(circle at 50% 45%, #3a0b0b 0%, #120405 60%, #050102 100%);
+  animation: moment-fade-in 0.5s ease-out both;
+}
+.moment-flash {
+  position: absolute;
+  inset: 0;
+  background: #ff3b30;
+  opacity: 0;
+  animation: moment-flash 1.1s ease-out 0.2s 1 both;
+  pointer-events: none;
+}
+.moment-ship {
+  position: relative;
+  width: 160px;
+  height: 70px;
+  animation: moment-shake 0.5s linear 0.2s 4;
+}
+.moment-hull {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px 36px 36px 10px;
+  background: linear-gradient(90deg, #5b6470, #8b95a3);
+  animation: moment-break 2.4s ease-in 0.9s forwards;
+}
+.moment-shard {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 14px;
+  background: #7d8794;
+  opacity: 0;
+  animation: moment-shard 2.6s ease-out 1s forwards;
+}
+.moment-shard.s0 { --dx: -120px; --dy: -70px; --r: 200deg; }
+.moment-shard.s1 { --dx: 130px; --dy: -60px; --r: -160deg; }
+.moment-shard.s2 { --dx: -90px; --dy: 80px; --r: 140deg; }
+.moment-shard.s3 { --dx: 110px; --dy: 90px; --r: -210deg; }
+.moment-shard.s4 { --dx: 0px; --dy: -110px; --r: 90deg; }
+.moment-shard.s5 { --dx: 20px; --dy: 120px; --r: -90deg; }
+.moment-shard.s6 { --dx: -170px; --dy: 10px; --r: 260deg; }
+.moment-shard.s7 { --dx: 180px; --dy: 20px; --r: -250deg; }
+.moment-alert {
+  margin: 8px 0 0;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(28px, 6vw, 54px);
+  letter-spacing: 0.18em;
+  color: #ff6b5f;
+  animation: moment-blink 1s steps(2, start) 0.4s 4 both;
+}
+.moment-caption {
+  margin: 0;
+  max-width: 34ch;
+  color: #e9d6d3;
+  opacity: 0;
+  animation: moment-fade-in 1s ease-out 1.6s forwards;
+}
+.moment-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  width: min(480px, 100%);
+  animation: moment-fade-in 0.8s ease-out both;
+}
+.moment-col {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  text-align: left;
+}
+.moment-col h2 { margin: 0 0 6px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+.moment-col ul { margin: 0; padding: 0; list-style: none; }
+.moment-col.lost li { color: #ff9e95; }
+.moment-col.saved li { color: #9be6b0; }
+.moment-continue { animation: moment-fade-in 0.8s ease-out both; }
+
+/* ------------------------------------------------------------------ the rescue */
+.moment-rescue {
+  background: radial-gradient(circle at 70% 40%, #14233a 0%, #080d18 70%);
+  animation: moment-fade-in 1s ease-out both;
+}
+.moment-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 12% 20%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 30% 70%, #cfe3ff, transparent),
+    radial-gradient(2px 2px at 55% 30%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 78% 60%, #cfe3ff, transparent),
+    radial-gradient(2px 2px at 90% 15%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 44% 88%, #fff, transparent);
+  animation: moment-twinkle 3s ease-in-out infinite;
+}
+.moment-wreck {
+  position: absolute;
+  top: 55%;
+  left: 36%;
+  width: 40px;
+  height: 20px;
+}
+.moment-shard.drift {
+  opacity: 0.85;
+  animation: moment-drift 9s ease-in-out infinite alternate;
+}
+.moment-cutter {
+  position: absolute;
+  top: 38%;
+  left: 100%;
+  width: 150px;
+  height: 46px;
+  animation: moment-cutter-in 3.8s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards;
+}
+.moment-cutter-body {
+  position: absolute;
+  inset: 0;
+  border-radius: 30px 8px 8px 30px;
+  background: linear-gradient(90deg, #e9eef6, #9db3d4);
+  box-shadow: 0 0 22px rgba(160, 200, 255, 0.5);
+}
+.moment-beam {
+  position: absolute;
+  top: 60%;
+  left: -150px;
+  width: 190px;
+  height: 90px;
+  background: linear-gradient(90deg, rgba(255, 238, 170, 0), rgba(255, 238, 170, 0.55));
+  clip-path: polygon(100% 0, 100% 100%, 0 70%);
+  transform: scaleX(-1);
+  transform-origin: 100% 50%;
+  opacity: 0;
+  animation: moment-fade-in 1.2s ease-out 2.6s forwards;
+}
+.moment-caption.rescue {
+  position: absolute;
+  bottom: 16%;
+  animation-delay: 1.4s;
+  color: #d9e6ff;
+}
+
+@keyframes moment-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes moment-flash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
+@keyframes moment-blink { 50% { opacity: 0.15; } }
+@keyframes moment-shake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-4px, 2px) rotate(-1deg); }
+  75% { transform: translate(4px, -2px) rotate(1deg); }
+}
+@keyframes moment-break {
+  0% { opacity: 1; filter: none; }
+  100% { opacity: 0; filter: blur(3px) brightness(2); transform: scale(1.1); }
+}
+@keyframes moment-shard {
+  0% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)); }
+}
+@keyframes moment-drift {
+  from { transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(0deg); }
+  to { transform: translate(calc(var(--dx, 0px) / 2), calc(var(--dy, 0px) / 3)) rotate(var(--r, 40deg)); }
+}
+@keyframes moment-twinkle { 50% { opacity: 0.6; } }
+@keyframes moment-cutter-in { to { left: 52%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .moment *, .moment { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+}

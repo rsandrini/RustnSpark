@@ -1081,7 +1081,7 @@ export function PortPage({ guided = false, embedded = false, onGoToShip }: PortP
       )}
 
       {tab === 'refuel' && (
-        <section className="stack">
+        <section className="stack" data-opening="refuel">
           <Gauge
             value={fuel}
             max={fuelCap}

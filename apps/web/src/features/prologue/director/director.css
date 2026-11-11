@@ -1,0 +1,47 @@
+/* Locked controls: shown as they will be in the game, but they do nothing. */
+[data-opening-locked] {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: saturate(0.6);
+}
+
+/* What the step wants pressed glows. */
+[data-opening-allowed] {
+  animation: opening-glow 1.8s ease-in-out infinite;
+  border-radius: 8px;
+}
+@keyframes opening-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 196, 77, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 196, 77, 0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-opening-allowed] {
+    animation: none;
+    outline: 2px solid rgba(255, 196, 77, 0.7);
+  }
+}
+
+/* The opening's own controls (skip, continue), above the spoken lines' backdrop so they are always reachable. */
+.opening-bar {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 95;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.opening-bar .opening-continue {
+  animation: opening-glow 1.8s ease-in-out infinite;
+}
+@media (max-width: 720px) {
+  .opening-bar {
+    bottom: 76px; /* above the phone's tab bar */
+    right: 12px;
+  }
+}

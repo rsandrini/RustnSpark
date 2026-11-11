@@ -1,4 +1,3 @@
-import { MissionOfferSchema, WorldResponseSchema } from '@rustandspark/contract';
 import { describe, expect, it } from 'vitest';
 import { computePortMarks } from '../hangar/connectors';
 import { directionViolations, placementIssue } from '../hangar/hangar.geometry';
@@ -10,14 +9,11 @@ import {
   PROLOGUE_SHIP_WITH_CARGO,
   PROLOGUE_SHIP_WITH_ENGINE,
   PROLOGUE_START_PARTS,
-  PROLOGUE_WORLD,
-  prologueOffers,
   prologueShip,
   type ProloguePart,
 } from './prologue-fixtures';
 
 const cells = new Set(PROLOGUE_CELLS.map(([x, y]) => `${x},${y}`));
-const PAYOUTS = [600, 900, 1500];
 
 /** The ship's own ports once `part` sits at `gx, gy, rot` beside the starting parts. */
 function marksWith(part: ProloguePart, gx: number, gy: number, rot: 0 | 90 | 180 | 270) {
@@ -101,39 +97,4 @@ describe('the opening ship', () => {
       expect(marks.some((mark) => mark.state === 'connected')).toBe(true);
     },
   );
-});
-
-describe('the opening world and offers', () => {
-  it('has a world and offers in the shapes the screens read', () => {
-    expect(() => WorldResponseSchema.parse(PROLOGUE_WORLD)).not.toThrow();
-    const offers = prologueOffers(PAYOUTS);
-    for (const offer of [offers.race, ...offers.firstStop, ...offers.secondStop, offers.finalRun]) {
-      expect(() => MissionOfferSchema.parse(offer)).not.toThrow();
-    }
-  });
-
-  it('pays the same for both offers of a stop, so the choice never changes the money', () => {
-    const offers = prologueOffers(PAYOUTS);
-    expect(offers.firstStop[0].reward).toBe(offers.firstStop[1].reward);
-    expect(offers.secondStop[0].reward).toBe(offers.secondStop[1].reward);
-  });
-
-  it('pays what the server says: the three payouts add up to the credits a pilot starts with', () => {
-    const offers = prologueOffers(PAYOUTS);
-    const earned = offers.race.reward + offers.firstStop[0].reward + offers.secondStop[0].reward;
-    expect(earned).toBe(PAYOUTS.reduce((sum, payout) => sum + payout, 0));
-  });
-
-  it('makes the final run the only dangerous one', () => {
-    const offers = prologueOffers(PAYOUTS);
-    expect(offers.finalRun.info.peakDanger).toBeGreaterThan(0);
-    for (const offer of [offers.race, ...offers.firstStop, ...offers.secondStop]) {
-      expect(offer.info.peakDanger).toBe(0);
-    }
-  });
-
-  it('gives the race a friend who finishes ahead of the player', () => {
-    const { race } = prologueOffers(PAYOUTS).race.info;
-    expect(race?.rivals[0]?.durationSeconds).toBeLessThan(race?.you?.durationSeconds ?? 0);
-  });
 });

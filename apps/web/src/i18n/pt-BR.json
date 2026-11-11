@@ -192,6 +192,14 @@
     "port": {
       "title": "Escritório do porto",
       "body": "O Kite se foi, e não será o último. Os três poderes agora lutam contra os piratas, cada um à sua maneira. Escolha a bandeira pela qual você vai voar, e eles te dão uma nave."
+    },
+    "director": {
+      "continue": "Continuar"
+    },
+    "moment": {
+      "signalLost": "SINAL PERDIDO",
+      "lossCaption": "A nave de {{friend}} também se foi. Nada se move lá fora.",
+      "rescueCaption": "Um cortador de resgate encontrou o seu sinal."
     }
   },
   "onboarding": {

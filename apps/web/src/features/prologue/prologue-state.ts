@@ -1,55 +1,48 @@
 import { useSyncExternalStore } from 'react';
+import { FIRST_STEP, isStepId, type StepId } from './director/steps';
+import type { ModuleKind } from './sandbox/sandbox-world';
+
+export type { StepId } from './director/steps';
 
 /**
- * The steps of the new-pilot opening, in order. Where the pilot is stays in the browser, per account (the server only
- * knows how the opening ENDED: `Player.prologueOutcome`). The opening after the last step is the faction picker.
+ * Where the pilot is in the new-pilot opening stays in the browser, per account (the server only knows how the opening
+ * ENDED: `Player.prologueOutcome`): the step they are on and the kind of job they chose when they bought the module.
  */
-export const PROLOGUE_STEPS = [
-  'gift',
-  'fit-engine',
-  'race-board',
-  'race',
-  'stop-one',
-  'offer-run-1',
-  'fit-cargo',
-  'stop-two',
-  'offer-run-2',
-  'final-board',
-  'final-run',
-  'loss',
-  'rescue',
-] as const;
-
-export type StepId = (typeof PROLOGUE_STEPS)[number];
-
-export const FIRST_STEP: StepId = PROLOGUE_STEPS[0];
-
-/** The step after `step`, or null when it was the last one (the story is over). */
-export function nextStep(step: StepId): StepId | null {
-  return PROLOGUE_STEPS[PROLOGUE_STEPS.indexOf(step) + 1] ?? null;
+interface Saved {
+  step: StepId;
+  kind: ModuleKind | null;
 }
 
 const listeners = new Set<() => void>();
-const cache = new Map<string, StepId>();
+const cache = new Map<string, Saved>();
 
 const storageKey = (playerId: string) => `rs.prologue.${playerId}`;
 
-function isStep(value: unknown): value is StepId {
-  return typeof value === 'string' && (PROLOGUE_STEPS as readonly string[]).includes(value);
+function isKind(value: unknown): value is ModuleKind {
+  return value === 'passengers' || value === 'crates';
 }
 
-function read(playerId: string): StepId {
+function read(playerId: string): Saved {
   const cached = cache.get(playerId);
   if (cached !== undefined) return cached;
-  let step: StepId = FIRST_STEP;
+  let saved: Saved = { step: FIRST_STEP, kind: null };
   try {
     const raw = window.localStorage.getItem(storageKey(playerId));
-    if (isStep(raw)) step = raw;
+    if (raw !== null) {
+      // a bare step id is what the first version stored
+      if (isStepId(raw)) saved = { step: raw, kind: null };
+      else {
+        const parsed = JSON.parse(raw) as { step?: unknown; kind?: unknown };
+        if (isStepId(parsed.step)) {
+          saved = { step: parsed.step, kind: isKind(parsed.kind) ? parsed.kind : null };
+        }
+      }
+    }
   } catch {
     // storage blocked or unreadable: start from the top
   }
-  cache.set(playerId, step);
-  return step;
+  cache.set(playerId, saved);
+  return saved;
 }
 
 /** Forgets what was read from the browser's storage (tests clear the storage between cases). */
@@ -58,14 +51,26 @@ export function clearPrologueSteps(): void {
   listeners.forEach((listener) => listener());
 }
 
-export function writeStep(playerId: string, step: StepId): void {
-  cache.set(playerId, step);
+function write(playerId: string, saved: Saved): void {
+  cache.set(playerId, saved);
   try {
-    window.localStorage.setItem(storageKey(playerId), step);
+    window.localStorage.setItem(storageKey(playerId), JSON.stringify(saved));
   } catch {
     // the step still holds for this session
   }
   listeners.forEach((listener) => listener());
+}
+
+export function writeStep(playerId: string, step: StepId): void {
+  write(playerId, { ...read(playerId), step });
+}
+
+export function writeKind(playerId: string, kind: ModuleKind): void {
+  write(playerId, { ...read(playerId), kind });
+}
+
+export function readSaved(playerId: string): Saved {
+  return read(playerId);
 }
 
 /** The opening is over for this pilot (the server has the outcome now): drop the saved step. */
@@ -90,7 +95,7 @@ const subscribe = (listener: () => void) => {
 export function usePrologueStep(playerId: string | undefined): StepId {
   return useSyncExternalStore(
     subscribe,
-    () => (playerId === undefined ? FIRST_STEP : read(playerId)),
+    () => (playerId === undefined ? FIRST_STEP : read(playerId).step),
     () => FIRST_STEP,
   );
 }

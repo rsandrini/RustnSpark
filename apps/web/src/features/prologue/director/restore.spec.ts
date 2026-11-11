@@ -1,0 +1,81 @@
+import { describe, expect, it } from 'vitest';
+import { moduleKindOf } from '../sandbox/sandbox-offers';
+import { createSandbox, STARTING_FUEL } from '../sandbox/sandbox-state';
+import { restoreSandbox } from './restore';
+import { OPENING_STEPS, type StepId } from './steps';
+
+function at(step: StepId, kind: 'passengers' | 'crates' | null = 'passengers') {
+  const sandbox = createSandbox({
+    payouts: [720, 1080, 1800],
+    purse: 300,
+    refuelCost: 100,
+    moduleCost: 800,
+    profile: { id: 'player-1', name: 'Test Pilot', locale: 'en', role: 'PLAYER' },
+  });
+  restoreSandbox(sandbox, step, kind);
+  return sandbox;
+}
+
+describe('coming back to the opening (the sandbox is rebuilt to where the pilot was)', () => {
+  it('starts untouched: the purse, the small tank, no engine fitted', () => {
+    const { state } = at('gift');
+    expect(state.credits).toBe(300);
+    expect(state.fuel).toBe(STARTING_FUEL);
+    expect(state.layout.some((p) => p.partInstanceId === 'prologue-engine')).toBe(false);
+    expect(state.history).toEqual([]);
+  });
+
+  it('has the engine fitted from the race on', () => {
+    expect(at('race-board').state.layout.some((p) => p.partInstanceId === 'prologue-engine')).toBe(
+      true,
+    );
+  });
+
+  it('has the race accepted but not flown when the pilot is on it, and flown after it', () => {
+    expect(at('race').state.mission?.id).toBe('sandbox-race');
+    const after = at('race-report').state;
+    expect(after.mission).toBeNull();
+    expect(after.history.map((h) => h.id)).toEqual(['sandbox-race']);
+    expect(after.credits).toBe(300 + 720);
+    expect(after.fuel).toBeLessThan(STARTING_FUEL);
+  });
+
+  it('pays for the refuel at the first stop and fills the tank', () => {
+    const before = at('stop-port').state;
+    const after = at('choose-job').state;
+    expect(after.credits).toBe(before.credits - 100);
+    expect(after.fuel).toBeGreaterThan(before.fuel);
+  });
+
+  it.each([
+    ['passengers', 'passengers'],
+    ['crates', 'crates'],
+  ] as const)('fits the %s module the pilot chose, and only then', (kind, expected) => {
+    expect(moduleKindOf(at('fit-module', kind))).toBeNull();
+    expect(at('fit-module', kind).state.credits).toBe(300 + 720 - 100 - 800);
+    expect(moduleKindOf(at('dispatch-job', kind))).toBe(expected);
+  });
+
+  it('ends the story with exactly the credits a new pilot starts with', () => {
+    const lost = at('rescue');
+    expect(lost.state.shipLost).toBe(true);
+    expect(lost.state.credits).toBe(3000);
+  });
+
+  it('keeps the wallet climbing and never goes negative, at every step', () => {
+    let last = 0;
+    for (const step of OPENING_STEPS) {
+      const credits = at(step).state.credits;
+      expect(credits).toBeGreaterThanOrEqual(0);
+      // the only drops are the refuel and the module
+      if (credits < last) expect([100, 800]).toContain(last - credits);
+      last = credits;
+    }
+  });
+
+  it('has the final run taken (not flown) on the final-run step', () => {
+    const sandbox = at('final-run');
+    expect(sandbox.state.mission?.job.kind).toBe('final');
+    expect(sandbox.state.shipLost).toBe(false);
+  });
+});

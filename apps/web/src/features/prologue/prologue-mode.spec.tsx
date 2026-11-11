@@ -91,10 +91,13 @@ describe('the real screens in the opening (the sandbox mode)', () => {
     expect(ships[0]?.name).not.toBe('Wayfarer');
   });
 
-  it('is off unless the build asks for it', async () => {
+  it('is on by default, and a build can switch it off (the pilot goes to the picker)', async () => {
+    vi.stubEnv('VITE_PROLOGUE_SANDBOX', '0');
     server.use(pilot({ factionId: null, outcome: null }));
     renderWithRouter(routes, { initialEntries: ['/onboarding'] });
-    expect(await screen.findByTestId('prologue')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: /choose your faction/i }),
+    ).toBeInTheDocument();
     const ships = await client.get<Array<{ name: string }>>('/v1/ships');
     expect(ships[0]?.name).not.toBe('Wayfarer');
   });

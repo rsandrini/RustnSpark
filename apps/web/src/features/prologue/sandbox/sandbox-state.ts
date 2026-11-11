@@ -241,10 +241,10 @@ export class Sandbox {
    * Brings a flight home once its time is up: the ship docks at the destination, the fuel is spent and the job is
    * paid (the final run is lost instead). Called before every answer, so the world is never behind the clock.
    */
-  settle(): void {
+  settle(force = false): void {
     const mission = this.snapshot.mission;
     if (mission === null || mission.status !== 'IN_TRANSIT' || mission.arrivalAt === null) return;
-    if (this.now() < mission.arrivalAt) return;
+    if (!force && this.now() < mission.arrivalAt) return;
     const lost = mission.job.kind === 'final';
     const paid = lost ? 0 : mission.reward;
     const result: SandboxResult = {
@@ -253,7 +253,7 @@ export class Sandbox {
       reward: mission.reward,
       paid,
       outcome: lost ? 'failure' : 'success',
-      finishedAt: mission.arrivalAt,
+      finishedAt: Math.min(mission.arrivalAt, this.now()),
       legSeconds: mission.legSeconds,
     };
     this.snapshot = {

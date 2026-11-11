@@ -4,6 +4,9 @@ import { client, setApiInterceptor } from '../../api/client';
 import { useAuth } from '../auth/auth.hooks';
 import { sandboxInterceptor } from './sandbox/sandbox-api';
 import { createSandbox, type Sandbox } from './sandbox/sandbox-state';
+import { friendOf, type Guide } from './director/lines';
+import { restoreSandbox } from './director/restore';
+import { readSaved } from './prologue-state';
 
 /** What the server says about the opening's numbers (the sandbox is built from it). */
 interface PrologueConfig {
@@ -12,6 +15,7 @@ interface PrologueConfig {
   purse?: number;
   moduleCost?: number;
   payouts: number[];
+  guides?: Guide[];
 }
 
 /** Defaults until the server sends its own (the opening's purse and module price). */
@@ -19,12 +23,11 @@ const DEFAULT_PURSE = 300;
 const DEFAULT_MODULE_COST = 800;
 
 /**
- * While the new-pilot opening runs on the sandbox (the real screens over a fake server in the browser), the build must
- * opt in: `VITE_PROLOGUE_SANDBOX=1`. It stays off until the director that tells the story is in, so the game keeps
- * working in between.
+ * The new-pilot opening runs on the sandbox (the real screens over a fake server in the browser). A build can switch it
+ * off with `VITE_PROLOGUE_SANDBOX=0`: the pilot then goes straight to the faction picker.
  */
 export function sandboxEnabled(): boolean {
-  return import.meta.env.VITE_PROLOGUE_SANDBOX === '1';
+  return import.meta.env.VITE_PROLOGUE_SANDBOX !== '0';
 }
 
 export interface PrologueMode {
@@ -33,6 +36,9 @@ export interface PrologueMode {
   readonly sandbox: Sandbox | null;
   /** The routes the nav lets the pilot open (null = all of them). The director narrows it step by step. */
   readonly allowedPaths: readonly string[] | null;
+  /** The guides who speak the story (from the Admin), and the friend's name. */
+  readonly guides: readonly Guide[];
+  readonly friendName: string;
   readonly setAllowedPaths: (paths: readonly string[] | null) => void;
 }
 
@@ -40,6 +46,8 @@ const INACTIVE: PrologueMode = {
   active: false,
   sandbox: null,
   allowedPaths: null,
+  guides: [],
+  friendName: '',
   setAllowedPaths: () => {},
 };
 
@@ -61,6 +69,9 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
     sandboxEnabled() && user != null && user.factionId == null && user.prologueOutcome === null;
   const [sandbox, setSandbox] = useState<Sandbox | null>(null);
   const [allowedPaths, setAllowedPaths] = useState<readonly string[] | null>(null);
+  const [guides, setGuides] = useState<readonly Guide[]>([]);
+  // the server could not be asked: the pilot goes on to the faction picker instead of waiting on a story that cannot start
+  const [failed, setFailed] = useState(false);
   const profile =
     user == null ? null : { id: user.id, name: user.name, locale: user.locale, role: user.role };
 
@@ -70,18 +81,26 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
     let installed = false;
     void client.get<PrologueConfig>('/v1/players/me/prologue').then((config) => {
       if (cancelled) return;
+      const found = config.guides ?? [];
       const next = createSandbox({
+        friendName: friendOf(found)?.name,
         payouts: config.payouts,
         purse: config.purse ?? DEFAULT_PURSE,
         refuelCost: config.refuelCost,
         moduleCost: config.moduleCost ?? DEFAULT_MODULE_COST,
         profile,
       });
+      // back where the pilot left the story (a closed tab): the ship, the money and the jobs as they were then
+      const saved = readSaved(profile.id);
+      restoreSandbox(next, saved.step, saved.kind);
       // what the real screens may already have cached from the real server must not leak in
       queryClient.clear();
+      setGuides(found);
       setApiInterceptor(sandboxInterceptor(next));
       installed = true;
       setSandbox(next);
+    }).catch(() => {
+      if (!cancelled) setFailed(true);
     });
     return () => {
       cancelled = true;
@@ -100,11 +119,18 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
     () =>
       sandbox === null
         ? { ...INACTIVE, setAllowedPaths }
-        : { active: true, sandbox, allowedPaths, setAllowedPaths },
-    [sandbox, allowedPaths],
+        : {
+            active: true,
+            sandbox,
+            allowedPaths,
+            guides,
+            friendName: friendOf(guides)?.name ?? '',
+            setAllowedPaths,
+          },
+    [sandbox, allowedPaths, guides],
   );
 
   // until the sandbox is ready the screens must not ask the real server for a pilot who has no ship
-  if (wants && sandbox === null) return null;
+  if (wants && sandbox === null && !failed) return null;
   return <PrologueModeContext.Provider value={value}>{children}</PrologueModeContext.Provider>;
 }
