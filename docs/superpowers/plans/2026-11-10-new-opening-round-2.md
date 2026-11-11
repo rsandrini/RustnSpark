@@ -30,8 +30,10 @@
 
 - Guides are `QuestGiver` rows (MENTOR role) of a new **non-playable faction `free`** ("Free pilots"), so they use the existing portrait upload, bilingual title and the existing scene editor. The playable list the picker shows is unchanged.
 - The friend's name: **Kite** (draft). The rescuer: **Dara Voss**. The harbour office: **Marshal Oren**. All editable in the Admin.
-- The pilot starts the opening with a **purse of 1,000** credits from the friend (config), pays 100 for the refuel and 800 for the module; the three payouts add up to `start_credits - purse + refuel + module`, so the end is exactly `start_credits`.
-- Controls outside the step's one action are inert (`pointer-events: none`), not hidden, so the pilot sees the real screen as it will be.
+- The pilot starts the opening with a **small purse of 300** credits (the engine is the friend's gift, so it costs nothing), earns the rest in the missions, pays 100 for the refuel and 800 for the module; the three payouts add up to `start_credits - purse + refuel + module` (3,600 with the defaults, 720 / 1,080 / 1,800), so the end is exactly `start_credits`. The race prize alone pays for the refuel and the module.
+- Controls outside the step's one action (the other tabs, the other port tabs, sell, upgrade, the parts and mission cards that are not the choice) are **inert and dimmed** (`pointer-events: none`, lower opacity), not hidden, so the pilot sees the real screen as it will be. The owner can overturn this.
+- **The second job** is the same type as the module the pilot bought (passengers or delivery), to a different destination, and **the friend flies the same job beside the pilot**: they say they are doing it together to earn money to improve the ships for "a next race" that never happens. The final run is also flown together.
+- **Names kept** (Kite, Dara Voss, Marshal Oren), all editable in the Admin; the owner reviews every text and name later.
 - The real tutorial's information hiding (item 10) is NOT in this round.
 
 ---
