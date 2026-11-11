@@ -425,6 +425,21 @@ describe('quest givers (the people behind the missions)', () => {
       expect(spare.status).toBe(201);
     });
 
+    it('saves an edit to the opening guides: the free faction has three mentors at once', async () => {
+      await freshWorld();
+      const token = await adminToken();
+      for (const id of ['free_mentor_kite', 'free_mentor_dara', 'free_mentor_oren']) {
+        const saved = await request(httpServer(testApp.app))
+          .patch(`/v1/admin/tuning/quest-givers/${id}`)
+          .set(auth(token))
+          .send({ data: { weight: 11 }, reason: 'edit the opening' });
+        expect(saved.status).toBe(200);
+      }
+      expect(await prisma.questGiver.count({ where: { factionId: 'free', role: 'MENTOR' } })).toBe(
+        3,
+      );
+    });
+
     it('a giver added in Admin starts offering on boards', async () => {
       await freshWorld();
       const token = await adminToken();

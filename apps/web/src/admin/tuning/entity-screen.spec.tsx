@@ -7,6 +7,7 @@ import { renderWithProviders } from '../../test/utils';
 import { server } from '../../test/msw/server';
 import { EntityScreen } from './EntityScreen';
 import { EntityFormScreen } from './EntityFormScreen';
+import { FeedbackProvider } from '../../ui/feedback';
 
 // The entity list plus its create / edit / clone pages, as the admin shell routes them.
 function renderAt(path: string) {
@@ -1138,5 +1139,77 @@ describe('EntityScreen', () => {
     await waitFor(() => {
       expect(retired).toBe(true);
     });
+  });
+});
+
+describe('saving in the Admin', () => {
+  it('says "Saved" in a notice after Save, so the editor knows it went through', async () => {
+    const schema = {
+      entity: 'ship-formats',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Id', 'pt-BR': 'ID' } },
+        {
+          name: 'displayName',
+          type: 'locale-map',
+          required: true,
+          description: { en: 'Display name', 'pt-BR': 'Nome' },
+        },
+      ],
+    };
+    const rows = [{ id: 'scout', displayName: { en: 'Scout', 'pt-BR': 'Batedor' }, active: true }];
+    server.use(
+      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema)),
+      http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json(rows)),
+      http.patch('/v1/admin/tuning/ship-formats/scout', () =>
+        HttpResponse.json({ row: rows[0], revision: { id: '2' } }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/admin/tuning/entities/ship-formats/scout']}>
+        <FeedbackProvider>
+          <Routes>
+            <Route
+              path="/admin/tuning/entities/:entity/:id"
+              element={<EntityFormScreen mode="edit" />}
+            />
+            <Route path="/admin/tuning/entities/:entity" element={<main />} />
+          </Routes>
+        </FeedbackProvider>
+      </MemoryRouter>,
+      { withRouter: false },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
+    expect(await screen.findByTestId('feedback-toast')).toHaveTextContent('Saved');
+  });
+
+  it('says "Not saved" at the top when the server refuses the save', async () => {
+    const schema = {
+      entity: 'ship-formats',
+      fields: [
+        { name: 'id', type: 'string', required: true, description: { en: 'Id', 'pt-BR': 'ID' } },
+        {
+          name: 'displayName',
+          type: 'locale-map',
+          required: true,
+          description: { en: 'Display name', 'pt-BR': 'Nome' },
+        },
+      ],
+    };
+    const rows = [{ id: 'scout', displayName: { en: 'Scout', 'pt-BR': 'Batedor' }, active: true }];
+    server.use(
+      http.get('/v1/admin/tuning/schema/ship-formats', () => HttpResponse.json(schema)),
+      http.get('/v1/admin/tuning/ship-formats', () => HttpResponse.json(rows)),
+      http.patch('/v1/admin/tuning/ship-formats/scout', () =>
+        HttpResponse.json(
+          { error: 'VALIDATION_ERROR', issues: [{ key: 'id', message: 'nope' }] },
+          { status: 400 },
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+    renderAt('/admin/tuning/entities/ship-formats/scout');
+    await user.click(await screen.findByRole('button', { name: 'Save' }));
+    expect(await screen.findByTestId('not-saved')).toHaveTextContent('Not saved: nope');
   });
 });

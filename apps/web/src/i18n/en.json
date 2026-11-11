@@ -1525,7 +1525,9 @@
       "remove": "Remove",
       "up": "Up",
       "down": "Down"
-    }
+    },
+    "saved": "Saved",
+    "notSaved": "Not saved: {{message}}"
   },
   "factions": {
     "luna": "Luna Authority",

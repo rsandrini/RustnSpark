@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFeedback } from '../../ui/feedback';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { tuningApi } from './tuning.api';
 import { BundleDialog } from './BundleDialog';
@@ -40,6 +41,7 @@ function useLatestRevision() {
 
 export function ConfigScreen() {
   const { t, i18n } = useTranslation();
+  const feedback = useFeedback();
   const locale = i18n.language as 'en' | 'pt-BR';
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -64,6 +66,7 @@ export function ConfigScreen() {
         reason: t('tuning.configChangeReason'),
       }),
     onSuccess: () => {
+      feedback.notify(t('tuning.saved'));
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'config'] });
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'revisions'] });
       setEdits({});
@@ -84,6 +87,7 @@ export function ConfigScreen() {
         reason: t('tuning.configResetReason'),
       }),
     onSuccess: () => {
+      feedback.notify(t('tuning.saved'));
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'config'] });
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'revisions'] });
       setConfirmReset(null);

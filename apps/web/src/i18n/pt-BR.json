@@ -1525,7 +1525,9 @@
       "remove": "Remover",
       "up": "Subir",
       "down": "Descer"
-    }
+    },
+    "saved": "Salvo",
+    "notSaved": "Não salvou: {{message}}"
   },
   "factions": {
     "luna": "Autoridade de Luna",

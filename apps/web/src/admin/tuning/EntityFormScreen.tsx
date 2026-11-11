@@ -9,6 +9,7 @@ import { ArtEditor } from './ArtEditor';
 import { GiverPreview } from './GiverPreview';
 import { Popup } from '../../ui/Popup';
 import { rowId } from './EntityScreen';
+import { useFeedback } from '../../ui/feedback';
 import { validationIssuesOf } from '../../api/errors';
 import type * as dto from '../../api/generated';
 
@@ -72,6 +73,7 @@ export type EntityFormMode = 'new' | 'edit' | 'clone';
 // new row must not be written on every blur.
 export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
   const { t } = useTranslation();
+  const feedback = useFeedback();
   const { entity, id: rawId } = useParams<{ entity: string; id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -110,6 +112,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
   const createMutation = useMutation({
     mutationFn: (body: dto.CreateEntityRequest) => tuningApi.createEntity(entityName, body),
     onSuccess: (_created, body) => {
+      feedback.notify(t('tuning.saved'));
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       // A duplicate opens the new row, ready to edit; a plain create goes back to the list.
       if (duplicating !== null) {
@@ -129,6 +132,7 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
     mutationFn: (params: { id: string; body: dto.UpdateEntityRequest }) =>
       tuningApi.updateEntity(entityName, params.id, params.body),
     onSuccess: () => {
+      feedback.notify(t('tuning.saved'));
       void queryClient.invalidateQueries({ queryKey: ['tuning', 'entities', entityName] });
       setFormErrors([]);
       setIssues([]);
@@ -212,6 +216,12 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
       </nav>
       <h2>{title}</h2>
+      {/* a refused save must be seen at once, not only under the field it concerns (it may be far down the form) */}
+      {(issues.length > 0 || formErrors.length > 0) && (
+        <p className="error-text" role="alert" data-testid="not-saved">
+          {t('tuning.notSaved', { message: issues[0]?.message ?? formErrors[0] ?? '' })}
+        </p>
+      )}
       {(entityName === 'factions' || entityName === 'locations' || entityName === 'quest-givers') &&
         mode === 'edit' &&
         id !== undefined && <ArtEditor kind={entityName} id={id} />}

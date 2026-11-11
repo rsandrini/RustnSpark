@@ -146,6 +146,9 @@ function getDelegate(client: PrismaClientLike, entity: string): PrismaDelegate {
   return delegate;
 }
 
+/** The faction of the new-pilot opening's guides: it has three mentors at once. */
+const OPENING_FACTION = 'free';
+
 @Injectable()
 export class EntityTuningService {
   constructor(
@@ -595,7 +598,8 @@ export class EntityTuningService {
       }
     }
 
-    // One active mentor per faction.
+    // One active mentor per faction, except the opening's own `free` faction: Kite, Dara and Oren are all mentors there
+    // (the database index leaves it out too).
     const before =
       existingId === undefined
         ? null
@@ -603,7 +607,8 @@ export class EntityTuningService {
     const role = (data.role as string | undefined) ?? before?.role;
     const active = (data.active as boolean | undefined) ?? before?.active ?? true;
     const factionId = (data.factionId as string | undefined) ?? before?.factionId;
-    if (factionId !== undefined && role === 'MENTOR' && active) {
+    const sharesMentors = factionId === OPENING_FACTION;
+    if (factionId !== undefined && !sharesMentors && role === 'MENTOR' && active) {
       const other = await this.prisma.questGiver.findFirst({
         where: { factionId, role: 'MENTOR', active: true, id: { not: existingId ?? '' } },
       });
@@ -611,7 +616,13 @@ export class EntityTuningService {
         fail('role', `${factionId} already has an active mentor (${other.id}); retire it first`);
       }
     }
-    if (mode === 'update' && before !== null && before.role === 'MENTOR' && before.active) {
+    if (
+      mode === 'update' &&
+      before !== null &&
+      before.factionId !== OPENING_FACTION &&
+      before.role === 'MENTOR' &&
+      before.active
+    ) {
       const stillMentor = role === 'MENTOR' && active && factionId === before.factionId;
       if (!stillMentor) {
         fail('role', 'a faction must keep an active mentor: add the new one first');
