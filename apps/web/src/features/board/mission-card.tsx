@@ -141,31 +141,34 @@ export function MissionCard({
 
   const rest = (
     <>
-      <div className="mcard-needs">
-        <b>{t('board.needsTitle')}</b>
-        {offer.info.requirements.length === 0 ? (
-          <span> {t(`board.needs.${offer.type}`)}</span>
-        ) : (
-          <ul className="mcard-requirements">
-            {offer.info.requirements.map((req) => (
-              <li key={req.code} className={req.met ? 'req-met' : 'req-unmet'}>
-                <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
-                  {req.met ? '✓' : '✗'}
-                </span>
-                {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
-                {req.needed !== undefined && req.actual !== undefined && (
-                  <span className="req-numbers" data-testid={`req-${req.code}`}>
-                    {t('board.requirementNumbers', {
-                      actual: requirementNumber(req.actual, req.unit, display),
-                      needed: requirementNumber(req.needed, req.unit, display),
-                    })}
+      {/* the opening's job in hand needs no list of what it needs: the pilot already has it */}
+      {!(opening && taken) && (
+        <div className="mcard-needs">
+          <b>{t('board.needsTitle')}</b>
+          {offer.info.requirements.length === 0 ? (
+            <span> {t(`board.needs.${offer.type}`)}</span>
+          ) : (
+            <ul className="mcard-requirements">
+              {offer.info.requirements.map((req) => (
+                <li key={req.code} className={req.met ? 'req-met' : 'req-unmet'}>
+                  <span className={`badge ${req.met ? 'ok' : 'warn'}`} aria-hidden="true">
+                    {req.met ? '✓' : '✗'}
                   </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                  {t(`board.requirements.${req.code}`, { defaultValue: req.message })}
+                  {req.needed !== undefined && req.actual !== undefined && (
+                    <span className="req-numbers" data-testid={`req-${req.code}`}>
+                      {t('board.requirementNumbers', {
+                        actual: requirementNumber(req.actual, req.unit, display),
+                        needed: requirementNumber(req.needed, req.unit, display),
+                      })}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {offer.info.cargo != null && offer.info.cargo.mode !== 'min' && (
         <p className="mcard-cargo sub" data-testid="mcard-cargo">
@@ -179,7 +182,7 @@ export function MissionCard({
       )}
 
       <div className="mcard-meta">
-        {origin !== undefined && <FactionBadge factionId={offer.factionId} />}
+        {!opening && origin !== undefined && <FactionBadge factionId={offer.factionId} />}
         {/* A mission under way no longer has a start deadline. */}
         {!opening && (!taken || offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
           <span className="sub">
@@ -203,7 +206,7 @@ export function MissionCard({
             {t('board.starterBadge')}
           </span>
         )}
-        {offer.status !== 'AVAILABLE' && (
+        {!opening && offer.status !== 'AVAILABLE' && (
           <span className="badge">
             {t(`board.status.${offer.status}`)}
             {mine && offer.status === 'HELD' ? '' : ''}
@@ -211,7 +214,8 @@ export function MissionCard({
         )}
       </div>
 
-      {taken &&
+      {!opening &&
+        taken &&
         engineLevels !== undefined &&
         (offer.status === 'ACCEPTED' || offer.status === 'HELD') && (
           <p className="sub" data-testid="mcard-engines">
@@ -297,7 +301,9 @@ export function MissionCard({
           </p>
         )}
 
-        {info.race !== null && <RaceField race={info.race} reward={offer.reward} money={money} />}
+        {!opening && info.race !== null && (
+          <RaceField race={info.race} reward={offer.reward} money={money} />
+        )}
 
         <dl className="mcard-facts">
           <div>

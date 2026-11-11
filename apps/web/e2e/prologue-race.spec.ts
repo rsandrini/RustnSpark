@@ -30,7 +30,7 @@ async function startRace(page: Page): Promise<void> {
   await read(page);
 }
 
-test('the race screen is only the race: no yard, no ship sheet, no error line under it', async ({
+test('the race screen is only the race: a lean job card, no yard, no ship sheet, no error line under it', async ({
   page,
 }) => {
   test.setTimeout(240_000);
@@ -38,8 +38,16 @@ test('the race screen is only the race: no yard, no ship sheet, no error line un
   // before and after Dispatch the job is all there is
   await expect(page.locator('.hangar-scene')).toBeHidden();
   await expect(page.getByText('SHIP SHEET', { exact: false })).toBeHidden();
+  // the job card keeps the job (what, where, pay, distance, time, fuel) and drops the rest
+  for (const extra of ['The field', 'You need', 'FREE PILOTS', 'Engines:', 'Entry: speed']) {
+    await expect(page.getByText(extra, { exact: false })).toHaveCount(0);
+  }
+  await expect(page.getByRole('heading', { name: 'Race to Dockside' })).toBeVisible();
   await dispatch(page);
   await expect.poll(() => flightLeft(page)).not.toBeNull();
+  for (const extra of ['The field', 'You need', 'FREE PILOTS', 'INTRANSIT', 'Engines:']) {
+    await expect(page.getByText(extra, { exact: false })).toHaveCount(0);
+  }
   await expect(page.locator('.hangar-scene')).toBeHidden();
   await expect(page.getByText('The ship is on a mission.')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save layout' })).toHaveCount(0);
