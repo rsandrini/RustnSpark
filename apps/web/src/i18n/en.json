@@ -86,111 +86,15 @@
       "play": "Play the opening",
       "confirm": "Skip anyway"
     },
-    "next": "Continue",
-    "race": {
-      "title": "The race",
-      "leg": "Leg {{current}} of {{total}}",
-      "skip": "Skip",
-      "friendName": "Kite",
-      "rivalName": "Rattler",
-      "you": "you",
-      "result": {
-        "title": "Race over",
-        "place": "{{place}} place",
-        "continue": "Continue"
-      }
-    },
-    "fight": {
-      "title": "Ambush",
-      "ambush": "Pirate ships drop out of the dust cloud.",
-      "friendDestroyed": "Kite’s ship takes a direct hit and breaks apart.",
-      "playerWrecked": "Your ship is torn open and drifts, silent.",
-      "continue": "Continue"
-    },
     "loss": {
-      "title": "Rescued",
-      "rescue": "A rescue cutter pulls you from the wreck. Nothing else made it.",
       "lostTitle": "Lost",
       "savedTitle": "Saved",
       "ship": "The ship",
       "parts": "Its parts",
       "player": "You",
-      "credits": "Your credits",
-      "continue": "Continue"
-    },
-    "fit": {
-      "title": "Fit the part",
-      "hint": "Drag the part onto the ship, or tap it and then tap a cell.",
-      "place": "Place it where it connects.",
-      "partMeta": "{{class}} · {{w}}×{{h}}",
-      "outside": "That spot is outside the ship.",
-      "overlap": "That spot overlaps another part.",
-      "notConnected": "The part must touch a matching connector.",
-      "done": "Fitted.",
-      "mobile": {
-        "parts": "Parts",
-        "close": "Close"
-      }
-    },
-    "script": {
-      "guides": {
-        "friend": {
-          "name": "Kite",
-          "title": "Free pilot"
-        },
-        "rescuer": {
-          "name": "Dara Voss",
-          "title": "Rescue crew chief"
-        },
-        "harbour": {
-          "name": "Marshal Oren",
-          "title": "Harbour office"
-        }
-      },
-      "gift": {
-        "l1": "Hey, you made it. I'm Kite. That ship's yours now, and she's got good bones. Out here a ship earns by carrying people and cargo between stations, and every trip pays.",
-        "l2": "Credits buy parts, parts make a better ship, and a better ship gets you out to the far fields, past the pirates. Right now she's got no engine, but I've got an old one in the shed. Worn, but it runs."
-      },
-      "fitEngine": {
-        "l1": "Drag it onto the back of the hull. The exhaust needs clear space behind it, and the ports have to line up. She saves by herself.",
-        "done": "That's it. Hear that? She's alive. Let's see what she can do."
-      },
-      "raceBoard": {
-        "l1": "Dockside sprint: three legs, you against me. Nothing at stake but bragging rights. Hit Dispatch."
-      },
-      "stopOne": {
-        "l1": "Dockside. You were close. Top her off, fuel isn't free, then pick a job. Passengers or crates, they pay the same."
-      },
-      "fitCargo": {
-        "l1": "You flew half empty. Passengers pay by the head, so a bigger hold means a bigger payday. There's a cargo hold in the shed: fit it the same way.",
-        "done": "Now she can carry."
-      },
-      "stopTwo": {
-        "l1": "Now we're talking. A full hold pays more. Take your pick."
-      },
-      "finalBoard": {
-        "l1": "Cinder Reach pays four times the going rate, and there's a reason nobody wants the run: pirates. Forty people are asking for us by name. I'll fly beside you."
-      },
-      "rescue": {
-        "l1": "Easy. Easy now. You're the only one we found; the pods held. I'm sorry. Kite didn't make it.",
-        "l2": "Take a minute. Then come with me: the harbour office has something to say to you."
-      }
-    },
-    "board": {
-      "refuel": "Refuel ({{cost}} ¢)",
-      "refuelled": "Tank full",
-      "chooseOne": "Pick one job.",
-      "refuelFirst": "Fill the tank first.",
-      "dispatch": "Dispatch",
-      "credits": "{{amount}} ¢",
-      "notEnough": "Not enough credits."
-    },
-    "transit": {
-      "title": "Under way",
-      "detail": "A short hop, shown shorter than a real trip."
+      "credits": "Your credits"
     },
     "port": {
-      "title": "Harbour office",
       "body": "Kite's gone, and he won't be the last. The three powers are all fighting the pirates now, each in its own way. Pick the flag you'll fly for, and they'll give you a ship."
     },
     "director": {
@@ -1078,7 +982,42 @@
         "work_due": "The first repair is done and no scavenging or mining yet",
         "checklist_done": "The Getting started list is complete",
         "first_pirates": "A flight meets pirates for the first time",
-        "first_scrap": "The first scrap is collected"
+        "first_scrap": "The first scrap is collected",
+        "prologue_gift_enter": "Opening · The gift · when it starts",
+        "prologue_gift_done": "Opening · The gift · when it is done",
+        "prologue_fit-engine_enter": "Opening · Fit the engine · when it starts",
+        "prologue_fit-engine_done": "Opening · Fit the engine · when it is done",
+        "prologue_race-board_enter": "Opening · Take the race · when it starts",
+        "prologue_race-board_done": "Opening · Take the race · when it is done",
+        "prologue_race_enter": "Opening · The race · when it starts",
+        "prologue_race_done": "Opening · The race · when it is done",
+        "prologue_race-report_enter": "Opening · Race report · when it starts",
+        "prologue_race-report_done": "Opening · Race report · when it is done",
+        "prologue_stop-port_enter": "Opening · Refuel at the port · when it starts",
+        "prologue_stop-port_done": "Opening · Refuel at the port · when it is done",
+        "prologue_choose-job_enter": "Opening · Choose a job · when it starts",
+        "prologue_choose-job_done": "Opening · Choose a job · when it is done",
+        "prologue_buy-module_enter": "Opening · Buy the module · when it starts",
+        "prologue_buy-module_done": "Opening · Buy the module · when it is done",
+        "prologue_fit-module_enter": "Opening · Fit the module · when it starts",
+        "prologue_fit-module_done": "Opening · Fit the module · when it is done",
+        "prologue_dispatch-job_enter": "Opening · Fly the job · when it starts",
+        "prologue_dispatch-job_done": "Opening · Fly the job · when it is done",
+        "prologue_job-report_enter": "Opening · Job report · when it starts",
+        "prologue_job-report_done": "Opening · Job report · when it is done",
+        "prologue_stop-two_enter": "Opening · Second job · when it starts",
+        "prologue_stop-two_done": "Opening · Second job · when it is done",
+        "prologue_final-board_enter": "Opening · The last job · when it starts",
+        "prologue_final-board_done": "Opening · The last job · when it is done",
+        "prologue_final-run_enter": "Opening · The last run · when it starts",
+        "prologue_final-run_done": "Opening · The last run · when it is done",
+        "prologue_loss_enter": "Opening · The loss · when it starts",
+        "prologue_loss_done": "Opening · The loss · when it is done",
+        "prologue_rescue_enter": "Opening · The rescue · when it starts",
+        "prologue_rescue_done": "Opening · The rescue · when it is done",
+        "prologue_race_leg_1": "Opening · The race · end of leg 1",
+        "prologue_race_leg_2": "Opening · The race · end of leg 2",
+        "prologue_race_leg_3": "Opening · The race · end of leg 3"
       },
       "positions": {
         "center": "Centre (dimmed)",

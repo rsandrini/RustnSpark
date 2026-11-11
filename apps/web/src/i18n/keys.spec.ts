@@ -32,6 +32,8 @@ function has(tree: unknown, key: string): boolean {
   return typeof node === 'string' || (typeof node === 'object' && node !== null);
 }
 
+import { SCENE_TRIGGERS } from '../admin/tuning/SceneEditor';
+
 describe('i18n keys used by the code', () => {
   const used = new Map<string, string>();
   for (const file of sourceFiles(join(__dirname, '..'))) {
@@ -59,15 +61,18 @@ describe('i18n keys used by the code', () => {
   // Keys built at runtime from a known set: check the whole family against its source of truth.
   describe('dynamic key families', () => {
     const hangarStats = [
-      ...readFileSync(
-        join(__dirname, '../features/hangar/ship-sheet-panel.tsx'),
-        'utf8',
-      ).matchAll(/\{\s*key: '([A-Za-z]+)'/g),
+      ...readFileSync(join(__dirname, '../features/hangar/ship-sheet-panel.tsx'), 'utf8').matchAll(
+        /\{\s*key: '([A-Za-z]+)'/g,
+      ),
     ].map((match) => `hangar.stats.${match[1]}`);
     const families: Array<[string, string[]]> = [
       ['hangar stat rows', hangarStats],
       ['mission types', MissionTypeSchema.options.map((type) => `board.type.${type}`)],
       ['report tabs', ['overview', 'narrative', 'log'].map((tab) => `report.tabs.${tab}`)],
+      [
+        'admin scene triggers',
+        SCENE_TRIGGERS.map((trigger) => `admin.dialogue.triggers.${trigger}`),
+      ],
       ['port tabs', ['market', 'repair', 'refuel', 'scavenging'].map((tab) => `port.tabs.${tab}`)],
     ];
 
