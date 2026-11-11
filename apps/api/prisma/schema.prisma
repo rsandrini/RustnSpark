@@ -63,7 +63,7 @@ model Player {
   publicId        String            @unique @default(dbgenerated("substr(md5(((random())::text || (clock_timestamp())::text)), 1, 12)"))
   credits         Int               @default(0)
   // Plain string, not an enum: `pt-BR` is not a valid enum member; DTO validation enforces values.
-  locale          String            @default("en")
+  locale          String            @default("pt-BR")
   // Faction chosen during onboarding; null until a player completes onboarding.
   factionId       String?
   // Owner debug switch, per account (never global — a global flag would speed up every

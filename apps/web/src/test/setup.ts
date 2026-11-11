@@ -28,6 +28,10 @@ beforeAll(async () => {
     i18n.on('initialized', () => resolve());
   });
 });
+// the game opens in Brazilian Portuguese; the specs read English, so every test starts in English
+beforeEach(async () => {
+  await i18n.changeLanguage('en');
+});
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 

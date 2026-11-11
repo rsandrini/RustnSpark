@@ -219,12 +219,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A pilot without a faction has no ship yet: onboarding first (S10.2).
       void navigate(profile.factionId ? '/' : '/onboarding');
     },
-    [loadProfile, navigate, queryClient],
+    [loadProfile, navigate, queryClient, i18n.language],
   );
 
   const register = useCallback(
     async (data: RegisterData) => {
-      const { accessToken } = await authApi.register(data);
+      // the account starts in the language the pilot is reading (Brazilian Portuguese unless they changed it)
+      const locale = i18n.language === 'en' ? 'en' : 'pt-BR';
+      const { accessToken } = await authApi.register({ ...data, locale });
       queryClient.clear();
       setAccessToken(accessToken);
       const profile = await loadProfile(accessToken);

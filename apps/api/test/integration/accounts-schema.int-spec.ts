@@ -26,6 +26,7 @@ const EXPECTED_COLUMNS: Readonly<Record<string, readonly string[]>> = {
     'tutorialDone',
     'dialogueEnabled',
     'publicId',
+    'prologueOutcome',
     'createdAt',
   ],
   RefreshToken: [

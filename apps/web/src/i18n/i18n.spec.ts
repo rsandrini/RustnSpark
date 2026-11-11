@@ -23,11 +23,11 @@ describe('i18n', () => {
 });
 
 describe('detectInitialLng', () => {
-  it('prefers a saved language, then the browser language, then English', async () => {
+  it('opens in Brazilian Portuguese, whatever the browser says, unless a language was saved', async () => {
     const { detectInitialLng, LANGUAGE_STORAGE_KEY } = await import('./config');
     window.localStorage.removeItem(LANGUAGE_STORAGE_KEY);
-    expect(detectInitialLng()).toBe('en');
-    const lang = vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('pt-PT');
+    expect(detectInitialLng()).toBe('pt-BR');
+    const lang = vi.spyOn(window.navigator, 'language', 'get').mockReturnValue('en-US');
     expect(detectInitialLng()).toBe('pt-BR');
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
     expect(detectInitialLng()).toBe('en');

@@ -9,6 +9,8 @@ import { defineConfig } from '@playwright/test';
  * Env: E2E_BASE_URL (default http://127.0.0.1:8080), E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD (an
  * admin created with the CLI; used only to make missions finish in seconds).
  */
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080';
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 120_000,
@@ -19,7 +21,14 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:8080',
+    baseURL: BASE_URL,
+    // the game opens in Brazilian Portuguese; the smoke specs read English labels, so every context starts in English
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: new URL(BASE_URL).origin, localStorage: [{ name: 'rs.language', value: 'en' }] },
+      ],
+    },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

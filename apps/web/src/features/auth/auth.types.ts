@@ -27,6 +27,8 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
+  /** The language the account starts in (the pilot's current one). */
+  locale?: 'en' | 'pt-BR';
 }
 
 /** Saving a guest pilot: an email and password, and optionally a pilot name instead of guest-xxxxxx. */

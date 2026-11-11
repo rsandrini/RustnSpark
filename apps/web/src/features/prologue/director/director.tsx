@@ -276,13 +276,14 @@ export function Director() {
       )}
       {def.moment === 'rescue' && <RescueMoment onReady={readyMoment} friend={friendName} />}
       {spoken !== undefined && <Speaker key={spoken.key} spoken={spoken} onDone={dropFirst} />}
-      <div className="opening-bar" data-opening-free="" data-testid="opening-bar" data-step={step}>
-        {ready && !satisfied && def.moment === undefined && (
-          <p className="opening-hint" data-testid="opening-hint">
-            {t(`prologue.hint.${step}`)}
-          </p>
-        )}
-        {ready && satisfied && def.confirm && (
+      {/* what to do now sits at the bottom, in the middle; a confirmation (take the engine, read on) is a card in the middle of the screen, like the guides' lines */}
+      {ready && !satisfied && def.moment === undefined && (
+        <p className="opening-hint" data-opening-free="" data-testid="opening-hint">
+          {t(`prologue.hint.${step}`)}
+        </p>
+      )}
+      {ready && satisfied && def.confirm && (
+        <div className="opening-confirm" data-opening-free="">
           <button
             type="button"
             className="btn primary opening-continue"
@@ -291,7 +292,9 @@ export function Director() {
           >
             {t(`prologue.continueLabel.${step}`, { defaultValue: t('prologue.director.continue') })}
           </button>
-        )}
+        </div>
+      )}
+      <div className="opening-bar" data-opening-free="" data-testid="opening-bar" data-step={step}>
         <button
           type="button"
           className="btn tiny prologue-skip-link"

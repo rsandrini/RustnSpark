@@ -1,5 +1,5 @@
-export const defaultLng = 'en';
-export const fallbackLng = 'en';
+export const defaultLng = 'pt-BR';
+export const fallbackLng = 'pt-BR';
 export const supportedLngs = ['en', 'pt-BR'] as const;
 
 export type SupportedLng = (typeof supportedLngs)[number];
@@ -10,7 +10,7 @@ function isSupported(value: string | null | undefined): value is SupportedLng {
   return (supportedLngs as readonly string[]).includes(value ?? '');
 }
 
-// Saved choice first, then the browser language (any pt-* maps to pt-BR), then the default.
+// Saved choice first, then the default (Brazilian Portuguese, whatever the browser says: the owner's call).
 export function detectInitialLng(): SupportedLng {
   try {
     const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -18,6 +18,5 @@ export function detectInitialLng(): SupportedLng {
   } catch {
     // storage can be unavailable (private mode); fall through to the browser language.
   }
-  const browser = typeof navigator === 'undefined' ? '' : navigator.language;
-  return browser.toLowerCase().startsWith('pt') ? 'pt-BR' : defaultLng;
+  return defaultLng;
 }

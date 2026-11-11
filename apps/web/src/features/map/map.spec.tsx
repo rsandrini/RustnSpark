@@ -241,7 +241,7 @@ describe('map (S10.5)', () => {
     expect(await within(box).findByText('2m 30s')).toBeInTheDocument();
     // The same fuel block as a mission card: aboard, needed, tank, and the verdict in words.
     const fuel = within(box).getByTestId('mcard-fuel');
-    expect(fuel).toHaveTextContent('You have 25 · the trip needs 12 · tank 60');
+    expect(fuel).toHaveTextContent('Fuel: you have 25 · the trip needs 12 · tank 60');
     expect(fuel).toHaveAttribute('data-state', 'ok');
     expect(within(box).getByText(/pays nothing/)).toBeInTheDocument();
     expect(within(box).getByRole('button', { name: /Fly to Estaleiro Tycho/ })).toBeEnabled();

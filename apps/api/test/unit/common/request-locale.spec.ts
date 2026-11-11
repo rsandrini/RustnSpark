@@ -18,17 +18,17 @@ describe('resolveRequestLocale', () => {
   });
 
   it('falls back to the default when neither exists', () => {
-    expect(resolveRequestLocale(undefined, undefined)).toBe('en');
-    expect(resolveRequestLocale(undefined, null as unknown as undefined)).toBe('en');
+    expect(resolveRequestLocale(undefined, undefined)).toBe('pt-BR');
+    expect(resolveRequestLocale(undefined, null as unknown as undefined)).toBe('pt-BR');
   });
 
   it('normalizes unsupported values through parseLocale', () => {
     // Explicit ?locale= values go through parseLocale, which is strict by
     // design — primary-subtag matching (`pt-PT` → `pt-BR`) only exists in
     // resolveLocaleFromHeader for Accept-Language.
-    expect(resolveRequestLocale('pt-PT', 'en')).toBe('en');
-    expect(resolveRequestLocale('fr', 'pt-BR')).toBe('en');
-    expect(resolveRequestLocale(undefined, 'fr')).toBe('en');
+    expect(resolveRequestLocale('pt-PT', 'en')).toBe('pt-BR');
+    expect(resolveRequestLocale('fr', 'pt-BR')).toBe('pt-BR');
+    expect(resolveRequestLocale(undefined, 'fr')).toBe('pt-BR');
     expect(resolveRequestLocale('pt', 'en')).toBe('pt-BR');
   });
 });

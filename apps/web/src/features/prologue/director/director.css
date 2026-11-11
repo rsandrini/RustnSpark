@@ -36,10 +36,41 @@
   gap: 10px;
   align-items: center;
 }
-.opening-bar .opening-continue {
+.opening-continue {
   animation: opening-glow 1.8s ease-in-out infinite;
 }
+
+/* A confirmation is a card in the middle of the screen, where the guides' lines were. */
+.opening-confirm {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 95;
+  transform: translate(-50%, -50%);
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: rgba(14, 19, 34, 0.94);
+  border: 1px solid rgba(255, 196, 77, 0.6);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  animation: opening-fade 0.35s ease-out both;
+}
+@keyframes opening-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.opening-confirm .opening-continue {
+  font-size: 1.1rem;
+  padding: 12px 26px;
+}
 @media (max-width: 720px) {
+  .opening-hint {
+    bottom: 76px;
+    width: calc(100vw - 24px);
+  }
   .opening-bar {
     bottom: 76px; /* above the phone's tab bar */
     right: 12px;
@@ -56,6 +87,12 @@
 
 /* What to do now, in one line, next to the skip link. */
 .opening-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 95;
+  transform: translateX(-50%);
+  text-align: center;
   margin: 0;
   max-width: 320px;
   padding: 8px 12px;
