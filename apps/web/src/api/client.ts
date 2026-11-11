@@ -126,6 +126,28 @@ function bytesOf(blob: Blob): Promise<ArrayBuffer> {
   });
 }
 
+/** What an interceptor is asked: the call the app is about to make. */
+export interface InterceptedRequest {
+  method: string;
+  path: string;
+  body: unknown;
+}
+
+/**
+ * An interceptor answers a call itself (`handled`) or leaves it to the network. The new-pilot opening installs
+ * one so the game's real screens run on a small fake server in the browser; it throws an `ApiError` to fail a call.
+ */
+export type ApiInterceptor = (
+  request: InterceptedRequest,
+) => Promise<{ handled: true; value: unknown } | { handled: false }>;
+
+let interceptor: ApiInterceptor | null = null;
+
+/** Installs the interceptor, or removes it with `null` (every call then goes to the network again). */
+export function setApiInterceptor(next: ApiInterceptor | null): void {
+  interceptor = next;
+}
+
 async function rawRequest<T>(
   method: HttpMethod,
   path: string,
@@ -133,6 +155,10 @@ async function rawRequest<T>(
   options: RequestOptions = {},
   allowRetry = true,
 ): Promise<T> {
+  if (interceptor !== null) {
+    const answer = await interceptor({ method, path, body });
+    if (answer.handled) return answer.value as T;
+  }
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
