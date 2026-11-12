@@ -6,6 +6,7 @@ import {
   DialoguePositionSchema,
 } from '@rustandspark/contract';
 import type { DialogueNode, GiverRef } from '../../api/generated';
+import { withoutNode } from './scene-edit';
 import { DialogueBox } from '../../features/dialogue/dialogue-box';
 
 // Admin editor for a mentor's dialogue scenes (docs/design/mentor-dialogue-plan.md §4): scenes with a trigger and an
@@ -498,13 +499,11 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
                         className="btn tiny"
                         disabled={scene.nodes.length <= 1}
                         onClick={() =>
-                          setScene(index, {
-                            nodes: scene.nodes.filter((_, at) => at !== nodeIndex),
-                            start:
-                              scene.start === node.id
-                                ? (scene.nodes.find((entry) => entry.id !== node.id)?.id ?? '')
-                                : scene.start,
-                          })
+                          onChange(
+                            scenes.map((entry, at) =>
+                              at === index ? withoutNode(entry, node.id) : entry,
+                            ),
+                          )
                         }
                       >
                         {t('admin.dialogue.removeNode')}
