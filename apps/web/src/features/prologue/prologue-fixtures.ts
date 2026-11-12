@@ -77,6 +77,8 @@ export interface ProloguePart {
   /** Ports in the part's own (authored) cells; a side with kind `none` carries no port. */
   readonly connectors: readonly ConnectorCell[];
   readonly rarity: 'COMMON' | 'UNCOMMON';
+  /** How worn it is, in percent (the ship is old: its first parts are far from new). Default 100. */
+  readonly condition?: number;
   /** The one spot (and turn) where the part joins the ship, for the guide to point at. */
   readonly target: Placement;
 }
@@ -110,6 +112,7 @@ export const PROLOGUE_BRIDGE: ProloguePart = {
   },
   connectors: [central(0, 0, 'W'), central(0, 0, 'E')],
   rarity: 'COMMON',
+  condition: 52,
   target: { partInstanceId: 'prologue-bridge', gx: 0, gy: 0, rot: 0 },
 };
 
@@ -131,6 +134,7 @@ export const PROLOGUE_TANK: ProloguePart = {
   },
   connectors: [central(0, 0, 'W'), central(0, 0, 'E')],
   rarity: 'COMMON',
+  condition: 38,
   target: { partInstanceId: 'prologue-tank', gx: -1, gy: 0, rot: 0 },
 };
 
@@ -150,6 +154,7 @@ export const PROLOGUE_HULL: ProloguePart = {
   },
   connectors: [central(0, 0, 'W'), central(1, 0, 'E')],
   rarity: 'COMMON',
+  condition: 30,
   target: { partInstanceId: 'prologue-hull', gx: -3, gy: 0, rot: 0 },
 };
 
@@ -193,6 +198,7 @@ export const PROLOGUE_ENGINE: ProloguePart = {
   },
   connectors: [central(0, 0, 'E')],
   rarity: 'COMMON',
+  condition: 46,
   target: { partInstanceId: 'prologue-engine', gx: -4, gy: 0, rot: 0 },
 };
 

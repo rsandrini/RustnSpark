@@ -188,32 +188,49 @@ export interface ShipYardProps {
   callouts?: ReactNode;
 }
 
-/** How long a landing burst plays. */
-const LAND_MS = 800;
-const SPARKS = 14;
+/** How long a landing plays. */
+const LAND_MS = 700;
+const SPARKS = 11;
 
 /**
- * A burst of sparks where a part has just landed: a ring that flashes outwards and a handful of sparks flying out in
- * every direction and going out. It is only a picture (pointer-transparent) and the CSS does all the moving.
+ * Metal hitting metal where a part has just landed: a hard flash on its outline and thin streaks of sparks flying out
+ * fast and going dark. It is only a picture (pointer-transparent) and the CSS does all the moving.
  */
-function YardSparks({ x, y, size }: { x: number; y: number; size: number }) {
+function YardSparks({
+  x,
+  y,
+  width,
+  height,
+}: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}) {
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const size = Math.max(width, height);
   return (
     <g className="yard-sparks" style={{ pointerEvents: 'none' }} aria-hidden="true">
-      <circle className="yard-spark-ring" cx={x} cy={y} r={size * 0.45} />
+      <rect className="yard-impact" x={x} y={y} width={width} height={height} />
       {Array.from({ length: SPARKS }, (_, index) => {
-        const angle = (index / SPARKS) * Math.PI * 2 + (index % 3) * 0.17;
-        const reach = size * (0.9 + (index % 4) * 0.28);
+        // fanned out unevenly, so it looks thrown and not drawn
+        const angle = (index / SPARKS) * Math.PI * 2 + ((index * 7) % 5) * 0.21;
+        const length = size * (0.16 + (index % 3) * 0.08);
+        const reach = size * (0.7 + ((index * 5) % 4) * 0.3);
         return (
-          <circle
+          <line
             key={index}
             className={`yard-spark s${index % 3}`}
-            cx={x}
-            cy={y}
-            r={0.045 + (index % 3) * 0.02}
+            x1={cx}
+            y1={cy}
+            x2={cx + Math.cos(angle) * length}
+            y2={cy + Math.sin(angle) * length}
             style={
               {
                 '--dx': `${(Math.cos(angle) * reach).toFixed(3)}px`,
                 '--dy': `${(Math.sin(angle) * reach).toFixed(3)}px`,
+                '--delay': `${(index % 4) * 18}ms`,
               } as React.CSSProperties
             }
           />
@@ -917,7 +934,7 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
                 }}
               />
               {landedStamp !== undefined && (
-                <YardSparks x={gx + width / 2} y={gy + height / 2} size={Math.max(width, height)} />
+                <YardSparks x={gx} y={gy} width={width} height={height} />
               )}
             </g>
           );

@@ -103,8 +103,8 @@ export interface SandboxSnapshot {
   readonly scrap: number;
 }
 
-/** The tank starts almost empty: just enough for the first race (the owner's call). */
-export const STARTING_FUEL = 15;
+/** The tank starts almost empty: just enough for the first race (the owner's call; the trips burn a lot of fuel). */
+export const STARTING_FUEL = 45;
 export const SHIP_ID = 'prologue-ship';
 export const SHIP_NAME = 'Wayfarer';
 

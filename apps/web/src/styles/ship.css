@@ -1166,75 +1166,77 @@ body.dragging-part .part-hover-card {
   display: none;
 }
 
-/* A part landing on the ship: a little shake and a burst of sparks (a picture only; reduced motion turns it off). */
+/* A part landing on the ship: one hard jolt (small, no bounce), a flash on the outline and thin streaks of sparks.
+   Reduced motion turns it all off. */
 .yard-block.landed {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: yard-land 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: yard-land 0.2s linear;
 }
 @keyframes yard-land {
   0% {
-    transform: scale(1.18) rotate(-3deg);
+    transform: translate(0.05px, 0.02px);
   }
-  30% {
-    transform: scale(0.94) rotate(2.5deg);
+  20% {
+    transform: translate(-0.045px, -0.015px);
   }
-  55% {
-    transform: scale(1.06) rotate(-1.5deg);
+  40% {
+    transform: translate(0.03px, 0.01px);
+  }
+  60% {
+    transform: translate(-0.018px, 0);
   }
   80% {
-    transform: scale(0.99) rotate(0.6deg);
+    transform: translate(0.008px, 0);
   }
   100% {
-    transform: scale(1) rotate(0);
+    transform: none;
+  }
+}
+.yard-impact {
+  fill: none;
+  stroke: #fff6e0;
+  stroke-width: 0.045;
+  opacity: 0;
+  animation: yard-impact 0.16s linear forwards;
+}
+@keyframes yard-impact {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 .yard-spark {
-  transform-box: fill-box;
-  transform-origin: center;
-  fill: #ffd27a;
+  stroke: #ffd58a;
+  stroke-width: 0.018;
+  stroke-linecap: butt;
   opacity: 0;
-  animation: yard-spark 0.7s ease-out forwards;
+  animation: yard-spark 0.42s cubic-bezier(0.1, 0.8, 0.2, 1) var(--delay, 0ms) forwards;
 }
 .yard-spark.s1 {
-  fill: #ff9a3d;
+  stroke: #ff8a2a;
 }
 .yard-spark.s2 {
-  fill: #fff4d6;
+  stroke: #fffbe8;
+  stroke-width: 0.012;
 }
 @keyframes yard-spark {
   0% {
     opacity: 1;
-    transform: translate(0, 0) scale(1.4);
+    transform: translate(0, 0);
+  }
+  55% {
+    opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: translate(var(--dx), var(--dy)) scale(0.2);
-  }
-}
-.yard-spark-ring {
-  fill: none;
-  stroke: #ffd27a;
-  stroke-width: 0.06;
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: 0;
-  animation: yard-ring 0.55s ease-out forwards;
-}
-@keyframes yard-ring {
-  0% {
-    opacity: 0.9;
-    transform: scale(0.35);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.5);
+    transform: translate(var(--dx), var(--dy));
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .yard-block.landed,
   .yard-spark,
-  .yard-spark-ring {
+  .yard-impact {
     animation: none;
   }
 }

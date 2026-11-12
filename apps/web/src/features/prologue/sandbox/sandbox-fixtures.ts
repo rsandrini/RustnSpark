@@ -57,7 +57,7 @@ export function inventoryItemOf(entry: SandboxPart, shipId: string): InventoryIt
     displayName: entry.part.name,
     description: descriptionOf(entry.part),
     rarity: entry.part.rarity,
-    condition: 100,
+    condition: entry.part.condition ?? 100,
     broken: false,
     location: entry.location,
     shipId: entry.location === 'INSTALLED' ? shipId : null,

@@ -347,6 +347,6 @@ describe('ShipYard landing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'drop' }));
     expect(container.querySelectorAll('.yard-block.landed')).toHaveLength(1);
     expect(container.querySelectorAll('.yard-spark').length).toBeGreaterThan(5);
-    expect(container.querySelector('.yard-spark-ring')).not.toBeNull();
+    expect(container.querySelector('.yard-impact')).not.toBeNull();
   });
 });

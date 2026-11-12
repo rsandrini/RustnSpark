@@ -104,7 +104,11 @@ const MOBILITY_PER_POWER_OVER_MASS = 2.4;
 const ROUND_TENTH = 10;
 
 /** A plain sheet for the parts that count (the connected ones): sums, a structure budget from the bridge, a mobility. */
-export function sheetOf(counted: readonly PartCatalogStats[], fuel: number): ShipSheet {
+export function sheetOf(
+  counted: readonly PartCatalogStats[],
+  fuel: number,
+  conditions: readonly number[] = [],
+): ShipSheet {
   const sum = (pick: (part: PartCatalogStats) => number) =>
     counted.reduce((total, part) => total + pick(part), 0);
   const mass = sum((part) => part.mass);
@@ -138,6 +142,10 @@ export function sheetOf(counted: readonly PartCatalogStats[], fuel: number): Shi
     structureBudget,
     autonomy: fuelUse > 0 ? Math.round(Math.min(fuel, fuelCap) / fuelUse) : 0,
     mob,
-    condition: 1,
+    // the ship is as worn as its parts are, on average (percent)
+    condition:
+      conditions.length === 0
+        ? 100
+        : Math.round(conditions.reduce((total, value) => total + value, 0) / conditions.length),
   };
 }

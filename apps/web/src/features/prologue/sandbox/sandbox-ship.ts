@@ -25,7 +25,11 @@ function viewOf(sandbox: Sandbox, layout: readonly Placement[]) {
     .filter((placement) => connected.has(placement.partInstanceId))
     .map((placement) => catalogById.get(placement.partInstanceId))
     .filter((stats): stats is PartCatalogStats => stats !== undefined);
-  return { catalogById, connectorsById, disconnected, counted };
+  const wear = new Map(sandbox.state.parts.map((entry) => [entry.id, entry.part.condition ?? 100]));
+  const conditions = layout
+    .filter((placement) => connected.has(placement.partInstanceId))
+    .map((placement) => wear.get(placement.partInstanceId) ?? 100);
+  return { catalogById, connectorsById, disconnected, counted, conditions };
 }
 
 const YARD_CELLS = new Set(SANDBOX_FORMATS[0]?.cells.map(([x, y]) => `${x},${y}`));
@@ -51,8 +55,11 @@ export function previewOf(sandbox: Sandbox, candidate: readonly Placement[]): Pr
       .filter((placement) => placement.outside === true)
       .map((placement) => placement.partInstanceId),
   );
-  const { catalogById, connectorsById, disconnected, counted } = viewOf(sandbox, onShip);
-  const sheet = sheetOf(counted, sandbox.state.fuel);
+  const { catalogById, connectorsById, disconnected, counted, conditions } = viewOf(
+    sandbox,
+    onShip,
+  );
+  const sheet = sheetOf(counted, sandbox.state.fuel, conditions);
   const problems: PreviewResponse['viability']['problems'] = [];
   if (!counted.some((stats) => stats.partClass === 'BRIDGE')) {
     problems.push({ code: 'NO_BRIDGE', message: 'Ship has no bridge installed.' });

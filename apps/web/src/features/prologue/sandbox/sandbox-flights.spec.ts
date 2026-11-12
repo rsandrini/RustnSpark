@@ -161,7 +161,7 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     expect(env.sandbox.state.credits).toBe(300 + 646);
     expect(env.sandbox.state.locationId).toBe(PLACE.dockside);
     expect(env.sandbox.state.slot).toBe(1);
-    expect(env.sandbox.state.fuel).toBe(1);
+    expect(env.sandbox.state.fuel).toBe(4);
     expect(env.events).toContainEqual({ type: 'arrived', missionId: 'sandbox-race' });
     expect(await env.call('GET', '/v1/missions/active')).toEqual([]);
 
@@ -281,5 +281,31 @@ describe('the sandbox board, the accept, the dispatch and the arrival', () => {
     );
     expect(report.outcome).toBe('failed');
     expect(report.stats.credits).toBe(0);
+  });
+});
+
+describe('the old ship', () => {
+  it('starts with worn parts: the sheet and the hold say so', async () => {
+    const env = fresh();
+    const ships = (await env.call('GET', '/v1/ships')) as Array<{ sheet: { condition: number } }>;
+    // far from new (the engine is not on the ship yet: bridge, tank and hull average about 40%)
+    expect(ships[0]?.sheet.condition).toBeLessThan(50);
+    expect(ships[0]?.sheet.condition).toBeGreaterThan(20);
+    const hold = (await env.call('GET', '/v1/inventory')) as Array<{
+      id: string;
+      condition: number;
+    }>;
+    for (const part of hold) expect(part.condition).toBeLessThan(60);
+  });
+
+  it('burns a good part of the tank on the first race', async () => {
+    const env = fresh();
+    await fitEngine(env);
+    await env.call('POST', '/v1/missions/sandbox-race/accept');
+    const before = env.sandbox.state.fuel;
+    await env.call('POST', '/v1/ships/prologue-ship/dispatch', { missionId: 'sandbox-race' });
+    env.advance(60);
+    await env.call('GET', '/v1/missions/active');
+    expect(before - env.sandbox.state.fuel).toBeGreaterThan(30);
   });
 });

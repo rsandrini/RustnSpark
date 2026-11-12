@@ -131,7 +131,8 @@ export const RACE_FRIEND_LEGS = [19.5, 16, 17.5] as const;
 export const RACE_ROUTES = ['sandbox-r1', 'sandbox-r2', 'sandbox-r3'] as const;
 
 /** Fuel a trip needs: a little of the engine's burn for every unit of distance. */
-const FUEL_PER_DISTANCE_AND_BURN = 0.01;
+/** The opening's trips are short, so they burn a lot per unit of distance: the pilot feels the tank go down. */
+const FUEL_PER_DISTANCE_AND_BURN = 0.03;
 export function fuelNeededFor(routeIds: readonly string[], fuelUse: number): number {
   const distance = routeIds.reduce((sum, id) => sum + (routeOf(id)?.distance ?? 0), 0);
   return Math.round(distance * fuelUse * FUEL_PER_DISTANCE_AND_BURN);
