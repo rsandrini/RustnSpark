@@ -379,7 +379,7 @@ export function BoardPage({ guided = false, embedded = false, onGoToShip }: Boar
                       {acceptLabel}
                     </button>
                   )}
-                  {offer.status === 'AVAILABLE' && (
+                  {!opening && offer.status === 'AVAILABLE' && (
                     <button
                       type="button"
                       className="btn"

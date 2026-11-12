@@ -88,6 +88,8 @@ export function PrologueModeProvider({ children }: { children: ReactNode }) {
         const found = config.guides ?? [];
         const next = createSandbox({
           friendName: friendOf(found)?.name,
+          // the engine is the friend's to give: it is in the hold only once the pilot has taken it
+          engineWaits: true,
           payouts: config.payouts,
           purse: config.purse ?? DEFAULT_PURSE,
           refuelCost: config.refuelCost,

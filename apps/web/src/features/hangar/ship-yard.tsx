@@ -188,6 +188,41 @@ export interface ShipYardProps {
   callouts?: ReactNode;
 }
 
+/** How long a landing burst plays. */
+const LAND_MS = 800;
+const SPARKS = 14;
+
+/**
+ * A burst of sparks where a part has just landed: a ring that flashes outwards and a handful of sparks flying out in
+ * every direction and going out. It is only a picture (pointer-transparent) and the CSS does all the moving.
+ */
+function YardSparks({ x, y, size }: { x: number; y: number; size: number }) {
+  return (
+    <g className="yard-sparks" style={{ pointerEvents: 'none' }} aria-hidden="true">
+      <circle className="yard-spark-ring" cx={x} cy={y} r={size * 0.45} />
+      {Array.from({ length: SPARKS }, (_, index) => {
+        const angle = (index / SPARKS) * Math.PI * 2 + (index % 3) * 0.17;
+        const reach = size * (0.9 + (index % 4) * 0.28);
+        return (
+          <circle
+            key={index}
+            className={`yard-spark s${index % 3}`}
+            cx={x}
+            cy={y}
+            r={0.045 + (index % 3) * 0.02}
+            style={
+              {
+                '--dx': `${(Math.cos(angle) * reach).toFixed(3)}px`,
+                '--dy': `${(Math.sin(angle) * reach).toFixed(3)}px`,
+              } as React.CSSProperties
+            }
+          />
+        );
+      })}
+    </g>
+  );
+}
+
 // The assembly yard. Cells are transparent rects (data-gx/gy) so placement and drag feedback
 // come from real geometry: while a block is dragged it stops capturing pointer events and the
 // cell underneath reports where it would snap. The view (zoom + pan) is a viewBox window onto
@@ -331,6 +366,41 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
     valid: boolean;
   };
   const [ghost, setGhost] = useState<Ghost | null>(null);
+
+  // A part that lands (dropped, moved or turned) gets a burst of sparks and a little shake, so placing it feels like
+  // something. The first layout the page loads, and a ship emptied and refilled, land nothing.
+  const [landed, setLanded] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const lastLayout = useRef<readonly Placement[] | null>(null);
+  const landStamp = useRef(0);
+  const landTimers = useRef<number[]>([]);
+  useEffect(() => {
+    const before = lastLayout.current;
+    lastLayout.current = layout;
+    if (before === null || before.length === 0) return;
+    const was = new Map(before.map((p) => [p.partInstanceId, `${p.gx},${p.gy},${p.rot}`]));
+    const changed = layout
+      .filter((p) => p.outside !== true && was.get(p.partInstanceId) !== `${p.gx},${p.gy},${p.rot}`)
+      .map((p) => p.partInstanceId);
+    if (changed.length === 0) return;
+    landStamp.current += 1;
+    const stamp = landStamp.current;
+    setLanded((map) => new Map([...map, ...changed.map((id): [string, number] => [id, stamp])]));
+    landTimers.current.push(
+      window.setTimeout(() => {
+        setLanded((map) => {
+          const next = new Map(map);
+          for (const id of changed) if (next.get(id) === stamp) next.delete(id);
+          return next;
+        });
+      }, LAND_MS),
+    );
+  }, [layout]);
+  useEffect(
+    () => () => {
+      landTimers.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    [],
+  );
   const ghostRef = useRef<Ghost | null>(null);
   // What a carried part needs to be drawn like the parts on the ship (set again on every render, further down).
   const drawing = useRef<{
@@ -778,8 +848,12 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
           const isGhosting = ghost?.partInstanceId === placement.partInstanceId;
           const isRotating = rotatingId === placement.partInstanceId;
           const { gx, gy } = placement;
+          const landedStamp = landed.get(placement.partInstanceId);
           return (
-            <g key={placement.partInstanceId} className="yard-block">
+            <g
+              key={`${placement.partInstanceId}-${landedStamp ?? 0}`}
+              className={`yard-block${landedStamp === undefined ? '' : ' landed'}`}
+            >
               {outsideIds.has(placement.partInstanceId) && !isGhosting && (
                 <rect
                   className="outside-halo"
@@ -842,6 +916,9 @@ export const ShipYard = forwardRef<ShipYardHandle, ShipYardProps>(function ShipY
                   onPointerLeave: () => onHoverPart?.(null),
                 }}
               />
+              {landedStamp !== undefined && (
+                <YardSparks x={gx + width / 2} y={gy + height / 2} size={Math.max(width, height)} />
+              )}
             </g>
           );
         })}

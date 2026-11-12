@@ -189,12 +189,17 @@ export function Director() {
   }, [playerId, step, finish]);
 
   const beginLeave = useCallback(() => {
+    // taking the gift: the engine lands in the pilot's hold now, not before
+    if (step === 'gift') {
+      sandbox?.giveEngine();
+      void queryClientRef.current.invalidateQueries();
+    }
     update((current) => ({
       ...current,
       phase: 'leave',
       queue: [...current.queue, ...scenesFor(guides, doneOf(step))],
     }));
-  }, [guides, step, update]);
+  }, [guides, step, update, sandbox]);
 
   // the lines are spoken: the pilot's turn, or the next step
   useEffect(() => {

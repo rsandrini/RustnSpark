@@ -228,6 +228,19 @@ describe('the director: the story on the real screens', () => {
     spy.mockRestore();
   }, 20000);
 
+  it("the friend's engine is in the hold only after the pilot takes it", async () => {
+    server.use(story([]));
+    saveStep('gift');
+    renderWithRouter(routes, { initialEntries: ['/ship'] });
+    const hold = async () =>
+      (await client.get<Array<{ id: string }>>('/v1/inventory')).map((part) => part.id);
+    const take = await screen.findByTestId('opening-continue');
+    expect(await hold()).not.toContain(PROLOGUE_ENGINE.id);
+
+    fireEvent.click(take);
+    await waitFor(async () => expect(await hold()).toContain(PROLOGUE_ENGINE.id));
+  });
+
   it('asks twice before skipping, at any step', async () => {
     server.use(story([]));
     for (const step of ['gift', 'race', 'stop-two', 'rescue'] as const) {

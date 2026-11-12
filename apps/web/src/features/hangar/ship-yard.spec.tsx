@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import type { ConnectorCell, PartCatalogStats } from '../../api/generated';
 import { renderWithProviders } from '../../test/utils';
@@ -273,5 +275,78 @@ describe('ShipYard parts outside the hull', () => {
     expect(container.querySelector('.yard-outline')?.getAttribute('d')).toContain('M0 0h1');
     expect(container.querySelectorAll('.outside-tag')).toHaveLength(1);
     expect(getByTestId('yard-outside-note')).toHaveTextContent('1 part(s) outside the ship');
+  });
+});
+
+describe('ShipYard landing', () => {
+  const stats = (): PartCatalogStats => ({
+    partType: 'x',
+    partClass: 'UTILITY',
+    w: 1,
+    h: 1,
+    mass: 1,
+    structureCost: 1,
+    partHp: 1,
+    basePrice: 0,
+    pot: 0,
+    pdf: 0,
+    bli: 0,
+    esc: 0,
+    sen: 0,
+    crg: 0,
+    min: 0,
+    energyCont: 0,
+    energyCombat: 0,
+    fuelCap: 0,
+    fuelUse: 0,
+    batCharge: 0,
+    batOutput: 0,
+    batInput: 0,
+    pressurized: false,
+    lifeSupport: false,
+  });
+  const props = {
+    cells: [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+    ] as [number, number][],
+    catalogById: new Map([
+      ['a', stats()],
+      ['b', stats()],
+    ]),
+    nameById: new Map([
+      ['a', 'A'],
+      ['b', 'B'],
+    ]),
+    selectedId: null,
+    draggingId: null,
+    onSelect: () => undefined,
+    onCellClick: () => undefined,
+    onDragStart: () => undefined,
+    onDragEnd: () => undefined,
+  };
+
+  it('shows nothing when the ship first appears, and sparks and a shake for a part that lands', () => {
+    const first = [{ partInstanceId: 'a', gx: 0, gy: 0, rot: 0 as const }];
+    const both = [...first, { partInstanceId: 'b', gx: 1, gy: 0, rot: 0 as const }];
+    function Harness() {
+      const [layout, setLayout] = useState(first);
+      return (
+        <>
+          <button type="button" aria-label="drop" onClick={() => setLayout(both)} />
+          <ShipYard {...props} layout={layout} />
+        </>
+      );
+    }
+    const { container } = renderWithProviders(<Harness />);
+    expect(container.querySelectorAll('.yard-spark')).toHaveLength(0);
+    expect(container.querySelectorAll('.yard-block.landed')).toHaveLength(0);
+
+    // a second part is dropped on the ship
+    fireEvent.click(screen.getByRole('button', { name: 'drop' }));
+    expect(container.querySelectorAll('.yard-block.landed')).toHaveLength(1);
+    expect(container.querySelectorAll('.yard-spark').length).toBeGreaterThan(5);
+    expect(container.querySelector('.yard-spark-ring')).not.toBeNull();
   });
 });

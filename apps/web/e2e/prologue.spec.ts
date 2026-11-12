@@ -163,6 +163,31 @@ test('the guide speaks in the middle of the screen, and the screen around it is 
   await expect(page.locator('[aria-disabled="true"].nav-link').first()).toBeVisible();
 });
 
+test('the engine reaches the hold only when it is taken, and landing it throws sparks', async ({
+  page,
+}) => {
+  await register(page);
+  await read(page);
+  // the gift is still the friend's: nothing in the hold yet
+  await expect(page.locator('.hangar-side .part-btn', { hasText: /engine/i })).toHaveCount(0);
+  await next(page);
+  await onStep(page, 'fit-engine');
+  await read(page);
+
+  const sheet = page.getByRole('button', { name: /^Parts \(/ });
+  if (await sheet.isVisible().catch(() => false)) await sheet.click();
+  const row = page.locator('.hangar-side .part-btn', { hasText: /engine/i }).first();
+  await expect(row).toBeVisible();
+  await row.click();
+  const cell = page.locator('.hangar-scene svg rect.yard-cell[data-gx="-4"][data-gy="0"]').first();
+  const box = await cell.boundingBox();
+  if (box === null) throw new Error('no such cell');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  // the part lands with a burst of sparks
+  await expect(page.locator('.yard-spark').first()).toBeAttached({ timeout: 3000 });
+  await expect(page.locator('.yard-block.landed')).toHaveCount(1);
+});
+
 test('the opening resumes where the pilot left it', async ({ page }) => {
   await register(page);
   await read(page);

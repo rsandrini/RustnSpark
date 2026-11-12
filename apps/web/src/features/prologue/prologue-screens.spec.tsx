@@ -11,6 +11,11 @@ import { renderWithRouter } from '../../test/utils';
 describe('the real Board and Port screens on the sandbox', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    // the pilot is past the gift: the friend's engine is in the hold
+    window.localStorage.setItem(
+      'rs.prologue.player-1',
+      JSON.stringify({ step: 'fit-engine', kind: null }),
+    );
     vi.stubEnv('VITE_PROLOGUE_SANDBOX', '1');
     server.use(
       http.get('/v1/players/me', () =>

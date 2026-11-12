@@ -23,6 +23,8 @@ export interface SandboxConfig {
   readonly upgradeCost: number;
   /** The friend's name, from the guide the admin edits (the race table and the reports use it). */
   readonly friendName?: string;
+  /** The friend's engine is not in the hold yet: it arrives when the pilot takes it (`giveEngine`). */
+  readonly engineWaits?: boolean;
   /** The clock, in milliseconds (a test drives it; the opening uses the app's clock, the one the screens read). */
   readonly clock?: () => number;
   /** The pilot's real profile, so the screens see the real name and id. */
@@ -126,10 +128,12 @@ export class Sandbox {
     this.snapshot = {
       credits: config.purse,
       fuel: STARTING_FUEL,
-      // the friend's gift waits in the hold
+      // the friend's gift is in the hold, unless it is still the friend's to give
       parts: [
         ...installed.map((part) => ({ id: part.id, part, location: 'INSTALLED' as const })),
-        { id: PROLOGUE_ENGINE.id, part: PROLOGUE_ENGINE, location: 'INVENTORY' as const },
+        ...(config.engineWaits === true
+          ? []
+          : [{ id: PROLOGUE_ENGINE.id, part: PROLOGUE_ENGINE, location: 'INVENTORY' as const }]),
       ],
       layout: installed.map((part) => part.target),
       locationId: PLACE.haven,
@@ -197,6 +201,12 @@ export class Sandbox {
         this.emit({ type: 'part_removed', partId: entry.id });
       }
     }
+  }
+
+  /** The pilot takes the friend's engine: it lands in the hold (once). */
+  giveEngine(): void {
+    if (this.snapshot.parts.some((entry) => entry.id === PROLOGUE_ENGINE.id)) return;
+    this.addPart(PROLOGUE_ENGINE, PROLOGUE_ENGINE.id);
   }
 
   /** The friend hands over scrap: the hold holds at least `units` of it afterwards. */

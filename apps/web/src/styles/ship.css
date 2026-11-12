@@ -1165,3 +1165,76 @@ body.dragging-part .compare-hover-card,
 body.dragging-part .part-hover-card {
   display: none;
 }
+
+/* A part landing on the ship: a little shake and a burst of sparks (a picture only; reduced motion turns it off). */
+.yard-block.landed {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: yard-land 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes yard-land {
+  0% {
+    transform: scale(1.18) rotate(-3deg);
+  }
+  30% {
+    transform: scale(0.94) rotate(2.5deg);
+  }
+  55% {
+    transform: scale(1.06) rotate(-1.5deg);
+  }
+  80% {
+    transform: scale(0.99) rotate(0.6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.yard-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: #ffd27a;
+  opacity: 0;
+  animation: yard-spark 0.7s ease-out forwards;
+}
+.yard-spark.s1 {
+  fill: #ff9a3d;
+}
+.yard-spark.s2 {
+  fill: #fff4d6;
+}
+@keyframes yard-spark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+  }
+}
+.yard-spark-ring {
+  fill: none;
+  stroke: #ffd27a;
+  stroke-width: 0.06;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: yard-ring 0.55s ease-out forwards;
+}
+@keyframes yard-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.35);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .yard-block.landed,
+  .yard-spark,
+  .yard-spark-ring {
+    animation: none;
+  }
+}

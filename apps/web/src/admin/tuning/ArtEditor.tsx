@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { defaultFactionBannerUrl, useFactionArt } from '../../ui/factionArt';
 import { placeArtUrl, usePlaceArt } from '../../ui/PlaceArt';
+import { useQuery } from '@tanstack/react-query';
+import { client } from '../../api/client';
 import { failureText } from '../../api/errors';
+import { useFeedback } from '../../ui/feedback';
 import { tuningApi } from './tuning.api';
 
 export type ArtKind = 'factions' | 'locations' | 'quest-givers';
@@ -18,37 +21,49 @@ const ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
 // Upload/replace/reset of an entity's images (a faction's banner/logo/background, a place's
 // wide/square/icon, a giver's portrait). Until an image is uploaded a slot shows the built-in
-// default (where there is one); "Reset to default" removes the upload again. Giver portraits
-// have no public listing endpoint, so their preview keeps the last upload of this session.
+// default (where there is one); "Reset to default" removes the upload again. An upload is saved on the server at once
+// (not with the form's Save), and says "Saved"; the preview always shows what the server holds.
 export function ArtEditor({ kind, id }: { kind: ArtKind; id: string }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const factionArt = useFactionArt();
   const placeArt = usePlaceArt();
-  const [giverArt, setGiverArt] = useState<Record<string, string | null>>({});
+  const feedback = useFeedback();
+  // what a quest giver already has uploaded (the portrait is saved on the server the moment it is chosen)
+  const giversQuery = useQuery({
+    queryKey: ['giverArt'],
+    enabled: kind === 'quest-givers',
+    queryFn: () =>
+      client.get<{ givers: Record<string, Record<string, string | null>> }>('/v1/givers/art'),
+  });
+  const giverArt = giversQuery.data?.givers[id];
   const uploaded: Record<string, string | null> | undefined =
     kind === 'factions' ? factionArt[id] : kind === 'locations' ? placeArt[id] : giverArt;
   const [error, setError] = useState<string | null>(null);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: [kind === 'factions' ? 'factionArt' : 'placeArt'] });
+    queryClient.invalidateQueries({
+      queryKey: [
+        kind === 'factions' ? 'factionArt' : kind === 'locations' ? 'placeArt' : 'giverArt',
+      ],
+    });
   const upload = useMutation({
     mutationFn: (args: { slot: string; file: File }) =>
       tuningApi.uploadArt(kind, id, args.slot, args.file),
-    onSuccess: (change, args) => {
+    onSuccess: () => {
       setError(null);
-      if (kind === 'quest-givers') setGiverArt((prev) => ({ ...prev, [args.slot]: change.url }));
-      else void refresh();
+      feedback.notify(t('tuning.saved'));
+      void refresh();
     },
     onError: (failure: Error) => setError(failureText(failure)),
   });
   const reset = useMutation({
     mutationFn: (slot: string) => tuningApi.resetArt(kind, id, slot),
-    onSuccess: (_change, slot) => {
+    onSuccess: () => {
       setError(null);
-      if (kind === 'quest-givers') setGiverArt((prev) => ({ ...prev, [slot]: null }));
-      else void refresh();
+      feedback.notify(t('tuning.saved'));
+      void refresh();
     },
     onError: (failure: Error) => setError(failureText(failure)),
   });

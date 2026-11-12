@@ -5,6 +5,13 @@
   filter: saturate(0.6);
 }
 
+/* A job card is something to read: its parts stay as bright as the card itself (they still do nothing unless allowed). */
+.mrow [data-opening-locked],
+.mcard [data-opening-locked] {
+  opacity: 1;
+  filter: none;
+}
+
 /* What the step wants pressed glows. */
 [data-opening-allowed] {
   animation: opening-glow 1.8s ease-in-out infinite;

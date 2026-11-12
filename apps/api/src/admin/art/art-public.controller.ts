@@ -105,6 +105,12 @@ export class ArtPublicController {
     return { places: await this.art.listUrls('locations') };
   }
 
+  // The uploaded portrait of every quest giver (the Admin's art editor shows what is already there).
+  @Get('givers/art')
+  async givers(): Promise<{ givers: Record<string, ArtUrls> }> {
+    return { givers: await this.art.listUrls('quest-givers') };
+  }
+
   // Public on purpose: the browser loads these as plain <img>/CSS backgrounds. File names are
   // validated against a strict pattern, hashed by content and served immutable; an SVG is sandboxed
   // by CSP so nothing inside it can run.

@@ -42,7 +42,8 @@ export function restoreSandbox(sandbox: Sandbox, step: StepId, kind: ModuleKind 
   const index = at(step);
   const chosen: ModuleKind = kind ?? 'passengers';
 
-  // the engine fitted (the friend's gift)
+  // the engine taken from the friend (every step after the gift has it), and fitted once the pilot got past fitting it
+  if (index > at('gift')) sandbox.giveEngine();
   if (index > at('fit-engine')) {
     sandbox.saveLayout([...sandbox.state.layout, PROLOGUE_ENGINE.target]);
   }
