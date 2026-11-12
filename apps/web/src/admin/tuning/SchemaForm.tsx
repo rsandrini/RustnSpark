@@ -221,6 +221,8 @@ export interface FormIssue {
 export interface FormSection {
   titleKey: string;
   fields: readonly string[];
+  /** Wrapped in a box that opens and closes (closed at first): a long section that is not always needed. */
+  collapsible?: boolean;
 }
 
 interface SchemaFormProps {
@@ -625,9 +627,14 @@ export function SchemaForm({
   const mainFields = fields.filter(isMain);
   const sideFields = fields.filter((field) => !isMain(field));
   const listed = new Set((sections ?? []).flatMap((section) => section.fields));
-  const sectionGroups: { titleKey: string | null; fields: dto.EntitySchemaField[] }[] = [
+  const sectionGroups: {
+    titleKey: string | null;
+    fields: dto.EntitySchemaField[];
+    collapsible?: boolean;
+  }[] = [
     ...(sections ?? []).map((section) => ({
       titleKey: section.titleKey,
+      collapsible: section.collapsible === true,
       fields: sideFields.filter((field) => section.fields.includes(field.name)),
     })),
     { titleKey: null, fields: sideFields.filter((field) => !listed.has(field.name)) },
@@ -732,14 +739,29 @@ export function SchemaForm({
           stacked underneath (owner request). Other forms keep the single paired-field grid. */}
       <div className={mainFields.length > 0 ? 'schema-form-split' : undefined}>
         <div className="schema-form-side">
-          {sectionGroups.map((group) => (
-            <section key={group.titleKey ?? 'rest'} className="schema-form-section">
-              {group.titleKey !== null && <h3>{t(group.titleKey)}</h3>}
-              <div className="schema-form-grid">
-                {group.fields.map((field) => renderField(field))}
-              </div>
-            </section>
-          ))}
+          {sectionGroups.map((group) =>
+            group.collapsible === true && group.titleKey !== null ? (
+              <details
+                key={group.titleKey}
+                className="schema-form-section schema-form-collapse"
+                data-testid="form-collapse"
+              >
+                <summary>
+                  <h3>{t(group.titleKey)}</h3>
+                </summary>
+                <div className="schema-form-grid">
+                  {group.fields.map((field) => renderField(field))}
+                </div>
+              </details>
+            ) : (
+              <section key={group.titleKey ?? 'rest'} className="schema-form-section">
+                {group.titleKey !== null && <h3>{t(group.titleKey)}</h3>}
+                <div className="schema-form-grid">
+                  {group.fields.map((field) => renderField(field))}
+                </div>
+              </section>
+            ),
+          )}
           <div className="schema-form-grid">
             <div className="field">
               <label className="lbl" htmlFor="reason">

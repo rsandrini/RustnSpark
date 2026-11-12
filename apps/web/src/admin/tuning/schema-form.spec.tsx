@@ -194,3 +194,29 @@ describe('SchemaForm', () => {
     );
   });
 });
+
+describe('SchemaForm collapsible sections', () => {
+  it('wraps a collapsible section in a box that starts closed and opens on click', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <SchemaForm
+        fields={fakeFields}
+        onSubmit={vi.fn()}
+        sections={[
+          { titleKey: 'tuning.sections.identity', fields: ['count'] },
+          { titleKey: 'admin.givers.sections.lines', fields: ['name'], collapsible: true },
+        ]}
+      />,
+    );
+    const box = screen.getByTestId('form-collapse');
+    expect(box).toHaveAttribute('data-testid', 'form-collapse');
+    expect(box.tagName).toBe('DETAILS');
+    expect(box).not.toHaveAttribute('open');
+    expect(box).toHaveTextContent('Their voice');
+
+    await user.click(box.querySelector('summary')!);
+    expect(box).toHaveAttribute('open');
+    // the plain section next to it is not a box
+    expect(screen.getAllByTestId('form-collapse')).toHaveLength(1);
+  });
+});
