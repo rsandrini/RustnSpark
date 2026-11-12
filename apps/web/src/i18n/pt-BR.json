@@ -1182,6 +1182,18 @@
         "BAN": "Conta banida"
       },
       "failed": "Não foi possível salvar a decisão."
+    },
+    "openingScript": {
+      "nav": "Roteiro da abertura",
+      "title": "Roteiro da abertura",
+      "help": "Todas as falas da abertura, na ordem em que a história é contada, com quem fala e quando. Use a busca para achar uma frase em qualquer idioma; Editar abre aquele guia.",
+      "search": "Buscar no roteiro…",
+      "none": "Nenhuma fala encontrada.",
+      "number": "#",
+      "moment": "Quando",
+      "who": "Quem",
+      "lines": "O que é dito",
+      "edit": "Editar"
     }
   },
   "tuning": {

@@ -31,19 +31,58 @@ const scene = (): SceneData => ({
   ],
 });
 
-const renderEditor = (value: unknown, onChange = vi.fn()) =>
-  renderWithProviders(<SceneEditor value={value} onChange={onChange} />);
+/** The list opens closed; most checks look inside the first scene, so open it like the editor does. */
+const renderEditor = (value: unknown, onChange = vi.fn(), open = true) => {
+  const view = renderWithProviders(<SceneEditor value={value} onChange={onChange} />);
+  if (open) {
+    const first = screen.queryAllByRole('button', { name: /^\d+\. / })[0];
+    if (first !== undefined) fireEvent.click(first);
+  }
+  return view;
+};
 
 describe('Admin scene editor', () => {
   it('lists the scenes and says when there are none', () => {
     renderEditor([]);
     expect(screen.getByText('No scenes yet.')).toBeInTheDocument();
-    renderEditor([scene()]);
+    renderEditor([scene()], vi.fn(), false);
     expect(
-      screen.getByRole('button', {
-        name: /welcome · The ship is built|welcome · The faction is chosen/,
-      }),
+      screen.getByRole('button', { name: /^1\. (The ship is built|The faction is chosen)/ }),
     ).toBeInTheDocument();
+    // the first words of the scene are beside its heading, to find it in a long list
+    expect(screen.getByText(/Hello, pilot\./)).toBeInTheDocument();
+  });
+
+  it('lists the scenes in the order they are told, numbered, whatever order they were saved in', () => {
+    const at = (id: string, trigger: string, order: number, text: string): SceneData => ({
+      ...scene(),
+      id,
+      trigger,
+      order,
+      nodes: [{ ...scene().nodes[0]!, text: { en: text, 'pt-BR': text }, next: null }],
+      start: 'w1',
+    });
+    renderEditor(
+      [
+        at('c', 'prologue_race_leg_2', 1, 'Second leg'),
+        at('a', 'prologue_gift_enter', 1, 'First line'),
+        at('d', 'prologue_race_done', 1, 'Race over'),
+        at('b', 'prologue_race_leg_1', 2, 'Later leg one'),
+        at('e', 'prologue_race_leg_1', 1, 'Leg one'),
+      ],
+      vi.fn(),
+      false,
+    );
+    const headings = screen.getAllByRole('button', { name: /^\d+\. / }).map((b) => b.textContent);
+    expect(headings.map((h) => h?.replace(/^\d+\. /, ''))).toEqual([
+      'Opening · The gift · when it starts',
+      'Opening · The race · end of leg 1',
+      'Opening · The race · end of leg 1',
+      'Opening · The race · end of leg 2',
+      'Opening · The race · when it is done',
+    ]);
+    expect(headings[0]).toMatch(/^1\. /);
+    expect(headings[4]).toMatch(/^5\. /);
   });
 
   it("edits a node's text, position and anchor and hands back the whole list", () => {
@@ -114,6 +153,9 @@ describe('Admin scene editor', () => {
       'prologue_race-board_enter',
       'prologue_race-board_done',
       'prologue_race_enter',
+      'prologue_race_leg_1',
+      'prologue_race_leg_2',
+      'prologue_race_leg_3',
       'prologue_race_done',
       'prologue_race-report_enter',
       'prologue_race-report_done',
@@ -139,9 +181,6 @@ describe('Admin scene editor', () => {
       'prologue_loss_done',
       'prologue_rescue_enter',
       'prologue_rescue_done',
-      'prologue_race_leg_1',
-      'prologue_race_leg_2',
-      'prologue_race_leg_3',
     ]);
     expect(options('Where it sits')).toEqual(['center', 'bottom', 'left', 'right', 'top']);
     expect(options('Points at')).toContain('port_refuel');

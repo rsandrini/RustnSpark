@@ -728,3 +728,30 @@
 .report-text-preview {
   font-style: italic;
 }
+
+/* The dialogue scenes of a guide, listed in the order they are told: a number, the moment, and the first words. */
+.scene-editor .scene-card > legend {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: 100%;
+}
+.scene-editor .scene-preview {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The opening script: one table, in story order. */
+.opening-script input[type='search'] {
+  width: min(480px, 100%);
+  margin: 6px 0 12px;
+}
+.opening-script-table td {
+  vertical-align: top;
+}
+.opening-script-lines {
+  margin: 0;
+  padding-left: 18px;
+}

@@ -120,6 +120,7 @@ export function AdminShell() {
       to: `/admin/tuning/entities/${entity}`,
       label: t(`tuning.entityNames.${entity}`),
     })),
+    { to: '/admin/tuning/opening-script', label: t('admin.openingScript.nav') },
     { to: '/admin/tuning/revisions', label: t('tuning.revisionHistoryTitle') },
   ];
 

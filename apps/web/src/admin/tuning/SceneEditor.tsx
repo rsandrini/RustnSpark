@@ -6,7 +6,7 @@ import {
   DialoguePositionSchema,
 } from '@rustandspark/contract';
 import type { DialogueNode, GiverRef } from '../../api/generated';
-import { withoutNode } from './scene-edit';
+import { firstWords, inSequence, withoutNode } from './scene-edit';
 import { DialogueBox } from '../../features/dialogue/dialogue-box';
 
 // Admin editor for a mentor's dialogue scenes (docs/design/mentor-dialogue-plan.md §4): scenes with a trigger and an
@@ -79,10 +79,18 @@ export const SCENE_TRIGGERS = [
   'checklist_done',
   'first_pirates',
   'first_scrap',
-  ...PROLOGUE_STEP_IDS.flatMap((step) => [`prologue_${step}_enter`, `prologue_${step}_done`]),
-  'prologue_race_leg_1',
-  'prologue_race_leg_2',
-  'prologue_race_leg_3',
+  // the opening in the order it is told: each step starts, (the race: its three legs,) and is done
+  ...PROLOGUE_STEP_IDS.flatMap((step) =>
+    step === 'race'
+      ? [
+          'prologue_race_enter',
+          'prologue_race_leg_1',
+          'prologue_race_leg_2',
+          'prologue_race_leg_3',
+          'prologue_race_done',
+        ]
+      : [`prologue_${step}_enter`, `prologue_${step}_done`],
+  ),
 ] as const;
 
 const PLACEHOLDER_GIVER: GiverRef = {
@@ -153,9 +161,10 @@ const blankNode = (id: string): SceneNodeData => ({
 });
 
 export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: SceneEditorProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const scenes = asScenes(value);
-  const [open, setOpen] = useState<string | null>(scenes[0]?.id ?? null);
+  // the list opens closed: the numbered headings are the table of contents
+  const [open, setOpen] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<{ scene: string; node: string } | null>(null);
 
   const setScene = (index: number, patch: Partial<SceneData>): void =>
@@ -187,10 +196,12 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
     <div className="scene-editor" role="group" aria-label={t('admin.dialogue.title')}>
       <p className="muted">{t('admin.dialogue.help')}</p>
       {scenes.length === 0 && <p className="muted">{t('admin.dialogue.none')}</p>}
-      {scenes.map((scene, index) => {
+      {inSequence(scenes, SCENE_TRIGGERS).map(({ scene, index }, position) => {
         const nodeIds = scene.nodes.map((node) => node.id);
         const isOpen = open === scene.id;
-        const heading = `${scene.id || t('admin.dialogue.unnamed')} · ${t(`admin.dialogue.triggers.${scene.trigger}`)}`;
+        // numbered in the order it is told, with its first words: a long list can be read like the story it is
+        const heading = `${position + 1}. ${t(`admin.dialogue.triggers.${scene.trigger}`)}`;
+        const preview = firstWords(scene, i18n.language === 'pt-BR' ? 'pt-BR' : 'en');
         return (
           <fieldset key={`${scene.id}-${index}`} className="scene-card">
             <legend>
@@ -202,6 +213,7 @@ export function SceneEditor({ value, onChange, giver = PLACEHOLDER_GIVER }: Scen
               >
                 {heading}
               </button>
+              {preview !== '' && <span className="scene-preview muted"> {preview}</span>}
             </legend>
             {isOpen && (
               <div className="stack">

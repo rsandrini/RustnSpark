@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SceneData, SceneNodeData } from './SceneEditor';
-import { withoutNode } from './scene-edit';
+import { firstWords, inSequence, withoutNode } from './scene-edit';
 
 const node = (
   id: string,
@@ -68,5 +68,35 @@ describe('removing a line from a scene', () => {
   it('never removes the only line', () => {
     const only = scene([node('a', null)]);
     expect(withoutNode(only, 'a')).toBe(only);
+  });
+});
+
+describe('the scenes in the order they are told', () => {
+  const at = (id: string, trigger: string, order: number): SceneData => ({
+    ...scene([node('a', null)]),
+    id,
+    trigger,
+    order,
+  });
+  const triggers = ['first', 'second', 'third'];
+
+  it("sorts by the moment, then by the scene order, and keeps each scene's place in the saved list", () => {
+    const sorted = inSequence(
+      [at('z', 'third', 1), at('y', 'first', 2), at('x', 'first', 1), at('w', 'second', 1)],
+      triggers,
+    );
+    expect(sorted.map((entry) => entry.scene.id)).toEqual(['x', 'y', 'w', 'z']);
+    expect(sorted.map((entry) => entry.index)).toEqual([2, 1, 3, 0]);
+  });
+
+  it('puts a moment it does not know last', () => {
+    const sorted = inSequence([at('odd', 'unknown', 1), at('x', 'first', 1)], triggers);
+    expect(sorted.map((entry) => entry.scene.id)).toEqual(['x', 'odd']);
+  });
+
+  it('gives the first words of a scene, shortened', () => {
+    const long = scene([node('a', null, { text: { en: 'word '.repeat(40), 'pt-BR': 'palavra' } })]);
+    expect(firstWords(long, 'en', 20)).toHaveLength(20);
+    expect(firstWords(long, 'pt-BR')).toBe('palavra');
   });
 });

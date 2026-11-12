@@ -1182,6 +1182,18 @@
         "BAN": "Account banned"
       },
       "failed": "Could not save the decision."
+    },
+    "openingScript": {
+      "nav": "Opening script",
+      "title": "Opening script",
+      "help": "Every line of the opening, in the order it is told, with who says it and when. Use the search to find a phrase in either language; Edit opens that guide.",
+      "search": "Search the script…",
+      "none": "No lines found.",
+      "number": "#",
+      "moment": "When",
+      "who": "Who",
+      "lines": "What is said",
+      "edit": "Edit"
     }
   },
   "tuning": {

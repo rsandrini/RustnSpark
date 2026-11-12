@@ -27,3 +27,33 @@ export function withoutNode(scene: SceneData, nodeId: string): SceneData {
       : scene.start;
   return { ...scene, nodes, start };
 }
+
+/**
+ * The scenes in the order they are told: by the moment each starts (the order of the trigger list, which for the opening
+ * is the story from the first line to the last), then by the scene's own order. Each keeps the position it has in the
+ * saved list, so an edit lands on the right scene.
+ */
+export function inSequence(
+  scenes: readonly SceneData[],
+  triggers: readonly string[],
+): Array<{ scene: SceneData; index: number }> {
+  const rank = (trigger: string) => {
+    const at = triggers.indexOf(trigger);
+    return at === -1 ? triggers.length : at;
+  };
+  return scenes
+    .map((scene, index) => ({ scene, index }))
+    .sort(
+      (a, b) =>
+        rank(a.scene.trigger) - rank(b.scene.trigger) ||
+        a.scene.order - b.scene.order ||
+        a.index - b.index,
+    );
+}
+
+/** The first words a scene says, to find it in a list of many. */
+export function firstWords(scene: SceneData, language: 'en' | 'pt-BR', limit = 80): string {
+  const first = scene.nodes.find((node) => node.id === scene.start) ?? scene.nodes[0];
+  const text = (first?.text[language] || first?.text.en || '').replace(/\s+/g, ' ').trim();
+  return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
+}

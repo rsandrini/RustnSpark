@@ -11,6 +11,7 @@ import { SystemScreen } from './system/SystemScreen';
 import { ConfigScreen } from './tuning/ConfigScreen';
 import { EntityFormScreen } from './tuning/EntityFormScreen';
 import { EntityScreen } from './tuning/EntityScreen';
+import { OpeningScript } from './tuning/OpeningScript';
 import { RevisionHistory } from './tuning/RevisionHistory';
 
 function AdminFallback() {
@@ -38,6 +39,7 @@ export default function AdminRoutes() {
             path="tuning/entities/:entity/:id/clone"
             element={<EntityFormScreen mode="clone" />}
           />
+          <Route path="tuning/opening-script" element={<OpeningScript />} />
           <Route path="tuning/revisions" element={<RevisionHistory />} />
         </Route>
       </Routes>
