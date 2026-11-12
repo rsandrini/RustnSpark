@@ -10,6 +10,7 @@ import {
   Patch,
   UseFilters,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import type { TuningRevision } from '@prisma/client';
 import { AdminGuard } from '../guards/admin.guard.js';
@@ -42,6 +43,8 @@ function serializeRevision(revision: TuningRevision): Record<string, unknown> {
 @UseFilters(ConfigTuningApiErrorFilter)
 @Controller('admin/tuning')
 export class EntityTuningController {
+  private readonly logger = new Logger(EntityTuningController.name);
+
   constructor(private readonly entityTuningService: EntityTuningService) {}
 
   @Get('schema/:entity')
@@ -160,6 +163,10 @@ export class EntityTuningController {
 
   private rethrowAsApiError(error: unknown): void {
     if (error instanceof GameConfigValidationError) {
+      // a refused save is worth a line in the log: the editor sees the reason, and so can whoever reads the log
+      this.logger.warn(
+        `tuning write refused: ${error.issues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`,
+      );
       const code = error.issues[0]?.message;
       throw new ConfigTuningApiError(
         {

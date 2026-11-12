@@ -216,12 +216,6 @@ export function EntityFormScreen({ mode }: { mode: EntityFormMode }) {
         {mode === 'clone' && <span className="muted">{t('tuning.clone')}</span>}
       </nav>
       <h2>{title}</h2>
-      {/* a refused save must be seen at once, not only under the field it concerns (it may be far down the form) */}
-      {(issues.length > 0 || formErrors.length > 0) && (
-        <p className="error-text" role="alert" data-testid="not-saved">
-          {t('tuning.notSaved', { message: issues[0]?.message ?? formErrors[0] ?? '' })}
-        </p>
-      )}
       {(entityName === 'factions' || entityName === 'locations' || entityName === 'quest-givers') &&
         mode === 'edit' &&
         id !== undefined && <ArtEditor kind={entityName} id={id} />}

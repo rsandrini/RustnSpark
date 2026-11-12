@@ -759,6 +759,17 @@ export function SchemaForm({
           <div className="schema-form-main">{mainFields.map((field) => renderField(field))}</div>
         )}
       </div>
+      {/* the summary at the top is out of sight when Save is pressed at the end of a long form: say it here too */}
+      {(issues.length > 0 || (errors?.length ?? 0) > 0) && (
+        <p className="error-text form-save-error" data-testid="save-error">
+          {t('tuning.notSaved', {
+            message:
+              issues[0] !== undefined
+                ? `${labelFor(issues[0].key)}${t('tuning.errors.separator')}${readable(issues[0].message)}`
+                : (errors?.[0] ?? ''),
+          })}
+        </p>
+      )}
       <div className="schema-form-actions">
         <button type="submit">{submitLabel ?? t('tuning.save')}</button>
         {onDuplicate !== undefined && (

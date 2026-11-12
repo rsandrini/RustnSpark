@@ -1183,7 +1183,7 @@ describe('saving in the Admin', () => {
     expect(await screen.findByTestId('feedback-toast')).toHaveTextContent('Saved');
   });
 
-  it('says "Not saved" at the top when the server refuses the save', async () => {
+  it('says "Not saved" beside the Save button when the server refuses the save', async () => {
     const schema = {
       entity: 'ship-formats',
       fields: [
@@ -1210,6 +1210,6 @@ describe('saving in the Admin', () => {
     const user = userEvent.setup();
     renderAt('/admin/tuning/entities/ship-formats/scout');
     await user.click(await screen.findByRole('button', { name: 'Save' }));
-    expect(await screen.findByTestId('not-saved')).toHaveTextContent('Not saved: nope');
+    expect(await screen.findByTestId('save-error')).toHaveTextContent('Not saved: Id: nope');
   });
 });
