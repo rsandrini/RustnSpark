@@ -49,11 +49,15 @@ const PART_SECTIONS: readonly FormSection[] = [
 // JSON, and the preview above the form shows the badge as it will appear in the game.
 const QUEST_GIVER_SECTIONS: readonly FormSection[] = [
   { titleKey: 'tuning.sections.identity', fields: ['id', 'name', 'title', 'factionId', 'role'] },
-  { titleKey: 'admin.givers.sections.personality', fields: ['personality'] },
-  // their voice is a long list of pools: closed until it is needed
+  { titleKey: 'admin.givers.sections.personality', fields: ['personality'], collapsible: true },
+  // every section but the identity is a box that opens and closes, closed at first (the form is long)
   { titleKey: 'admin.givers.sections.lines', fields: ['lines'], collapsible: true },
-  { titleKey: 'admin.dialogue.section', fields: ['scenes'] },
-  { titleKey: 'admin.givers.sections.places', fields: ['locationIds', 'weight'] },
+  { titleKey: 'admin.dialogue.section', fields: ['scenes'], collapsible: true },
+  {
+    titleKey: 'admin.givers.sections.places',
+    fields: ['locationIds', 'weight'],
+    collapsible: true,
+  },
 ];
 
 const SECTIONS: Record<string, readonly FormSection[]> = {
